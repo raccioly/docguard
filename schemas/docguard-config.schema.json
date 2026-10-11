@@ -126,6 +126,7 @@
         "suppressions":       { "type": "boolean" },
         "specRegistry":       { "type": "boolean" },
         "docDependency":      { "type": "boolean" },
+        "requirementAnchors": { "type": "boolean" },
         "pathScopedRules":    { "type": "boolean" },
         "docOwnership":       { "type": "boolean" },
         "evidence":           { "type": "boolean" },
@@ -285,6 +286,13 @@
         }
       },
       "additionalProperties": false
+    },
+    "anchors": {
+      "type": "object",
+      "description": "Requirement anchors (`docguard anchors`, specs/070-requirement-anchors): code→requirement tags anchored to the symbol, statement or route below them. Active when `.docguard-anchor-lock.jsonl` exists or `enabled` is true.",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Report requirement anchors in guard before the project has an anchor lock. Default false." }
+      }
     },
     "specFirst": {
       "type": "object",

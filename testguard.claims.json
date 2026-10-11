@@ -1635,7 +1635,7 @@
           "id": "F1",
           "description": "AST metadata (positions) is fingerprinted, so a line move fires.",
           "faultClass": "return-altered",
-          "file": "cli/scanners/doc-deps.mjs",
+          "file": "cli/scanners/fingerprint.mjs",
           "find": "  return JSON.stringify(node, (key, value) => (AST_METADATA.has(key) ? undefined : value));",
           "replace": "  return JSON.stringify(node);",
           "producedBy": {
@@ -1648,7 +1648,7 @@
           "description": "Symbols fall back to whole-file bytes, so unrelated edits fire.",
           "faultClass": "return-altered",
           "file": "cli/scanners/doc-deps.mjs",
-          "find": "      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeAst(node)) };",
+          "find": "      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeJsV0(node)) };",
           "replace": "      return { ok: true, tier: 'ast', fingerprint: sha256(bytes) };",
           "producedBy": {
             "producer": "agent",
@@ -1660,8 +1660,8 @@
           "description": "A changed dependency is reported as current.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/doc-deps.mjs",
-          "find": "        else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';",
-          "replace": "        else if (false) state = 'changed';",
+          "find": "      else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';",
+          "replace": "      else if (false) state = 'changed';",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 030)"
@@ -1749,6 +1749,133 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-SCOPE-RESOLVES-SYMBOLS",
+      "statement": "A requirement tag anchors to the code directly below it at the narrowest scope its position allows, with a fingerprint that ignores formatting, comments and the symbol's own name but not directive comments; tags inside literals, test files and unresolvable positions never create a precise anchor, and guard reports anchors only for projects that opted in.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 1)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors.test.mjs",
+        "tests/requirement-evidence-literals.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Implementation evidence reads the whole file, so a tag quoted in a string counts.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/requirement-evidence.mjs",
+          "find": "  return realComments(content, filename)",
+          "replace": "  return [{ text: content, line: 1 }]",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A tag directly above a declaration falls back to file scope.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (name) return symbolAnchor(tag, next, [...loc.owners.map(o => o.name), name].join('.'), ctx);",
+          "replace": "    if (name) return file();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "The symbol's own name is fingerprinted, so a rename reads as a change.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    if (this === node && (key === 'id' || key === 'key')) return undefined;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Directive comments are ignored, so adding @ts-ignore is invisible.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    .filter(c => c.start >= node.start && c.end <= node.end && DIRECTIVE_RE.test(c.value))",
+          "replace": "    .filter(() => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A file header directly above a declaration is no longer reported ambiguous.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (DECLARATION_TYPES.has(next.type)) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A cache that git tracks is trusted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-cache.mjs",
+          "find": "  if (tracked.length) return off(`ignored: git tracks ${tracked.length} file(s) under ${STATE_DIR}/ (${tracked.slice(0, 3).join(', ')}), so a cache there may have been planted`, tracked);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Guard reports anchors in a project that never opted in.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/requirement-anchors.mjs",
+          "find": "  if (!links && !anchorsActivated(projectDir, config)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A comma list of requirements in one tag is accepted silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (extra.length) problems.push(`lists ${extra.length + 1} requirements in one tag; only ${m[2]} anchors. Write one tag per requirement, one per line`);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file the pattern lexer cannot balance still gets precise anchors.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (lexed.error) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
           }
         }
       ]

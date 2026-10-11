@@ -51,6 +51,7 @@
     { "name": "docguard_doc_structure", "description": "Headings, sections and markers of one document" },
     { "name": "docguard_read_section", "description": "Read one bounded section of a document" },
     { "name": "docguard_task_context", "description": "Deterministic context packet for a task" },
+    { "name": "docguard_anchors", "description": "Code-to-requirement links and what each anchors to" },
     { "name": "docguard_diagnose", "description": "Only what needs fixing, shaped for an agent to act on" }
   ],
   "compatibility": {

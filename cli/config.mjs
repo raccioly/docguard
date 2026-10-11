@@ -84,6 +84,7 @@ export function loadConfig(projectDir) {
       documentLifecycle: true,
       specRegistry: true,
       docDependency: true, // opt-in by declaration: not applicable until a section declares covers=
+      requirementAnchors: true, // opt-in: not applicable without .docguard-anchor-lock.jsonl or anchors.enabled
       pathScopedRules: true, // not applicable without agent instruction files
       docOwnership: true, // not applicable without an ownership block or .devin/wiki.json
       evidence: true,

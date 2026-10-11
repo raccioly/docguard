@@ -101,6 +101,7 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
+| `requirementAnchors` | `true` | Code→requirement tags that cite no declared requirement (ANC007) and files anchored below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
 
@@ -368,6 +369,25 @@ doc section declares the code it describes:
 review in `.docguard-doc-lock.json` (commit it). Set
 `"validators": { "docDependency": false }` to turn the check off. See
 [`docguard review`](commands.md#docguard-review).
+
+## Requirement anchors — `anchors` and `validators.requirementAnchors`
+
+`docguard anchors` lists, in any project, what each `@implements` / `@req` tag
+anchors to.
+
+Guard reports on anchors only once the project opts in. That means either a
+committed `.docguard-anchor-lock.jsonl` or this setting:
+
+```json
+"anchors": { "enabled": true }
+```
+
+| Key | Default | Meaning |
+|---|---|---|
+| `anchors.enabled` | `false` | Report ANC findings in guard before the project has an anchor lock |
+| `validators.requirementAnchors` | `true` | Set `false` to turn the Requirement-Anchors validator off |
+
+See [`docguard anchors`](commands.md#docguard-anchors).
 
 ## Doc ownership — `ownership`
 

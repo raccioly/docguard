@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 import { TEST_PATTERNS } from '../shared-trace-patterns.mjs';
+import { realComments } from './anchor-tags.mjs';
 import { parseJsTs, walk } from './js-ast.mjs';
 
 export function isTestSource(file) {
@@ -101,19 +102,18 @@ function testDeclarations(content, filename) {
   return declarations;
 }
 
+/**
+ * Comments that carry `@implements` / `@req`, read string-aware in every tier
+ * (docguard.requirement-anchors#FR-005): a tag quoted inside a string,
+ * template, regex or YAML value is documentation about tags, not evidence.
+ * Every requirement ID in a tagged comment still counts, as before (FR-006).
+ * @implements docguard.requirement-anchors#FR-005
+ * @implements docguard.requirement-anchors#FR-006
+ */
 function implementationDeclarations(content, filename) {
-  const declarations = [];
-  const ext = extname(filename);
-  // YAML: action.yml and CI workflows implement specs too; `#` is their comment.
-  const hashComments = /\.(?:py|rb|php|sh|ya?ml)$/.test(ext);
-  const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*/g;
-  for (const token of content.matchAll(tokens)) {
-    if (token[0].startsWith('#') && !hashComments) continue;
-    const line = content.slice(0, token.index).split('\n').length;
-    const text = token[0].replace(/^(?:\/\/|\/\*|#)/, '');
-    if (/@(?:req|implements)\s/i.test(text)) declarations.push({ text, line });
-  }
-  return declarations;
+  return realComments(content, filename)
+    .filter(c => /@(?:req|implements)\s/i.test(c.text))
+    .map(c => ({ text: c.text, line: c.line }));
 }
 
 function collectReferences(projectDir, projectFiles, patterns, select, declarationsForFile) {

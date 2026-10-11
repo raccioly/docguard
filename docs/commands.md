@@ -545,6 +545,60 @@ resolves, **DLK003** a section never accepted or whose `covers=` changed,
 Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
 `fix` and agents never do.
 
+### `docguard anchors`
+
+**Which code each requirement tag points at.** A tag anchors to the code
+directly below it, not to the whole file:
+
+```js
+/** @implements acme.billing#FR-002 */
+export function applyDiscount(total, coupon) {
+  // @implements acme.billing#FR-003
+  const rate = coupon ? 0.1 : 0;
+  ...
+}
+```
+
+```bash
+npx docguard-cli anchors                                  # every link, grouped by file
+npx docguard-cli anchors --spec acme.billing --format json
+npx docguard-cli anchors --file src/pricing.mjs
+```
+
+Each tag anchors as follows:
+
+| Where the tag sits | What it anchors to |
+|---|---|
+| The file's leading comment block, followed by imports | the whole file |
+| Directly above a function, class, method or top-level variable (decorators may sit between, no blank line) | that symbol, by qualified path (`Cart.total`) |
+| Inside a function body, or above another top-level statement | that statement |
+| Above a route registration DocGuard recognises (JS/TS) | the route (`route:POST /login`) |
+| Inside a Python docstring | the docstring's owner |
+
+Add `{scope=file|symbol|statement|route}` after the requirement to say which
+scope you mean.
+
+A leading header directly above a declaration stays at file scope and is
+reported ambiguous (**ANC006**). A tag inside a string, template, regex or
+quoted YAML value is not a tag.
+
+Every link names the tier that placed it:
+- `babel@7` for JS/TS;
+- `python-ast@3.12` for Python, from the machine's `python3` in one run;
+- `pattern@1` for Go, Rust, Java, Kotlin, C#, PHP, Ruby, Swift, C and C++,
+  using a string-aware lexer that falls back to file scope when it cannot
+  balance a file;
+- `file` for YAML and shell.
+
+The listing works in any project. Guard reports on anchors only after you opt
+in, with a committed `.docguard-anchor-lock.jsonl` or `anchors.enabled: true`.
+It then reports **ANC007** for a tag that cites a requirement nobody declares
+and **ANC010** for files read below their exact tier.
+
+The per-file cache lives in `.docguard/anchors.cache.json`, keyed by each
+file's bytes. It is off in CI and with `--no-cache`, and it is ignored and
+reported when git tracks anything under `.docguard/`.
+
 ### `docguard rules`
 
 **Which instructions an agent loads for a path.** Each harness finds its
@@ -743,7 +797,7 @@ read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
 `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
 `docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,
-`docguard_task_context`, `docguard_diagnose`). `docguard_guard` returns each
+`docguard_task_context`, `docguard_anchors`, `docguard_diagnose`). `docguard_guard` returns each
 fact once by default; pass `detail: "full"` for the complete contract. The four navigation tools answer
 "which docs describe this file?" and read one bounded section at a time, so an
 agent does not load whole documents; none of them calls a model.

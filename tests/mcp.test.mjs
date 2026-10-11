@@ -142,7 +142,7 @@ describe('docguard mcp', () => {
     // The four navigation tools come from docguard.mcp-doc-tools.
     assert.deepEqual(
       tools.map((t) => t.name).sort(),
-      ['docguard_diagnose', 'docguard_doc_structure', 'docguard_docs_for_path', 'docguard_explain', 'docguard_guard', 'docguard_read_section', 'docguard_report', 'docguard_score', 'docguard_task_context', 'docguard_verify_claims', 'docguard_verify_evidence']
+      ['docguard_anchors', 'docguard_diagnose', 'docguard_doc_structure', 'docguard_docs_for_path', 'docguard_explain', 'docguard_guard', 'docguard_read_section', 'docguard_report', 'docguard_score', 'docguard_task_context', 'docguard_verify_claims', 'docguard_verify_evidence']
     );
     for (const t of tools) {
       assert.ok(t.description, `${t.name} must have a description`);

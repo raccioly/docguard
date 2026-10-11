@@ -211,7 +211,7 @@ describe('tools/list states the boundary (FR-006)', () => {
     const { app } = tree();
     const { byId } = stdio(app, [], [{ jsonrpc: '2.0', id: 1, method: 'tools/list' }]);
     const withDir = byId.get(1).result.tools.filter((t) => t.inputSchema.properties.projectDir);
-    assert.equal(withDir.length, 10);
+    assert.equal(withDir.length, 11);
     for (const t of withDir) {
       assert.match(t.inputSchema.properties.projectDir.description, /inside the directories this server serves/, t.name);
       assert.match(t.inputSchema.properties.projectDir.description, /relative to the served directory/, t.name);

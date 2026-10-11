@@ -69,6 +69,10 @@ provides:
       file: "commands/trace.md"
       description: "Generate the requirements traceability matrix"
 
+    - name: "speckit.docguard.anchors"
+      file: "commands/anchors.md"
+      description: "List what each requirement tag anchors to (read-only)"
+
     - name: "speckit.docguard.brief"
       file: "commands/brief.md"
       description: "Brief prior spec intent and lifecycle before creating a new specification"

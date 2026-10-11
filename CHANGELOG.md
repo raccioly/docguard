@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Requirement anchors: a tag now points at the code under it, not the whole
+  file** (`specs/070-requirement-anchors`, user story 1).
+  - **Scope by position.** A tag anchors to the narrowest scope its position
+    allows:
+    - a tag in the file's leading block covers the whole file;
+    - a tag directly above a function, class, method or top-level variable
+      covers that symbol, by qualified path (`Cart.total`, `Server.Run`);
+    - a tag inside a function body, or above another top-level statement,
+      covers that statement;
+    - a tag above an Express-style registration covers the route
+      (`route:POST /login`);
+    - a tag inside a Python docstring covers the docstring's owner.
+
+    A file header sitting directly above a declaration stays file-scoped and
+    is reported ambiguous, never silently reinterpreted.
+  - **`docguard anchors` and the `docguard_anchors` MCP tool.** Both list every
+    link, with the tier that placed it:
+    - Babel for JS/TS;
+    - one batched `python3` run for Python;
+    - a string-aware, self-checking pattern lexer for Go, Rust, Java, Kotlin,
+      C#, PHP, Ruby, Swift, C and C++;
+    - file tier for YAML and shell.
+  - **Opt-in for guard.** Guard reports anchors only once a project opts in
+    (`anchors.enabled`, or the anchor lock that the next story adds):
+    - **ANC007**: a tag cites a requirement nobody declares;
+    - **ANC010**: a file was read below its exact tier.
+
+    Projects that have not opted in see no new findings.
+
+### Changed
+
+- **The doc lock's fingerprinting moved into a shared module.** It now lives
+  in `cli/scanners/fingerprint.mjs`, byte for byte, as `doclock-v0`; every
+  accepted section stays current.
+  - Covered Python symbols are read in one `python3` run per check instead of
+    one per symbol.
+  - Member paths resolve at any depth (`Outer.Inner.method`,
+    `outer.helper`).
+- **Requirement definitions carry their whole `block`.** Every line of a list
+  item, heading or paragraph is included, so a requirement fingerprint sees
+  every line. `text` stays the first line.
+
+### Fixed
+
+- **A tag quoted inside a string is no longer requirement evidence.** The
+  implementation-evidence scanner read `// @req FR-012` inside a help string
+  (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
+  every language it can lex, and quote-aware `#` comments in YAML and shell.
+- **A Python interpreter upgrade no longer reads as a code change in the doc
+  lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
+  revision, re-read with today's interpreter, is now unverifiable instead of
+  DLK001.
+
 ## [0.44.2] - 2026-10-11
 
 ### Fixed

@@ -166,6 +166,7 @@ import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs'
 import { validateSuppressions } from '../validators/suppressions.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
+import { validateRequirementAnchors } from '../validators/requirement-anchors.mjs';
 import { validatePathScopedRules } from '../validators/path-scoped-rules.mjs';
 import { validateDocOwnership } from '../validators/doc-ownership.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
@@ -372,6 +373,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'documentLifecycle', name: 'Document-Lifecycle', fn: () => validateDocumentLifecycle(projectDir, config) },
     { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
     { key: 'docDependency', name: 'Doc-Dependency', fn: () => validateDocDependency(projectDir, config) },
+    { key: 'requirementAnchors', name: 'Requirement-Anchors', fn: () => validateRequirementAnchors(projectDir, config) },
     { key: 'pathScopedRules', name: 'Path-Scoped-Rules', fn: () => validatePathScopedRules(projectDir, config) },
     { key: 'docOwnership', name: 'Doc-Ownership', fn: () => validateDocOwnership(projectDir, config) },
     { key: 'evidence', name: 'Evidence', fn: () => validateEvidence(projectDir, config) },
@@ -711,7 +713,7 @@ export function liteValidatorsConfig(config = {}) {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-    'evidence', 'docDependency', 'pathScopedRules', 'docOwnership', 'suppressions',
+    'evidence', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'suppressions',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

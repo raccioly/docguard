@@ -4,8 +4,8 @@
 # DocGuard serves read-only tools over stdio: docguard_guard, docguard_score,
 # docguard_explain, docguard_verify_evidence, docguard_verify_claims,
 # docguard_report, docguard_docs_for_path, docguard_doc_structure,
-# docguard_read_section, docguard_task_context, docguard_diagnose. No credentials
-# or required configuration. Every project-scoped tool also accepts a per-call
+# docguard_read_section, docguard_task_context, docguard_anchors,
+# docguard_diagnose. No credentials or required configuration. Every project-scoped tool also accepts a per-call
 # `projectDir`, which must be inside the served directory (the startup
 # projectDir below, else the working directory); `docguard mcp --root <dir>`
 # serves more trees.

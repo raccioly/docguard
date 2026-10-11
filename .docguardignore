@@ -37,6 +37,10 @@ templates/demo-fixture/
 templates/demo-fixture/**
 benchmarks/fixtures/
 benchmarks/fixtures/**
+# Requirement-anchor fixture projects (specs/070): their tags cite the fixture's
+# own example specs (acme.billing), not this repository's requirements.
+tests/fixtures/anchors/
+tests/fixtures/anchors/**
 packaging/
 packaging/**
 

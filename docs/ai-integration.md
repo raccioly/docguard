@@ -57,6 +57,7 @@ applies to stdio and `--transport http`).
 | `docguard_doc_structure` | One document's headings (with anchors, line ranges, bytes), section markers and fact markers |
 | `docguard_read_section` | One section by id, anchor or heading, bounded (8 KiB default, 32 KiB cap, `nextOffset` when truncated) |
 | `docguard_task_context` | The `agent --task` context packet: task-linked requirements, code and test pointers, excerpts |
+| `docguard_anchors` | Each `@implements`/`@req` tag, the requirement it resolves to, and the symbol, statement, route or file it anchors to, with its tier |
 | `docguard_diagnose` | Failing/warning validators with per-finding suggestions, shaped for action |
 
 The server is read-only (never scaffolds), keeps stdout as a pure JSON-RPC

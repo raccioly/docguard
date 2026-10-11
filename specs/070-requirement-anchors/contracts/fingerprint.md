@@ -37,7 +37,11 @@
 - Comments are dropped except directives. Literals are kept verbatim.
 - Every whitespace run collapses to nothing between tokens.
 - In Go, a `;` token is emitted wherever a newline ends a statement under the
-  language specification's semicolon-insertion rule.
+  language specification's semicolon-insertion rule. Kotlin, Swift and Ruby
+  follow the same rule on a best-effort basis.
+- Python gets indent/dedent markers, so re-indenting a whole block keeps the
+  floor while moving a statement into or out of a block changes it.
+- Inside literals, `\r\n` becomes `\n`, so CRLF checkouts give the same floor.
 - The floor is computed for every link in every language, so any two machines
   can compare at this level.
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Requirement Anchors and Suspect Links
 
-**Branch**: `feat/requirement-anchors` (one PR per user story; each later PR uses a branch `feat/requirement-anchors-usN`) | **Date**: 2026-10-11 | **Spec**: [spec.md](spec.md)
+**Branch**: `feat/requirement-anchors` (integration branch: each story lands as its own commits; one draft PR to `main`; one release, 0.45.0) | **Date**: 2026-10-11 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/070-requirement-anchors/spec.md`
 
@@ -202,11 +202,12 @@ writer. This mirrors spec 030 exactly.
   - JS/TS: Babel `ast.comments`, which already excludes strings, templates
     and regex literals.
   - Python: `tokenize` COMMENT tokens plus docstring nodes.
-  - Pattern languages: `pattern-lexer.mjs` extends `lexCLike` with
-    `collectComments: true`. Comment spans are recorded instead of only
-    masked. It adds `lexRust` (raw strings `r#"…"#`, byte strings, lifetimes
-    vs. character literals) and reuses `lexCSharp`, `lexPhp` and the Sinatra
-    Ruby tokenizer.
+  - Pattern languages: `pattern-lexer.mjs` is a self-contained tokenizer per
+    language family that records comments as `{s, e, line, endLine, text}`.
+    It handles raw, verbatim, interpolated and heredoc literals, lifetimes vs.
+    character literals, preprocessor lines and Python indentation. The route
+    lexers stay untouched, because `lexCLike` masks literals and drops
+    comments.
   - `requirement-evidence.mjs` switches to this pass, which is the FR-005
     fix. Files with no parser fall back to today's tokenizer, made
     string-aware for `"`, `'` and backtick.
@@ -401,7 +402,22 @@ How "code fp equal" is decided:
 
   The project's module resolution is never used.
 
-## PR sequence
+## Story sequence (one integration branch, one release)
+
+All ten stories land as separate commits on `feat/requirement-anchors`:
+
+- **One draft PR to `main`.** It is opened after story 1, and every push runs
+  the full CI matrix (CI triggers only on PRs to `main`).
+- **No auto-merge.** The auto-merge workflow handles bot PRs only, so the draft
+  never merges itself.
+- **Kept current.** `main` is merged in after each story.
+- **No early release.** Nothing reaches `main` until the release gate in
+  `checklists/remediation.md` passes on the final commit, so the weekly
+  scheduled release cannot ship a partial feature.
+- **One release.** Ricardo merges and asks for 0.45.0, a single minor release.
+
+The "PR" column below is the story's commit series, and "Gate before merge" is
+the gate before that story is closed on the branch.
 
 | PR | Story | Contents | Gate before merge |
 |---|---|---|---|

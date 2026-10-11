@@ -79,6 +79,7 @@ none.
 | `docguard_doc_structure` | `doc` (required) | One document's headings (level, anchor, line range, bytes), section markers, fact markers, marker issues, last-reviewed date and size |
 | `docguard_read_section` | `doc` (required); one of `id`, `anchor`, `heading` or `line`; `context` (0 to 50, default 3, with `line`); `offset`; `maxBytes` | One section, found by section id, then anchor, then exact heading; or the lines around `line`. 8 KiB by default, 32 KiB at most; a truncated read returns `nextOffset`. An ambiguous match fails with the candidates |
 | `docguard_task_context` | `task` (required) | The packet `docguard agent --task <text> --format json` prints: task-linked requirements, code and test pointers, excerpts and verification steps. It abstains when relevance is weak |
+| `docguard_anchors` | `spec`, `file` (optional) | The listing `docguard anchors --format json` prints: each `@implements`/`@req` tag, the requirement it resolves to, and the file, symbol, statement or route it anchors to with its tier, plus problems. Bounded to 200 links; it never writes the anchor lock |
 | `docguard_diagnose` | none | `status`, error and warning counts, `nextStep`, and `problems`: only the validators with errors or warnings, each with its findings and suggestions |
 
 ### Compact and full guard responses

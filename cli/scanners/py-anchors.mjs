@@ -153,7 +153,7 @@ def outline(tree, source, lines):
             following[str(line)] = {'start': first, 'line': stmt.lineno, 'end': stmt.end_lineno, 'owner': owner,
                                     'kind': kind, 'v1': ser(stmt, stmt if kind != 'stmt' else None)}
     module_doc = docstring_node(tree)
-    return {'comments': comments, 'symbols': symbols, 'following': following,
+    return {'comments': comments, 'symbols': symbols, 'following': following, 'moduleV1': ser(tree, tree),
             'moduleDocstring': [module_doc.lineno, module_doc.end_lineno] if module_doc is not None else None}
 
 request = json.load(sys.stdin)

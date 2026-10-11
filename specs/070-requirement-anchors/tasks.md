@@ -9,9 +9,12 @@
 [research.md](research.md) ·
 [quickstart.md](quickstart.md)
 
-**Delivery**: one PR per user story, in plan.md's PR sequence.
+**Delivery**: each user story lands as its own commits on the integration
+branch `feat/requirement-anchors`, in plan.md's story sequence. One draft PR
+to `main` runs CI on every push. All stories ship together in one release
+(0.45.0), after T079. "PR n" below means story n's commit series.
 
-Each PR must also:
+Each story must also:
 - run `npm test`, `docguard guard` and the `budget` job;
 - update `CHANGELOG.md`;
 - regenerate `llms.txt` and `llms-full.txt` (`npm run llms`) and the findings
@@ -82,7 +85,7 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
 ### Implementation
 
 - [ ] T014 [US1] Create `cli/scanners/pattern-lexer.mjs`:
-  - extend `lexCLike` (`cli/scanners/route-lexing.mjs`) with `collectComments` without changing its default output;
+  - a self-contained tokenizer, not an extension of `lexCLike`, which cannot represent comment records or raw, verbatim and interpolated strings (`route-lexing.mjs` stays untouched);
   - add `lexRust` (`r#"…"#`, `b""`, `c""`, lifetimes vs. character literals);
   - adapt `lexCSharp`, `lexPhp` and the Sinatra Ruby tokenizer through a common `{code, lits, comments}` shape;
   - symbol finder per family (declaration keywords, class-body depth for methods, `impl` blocks);
@@ -140,13 +143,13 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
   - `README.md`, `docs/commands.md`.
 
   (FR-042)
-- [ ] T025 [US1] Verify and ship PR 1:
+- [ ] T025 [US1] Verify and close story 1:
   - add a `testguard.claims.json` claim `ANCHOR-SCOPE-RESOLVES-SYMBOLS`;
   - confirm every `.docguard-doc-lock.json` entry is still current, `guard` passes, and the `budget` job passes (SC-003);
   - list the literal-tag evidence differences in `CHANGELOG.md` (FR-026, SC-002);
   - update `CHANGELOG.md` and run `npm run llms` and `npm run docs:reference`;
   - run `docguard specs --write`;
-  - open the PR.
+  - commit and push to the draft PR, then merge `main` into the branch.
 
 ## Phase 4: US2, a reviewed link turns suspect (P1, PR 2)
 
@@ -210,11 +213,11 @@ accept refusal path refuses.
   - add `.github/CODEOWNERS` with `.docguard-anchor-lock.jsonl @raccioly`.
 
   (FR-043)
-- [ ] T036 [US2] Verify and ship PR 2:
+- [ ] T036 [US2] Verify and close story 2:
   - add the claim `ANCHOR-SUSPECT-ON-CHANGE`;
   - pass the budget (SC-003);
   - update `CHANGELOG.md`, run `npm run llms` and `npm run docs:reference`, run `specs --write`;
-  - open the PR.
+  - commit and push to the draft PR, then merge `main` into the branch.
 
 ## Phase 5: US3, fail only where the signal is proven (P1, PR 3)
 
@@ -247,7 +250,7 @@ follow the policy, and completion is not deadlocked.
 - [ ] T040 [US3] Run the replay over at least the last 100 first-parent commits of this repository and commit the evidence. Record the outcome and the resulting default in `spec.md` under a "Measured outcome" note in the Assumptions section (FR-027, FR-028, SC-005)
 - [ ] T041 [US3] Implement `failOn` in `cli/validators/requirement-anchors.mjs`. Severity becomes error only under FR-028's conditions (FR-028)
 - [ ] T042 [US3] Add the SPC007 exemption in `cli/commands/specs.mjs` `planSpecCompletion`: drop the completing spec's own ANC findings from the error count and print them (FR-029)
-- [ ] T043 [US3] Document the policy, the replay and its evidence in `docs-canonical/CI-RECIPES.md` and `docs/configuration.md`. Ship PR 3 with the claim `ANCHOR-FAIL-POLICY-SCOPED`, `CHANGELOG.md` and `specs --write`
+- [ ] T043 [US3] Document the policy, the replay and its evidence in `docs-canonical/CI-RECIPES.md` and `docs/configuration.md`. Close story 3 with the claim `ANCHOR-FAIL-POLICY-SCOPED`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 6: US4, moving or renaming keeps the review (P2, PR 4)
 
@@ -258,7 +261,7 @@ follow the policy, and completion is not deadlocked.
 
   (FR-030, SC-009)
 - [ ] T045 [US4] Add carry-over to `cli/scanners/anchors.mjs`. A reviewed entry with no resolving anchor becomes moved only when exactly one unreviewed link has the same requirement and the same v1 exact fingerprint. The lock is never written; the next accept rewrites the key. Add the info note to the validator (FR-030)
-- [ ] T046 [US4] Docs (`docs-canonical/DATA-MODEL.md` transitions). Ship PR 4 with the claim `ANCHOR-MOVE-CARRIES-REVIEW`, `CHANGELOG.md` and `specs --write`
+- [ ] T046 [US4] Docs (`docs-canonical/DATA-MODEL.md` transitions). Close story 4 with the claim `ANCHOR-MOVE-CARRIES-REVIEW`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 7: US5, see what else a change may affect (P2, PR 5)
 
@@ -274,7 +277,7 @@ follow the policy, and completion is not deadlocked.
   - "unavailable" for languages without a graph.
 
   (FR-031)
-- [ ] T052 [US5] Docs. Ship PR 5 with the claim `ANCHOR-RIPPLE-NAME-FILTERED`, `CHANGELOG.md` and `specs --write`
+- [ ] T052 [US5] Docs. Close story 5 with the claim `ANCHOR-RIPPLE-NAME-FILTERED`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 8: US6, tests linked to a changed requirement (P3, PR 6)
 
@@ -293,7 +296,7 @@ follow the policy, and completion is not deadlocked.
 
   (FR-033)
 - [ ] T056 [US6] Add the test-chain view to `cli/scanners/anchors.mjs` and the listing's `tests[]` (FR-032)
-- [ ] T057 [US6] Docs. Ship PR 6 with the claim `ANCHOR-TESTCHAIN-NEEDS-REVERIFY`, `CHANGELOG.md` and `specs --write`
+- [ ] T057 [US6] Docs. Close story 6 with the claim `ANCHOR-TESTCHAIN-NEEDS-REVERIFY`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 9: US7, inventory of code without a requirement (P3, PR 7)
 
@@ -306,7 +309,7 @@ follow the policy, and completion is not deadlocked.
 - [ ] T059 [US7] Implement `anchors --orphans` in `cli/scanners/anchors.mjs` and `cli/commands/anchors.mjs`. Candidates come from `moduleSymbols`, `py-anchors` and the pattern symbol finder, under current specs' `scope.sourcePaths` or `anchors.orphanPaths`, in deterministic order (FR-034)
 - [ ] T060 [US7] Implement `anchors disposition` with a lock entry `disposition|<file>|<anchor>`, `kind` ∈ {derived, dead, infrastructure} and a reason of 10–500 characters, through `commitFileTransaction` (FR-035)
 - [ ] T061 [US7] Show anchor granularity (by scope and tier) as info in `cli/commands/score.mjs` and `cli/commands/trace.mjs` (FR-036)
-- [ ] T062 [US7] Docs. Ship PR 7 with the claim `ANCHOR-ORPHANS-DETERMINISTIC`, `CHANGELOG.md` and `specs --write`
+- [ ] T062 [US7] Docs. Close story 7 with the claim `ANCHOR-ORPHANS-DETERMINISTIC`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 10: US8, export the trace matrix (P3, PR 8)
 
@@ -320,7 +323,7 @@ follow the policy, and completion is not deadlocked.
   (FR-037, SC-010)
 - [ ] T064 [US8] Create `cli/writers/trace-matrix.mjs` with the CSV (RFC 4180) and ReqIF 1.2 serializers. Build the XML by string assembly, escape it, and use ids `_` + the first 16 hex digits of sha1 of the key (FR-037, research P9)
 - [ ] T065 [US8] Add `trace --matrix --format csv|reqif [--output]` to `cli/commands/trace.mjs` and `cli/docguard.mjs`. Write through `safeWrite` (FR-037)
-- [ ] T066 [US8] Docs. Ship PR 8 with the claim `TRACE-MATRIX-COMPLETE`, `CHANGELOG.md` and `specs --write`
+- [ ] T066 [US8] Docs. Close story 8 with the claim `TRACE-MATRIX-COMPLETE`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 11: US9, StrictDoc and OpenFastTrace importers (P3, PR 9)
 
@@ -333,7 +336,7 @@ follow the policy, and completion is not deadlocked.
 
   (FR-038)
 - [ ] T068 [US9] Add the StrictDoc and OFT recognizers and the `anchors.importMap` resolution to `cli/scanners/anchor-tags.mjs`, read-only (FR-038)
-- [ ] T069 [US9] Docs (`docs/configuration.md` import mapping). Ship PR 9 with the claim `ANCHOR-IMPORTERS-READ-ONLY`, `CHANGELOG.md` and `specs --write`
+- [ ] T069 [US9] Docs (`docs/configuration.md` import mapping). Close story 9 with the claim `ANCHOR-IMPORTERS-READ-ONLY`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 12: US10, provably deterministic fingerprints (P3, PR 10)
 
@@ -355,13 +358,14 @@ follow the policy, and completion is not deadlocked.
 
   (FR-009, research P7)
 - [ ] T074 [US10] Add a test `tests/requirement-anchors-treesitter.test.mjs`. The tier is unavailable with a wrong hash and with a missing file, and is never auto-detected. Use a fake artifact, with no network (FR-009)
-- [ ] T075 [US10] Docs (`docs-canonical/SECURITY.md` tree-sitter loading, `docs-canonical/TEST-SPEC.md`). Ship PR 10 with the claim `ANCHOR-FINGERPRINT-GOLDEN`, `CHANGELOG.md` and `specs --write`
+- [ ] T075 [US10] Docs (`docs-canonical/SECURITY.md` tree-sitter loading, `docs-canonical/TEST-SPEC.md`). Close story 10 with the claim `ANCHOR-FINGERPRINT-GOLDEN`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 13: Polish and completion
 
 - [ ] T076 Move every tag in this repository that sits inside a function body or above an unrelated statement (the 15 statement-level tags plus the before-import blocks) to an explicit `{scope=…}`. Accept the moved links with a reason (FR-043)
 - [ ] T077 Run `docguard reconcile --since <base> --format json` and `docguard specs complete --id docguard.requirement-anchors --write --reason "…"` once all PRs have merged
 - [ ] T078 Run `/speckit-analyze` for cross-artifact consistency before PR 1 opens, and again before T077
+- [ ] T079 Before any release that contains spec 070, complete every item of the release gate in `checklists/remediation.md`, and record its results for the exact commit being released. These include the A/B runs against the base release on this repository and on the Guard-family repositories. Keep the finding table there current as each PR merges (C1–C2, H1–H2, M1–M5, L1–L5)
 
 ## Dependencies and order
 

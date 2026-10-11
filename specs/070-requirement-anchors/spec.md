@@ -66,9 +66,13 @@ inherit:
 
 ## User Scenarios & Testing *(mandatory)*
 
-Each story ships as its own pull request, in this order. Stories 1–3 are the
-minimum viable product. Every later story builds on the anchor lock and changes
-nothing for projects that do not use it.
+Each story lands as its own commits, in this order, on one integration branch
+(`feat/requirement-anchors`). One draft pull request runs the full CI matrix on
+every push. All ten stories ship together in one release (0.45.0), after the
+release gate in [checklists/remediation.md](checklists/remediation.md) passes.
+Nothing merges to `main` before then, so the weekly scheduled release cannot
+ship a partial feature. Every story changes nothing for projects that have not
+opted in.
 
 ### User Story 1 - A tag anchors to the code under it (Priority: P1)
 
@@ -625,7 +629,9 @@ is reported unavailable and the pattern tier is used.
 - **FR-020**: These finding codes MUST be added to the finding catalog. Each
   MUST name the requirement, file, anchor and tier, and code-side suspects
   MUST include a command that shows the change. ANC001 and ANC003 become
-  errors only under FR-028.
+  errors only under FR-028. Guard findings are only `error` or `warn`, so the
+  `info` codes (ANC004, ANC006) are reported by `docguard anchors` and its
+  JSON, never by guard.
 
   | Code | Condition | Severity | Disposition |
   |---|---|---|---|

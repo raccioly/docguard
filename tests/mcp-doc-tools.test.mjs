@@ -102,11 +102,13 @@ function mcp(dir, calls) {
 
 const NEW_TOOLS = ['docguard_docs_for_path', 'docguard_doc_structure', 'docguard_read_section', 'docguard_task_context'];
 const OLD_TOOLS = ['docguard_guard', 'docguard_score', 'docguard_explain', 'docguard_verify_evidence', 'docguard_verify_claims', 'docguard_report', 'docguard_diagnose'];
+// Added after this spec: docguard.requirement-anchors#FR-021.
+const LATER_TOOLS = ['docguard_anchors'];
 
 describe('the tool list (FR-001, FR-009)', () => {
   it('adds four read-only tools, keeps the seven, and offers no model-backed tool', () => {
     const { tools } = mcp(project(), []);
-    assert.deepEqual(tools.map(t => t.name).sort(), [...OLD_TOOLS, ...NEW_TOOLS].sort());
+    assert.deepEqual(tools.map(t => t.name).sort(), [...OLD_TOOLS, ...NEW_TOOLS, ...LATER_TOOLS].sort());
     for (const t of tools.filter(t => NEW_TOOLS.includes(t.name))) assert.equal(t.annotations.readOnlyHint, true, t.name);
     assert.ok(!tools.some(t => /(?:^|_)(?:ask|question|chat|answer)(?:_|$)/i.test(t.name)));
   });

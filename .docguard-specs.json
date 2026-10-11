@@ -1290,12 +1290,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 646
+            "line": 648
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 673
+            "line": 675
           },
           {
             "requirementId": "FR-021",
@@ -4948,7 +4948,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 953
+            "line": 1013
           },
           {
             "requirementId": "FR-008",
@@ -5188,7 +5188,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 558
+            "line": 494
           },
           {
             "requirementId": "FR-005",
@@ -5963,23 +5963,18 @@
           },
           {
             "requirementId": "FR-005",
-            "file": "cli/findings.mjs",
-            "line": 927
-          },
-          {
-            "requirementId": "FR-005",
             "file": "cli/validators/suppressions.mjs",
             "line": 12
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1189
+            "line": 1249
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1199
+            "line": 1259
           },
           {
             "requirementId": "FR-006",
@@ -8081,7 +8076,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 681
+            "line": 695
           },
           {
             "requirementId": "FR-006",
@@ -8705,12 +8700,12 @@
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 196
+            "line": 161
           },
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 198
+            "line": 163
           },
           {
             "requirementId": "FR-014",
@@ -8720,7 +8715,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 193
+            "line": 194
           },
           {
             "requirementId": "FR-016",
@@ -9976,7 +9971,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 192
+            "line": 193
           },
           {
             "requirementId": "FR-011",
@@ -10220,7 +10215,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 852
+            "line": 874
           },
           {
             "requirementId": "FR-001",
@@ -10230,17 +10225,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 853
+            "line": 875
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 854
+            "line": 876
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 855
+            "line": 877
           },
           {
             "requirementId": "FR-005",
@@ -10900,7 +10895,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 79
+            "line": 80
           }
         ],
         "testEvidence": [
@@ -11164,23 +11159,85 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:e86a83d86a5faa4c53ba576111e0f7f899f6ae3b481c7cad58bc4448d2a1ecc9"
+            "digest": "sha256:fc04c909758b0d65579e629696c7d731cdaf10e58fc13b282151eeeb923f0389"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
-            "digest": "sha256:dbe3357705ec3075434a39d675a69c636dcbbeeb2bb0dc5b117c20515c4d3183"
+            "digest": "sha256:69361fb550dbae6eaa3ab7e5a611eabf36e890a5607e22c65a74eb265fc40758"
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:2ba5bee1e78da4c638b8fe2e7d5e5e129cce3a7275234ce975124ac32418aad3"
+            "digest": "sha256:2d854e1874db4dae2de0c796ddd27e2c8f63e33b250adbc655929253164e562e"
           }
         ],
         "taskCompletion": {
           "checked": 0,
-          "total": 78
+          "total": 79
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 107
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 110
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 111
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-requirements.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-requirements.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 28
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-015",
+            "file": "tests/fingerprint-shared.test.mjs",
+            "line": 8
+          }
+        ]
       }
     },
     {
@@ -12649,7 +12706,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 943
+            "line": 965
           },
           {
             "requirementId": "FR-011",

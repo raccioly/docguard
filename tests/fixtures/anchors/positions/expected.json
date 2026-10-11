@@ -1,0 +1,231 @@
+{
+  "links": [
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-001",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-002",
+      "scope": "symbol",
+      "anchor": "applyDiscount",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-003",
+      "scope": "statement",
+      "anchor": "applyDiscount>stmt:acme.billing#FR-003#1",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-004",
+      "scope": "symbol",
+      "anchor": "Cart.total",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-005",
+      "scope": "symbol",
+      "anchor": "LIMITS",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-006",
+      "scope": "route",
+      "anchor": "route:POST /login",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-007",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-001",
+      "scope": "symbol",
+      "anchor": "multi",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-004",
+      "scope": "statement",
+      "anchor": "<module>>stmt:acme.billing#FR-004#1",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/header.ts",
+      "requirement": "acme.billing#FR-008",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "babel@7"
+    },
+    {
+      "file": "src/billing.py",
+      "requirement": "acme.billing#FR-001",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "python-ast@",
+      "pattern": "file"
+    },
+    {
+      "file": "src/billing.py",
+      "requirement": "acme.billing#FR-002",
+      "scope": "symbol",
+      "anchor": "RATE",
+      "tier": "python-ast@"
+    },
+    {
+      "file": "src/billing.py",
+      "requirement": "acme.billing#FR-003",
+      "scope": "symbol",
+      "anchor": "apply",
+      "tier": "python-ast@"
+    },
+    {
+      "file": "src/billing.py",
+      "requirement": "acme.billing#FR-004",
+      "scope": "statement",
+      "anchor": "apply>stmt:acme.billing#FR-004#1",
+      "tier": "python-ast@"
+    },
+    {
+      "file": "src/billing.py",
+      "requirement": "acme.billing#FR-005",
+      "scope": "symbol",
+      "anchor": "Invoice.total",
+      "tier": "python-ast@"
+    },
+    {
+      "file": "src/server.go",
+      "requirement": "acme.billing#FR-001",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/server.go",
+      "requirement": "acme.billing#FR-002",
+      "scope": "symbol",
+      "anchor": "Server.Run",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/server.go",
+      "requirement": "acme.billing#FR-003",
+      "scope": "statement",
+      "anchor": "Server.Run>stmt:acme.billing#FR-003#1",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/server.go",
+      "requirement": "acme.billing#FR-004",
+      "scope": "symbol",
+      "anchor": "Server",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/broken.go",
+      "requirement": "acme.billing#FR-002",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/lib.rs",
+      "requirement": "acme.billing#FR-001",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/lib.rs",
+      "requirement": "acme.billing#FR-002",
+      "scope": "symbol",
+      "anchor": "total",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/lib.rs",
+      "requirement": "acme.billing#FR-003",
+      "scope": "symbol",
+      "anchorPrefix": "Id.from",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/Billing.java",
+      "requirement": "acme.billing#FR-002",
+      "scope": "symbol",
+      "anchorPrefix": "Billing.total",
+      "tier": "pattern@"
+    },
+    {
+      "file": "src/Billing.java",
+      "requirement": "acme.billing#FR-003",
+      "scope": "symbol",
+      "anchorPrefix": "Billing.total",
+      "tier": "pattern@"
+    },
+    {
+      "file": "workflow.yml",
+      "requirement": "acme.billing#FR-001",
+      "scope": "file",
+      "anchor": "*",
+      "tier": "file"
+    }
+  ],
+  "problems": [
+    {
+      "code": "ANC006",
+      "file": "src/pricing.mjs",
+      "line": 29,
+      "match": "scope=symbol"
+    },
+    {
+      "code": "ANC006",
+      "file": "src/pricing.mjs",
+      "line": 33,
+      "match": "lists 2 requirements"
+    },
+    {
+      "code": "ANC007",
+      "file": "src/pricing.mjs",
+      "line": 36,
+      "match": "FR-099"
+    },
+    {
+      "code": "ANC006",
+      "file": "src/header.ts",
+      "line": 1,
+      "match": "leading comment block"
+    },
+    {
+      "code": "ANC006",
+      "file": "src/broken.go",
+      "line": 3,
+      "match": "could not balance"
+    }
+  ],
+  "absent": [
+    {
+      "file": "src/pricing.mjs",
+      "requirement": "acme.billing#FR-008",
+      "why": "@covers in a source file is test-only evidence (L3)"
+    },
+    {
+      "file": "tests/pricing.test.mjs",
+      "requirement": "acme.billing#FR-009",
+      "why": "tags in test files never anchor (L3)"
+    }
+  ]
+}
