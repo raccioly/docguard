@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `module.exports = router.routes()` mounted with `api.use(users)` lost the
     prefix above it. Such exports (and `router.middleware()`,
     `export default router.routes()`) are now followed.
+  - A JWT middleware built to let unauthenticated requests through (koa-jwt
+    `passthrough: true`, express-jwt `credentialsRequired: false`) no longer
+    marks every route below it as requiring auth; route-level auth middleware
+    still does. On the Koa app, auth now sits on exactly the 12 routes that
+    carry `auth`, not on `POST /api/users/login`.
   - A declaration an Actix, Axum, Rocket, Symfony or Laravel reader recognises
     but cannot turn into a route is listed in `scan.unresolved`
     (`route-unresolved-path`, `-prefix`, `-method`, `-declaration`), so the

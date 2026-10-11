@@ -12,7 +12,7 @@
 
 - [x] T002 FR-001, FR-002, FR-005: `cli/scanners/rust-routes.mjs` `extractRustBuilderRoutes`; `cli/scanners/routes.mjs` `scanRustWebRoutes`
 - [x] T003 FR-003, FR-005: `cli/scanners/php-routes.mjs`; `routes.mjs` `scanSymfonyRoutes`, `scanLaravelRoutes`
-- [x] T004 FR-004: `cli/scanners/router-routes.mjs`
+- [x] T004 FR-004, FR-008: `cli/scanners/router-routes.mjs` (Koa `routes()` exports; pass-through JWT middleware)
 
 ## Phase 3: Docs and verification
 

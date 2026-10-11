@@ -56,6 +56,7 @@ const FUNCTION_TYPES = new Set(['FunctionExpression', 'ArrowFunctionExpression']
 const KOA_ROUTER_MODULES = new Set(['@koa/router', 'koa-router']);
 const ZOD_OPENAPI = '@hono/zod-openapi';
 /** Calls a `use()` hands a router or application to (koa-router's `routes()` and its alias). */
+const PASS_THROUGH_JWT = /\b(?:passthrough\s*:\s*true|credentialsRequired\s*:\s*false)\b/;
 const MOUNT_METHODS = new Set(['routes', 'middleware']);
 /** A `use()` argument that names a path through a value this reader cannot read. */
 const PATH_LIKE_NAME = /^(?:process\.env\.|[A-Z][A-Z0-9_]*\b)|(?:path|prefix|base|url)$/i;
@@ -89,6 +90,7 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   // prefixes; a file outside `sources` (a config module with no router call)
   // is read through `loadSource` (docguard.js-route-shapes#FR-011).
   const contentOf = new Map(sources.map(s => [s.abs, s.content]));
+  const sourceOf = (abs) => contentOf.get(abs) ?? (loadSource ? loadSource(abs) : null);
   const exportedCache = new Map();
   const exportedConstantsOf = (abs) => {
     if (!exportedCache.has(abs)) {
@@ -102,7 +104,7 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   for (const src of sources) {
     const { ast, tier, tierReason } = parseWithTier(src.content, src.abs);
     fileTiers.push({ file: src.file, tier, tierReason });
-    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource, exportedConstantsOf };
+    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource, exportedConstantsOf, sourceOf };
     if (ast) readAst(ast, ctx);
     else readByPattern(ctx);
   }
@@ -249,7 +251,7 @@ function mountedRouter(node) {
 }
 
 function readAst(ast, ctx) {
-  const { src, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport } = ctx;
+  const { src, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, sourceOf } = ctx;
   const { abs, file, content } = src;
   const constants = topLevelStaticStrings(ast);
   const bodies = functionBodies(ast);
@@ -480,7 +482,30 @@ function readAst(ast, ctx) {
   };
   const handlerName = (h) => (h?.type === 'Identifier' ? h.name : FUNCTION_TYPES.has(h?.type) ? (h.id?.name || 'inline') : h?.type === 'MemberExpression' ? (h.property?.name || '') : '');
   const pathLike = p => typeof p === 'string' && (p.startsWith('/') || p === '*');
-  const middlewareAuth = (args) => args.some(a => isAuthMiddlewareNode(a) || (FUNCTION_TYPES.has(a?.type) && AUTH_CHECK_RE.test(content.slice(a.start, a.end))));
+  // A JWT middleware built to let unauthenticated requests through (koa-jwt
+  // `passthrough: true`, express-jwt `credentialsRequired: false`) protects
+  // nothing by itself, wherever it is built: inline, in a local binding or in
+  // the module an imported name comes from (docguard.real-project-route-gaps#FR-008).
+  const passThroughJwt = (arg) => {
+    const a = unwrap(arg);
+    if (a?.type === 'CallExpression') return PASS_THROUGH_JWT.test(content.slice(a.start, a.end));
+    if (a?.type !== 'Identifier') return false;
+    if (imports.has(a.name) && !bound.has(a.name)) {
+      const target = resolveImport(abs, imports.get(a.name).spec);
+      const text = target ? sourceOf?.(target) : null;
+      return Boolean(text && /jwt/i.test(text) && PASS_THROUGH_JWT.test(text));
+    }
+    const decl = new RegExp(`\\b(?:const|let|var)\\s+${a.name}\\s*=\\s*[\\w.$]+\\s*\\(`).exec(content);
+    if (!decl) return false;
+    const open = decl.index + decl[0].length - 1;
+    let depth = 0;
+    for (let i = open; i < content.length; i++) {
+      if (content[i] === '(') depth++;
+      else if (content[i] === ')' && --depth === 0) return PASS_THROUGH_JWT.test(content.slice(open, i));
+    }
+    return false;
+  };
+  const middlewareAuth = (args) => args.some(a => !passThroughJwt(a) && (isAuthMiddlewareNode(a) || (FUNCTION_TYPES.has(a?.type) && AUTH_CHECK_RE.test(content.slice(a.start, a.end)))));
   // What a `use()` argument mounts: `sub.routes()`, `sub.middleware()`, or
   // koa-mount's `mount('/x', appOrRouter)`.
   const mountOf = (arg) => {

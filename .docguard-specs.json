@@ -10366,6 +10366,7 @@
           "docguard.real-project-route-gaps#FR-005",
           "docguard.real-project-route-gaps#FR-006",
           "docguard.real-project-route-gaps#FR-007",
+          "docguard.real-project-route-gaps#FR-008",
           "docguard.real-project-route-gaps#SC-001",
           "docguard.real-project-route-gaps#SC-002"
         ]
@@ -10374,7 +10375,7 @@
         "artifacts": [
           {
             "path": "specs/071-real-project-route-gaps/spec.md",
-            "digest": "sha256:55a6173ad1919cb0323401c9a5e34542435fb1a1d94f0de713c683b5764e98e1"
+            "digest": "sha256:42398ab3da89a307ddd39ba897309eb98bbf67ceace950075aa6a7e03a6c67d8"
           },
           {
             "path": "specs/071-real-project-route-gaps/plan.md",
@@ -10382,7 +10383,7 @@
           },
           {
             "path": "specs/071-real-project-route-gaps/tasks.md",
-            "digest": "sha256:ce55ad512563d6e44df51a6ef2027363c57471a725ae59b95cac37e38140a059"
+            "digest": "sha256:a71b3b2dd8f90faab9f99c5b610898eaceed7e98b5ec5f124e6ebd10e93dbab2"
           }
         ],
         "taskCompletion": {
@@ -10478,14 +10479,19 @@
             "line": 14
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-008",
             "file": "tests/real-project-route-gaps.test.mjs",
             "line": 15
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/real-project-route-gaps.test.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 17
           }
         ]
       }

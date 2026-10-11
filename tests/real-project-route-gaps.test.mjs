@@ -12,6 +12,7 @@
  * @req docguard.real-project-route-gaps#FR-005
  * @req docguard.real-project-route-gaps#FR-006
  * @req docguard.real-project-route-gaps#FR-007
+ * @req docguard.real-project-route-gaps#FR-008
  * @req docguard.real-project-route-gaps#SC-001
  * @req docguard.real-project-route-gaps#SC-002
  */
@@ -343,6 +344,70 @@ describe('FR-004: a Koa router mounted through a routes() export keeps its prefi
     const auth = Object.fromEntries(routes.map(r => [`${r.method} ${r.path}`, Boolean(r.auth)]));
     assert.equal(auth['POST /api/accounts'], false, 'mounted before the auth middleware');
     assert.equal(auth['GET /api/notes'], true, 'mounted after api.use(requireAuth)');
+  });
+});
+
+// ── FR-008: a pass-through JWT middleware does not mark routes auth ───────
+
+const KOA_JWT = passthrough => ({
+  'package.json': JSON.stringify({ name: 'jwt', dependencies: { koa: '2.15.0', 'koa-router': '12.0.0', 'koa-jwt': '4.0.0' } }),
+  'src/middleware/jwt.js': `const koaJwt = require('koa-jwt')\nmodule.exports = koaJwt({\n  secret: process.env.SECRET,\n${passthrough ? '  passthrough: true,\n' : ''}  key: 'jwt',\n})\n`,
+  'src/middleware/auth-required.js': 'module.exports = (ctx, next) => { ctx.assert(ctx.state.jwt, 401); return next() }\n',
+  'src/routes/users.js': `const Router = require('koa-router')
+const auth = require('../middleware/auth-required')
+const router = new Router()
+router.post('/users/login', ctx => {})
+router.get('/user', auth, ctx => {})
+module.exports = router.routes()
+`,
+  'src/routes/index.js': `const Router = require('koa-router')
+const router = new Router()
+const api = new Router()
+const users = require('./users')
+api.use(users)
+router.use('/api', api.routes())
+module.exports = router
+`,
+  'src/app.js': `const Koa = require('koa')
+const jwt = require('./middleware/jwt')
+const routes = require('./routes')
+const app = new Koa()
+app.use(jwt)
+app.use(routes.routes())
+module.exports = app
+`,
+});
+
+describe('FR-008: an app-wide JWT middleware that lets anonymous requests through marks nothing auth', () => {
+  const authOf = dir => Object.fromEntries(routesOf(dir, 'Koa').map(r => [`${r.method} ${r.path}`, Boolean(r.auth)]));
+
+  it('koa-jwt with passthrough: true in an imported module: only the route-level auth middleware counts', () => {
+    const auth = authOf(project(KOA_JWT(true)));
+    assert.equal(auth['POST /api/users/login'], false, 'login is public');
+    assert.equal(auth['GET /api/user'], true, 'route-level auth middleware');
+  });
+
+  it('without passthrough the same middleware still marks every route below it', () => {
+    const auth = authOf(project(KOA_JWT(false)));
+    assert.equal(auth['POST /api/users/login'], true);
+    assert.equal(auth['GET /api/user'], true);
+  });
+
+  it('inline: express-jwt with credentialsRequired: false is pass-through, the default is not', () => {
+    const app = optional => ({
+      'package.json': JSON.stringify({ name: 'ex', dependencies: { koa: '2.15.0', 'koa-router': '12.0.0' } }),
+      'src/app.js': `const Koa = require('koa')
+const Router = require('koa-router')
+const { expressjwt } = require('express-jwt')
+const app = new Koa()
+const router = new Router()
+router.get('/open', ctx => {})
+app.use(expressjwt({ secret: 's', algorithms: ['HS256']${optional ? ', credentialsRequired: false' : ''} }))
+app.use(router.routes())
+`,
+    });
+    assert.equal(authOf(project(app(true)))['GET /open'], false);
+    assert.equal(authOf(project(app(false)))['GET /open'], true);
   });
 });
 

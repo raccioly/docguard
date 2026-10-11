@@ -67,11 +67,12 @@ A maintainer of an Actix Web API runs `docguard guard`.
 - **FR-005**: When the detected framework is Actix Web, Axum, Rocket, Symfony or Laravel, a route declaration the reader recognises but cannot turn into a route MUST be recorded in `scan.unresolved` as `{ framework, code, file, line, target }` with a `route-unresolved-path`, `route-unresolved-prefix`, `route-unresolved-method` or `route-unresolved-declaration` code. At minimum an Actix `web::resource(` that yields no route, an Actix or Axum `.route(` whose method cannot be read, a Symfony `@Route(`/`#[Route(` that yields no route and a Laravel route file the application does not load MUST be recorded.
 - **FR-006**: Every route that the readers reported correctly before this change MUST be reported unchanged: the NestJS, Laravel, ASP.NET Core, Sinatra, Cloudflare Pages and Hono reference projects keep their counts.
 - **FR-007**: `docs/reference/languages.md` MUST describe the forms now read and the known limitations below.
+- **FR-008**: A JWT middleware built to let unauthenticated requests through (koa-jwt `passthrough: true`, express-jwt `credentialsRequired: false`), written inline, bound locally or imported from a project module, MUST NOT mark the routes it covers as requiring auth; route-level auth middleware still does. Without that option, the middleware keeps marking every route below it.
 
 ## Success Criteria *(mandatory)*
 
-- **SC-001**: Each of FR-001 to FR-005 has a test, on a minimal look-alike fixture, that fails before the change and passes after it.
-- **SC-002**: The full suite passes and `docguard guard` reports no new finding; re-run on the public reference projects, Actix reads 19 routes under `/api`, Axum 19, Symfony 19, Koa's 19 paths carry `/api`, and no other count changes.
+- **SC-001**: Each of FR-001 to FR-005 and FR-008 has a test, on a minimal look-alike fixture, that fails before the change and passes after it.
+- **SC-002**: The full suite passes and `docguard guard` reports no new finding; re-run on the public reference projects, Actix reads 19 routes under `/api`, Axum 19, Symfony 19, Koa's 19 paths carry `/api` with auth only on the 12 routes that carry route-level auth middleware, and no other count changes.
 
 ## Out of Scope
 
@@ -79,4 +80,3 @@ A maintainer of an Actix Web API runs `docguard guard`.
 - A Starlette `Route(...)` list built inside a library class (sqladmin) mounts at a path the host application chooses; a library has no served path of its own.
 - Auth detection for Actix `.wrap(...)` and Axum `.layer(...)` / `.route_layer(...)` middleware: the Rust builder readers report `auth: false`, as the pattern readers did.
 - Axum routers built by reassignment (`app = app.route(…)`) are read as unprefixed registrations, as before.
-- Auth middleware is recognised by name. Once a Koa router's mount chain is followed to the application, an app-wide `app.use(jwt)` built with koa-jwt's `passthrough: true` marks every route below it auth (the Koa RealWorld app); reading middleware options in another module is not attempted.
