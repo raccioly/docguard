@@ -96,7 +96,7 @@ DocGuard recognizes and validates these project config files:
 | `.docguardignore` | Per-project file exclusions (like `.gitignore`) |
 | `vitest.config.ts` / `jest.config.ts` | Test runner config (scanned for custom test patterns) |
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
-| `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
+| `.jules/` | This repo's own Google Jules routines, rules, preflight and environment setup (`setup.sh`); internal tooling, not shipped (spec 067) |
 | `.pre-commit-hooks.yaml` | This repo as a pre-commit hook source — consumers reference `repo: raccioly/docguard` to run `docguard-guard` (changed-only) per commit |
 | `glama.json` | Glama MCP directory metadata — declares repo maintainers so the Glama listing can be claimed/managed |
 | `server.json` | Official MCP Registry manifest (`io.github.raccioly/docguard`) — server name, npm package, stdio transport |

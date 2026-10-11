@@ -9,12 +9,19 @@ name: Auto-merge (green bot PRs)
 # SECURITY: workflow_run runs in the BASE repo context with write scope. It
 # checks out only the default branch policy with persisted credentials disabled,
 # reads PR metadata through the API, and never checks out or executes PR code.
+# Every merge is pinned to the head commit the CI run verified, so a push after
+# CI makes GitHub refuse it.
 #
 # WHAT AUTO-MERGES:
 #   - dependabot: patch + minor only. Majors NEVER (v0.34.1 shipped a Node-18
 #     break from an auto-accepted @babel/parser major; bug-255).
-#   - jules: test-only and docs-only changes. Anything touching cli/ logic,
-#     .github/, or package.json is labeled and left for a human.
+#   - jules: only NEW top-level test modules (tests/<name>.test.mjs), decided by
+#     .github/scripts/jules-policy.mjs (specs/067-jules-policy). An edited,
+#     removed or renamed file, any Markdown (instruction and prompt files ship
+#     to npm), fixtures, helpers, code and CI are labeled and left for a human.
+#
+# @implements docguard.jules-policy#FR-001
+# @implements docguard.jules-policy#FR-002
 
 on:
   workflow_run:
@@ -89,12 +96,6 @@ jobs:
               return;
             }
 
-            // ── Scope gate: what files does this PR touch? ───────────────
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner, repo, pull_number: num, per_page: 300,
-            });
-            const paths = files.map((f) => f.filename);
-
             if (author === BOT_DEPENDABOT) {
               // Version delta from the title: "bump X from 1.2.3 to 1.2.4"
               const m = /from (\d+)\.(\d+)\.(\d+)\S* to (\d+)\.(\d+)\.(\d+)/.exec(pr.title || '');
@@ -107,21 +108,32 @@ jobs:
               }
               core.info(`#${num} dependabot ${toMin !== fromMin ? 'minor' : 'patch'} bump — eligible.`);
             } else {
-              // Jules: only test-only / docs-only changes auto-merge.
-              const risky = paths.filter((p) =>
-                !(p.startsWith('tests/') || p.startsWith('docs/') || p.endsWith('.md'))
-              );
-              if (risky.length) {
-                await hold('jules-review', `it changes non-test/non-doc files:\n${risky.map((p) => `- \`${p}\``).join('\n')}\n\nProduction-logic changes from an agent get a human read before they ship to npm.`);
+              // Jules: the policy module decides, from the default branch.
+              const policy = await import(process.env.GITHUB_WORKSPACE + '/.github/scripts/jules-policy.mjs');
+              if (pr.labels.some((l) => l.name === policy.LABELS.queueFull)) {
+                core.info(`#${num} was closed by triage as queue-full — leaving alone.`);
                 return;
               }
-              core.info(`#${num} jules test/docs-only (${paths.length} files) — eligible.`);
+              // The files of the exact head CI verified. A listFiles page reads
+              // the branch as it is now, which can move while it is read; this
+              // comparison cannot. It lists at most 300 files, and the policy
+              // holds anything over 10.
+              const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
+                owner, repo, basehead: `${pr.base.sha}...${headSha}`,
+              });
+              const verdict = policy.mergeVerdict({ files: cmp.files ?? [] });
+              if (verdict.verdict !== 'merge') {
+                await hold(policy.LABELS.review, verdict.reason);
+                return;
+              }
+              core.info(`#${num} Jules: ${verdict.reason} — eligible.`);
             }
 
             // ── Merge ────────────────────────────────────────────────────
             try {
+              // Pinned to the verified head: a push after CI ran makes GitHub refuse the merge.
               const { data: merge } = await github.rest.pulls.merge({
-                owner, repo, pull_number: num, merge_method: 'squash',
+                owner, repo, pull_number: num, merge_method: 'squash', sha: headSha,
               });
               if (!merge.merged) throw new Error(merge.message || 'GitHub declined the merge');
               await github.rest.issues.createComment({

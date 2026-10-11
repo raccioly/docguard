@@ -107,7 +107,7 @@ DocGuard recognizes and validates these project config files:
 | `.docguardignore` | Per-project file exclusions (like `.gitignore`) |
 | `vitest.config.ts` / `jest.config.ts` | Test runner config (scanned for custom test patterns) |
 | `.storybook/` | Component documentation tool (detected for docs-coverage) |
-| `.jules-setup.sh` | This repo's own Google Jules environment bootstrap script (internal tooling, not shipped) |
+| `.jules/` | This repo's own Google Jules routines, rules, preflight and environment setup (`setup.sh`); internal tooling, not shipped (spec 067) |
 | `.pre-commit-hooks.yaml` | This repo as a pre-commit hook source — consumers reference `repo: raccioly/docguard` to run `docguard-guard` (changed-only) per commit |
 | `glama.json` | Glama MCP directory metadata — declares repo maintainers so the Glama listing can be claimed/managed |
 | `server.json` | Official MCP Registry manifest (`io.github.raccioly/docguard`) — server name, npm package, stdio transport |
@@ -1547,6 +1547,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/config.mjs`, `cli/shared-doc-roles.mjs`, `cli/validators/metrics-consistency.mjs` (dogfood fixes) | `tests/dogfood-findings.test.mjs` | ✅ |
 | `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, the CI runtime budget | `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs` | ✅ |
 | `tools/generate-docs-reference.mjs`, `docs/` site navigation and links | `tests/user-docs.test.mjs` | ✅ |
+| `.github/scripts/jules-policy.mjs`, `.github/scripts/jules-triage.mjs`, `.jules/preflight.mjs`, `.jules/setup.sh`, the Jules branch of `auto-merge.yml` | `tests/jules-policy.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal
@@ -1757,6 +1758,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Security
+
+- **A Jules pull request auto-merges only when it adds new test files**
+  (`specs/067-jules-policy`). `.github/workflows/auto-merge.yml` merged a
+  green Jules PR whenever every path was under `tests/` or `docs/` or ended
+  in `.md`: that admitted `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, the
+  constitution, and prompt files that ship to npm (`commands/`, `templates/`,
+  `extensions/**/commands/`), as well as edits to existing tests (#421, #451
+  and #516 each edited one), deletions, renames and fixtures. Now
+  `.github/scripts/jules-policy.mjs` decides: 1 to 10 files, each a newly
+  added `tests/<name>.test.mjs`; everything else waits for a maintainer. The
+  files come from comparing the PR base with the exact head commit CI
+  verified, not from one 100-file page of the live branch, and every merge
+  (Dependabot's too) is pinned to that commit with `sha`, so a push after CI
+  makes GitHub refuse it.
+
+### Changed
+
+- **Jules triage is a tested policy, and Jules runs repository routines**
+  (`specs/067-jules-policy`). `jules-triage.yml` now runs
+  `.github/scripts/jules-triage.mjs`, which closes a Jules PR that is empty,
+  a duplicate of an open PR (same `[jules:<routine>] <target>` or same
+  files), work declined in the last 60 days, over a five-PR review queue, or
+  off its routine's contract, reading every page of PRs and files. It no
+  longer closes PRs by title keyword, so a new security or performance fix
+  reaches a maintainer, and its comments no longer mention the agent, which
+  in Jules' Reactive Mode is an instruction. Three weekly routines live in
+  `.jules/routines/` (`bug-hunt`, `test-gaps`, `docs-drift`), each started
+  by `.jules/preflight.mjs`, which answers STOP when the queue is full or the
+  routine already has a PR waiting; `.jules/RULES.md` tells them never to
+  ask a question. `.jules/setup.sh` replaces `.jules-setup.sh`: it fails
+  unless the suite and guard pass on the full history, and sets no dummy API
+  keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
+
+## [0.44.0] - 2026-10-11
 
 ### Added
 
@@ -2113,44 +2150,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   guard also accepts the old fingerprint, and `guard --update-baseline` rewrites
   it in the new form. Guard tries the exact fingerprint first: findings that
   differ only in digits and in the hint share one stable fingerprint, and trying
-  that first let a hinted finding spend another finding's entry (found
-  dogfooding a real repository before release, where 3 of 163 frozen findings
-  came back).
 
-## [0.43.1] - 2026-10-05
-
-Automated weekly release — batches everything merged since `v0.43.0`.
-
-### Commits
-
-- test: add missing tests for cli command exports (#516)
-- docs: link the README's brief to its rendered GitHub Pages copy (#515)
-- chore(deps): bump @babel/parser (#513)
-
-## [0.43.0] - 2026-10-01
-
-**Upgrading from 0.42.x.** No new check fails a build: every new finding is a
-warning or an escalation, so the worst case is `guard` moving from PASS to WARN
-(exit 2). That still fails CI that runs with `--fail-on-warning` or treats any
-non-zero exit as failure. Most likely triggers:
-
-- **STR004:** an `AGENTS.md` instruction chain over 32 KiB. Codex stops reading
-  there.
-- **TDO002:** a comment that starts with a bare `TODO` or `FIXME`.
-- **SPR006/SPR007:** Spec Kit projects whose checked tasks carry no
-  `@implements` annotation, and as-built specs that drifted.
-- **PSR001–PSR004:** agent instruction files (including a root `AGENTS.md`)
-  that point at missing paths, or whose path scopes match nothing or cannot
-  be read.
-- **ENV003 on Go, Java, Kotlin, Ruby, Rust, PHP and C# projects:** env reads in
-  those languages (and Spring `${X}` placeholders) are now found, so an
-  undocumented variable is reported where it was invisible before.
-- **SCH002 and ENV findings on Python projects:** SQLAlchemy models and
-  pydantic `BaseSettings` fields are now read, so ones the docs do not
-  mention yet are reported.
-
-
-<!-- truncated: 5085 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5144 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2678,19 +2679,26 @@ extensions/spec-kit-docguard/
 
 ## Agent Rules
 
-### Automated agents / bots (Jules "Sentinel", "Bolt", "Palette", and any auto-PR agent)
-- **Never open a duplicate PR.** Before opening ANY PR, search existing **open
-  AND closed** PRs and issues for the same topic/title. If it exists, STOP — do
-  not open another. (Dozens of duplicate command-injection and diff-optimization
-  PRs were closed as noise.)
-- **Do not re-open resolved work.** See `.jules/sentinel.md` (execSync/command
-  injection — RESOLVED in v0.21.1 + #296) and `.jules/bolt.md` (diff/scan
-  micro-optimizations — already applied; code refactored since). These are
-  historical learnings, **not** standing mandates to re-scan every run.
-- **Bar for a new PR:** a genuinely new, unaddressed finding, with evidence — a
-  concrete exploit path / failing test (security) or a benchmark showing >20%
-  real-workload improvement (performance). A Big-O note alone is insufficient.
-- This repo has **no web UI and no VS Code extension** — skip all UX tasks.
+### Automated agents / bots (Google Jules and any auto-PR agent)
+- **Jules runs only the routines in `.jules/routines/`** (`bug-hunt`,
+  `test-gaps`, `docs-drift`, weekly), after `.jules/RULES.md`. Each starts with
+  `node .jules/preflight.mjs <routine>`; on `STOP` it ends with no PR.
+  **Never ask a question:** take the pessimistic in-scope option, or end the
+  task with a summary and no PR.
+- **One PR per routine target**, titled `[jules:<routine>] <target> — …`.
+  `.github/scripts/jules-policy.mjs` (via `jules-triage.yml`) closes a PR that
+  is empty, a duplicate of an open PR, work declined in the last 60 days, over
+  the five-PR queue, or off its routine's contract. It never closes a PR for
+  its subject: a security or performance fix reaches a maintainer.
+- **Only new test files merge alone.** `auto-merge.yml` merges a green Jules PR
+  only when every file is a newly added `tests/<name>.test.mjs`, pinned to the
+  head CI verified. Edited tests, fixtures, any Markdown (instruction and
+  prompt files ship to npm), code and CI wait for a maintainer.
+- **Agents never edit an existing test, `CHANGELOG.md`, `.github/`, `.jules/`
+  or instruction files**, and never mention an agent by handle: in Jules'
+  Reactive Mode a mention is an instruction. Setup: `bash .jules/setup.sh`
+  (fails unless the suite and guard are green). Spec:
+  `specs/067-jules-policy`.
 
 ### Dependencies
 - Never add a package without first verifying it exists on the official registry (npm/PyPI).
@@ -2735,4 +2743,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.43.1 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.44.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
