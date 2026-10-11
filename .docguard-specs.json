@@ -11369,11 +11369,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:de825ad0ccb6293c86fe7da6f7b735902b81c478f697911dda03ff316d6f753e"
+            "digest": "sha256:913b9e08bbf421304268df937af1ea322de7c2f16b95f87871ad206689b962bc"
           }
         ],
         "taskCompletion": {
-          "checked": 46,
+          "checked": 52,
           "total": 79
         },
         "implementationEvidence": [
@@ -11772,6 +11772,16 @@
           {
             "requirementId": "FR-030",
             "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-031",
+            "file": "tests/impact-walk-relocation.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-031",
+            "file": "tests/requirement-anchors-ripple.test.mjs",
             "line": 7
           },
           {

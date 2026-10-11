@@ -110,6 +110,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC010) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
+| Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
+| Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |

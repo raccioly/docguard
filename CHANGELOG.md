@@ -89,6 +89,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     not lost and unreviewed. The next accept rewrites its lock key.
   - **Lost.** Two identical candidate bodies, or a changed body, leave the
     old link lost (ANC003). DocGuard does no similarity matching.
+- **See what else an anchored change may affect**
+  (`specs/070-requirement-anchors`, user story 5).
+  - **What is listed.** When an anchored function's code changes,
+    `docguard anchors` lists the anchored links in files that:
+    - import that file and use the changed name (named, default or
+      `ns.name`);
+    - sit one import further, at low confidence.
+
+    Hub modules are excluded, and more than `anchors.fanOutLimit` files
+    collapse into a count. It is advisory only.
+  - **Shared walk.** The reverse-import walk and hub rule moved from the
+    `impact` command into `cli/scanners/import-graph.mjs`, so `diff --since`
+    and ripple share one implementation; `impact`'s output is unchanged.
+  - **Edge names.** Import-graph edges now record the names each import
+    binds.
 
 ### Changed
 

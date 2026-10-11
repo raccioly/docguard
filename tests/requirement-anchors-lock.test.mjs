@@ -123,6 +123,10 @@ describe('the lock file (FR-016 to FR-018)', () => {
     const entry = JSON.parse(lines[1]);
     lines.push(stableLine({ ...entry, reason: 'reviewed on another branch' }));
     writeFileSync(path, `${lines.join('\n')}\n`);
+    // The reader itself fails closed: neither conflicting line is a lock entry.
+    const lock = readAnchorLock(dir);
+    assert.equal(lock.links.has(entry.key), false);
+    assert.deepEqual(lock.conflicts.map(c => c.key), [entry.key]);
     const s = status(dir);
     assert.ok(s.problems.some(p => p.code === 'ANC009' && p.message.includes(entry.key)));
     assert.equal(s.links.find(l => l.key === entry.key).state, 'suspect');
@@ -231,6 +235,14 @@ describe('suspect links (user story 2)', () => {
 });
 
 describe('accept refuses what it cannot vouch for (FR-022 to FR-025)', () => {
+  it('a short reason is refused up front with the guidance, before anything is fingerprinted', () => {
+    const dir = project();
+    const r = spawnSync(process.execPath, [CLI, 'anchors', 'accept', '--spec', 'acme.billing', '--bulk', '--reason', 'short', '--format', 'json', '--dir', dir], { encoding: 'utf8' });
+    assert.equal(r.status, 1);
+    assert.match(JSON.parse(r.stdout).message, /needs --reason "<what you checked>" \(10-500 characters\)/);
+    assert.equal(existsSync(join(dir, ANCHOR_LOCK_PATH)), false);
+  });
+
   it('more than one link without --bulk, a short reason, or no selection writes nothing', () => {
     const dir = project();
     const before = existsSync(join(dir, ANCHOR_LOCK_PATH));

@@ -141,6 +141,7 @@ function buildUncached(projectDir, config, allFiles) {
     try {
       const content = readFileSync(file, 'utf-8');
       const imports = extractImports(content);
+      const namesBySpec = importNamesBySpec(content);
 
       const resolvedImports = [];
       for (const imp of imports) {
@@ -152,7 +153,7 @@ function buildUncached(projectDir, config, allFiles) {
           if (aliased) resolved = relative(projectDir, aliased);
         }
         if (resolved) {
-          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript' });
+          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript', names: namesBySpec.get(imp.spec) || null });
           // v0.28 (field report #2): a dynamic `await import()` does NOT create a
           // load-time edge — it's the canonical way to BREAK an import cycle. So
           // it's excluded from the cycle-detection adjacency (fileMap) while still
@@ -294,7 +295,7 @@ function addPythonImportGraph(projectDir, config, pythonFiles, graph) {
       for (const target of selected) {
         const to = posixPath(relative(projectDir, target.file));
         if (to === relPath || resolvedImports.includes(to)) continue;
-        graph.edges.push({ from: relPath, to, dynamic: false, language: 'python' });
+        graph.edges.push({ from: relPath, to, dynamic: false, language: 'python', names: pythonImportNames(imp) });
         resolvedImports.push(to);
       }
     }
@@ -382,3 +383,99 @@ export function getFilesRecursive(dir, config, projectDir) {
   }, { ignoreDirs: IGNORE_DIRS });
   return results;
 }
+
+// ── Imported names and the reverse walk (specs/070-requirement-anchors) ─────
+
+const emptyNames = () => ({ named: [], default: false, namespace: null, all: false });
+
+/**
+ * What each module specifier's import binds, read from the whole clause
+ * (which may span lines): named imports by their exported name, a default
+ * import, a namespace binding (`* as ns`, a CommonJS `const m = require()`),
+ * or `all` for a re-export. Requirement-anchor ripple keeps only importers
+ * that bind the changed name (FR-031). The clause excludes quotes and `;` so
+ * a side-effect import cannot swallow the next statement.
+ * @returns {Map<string, {named: string[], default: boolean, namespace: string|null, all: boolean}>}
+ */
+export function importNamesBySpec(content) {
+  const out = new Map();
+  const entry = spec => { if (!out.has(spec)) out.set(spec, emptyNames()); return out.get(spec); };
+  const named = (clause, into) => {
+    for (const part of clause.split(',')) {
+      const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*|'[^']*'|"[^"]*")(?:\s+as\s+[A-Za-z_$][\w$]*)?\s*$/.exec(part);
+      if (m) into.named.push(m[1].replace(/^['"]|['"]$/g, ''));
+    }
+  };
+  for (const m of content.matchAll(/\bimport\s+(?:type\s+)?([^;'"]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
+    const into = entry(m[2]);
+    let clause = m[1].trim();
+    const brace = /\{([^}]*)\}/.exec(clause);
+    if (brace) { named(brace[1], into); clause = clause.replace(brace[0], ''); }
+    const ns = /\*\s*as\s+([A-Za-z_$][\w$]*)/.exec(clause);
+    if (ns) { into.namespace = ns[1]; clause = clause.replace(ns[0], ''); }
+    if (/[A-Za-z_$]/.test(clause.replace(/,/g, ''))) into.default = true;
+  }
+  for (const m of content.matchAll(/\b(?:const|let|var)\s+(\{[^}]*\}|[A-Za-z_$][\w$]*)\s*=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    const into = entry(m[2]);
+    if (m[1].startsWith('{')) {
+      for (const part of m[1].slice(1, -1).split(',')) {
+        const p = /^\s*([A-Za-z_$][\w$]*)/.exec(part);
+        if (p) into.named.push(p[1]);
+      }
+    } else into.namespace = m[1];
+  }
+  for (const m of content.matchAll(/\bexport\s+(?:\*(?:\s+as\s+[A-Za-z_$][\w$]*)?|\{[^}]*\})\s+from\s+['"]([^'"]+)['"]/g)) entry(m[1]).all = true;
+  return out;
+}
+
+/** The names a Python import binds, in the same shape. */
+function pythonImportNames(imp) {
+  const out = emptyNames();
+  if (imp.kind === 'import') { out.namespace = imp.module || null; return out; }
+  for (const name of Array.isArray(imp.names) ? imp.names : []) {
+    if (name === '*') out.all = true;
+    else if (name) out.named.push(name);
+  }
+  return out;
+}
+
+/** A module importing more than this many others is a hub: an orchestrator, not a user of one module. */
+export const HUB_OUT_DEGREE = 15;
+
+/**
+ * Reverse edges (`to → [from…]`), out-degree, and the hub test over a graph's
+ * edges. Shared by `impact` / `diff --since` and requirement-anchor ripple.
+ */
+export function reverseImportIndex(graph) {
+  const reverseEdges = new Map();
+  const outDegree = new Map();
+  for (const e of graph.edges) {
+    if (!reverseEdges.has(e.to)) reverseEdges.set(e.to, []);
+    reverseEdges.get(e.to).push(e.from);
+    outDegree.set(e.from, (outDegree.get(e.from) || 0) + 1);
+  }
+  return { reverseEdges, outDegree, isHub: file => (outDegree.get(file) || 0) > HUB_OUT_DEGREE };
+}
+
+/**
+ * Ancestors of `file` in the reverse import graph, capped at `maxHops`.
+ * Returns Map<ancestorPath, hops>. Beyond two hops, hub modules connect
+ * everything and the signal drowns.
+ */
+export function reverseImportAncestors(file, reverseEdges, maxHops = 2) {
+  const seen = new Map();
+  let frontier = [file];
+  for (let hop = 1; hop <= maxHops && frontier.length > 0; hop++) {
+    const next = [];
+    for (const cur of frontier) {
+      for (const importer of reverseEdges.get(cur) || []) {
+        if (importer === file || seen.has(importer)) continue;
+        seen.set(importer, hop);
+        next.push(importer);
+      }
+    }
+    frontier = next;
+  }
+  return seen;
+}
+

@@ -46,7 +46,7 @@ import { execFileSync } from 'node:child_process';
 
 import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
-import { buildImportGraph } from '../scanners/import-graph.mjs';
+import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from '../scanners/import-graph.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { findReferences } from '../scanners/doc-references.mjs';
 
@@ -84,28 +84,6 @@ function docsReferencing(changedDocPath, index) {
 
 // Canonical doc references for one file: the matcher `trace --reverse` and the
 // `docguard_docs_for_path` MCP tool share (docguard.mcp-doc-tools#FR-003).
-
-/**
- * Ancestors of `file` in the reverse import graph, capped at `maxHops`.
- * Returns Map<ancestorPath, {hops, via}> where `via` is the first hop on the
- * path back toward the changed file (for explainable output).
- */
-function reverseImportAncestors(file, reverseEdges, maxHops = 2) {
-  const seen = new Map(); // ancestor → hops from the changed file
-  let frontier = [file];
-  for (let hop = 1; hop <= maxHops && frontier.length > 0; hop++) {
-    const next = [];
-    for (const cur of frontier) {
-      for (const importer of reverseEdges.get(cur) || []) {
-        if (importer === file || seen.has(importer)) continue;
-        seen.set(importer, hop);
-        next.push(importer);
-      }
-    }
-    frontier = next;
-  }
-  return seen;
-}
 
 // ── PR doc-conflict analysis (`impact --prs`) ───────────────────────────────
 //
@@ -285,19 +263,12 @@ export function runImpact(projectDir, config, flags) {
   if (flags.indirect !== false && codeChanged.length > 0) {
     const graph = buildImportGraph(projectDir, config || {});
     if (graph.edges.length > 0) {
-      const reverseEdges = new Map(); // to → [from…]
-      const outDegree = new Map();    // from → number of imports
-      for (const e of graph.edges) {
-        if (!reverseEdges.has(e.to)) reverseEdges.set(e.to, []);
-        reverseEdges.get(e.to).push(e.from);
-        outDegree.set(e.from, (outDegree.get(e.from) || 0) + 1);
-      }
       // Hub suppression (dogfooded): an orchestrator that imports many modules
       // (a CLI dispatcher, a barrel index) would flag its docs on EVERY
       // dependency change — recurring noise, not signal. Its doc-relevant
-      // surface rarely shifts when one of 30 imports does.
-      const HUB_OUT_DEGREE = 15;
-      const isHub = (f) => (outDegree.get(f) || 0) > HUB_OUT_DEGREE;
+      // surface rarely shifts when one of 30 imports does. The index and the
+      // walk live in import-graph.mjs, shared with requirement-anchor ripple.
+      const { reverseEdges, isHub } = reverseImportIndex(graph);
       const changedSet = new Set(codeChanged.map(f => f.replace(/^\.\//, '')));
       const indirectMap = new Map(); // doc → chains[]
       for (const f of codeChanged) {

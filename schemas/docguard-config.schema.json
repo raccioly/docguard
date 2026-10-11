@@ -292,6 +292,7 @@
       "description": "Requirement anchors (`docguard anchors`, specs/070-requirement-anchors): code→requirement tags anchored to the symbol, statement or route below them. Active when `.docguard-anchor-lock.jsonl` exists or `enabled` is true.",
       "properties": {
         "enabled": { "type": "boolean", "description": "Report requirement anchors in guard before the project has an anchor lock. Default false." },
+        "fanOutLimit": { "type": "integer", "minimum": 1, "description": "Most files a changed anchor's ripple lists before it collapses into one summary. Default 10." },
         "failOn": { "enum": ["none", "reviewed-exact"], "description": "Which suspect or lost links fail guard. reviewed-exact (the measured default): reviewed, exact-tier links at symbol, statement or route scope. none: anchors only warn. A requirement-side change never fails." }
       }
     },

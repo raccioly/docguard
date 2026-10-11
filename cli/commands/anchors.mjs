@@ -66,6 +66,11 @@ function printText(result) {
     const where = link.scope === 'file' ? 'whole file' : `${link.anchor} (${link.scope}${link.startLine ? `, lines ${link.startLine}-${link.endLine}` : ''})`;
     const state = link.state ? `${STATE_ICON[link.state] || ''} ${link.state}${link.side ? ` (${link.side})` : ''}` : '';
     console.log(`  ${link.requirement.padEnd(48)} → ${where} ${c.dim}[${link.tier}]${c.reset} ${state}`);
+    if (Array.isArray(link.ripple)) {
+      for (const r of link.ripple) console.log(`      ${c.dim}↳ may affect ${r.file} (${r.hops} hop${r.hops > 1 ? 's' : ''}, ${r.links.length} link(s))${c.reset}`);
+    } else if (link.ripple?.collapsed) {
+      console.log(`      ${c.dim}↳ may affect ${link.ripple.count} files (${link.ripple.files.join(', ')}, …)${c.reset}`);
+    }
   }
   if (result.problems.length) {
     console.log(`\n${c.yellow}${result.problems.length} problem(s)${c.reset}`);
@@ -76,7 +81,7 @@ function printText(result) {
 }
 
 function list(projectDir, config, flags) {
-  const computed = computeAnchorStatus(projectDir, config, { noCache: flags.noCache === true });
+  const computed = computeAnchorStatus(projectDir, config, { noCache: flags.noCache === true, ripple: true });
   const links = filterLinks(computed.links, flags);
   const lost = filterLinks(computed.lost, flags);
   const infoCodes = new Set(['ANC004', 'ANC006']);

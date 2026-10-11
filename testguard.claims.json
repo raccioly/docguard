@@ -2237,6 +2237,85 @@
       ]
     },
     {
+      "id": "ANCHOR-RIPPLE-NAME-FILTERED",
+      "statement": "Ripple lists the anchored links in files that import a changed anchored symbol and bind its name (named, default or namespace use), up to two hops, never a hub, collapsing wide fan-out, and only as advisory output; impact keeps the same two-hop, hub-suppressed walk.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-031"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 5)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-ripple.test.mjs",
+        "tests/impact-walk-relocation.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Every importer qualifies, whatever it imports.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "        if (name && !bindsName(projectDir, file, edgeNames.get(`${file}\\u0000${link.file}`), name)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Hubs are not excluded.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "      if (isHub(file)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Fan-out never collapses.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    link.ripple = hits.length > limit",
+          "replace": "    link.ripple = false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The walk is not capped at two hops.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "export function reverseImportAncestors(file, reverseEdges, maxHops = 2) {",
+          "replace": "export function reverseImportAncestors(file, reverseEdges, maxHops = 3) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A namespace import is never matched.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    return new RegExp(`\\\\b${ns}\\\\.${name}\\\\b`).test(text);",
+          "replace": "    return false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {

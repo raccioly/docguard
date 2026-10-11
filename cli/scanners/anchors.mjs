@@ -40,6 +40,7 @@ import { pythonBatch, pythonTier } from './py-anchors.mjs';
 import { isTestSource } from './requirement-evidence.mjs';
 import { collectRequirementIds } from './requirement-docs.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
+import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from './import-graph.mjs';
 
 export { ANCHOR_LOCK_PATH };
 export const ANCHOR_ALGO = 1;
@@ -428,10 +429,83 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     problems.push({ code: 'ANC003', file: entry.file, line: null, tier: entry.tier, confidence: 'high', key, scope: entry.scope, reviewedState: entry.state, requirement: entry.requirement,
       message: `${describeLink(entry)} was ${entry.state} on ${entry.date}, but no tag anchors it any more${exists ? ' while the requirement still exists' : ' and the requirement is no longer declared'}; restore the tag where the requirement is implemented, or run \`docguard anchors accept --remove '${key}' --reason "…"\`` });
   }
+  if (options.ripple) addRipple(projectDir, config, links);
   const byState = {};
   for (const l of [...links, ...lost]) byState[l.state] = (byState[l.state] || 0) + 1;
   const baselined = byState.baselined || 0;
   const summary = { ...base.summary, byState, baselinedShare: links.length ? Number((baselined / links.length).toFixed(3)) : 0 };
   return { ...base, links, lost, problems, lock: lockSummary, notes, summary };
+}
+
+const GRAPH_LANGS = new Set(['js', 'ts', 'python']);
+export const DEFAULT_FAN_OUT_LIMIT = 10;
+
+/** The top-level name a changed anchor exports, or null (a route, a module statement). */
+function exportedNameOf(link) {
+  if (link.scope === 'symbol') return link.anchor.split(/[.#(]/)[0];
+  if (link.scope === 'statement') {
+    const owner = link.anchor.split('>stmt:')[0];
+    return owner === '<module>' ? null : owner.split('.')[0];
+  }
+  return null;
+}
+
+/** Whether `importer` binds `name` from the changed file, by its import edge. */
+function bindsName(projectDir, importer, names, name) {
+  if (!names || names.all) return true; // unknown or re-exported: conservative
+  if (names.named.includes(name)) return true;
+  if (name === 'default' && names.default) return true;
+  if (names.namespace) {
+    let text = '';
+    try { text = readFileSync(resolve(projectDir, importer), 'utf8'); } catch { return true; }
+    const ns = names.namespace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${ns}\\.${name}\\b`).test(text);
+  }
+  return false;
+}
+
+/**
+ * FR-031: for each link whose code changed (a code-side suspect at symbol or
+ * statement scope), the anchored links in files that import it and use the
+ * changed exported name, up to the two hops `diff --since` walks, hubs
+ * excluded. Hop-one importers must bind the name; hop-two files are reported
+ * at low confidence (which of their imports reaches the change is not
+ * known without a call graph, which this deliberately does not build). More
+ * than `anchors.fanOutLimit` files collapse into one summary. Advisory only:
+ * ripple never produces a guard finding.
+ */
+function addRipple(projectDir, config, links) {
+  const changed = links.filter(l => l.state === 'suspect' && (l.side === 'code' || l.side === 'both') && l.scope !== 'file');
+  if (!changed.length) return;
+  const limit = Number.isInteger(config.anchors?.fanOutLimit) && config.anchors.fanOutLimit > 0 ? config.anchors.fanOutLimit : DEFAULT_FAN_OUT_LIMIT;
+  const graph = buildImportGraph(projectDir, config);
+  const { reverseEdges, isHub } = reverseImportIndex(graph);
+  const edgeNames = new Map(graph.edges.map(e => [`${e.from}\u0000${e.to}`, e.names ?? null]));
+  const linksByFile = new Map();
+  for (const l of links) {
+    if (!linksByFile.has(l.file)) linksByFile.set(l.file, []);
+    linksByFile.get(l.file).push(l.key);
+  }
+  for (const link of changed) {
+    if (!GRAPH_LANGS.has(languageOf(link.file))) { link.ripple = { unavailable: `no import graph for ${link.file}` }; continue; }
+    const name = exportedNameOf(link);
+    const ancestors = reverseImportAncestors(link.file, reverseEdges);
+    const hopOne = new Set();
+    const hits = [];
+    for (const [file, hops] of [...ancestors].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))) {
+      if (isHub(file)) continue;
+      if (hops === 1) {
+        if (name && !bindsName(projectDir, file, edgeNames.get(`${file}\u0000${link.file}`), name)) continue;
+        hopOne.add(file);
+      } else if (![...hopOne].some(h => (reverseEdges.get(h) || []).includes(file))) continue;
+      const anchored = (linksByFile.get(file) || []).filter(k => k !== link.key);
+      if (!anchored.length) continue;
+      const via = hops === 1 ? link.file : [...hopOne].find(h => (reverseEdges.get(h) || []).includes(file));
+      hits.push({ file, via, hops, confidence: hops === 1 ? 'high' : 'low', links: anchored });
+    }
+    link.ripple = hits.length > limit
+      ? { collapsed: true, count: hits.length, files: hits.slice(0, limit).map(h => h.file) }
+      : hits;
+  }
 }
 

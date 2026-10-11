@@ -1606,6 +1606,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC010) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
+| Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
+| Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -1932,6 +1935,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     not lost and unreviewed. The next accept rewrites its lock key.
   - **Lost.** Two identical candidate bodies, or a changed body, leave the
     old link lost (ANC003). DocGuard does no similarity matching.
+- **See what else an anchored change may affect**
+  (`specs/070-requirement-anchors`, user story 5).
+  - **What is listed.** When an anchored function's code changes,
+    `docguard anchors` lists the anchored links in files that:
+    - import that file and use the changed name (named, default or
+      `ns.name`);
+    - sit one import further, at low confidence.
+
+    Hub modules are excluded, and more than `anchors.fanOutLimit` files
+    collapse into a count. It is advisory only.
+  - **Shared walk.** The reverse-import walk and hub rule moved from the
+    `impact` command into `cli/scanners/import-graph.mjs`, so `diff --since`
+    and ripple share one implementation; `impact`'s output is unchanged.
+  - **Edge names.** Import-graph edges now record the names each import
+    binds.
 
 ### Changed
 
@@ -2226,23 +2244,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   using the `Microsoft.NET.Sdk.Web` SDK (every `dotnet new webapi` project)
   is now labelled ASP.NET Core; before, the check tested the wrong string and
   never matched.
-- **Routes for NestJS and Cloudflare Workers** (`specs/058-js-framework-routes`,
-  part of #519). Both were detected but their routes were not read, so the
-  API-surface check, `diff` and `generate` saw no endpoints.
-  - NestJS: `@Controller` paths joined with `@Get`, `@Post` and the other
-    method decorators, under `setGlobalPrefix` (with `exclude`), URI versioning
-    (`@Version`, `defaultVersion`, `VERSION_NEUTRAL`) and `RouterModule`
-    paths. `@UseGuards` with an auth guard, a global auth guard and
-    `@Public()`-style opt-outs set each route's auth; `ThrottlerGuard` is not
-    auth. A NestJS project that also lists `express` is now labelled NestJS.
-  - Cloudflare Workers: the paths a Worker's `fetch` entry tests
-    (`url.pathname === '/x'`, `switch`, tables keyed by pathname, `URLPattern`),
-    with methods from the `request.method` checks around them. A Durable
-    Object's `fetch` is not public and is not read.
-  - itty-router (with `base`) and Hono on Workers. Hono now applies
-    `basePath()` and `app.route('/prefix', subApp)` across files, with or
 
-<!-- truncated: 5399 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5414 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -631,6 +631,19 @@ fingerprint; two identical bodies, or none, leave the old link **lost**.
 A tag that ends up as the first thing in a new file is read as that file's
 header. Put an import above it, or write `{scope=symbol}`.
 
+**Ripple.** When an anchored function's code changes, `docguard anchors`
+also lists the anchored links in files that might be affected, as
+`↳ may affect` lines and `ripple[]` in JSON:
+- **One hop:** files that import the changed file and use the changed name
+  (named import, default, or `ns.name`).
+- **Two hops:** files one import further, at low confidence.
+- **Excluded:** hub modules, those with more than 15 imports.
+- **Collapsed:** more than `anchors.fanOutLimit` files (default 10) become
+  one count.
+
+Ripple uses the same reverse-import walk as `diff --since`. It covers JS/TS
+and Python, and it is advisory: it never adds a guard finding.
+
 With the lock committed, guard reports:
 - **ANC001**: a link whose code changed;
 - **ANC002**: a link whose requirement changed;

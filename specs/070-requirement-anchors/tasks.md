@@ -265,11 +265,11 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 7: US5, see what else a change may affect (P2, PR 5)
 
-- [ ] T047 [P] [US5] `tests/impact-walk-relocation.test.mjs` pins today's `diff --since` indirect output on a fixture before the move (FR-031)
-- [ ] T048 [P] [US5] Ripple fixture `tests/fixtures/anchors/ripple/` (`a.mjs` exports `f` and `g`, `b.mjs` imports `f`, `c.mjs` imports `g`, a hub importer) and `tests/requirement-anchors-ripple.test.mjs` (FR-031)
-- [ ] T049 [US5] Move `reverseImportAncestors` and the hub rule from `cli/commands/impact.mjs` to `cli/scanners/import-graph.mjs`, have `impact.mjs` import them, and keep T047 passing (Constitution IV)
-- [ ] T050 [US5] Record imported names per edge in `cli/scanners/import-graph.mjs` (named, default, namespace plus `ns.<name>` usage) without changing existing graph consumers (FR-031)
-- [ ] T051 [US5] Add ripple to `cli/scanners/anchors.mjs` and the listing:
+- [x] T047 [P] [US5] `tests/impact-walk-relocation.test.mjs` pins today's `diff --since` indirect output on a fixture before the move (FR-031)
+- [x] T048 [P] [US5] Ripple fixture `tests/fixtures/anchors/ripple/` (`a.mjs` exports `f` and `g`, `b.mjs` imports `f`, `c.mjs` imports `g`, a hub importer) and `tests/requirement-anchors-ripple.test.mjs` (FR-031)
+- [x] T049 [US5] Move `reverseImportAncestors` and the hub rule from `cli/commands/impact.mjs` to `cli/scanners/import-graph.mjs`, have `impact.mjs` import them, and keep T047 passing (Constitution IV)
+- [x] T050 [US5] Record imported names per edge in `cli/scanners/import-graph.mjs` (named, default, namespace plus `ns.<name>` usage) without changing existing graph consumers (FR-031)
+- [x] T051 [US5] Add ripple to `cli/scanners/anchors.mjs` and the listing:
   - depth 2;
   - name-filtered;
   - fan-out above `anchors.fanOutLimit` collapses into one summary;
@@ -277,7 +277,7 @@ follow the policy, and completion is not deadlocked.
   - "unavailable" for languages without a graph.
 
   (FR-031)
-- [ ] T052 [US5] Docs. Close story 5 with the claim `ANCHOR-RIPPLE-NAME-FILTERED`, `CHANGELOG.md` and `specs --write`
+- [x] T052 [US5] Docs. Close story 5 with the claim `ANCHOR-RIPPLE-NAME-FILTERED`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 8: US6, tests linked to a changed requirement (P3, PR 6)
 
