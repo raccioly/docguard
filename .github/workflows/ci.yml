@@ -357,7 +357,7 @@ jobs:
       # The opt-in tier with the real vetted artifacts: hashes, staging,
       # golden spans and formatting stability (FR-009).
       - name: Tree-sitter tier with the vetted artifacts
-        run: node --test tests/requirement-anchors-treesitter.test.mjs
+        run: node --test tests/requirement-anchors-treesitter.test.mjs tests/anchor-oracle.test.mjs
 
   # ── npm publish dry-run on tags ──
   publish-check:

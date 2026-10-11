@@ -67,6 +67,7 @@ named test or recorded measurement that fails without it).
 | An explicit `{scope=…}` is honored in the file's leading block | ANC006 told users to add `{scope=symbol}` there, and all three resolvers ignored it | tests/requirement-anchors.test.mjs |
 | A tag inside a `switch` case anchors to its statement | It anchored to the whole enclosing function | tests/requirement-anchors.test.mjs |
 | The anchor cache identity includes a hash of the resolver code and the requirement patterns | Found while dogfooding: after a resolver change, unchanged files kept the old anchors, and a custom `traceability.requirementPattern` would have done the same | tests/requirement-anchors.test.mjs |
+| `/speckit-analyze` re-run (T078): FR-042, FR-043 and SC-007 gained executable proof | Each was proven only by review or a CI measurement. `tests/requirement-anchors-adoption.test.mjs` checks the docs and this repository's adoption; `tests/anchor-oracle.test.mjs` asserts the 99% threshold where the oracle is installed. The plan's file list and T002 were brought up to date | tasks T078, plan |
 
 ## Release gate
 

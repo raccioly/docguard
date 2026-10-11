@@ -140,7 +140,12 @@ cli/commands/specs.mjs              # CHANGED  SPC007 exemption for the completi
 cli/commands/trace.mjs              # CHANGED  --matrix csv|reqif (US8), granularity (US7)
 cli/writers/trace-matrix.mjs        # NEW  deterministic CSV + ReqIF 1.2 serializer (no deps)
 cli/commands/score.mjs              # CHANGED  granularity info (FR-036)
-cli/evidence/adapters.mjs           # CHANGED  testguard-evidence adapter (US6)
+cli/scanners/testguard-evidence.mjs # NEW  TestGuard saved-report adapter (US6; a scanner, because it asks git about the evidence revision)
+cli/scanners/requirement-docs.mjs   # NEW  requirement-doc collector moved out of the traceability validator (Constitution IV)
+cli/scanners/semantic-claims.mjs    # CHANGED  evidence reader takes a per-file size cap (the TestGuard report)
+cli/scanners/ts-anchors.mjs         # NEW  opt-in tree-sitter tier: manifest check, staging, child process (US10, FR-009)
+cli/scanners/ts-anchors-child.mjs   # NEW  the tier's parser process
+cli/scanners/ts-decls.mjs           # NEW  declaration rules and fingerprint tokens shared by the tier and the oracle
 cli/commands/mcp.mjs                # CHANGED  read-only docguard_anchors tool
 cli/commands/guard.mjs              # CHANGED  register validator; changed-only support
 cli/config.mjs                      # CHANGED  anchors.{enabled,failOn,orphanPaths,import,importMap,treeSitter,fanOutLimit}
@@ -149,7 +154,7 @@ cli/docguard.mjs                    # CHANGED  command, help, flags
 schemas/docguard-anchor-lock.schema.json      # NEW
 schemas/docguard-anchor-treesitter.manifest.json # NEW pinned artifact hashes (US10)
 tools/anchor-churn-replay.mjs       # NEW  US3 replay
-tools/anchor-oracle/{package.json,package-lock.json,run.mjs} # NEW CI-only (US10)
+tools/anchor-oracle/{package.json,package-lock.json,run.mjs,VETTING.md,corpus/} # NEW CI-only (US10)
 .github/workflows/ci.yml            # CHANGED  anchor-oracle job (US10)
 .gitattributes, .github/CODEOWNERS  # NEW/CHANGED  dogfood (FR-043)
 .docguard-anchor-lock.jsonl         # NEW  this repo's baseline (US2) and reviews

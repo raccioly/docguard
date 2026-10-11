@@ -31,7 +31,7 @@ touches different files from the other open tasks in its phase.
 ## Phase 1: Setup
 
 - [x] T001 Create `tests/fixtures/anchors/` with a README describing every fixture project and its expected output files (quickstart.md)
-- [x] T002 [P] Add the `anchors` defaults to `cli/config.mjs` (story 1 adds `anchors.enabled`, the validator key and the schema entry; each later key arrives with the story that reads it, so the documented configuration never names an unimplemented option): `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguardEvidence=".testguard/evidence.json"`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009)
+- [x] T002 [P] Add the `anchors` defaults to `cli/config.mjs` (story 1 adds `anchors.enabled`, the validator key and the schema entry; each later key arrives with the story that reads it, so the documented configuration never names an unimplemented option): `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguard={evidence:".testguard/evidence.json", claims:"testguard.claims.json"}`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009)
 - [x] T003 [P] Reserve ANC001–ANC010 in `cli/findings.mjs`, with titles, help text, validator `requirementAnchors`, and the severity and disposition table from spec FR-020
 
 ## Phase 2: Foundational (blocks all stories; ships in PR 1)
@@ -364,7 +364,7 @@ follow the policy, and completion is not deadlocked.
 
 - [x] T076 Move every tag in this repository that sits inside a function body or above an unrelated statement (the 15 statement-level tags plus the before-import blocks) to an explicit `{scope=…}`. Accept the moved links with a reason (FR-043)
 - [ ] T077 Run `docguard reconcile --since <base> --format json` and `docguard specs complete --id docguard.requirement-anchors --write --reason "…"` once all PRs have merged
-- [ ] T078 Run `/speckit-analyze` for cross-artifact consistency before PR 1 opens, and again before T077
+- [x] T078 Run `/speckit-analyze` for cross-artifact consistency before PR 1 opens, and again before T077
 - [ ] T079 Before any release that contains spec 070, complete every item of the release gate in `checklists/remediation.md`, and record its results for the exact commit being released. These include the A/B runs against the base release on this repository and on the Guard-family repositories. Keep the finding table there current as each PR merges (C1–C2, H1–H2, M1–M5, L1–L5)
 
 ## Dependencies and order
