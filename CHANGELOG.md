@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.44.1] - 2026-10-11
-
 ### Security
 
 - **No workflow job runs code beside a repository write token**
@@ -32,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   `tests/workflow-permissions.test.mjs` reads every workflow and fails one
   that breaks these rules.
+
+## [0.44.1] - 2026-10-11
+
+### Security
 
 - **A Jules pull request auto-merges only when it adds new test files**
   (`specs/067-jules-policy`). `.github/workflows/auto-merge.yml` merged a
