@@ -46,7 +46,7 @@ import { extractGoRoutes } from './go-routes.mjs';
 import { extractSpringRoutes } from './spring-routes.mjs';
 import { extractRailsRoutes } from './rails-routes.mjs';
 import { extractSinatraRoutes } from './sinatra-routes.mjs';
-import { extractWarpRoutes, extractTideRoutes } from './rust-routes.mjs';
+import { extractWarpRoutes, extractTideRoutes, extractRustBuilderRoutes } from './rust-routes.mjs';
 import { extractLaravelRoutes, extractSymfonyRoutes } from './php-routes.mjs';
 import { extractAspNetRoutes } from './dotnet-routes.mjs';
 import { extractNestRoutes } from './nest-routes.mjs';
@@ -1076,8 +1076,9 @@ function scanGoWebRoutes(dir, ctx) {
 }
 
 // ── Rust web frameworks (Axum / Actix / Rocket / Warp / Tide) ────────────────
-// Warp filter chains and Tide `at()` trees are composed across functions and
-// files by rust-routes.mjs (docguard.more-route-frameworks#FR-003/004).
+// Warp filter chains, Tide `at()` trees (docguard.more-route-frameworks#FR-003/004)
+// and Actix, Axum and Rocket builders (docguard.real-project-route-gaps#FR-001/002)
+// are composed across functions and files by rust-routes.mjs.
 
 function scanRustWebRoutes(dir, ctx) {
   const routes = [];
@@ -1085,31 +1086,14 @@ function scanRustWebRoutes(dir, ctx) {
   const sources = [];
   for (const filePath of rsFiles) {
     const content = readFileSafe(filePath);
-    if (!content) continue;
-    sources.push({ file: relative(dir, filePath), content });
-    const { tier, tierReason } = tierFor(filePath, null);
-
-    // Axum: .route("/x", get(handler)) / .route("/x", post(handler).get(handler))
-    const axum = /\.route\s*\(\s*"([^"]+)"\s*,\s*([a-z]+)\s*\(/g;
-    let m;
-    while ((m = axum.exec(content)) !== null) {
-      const method = m[2].toUpperCase();
-      if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'].includes(method)) continue;
-      routes.push({ method, path: m[1], handler: '', file: relative(dir, filePath), source: 'axum', auth: false, description: '', tier, tierReason });
-    }
-
-    // Actix-web: .route("/x", web::get().to(handler))
-    const actix = /\.route\s*\(\s*"([^"]+)"\s*,\s*web::(get|post|put|delete|patch)\(\)/g;
-    while ((m = actix.exec(content)) !== null) {
-      routes.push({ method: m[2].toUpperCase(), path: m[1], handler: '', file: relative(dir, filePath), source: 'actix', auth: false, description: '', tier, tierReason });
-    }
-
-    // Rocket: #[get("/x")] etc.
-    const rocket = /#\[(get|post|put|delete|patch)\(\s*"([^"]+)"/g;
-    while ((m = rocket.exec(content)) !== null) {
-      routes.push({ method: m[1].toUpperCase(), path: m[2], handler: '', file: relative(dir, filePath), source: 'rocket', auth: false, description: '', tier, tierReason });
-    }
+    if (content) sources.push({ file: relPosix(dir, filePath), content });
   }
+  // Actix, Axum and Rocket builders (docguard.real-project-route-gaps#FR-001,
+  // FR-002): what the reader recognised but could not place joins
+  // `scan.unresolved` (FR-005).
+  const builder = extractRustBuilderRoutes(sources);
+  for (const r of builder) routes.push({ ...r, description: '', ...tierFor(resolve(dir, r.file), null) });
+  for (const u of builder.unresolved) ctx.scan.unresolved.push(u);
   const omitted = [];
   for (const [source, extract] of [['warp', extractWarpRoutes], ['tide', extractTideRoutes]]) {
     const found = extract(sources);
@@ -1135,6 +1119,7 @@ function scanLaravelRoutes(dir, ctx) {
   if (files.truncated) ctx.scan.truncated = true;
   const found = extractLaravelRoutes(files.map(f => relPosix(dir, f)), rel => readFileSafe(resolve(dir, rel)));
   recordPatternFiles(ctx, found.read.map(rel => resolve(dir, rel)));
+  for (const u of found.unresolved) ctx.scan.unresolved.push({ framework: 'Laravel', ...u });
   return withOmitted(found.map(r => ({ ...r, source: 'laravel', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 
@@ -1146,6 +1131,8 @@ function scanSymfonyRoutes(dir, ctx) {
   const php = rels.filter(r => r.endsWith('.php')).map(file => ({ file, content: read(file) }));
   const yaml = rels.filter(r => /(^|\/)config\/routes(\.ya?ml|\/[^/]+\.ya?ml)$/.test(r)).map(file => ({ file, content: read(file) }));
   const found = extractSymfonyRoutes(php, { yaml, readFile: read });
+  // A route declaration that yields no route (docguard.real-project-route-gaps#FR-005).
+  for (const u of found.unresolved) ctx.scan.unresolved.push({ framework: 'Symfony', ...u });
   return withOmitted(found.map(r => ({ ...r, source: 'symfony', description: '', ...tierFor(resolve(dir, r.file), null) })), found.omitted);
 }
 

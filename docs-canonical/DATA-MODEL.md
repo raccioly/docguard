@@ -435,10 +435,13 @@ reader saw and left out of the surface, as `{ framework, code, file, line, targe
 the NestJS, Worker, Cloudflare Pages and router-library (Hono, itty-router,
 Koa) readers' limitations, Express and Fastify route paths and Express mount
 prefixes that are not literal (`route-unresolved-path`,
-`route-unresolved-prefix`), and the Python reader's
+`route-unresolved-prefix`), the Actix, Axum, Rocket, Symfony and Laravel
+readers' (`route-unresolved-path`, `route-unresolved-prefix`,
+`route-unresolved-method`, `route-unresolved-declaration`: a declaration the
+reader recognised but could not turn into a route), and the Python reader's
 (`python-unresolved-route-path`, `python-unresolved-include`,
 `django-unresolved-route`, `django-unresolved-include`), minus those in test,
-fixture, example or ignored files (specs 058, 063, 064). `scan.caseNotes` lists
+fixture, example or ignored files (specs 058, 063, 064, 071). `scan.caseNotes` lists
 each case setting whose value is an expression rather than a literal, as
 `{ framework, file, line, reason }`; the routes it may govern compare exactly.
 

@@ -292,7 +292,8 @@ const API_RESOURCE_ACTIONS = ['index', 'store', 'show', 'update', 'destroy'];
  *
  * @param {string[]} paths  project-relative POSIX paths of the project's `.php` files
  * @param {(rel: string) => string|null} readFile
- * @returns {Array<{ method, path, handler, file, line, auth }> & { omitted: Array<{ file, line, reason }>, read: string[] }}
+ * @implements docguard.real-project-route-gaps#FR-005
+ * @returns {Array<{ method, path, handler, file, line, auth }> & { omitted: Array<{ file, line, reason }>, read: string[], unresolved: Array<{ code, file, line, target }> }}
  */
 export function extractLaravelRoutes(paths, readFile) {
   const known = new Set(paths);
@@ -318,8 +319,25 @@ export function extractLaravelRoutes(paths, readFile) {
     const app = new LaravelApp(root, load, routes, omitted);
     app.run();
   }
+  // A route file under an application's `routes/` that no application loads
+  // (a custom provider, a typo in withRouting) declares routes this reader
+  // cannot place: its first route statement is recorded, never dropped
+  // (docguard.real-project-route-gaps#FR-005).
+  const unresolved = [];
+  for (const rel of paths) {
+    if (read.has(rel) || !rel.endsWith('.php')) continue;
+    const m = /^(?:(.*)\/)?routes\/.+$/.exec(rel);
+    if (!m || !roots.has(m[1] || '')) continue;
+    const content = readFile(rel);
+    if (typeof content !== 'string') continue;
+    const f = prepare(rel, content);
+    const st = /(?<![\w$>])(?:\\?(?:[A-Za-z_]\w*\\)*)Route\s*::\s*([A-Za-z_]\w*)\s*\(/.exec(f.code);
+    if (!st) continue;
+    unresolved.push({ code: 'route-unresolved-declaration', file: rel, line: lineAt(f, st.index), target: `Route::${st[1]}` });
+  }
   Object.defineProperty(routes, 'omitted', { value: omitted, enumerable: false });
   Object.defineProperty(routes, 'read', { value: [...read], enumerable: false });
+  Object.defineProperty(routes, 'unresolved', { value: unresolved, enumerable: false });
   return routes;
 }
 
@@ -663,11 +681,12 @@ const SYMFONY_AUTH_ATTRS = new Set(['IsGranted', 'Security']);
  * @param {object} [opts]
  * @param {Array<{ file: string, content: string }>} [opts.yaml]  the route YAML entry files (`config/routes.yaml`, `config/routes/*.yaml`)
  * @param {(rel: string) => string|null} [opts.readFile]  reads a YAML file an import names
- * @returns {Array<{ method, path, handler, file, line, auth }> & { omitted: Array<{ file, line, reason }> }}
+ * @returns {Array<{ method, path, handler, file, line, auth }> & { omitted: Array<{ file, line, reason }>, unresolved: Array<{ code, file, line, target }> }}
  */
 export function extractSymfonyRoutes(sources, { yaml = [], readFile = () => null } = {}) {
   const routes = [];
   const omitted = [];
+  const unresolved = [];
   const imports = []; // { target, dir: boolean, prefixes: (string|null)[] }
   const seenYaml = new Set();
   const loadYaml = (file, content, prefixes, depth) => {
@@ -684,9 +703,10 @@ export function extractSymfonyRoutes(sources, { yaml = [], readFile = () => null
     const f = prepare(s.file, s.content);
     const covering = imports.filter(imp => (imp.dir ? s.file.startsWith(imp.target) : s.file === imp.target));
     const importPrefixes = covering.length ? covering.flatMap(imp => imp.prefixes) : [''];
-    symfonyFileRoutes(f, importPrefixes, routes, omitted);
+    symfonyFileRoutes(f, importPrefixes, routes, omitted, unresolved);
   }
   Object.defineProperty(routes, 'omitted', { value: omitted, enumerable: false });
+  Object.defineProperty(routes, 'unresolved', { value: unresolved, enumerable: false });
   return routes;
 }
 
@@ -791,7 +811,7 @@ function routeAnnotations(text) {
         if (!methods.length) methods = null;
       }
     }
-    out.push({ paths: [path], methods, unknownMethods: false });
+    out.push({ paths: [path], methods, unknownMethods: false, at: m.index });
   }
   return out;
 }
@@ -802,7 +822,42 @@ function symfonyJoin(...parts) {
   return joined.startsWith('/') ? joined : '/' + joined;
 }
 
-function symfonyFileRoutes(f, importPrefixes, routes, omitted) {
+/**
+ * The routes of one PHP file's controller classes.
+ *
+ * A class-level route is a prefix for the class's method routes; when no
+ * method declares a route and the class has an `__invoke` method, it is that
+ * method's route, as Symfony's `AnnotationClassLoader` reads it, for
+ * `@Route` annotations and `#[Route]` attributes alike. A declaration that
+ * yields no route (on a trait method, above a property) is recorded in
+ * `unresolved`, never dropped.
+ *
+ * @implements docguard.real-project-route-gaps#FR-003
+ * @implements docguard.real-project-route-gaps#FR-005
+ */
+function symfonyFileRoutes(f, importPrefixes, routes, omitted, unresolved = []) {
+  const read = new Set(); // lines of the route declarations read
+  const markRead = (decl, list) => {
+    for (const a of decl.attrs) if (a.name === 'Route') read.add(lineAt(f, a.pos));
+    for (const r of list) if (r.at !== undefined && decl.doc) read.add(lineAt(f, decl.doc.start + r.at));
+  };
+  const emit = (r, fallbackPos, classPrefixes, handler, auth, defaultMethods) => {
+    const line = lineAt(f, r.pos ?? fallbackPos);
+    const methods = r.methods || defaultMethods || ['ANY'];
+    for (const path of r.paths) {
+      for (const classPrefix of classPrefixes) {
+        for (const importPrefix of importPrefixes) {
+          if (typeof path !== 'string' || typeof classPrefix !== 'string' || typeof importPrefix !== 'string' || r.unknownMethods) {
+            omitted.push({ file: f.file, line, reason: 'path or prefix is not literal' });
+            continue;
+          }
+          for (const method of methods) {
+            routes.push({ method, path: symfonyJoin(importPrefix, classPrefix, path), handler, file: f.file, line, auth });
+          }
+        }
+      }
+    }
+  };
   const classRe = /\b((?:(?:final|abstract|readonly)\s+)*)class\s+([A-Za-z_]\w*)/g;
   let m;
   while ((m = classRe.exec(f.code)) !== null) {
@@ -815,9 +870,12 @@ function symfonyFileRoutes(f, importPrefixes, routes, omitted) {
       ...cls.attrs.filter(a => a.name === 'Route').map(a => routeAttribute(f, a)),
       ...(cls.doc ? routeAnnotations(cls.doc.text) : []),
     ];
+    markRead(cls, classRoutes);
     const classPrefixes = classRoutes.length ? classRoutes.flatMap(r => r.paths) : [''];
     const classMethods = classRoutes.find(r => r.methods)?.methods || null;
     const classAuth = cls.attrs.some(a => SYMFONY_AUTH_ATTRS.has(a.name)) || /@(?:IsGranted|Security)\b/.test(cls.doc?.text || '');
+    let methodRoutes = 0;
+    let invoke = null;
     const fnRe = /\b((?:(?:public|protected|private|static|final|abstract)\s+)*)function\s+&?\s*([A-Za-z_]\w*)\s*\(/g;
     fnRe.lastIndex = open + 1;
     let fm;
@@ -836,29 +894,35 @@ function symfonyFileRoutes(f, importPrefixes, routes, omitted) {
         ...decl.attrs.filter(a => a.name === 'Route').map(a => routeAttribute(f, a)),
         ...(decl.doc ? routeAnnotations(decl.doc.text) : []),
       ];
-      if (!declared.length) continue;
       const auth = classAuth
         || decl.attrs.some(a => SYMFONY_AUTH_ATTRS.has(a.name))
         || /@(?:IsGranted|Security)\b/.test(decl.doc?.text || '')
         || (!!body && /denyAccessUnlessGranted\s*\(/.test(f.code.slice(...body)));
-      for (const r of declared) {
-        const line = lineAt(f, r.pos ?? fm.index);
-        const methods = r.methods || classMethods || ['ANY'];
-        for (const path of r.paths) {
-          for (const classPrefix of classPrefixes) {
-            for (const importPrefix of importPrefixes) {
-              if (typeof path !== 'string' || typeof classPrefix !== 'string' || typeof importPrefix !== 'string' || r.unknownMethods) {
-                omitted.push({ file: f.file, line, reason: 'path or prefix is not literal' });
-                continue;
-              }
-              for (const method of methods) {
-                routes.push({ method, path: symfonyJoin(importPrefix, classPrefix, path), handler: `${m[2]}::${fm[2]}`, file: f.file, line, auth });
-              }
-            }
-          }
-        }
-      }
+      if (fm[2] === '__invoke') invoke = { pos: fm.index, auth };
+      if (!declared.length) continue;
+      markRead(decl, declared);
+      methodRoutes++;
+      for (const r of declared) emit(r, fm.index, classPrefixes, `${m[2]}::${fm[2]}`, auth, classMethods);
     }
+    // An invokable controller: the class route is the route of __invoke.
+    if (!methodRoutes && invoke && classRoutes.length) {
+      for (const r of classRoutes) emit(r, m.index, [''], `${m[2]}::__invoke`, invoke.auth, null);
+    }
+  }
+  // A declaration no class read: recorded, never guessed (FR-005).
+  const declared = [];
+  const attrRe = /#\[\s*\\?(?:[A-Za-z_]\w*\\)*Route\s*\(/g;
+  while ((m = attrRe.exec(f.code)) !== null) declared.push(m.index);
+  for (const d of f.docs) {
+    const re = /@Route\s*\(/g;
+    while ((m = re.exec(d.text)) !== null) declared.push(d.start + m.index);
+  }
+  const seen = new Set();
+  for (const pos of declared) {
+    const line = lineAt(f, pos);
+    if (read.has(line) || seen.has(line)) continue;
+    seen.add(line);
+    unresolved.push({ code: 'route-unresolved-declaration', file: f.file, line, target: (f.src.slice(pos).match(/^[^\n]*/) || [''])[0].replace(/^[\s#[@]+/, '').trim().slice(0, 120) });
   }
 }
 
