@@ -924,6 +924,7 @@
           "docguard.baseline-stable-fingerprint#FR-003",
           "docguard.baseline-stable-fingerprint#FR-004",
           "docguard.baseline-stable-fingerprint#FR-005",
+          "docguard.baseline-stable-fingerprint#FR-006",
           "docguard.baseline-stable-fingerprint#SC-001",
           "docguard.baseline-stable-fingerprint#SC-002"
         ]
@@ -932,7 +933,7 @@
         "artifacts": [
           {
             "path": "specs/052-baseline-stable-fingerprint/spec.md",
-            "digest": "sha256:95c7e9cfc0e3412079e0eb5df23bba45ff8b32ca327b6cf7bad78411ea49f083"
+            "digest": "sha256:9392d36927e9df04394a496c306a05cf4a13915604915b117451ad4bac2dd8d5"
           },
           {
             "path": "specs/052-baseline-stable-fingerprint/plan.md",
@@ -940,12 +941,12 @@
           },
           {
             "path": "specs/052-baseline-stable-fingerprint/tasks.md",
-            "digest": "sha256:a43a14836eb0421981ca8982c5c969ec854c082eae5b8032b807a27220867746"
+            "digest": "sha256:1f66d7b1779b400d59c0e72d342edde125967ae9055a6d1495cad9b67dcc7418"
           }
         ],
         "taskCompletion": {
-          "checked": 4,
-          "total": 4
+          "checked": 5,
+          "total": 5
         },
         "implementationEvidence": [
           {
@@ -996,14 +997,19 @@
             "line": 8
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-006",
             "file": "tests/baseline-stable-fingerprint.test.mjs",
             "line": 9
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/baseline-stable-fingerprint.test.mjs",
             "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/baseline-stable-fingerprint.test.mjs",
+            "line": 11
           }
         ]
       }
@@ -1273,12 +1279,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 643
+            "line": 646
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 670
+            "line": 673
           },
           {
             "requirementId": "FR-021",

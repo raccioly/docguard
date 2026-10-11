@@ -6,6 +6,7 @@
  * @req docguard.baseline-stable-fingerprint#FR-003
  * @req docguard.baseline-stable-fingerprint#FR-004
  * @req docguard.baseline-stable-fingerprint#FR-005
+ * @req docguard.baseline-stable-fingerprint#FR-006
  * @req docguard.baseline-stable-fingerprint#SC-001
  * @req docguard.baseline-stable-fingerprint#SC-002
  */
@@ -143,5 +144,43 @@ describe('the docs describe the change (FR-005)', () => {
     assert.match(config, /`guard --update-baseline` rewrites it/);
     const changelog = readFileSync('CHANGELOG.md', 'utf8');
     assert.match(changelog, /specs\/052-baseline-stable-fingerprint/);
+  });
+});
+
+describe('a legacy entry is matched exactly before a shared stable one (FR-006)', () => {
+  let dir;
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
+
+  // Found dogfooding a real repository (wu-whatsappinbox, 2026-10-10): TRC004
+  // messages that differ only in digits and in the hint share one stable
+  // fingerprint. With the stable form tried first, a hinted finding spent the
+  // budget the legacy file had recorded for an unhinted one, which resurfaced.
+  it('every finding a legacy baseline froze stays suppressed when hinted and unhinted findings share a stable fingerprint', () => {
+    dir = mkdtempSync(join(tmpdir(), 'docguard-bsl-order-'));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'bsl-order', profile: 'standard' }));
+    mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
+    writeFileSync(join(dir, 'docs-canonical', 'ARCHITECTURE.md'), '# Architecture\n');
+    mkdirSync(join(dir, 'specs', '018-music'), { recursive: true });
+    writeFileSync(join(dir, 'specs', '018-music', 'spec.md'), [
+      '# Music', '', '## Requirements', '',
+      '- **FR-004**: The audio mixer MUST lower music volume while narration audio plays.',
+      '- **FR-005**: Quarterly invoices MUST round totals to whole cents.', '',
+    ].join('\n'));
+    mkdirSync(join(dir, 'tests', 'unit'), { recursive: true });
+    writeFileSync(join(dir, 'tests', 'unit', 'mixer.test.js'), "test('mixer lowers music volume', () => { /* audio mixer music volume */ });\n");
+    const findings = trcFindings(dir);
+    const hinted = findings.filter(f => /IR soft-match/.test(f.message));
+    const plain = findings.filter(f => !/IR soft-match/.test(f.message));
+    assert.ok(hinted.length >= 1 && plain.length >= 1, 'fixture has a hinted and an unhinted TRC004');
+    assert.equal(fingerprintFinding(hinted[0]), fingerprintFinding(plain[0]), 'they share one stable fingerprint');
+    // A baseline as an earlier release wrote it: one legacy entry per finding.
+    run(['guard', '--update-baseline'], dir);
+    const frozen = JSON.parse(readFileSync(join(dir, BASELINE_FILE), 'utf8'));
+    for (const f of findings) delete frozen.fingerprints[fingerprintFinding(f)];
+    for (const f of findings) frozen.fingerprints[oldFingerprint(f)] = (frozen.fingerprints[oldFingerprint(f)] || 0) + 1;
+    writeFileSync(join(dir, BASELINE_FILE), JSON.stringify(frozen, null, 2));
+    const json = JSON.parse(run(['guard', '--format', 'json'], dir).stdout);
+    assert.equal(json.findings.filter(f => f.code === 'TRC004').length, 0, 'no frozen finding resurfaces');
+    assert.equal(json.baselineStale, 0, 'every legacy entry was consumed by its own finding');
   });
 });
