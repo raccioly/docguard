@@ -4583,7 +4583,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1204
+            "line": 1191
           },
           {
             "requirementId": "FR-009",
@@ -8242,12 +8242,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 23
+            "line": 27
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 24
+            "line": 28
           },
           {
             "requirementId": "FR-005",
@@ -8262,7 +8262,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 25
+            "line": 29
           },
           {
             "requirementId": "FR-005",
@@ -10318,6 +10318,166 @@
             "requirementId": "SC-003",
             "file": "tests/read-only-commands.test.mjs",
             "line": 18
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.real-project-route-gaps",
+      "path": "specs/071-real-project-route-gaps/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.real-project-route-gaps#FR-001",
+          "docguard.real-project-route-gaps#FR-002",
+          "docguard.real-project-route-gaps#FR-003",
+          "docguard.real-project-route-gaps#FR-004",
+          "docguard.real-project-route-gaps#FR-005",
+          "docguard.real-project-route-gaps#FR-006",
+          "docguard.real-project-route-gaps#FR-007",
+          "docguard.real-project-route-gaps#SC-001",
+          "docguard.real-project-route-gaps#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/071-real-project-route-gaps/spec.md",
+            "digest": "sha256:55a6173ad1919cb0323401c9a5e34542435fb1a1d94f0de713c683b5764e98e1"
+          },
+          {
+            "path": "specs/071-real-project-route-gaps/plan.md",
+            "digest": "sha256:6f862a536d4397ed2c707e284f7f7cd292efcb86f73d888f79380b35701d7977"
+          },
+          {
+            "path": "specs/071-real-project-route-gaps/tasks.md",
+            "digest": "sha256:ce55ad512563d6e44df51a6ef2027363c57471a725ae59b95cac37e38140a059"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 763
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 764
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 835
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 40
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 295
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 836
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 765
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 16
           }
         ]
       }

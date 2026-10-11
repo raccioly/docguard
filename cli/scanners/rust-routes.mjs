@@ -1,8 +1,7 @@
 /**
- * Warp and Tide route readers.
+ * Rust route readers: Warp, Tide, and the Actix, Axum and Rocket builders.
  *
- * DocGuard has no Rust parser. Axum, Actix and Rocket declare a route on one
- * line and are matched by pattern in routes.mjs; Warp and Tide do not.
+ * DocGuard has no Rust parser. Each reader evaluates the masked source:
  *
  * - **Warp** composes filters: a route's path, method and prefix are usually
  *   in different expressions, often in different functions
@@ -15,14 +14,22 @@
  *   `.at("/:id")` a route under that, `.nest(server)` mounts a server. As in
  *   the Go reader, servers, routes and function parameters are nodes, and
  *   prefixes are resolved once every file is read.
+ * - **Actix, Axum and Rocket** build the same kind of tree: `web::scope`,
+ *   `web::resource`, `Router::new()` and `rocket::build()` are nodes, and
+ *   `.service()`, `.configure()`, `.nest()`, `.merge()` and `.mount()` mount
+ *   one on another (`extractRustBuilderRoutes`).
  *
  * Comments and string bodies are masked first (`lexCLike`). A segment or
  * prefix that is not literal text (or, for Warp, a `const` string) makes its
- * route unreadable: it is omitted and recorded in `omitted`, never guessed.
+ * route unreadable: it is omitted and recorded (Warp and Tide in `omitted`,
+ * the builder reader in `unresolved`), never guessed.
  *
  * @implements docguard.more-route-frameworks#FR-003
  * @implements docguard.more-route-frameworks#FR-004
  * @implements docguard.more-route-frameworks#FR-005
+ * @implements docguard.real-project-route-gaps#FR-001
+ * @implements docguard.real-project-route-gaps#FR-002
+ * @implements docguard.real-project-route-gaps#FR-005
  */
 
 import { lexCLike, matchPairs, splitTopLevel, trimRange, literalIn, joinRoutePath } from './route-lexing.mjs';
@@ -705,6 +712,484 @@ export function extractTideRoutes(sources) {
         routes.push({ method, path, handler: r.handler, file: r.file, line: r.line, auth: r.auth });
       }
     }
+  }
+  return routes;
+}
+
+// ── Actix, Axum and Rocket builders ──────────────────────────────────────────
+//
+// The three builder APIs share Tide's shape: a router, scope or resource is a
+// node; `.service()`, `.configure()`, `.nest()`, `.merge()` and `.mount()` are
+// edges; a registration's served path is every chain of prefixes down to its
+// node (docguard.real-project-route-gaps#FR-001, FR-002).
+
+const BUILDER_VERBS = new Map([
+  ['get', 'GET'], ['post', 'POST'], ['put', 'PUT'], ['delete', 'DELETE'], ['patch', 'PATCH'],
+  ['head', 'HEAD'], ['options', 'OPTIONS'], ['trace', 'TRACE'], ['connect', 'CONNECT'],
+]);
+const MACRO_VERBS = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options']);
+/** Parameter types that hand a function a builder to register on. */
+const BUILDER_PARAM = /\b(?:Router|ServiceConfig|Scope|Resource|App|Rocket)\b/;
+/** Result types of a function that returns a builder. */
+const BUILDER_RESULT = /\b(?:Router|Scope|Resource|App|Rocket|HttpServiceFactory)\b/;
+const FRAMEWORK_OF = { actix: 'Actix Web', axum: 'Axum', rocket: 'Rocket' };
+const BUILDER_CALL = /\.\s*(route|service|configure|nest|merge|mount|to|to_async|route_service)\s*\(/g;
+const ROUTE_MACRO = /#\[\s*(get|post|put|delete|patch|head|options)\s*\(/g;
+
+/** `/x`, `x` → normalised served path. */
+const servedPath = p => (p.startsWith('/') ? p : '/' + p).replace(/\/{2,}/g, '/');
+const joinPrefix = (a, b) => (a === null || b === null ? null : b === '' ? a : joinRoutePath(a, b));
+
+/**
+ * Read the Actix Web, Axum and Rocket routes of a project.
+ *
+ * - **Actix**: `App::new()`, `web::scope(p)` and `web::resource(p)` are nodes;
+ *   `.route(p, web::get().to(h))` on an app, scope or `ServiceConfig`,
+ *   `.route(web::post().to(h))` and `.to(h)` on a resource register routes;
+ *   `.service(x)` mounts a scope, a resource, a tuple of them or a handler
+ *   macro; `.configure(f)` mounts `f`'s `ServiceConfig` parameter (or a
+ *   closure's).
+ * - **Axum**: `Router::new()` is a node; `.route(p, get(a).put(b))` registers
+ *   every method of the method router (`on(MethodFilter::…)`, `any`,
+ *   `*_service`); `.nest(p, r)` and `.merge(r)` mount another router.
+ * - **Rocket**: `rocket::build().mount(p, routes![a, b])` mounts handler macros.
+ *
+ * A handler macro (`#[get("/p")]`) takes the prefix of every node that
+ * registers it; one nothing registers keeps its own path. A registration on a
+ * receiver the reader cannot evaluate keeps its literal path, as the one-line
+ * patterns did. A recognised declaration that yields no route is recorded in
+ * `unresolved`, never guessed (FR-005).
+ *
+ * @implements docguard.real-project-route-gaps#FR-001
+ * @implements docguard.real-project-route-gaps#FR-002
+ * @implements docguard.real-project-route-gaps#FR-005
+ * @param {Array<{ file: string, content: string }>} sources  `.rs` files, project-relative paths
+ * @returns {Array<{ method, path, handler, file, line, auth, source }> & { unresolved: Array<{ framework, code, file, line, target }> }}
+ */
+export function extractRustBuilderRoutes(sources) {
+  const routes = [];
+  const unresolved = [];
+  Object.defineProperty(routes, 'unresolved', { value: unresolved, enumerable: false });
+  const marker = /\.\s*(?:route|service|configure|nest|merge|mount)\s*\(|#\[\s*(?:get|post|put|delete|patch|head|options)\s*\(/;
+  if (!(sources || []).some(s => typeof s?.content === 'string' && marker.test(s.content))) return routes;
+  const files = readFiles(sources);
+  for (const f of files) f.lets = indexLets(f);
+  const fns = indexFunctions(files);
+  const consts = collectConsts(files);
+
+  const missed = new Set();
+  const miss = (fw, code, file, line, target = '') => {
+    const k = `${code}|${file}|${line}`;
+    if (missed.has(k)) return;
+    missed.add(k);
+    unresolved.push({ framework: FRAMEWORK_OF[fw] || 'Rust', code, file, line, target: String(target).replace(/\s+/g, ' ').slice(0, 120) });
+  };
+  const text = (f, [a, b]) => f.code.slice(a, b).trim();
+  /** Source text of a range, with literals restored, for `target`. */
+  const original = (f, [a, b]) => {
+    let out = '';
+    for (let k = a; k < b; k++) {
+      const lit = f.lits.get(k);
+      if (lit && typeof lit.value === 'string') { out += JSON.stringify(lit.value); k = lit.end - 1; continue; }
+      out += f.code[k];
+    }
+    return out.trim();
+  };
+  /** A string argument: a literal, `&"x"`, or a `const` string; null otherwise. */
+  const strValue = (f, range) => {
+    let [a, b] = trimRange(f.code, ...range);
+    while (a < b && f.code[a] === '&') a++;
+    const lit = literalIn(f.code, f.lits, a, b);
+    if (typeof lit === 'string') return lit;
+    const id = /^(?:[A-Za-z_]\w*::)*([A-Za-z_]\w*)$/.exec(f.code.slice(a, b).trim());
+    const v = id ? consts.get(id[1]) : null;
+    return typeof v === 'string' ? v : null;
+  };
+  const lastIdent = t => (/(?:^|::)([A-Za-z_]\w*)\s*$/.exec(t) || [])[1] || '';
+
+  // ── Nodes ──
+  const nodes = new Map();
+  const made = [];
+  const mk = (f, pos, kind, fw, path = '') => {
+    const key = `${f.file}:${pos}`;
+    if (!nodes.has(key)) {
+      const node = { kind, fw, path, file: f.file, line: lineOf(f.code, pos), touched: false };
+      nodes.set(key, node);
+      made.push(node);
+      if (path === null) miss(fw, kind === 'scope' ? 'route-unresolved-prefix' : 'route-unresolved-path', f.file, node.line, kind === 'scope' ? 'web::scope' : 'web::resource');
+    }
+    return nodes.get(key);
+  };
+  const paramNodes = new Map();
+  const paramNode = (fn, index) => {
+    const key = `${fn.f.file}:${fn.start}:${index}`;
+    if (!paramNodes.has(key)) paramNodes.set(key, { kind: 'param', fw: null, path: '', key });
+    return paramNodes.get(key);
+  };
+  const retNodes = new Map();
+  const retNode = fn => {
+    if (!retNodes.has(fn)) retNodes.set(fn, { kind: 'ret', fn });
+    return retNodes.get(fn);
+  };
+  // `.configure(|cfg| …)`: the closure parameter is a node mounted on the receiver.
+  const closures = [];
+  for (const f of files) {
+    const re = /\.\s*configure\s*\(\s*(?:move\s+)?\|\s*(?:mut\s+)?([A-Za-z_]\w*)\s*(?::[^|]*)?\|/g;
+    let m;
+    while ((m = re.exec(f.code)) !== null) {
+      const open = f.code.indexOf('(', m.index);
+      const close = f.pairs.get(open);
+      if (close == null) continue;
+      closures.push({ f, name: m[1], s: m.index + m[0].length, e: close, node: { kind: 'param', fw: 'actix', path: '', key: `${f.file}:${m.index}` }, at: m.index });
+    }
+  }
+  const closureParam = (f, name, pos) => {
+    let best = null;
+    for (const c of closures) if (c.f === f && c.name === name && pos >= c.s && pos < c.e && (!best || c.s > best.s)) best = c;
+    return best;
+  };
+  const letFor = (f, fn, name, pos) => {
+    let best = null;
+    for (const l of f.lets) {
+      if (l.name !== name || l.pos >= pos || (pos >= l.s && pos <= l.e)) continue;
+      if (fn && (l.pos < fn.bodyOpen || l.pos > fn.bodyClose)) continue;
+      if (!best || l.pos > best.pos) best = l;
+    }
+    return best;
+  };
+  const memo = new Map();
+  const visiting = new Set();
+
+  /** The node an expression denotes, or null when it is not a builder this reader models. */
+  const evalNode = (f, fn, s, e, depth = 0) => {
+    if (depth > MAX_DEPTH) return null;
+    const { code, pairs } = f;
+    const chain = parseChain(code, pairs, s, e);
+    if (!chain) return null;
+    if (chain.group) return evalNode(f, fn, ...chain.group, depth + 1);
+    if (chain.block) {
+      const t = tailRange(code, pairs, ...chain.block);
+      return t ? evalNode(f, fn, t[0], t[1], depth + 1) : null;
+    }
+    const p = chain.path;
+    const joined = p.join('::');
+    const last = p[p.length - 1];
+    if (chain.macro) return null;
+    if (chain.args) {
+      const arg0 = () => splitTopLevel(code, pairs, ...chain.args)[0];
+      if (/(?:^|::)App::new$/.test(joined)) return mk(f, chain.start, 'root', 'actix');
+      if (/(?:^|::)Router::new$/.test(joined)) return mk(f, chain.start, 'root', 'axum');
+      if (p[0] === 'rocket' && p.length === 2 && ['build', 'ignite', 'custom'].includes(last)) return mk(f, chain.start, 'root', 'rocket');
+      if (/(?:^|::)(?:web::scope|Scope::new)$/.test(joined)) { const a = arg0(); return mk(f, chain.start, 'scope', 'actix', a ? strValue(f, a) : null); }
+      if (/(?:^|::)(?:web::resource|Resource::new)$/.test(joined)) { const a = arg0(); return mk(f, chain.start, 'resource', 'actix', a ? strValue(f, a) : null); }
+      if (p[0] === 'web' || p[0] === 'axum' || p[0] === 'routing') return null; // a framework call, never a project function
+      const targets = calleesOf(fns, p, f);
+      if (targets.length === 1 && BUILDER_RESULT.test(targets[0].result)) return retNode(targets[0]);
+      return null;
+    }
+    if (p.length !== 1) return null;
+    const l = letFor(f, fn, p[0], chain.start);
+    if (l) {
+      if (memo.has(l)) return memo.get(l);
+      if (visiting.has(l)) return null;
+      visiting.add(l);
+      const node = evalNode(f, fn, l.s, l.e, depth + 1);
+      visiting.delete(l);
+      memo.set(l, node);
+      return node;
+    }
+    const c = closureParam(f, p[0], chain.start);
+    if (c) return c.node;
+    if (fn) {
+      const index = fn.params.findIndex(q => q.name === p[0]);
+      if (index >= 0 && BUILDER_PARAM.test(fn.params[index].type)) return paramNode(fn, index);
+    }
+    return null;
+  };
+
+  // ── Method readers ──
+  /** `web::get().to(h)`, `web::route().guard(guard::Post()).to(h)`, `web::method(Method::PUT)`. */
+  const isActixRoute = (f, range) => {
+    const chain = parseChain(f.code, f.pairs, ...range);
+    if (!chain?.path) return false;
+    const j = chain.path.join('::');
+    return /(?:^|::)web::\w+$/.test(j) || /(?:^|::)Route::new$/.test(j);
+  };
+  const actixMethods = (f, range) => {
+    const chain = parseChain(f.code, f.pairs, ...range);
+    if (!chain?.path || !chain.args) return null;
+    const j = chain.path.join('::');
+    const last = chain.path[chain.path.length - 1];
+    let method;
+    if (/(?:^|::)web::\w+$/.test(j) && BUILDER_VERBS.has(last)) method = BUILDER_VERBS.get(last);
+    else if (/(?:^|::)(?:web::route|Route::new)$/.test(j)) method = 'ANY';
+    else if (/(?:^|::)web::method$/.test(j)) {
+      const m = /(?:^|::)Method::([A-Z]+)$/.exec(text(f, chain.args));
+      if (!m) return null;
+      method = m[1];
+    } else return null;
+    let handler = '';
+    for (const c of chain.calls) {
+      if (!c.args) continue;
+      const t = text(f, c.args);
+      if (c.name === 'to' || c.name === 'to_async') handler = lastIdent(t);
+      else if (c.name === 'method') {
+        const m = /(?:^|::)Method::([A-Z]+)$/.exec(t);
+        if (!m) return null;
+        method = m[1];
+      } else if (c.name === 'guard') {
+        const m = /(?:^|::)guard::(Get|Post|Put|Delete|Patch|Head|Options|Trace|Connect)\s*\(\s*\)$/.exec(t);
+        if (m) method = m[1].toUpperCase();
+      }
+    }
+    return { methods: [method], handler };
+  };
+  /** `get(a).post(b)`, `routing::any(h)`, `on(MethodFilter::GET | MethodFilter::POST, h)`, `get_service(svc)`. */
+  const axumMethods = (f, range) => {
+    const chain = parseChain(f.code, f.pairs, ...range);
+    if (!chain?.path || !chain.args || chain.macro) return null;
+    if (chain.path.length > 1 && !chain.path.slice(0, -1).every(s => s === 'axum' || s === 'routing' || s === 'method_routing')) return null;
+    const methods = [];
+    let handler = '';
+    const add = (name, args) => {
+      const base = name.replace(/_service$/, '');
+      if (base === 'any') { methods.push('ANY'); }
+      else if (BUILDER_VERBS.has(base)) methods.push(BUILDER_VERBS.get(base));
+      else if (base === 'on') {
+        const parts = args ? splitTopLevel(f.code, f.pairs, ...args) : [];
+        if (!parts[0]) return false;
+        for (const piece of text(f, parts[0]).split('|')) {
+          const m = /^(?:[A-Za-z_]\w*::)*MethodFilter::([A-Z]+)$/.exec(piece.trim());
+          if (!m) return false;
+          methods.push(m[1]);
+        }
+        if (parts[1] && !handler) handler = lastIdent(text(f, parts[1]));
+        return true;
+      } else return false;
+      const first = args ? splitTopLevel(f.code, f.pairs, ...args)[0] : null;
+      if (first && !handler) handler = lastIdent(text(f, first));
+      return true;
+    };
+    if (!add(chain.path[chain.path.length - 1], chain.args)) return null;
+    for (const c of chain.calls) {
+      const base = c.name.replace(/_service$/, '');
+      if (base === 'any' || base === 'on' || BUILDER_VERBS.has(base)) {
+        if (!add(c.name, c.args)) return null;
+      }
+      // layer, route_layer, with_state, fallback, … pass through.
+    }
+    return { methods: [...new Set(methods)], handler };
+  };
+
+  // ── Handler macros ──
+  const macros = [];
+  for (const f of files) {
+    const actix = /\bactix_web\b/.test(f.code);
+    ROUTE_MACRO.lastIndex = 0;
+    let m;
+    while ((m = ROUTE_MACRO.exec(f.code)) !== null) {
+      const open = m.index + m[0].length - 1;
+      const close = f.pairs.get(open);
+      if (close == null) continue;
+      const bracket = f.code.lastIndexOf('[', open);
+      const end = f.pairs.get(bracket);
+      if (end == null) continue;
+      const after = /^(?:\s*#\s*\[[^\]]*\])*\s*(?:pub(?:\s*\([^)]*\))?\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)/.exec(f.code.slice(end + 1, end + 400));
+      if (!after) continue;
+      const first = splitTopLevel(f.code, f.pairs, open + 1, close)[0];
+      const raw = first ? literalIn(f.code, f.lits, ...first) : undefined;
+      const fw = actix ? 'actix' : 'rocket';
+      const line = lineOf(f.code, m.index);
+      if (typeof raw !== 'string') { miss(fw, 'route-unresolved-path', f.file, line, first ? original(f, first) : ''); continue; }
+      macros.push({ name: after[1], method: m[1].toUpperCase(), path: raw.replace(/\?.*$/, '') || '/', f, file: f.file, line, fw, regs: [] });
+    }
+  }
+  const registerHandler = (f, ref, parent, path, fw) => {
+    const segs = ref.split('::').map(s => s.trim()).filter(Boolean);
+    const name = segs[segs.length - 1];
+    let hits = macros.filter(x => x.name === name);
+    const qual = segs.length > 1 ? segs[segs.length - 2] : null;
+    if (hits.length > 1 && qual && !['self', 'super', 'crate'].includes(qual)) {
+      const narrowed = hits.filter(x => x.f.stem.has(qual));
+      if (narrowed.length) hits = narrowed;
+    } else if (hits.length > 1) {
+      const local = hits.filter(x => x.f === f);
+      if (local.length) hits = local;
+    }
+    for (const x of hits) x.regs.push({ parent, path, fw });
+    return hits.length > 0;
+  };
+
+  // ── Registrations ──
+  const UNKNOWN = { kind: 'root', fw: null, path: '' };
+  const mounts = [];  // { target, parent, path }
+  const records = []; // { node, path, methods, handler, file, line, fw }
+  for (const f of files) {
+    const { code, pairs } = f;
+    BUILDER_CALL.lastIndex = 0;
+    let m;
+    while ((m = BUILDER_CALL.exec(code)) !== null) {
+      const dot = m.index;
+      const open = m.index + m[0].length - 1;
+      const close = pairs.get(open);
+      if (close == null) continue;
+      const start = chainStart(code, pairs, dot);
+      if (start < 0) continue;
+      const fn = enclosingFn(fns, f, dot);
+      const recv = evalNode(f, fn, start, dot);
+      const args = splitTopLevel(code, pairs, open + 1, close);
+      const line = lineOf(code, dot);
+      const name = m[1];
+      if (name === 'route') {
+        if (args.length === 1 && recv?.kind === 'resource') {
+          recv.touched = true;
+          const r = actixMethods(f, args[0]);
+          if (!r) { miss('actix', 'route-unresolved-method', f.file, line, original(f, args[0])); continue; }
+          records.push({ node: recv, path: '', ...r, file: f.file, line, fw: 'actix' });
+          continue;
+        }
+        if (args.length !== 2) continue;
+        const path = strValue(f, args[0]);
+        const actix = recv?.fw === 'actix' || recv?.kind === 'scope' || isActixRoute(f, args[1]);
+        const r = actix ? actixMethods(f, args[1]) : axumMethods(f, args[1]);
+        const fw = actix ? 'actix' : 'axum';
+        if (!recv) {
+          // A receiver this reader cannot evaluate: the literal path, as before.
+          if (typeof path === 'string' && r) records.push({ node: UNKNOWN, path, ...r, file: f.file, line, fw });
+          continue;
+        }
+        if (recv.kind === 'resource') continue;
+        if (path === null) { miss(fw, 'route-unresolved-path', f.file, line, original(f, args[0])); continue; }
+        if (!r) { miss(fw, 'route-unresolved-method', f.file, line, original(f, args[1])); continue; }
+        records.push({ node: recv, path, ...r, file: f.file, line, fw });
+      } else if (name === 'to' || name === 'to_async') {
+        if (recv?.kind !== 'resource' || args.length !== 1) continue;
+        recv.touched = true;
+        records.push({ node: recv, path: '', methods: ['ANY'], handler: lastIdent(text(f, args[0])), file: f.file, line, fw: 'actix' });
+      } else if (name === 'route_service') {
+        if (!recv || recv.fw === 'actix' || args.length !== 2) continue;
+        const path = strValue(f, args[0]);
+        if (path === null) { miss('axum', 'route-unresolved-path', f.file, line, original(f, args[0])); continue; }
+        records.push({ node: recv, path, methods: ['ANY'], handler: '', file: f.file, line, fw: 'axum' });
+      } else if (name === 'service') {
+        if (args.length !== 1) continue;
+        let items = [args[0]];
+        const [a, b] = args[0];
+        if (code[a] === '(' && pairs.get(a) === b - 1) items = splitTopLevel(code, pairs, a + 1, b - 1);
+        for (const item of items) {
+          const target = evalNode(f, fn, ...item);
+          if (target) { mounts.push({ target, parent: recv || UNKNOWN, path: '' }); continue; }
+          const t = text(f, item);
+          if (/^(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*$/.test(t)) registerHandler(f, t, recv || UNKNOWN, '', 'actix');
+        }
+      } else if (name === 'configure') {
+        if (!recv || args.length !== 1) continue;
+        const c = closures.find(x => x.f === f && x.at === dot);
+        if (c) { mounts.push({ target: c.node, parent: recv, path: '' }); continue; }
+        const t = text(f, args[0]);
+        if (!/^(?:[A-Za-z_]\w*::)*[A-Za-z_]\w*$/.test(t)) continue;
+        for (const target of calleesOf(fns, t.split('::'), f)) {
+          const index = Math.max(0, target.params.findIndex(q => /\bServiceConfig\b/.test(q.type)));
+          mounts.push({ target: paramNode(target, index), parent: recv, path: '' });
+        }
+      } else if (name === 'nest' || name === 'merge') {
+        const want = name === 'nest' ? 2 : 1;
+        if (args.length !== want || (recv && recv.fw === 'actix')) continue;
+        const path = name === 'nest' ? strValue(f, args[0]) : '';
+        const target = evalNode(f, fn, ...args[want - 1]);
+        if (path === null) miss('axum', 'route-unresolved-prefix', f.file, line, original(f, args[0]));
+        if (target) mounts.push({ target, parent: recv || UNKNOWN, path });
+      } else if (name === 'mount') {
+        if (args.length !== 2) continue;
+        const chain = parseChain(code, pairs, ...args[1]);
+        if (!chain?.macro || chain.path.join('::') !== 'routes' || !chain.args) continue;
+        const path = strValue(f, args[0]);
+        if (path === null) miss('rocket', 'route-unresolved-prefix', f.file, line, original(f, args[0]));
+        for (const item of splitTopLevel(code, pairs, ...chain.args)) registerHandler(f, text(f, item), recv || UNKNOWN, path, 'rocket');
+      }
+    }
+    // A builder handed to a project function (`routes(cfg)`, `add_api(router)`).
+    const call = /\b([A-Za-z_]\w*)\s*\(/g;
+    while ((m = call.exec(code)) !== null) {
+      const list = fns.get(m[1]);
+      if (!list || /\bfn\s+$/.test(code.slice(Math.max(0, m.index - 8), m.index))) continue;
+      if (/\.\s*$/.test(code.slice(Math.max(0, m.index - 2), m.index))) continue;
+      const qual = /([A-Za-z_]\w*)\s*::\s*$/.exec(code.slice(Math.max(0, m.index - 64), m.index));
+      const targets = calleesOf(fns, qual ? [qual[1], m[1]] : [m[1]], f);
+      const open = m.index + m[0].length - 1;
+      if (!pairs.has(open)) continue;
+      const args = splitTopLevel(code, pairs, open + 1, pairs.get(open));
+      const fn = enclosingFn(fns, f, m.index);
+      for (const target of targets) {
+        target.params.forEach((q, index) => {
+          if (!args[index] || !BUILDER_PARAM.test(q.type)) return;
+          const node = evalNode(f, fn, ...args[index]);
+          if (node) mounts.push({ target: paramNode(target, index), parent: node, path: '' });
+        });
+      }
+    }
+  }
+
+  // ── Resolution ──
+  const derefMemo = new Map();
+  const deref = (node, seen = new Set()) => {
+    if (!node || seen.has(node)) return [];
+    seen.add(node);
+    if (node.kind !== 'ret') return [node];
+    if (!derefMemo.has(node.fn)) {
+      derefMemo.set(node.fn, []);
+      const fn = node.fn;
+      const t = tailRange(fn.f.code, fn.f.pairs, fn.bodyOpen + 1, fn.bodyClose);
+      derefMemo.set(node.fn, t ? [evalNode(fn.f, fn, t[0], t[1])].filter(Boolean) : []);
+    }
+    return derefMemo.get(node.fn).flatMap(n => deref(n, seen));
+  };
+  const mountsOf = node => mounts.filter(mt => deref(mt.target).includes(node));
+  const prefixMemo = new Map();
+  const prefixes = (node, visiting = new Set()) => {
+    if (prefixMemo.has(node)) return prefixMemo.get(node);
+    if (visiting.has(node) || visiting.size > MAX_DEPTH) return [];
+    visiting.add(node);
+    let out;
+    if (node.kind === 'ret') out = deref(node).flatMap(n => prefixes(n, visiting));
+    else {
+      const ms = node === UNKNOWN ? [] : mountsOf(node);
+      const base = ms.length ? ms.flatMap(mt => prefixes(mt.parent, visiting).map(p => joinPrefix(p, mt.path))) : [''];
+      out = base.map(p => joinPrefix(p, node.path));
+    }
+    visiting.delete(node);
+    out = [...new Set(out)].slice(0, 64);
+    if (!visiting.size) prefixMemo.set(node, out);
+    return out;
+  };
+
+  const seen = new Set();
+  const emit = (method, path, handler, file, line, source) => {
+    const key = `${method} ${path}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    routes.push({ method, path, handler, file, line, auth: false, source });
+  };
+  for (const r of records) {
+    for (const p of prefixes(r.node)) {
+      const full = joinPrefix(p, r.path);
+      if (full === null) continue; // its prefix is recorded where it is mounted
+      for (const method of r.methods) emit(method, servedPath(full), r.handler, r.file, r.line, r.fw);
+    }
+  }
+  for (const x of macros) {
+    if (!x.regs.length) { emit(x.method, servedPath(x.path), x.name, x.file, x.line, x.fw); continue; }
+    for (const reg of x.regs) {
+      for (const p of prefixes(reg.parent)) {
+        const full = joinPrefix(joinPrefix(p, reg.path), x.path);
+        if (full === null) continue;
+        emit(x.method, servedPath(full), x.name, x.file, x.line, reg.fw);
+      }
+    }
+  }
+  // A resource that registered no route (`web::resource("/x").name("x")`).
+  for (const n of made) {
+    if (n.kind === 'resource' && n.path !== null && !n.touched) miss('actix', 'route-unresolved-declaration', n.file, n.line, `web::resource("${n.path}")`);
   }
   return routes;
 }

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Route readers that undercounted real projects**
+  (`specs/071-real-project-route-gaps`). Run on the public RealWorld example
+  applications, which all serve the same 19 endpoints:
+  - **Actix Web** read 0 routes and reported nothing missing. The builder
+    style (`web::scope("/api").service(web::resource("users").route(web::post().to(h)))`,
+    `.configure(f)`, functions returning a `Scope`) is now read, with scope
+    prefixes composed across functions and files, and `#[get("/p")]` handlers
+    take the prefix of the scope that registers them. Rocket's
+    `.mount("/p", routes![a, b])` prefixes its handlers the same way.
+  - **Axum** kept only the first method of `.route("/x", get(a).put(b))`
+    (12 of 19). Every chained method is now reported, with `on(MethodFilter::…)`,
+    `any` and `*_service`, and `.nest("/p", r)` / `.merge(r)` prefixes apply.
+  - **Symfony** read 0: an invokable controller declares its route on the
+    class (`@Route` or `#[Route]` above a class with `__invoke`), which was read
+    only as a prefix. It is now the route of `__invoke` when no method declares
+    one, as Symfony's loader does.
+  - **Koa** dropped `/api` from all 19 paths: a module ending
+    `module.exports = router.routes()` mounted with `api.use(users)` lost the
+    prefix above it. Such exports (and `router.middleware()`,
+    `export default router.routes()`) are now followed.
+  - A declaration an Actix, Axum, Rocket, Symfony or Laravel reader recognises
+    but cannot turn into a route is listed in `scan.unresolved`
+    (`route-unresolved-path`, `-prefix`, `-method`, `-declaration`), so the
+    API-surface check reports `partial` instead of a silent zero; a Laravel
+    route file no application loads is one of them.
+
 ## [0.44.2] - 2026-10-11
 
 ### Fixed

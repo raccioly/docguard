@@ -37,6 +37,7 @@
  * @implements docguard.js-route-shapes#FR-004
  * @implements docguard.js-route-shapes#FR-005
  * @implements docguard.js-route-shapes#FR-009
+ * @implements docguard.real-project-route-gaps#FR-004
  */
 
 import { walk, isAuthMiddlewareNode, isAuthMiddlewareName, functionBodies, topLevelStaticStrings, pathArgValue, AUTH_CHECK_RE, parseJsTs, exportedStaticStrings, importedStaticStrings } from './js-ast.mjs';
@@ -239,6 +240,14 @@ function requireSpec(node) {
     && n.arguments?.length === 1 && n.arguments[0].type === 'StringLiteral' ? n.arguments[0].value : null;
 }
 
+/** `x.routes()` / `x.middleware()` → `x`: the router a koa-router dispatch function belongs to. */
+function mountedRouter(node) {
+  const n = unwrap(node);
+  const callee = n?.type === 'CallExpression' ? n.callee : null;
+  return callee?.type === 'MemberExpression' && !callee.computed && MOUNT_METHODS.has(callee.property?.name)
+    && !(n.arguments || []).length && callee.object?.type === 'Identifier' ? callee.object.name : null;
+}
+
 function readAst(ast, ctx) {
   const { src, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport } = ctx;
   const { abs, file, content } = src;
@@ -301,6 +310,9 @@ function readAst(ast, ctx) {
       }
     } else if (st.type === 'ExportDefaultDeclaration' && st.declaration?.type === 'Identifier') {
       exportsMap.set('default', st.declaration.name);
+    } else if (st.type === 'ExportDefaultDeclaration' && mountedRouter(st.declaration)) {
+      // `export default router.routes()` (docguard.real-project-route-gaps#FR-004).
+      exportsMap.set('default', mountedRouter(st.declaration));
     } else if (st.type === 'ExportNamedDeclaration') {
       for (const d of st.declaration?.declarations || []) if (d.id?.type === 'Identifier') exportsMap.set(d.id.name, d.id.name);
       for (const sp of st.specifiers || []) {
@@ -314,6 +326,9 @@ function readAst(ast, ctx) {
       const value = unwrap(right);
       if (isModuleExports(left)) {
         if (value?.type === 'Identifier') exportsMap.set('default', value.name);
+        // `module.exports = router.routes()`: the module exports that router's
+        // dispatch, which a parent `use()` mounts (docguard.real-project-route-gaps#FR-004).
+        else if (mountedRouter(value)) exportsMap.set('default', mountedRouter(value));
         else if (value?.type === 'ObjectExpression') {
           for (const p of value.properties || []) {
             if (p.type === 'ObjectProperty' && !p.computed && p.value?.type === 'Identifier') exportsMap.set(p.key?.name ?? p.key?.value, p.value.name);
@@ -490,6 +505,18 @@ function readAst(ast, ctx) {
     }
     return null;
   };
+  // Koa: `api.use(users)` with `users` an imported module's export (often
+  // `router.routes()`) mounts that router with no path. An auth middleware,
+  // a path-like name or a value that is not imported stays a middleware
+  // (docguard.real-project-route-gaps#FR-004).
+  const importedRouterMount = (arg, recvId) => {
+    const a = unwrap(arg);
+    if (a?.type !== 'Identifier' || !imports.has(a.name) || bound.has(a.name)) return null;
+    if (ctx.defaultSource !== 'koa' && nodes.get(recvId)?.kind !== 'koa') return null;
+    if (isAuthMiddlewareName(a.name) || /^[A-Z][A-Z0-9_]*$/.test(a.name) || /(?:path|prefix|base|url)$/i.test(a.name)) return null;
+    const child = importedId(a.name);
+    return child ? { child, prefix: '', unresolved: false } : null;
+  };
   const koaLocalNode = expr => expr?.type === 'Identifier' && bound.has(expr.name) && nodes.get(idOf(expr.name))?.kind === 'koa';
   // A first `use()` argument that is a path this reader cannot read (an
   // imported constant, `process.env.X`), rather than a middleware.
@@ -510,7 +537,7 @@ function readAst(ast, ctx) {
     const start = node.start ?? 0;
 
     if (prop === 'use') {
-      const mounts = args.map(mountOf);
+      const mounts = args.map(a => mountOf(a) || importedRouterMount(a, recv.id));
       if (mounts.some(Boolean)) {
         // Koa: `use(path?, ...middleware, sub.routes())`.
         let prefixes = [''];
