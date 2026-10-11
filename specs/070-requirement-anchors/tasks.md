@@ -313,7 +313,7 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 10: US8, export the trace matrix (P3, PR 8)
 
-- [ ] T063 [P] [US8] Matrix fixture and `tests/trace-matrix.test.mjs`:
+- [x] T063 [P] [US8] Matrix fixture and `tests/trace-matrix.test.mjs`:
   - CSV header exactly as in contracts/trace-matrix.md;
   - 5 rows;
   - formula-injection prefix;
@@ -321,9 +321,9 @@ follow the policy, and completion is not deadlocked.
   - byte-identical across two runs.
 
   (FR-037, SC-010)
-- [ ] T064 [US8] Create `cli/writers/trace-matrix.mjs` with the CSV (RFC 4180) and ReqIF 1.2 serializers. Build the XML by string assembly, escape it, and use ids `_` + the first 16 hex digits of sha1 of the key (FR-037, research P9)
-- [ ] T065 [US8] Add `trace --matrix --format csv|reqif [--output]` to `cli/commands/trace.mjs` and `cli/docguard.mjs`. Write through `safeWrite` (FR-037)
-- [ ] T066 [US8] Docs. Close story 8 with the claim `TRACE-MATRIX-COMPLETE`, `CHANGELOG.md` and `specs --write`
+- [x] T064 [US8] Create `cli/writers/trace-matrix.mjs` with the CSV (RFC 4180) and ReqIF 1.2 serializers. Build the XML by string assembly, escape it, and use ids `_` + the first 16 hex digits of sha1 of the key (FR-037, research P9)
+- [x] T065 [US8] Add `trace --matrix --format csv|reqif|json [--spec <id>] [--out|--output <path>]` to `cli/commands/trace.mjs` and `cli/docguard.mjs`. Write through `safeWrite` (FR-037)
+- [x] T066 [US8] Docs. Close story 8 with the claim `TRACE-MATRIX-COMPLETE`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 11: US9, StrictDoc and OpenFastTrace importers (P3, PR 9)
 

@@ -628,6 +628,81 @@ export function anchorGranularity(projectDir, config = {}) {
   return { links: summary.links, byScope: summary.byScope, byTier: summary.byTier };
 }
 
+/* ───────────────────────────── Trace matrix (US8) ───────────────────────────── */
+
+/** Byte order on UTF-8, the contract's sort (not UTF-16 code units). */
+const byteCompare = (a, b) => Buffer.compare(Buffer.from(String(a ?? ''), 'utf8'), Buffer.from(String(b ?? ''), 'utf8'));
+
+/** A spec's state for the matrix: `retired`, else its reviewed delivery state. */
+function specStates(projectDir) {
+  const registry = readSpecRegistry(projectDir);
+  const states = new Map();
+  for (const e of registry.value?.specs || []) {
+    const lifecycle = e.reviewed?.lifecycle || {};
+    states.set(e.specId, lifecycle.context === 'retired' ? 'retired' : lifecycle.delivery || '');
+  }
+  return states;
+}
+
+/**
+ * FR-037: every requirement → anchor → test path, in one deterministic order
+ * (requirement, file, anchor, test file, test line; byte order). One row per
+ * (link, test reference); a link with no test has one row with empty test
+ * columns; a requirement with no link has one row per test, or one row,
+ * with `link_state: missing`. The ReqIF model holds each requirement, anchor
+ * and test once, with `implements` and `verifies` relations.
+ * @implements docguard.requirement-anchors#FR-037
+ */
+export function traceMatrix(projectDir, config = {}, options = {}) {
+  const status = computeAnchorStatus(projectDir, config, { tests: true, noCache: options.noCache });
+  const index = status.index;
+  const refs = testReferences(projectDir, config, index);
+  const states = specStates(projectDir);
+  const inSpec = id => !options.spec || id.startsWith(`${options.spec}#`);
+  const requirements = new Map();
+  const addRequirement = (identity, fingerprint, specId) => {
+    if (requirements.has(identity) || !inSpec(identity)) return;
+    requirements.set(identity, { identity, fingerprint: fingerprint || '', specState: specId ? states.get(specId) ?? '' : (index.retired.has(identity) ? 'retired' : '') });
+  };
+  for (const entry of index.byQualified.values()) addRequirement(entry.identity, entry.fingerprint, entry.specId);
+  const allLinks = [
+    ...status.links.map(l => ({ ...l, entry: l.entry || null })),
+    ...status.lost.map(l => ({ ...l, confidence: '', exact: l.entry.code, tests: undefined })),
+  ].filter(l => inSpec(l.requirement));
+  for (const l of allLinks) addRequirement(l.requirement, l.req || l.entry?.req || '', l.specId || (l.retired || l.state === 'retired-target' ? null : l.requirement.split('#')[0]));
+  const testsOf = identity => [...(refs.get(identity)?.values() || [])].sort((a, b) => byteCompare(a.file, b.file) || a.line - b.line);
+
+  const rows = [];
+  const linksBy = new Map();
+  for (const l of allLinks) linksBy.set(l.requirement, [...(linksBy.get(l.requirement) || []), l]);
+  for (const req of requirements.values()) {
+    const base = { requirement: req.identity, requirement_fp: req.fingerprint, spec_state: req.specState };
+    const tests = testsOf(req.identity);
+    const links = linksBy.get(req.identity) || [];
+    if (!links.length) {
+      const empty = { file: '', anchor: '', scope: '', tier: '', confidence: '', link_state: 'missing', suspect_side: '', code_fp: '', reviewed_revision: '', reviewed_date: '' };
+      if (!tests.length) rows.push({ ...base, ...empty, test_file: '', test_line: '', test_status: '' });
+      for (const t of tests) rows.push({ ...base, ...empty, test_file: t.file, test_line: t.line, test_status: 'linked' });
+      continue;
+    }
+    for (const l of links) {
+      const linkCols = {
+        file: l.file, anchor: l.scope === 'file' ? '' : l.anchor, scope: l.scope, tier: l.tier, confidence: l.confidence || '',
+        link_state: l.state, suspect_side: l.side || '', code_fp: l.exact || '',
+        reviewed_revision: l.entry?.revision || '', reviewed_date: l.entry?.date || '', key: l.key,
+      };
+      if (!tests.length) rows.push({ ...base, ...linkCols, test_file: '', test_line: '', test_status: '' });
+      for (const t of tests) {
+        const chain = (l.tests || []).find(x => x.file === t.file && x.line === t.line);
+        rows.push({ ...base, ...linkCols, test_file: t.file, test_line: t.line, test_status: chain ? chain.status : 'linked' });
+      }
+    }
+  }
+  rows.sort((a, b) => byteCompare(a.requirement, b.requirement) || byteCompare(a.file, b.file) || byteCompare(a.anchor, b.anchor)
+    || byteCompare(a.test_file, b.test_file) || (Number(a.test_line) || 0) - (Number(b.test_line) || 0));
+  return { rows, requirements: [...requirements.values()].sort((a, b) => byteCompare(a.identity, b.identity)) };
+}
+
 const GRAPH_LANGS = new Set(['js', 'ts', 'python']);
 export const DEFAULT_FAN_OUT_LIMIT = 10;
 

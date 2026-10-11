@@ -799,7 +799,40 @@ npx docguard-cli trace --reverse src/api/x.ts  # code → doc: the declared owne
 npx docguard-cli trace --features              # per-feature Spec Kit adherence
 npx docguard-cli trace --owners                # the ownership map: files per entry, unowned code, ties
 npx docguard-cli trace --owners --suggest      # a draft ownership block; never writes
+npx docguard-cli trace --matrix                # requirement → anchor → test, as CSV
+npx docguard-cli trace --matrix --format reqif --out trace.reqif   # ReqIF 1.2 for DOORS or Polarion
 ```
+
+**The trace matrix.** `trace --matrix` exports every requirement → anchor →
+test path from the requirement anchors. The CSV columns are:
+
+```text
+requirement,requirement_fp,spec_state,file,anchor,scope,tier,confidence,link_state,suspect_side,code_fp,reviewed_revision,reviewed_date,test_file,test_line,test_status
+```
+
+Rows:
+- **One per link and test.** A link with no test has empty test columns.
+- **Missing links.** A requirement with no link has `link_state: missing`:
+  one row per test that cites it, or a single row.
+- **`test_status`.** It is `linked`, or, for a link whose code changed, the
+  test chain's `needs-reverification`, `re-verified` or `inconclusive`.
+- **Order.** Rows sort by requirement, file, anchor and test (UTF-8 byte
+  order), so two runs give the same bytes.
+- **Cells.** Quoted per RFC 4180. A cell that starts with `=`, `+`, `-`, `@`,
+  a tab or a carriage return gets a `'` prefix, so a spreadsheet does not run
+  it as a formula.
+
+`--format reqif` writes ReqIF 1.2:
+- requirements, anchors and tests are spec objects;
+- `implements` (anchor → requirement) and `verifies` (test → requirement) are
+  spec relations;
+- identifiers are a hash of each key, so they are stable;
+- the creation time is fixed at the epoch, so the file only changes when the
+  matrix does.
+
+`--format json` gives the same rows. `--spec <id>` keeps one spec. `--out`
+(or `--output`) writes the file through DocGuard's safe write, which backs up
+an existing file first; otherwise the export is the whole of stdout.
 
 `--owners` reads the `ownership` block in `.docguard.json`
 ([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds

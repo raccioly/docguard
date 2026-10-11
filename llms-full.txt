@@ -48,7 +48,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
-| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
+| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs` | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
@@ -1417,6 +1417,8 @@ Git hooks are written, replaced or removed only in a hooks folder the repository
 | agent, agent --task | None | Emits a task graph or transient bounded context; never stores raw task text or selected output |
 | fix --write, sync --write | Targeted documentation edits | Mapped human documents permit only unique `source=code` sections; backups and fix history remain enabled where supported. `sync --write` skips a section drawn from incomplete evidence unless `--allow-partial` |
 | review --accept, review --prune | `.docguard-doc-lock.json` only | One file transaction; `--accept` requires a reason. Plain `review` and `review --suggest` write nothing |
+| anchors, anchors --orphans | None | Read-only listings; the per-file cache under `.docguard/` is the only thing written, and only outside CI |
+| anchors accept, anchors disposition | `.docguard-anchor-lock.jsonl` only, plus `.gitattributes` with `--gitattributes` | One file transaction; a reason of 10 to 500 characters; `--bulk` for more than one entry; `accept` refuses when a selected file changed during the run. DocGuard authenticates nobody: review the lock through CODEOWNERS |
 | rules --for, trace --owners [--suggest], ignore | None | Read-only, including agent skills and the Spec Kit hint; `--suggest` prints a draft ownership block and never writes configuration; `ignore --format claimspec` prints its document to stdout |
 | reconcile | None by default | `--write` delegates only mechanical generated-section refreshes to `sync` |
 | specs, specs preflight, specs require | None for check/plan modes | `specs --write` refreshes the registry; `specs approve --write` records a reviewed approval and delivery state in the registry only; `specs complete --write` transactionally records a reviewed outcome and active context; `specs reanchor --write` moves recorded outcome revisions in the registry |
@@ -1425,6 +1427,7 @@ Git hooks are written, replaced or removed only in a hooks folder the repository
 | init, generate | Documentation and configuration scaffolding | Explicit force options may overwrite content. When `specify` is installed and Spec Kit is not initialized, `init` runs `specify init --here --force` (skip with `--no-spec-kit`) and registers the packaged extension. `generate --spec --write` adds one spec and its registry entry in one transaction |
 | hooks | Hook configuration and executable scripts | Inventory distinguishes managed, legacy, foreign, missing, and unreadable hooks; removal preserves foreign commands around a managed block; auto-fix hooks may edit and stage documentation. A foreign hook is skipped under `--force` and no `.bak` is written, so overwriting one requires `--force` twice rather than a plain re-install. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`. An installed hook skips a working tree with no `.docguard.json` and permits guard exit 3, so a branch or worktree that never adopted DocGuard is not blocked by a repo-wide hook |
 | report | None by default | `--out` writes an artifact |
+| trace --matrix | None by default | `--out` (or `--output`) writes the export through the safe write, which backs up an existing file |
 | upgrade | None by default | Contacts the npm registry unless `--schema-only`; `--check-only` only reports. `--apply` installs the newer CLI globally, migrates `.docguard.json`, refreshes out-of-date agent files and re-registers the Spec Kit extension when its registered version differs; `--pr` puts the migration on a new branch and opens a pull request instead of editing in place |
 
 Review the exact command and flags before assigning privileges. CLI help is the authoritative command inventory.
@@ -1611,6 +1614,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
 | Anchor test chain; TestGuard evidence adapter (every re-verified, needs-reverification and inconclusive cause, path and revision safety) | `tests/requirement-anchors-testchain.test.mjs` | ✅ |
 | Anchor orphans, dispositions and granularity in `score`/`trace` | `tests/requirement-anchors-orphans.test.mjs` | ✅ |
+| Trace-matrix export: CSV columns and order, RFC 4180 quoting, formula injection, ReqIF 1.2 structure and escaping, byte-identical runs, `--out` | `tests/trace-matrix.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -1987,6 +1991,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     as stale. No requirement text is proposed and no model is called.
   - **Granularity.** `score` and `trace` report links by scope and tier as
     information, once a project has opted in.
+- **`docguard trace --matrix` exports the requirement → anchor → test chain**
+  (`specs/070-requirement-anchors`, user story 8).
+  - **CSV.** Fixed, documented columns: requirement, fingerprints, spec state,
+    file, anchor, scope, tier, link state, review revision and date, and the
+    test with its status. Rows are in UTF-8 byte order, quoted per RFC 4180,
+    and a cell that could run as a spreadsheet formula gets a `'` prefix.
+  - **ReqIF 1.2.** `--format reqif` holds requirements, anchors and tests as
+    spec objects, with `implements` and `verifies` relations, hash-stable
+    identifiers and a fixed creation time, so two runs give the same bytes.
+  - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
+    through the safe write, which backs up an existing file.
 
 ### Changed
 
@@ -2235,19 +2250,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     paths and prefixes built from `const` strings another project file
     exports resolve, through `import` (named or namespace) and CommonJS
     (`const { PREFIX } = require('./config')`, `cfg.PREFIX` from
-    `module.exports = { PREFIX: '/api' }` or `exports.PREFIX = '/api'`).
 
-  A prefix, mount path, route definition or Pages export that is not literal
-  is recorded and makes the API-surface check `partial`; the routes below an
-  unresolved Koa, Hono or itty-router prefix are no longer reported at the
-  root.
-- **Routes for Sinatra, Starlette, Warp, Tide and Go `net/http`-only
-  services** (`specs/060-more-route-frameworks`, part of #519). These
-  frameworks were classified but no scanner read them, so `generate`, `diff`
-  and guard's API-surface check saw no endpoint. Now:
-  - Sinatra: classic and modular apps across files, nested `namespace`
-
-<!-- truncated: 5449 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5460 more lines — read CHANGELOG.md directly -->
 
 ---
 

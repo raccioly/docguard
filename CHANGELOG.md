@@ -139,6 +139,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     as stale. No requirement text is proposed and no model is called.
   - **Granularity.** `score` and `trace` report links by scope and tier as
     information, once a project has opted in.
+- **`docguard trace --matrix` exports the requirement → anchor → test chain**
+  (`specs/070-requirement-anchors`, user story 8).
+  - **CSV.** Fixed, documented columns: requirement, fingerprints, spec state,
+    file, anchor, scope, tier, link state, review revision and date, and the
+    test with its status. Rows are in UTF-8 byte order, quoted per RFC 4180,
+    and a cell that could run as a spreadsheet formula gets a `'` prefix.
+  - **ReqIF 1.2.** `--format reqif` holds requirements, anchors and tests as
+    spec objects, with `implements` and `verifies` relations, hash-stable
+    identifiers and a fixed creation time, so two runs give the same bytes.
+  - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
+    through the safe write, which backs up an existing file.
 
 ### Changed
 

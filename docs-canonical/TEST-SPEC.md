@@ -115,6 +115,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
 | Anchor test chain; TestGuard evidence adapter (every re-verified, needs-reverification and inconclusive cause, path and revision safety) | `tests/requirement-anchors-testchain.test.mjs` | ✅ |
 | Anchor orphans, dispositions and granularity in `score`/`trace` | `tests/requirement-anchors-orphans.test.mjs` | ✅ |
+| Trace-matrix export: CSV columns and order, RFC 4180 quoting, formula injection, ReqIF 1.2 structure and escaping, byte-identical runs, `--out` | `tests/trace-matrix.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |

@@ -51,6 +51,9 @@ named test or recorded measurement that fails without it).
 | `anchors disposition` also takes `--file … --bulk` and `--remove` | Adoption needs to disposition a whole infrastructure file, and a disposition must be removable when a requirement appears | contracts/anchors-cli.md |
 | Granularity is computed only once a project opted in | FR-041: a project that has not opted in pays nothing, including in `score` and `trace` | FR-036 test |
 | SECURITY.md's write table gained the `anchors` rows | Stories 1 and 2 added a lock writer without listing it there | docs-canonical/SECURITY.md |
+| `trace --matrix` takes `--out`, with `--output` as an alias | `report --out` is the CLI's existing flag for writing an artifact | contracts/trace-matrix.md |
+| ReqIF times are always the epoch (no `--timestamp`) | A real time would change every export and defeat byte-identical runs; DOORS and Polarion import without it | contracts/trace-matrix.md |
+| The formula-injection prefix also covers a leading tab or carriage return | OWASP's CSV-injection list includes both | contracts/trace-matrix.md |
 
 ## Release gate
 

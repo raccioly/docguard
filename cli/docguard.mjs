@@ -288,13 +288,16 @@ const COMMAND_HELP = {
   },
   trace: {
     summary: 'Requirements traceability matrix.',
-    usage: 'docguard trace [--reverse <path>] [--features] [--owners [--suggest]]',
+    usage: 'docguard trace [--reverse <path>] [--features] [--owners [--suggest]] | docguard trace --matrix [--format csv|reqif|json] [--spec <id>] [--out <path>]',
     flags: [
+      ['--matrix', 'Export every requirement → anchor → test path (CSV by default, or --format reqif|json)'],
+      ['--out <path>', 'With --matrix: write the export to this file instead of stdout (also --output)'],
+      ['--spec <id>', 'With --matrix: only this Spec ID\'s requirements'],
       ['--reverse', 'Code→doc map instead of doc→code (the declared owner first, when an ownership map exists)'],
       ['--owners', 'The ownership map: files per entry, unowned directories, ties'],
       ['--owners --suggest', 'Print a draft ownership block from the source layout; never writes'],
     ],
-    examples: ['docguard trace', 'docguard trace --reverse'],
+    examples: ['docguard trace', 'docguard trace --reverse', 'docguard trace --matrix --format reqif --out trace.reqif'],
   },
   upgrade: {
     // docguard.output-ux#FR-006: two jobs, both named.
@@ -749,6 +752,12 @@ async function main() {
       flags.baseline = true;
     } else if (args[i] === '--gitattributes' && command === 'anchors') {
       flags.gitattributes = true;
+    } else if (args[i] === '--matrix' && command === 'trace') {
+      flags.matrix = true;
+    } else if (args[i] === '--output' && args[i + 1] && command === 'trace') {
+      flags.out = args[++i];
+    } else if (args[i] === '--spec' && args[i + 1] && command === 'trace') {
+      flags.spec = args[++i];
     } else if (args[i] === '--orphans' && command === 'anchors') {
       flags.orphans = true;
     } else if (args[i] === '--symbol' && args[i + 1] && command === 'anchors') {
@@ -842,6 +851,10 @@ async function main() {
     process.exit(0);
   }
 
+  // `trace --matrix` exports CSV unless asked for ReqIF or JSON
+  // (docguard.requirement-anchors#FR-037); the export is the whole of stdout.
+  if (command === 'trace' && flags.matrix && !args.includes('--format')) flags.format = 'csv';
+
   // In JSON mode the entire stdout MUST be parseable JSON. The banner would
   // corrupt the output for any
   // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
@@ -855,7 +868,9 @@ async function main() {
   // artifact belongs here, or the banner corrupts the payload.
   // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
   // 'claimspec' (docguard ignore): stdout IS the claimspec document.
-  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit' || flags.format === 'claimspec';
+  // 'csv' and 'reqif' (`trace --matrix`): stdout IS the exported matrix.
+  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit' || flags.format === 'claimspec'
+    || flags.format === 'csv' || flags.format === 'reqif';
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.

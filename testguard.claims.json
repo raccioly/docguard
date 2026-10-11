@@ -2604,6 +2604,156 @@
       ]
     },
     {
+      "id": "TRACE-MATRIX-COMPLETE",
+      "statement": "trace --matrix exports every requirement, link and test exactly once: CSV with the documented columns in UTF-8 byte order, RFC 4180 quoting and formula-injection prefixes, and well-formed ReqIF 1.2 with escaped values and a fixed creation time, byte-identical across runs, banner-free on stdout or written through the safe write.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-037"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 8)"
+      },
+      "defendedBy": [
+        "tests/trace-matrix.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A formula-like cell reaches the spreadsheet unprefixed.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  if (FORMULA_START.test(text)) text = `'${text}`;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A cell with a comma or quote is not quoted.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  return /[\",\\n\\r]/.test(text) ? `\"${text.replaceAll('\"', '\"\"')}\"` : text;",
+          "replace": "  return text;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Rows keep whatever order links were found in.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  rows.sort((a, b) => byteCompare(a.requirement, b.requirement) || byteCompare(a.file, b.file) || byteCompare(a.anchor, b.anchor)",
+          "replace": "  rows.sort((a, b) => 0 || byteCompare(a.file, b.file) || byteCompare(a.anchor, b.anchor)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A requirement with no link is left out.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!links.length) {\n      const empty",
+          "replace": "    if (!links.length) { continue;\n      const empty",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A changed link's tests are reported as merely linked.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "test_status: chain ? chain.status : 'linked' });",
+          "replace": "test_status: 'linked' });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "XML special characters are written raw.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "    .replace(/[&<>\"']/g, ch => XML_ESCAPES[ch]);",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A test cited by two links becomes two ReqIF objects.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "      if (!prior) {",
+          "replace": "      if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The ReqIF creation time is the wall clock.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  const time = xmlEscape(options.creationTime || FIXED_CREATION_TIME);",
+          "replace": "  const time = xmlEscape(options.creationTime || new Date().toISOString());",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The export is preceded by the banner.",
+          "faultClass": "condition-forced",
+          "file": "cli/docguard.mjs",
+          "find": "    || flags.format === 'csv' || flags.format === 'reqif';",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "--out writes without the safe write and still prints to stdout.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/trace.mjs",
+          "find": "    safeWrite(target, text);",
+          "replace": "    process.stdout.write(text);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The requirement object carries its ReqIF identifier as its ID.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  { key: 'Requirement', attrs: [['ID', 'key'],",
+          "replace": "  { key: 'Requirement', attrs: [['ID', 'id'],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {
