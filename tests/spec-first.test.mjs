@@ -18,9 +18,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { classifySpecFirst } from '../cli/scanners/spec-first.mjs';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
-const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf-8' });
+const git = (cwd, ...args) => fixtureGit(cwd, args);
 
 function write(dir, rel, content) {
   mkdirSync(dirname(join(dir, rel)), { recursive: true });
@@ -29,8 +30,7 @@ function write(dir, rel, content) {
 
 function commit(dir, message) {
   git(dir, 'add', '-A');
-  const r = git(dir, 'commit', '-q', '-m', message);
-  assert.equal(r.status, 0, r.stderr);
+  git(dir, 'commit', '-q', '-m', message);
 }
 
 function repo({ config } = {}) {
@@ -204,7 +204,7 @@ describe('replay over this repository\'s own history', () => {
   it('classifies each of the last 10 commits without an inconclusive result', async () => {
     const { execFileSync } = await import('node:child_process');
     const { specInventory } = await import('../cli/scanners/spec-first.mjs');
-    const g = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
+    const g = (...a) => execFileSync('git', [...FIXTURE_GIT, ...a], { encoding: 'utf8' }).trim();
     let commits;
     try { commits = g('log', '--format=%H', '-11').split('\n'); } catch { return; }
     if (commits.length < 11) return; // shallow clone: nothing to replay

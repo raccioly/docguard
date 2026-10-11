@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 /**
  * @req docguard.document-lifecycle#FR-010
@@ -27,7 +28,7 @@ function write(dir, path, content) {
 }
 
 function git(dir, args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
 function fixture(t) {

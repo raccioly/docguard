@@ -22,6 +22,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveHooksTarget } from '../cli/shared-git.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 
@@ -45,7 +46,7 @@ function gitEnv({ global = emptyGlobal, system = null, extra = {} } = {}) {
 
 // Fixture git: isolated configuration, hooks and signing off.
 function git(args, cwd) {
-  const r = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', ...args],
+  const r = spawnSync('git', [...FIXTURE_GIT, ...args],
     { cwd, encoding: 'utf8', env: gitEnv() });
   if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${r.stderr}`);
   return r.stdout;

@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { validatePathScopedRules } from '../cli/validators/path-scoped-rules.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'docguard.mjs');
 // No `specify` on PATH, so nothing here can reach Spec Kit even by accident.
@@ -112,11 +113,11 @@ describe('the MCP Origin comment matches the code (FR-006)', () => {
 describe('PSR002 resolves pointers against files that exist, ignored or not (FR-007)', () => {
   it('a pointer to a file .docguardignore excludes is not reported missing', () => {
     fresh('psr');
-    spawnSync('git', ['init', '-q'], { cwd: dir });
+    fixtureGit(dir, ['init', '-q']);
     write(dir, 'AGENTS.md', '# Agents\n\nFinding codes are listed in docs/reference/findings.md and docs/reference/gone.md.\n');
     write(dir, 'docs/reference/findings.md', '# Findings\n');
     write(dir, '.docguardignore', 'docs/reference/findings.md\n');
-    spawnSync('git', ['add', '-A'], { cwd: dir });
+    fixtureGit(dir, ['add', '-A']);
     const missing = validatePathScopedRules(dir, {}).findings.filter(f => f.code === 'PSR002').map(f => f.message);
     assert.ok(missing.some(m => m.includes('docs/reference/gone.md')), `a missing file is still reported: ${missing}`);
     assert.ok(!missing.some(m => m.includes('docs/reference/findings.md')), `an ignored file is not missing: ${missing}`);

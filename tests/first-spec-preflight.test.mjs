@@ -36,6 +36,7 @@ import { resolveCommit } from '../cli/scanners/revision-anchor.mjs';
 import { classifySpecFirst } from '../cli/scanners/spec-first.mjs';
 import { BLOCKER_CODES, CODES } from '../cli/findings.mjs';
 import { notesSince } from './fixtures/changelog-notes.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const passingGuard = { status: 'PASS', errors: 0, warnings: 0 };
@@ -50,7 +51,7 @@ function project() {
   temps.push(dir);
   const write = (rel, content) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), content); };
   const git = (...args) => {
-    const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    const r = spawnSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8' });
     assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
     return r.stdout.trim();
   };

@@ -23,15 +23,16 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-v020-'));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'v020-test', version: '0.0.1' }));
-  spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir });
+  fixtureGit(dir, ['init', '-q', '-b', 'main']);
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']);
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init']);
   return dir;
 }
 
@@ -54,9 +55,14 @@ describe('v0.20 — init --with <name> dispatcher', () => {
 
   it('init --with agents,hooks dispatches both in order', () => {
     dir = makeFixture();
+    // `hooks` refuses a global core.hooksPath by design (spec 065); this case
+    // is about dispatch order, so it runs on a machine without one.
+    const isolated = join(dir, '.isolated-gitconfig');
+    writeFileSync(isolated, '');
     const r = spawnSync('node', [CLI, 'init', '--skip-prompts', '--with', 'agents,hooks'], {
       cwd: dir,
       encoding: 'utf-8',
+      env: { ...process.env, GIT_CONFIG_GLOBAL: isolated, GIT_CONFIG_NOSYSTEM: '1' },
     });
     assert.equal(r.status, 0, `exit 0; got ${r.status}\n${r.stderr}`);
     assert.match(r.stdout, /── agents ──/);

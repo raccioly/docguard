@@ -25,6 +25,7 @@ import { tmpdir } from 'node:os';
 import { completeSpec, reanchorSpec } from '../cli/commands/specs.mjs';
 import { projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const passingGuard = { status: 'PASS', errors: 0, warnings: 0 };
 
@@ -32,7 +33,7 @@ function write(dir, path, content) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
   writeFileSync(join(dir, path), content);
 }
-const git = (dir, args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const git = (dir, args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 /** Two approved, implemented specs with evidence, committed on `main`. */
 function fixture(t) {
@@ -228,7 +229,7 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
     const { dir } = squashMerged(t);
     const shallow = mkdtempSync(join(tmpdir(), 'docguard-anchor-shallow-'));
     t.after(() => rmSync(shallow, { recursive: true, force: true }));
-    execFileSync('git', ['clone', '-q', '--depth', '1', `file://${dir}`, shallow]);
+    execFileSync('git', [...FIXTURE_GIT, 'clone', '-q', '--depth', '1', `file://${dir}`, shallow]);
     const result = validateSpecRegistry(shallow, {});
     assert.deepEqual(result.findings.filter(f => f.code === 'SPR008'), []);
     assert.equal(result.applicability?.status, 'partial');

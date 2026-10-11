@@ -13,9 +13,10 @@ const CBX = '- [x' + '] ';
 const CBU = '- [ ' + '] ';
 
 import { validateSpecKitIntegration, parseCheckedTasks } from '../cli/scanners/speckit.mjs';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 
 let hasGit = true;
-try { execSync('git --version', { stdio: 'ignore' }); } catch { hasGit = false; }
+try { execSync(`git ${FIXTURE_GIT_SHELL} --version`, { stdio: 'ignore' }); } catch { hasGit = false; }
 
 describe('Spec-Kit — phantom-completion detection (SPK008/SPK009)', () => {
   let tmp;
@@ -196,9 +197,9 @@ describe('Spec-Kit — phantom-completion detection (SPK008/SPK009)', () => {
         CBX + 'T005 Create audit log in src/api/audit.ts',
       ]),
     });
-    execSync('git init -q', { cwd: tmp });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmp });
     execSync(
-      'git -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit --allow-empty -qm "feat: implement T004 users API"',
+      `git ${FIXTURE_GIT_SHELL} -c user.name=t -c user.email=t@t commit --allow-empty -qm "feat: implement T004 users API"`,
       { cwd: tmp }
     );
 
@@ -214,9 +215,9 @@ describe('Spec-Kit — phantom-completion detection (SPK008/SPK009)', () => {
     writeFeature('001-feat', {
       'tasks.md': tasksMd([CBX + 'T001 Create src/missing/core.mjs']),
     });
-    execSync('git init -q', { cwd: tmp });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmp });
     execSync(
-      'git -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit --allow-empty -qm "feat: implement T0010 other thing"',
+      `git ${FIXTURE_GIT_SHELL} -c user.name=t -c user.email=t@t commit --allow-empty -qm "feat: implement T0010 other thing"`,
       { cwd: tmp }
     );
 

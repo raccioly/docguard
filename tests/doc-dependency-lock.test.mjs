@@ -28,6 +28,7 @@ import { tmpdir } from 'node:os';
 import { validateDocDependency } from '../cli/validators/doc-dependency.mjs';
 import { coveredSections, createContext, docLockStatus, fingerprint, readLock } from '../cli/scanners/doc-deps.mjs';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -70,7 +71,7 @@ function project({ covers = 'src/pricing.mjs#discount', files = {} } = {}) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), content);
   }
-  const git = (...a) => execFileSync('git', a, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const git = (...a) => execFileSync('git', [...FIXTURE_GIT, ...a], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');
   git('add', '-A'); git('commit', '-qm', 'base');
   return { dir, git, write: (rel, c) => writeFileSync(join(dir, rel), c) };

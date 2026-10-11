@@ -29,6 +29,7 @@ import { compileScopePattern, instructionKind, safeProjectPath } from '../cli/sc
 import { extractInstructionPointers } from '../cli/scanners/instruction-audit.mjs';
 import { validatePathScopedRules } from '../cli/validators/path-scoped-rules.mjs';
 import { rulesFor } from '../cli/commands/rules.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 
@@ -42,8 +43,8 @@ function project(t, files, { git = true } = {}) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   if (git) {
-    execFileSync('git', ['init', '-q'], { cwd: dir });
-    execFileSync('git', ['add', '-A'], { cwd: dir });
+    execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: dir });
+    execFileSync('git', [...FIXTURE_GIT, 'add', '-A'], { cwd: dir });
   }
   return dir;
 }

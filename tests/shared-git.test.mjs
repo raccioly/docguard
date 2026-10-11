@@ -11,7 +11,6 @@
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -28,6 +27,7 @@ import {
   fileContentAtRev,
   symbolExistsAtRev,
 } from '../cli/shared-git.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 function tmp() {
   return mkdtempSync(join(tmpdir(), 'docguard-git-'));
@@ -38,10 +38,7 @@ function cleanup(dir) {
 }
 
 function git(dir, ...args) {
-  const env = { ...process.env };
-  return spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t'].concat(args), {
-    cwd: dir, encoding: 'utf-8', env,
-  });
+  return fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', ...args]);
 }
 
 function commit(dir, msg) {
@@ -223,7 +220,7 @@ describe('getDiffText', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'a.ts'), 'v1\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'a.ts'), 'v2\n');
     commit(dir, 'second');
     const diff = getDiffText(dir, base);
@@ -237,7 +234,7 @@ describe('getDiffText', () => {
     writeFileSync(join(dir, 'a.ts'), 'v1\n');
     writeFileSync(join(dir, 'b.ts'), 'v1\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'a.ts'), 'v2\n');
     writeFileSync(join(dir, 'b.ts'), 'v2\n');
     commit(dir, 'second');
@@ -256,7 +253,7 @@ describe('fileContentAtRev', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'a.ts'), 'v1\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'a.ts'), 'v2\n');
     commit(dir, 'second');
     const content = fileContentAtRev(dir, base, 'a.ts');
@@ -268,7 +265,7 @@ describe('fileContentAtRev', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'a.ts'), 'v1\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'b.ts'), 'v1\n');
     commit(dir, 'second');
     const content = fileContentAtRev(dir, base, 'b.ts');
@@ -285,7 +282,7 @@ describe('symbolExistsAtRev', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'a.ts'), 'export function testSymbol() {}\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'a.ts'), 'export function renamedSymbol() {}\n');
     commit(dir, 'second');
     assert.equal(symbolExistsAtRev(dir, 'testSymbol', base), true);
@@ -296,7 +293,7 @@ describe('symbolExistsAtRev', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'a.ts'), 'export function otherSymbol() {}\n');
     commit(dir, 'first');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     assert.equal(symbolExistsAtRev(dir, 'testSymbol', base), false);
   });
 });
@@ -311,7 +308,7 @@ describe('getDiffSnapshot', () => {
     writeFileSync(join(dir, 'old.ts'), 'export const oldValue = 1;\n');
     writeFileSync(join(dir, 'deleted.ts'), 'export const removed = true;\n');
     commit(dir, 'base');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     renameSync(join(dir, 'old.ts'), join(dir, 'new.ts'));
     rmSync(join(dir, 'deleted.ts'));
     commit(dir, 'change paths');
@@ -329,7 +326,7 @@ describe('getDiffSnapshot', () => {
     git(dir, 'init', '-q');
     writeFileSync(join(dir, 'large.ts'), 'base\n');
     commit(dir, 'base');
-    const base = git(dir, 'rev-parse', 'HEAD').stdout.trim();
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
     writeFileSync(join(dir, 'large.ts'), 'x'.repeat(4096));
     commit(dir, 'large patch');
 

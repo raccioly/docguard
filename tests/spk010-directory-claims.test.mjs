@@ -14,6 +14,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { detectUntouchedClaims, detectSpecKit, touchedWithin } from '../cli/scanners/speckit.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
@@ -26,7 +27,7 @@ function repo({ tasks, baseline = {}, andThen = {} }) {
     mkdirSync(dirname(join(dir, p)), { recursive: true });
     writeFileSync(join(dir, p), body);
   };
-  const git = (...a) => execFileSync('git', a, { cwd: dir, stdio: 'pipe', encoding: 'utf8' });
+  const git = (...a) => execFileSync('git', [...FIXTURE_GIT, ...a], { cwd: dir, stdio: 'pipe', encoding: 'utf8' });
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');
   git('config', 'commit.gpgsign', 'false'); git('config', 'core.hooksPath', '/dev/null');
   put('.docguard.json', JSON.stringify({ projectName: 'd', profile: 'starter' }));

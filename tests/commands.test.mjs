@@ -408,7 +408,7 @@ describe('docguard hooks', () => {
   it('lists available hooks without scaffolding the inspected repository', t => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-list-'));
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
-    execSync('git init -q', { cwd: tmpDir });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-list","version":"1.0.0"}');
 
     const output = run(`hooks --list --dir ${tmpDir}`);
@@ -421,7 +421,7 @@ describe('docguard hooks', () => {
   it('distinguishes an existing foreign hook from a DocGuard installation', t => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-foreign-'));
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
-    execSync('git init -q', { cwd: tmpDir });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-foreign","version":"1.0.0"}');
     writeFileSync(join(tmpDir, '.git/hooks/pre-commit'), '#!/bin/sh\nnpm test\n');
 
@@ -433,7 +433,7 @@ describe('docguard hooks', () => {
   it('routes init --with hooks --list directly to read-only inventory', t => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-init-hooks-list-'));
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
-    execSync('git init -q', { cwd: tmpDir });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-nested-list","version":"1.0.0"}');
 
     const output = run(`init --with hooks --list --dir ${tmpDir}`);
@@ -888,6 +888,7 @@ describe('docguard trace error handling', () => {
 });
 
 import { getTestFilesFromPatterns } from '../cli/validators/docs-diff.mjs';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 describe('getTestFilesFromPatterns', () => {
   it('should return empty array if directory does not exist', () => {
     const results = getTestFilesFromPatterns('/path/that/does/not/exist/for/sure/12345', ['**/*.test.js']);

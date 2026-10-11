@@ -16,6 +16,7 @@ import {
   RELEASE_PATH_ALLOWLIST,
 } from '../cli/release-pr-policy.mjs';
 import { validateReleaseWorkspace } from '../.github/scripts/validate-release-candidate.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 /**
  * @req docguard.tokenless-scheduled-releases#FR-001
@@ -163,12 +164,12 @@ describe('scheduled release workflow', () => {
     };
     try {
       mkdirSync(join(root, 'extensions/spec-kit-docguard'), { recursive: true });
-      execFileSync('git', ['init', '-q'], { cwd: root });
-      execFileSync('git', ['config', 'user.name', 'DocGuard Test'], { cwd: root });
-      execFileSync('git', ['config', 'user.email', 'test@docguard.local'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'config', 'user.name', 'DocGuard Test'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'config', 'user.email', 'test@docguard.local'], { cwd: root });
       writeVersion('0.40.0');
-      execFileSync('git', ['add', '.'], { cwd: root });
-      execFileSync('git', ['commit', '-qm', 'base'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'add', '.'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'commit', '-qm', 'base'], { cwd: root });
       writeVersion('0.40.1');
 
       const result = validateReleaseWorkspace({
@@ -181,7 +182,7 @@ describe('scheduled release workflow', () => {
       assert.ok(result.paths.includes('package.json'));
 
       writeFileSync(join(root, 'cli.mjs'), 'unexpected');
-      execFileSync('git', ['add', 'cli.mjs'], { cwd: root });
+      execFileSync('git', [...FIXTURE_GIT, 'add', 'cli.mjs'], { cwd: root });
       assert.throws(() => validateReleaseWorkspace({
         root,
         baseVersion: '0.40.0',

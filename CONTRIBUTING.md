@@ -138,6 +138,27 @@ test: add edge case tests for score command
 - ANSI colors via the shared `c` object from `docguard.mjs`
 - No TypeScript — plain JavaScript for maximum portability
 
+## Tests That Create Git Repositories
+
+Fixture git goes through `tests/helpers/git.mjs`; product git does not.
+
+- A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` on every git call (`spawnSync('git', [...FIXTURE_GIT, ...args])`), or `FIXTURE_GIT_SHELL` in a `git …` command line. The options turn hooks off (`core.hooksPath` set to the null device) and commit and tag signing off, for that one call.
+- Prefer `fixtureGit(cwd, args)` for setup steps. It throws with git's stderr when the step fails, so a fixture that was never committed cannot let the test pass against an empty repository.
+- Pin the branch when the test depends on it: `git init -b main`.
+- Never set the options in the environment, and never add them to `cli/`. DocGuard's own git calls must keep meeting the user's real configuration. The exception is a scratch repository DocGuard itself creates, such as the `demo` fixture.
+- `tests/test-git-hermeticity.test.mjs` fails on a git spawn in `tests/` that bypasses the helper. A call that must bypass it (a control that proves a config bites) carries a `fixture-git-exempt:` comment with the reason.
+
+CI's `hermeticity` job runs the suite under a global config whose hooks all fail, whose signing always fails and whose default branch is `trunk`. To reproduce it locally without touching your own config:
+
+```bash
+H=$(mktemp -d); mkdir "$H/hooks"
+for h in pre-commit prepare-commit-msg commit-msg post-commit pre-push post-checkout; do
+  printf '#!/bin/sh\nexit 1\n' > "$H/hooks/$h"; chmod +x "$H/hooks/$h"
+done
+printf '[core]\n\thooksPath = %s\n[commit]\n\tgpgsign = true\n[tag]\n\tgpgsign = true\n[gpg]\n\tprogram = false\n[init]\n\tdefaultBranch = trunk\n' "$H/hooks" > "$H/gitconfig"
+GIT_CONFIG_GLOBAL="$H/gitconfig" npm test
+```
+
 ## Reporting Bugs
 
 Open a GitHub issue with:

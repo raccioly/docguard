@@ -17,6 +17,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gitMetadataStatus } from '../cli/shared-git.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -43,7 +44,7 @@ function sandboxedWorktree() {
   dirs.push(root);
   const main = join(root, 'main');
   mkdirSync(main);
-  const git = (cwd, ...a) => spawnSync('git', a, { cwd, encoding: 'utf8' });
+  const git = (cwd, ...a) => fixtureGit(cwd, a);
   git(main, 'init', '-q'); git(main, 'config', 'user.email', 't@t'); git(main, 'config', 'user.name', 't');
   write(main, FILES);
   git(main, 'add', '-A'); git(main, 'commit', '-q', '-m', 'base');

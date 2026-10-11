@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
  */
 
 import { validateDocumentLifecycle } from '../cli/validators/document-lifecycle.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 function write(dir, path, content) {
   const target = join(dir, path);
@@ -24,8 +25,8 @@ function repository(t, files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-lifecycle-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) write(dir, path, content);
-  execFileSync('git', ['init', '-q'], { cwd: dir });
-  execFileSync('git', ['add', '.'], { cwd: dir });
+  execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: dir });
+  execFileSync('git', [...FIXTURE_GIT, 'add', '.'], { cwd: dir });
   return dir;
 }
 

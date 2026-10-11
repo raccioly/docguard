@@ -16,6 +16,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const REQS = '# Requirements\n\n| ID | Priority | Requirement |\n|---|---|---|\n| FR-024 | P1 | A repo-wide hook must not block an unadopted tree. |\n';
 
@@ -23,7 +24,7 @@ function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-canonical-links-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const write = (p, c) => { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), c); };
-  const git = args => execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const git = args => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git(['init', '-q']); git(['config', 'user.email', 't@t']); git(['config', 'user.name', 't']);
   write('.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'standard' }));
   write('docs-canonical/REQUIREMENTS.md', REQS);
@@ -63,7 +64,7 @@ describe('reconcile links a change to a declared canonical requirement', () => {
     write('docs-canonical/REQUIREMENTS.md', `${REQS}| FR-018 | P1 | Findings carry three channels. |\n`);
     write('tests/hook.test.js', '// @req docs-canonical/REQUIREMENTS.md#FR-018\ntest("hook", () => {});\n');
     commit('old citation');
-    const before = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+    const before = execFileSync('git', [...FIXTURE_GIT, 'rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
     write('tests/hook.test.js', '// @req docs-canonical/REQUIREMENTS.md#FR-024\ntest("hook", () => {});\n');
     commit('renumbered citation');
     const item = find(buildReconciliationPlan(dir, {}, before), 'tests/hook.test.js');

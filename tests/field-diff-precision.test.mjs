@@ -8,6 +8,7 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { removedTokens } from '../cli/shared-diff.mjs';
 import { validateDiffSuspicion } from '../cli/validators/diff-suspicion.mjs';
 import { diffTechStack, validateDocsDiff } from '../cli/validators/docs-diff.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'dg-field-diff-'));
@@ -17,7 +18,7 @@ function fixture(t) {
 const write = (dir, path, text) => safeWrite(join(dir, path), text);
 function revisions(t, file, before, after, docs) {
   const dir = fixture(t);
-  const git = (...args) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], {
+  const git = (...args) => execFileSync('git', [...FIXTURE_GIT, ...args], {
     cwd: dir, encoding: 'utf8', stdio: 'pipe',
   });
   git('init', '-q');

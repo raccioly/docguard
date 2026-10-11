@@ -20,6 +20,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { collectAreaFacts, resolveArea } from '../cli/scanners/as-built.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -38,7 +39,7 @@ const USERS = [
 function project(files) {
   const dir = mkdtempSync(join(tmpdir(), 'as-built-'));
   dirs.push(dir);
-  const git = (...a) => spawnSync('git', a, { cwd: dir, encoding: 'utf8' });
+  const git = (...a) => fixtureGit(dir, a);
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });

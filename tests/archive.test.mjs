@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 /**
  * @req specs/006-document-lifecycle/spec.md#FR-001
@@ -26,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 
 function git(dir, ...args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8' });
 }
 
 function fixture(t) {

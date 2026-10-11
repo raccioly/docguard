@@ -22,6 +22,7 @@ import {
   buildInstructionAuditTasks,
 } from '../cli/scanners/instruction-audit.mjs';
 import { runVerify } from '../cli/commands/verify.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 describe('Instruction Audit scanner', () => {
   let tmpDir;
@@ -107,7 +108,7 @@ describe('Instruction Audit scanner', () => {
   });
 
   it('does not index a Git-ignored disposable worktree when resolving a bare pointer', () => {
-    execFileSync('git', ['init', '-q'], { cwd: tmpDir });
+    execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: tmpDir });
     mkdirSync(join(tmpDir, 'src', 'websec_validator'), { recursive: true });
     mkdirSync(join(tmpDir, '.claude', 'worktrees', 'discarded', 'src', 'websec_validator'), { recursive: true });
     write(join('src', 'websec_validator', 'scanners.py'), 'SCANNERS = []\n');
