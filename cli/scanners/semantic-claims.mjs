@@ -74,6 +74,7 @@ export function createEvidenceReader(projectDir, { maxFileBytes = MAX_EVIDENCE_F
   try { root = realpathSync(projectDir); } catch { /* unknown root */ }
   const cache = new Map();
   // A larger per-file cap (a saved TestGuard report) adds its own allowance to the budget.
+  // @implements docguard.requirement-anchors#FR-033 {scope=statement}
   const maxBytes = MAX_EVIDENCE_BYTES + Math.max(0, maxFileBytes - MAX_EVIDENCE_FILE_BYTES);
   let bytes = 0;
   return (citation) => {

@@ -288,6 +288,7 @@ jobs:
   # unless the PR body declares `Budget-Exempt: <metric> — <reason>`; the
   # table lands in the job summary either way.
   # @implements docguard.non-regression-budgets#FR-004
+  # @implements docguard.requirement-anchors#SC-003 (guard wall time within x1.15 of base, lock baselined)
   budget:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

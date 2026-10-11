@@ -268,6 +268,7 @@ export function runImpact(projectDir, config, flags) {
       // dependency change — recurring noise, not signal. Its doc-relevant
       // surface rarely shifts when one of 30 imports does. The index and the
       // walk live in import-graph.mjs, shared with requirement-anchor ripple.
+      // @implements docguard.requirement-anchors#FR-031 {scope=statement}
       const { reverseEdges, isHub } = reverseImportIndex(graph);
       const changedSet = new Set(codeChanged.map(f => f.replace(/^\.\//, '')));
       const indirectMap = new Map(); // doc → chains[]

@@ -11293,7 +11293,17 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ],
+          "assetPaths": [
+            "tests/fixtures/anchors/",
+            "tools/anchor-oracle/corpus/"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -11603,9 +11613,19 @@
             "line": 15
           },
           {
+            "requirementId": "FR-031",
+            "file": "cli/commands/impact.mjs",
+            "line": 271
+          },
+          {
             "requirementId": "FR-032",
             "file": "cli/scanners/anchors.mjs",
             "line": 540
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "cli/scanners/semantic-claims.mjs",
+            "line": 77
           },
           {
             "requirementId": "FR-033",
@@ -11655,7 +11675,7 @@
           {
             "requirementId": "FR-040",
             "file": ".github/workflows/ci.yml",
-            "line": 334
+            "line": 335
           },
           {
             "requirementId": "FR-040",
@@ -11676,6 +11696,11 @@
             "requirementId": "FR-041",
             "file": "cli/scanners/anchors.mjs",
             "line": 26
+          },
+          {
+            "requirementId": "SC-003",
+            "file": ".github/workflows/ci.yml",
+            "line": 291
           }
         ],
         "testEvidence": [
