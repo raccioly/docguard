@@ -40,6 +40,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ask a question. `.jules/setup.sh` replaces `.jules-setup.sh`: it fails
   unless the suite and guard pass on the full history, and sets no dummy API
   keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
+### Fixed
+
+- **Git hooks stay inside the repository** (`specs/065-hooks-repo-scope`).
+  With a `core.hooksPath` in the global Git config, `docguard hooks` wrote its
+  `pre-commit`, `pre-push` and `commit-msg` hooks into that shared folder, so
+  they ran in every repository on the machine; `--force` replaced the user's
+  global hook and `--remove` deleted the hooks everywhere. DocGuard now writes,
+  replaces and removes hooks only in a folder the repository owns: no
+  `core.hooksPath`, or one from the repository's local or worktree config that
+  points inside it. A global, system or command-line `core.hooksPath`, or one
+  outside the repository, makes `hooks` change nothing and exit 1 with the line
+  to add to the shared hooks or how to give the repository its own folder.
+  `--list` stays read-only and says the folder is shared. The tests that
+  install hooks no longer touch a contributor's global hooks.
+- **`docguard setup` installs its hook where Git runs it.** Its hook step
+  hard-coded `.git/hooks`, which is wrong in a linked worktree and with a
+  repo-local `core.hooksPath`. It now uses the same rule as `docguard hooks`
+  and does not offer to install into a shared folder.
+- **A failed `upgrade --apply --pr` leaves the repository as it was.** It used
+  to leave you on its new branch with the migration half applied. It now
+  returns to the branch (or commit) you started from, restores
+  `.docguard.json`, deletes the branch unless it was pushed, and names the
+  pushed branch when only `gh pr create` failed.
 
 ## [0.44.0] - 2026-10-11
 

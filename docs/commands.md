@@ -844,6 +844,16 @@ npx docguard-cli hooks --remove     # Remove hooks
 - `pre-push` → runs `docguard score` with threshold
 - `commit-msg` → validates conventional commit format
 
+Hooks go into the folder Git runs them from: `.git/hooks` (shared by the
+repository's linked worktrees), or a `core.hooksPath` set in the repository's
+own configuration that points inside the repository (for example `.githooks`).
+DocGuard never writes, replaces or removes hooks in a folder other
+repositories use: a `core.hooksPath` from your global or system Git config, the
+command line, or one pointing outside the repository. There, `hooks` (with or
+without `--force`, `--auto-fix` or `--remove`) changes nothing, exits `1`, and
+prints the line to add to the shared hooks yourself, or how to give the
+repository its own folder. `--list` still works and says the folder is shared.
+
 ### `docguard watch`
 
 **Live watch mode** — re-runs guard on file changes.

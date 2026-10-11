@@ -21,7 +21,7 @@
  * Network access (npm registry fetch) is OPTIONAL — if offline, we fall back
  * to "could not check remote version" without erroring.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -190,32 +190,41 @@ function openUpgradePR(projectDir, migratedConfig, fromVersion, toVersion) {
   }
 
   const branch = `docguard/upgrade-schema-${toVersion}-${Date.now().toString(36)}`;
+  const git = args => spawnSync('git', args, { cwd: projectDir, encoding: 'utf-8' });
+  const cfgPath = resolve(projectDir, '.docguard.json');
+  const priorConfig = existsSync(cfgPath) ? readFileSync(cfgPath, 'utf-8') : null;
+  // Where to come back to: the branch name, or the commit when HEAD is detached.
+  const head = git(['symbolic-ref', '-q', '--short', 'HEAD']);
+  const start = head.status === 0 ? head.stdout.trim() : git(['rev-parse', 'HEAD']).stdout.trim();
+
   // Branch off current HEAD
-  let r = spawnSync('git', ['checkout', '-b', branch], { cwd: projectDir, encoding: 'utf-8' });
-  if (r.status !== 0) return { ok: false, error: `git checkout failed: ${r.stderr || r.stdout}` };
+  let r = git(['checkout', '-b', branch]);
+  if (r.status !== 0) {
+    // checkout -b can fail after switching (a failing post-checkout hook).
+    const switched = git(['rev-parse', '--abbrev-ref', 'HEAD']).stdout.trim() === branch;
+    const fail = `git checkout failed: ${r.stderr || r.stdout}`;
+    return switched ? rollbackUpgradePR(projectDir, { start, branch, priorConfig, pushed: false }, fail) : { ok: false, error: fail };
+  }
+  const failed = (error, pushed = false) => rollbackUpgradePR(projectDir, { start, branch, priorConfig, pushed }, error);
 
   // Write the migrated config
   try {
-    writeFileSync(
-      resolve(projectDir, '.docguard.json'),
-      JSON.stringify(migratedConfig, null, 2) + '\n',
-      'utf-8'
-    );
+    writeFileSync(cfgPath, JSON.stringify(migratedConfig, null, 2) + '\n', 'utf-8');
   } catch (e) {
-    return { ok: false, error: `write .docguard.json failed: ${e.message}` };
+    return failed(`write .docguard.json failed: ${e.message}`);
   }
 
   // Commit
-  r = spawnSync('git', ['add', '.docguard.json'], { cwd: projectDir, encoding: 'utf-8' });
-  if (r.status !== 0) return { ok: false, error: `git add failed: ${r.stderr}` };
+  r = git(['add', '.docguard.json']);
+  if (r.status !== 0) return failed(`git add failed: ${r.stderr}`);
 
   const commitMsg = `chore(docguard): migrate .docguard.json schema ${fromVersion} → ${toVersion}\n\nAutomated migration via \`docguard upgrade --apply --pr\`.`;
-  r = spawnSync('git', ['commit', '-m', commitMsg], { cwd: projectDir, encoding: 'utf-8' });
-  if (r.status !== 0) return { ok: false, error: `git commit failed: ${r.stderr || r.stdout}` };
+  r = git(['commit', '-m', commitMsg]);
+  if (r.status !== 0) return failed(`git commit failed: ${r.stderr || r.stdout}`);
 
   // Push
-  r = spawnSync('git', ['push', '-u', 'origin', branch], { cwd: projectDir, encoding: 'utf-8' });
-  if (r.status !== 0) return { ok: false, error: `git push failed: ${r.stderr || r.stdout}` };
+  r = git(['push', '-u', 'origin', branch]);
+  if (r.status !== 0) return failed(`git push failed: ${r.stderr || r.stdout}`);
 
   // Open PR
   const prBody =
@@ -230,10 +239,60 @@ function openUpgradePR(projectDir, migratedConfig, fromVersion, toVersion) {
     '--title', `chore(docguard): migrate schema ${fromVersion} → ${toVersion}`,
     '--body', prBody,
   ], { cwd: projectDir, encoding: 'utf-8' });
-  if (r.status !== 0) return { ok: false, error: `gh pr create failed: ${r.stderr || r.stdout}` };
+  if (r.status !== 0) return failed(`gh pr create failed: ${r.stderr || r.stdout}`, true);
 
   const prUrl = (r.stdout || '').trim().split('\n').pop();
   return { ok: true, prUrl };
+}
+
+/**
+ * Undo `openUpgradePR` after a failed step: back to the starting branch (or
+ * commit), `.docguard.json` as it was, and the new branch deleted unless it
+ * was pushed. A step that cannot be undone is reported with the manual fix.
+ *
+ * @implements docguard.hooks-repo-scope#FR-005
+ */
+function rollbackUpgradePR(projectDir, { start, branch, priorConfig, pushed }, error) {
+  const git = args => spawnSync('git', args, { cwd: projectDir, encoding: 'utf-8' });
+  const cfgPath = resolve(projectDir, '.docguard.json');
+  const manual = [];
+
+  // Drop the migration from the index and the working tree (it may be
+  // committed on the new branch), so the switch back cannot be refused.
+  git(['reset', '-q', '--', '.docguard.json']);
+  git(['checkout', '-q', 'HEAD', '--', '.docguard.json']);
+
+  const back = git(['checkout', '-q', start]);
+  const onStart = git(['rev-parse', '--abbrev-ref', 'HEAD']).stdout.trim() !== branch;
+  if (!onStart) {
+    manual.push(`git checkout ${start}`);
+  } else {
+    if (back.status !== 0) {
+      // Switched, but a checkout hook complained: say so, the switch stands.
+      manual.push(`check the post-checkout hook output: ${(back.stderr || back.stdout).trim()}`);
+    }
+    // The exact text the user had, including uncommitted edits.
+    try {
+      if (priorConfig === null) { if (existsSync(cfgPath)) unlinkSync(cfgPath); }
+      else if (!existsSync(cfgPath) || readFileSync(cfgPath, 'utf-8') !== priorConfig) writeFileSync(cfgPath, priorConfig, 'utf-8');
+    } catch (e) {
+      manual.push(`restore .docguard.json (${e.message})`);
+    }
+  }
+
+  if (!pushed && onStart) {
+    const del = git(['branch', '-D', branch]);
+    if (del.status !== 0) manual.push(`git branch -D ${branch}`);
+  }
+
+  const kept = !pushed && manual.includes(`git branch -D ${branch}`);
+  let message = onStart
+    ? `${error}\n  Rolled back: back on ${start}, .docguard.json restored`
+    : `${error}\n  Could not return to ${start}; you are still on ${branch}`;
+  if (pushed) message += `. The branch ${branch} was pushed; open the pull request yourself with: gh pr create --head ${branch}`;
+  else if (onStart) message += `, branch ${branch} ${kept ? 'not deleted' : 'deleted'}.`;
+  if (manual.length) message += `\n  Finish by hand: ${manual.join('; ')}`;
+  return { ok: false, error: message };
 }
 
 export async function runUpgrade(projectDir, _config, flags) {
