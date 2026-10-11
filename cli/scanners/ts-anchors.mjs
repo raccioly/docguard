@@ -102,7 +102,8 @@ export function prepareTreeSitter(projectDir, config = {}, options = {}) {
     ok: true, configured: true, problems,
     tier: `treesitter@${tierHash.slice(0, 8)}`,
     languages: Object.keys(grammars).sort(),
-    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.js'), wasm: copyOf(projectDir, runtimeWasm, 'web-tree-sitter.wasm') },
+    // `.mjs`: the runtime is an ES module, and Node before 22 reads a `.js` outside a `"type": "module"` package as CommonJS.
+    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.mjs'), wasm: copyOf(projectDir, runtimeWasm, 'web-tree-sitter.wasm') },
     grammars: Object.fromEntries(Object.entries(grammars).map(([lang, g]) => [lang, copyOf(projectDir, g, basename(String(artifacts.grammars[lang])) || `${lang}.wasm`)])),
   };
 }

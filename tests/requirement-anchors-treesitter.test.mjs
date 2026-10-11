@@ -61,7 +61,7 @@ describe('loading (FR-009)', () => {
     const link = result.links[0];
     assert.match(link.tier, /^treesitter@[0-9a-f]{8}$/);
     assert.deepEqual([link.anchor, link.startLine, link.endLine, link.confidence], ['Serve', 6, 9, 'high']);
-    assert.ok(existsSync(join(dir, '.docguard/ts', sha(fakeArtifacts.runtime), 'web-tree-sitter.js')));
+    assert.ok(existsSync(join(dir, '.docguard/ts', sha(fakeArtifacts.runtime), 'web-tree-sitter.mjs')));
     assert.equal(readFileSync(join(dir, '.docguard/.gitignore'), 'utf8'), '*\n');
   });
 

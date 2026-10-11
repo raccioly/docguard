@@ -2926,7 +2926,7 @@
           "description": "The parser process imports the configured file instead of the verified copy.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/ts-anchors.mjs",
-          "find": "    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.js'),",
+          "find": "    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.mjs'),",
           "replace": "    runtime: { js: String(artifacts.runtime),",
           "producedBy": {
             "producer": "agent",
