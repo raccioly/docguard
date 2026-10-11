@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from '../cli/repository-root.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const cli = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 
@@ -28,7 +29,7 @@ function packageAt(path, value = {}) {
 }
 
 function initGit(path) {
-  execFileSync('git', ['init', '-q'], { cwd: path });
+  execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: path });
 }
 
 test('selects the nearest ancestor DocGuard configuration without changing scope', t => {

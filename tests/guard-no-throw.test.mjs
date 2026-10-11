@@ -19,12 +19,12 @@
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { runGuardInternal } from '../cli/commands/guard.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 function makeRealisticRepo() {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-no-throw-'));
@@ -57,9 +57,9 @@ function makeRealisticRepo() {
   writeFileSync(join(dir, '.env.example'), 'PORT=3000\nDATABASE_URL=postgres://localhost\n');
 
   // git init + commit so Freshness has history to read
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
 
   return dir;
 }

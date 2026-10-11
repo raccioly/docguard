@@ -39,6 +39,7 @@ import { MIN_SPEC_KIT_VERSION, PACKAGED_EXTENSION_DIR, packagedExtensionVersion 
 import { readAgentSurface, readExtensionCommands, verifyHooks, commandHint } from '../cli/agent-surface.mjs';
 import { RELEASE_PATH_ALLOWLIST } from '../cli/release-pr-policy.mjs';
 import { notesSince } from './fixtures/changelog-notes.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const ROOT = resolve('.');
 const CLI = resolve('cli/docguard.mjs');
@@ -116,7 +117,7 @@ after(() => rmSync(binDir, { recursive: true, force: true }));
 
 function project({ claude = false, specify = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'spec-kit-honesty-'));
-  spawnSync('git', ['init', '-q'], { cwd: dir, stdio: 'ignore' });
+  fixtureGit(dir, ['init', '-q']);
   if (claude) mkdirSync(join(dir, '.claude'));
   for (const [rel, value] of Object.entries(specify || {})) {
     mkdirSync(join(dir, rel, '..'), { recursive: true });

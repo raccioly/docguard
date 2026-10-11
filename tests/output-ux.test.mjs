@@ -32,7 +32,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { devNull, tmpdir } from 'node:os';
@@ -49,6 +49,7 @@ import { validatePathScopedRules } from '../cli/validators/path-scoped-rules.mjs
 import { createContext, fingerprint } from '../cli/scanners/doc-deps.mjs';
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
 import { notesSince } from './fixtures/changelog-notes.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -62,9 +63,9 @@ function project(t, files = {}, { git = true } = {}) {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) write(dir, path, content);
   if (git) {
-    run(dir, 'git', ['init', '-q']);
-    run(dir, 'git', ['config', 'user.email', 't@example.com']);
-    run(dir, 'git', ['config', 'user.name', 'T']);
+    fixtureGit(dir, ['init', '-q'], { env: BASE_ENV });
+    fixtureGit(dir, ['config', 'user.email', 't@example.com'], { env: BASE_ENV });
+    fixtureGit(dir, ['config', 'user.name', 'T'], { env: BASE_ENV });
     commit(dir, 'initial');
   }
   return dir;
@@ -75,13 +76,9 @@ function write(dir, path, content) {
   writeFileSync(join(dir, path), content);
 }
 
-function run(dir, cmd, args) {
-  return execFileSync(cmd, args, { cwd: dir, encoding: 'utf8', env: BASE_ENV, stdio: ['ignore', 'pipe', 'pipe'] });
-}
-
 function commit(dir, message) {
-  run(dir, 'git', ['add', '-A']);
-  spawnSync('git', ['commit', '-qm', message, '--allow-empty'], { cwd: dir, env: BASE_ENV });
+  fixtureGit(dir, ['add', '-A'], { env: BASE_ENV });
+  fixtureGit(dir, ['commit', '-qm', message, '--allow-empty'], { env: BASE_ENV });
 }
 
 function cli(dir, args, { env = {}, input = '' } = {}) {
@@ -553,7 +550,7 @@ describe('small defects (FR-012–FR-017)', () => {
     const before = fingerprint(createContext(dir), 'src/lib/**');
     write(dir, 'src/lib/new.mjs', 'export const n = 1;\n');
     assert.deepEqual(fingerprint(createContext(dir), 'src/lib/**'), before, 'an untracked file does not count');
-    run(dir, 'git', ['add', 'src/lib/new.mjs']);
+    fixtureGit(dir, ['add', 'src/lib/new.mjs'], { env: BASE_ENV });
     assert.notDeepEqual(fingerprint(createContext(dir), 'src/lib/**'), before, 'once added, it does');
     const plain = project(t, { 'src/lib/a.mjs': 'export const a = 1;\n' }, { git: false });
     assert.equal(fingerprint(createContext(plain), 'src/lib/**').ok, true, 'outside git the working tree counts');

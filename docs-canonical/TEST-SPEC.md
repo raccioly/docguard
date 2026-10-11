@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.4.2 -->
+<!-- docguard:version 1.4.3 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -22,6 +22,8 @@ Tests are designed to be config-aware. They verify that project-type settings li
 All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 360 seconds since spec 051; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
+
+Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
 
 ## Test Categories
 
@@ -66,6 +68,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
+| `cli/commands/demo.mjs` | `tests/demo-command.test.mjs`, `tests/test-git-hermeticity.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
@@ -171,6 +174,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.3 | 2026-10-11 | DocGuard Team | Fixture git goes through `tests/helpers/git.mjs`; the CI `hermeticity` job; map `demo.mjs` to its tests (spec 066) |
 | 1.4.2 | 2026-10-10 | DocGuard Team | Record the scripted timing source behind the budget tests (spec 062) |
 | 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |

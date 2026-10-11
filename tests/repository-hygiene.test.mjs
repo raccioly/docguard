@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const root = process.cwd();
 
@@ -18,7 +19,7 @@ const root = process.cwd();
 
 /** Tracked files are the oracle: ignored-but-present local files are fine. */
 function trackedFiles() {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root, maxBuffer: 32 * 1024 * 1024 })
+  return execFileSync('git', [...FIXTURE_GIT, 'ls-files', '-z'], { cwd: root, maxBuffer: 32 * 1024 * 1024 })
     .toString('utf8')
     .split('\0')
     .filter(Boolean);

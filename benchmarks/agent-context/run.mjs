@@ -16,7 +16,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -52,8 +52,14 @@ const PROTOCOL_RESULTS = { v1: DEFAULT_RESULT, v2: DEFAULT_RESULT_V2, v3: DEFAUL
 const MIN_NAVIGATION_MODULES = 25;
 const DOCGUARD = join(REPO_ROOT, 'cli/docguard.mjs');
 const TASK_SELECTOR = join(REPO_ROOT, 'cli/scanners/task-context.mjs');
+// The frozen fixture repositories belong to the benchmark, not to the machine:
+// a global core.hooksPath, mandatory signing or init.defaultBranch must not
+// fail or change them.
+// @implements docguard.test-git-hermeticity#FR-005
 const FIXED_GIT_ENV = {
   ...process.env,
+  GIT_CONFIG_NOSYSTEM: '1',
+  GIT_CONFIG_GLOBAL: devNull,
   GIT_AUTHOR_NAME: 'DocGuard Benchmark',
   GIT_AUTHOR_EMAIL: 'benchmark@docguard.invalid',
   GIT_COMMITTER_NAME: 'DocGuard Benchmark',

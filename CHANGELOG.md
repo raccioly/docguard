@@ -42,6 +42,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
 ### Fixed
 
+- **The test suite no longer depends on the machine's git config**
+  (`specs/066-test-git-hermeticity`). Under a global config with failing
+  hooks, mandatory signing through a failing gpg and `init.defaultBranch=trunk`
+  (TestGuard's hostile CI config), `npm test` reported 189 failures in 34
+  files; CI runners carry no global config and could not see them. Some were
+  silent: a fixture commit failed, nobody read its status, and the test
+  asserted against an empty repository (`shared-git` counted "0 commits"; all
+  20 `generated-docs-e2e` cases reported CHG003 about the broken fixture),
+  and 107 more passed although one of their fixture steps had failed.
+  - Fixture git goes through the new `tests/helpers/git.mjs`: `FIXTURE_GIT`
+    turns hooks and signing off per call, never in the environment, so
+    DocGuard's own git calls still meet the real config. `fixtureGit()` throws
+    with git's stderr when a setup step fails.
+  - `tests/test-git-hermeticity.test.mjs` fails on a git spawn in `tests/`
+    that bypasses the helper.
+  - New CI job `hermeticity`: it writes that hostile config, fails if a plain
+    commit still succeeds or a new repository is not on `trunk`, then runs
+    `npm test` under it.
+  - The agent-context benchmark builds its frozen fixtures without the
+    machine's global or system config, as the precision benchmark already did.
+  - Under the hostile config, 6 failures remain, all in hook installation and
+    `upgrade --pr`; spec 065 covers them.
+- **`docguard demo` commits its fixture on a machine with global hooks or
+  mandatory signing** (`specs/066-test-git-hermeticity`). The demo's scratch
+  commit ran the user's global hooks and signing, and nobody checked its
+  status, so on such a machine the fixture had no commit, and the user's
+  global pre-commit hook ran on a repository they never asked DocGuard to
+  touch. That commit now runs with hooks and signing off.
 - **Git hooks stay inside the repository** (`specs/065-hooks-repo-scope`).
   With a `core.hooksPath` in the global Git config, `docguard hooks` wrote its
   `pre-commit`, `pre-push` and `commit-msg` hooks into that shared folder, so

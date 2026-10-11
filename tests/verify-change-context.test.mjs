@@ -9,9 +9,10 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
-function git(dir, ...a) { spawnSync('git', a, { cwd: dir, encoding: 'utf-8' }); }
+function git(dir, ...a) { fixtureGit(dir, a); }
 
 describe('verify --since change context (feat 6)', () => {
   let dir;

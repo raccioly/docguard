@@ -38,6 +38,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MIN_SPEC_KIT_VERSION } from '../cli/spec-kit-delegation.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const posix = process.platform !== 'win32';
@@ -89,7 +90,7 @@ after(() => { rmSync(stubDir, { recursive: true, force: true }); });
 
 function fixture({ claude = true, specify = null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'spec-kit-deleg-'));
-  spawnSync('git', ['init', '-q'], { cwd: dir, stdio: 'ignore' });
+  fixtureGit(dir, ['init', '-q']);
   if (claude) writeFileSync(join(dir, 'CLAUDE.md'), '# Agent\n');
   if (specify) {
     mkdirSync(join(dir, '.specify'), { recursive: true });

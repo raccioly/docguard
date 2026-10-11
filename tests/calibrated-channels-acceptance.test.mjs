@@ -27,6 +27,7 @@ import { join, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { derivePrecisionEvidence } from '../benchmarks/lib/precision-evidence.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -40,16 +41,16 @@ function project(files, { git = false } = {}) {
     writeFileSync(join(dir, path), body);
   }
   if (git) {
-    const g = (...a) => execFileSync('git', a, { cwd: dir, stdio: 'pipe' });
+    const g = (...a) => execFileSync('git', [...FIXTURE_GIT, ...a], { cwd: dir, stdio: 'pipe' });
     g('init', '-q'); g('config', 'user.email', 't@t'); g('config', 'user.name', 't');
     g('config', 'commit.gpgsign', 'false'); g('config', 'core.hooksPath', '/dev/null');
     g('add', '-A');
-    execFileSync('git', ['commit', '-qm', 'docs'], { cwd: dir, stdio: 'pipe',
+    execFileSync('git', [...FIXTURE_GIT, 'commit', '-qm', 'docs'], { cwd: dir, stdio: 'pipe',
       env: { ...process.env, GIT_AUTHOR_DATE: '2026-08-01T10:00:00Z', GIT_COMMITTER_DATE: '2026-08-01T10:00:00Z' } });
     for (let i = 1; i <= 12; i++) {
       writeFileSync(join(dir, 'src/app.js'), `export const v = ${i};\n`);
       g('add', '-A');
-      execFileSync('git', ['commit', '-qm', `c${i}`], { cwd: dir, stdio: 'pipe',
+      execFileSync('git', [...FIXTURE_GIT, 'commit', '-qm', `c${i}`], { cwd: dir, stdio: 'pipe',
         env: { ...process.env, GIT_AUTHOR_DATE: `2026-09-${String(i).padStart(2, '0')}T10:00:00Z`, GIT_COMMITTER_DATE: `2026-09-${String(i).padStart(2, '0')}T10:00:00Z` } });
     }
   }

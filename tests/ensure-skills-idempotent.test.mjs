@@ -20,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -37,7 +38,7 @@ function makeRepo() {
   writeFileSync(join(dir, 'AGENTS.md'), '# Agents\n');
   writeFileSync(join(dir, 'DRIFT-LOG.md'), '# Drift\n');
   const env = { ...process.env };
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
   return dir;
 }
 

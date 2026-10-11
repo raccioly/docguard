@@ -5,10 +5,10 @@
  * inline, env vars with and without defaults, a JWT library, entities, tests.
  * @req docguard.generated-docs-consistency#SC-001
  */
-import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from '../helpers/git.mjs';
 
 const GITIGNORE = 'node_modules/\n.env\n__pycache__/\n';
 
@@ -214,7 +214,7 @@ export function materialize(files, { prefix = 'gdc-', git = true } = {}) {
     writeFileSync(join(dir, rel), body);
   }
   if (git) {
-    const run = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    const run = (...args) => fixtureGit(dir, args);
     run('init', '-q');
     run('config', 'user.email', 't@t');
     run('config', 'user.name', 't');

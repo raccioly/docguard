@@ -29,6 +29,7 @@ import { dirname, join, resolve } from 'node:path';
 import { devNull, tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { notesSince } from './fixtures/changelog-notes.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -51,7 +52,7 @@ function tempDir(prefix) {
 }
 
 function git(dir, args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', env: ENV, stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', env: ENV, stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
 function cli(dir, args, options = {}) {

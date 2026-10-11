@@ -23,6 +23,7 @@ import { assetPathCovers, projectSpecRegistry } from '../cli/scanners/spec-regis
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
 import { CODES } from '../cli/findings.mjs';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const temps = [];
@@ -33,7 +34,7 @@ function project() {
   const dir = mkdtempSync(join(tmpdir(), 'asset-paths-'));
   temps.push(dir);
   const write = (rel, content) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), content); };
-  const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+  const git = (...args) => fixtureGit(dir, args);
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't'); git('config', 'gc.auto', '0');
   write('.docguard.json', JSON.stringify({ projectName: 'acme' }));
   write('.specify/memory/constitution.md', '# Constitution\n');
@@ -43,7 +44,7 @@ function project() {
   write('src/b.mjs', 'export const b = 1;\n');
   spawnSync(process.execPath, [CLI, 'specs', '--write'], { cwd: dir, encoding: 'utf8' });
   git('add', '-A'); git('commit', '-qm', 'base');
-  const base = git('rev-parse', 'HEAD').stdout.trim();
+  const base = git('rev-parse', 'HEAD').trim();
   const registryPath = join(dir, '.docguard-specs.json');
   const setScope = scope => {
     const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
@@ -96,7 +97,7 @@ describe('reconciliation links a covered file to its owner (FR-002)', () => {
     const { dir, base, write, setScope, commit } = project();
     setScope({ assetPaths: ['bench/sample/'] });
     commit('own the frozen sample');
-    const since = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).stdout.trim();
+    const since = fixtureGit(dir, ['rev-parse', 'HEAD']).trim();
     write('bench/sample/a.mjs', 'export const a = 2;\n');
     write('bench/sample-two/c.mjs', 'export const c = 2;\n');
     write('src/b.mjs', 'export const b = 2;\n');
@@ -164,7 +165,7 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
   // anything. #485 added spec 036's frozen assets; reconciling from just
   // before it covers every one of them.
   const BEFORE_036 = '3f88bdf87cc9e8386d445f59dc9e8dc7c802ca00^';
-  const resolvable = spawnSync('git', ['rev-parse', '--verify', '-q', `${BEFORE_036}{commit}`], { cwd: REPO }).status === 0;
+  const resolvable = spawnSync('git', [...FIXTURE_GIT, 'rev-parse', '--verify', '-q', `${BEFORE_036}{commit}`], { cwd: REPO }).status === 0;
 
   it('a plan spanning 036\'s frozen assets resolves every benchmark file; without the list it would not', { skip: !resolvable && 'history before #485 is not available (shallow clone)' }, () => {
     const unresolved = plan => plan.classifications
@@ -174,8 +175,8 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
     // Reproduce the block on a copy whose registry lacks the list.
     const copy = mkdtempSync(join(tmpdir(), 'asset-paths-repo-'));
     temps.push(copy);
-    spawnSync('git', ['clone', '-q', '--no-hardlinks', REPO, copy]);
-    spawnSync('git', ['checkout', '-q', spawnSync('git', ['rev-parse', 'HEAD'], { cwd: REPO, encoding: 'utf8' }).stdout.trim()], { cwd: copy });
+    fixtureGit(REPO, ['clone', '-q', '--no-hardlinks', REPO, copy]);
+    fixtureGit(copy, ['checkout', '-q', fixtureGit(REPO, ['rev-parse', 'HEAD']).trim()]);
     const stripped = JSON.parse(readFileSync(join(REPO, '.docguard-specs.json'), 'utf8'));
     delete stripped.specs.find(s => s.specId === 'docguard.symbol-map').reviewed.scope.assetPaths;
     writeFileSync(join(copy, '.docguard-specs.json'), `${JSON.stringify(stripped, null, 2)}\n`);

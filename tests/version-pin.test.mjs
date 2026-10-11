@@ -20,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 const PKG = JSON.parse(readFileSync('package.json', 'utf-8'));
@@ -38,9 +39,9 @@ function makeRepo(extraConfig = {}) {
   }, null, 2));
   // git init so Freshness has history
   const env = { ...process.env };
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
   return dir;
 }
 

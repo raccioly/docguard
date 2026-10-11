@@ -36,6 +36,7 @@ import { validateSuppressions } from '../cli/validators/suppressions.mjs';
 import { collectSuppressions } from '../cli/scanners/suppressions.mjs';
 import { claimspecPathPattern, toClaimspecIgnore } from '../cli/writers/claimspec-ignore.mjs';
 import { CLAIMSPEC_VENDOR, assertValidClaimspec, validateClaimspec, validateWithSchemas } from '../cli/claimspec-schema.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -453,7 +454,7 @@ describe('the ignore matcher reads every pattern the way gitignore does (FR-010)
       '**', '***', 'x.**', 'My Docs/', 'C#/', 'notes#1.md', '.DS_Store', '**.md', 'tests/**/*.snap', 'a/**',
       '/', 'packages/*/dist/', '*', '*.test.ts', 'vendor/legacy.ts',
     ];
-    const tracked = spawnSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n').filter(Boolean);
+    const tracked = fixtureGit(ROOT, ['ls-files']).split('\n').filter(Boolean);
     const paths = [...tracked, 'fixtures/x', 'a/b', 'a/x/b', 'build', 'build/x', 'x/build', 'Research', 'Research/a.md',
       'My Docs/a.md', 'C#/x.cs', 'x.bak', 'deep/x.egg-info/PKG', 'src/legacy/a.js', 'z/src/legacy/a.js', 'a/q/b/c'];
     const fixed = p => /[?[\]()+^$|{}\\§]/.test(p) || /^\//.test(p) || /(^|\/)\*\*\//.test(p);

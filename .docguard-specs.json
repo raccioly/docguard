@@ -1457,7 +1457,7 @@
           {
             "requirementId": "SC-009",
             "file": "tests/untouched-claims.test.mjs",
-            "line": 74
+            "line": 75
           }
         ]
       }
@@ -3325,7 +3325,7 @@
           {
             "requirementId": "FR-001",
             "file": "tests/archive.test.mjs",
-            "line": 10
+            "line": 11
           },
           {
             "requirementId": "FR-001",
@@ -3335,7 +3335,7 @@
           {
             "requirementId": "FR-002",
             "file": "tests/archive.test.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-002",
@@ -3345,32 +3345,32 @@
           {
             "requirementId": "FR-003",
             "file": "tests/archive.test.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-004",
             "file": "tests/archive.test.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "FR-005",
             "file": "tests/archive.test.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-006",
             "file": "tests/archive.test.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-007",
             "file": "tests/archive.test.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-008",
             "file": "tests/archive.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-008",
@@ -3380,22 +3380,22 @@
           {
             "requirementId": "FR-009",
             "file": "tests/archive.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-010",
             "file": "tests/reconcile.test.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-011",
             "file": "tests/reconcile.test.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-012",
             "file": "tests/reconcile.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-012",
@@ -3425,12 +3425,12 @@
           {
             "requirementId": "FR-016",
             "file": "tests/spec-completion.test.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-017",
             "file": "tests/spec-completion.test.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-018",
@@ -3445,27 +3445,27 @@
           {
             "requirementId": "FR-020",
             "file": "tests/archive.test.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-020",
             "file": "tests/spec-completion.test.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "SC-001",
             "file": "tests/archive.test.mjs",
-            "line": 19
+            "line": 20
           },
           {
             "requirementId": "SC-002",
             "file": "tests/archive.test.mjs",
-            "line": 20
+            "line": 21
           },
           {
             "requirementId": "SC-003",
             "file": "tests/archive.test.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "SC-004",
@@ -3475,12 +3475,12 @@
           {
             "requirementId": "SC-005",
             "file": "tests/archive.test.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "SC-006",
             "file": "tests/reconcile.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "SC-007",
@@ -5654,12 +5654,12 @@
           {
             "requirementId": "FR-006",
             "file": "tests/field-report-followups.test.mjs",
-            "line": 40
+            "line": 41
           },
           {
             "requirementId": "FR-006",
             "file": "tests/hook-fail-open.test.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "FR-006",
@@ -7852,7 +7852,7 @@
           {
             "requirementId": "FR-003",
             "file": "tests/impact.test.mjs",
-            "line": 86
+            "line": 87
           },
           {
             "requirementId": "FR-003",
@@ -8397,7 +8397,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 231
+            "line": 287
           },
           {
             "requirementId": "FR-004",
@@ -8719,7 +8719,7 @@
           {
             "requirementId": "FR-004",
             "file": "tests/sync-since.test.mjs",
-            "line": 56
+            "line": 57
           },
           {
             "requirementId": "FR-005",
@@ -12333,6 +12333,141 @@
       }
     },
     {
+      "specId": "docguard.test-git-hermeticity",
+      "path": "specs/066-test-git-hermeticity/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.hooks-repo-scope"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.test-git-hermeticity#FR-001",
+          "docguard.test-git-hermeticity#FR-002",
+          "docguard.test-git-hermeticity#FR-003",
+          "docguard.test-git-hermeticity#FR-004",
+          "docguard.test-git-hermeticity#FR-005",
+          "docguard.test-git-hermeticity#FR-006",
+          "docguard.test-git-hermeticity#FR-007",
+          "docguard.test-git-hermeticity#SC-001",
+          "docguard.test-git-hermeticity#SC-002",
+          "docguard.test-git-hermeticity#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/066-test-git-hermeticity/spec.md",
+            "digest": "sha256:edca5c329d61332aabd17c639038b31bcf7968582370e2ce8babb015be7ef5a3"
+          },
+          {
+            "path": "specs/066-test-git-hermeticity/plan.md",
+            "digest": "sha256:b741ca93ab5eca7020b0b9b32729eee954a4c7233bd3ce81cace44c60f388bd8"
+          },
+          {
+            "path": "specs/066-test-git-hermeticity/tasks.md",
+            "digest": "sha256:f19b2b9efc4016f069b157bae71c5cd231b6407fbefef481762713c4c6a698e5"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-005",
+            "file": "benchmarks/agent-context/run.mjs",
+            "line": 58
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/demo.mjs",
+            "line": 101
+          },
+          {
+            "requirementId": "FR-006",
+            "file": ".github/workflows/ci.yml",
+            "line": 205
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/test-git-hermeticity.test.mjs",
+            "line": 23
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.tokenless-scheduled-releases",
       "path": "specs/011-tokenless-scheduled-releases/spec.md",
       "reviewed": {
@@ -12476,82 +12611,82 @@
           {
             "requirementId": "FR-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "FR-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "FR-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "FR-005",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 25
+            "line": 26
           },
           {
             "requirementId": "FR-006",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 26
+            "line": 27
           },
           {
             "requirementId": "FR-007",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 27
+            "line": 28
           },
           {
             "requirementId": "FR-008",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 28
+            "line": 29
           },
           {
             "requirementId": "FR-009",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 29
+            "line": 30
           },
           {
             "requirementId": "FR-010",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 30
+            "line": 31
           },
           {
             "requirementId": "FR-011",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 31
+            "line": 32
           },
           {
             "requirementId": "FR-012",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 32
+            "line": 33
           },
           {
             "requirementId": "SC-001",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 33
+            "line": 34
           },
           {
             "requirementId": "SC-002",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 34
+            "line": 35
           },
           {
             "requirementId": "SC-003",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 35
+            "line": 36
           },
           {
             "requirementId": "SC-004",
             "file": "tests/scheduled-release.test.mjs",
-            "line": 36
+            "line": 37
           }
         ]
       }
@@ -12932,7 +13067,7 @@
           {
             "requirementId": "FR-006",
             "file": "tests/unreadable-git-metadata.test.mjs",
-            "line": 105
+            "line": 106
           },
           {
             "requirementId": "SC-001",

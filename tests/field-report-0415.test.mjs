@@ -16,8 +16,9 @@ import { execSync } from 'node:child_process';
 import { digestSource } from '../cli/scanners/spec-registry.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validateDocsCoverage } from '../cli/validators/docs-coverage.mjs';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 
-const runGit = (args, cwd) => execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
+const runGit = (args, cwd) => execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
 
 describe('field report §3.4 — a review stamp is not a content change', () => {
   it('excludes docguard:last-reviewed from the digest source', () => {

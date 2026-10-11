@@ -194,6 +194,62 @@ jobs:
       - name: Hooks --list
         run: node cli/docguard.mjs hooks --list
 
+  # ── Hermeticity (specs/066-test-git-hermeticity) ──
+  # The suite must not depend on the machine's git config. Runners carry none,
+  # so the test job above cannot see a dependency on it; a contributor machine
+  # or agent sandbox with a global core.hooksPath or mandatory signing turned
+  # 189 tests red. This job runs the suite on such a machine: every hook fails,
+  # signing is mandatory through a gpg that always fails, and the default
+  # branch is `trunk`. Fixture git passes its own options (tests/helpers/git.mjs)
+  # per call; product code still meets this config.
+  # @implements docguard.test-git-hermeticity#FR-006
+  hermeticity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Full git history for freshness validator
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      # gc.auto/maintenance.auto match the test job (#486): they keep fixture
+      # cleanup reliable and make nothing pass that would otherwise fail.
+      - name: Manufacture a hostile global git config
+        shell: bash
+        run: |
+          H="$RUNNER_TEMP/hostile"
+          mkdir -p "$H/hooks"
+          for hook in pre-commit prepare-commit-msg commit-msg post-commit pre-push post-checkout; do
+            printf '#!/bin/sh\necho "hostile %s hook fired" >&2\nexit 1\n' "$hook" > "$H/hooks/$hook"
+            chmod +x "$H/hooks/$hook"
+          done
+          printf '[core]\n\thooksPath = %s\n[commit]\n\tgpgsign = true\n[tag]\n\tgpgsign = true\n[gpg]\n\tprogram = /usr/bin/false\n[init]\n\tdefaultBranch = trunk\n[gc]\n\tauto = 0\n[maintenance]\n\tauto = false\n' "$H/hooks" > "$H/gitconfig"
+          echo "GIT_CONFIG_GLOBAL=$H/gitconfig" >> "$GITHUB_ENV"
+
+      # A hostile config that git ignores proves nothing: fail before the suite
+      # if an unpinned commit still succeeds, or a fresh repository is not on trunk.
+      - name: Prove the config is hostile
+        shell: bash
+        run: |
+          R="$(mktemp -d)"
+          git -C "$R" init -q
+          if [ "$(git -C "$R" symbolic-ref --short HEAD)" != trunk ]; then
+            echo "::error::init.defaultBranch is not in effect"
+            exit 1
+          fi
+          if git -C "$R" -c user.name=probe -c user.email=probe@example.invalid commit -q --allow-empty -m probe 2>/dev/null; then
+            echo "::error::an unpinned commit succeeded; the hostile config is not in effect"
+            exit 1
+          fi
+
+      - name: Run tests under the hostile config
+        run: npm test
+
   # ── Spec-first gate (Constitution X, specs/015-spec-first-gate) ──
   # A change to cli/ must name its governing spec or declare
   # `Spec-Exempt: <kind> — <reason>` in the PR description or a commit message.

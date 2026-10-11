@@ -1423,9 +1423,9 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.4.2 -->
+<!-- docguard:version 1.4.3 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1445,6 +1445,8 @@ Tests are designed to be config-aware. They verify that project-type settings li
 All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 360 seconds since spec 051; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
+
+Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
 
 ## Test Categories
 
@@ -1489,6 +1491,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
+| `cli/commands/demo.mjs` | `tests/demo-command.test.mjs`, `tests/test-git-hermeticity.test.mjs` | ✅ pass |
 | `cli/commands/publish.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/trace.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` | `tests/traceability.test.mjs`, `tests/archive.test.mjs` | ✅ |
@@ -1594,6 +1597,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.3 | 2026-10-11 | DocGuard Team | Fixture git goes through `tests/helpers/git.mjs`; the CI `hermeticity` job; map `demo.mjs` to its tests (spec 066) |
 | 1.4.2 | 2026-10-10 | DocGuard Team | Record the scripted timing source behind the budget tests (spec 062) |
 | 1.4.1 | 2026-10-10 | DocGuard Team | Map `watch.mjs` to its deterministic reliability tests (spec 055) |
 | 1.4.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: map the modules those specs added or changed to their tests; record the 360-second CI runtime budget (spec 051) |
@@ -1799,6 +1803,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
 ### Fixed
 
+- **The test suite no longer depends on the machine's git config**
+  (`specs/066-test-git-hermeticity`). Under a global config with failing
+  hooks, mandatory signing through a failing gpg and `init.defaultBranch=trunk`
+  (TestGuard's hostile CI config), `npm test` reported 189 failures in 34
+  files; CI runners carry no global config and could not see them. Some were
+  silent: a fixture commit failed, nobody read its status, and the test
+  asserted against an empty repository (`shared-git` counted "0 commits"; all
+  20 `generated-docs-e2e` cases reported CHG003 about the broken fixture),
+  and 107 more passed although one of their fixture steps had failed.
+  - Fixture git goes through the new `tests/helpers/git.mjs`: `FIXTURE_GIT`
+    turns hooks and signing off per call, never in the environment, so
+    DocGuard's own git calls still meet the real config. `fixtureGit()` throws
+    with git's stderr when a setup step fails.
+  - `tests/test-git-hermeticity.test.mjs` fails on a git spawn in `tests/`
+    that bypasses the helper.
+  - New CI job `hermeticity`: it writes that hostile config, fails if a plain
+    commit still succeeds or a new repository is not on `trunk`, then runs
+    `npm test` under it.
+  - The agent-context benchmark builds its frozen fixtures without the
+    machine's global or system config, as the precision benchmark already did.
+  - Under the hostile config, 6 failures remain, all in hook installation and
+    `upgrade --pr`; spec 065 covers them.
+- **`docguard demo` commits its fixture on a machine with global hooks or
+  mandatory signing** (`specs/066-test-git-hermeticity`). The demo's scratch
+  commit ran the user's global hooks and signing, and nobody checked its
+  status, so on such a machine the fixture had no commit, and the user's
+  global pre-commit hook ran on a repository they never asked DocGuard to
+  touch. That commit now runs with hooks and signing off.
 - **Git hooks stay inside the repository** (`specs/065-hooks-repo-scope`).
   With a `core.hooksPath` in the global Git config, `docguard hooks` wrote its
   `pre-commit`, `pre-push` and `commit-msg` hooks into that shared folder, so
@@ -2127,36 +2159,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A file that does not parse is read by pattern into the same entities,
     which then report the `regex-fallback` tier. Drizzle and Mongoose entities
     now report their tier too, so a pattern-read schema marks the plan's
-    entity surface partial.
-  - Zod schemas are the data model only when no ORM entity is found; a
-    Mongoose project with Zod schemas used to report both. A Zod-only project
-    listed each schema twice; it now lists each once.
-  - SCH001's help names every model source guard reads.
 
-  Guard now names a TypeORM entity by its class and accepts the class or the
-  table name in DATA-MODEL.md. Knex is still read by guard only, by table name.
-- **The watch reliability tests no longer depend on wall-clock timing**
-  (`specs/055-watch-deterministic`, #523). `tests/watch-reliability.test.mjs`
-  slept 300–600 ms around the 500 ms debounce and let the watcher print to
-  stdout, which the test runner also reads its own messages from; it failed
-  intermittently in full local runs on a loaded machine. The tests now drive
-  the debounce with a fake clock through two new optional `runWatch` runtime
-  hooks (`setTimeout`, `clearTimeout`, defaulting to the global timers),
-  observe check completion by draining queued promise callbacks, and capture
-  console output. They assert the coalescing at the exact window edge, and a
-  new case covers a save that lands while a queued check's window is still
-  open. The file runs in about 0.1 s instead of 4 s. `docguard watch` itself
-  is unchanged.
-
-- **Defects found while documenting DocGuard** (`specs/054-docs-verification-findings`).
-  Running every documented flow on scratch projects turned up:
-  - A Koa project was labelled Hono. It is now labelled Koa. Its routes are
-    read as before, by the same method-shorthand scanner, and carry
-    `source: koa`.
-  - Agent files written by `init --with agents` carried no sync marker, so
-    `agents --sync` skipped every one of them. They are now marked. Files
-
-<!-- truncated: 5167 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5195 more lines — read CHANGELOG.md directly -->
 
 ---
 

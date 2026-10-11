@@ -27,6 +27,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mechanicalSectionsForChanges, SECTION_FILE_MATCHERS, sectionTouchedByChanges } from '../cli/shared-sync-scope.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -42,14 +43,14 @@ function makeRepo(files) {
 
 function gitInit(dir) {
   const env = { ...process.env };
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
 }
 
 function commitAll(dir, msg) {
-  spawnSync('git', ['add', '-A'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', msg], { cwd: dir });
+  fixtureGit(dir, ['add', '-A']);
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', msg]);
 }
 
 describe('sync --since — banner reflects scoping', () => {

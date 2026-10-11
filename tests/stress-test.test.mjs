@@ -21,6 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 const RUN_STRESS = process.env.STRESS === '1';
@@ -62,16 +63,16 @@ function makeStressRepo(serviceCount = 500, routeCount = 500) {
 
   // git init so Freshness has history
   const env = { ...process.env };
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
 
   // Touch 3 files for the --changed-only test
   writeFileSync(join(dir, 'src/services/svc0.ts'), 'export const svc0 = () => "changed";\n');
   writeFileSync(join(dir, 'src/routes/route0.ts'),
     'import express from "express";\nconst r = express.Router();\nr.get("/route0", () => {});\nexport default r;\n// changed\n');
   writeFileSync(join(dir, 'src/services/svc1.ts'), 'export const svc1 = () => "changed too";\n');
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-am', 'touch 3 files'], { cwd: dir, env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-am', 'touch 3 files'], { env });
 
   return dir;
 }
