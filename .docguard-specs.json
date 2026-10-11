@@ -10730,6 +10730,113 @@
       }
     },
     {
+      "specId": "docguard.removed-file-attribution",
+      "path": "specs/069-removed-file-attribution/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.removed-file-attribution#FR-001",
+          "docguard.removed-file-attribution#FR-002",
+          "docguard.removed-file-attribution#FR-003",
+          "docguard.removed-file-attribution#FR-004",
+          "docguard.removed-file-attribution#SC-001",
+          "docguard.removed-file-attribution#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/069-removed-file-attribution/spec.md",
+            "digest": "sha256:3436606efe9213c20a2b7e5bc29cd46904544af4bd65c499035dce41ff4470e3"
+          },
+          {
+            "path": "specs/069-removed-file-attribution/plan.md",
+            "digest": "sha256:bd8b28694b896971e4411dbcf370d31a6ba1efc380c9eaf7defb080ed71611eb"
+          },
+          {
+            "path": "specs/069-removed-file-attribution/tasks.md",
+            "digest": "sha256:4c397cad1384ec7ae27e792493ade44c16ae393ed9262cea433a60b43f9ad2b6"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 3,
+          "total": 3
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 11
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/removed-file-attribution.test.mjs",
+            "line": 10
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.spec-first-gate",
       "path": "specs/015-spec-first-gate/spec.md",
       "reviewed": {

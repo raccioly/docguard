@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A spec that removes a file can be completed**
+  (`specs/069-removed-file-attribution`). Reconciliation could not attribute a
+  deleted source or test file: it is no spec's evidence once it is gone, its
+  diff holds only the removed lines, and an `assetPaths` entry for it covers
+  nothing (SPR009). `specs complete` therefore blocked (SPC006) on any spec
+  whose work removed code, even when the spec named the removal; spec 067's
+  removal of `.jules-setup.sh` hit this. A deleted file is now linked to every
+  current, approved spec whose own documents name its exact path, or name a
+  directory containing it that HEAD no longer tracks anything under. Only
+  deletions are linked this way: a file that still exists needs an annotation,
+  and a near-miss name (`scripts/old.sh` for `scripts/old.sh.mjs`) does not
+  count.
+
 ## [0.44.1] - 2026-10-11
 
 ### Security
