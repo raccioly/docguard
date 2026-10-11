@@ -1,7 +1,7 @@
 import { hasWorkerConfig } from './shared-source.mjs';
 import { applyDocRoles } from './shared-doc-roles.mjs';
 /**
- * @implements docguard.evidence-scoped-verification#FR-010
+ * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
  * DocGuard — configuration loading.
  *
  * Extracted from docguard.mjs (v0.23.0) to break the demo.mjs → docguard.mjs
@@ -84,6 +84,7 @@ export function loadConfig(projectDir) {
       documentLifecycle: true,
       specRegistry: true,
       docDependency: true, // opt-in by declaration: not applicable until a section declares covers=
+      requirementAnchors: true, // opt-in: not applicable without .docguard-anchor-lock.jsonl or anchors.enabled
       pathScopedRules: true, // not applicable without agent instruction files
       docOwnership: true, // not applicable without an ownership block or .devin/wiki.json
       evidence: true,

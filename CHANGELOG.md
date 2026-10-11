@@ -7,6 +7,239 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Requirement anchors: a tag now points at the code under it, not the whole
+  file** (`specs/070-requirement-anchors`, user story 1).
+  - **Scope by position.** A tag anchors to the narrowest scope its position
+    allows:
+    - a tag in the file's leading block covers the whole file;
+    - a tag directly above a function, class, method or top-level variable
+      covers that symbol, by qualified path (`Cart.total`, `Server.Run`);
+    - a tag inside a function body, or above another top-level statement,
+      covers that statement;
+    - a tag above an Express-style registration covers the route
+      (`route:POST /login`);
+    - a tag inside a Python docstring covers the docstring's owner.
+
+    A file header sitting directly above a declaration stays file-scoped and
+    is reported ambiguous, never silently reinterpreted.
+  - **`docguard anchors` and the `docguard_anchors` MCP tool.** Both list every
+    link, with the tier that placed it:
+    - Babel for JS/TS;
+    - one batched `python3` run for Python;
+    - a string-aware, self-checking pattern lexer for Go, Rust, Java, Kotlin,
+      C#, PHP, Ruby, Swift, C and C++;
+    - file tier for YAML and shell.
+  - **Opt-in for guard.** Guard reports anchors only once a project opts in
+    (`anchors.enabled`, or the anchor lock that the next story adds):
+    - **ANC007**: a tag cites a requirement nobody declares;
+    - **ANC010**: a file was read below its exact tier.
+
+    Projects that have not opted in see no new findings.
+- **Reviewed requirement links turn suspect when the code or the requirement
+  changes** (`specs/070-requirement-anchors`, user story 2).
+  - **Lock.** `docguard anchors accept` records a review in a committed
+    `.docguard-anchor-lock.jsonl`, one link per line so reviews on two
+    branches merge with `merge=union`.
+  - **Accept rules.** An accept:
+    - is bound to the exact fingerprints it saw, so a later change flags
+      the link again;
+    - records the fingerprints it replaced;
+    - needs a reason of 10–500 characters;
+    - needs `--bulk` for more than one link;
+    - refuses when a file changed during the run.
+  - **Adoption.** `--baseline` stamps every link as baselined, never as
+    reviewed, and the baselined share is reported. `--remove` deletes an
+    entry.
+  - **Guard findings:**
+    - ANC001: a link whose code changed (formatting, comments and line moves
+      do not count);
+    - ANC002: a link whose requirement text changed (whitespace does not
+      count);
+    - ANC003: a reviewed link whose tag is gone;
+    - ANC005: an unreadable lock, which fails;
+    - ANC008: a tag citing a retired requirement;
+    - ANC009: two different lock lines for one link after a merge.
+  - **What DocGuard does not do.** It edits `.gitattributes` only with
+    `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
+    to require human review of the lock through CODEOWNERS.
+- **A reviewed link fails guard only where the signal is proven**
+  (`specs/070-requirement-anchors`, user story 3).
+  - **Policy.** Under `anchors.failOn: reviewed-exact`, ANC001 and ANC003
+    are errors for links that:
+    - someone accepted as reviewed (never merely baselined);
+    - sit at symbol, statement or route scope;
+    - were read by Babel or python3's `ast`.
+
+    Every other anchor finding warns, and a requirement-text change never
+    fails.
+  - **How the default was chosen.** `tools/anchor-churn-replay.mjs`
+    replayed 150 commits of this repository: 1,058 flags, all from commits
+    that changed code, none from formatting-only ones. `reviewed-exact` is
+    therefore the default, and a test keeps the shipped default equal to the
+    committed evidence.
+  - **Completion.** `specs complete` no longer counts the completing spec's
+    own failing anchors toward SPC007; it lists them with their accept
+    commands.
+- **A renamed or moved function keeps its review**
+  (`specs/070-requirement-anchors`, user story 4).
+  - **Moved.** The anchor fingerprint leaves out the symbol's own name, so a
+    function renamed or moved with an unchanged body is reported as moved,
+    not lost and unreviewed. The next accept rewrites its lock key.
+  - **Lost.** Two identical candidate bodies, or a changed body, leave the
+    old link lost (ANC003). DocGuard does no similarity matching.
+- **See what else an anchored change may affect**
+  (`specs/070-requirement-anchors`, user story 5).
+  - **What is listed.** When an anchored function's code changes,
+    `docguard anchors` lists the anchored links in files that:
+    - import that file and use the changed name (named, default or
+      `ns.name`);
+    - sit one import further, at low confidence.
+
+    Hub modules are excluded, and more than `anchors.fanOutLimit` files
+    collapse into a count. It is advisory only.
+  - **Shared walk.** The reverse-import walk and hub rule moved from the
+    `impact` command into `cli/scanners/import-graph.mjs`, so `diff --since`
+    and ripple share one implementation; `impact`'s output is unchanged.
+  - **Edge names.** Import-graph edges now record the names each import
+    binds.
+- **Requirement anchors: the tests of a changed requirement need
+  re-verification** (`specs/070-requirement-anchors`, user story 6).
+  - **Listed.** Under each link whose code changed, `docguard anchors` names
+    every test that cites the requirement, as `⊢ test` lines and `tests[]` in
+    JSON.
+  - **Re-verified from saved TestGuard evidence.** A test is re-verified only
+    when all of these hold:
+    - the evidence revision carried the anchored code at today's fingerprint;
+    - a claim names the requirement as `req:<spec-id>#<requirement-id>` (the
+      structured `source.ref` TestGuard validates);
+    - the test defended that claim;
+    - every fault was killed, with the claim, targets and defenders unchanged
+      since the probe.
+  - **Inconclusive.** An unreadable, provisional, foreign-revision or stale
+    report is inconclusive, never re-verified. A claim that names the
+    requirement by file path gets the `req:` form to write.
+  - **Reads files only.** DocGuard reads `anchors.testguard.evidence` and
+    `anchors.testguard.claims` and never runs a test or TestGuard.
+  - **ANC002 data.** Requirement-side findings now carry `scope` and
+    `reviewedState`, like ANC001.
+- **Requirement anchors: code that implements no requirement**
+  (`specs/070-requirement-anchors`, user story 7).
+  - **`docguard anchors --orphans`** lists each exported or top-level function,
+    class, struct, enum or top-level method that no tag anchors, once, in file
+    and line order. It reads under `anchors.orphanPaths` or the current specs'
+    `scope.sourcePaths`; `--spec` narrows to one spec. Each language keeps
+    its own idea of private: `_name` in Python, lowercase in Go, Rust without
+    `pub`, `static` in C.
+  - **`docguard anchors disposition`** records why one implements no
+    requirement (`derived`, `dead` or `infrastructure`, with a 10–500
+    character reason) in the anchor lock. `--file … --bulk` covers a file,
+    and `--remove` deletes one. A disposition whose symbol is gone is listed
+    as stale. No requirement text is proposed and no model is called.
+  - **Granularity.** `score` and `trace` report links by scope and tier as
+    information, once a project has opted in.
+- **`docguard trace --matrix` exports the requirement → anchor → test chain**
+  (`specs/070-requirement-anchors`, user story 8).
+  - **CSV.** Fixed, documented columns: requirement, fingerprints, spec state,
+    file, anchor, scope, tier, link state, review revision and date, and the
+    test with its status. Rows are in UTF-8 byte order, quoted per RFC 4180,
+    and a cell that could run as a spreadsheet formula gets a `'` prefix.
+  - **ReqIF 1.2.** `--format reqif` holds requirements, anchors and tests as
+    spec objects, with `implements` and `verifies` relations, hash-stable
+    identifiers and a fixed creation time, so two runs give the same bytes.
+  - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
+    through the safe write, which backs up an existing file.
+- **Requirement anchors read StrictDoc and OpenFastTrace tags**
+  (`specs/070-requirement-anchors`, user story 9).
+  - **Opt in.** `anchors.import: ["strictdoc", "openfasttrace"]` reads
+    `@relation(REQ-1, scope=function)` and `[impl->dsn~name~3]` tags as
+    anchors to the requirements `anchors.importMap` names, so existing tags
+    gain content-based suspect detection without being rewritten.
+  - **Findings.** An unmapped ID is ANC007. Native and imported tags for
+    different requirements on one symbol are ANC006. An OpenFastTrace tag
+    behind the mapped revision is an outdated, code-side suspect (ANC001,
+    `cause: "oft-outdated"`).
+  - **Cache.** The import settings are part of the anchor cache's identity,
+    so editing the map is never answered from the cache.
+- **Requirement anchors: provably deterministic fingerprints, and an opt-in
+  tree-sitter tier** (`specs/070-requirement-anchors`, user story 10).
+  - **Golden fixtures.** The golden set covers all 13 languages the anchors
+    read. Python `ast` values are recorded for 3.11 through 3.14, because
+    they differ between versions. Any change to a fingerprint fails the
+    suite until the algorithm version is bumped. An entry stamped under an
+    algorithm this DocGuard does not compute is unverifiable, never suspect.
+  - **Oracle.** A CI-only job (`tools/anchor-oracle`) measures the pattern
+    tier against tree-sitter on a vendored corpus of idiomatic code and the
+    anchor fixtures. It fails when a high-confidence language disagrees on
+    more than 1% of declarations. Every package in it passes the dependency
+    vetting recorded in `VETTING.md` (Kotlin's and Swift's grammars do not,
+    so those languages have no oracle). It installs from a lockfile with no
+    install scripts, and nothing in it ships.
+  - **Tree-sitter tier.** `anchors.treeSitter.artifacts` lets tree-sitter
+    refine the span and exact fingerprint of each pattern-tier symbol in Go,
+    Rust, Java, C#, PHP, Ruby, C and C++, keeping keys and floors unchanged.
+    Only files matching the hashes in
+    `schemas/docguard-anchor-treesitter.manifest.json` load. They are staged
+    under `.docguard/ts/` and parsed in a child process with no environment,
+    never through `node_modules`. Anything missing or mismatched is ANC010,
+    and the pattern tier answers.
+  - **Pattern tier fixes the oracle found.** These are:
+    - Ruby `Const = Struct.new … do` class bodies;
+    - Java compact constructors, and annotation elements with defaults;
+    - C# expression bodies that span a switch expression;
+    - C functions returning `struct x`;
+    - C++ inline namespaces, user-defined literal operators, and
+      `= delete` / `= default` members.
+
+    On the corpus, every measured language agrees 100% with tree-sitter.
+  - **Explicit scope wins.** `{scope=symbol}` in a file's leading comment
+    block now anchors the declaration below, as ANC006's advice says. A tag
+    inside a `switch` case anchors its statement.
+  - **Cache identity.** The anchor cache is keyed by the resolver code and the
+    requirement patterns too, so an upgrade or a custom
+    `traceability.requirementPattern` is never answered with stale anchors.
+- **DocGuard's own requirement tags name their scope.** Every tag that sat
+  below an import, inside a function, or in a header directly above a
+  declaration now says `{scope=file}`, `{scope=symbol}` or
+  `{scope=statement}`. `docguard anchors` on this repository reports no ANC006
+  or ANC007, and every link is reviewed or baselined.
+
+### Changed
+
+- **The doc lock's fingerprinting moved into a shared module.** It now lives
+  in `cli/scanners/fingerprint.mjs`, byte for byte, as `doclock-v0`; every
+  accepted section stays current.
+  - Covered Python symbols are read in one `python3` run per check instead of
+    one per symbol.
+  - Member paths resolve at any depth (`Outer.Inner.method`,
+    `outer.helper`).
+- **Requirement definitions carry their whole `block`.** Every line of a list
+  item, heading or paragraph is included, so a requirement fingerprint sees
+  every line. `text` stays the first line.
+
+### Fixed
+
+- **A tag quoted inside a string is no longer requirement evidence.** The
+  implementation-evidence scanner read `// @req FR-012` inside a help string
+  (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
+  every language it can lex, and quote-aware `#` comments in YAML and shell.
+  - **What changes on DocGuard itself.** Four implementation-evidence
+    entries that 0.44.3 recorded disappear. Each came from a `/*` inside a
+    string (a glob) that the old regex took for the start of a comment,
+    swallowing the code after it:
+    - `cli/commands/trace.mjs` for `docguard.doc-ownership-map#FR-004`,
+      `docguard.mcp-doc-tools#FR-003` and `docguard.output-ux#FR-009`;
+    - `cli/findings.mjs` for `docguard.ignore-reasons#FR-005`.
+
+    The spec registry's projection changes accordingly. Guard output is
+    otherwise unchanged against 0.44.3 on this repository and on the
+    projects in the release gate.
+- **A Python interpreter upgrade no longer reads as a code change in the doc
+  lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
+  revision, re-read with today's interpreter, is now unverifiable instead of
+  DLK001.
+
 ## [0.44.3] - 2026-10-11
 
 ### Fixed

@@ -71,7 +71,7 @@ describe('docguard mcp --transport http', () => {
     const body = await res.json();
     const names = body.result.tools.map(t => t.name);
     assert.deepEqual(names.sort(), [
-      'docguard_diagnose', 'docguard_doc_structure', 'docguard_docs_for_path', 'docguard_explain', 'docguard_guard', 'docguard_read_section', 'docguard_report', 'docguard_score', 'docguard_task_context', 'docguard_verify_claims', 'docguard_verify_evidence',
+      'docguard_anchors', 'docguard_diagnose', 'docguard_doc_structure', 'docguard_docs_for_path', 'docguard_explain', 'docguard_guard', 'docguard_read_section', 'docguard_report', 'docguard_score', 'docguard_task_context', 'docguard_verify_claims', 'docguard_verify_evidence',
     ]);
   });
 

@@ -32,6 +32,10 @@ import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-pat
 import { referenceKind, docAnnotationsIn } from '../scanners/doc-references.mjs';
 import { defaultOwnershipRoots, ownerOf, ownershipReport, SOURCE_RE, projectFiles } from '../scanners/doc-ownership.mjs';
 import { scanComponents } from '../scanners/inventory.mjs';
+import { anchorGranularity, traceMatrix } from '../scanners/anchors.mjs';
+import { CSV_COLUMNS, matrixModel, toCsv, toReqif } from '../writers/trace-matrix.mjs';
+import { safeWrite } from '../writers/generate-io.mjs';
+import { readFileSync as readPackageJson } from 'node:fs';
 
 
 /**
@@ -221,7 +225,37 @@ export function runTraceReverse(projectDir, config, flags) {
   }
 }
 
+/**
+ * FR-037: `trace --matrix` exports the requirement → anchor → test chain as
+ * CSV (default), ReqIF 1.2 or JSON, to stdout or through safeWrite.
+ *
+ * @implements docguard.requirement-anchors#FR-037
+ */
+export function runTraceMatrix(projectDir, config, flags) {
+  const format = flags.format || 'csv';
+  if (!['csv', 'reqif', 'json'].includes(format)) {
+    console.error(`${c.red}trace --matrix exports --format csv, reqif or json, not ${format}.${c.reset}`);
+    process.exitCode = 1;
+    return null;
+  }
+  const { rows, requirements } = traceMatrix(projectDir, config, { spec: flags.spec || null });
+  let version = '';
+  try { version = JSON.parse(readPackageJson(new URL('../../package.json', import.meta.url), 'utf8')).version; } catch { /* unknown */ }
+  const text = format === 'csv' ? toCsv(rows)
+    : format === 'reqif' ? toReqif(matrixModel(rows, requirements), { toolVersion: version })
+      : `${JSON.stringify({ columns: CSV_COLUMNS, rows: rows.map(({ key, ...row }) => row) }, null, 2)}\n`;
+  if (flags.out) {
+    const target = resolve(projectDir, flags.out);
+    safeWrite(target, text);
+    process.stderr.write(`Wrote ${rows.length} row(s) for ${requirements.length} requirement(s) to ${flags.out}\n`);
+  } else {
+    process.stdout.write(text);
+  }
+  return { rows: rows.length, requirements: requirements.length };
+}
+
 export function runTrace(projectDir, config, flags) {
+  if (flags.matrix) return runTraceMatrix(projectDir, config, flags);
   if (flags.owners) return runTraceOwners(projectDir, config, flags);
   // L-2: dispatch to reverse mode when --reverse is set.
   if (flags.reverse) {
@@ -319,14 +353,20 @@ export function runTrace(projectDir, config, flags) {
   }
 
   // ── 5. Output ──
+  // docguard.requirement-anchors#FR-036: anchor granularity, information only.
+  const granularity = anchorGranularity(projectDir, config);
   if (flags.format === 'json') {
-    outputJSON(config.projectName, matrix, orphanedDocs);
+    outputJSON(config.projectName, matrix, orphanedDocs, granularity);
   } else {
     outputText(config.projectName, matrix, canonicalDocs, orphanedDocs);
+    if (granularity) {
+      const tally = t => Object.entries(t).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
+      console.log(`  ${c.dim}Anchor granularity (info): ${granularity.links} link(s); by scope ${tally(granularity.byScope)}; by tier ${tally(granularity.byTier)}${c.reset}\n`);
+    }
   }
 }
 
-function outputJSON(projectName, matrix, orphanedDocs) {
+function outputJSON(projectName, matrix, orphanedDocs, granularity = null) {
   const result = {
     project: projectName,
     traceability: matrix.map(m => ({
@@ -348,6 +388,7 @@ function outputJSON(projectName, matrix, orphanedDocs) {
       missing: matrix.filter(m => m.coverageSignal === 'MISSING').length,
       orphaned: orphanedDocs.length,
     },
+    ...(granularity ? { anchorGranularity: { ...granularity, info: 'How precisely requirement tags anchor; information only.' } } : {}),
     timestamp: new Date().toISOString(),
   };
   console.log(JSON.stringify(result, null, 2));

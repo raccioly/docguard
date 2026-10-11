@@ -12,8 +12,8 @@ import { isMappedDocPath } from '../shared-doc-roles.mjs';
  *
  * Default is a DRY RUN (preview); `--write` applies. `--since <ref>` adds the
  * git diff as context. Only edits docguard:generated docs unless `--force`.
- * @implements docguard.document-lifecycle#FR-010
- * @implements docguard.code-derived-diagrams#FR-007
+ * @implements docguard.document-lifecycle#FR-010 {scope=file}
+ * @implements docguard.code-derived-diagrams#FR-007 {scope=file}
  */
 
 import { existsSync, readFileSync } from 'node:fs';

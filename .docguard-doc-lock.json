@@ -4,17 +4,17 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:467085a6675710e13f70c4458b6d75c1de8ff95111250a0a22797fc159b53918",
+          "fingerprint": "sha256:f7bd75cbb0f099bed839a9759ca5b727c74a6d277fc540d5ea10b88fab9745d5",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
-          "fingerprint": "sha256:493c21d59bac254dff65ad866935c64cd3686aefa55f15d22a35f465b14d8a0a",
+          "fingerprint": "sha256:cac9af08cec8e73235af7b41ff8ed36c49691c6389cc3a2c844ba2cc446fbbd8",
           "tier": "ast"
         }
       },
-      "reason": "planSpecCompletion now names specs approve in SPC002 and reports the transition from the recorded delivery; requirement identity and evidence rules are unchanged",
-      "reviewedAt": "2026-09-30",
-      "reviewedRevision": "896e3a9dd92ca4bfdf930c01f565e54a1403cddc"
+      "reason": "planSpecCompletion now exempts the completing spec's own failing anchor findings from SPC007 (spec 070 FR-029); prose updated",
+      "reviewedAt": "2026-10-11",
+      "reviewedRevision": "86b0182858b37cae623d3ede22b63382d09b545d"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {

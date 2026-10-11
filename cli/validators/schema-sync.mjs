@@ -12,7 +12,7 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  * table names by pattern.
  *
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
- * @implements docguard.typeorm-models#FR-007
+ * @implements docguard.typeorm-models#FR-007 {scope=file}
  */
 
 import { existsSync, readFileSync } from 'node:fs';

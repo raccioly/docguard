@@ -1,0 +1,78 @@
+{
+  "generatedBy": "doc-deps.mjs at 59b7758 (v0.44.2), before the fingerprint.mjs extraction",
+  "fixture": {
+    "src/pricing.mjs#applyDiscount": {
+      "tier": "ast",
+      "fingerprint": "sha256:b93f697b509b9ed113ec030c80c3196b2688dbe9f17657eac20d3a6521b5f30b"
+    },
+    "src/pricing.mjs#RATE": {
+      "tier": "ast",
+      "fingerprint": "sha256:525475c9e166c817141eeb7c028baee261bff9e1b39ebd72e2703c7e872c0b4b"
+    },
+    "src/pricing.mjs#Cart": {
+      "tier": "ast",
+      "fingerprint": "sha256:6dade4ab23dc48f6f2fc8e6a560189f36af5e92edb2a52b5a3edb82967b41c25"
+    },
+    "src/pricing.mjs#Cart.total": {
+      "tier": "ast",
+      "fingerprint": "sha256:a8f4e3a9f90ae493fcebb6154edfa5ae62a72324458f3f505498ac4a5529f391"
+    },
+    "src/pricing.mjs#Cart.empty": {
+      "tier": "ast",
+      "fingerprint": "sha256:4ce56c3fa992dbe270840b2ab7b803a2693eb7975d0f1d4d4d4d6f0b0863f67a"
+    },
+    "src/pricing.mjs#exposed": {
+      "tier": "ast",
+      "fingerprint": "sha256:bc0c8cad9329467dade1a37ff9b3e34709ed74f61e1d53f2c90333adb7c11672"
+    },
+    "src/pricing.mjs#default": {
+      "tier": "ast",
+      "fingerprint": "sha256:5e7ce820826c4c92fb248637d7558493cda8ef7a87ecd294a48c35063a6e8f13"
+    },
+    "src/pricing.mjs#main": {
+      "tier": "ast",
+      "fingerprint": "sha256:5e7ce820826c4c92fb248637d7558493cda8ef7a87ecd294a48c35063a6e8f13"
+    },
+    "src/pricing.mjs": {
+      "tier": "content",
+      "fingerprint": "sha256:b4317cc50d98937508eed8b6167b80f14419f683ac03c08d3b26993d822f8b4e"
+    },
+    "src/types.ts#sum": {
+      "tier": "ast",
+      "fingerprint": "sha256:9e107db327bcde0a28127d17dedee95b0db8e4cc20a96d59168a3738fb67c4bc"
+    },
+    "src/types.ts#Line": {
+      "tier": "ast",
+      "fingerprint": "sha256:f69b0460d3ab03b442e92fc993b3dafdbf6d75d0edd4b533f82993f9578146fd"
+    },
+    "src/types.ts#Mode": {
+      "tier": "ast",
+      "fingerprint": "sha256:8556ceaf101aee187704ed7e13fbd4d4df212e53de684fe186442de10a093917"
+    },
+    "src/billing.py#apply_discount": {
+      "tier": "python-ast",
+      "fingerprint": "sha256:44bd22d65a3e6b6b532607534aa41adf7b6bbdeb44be6ddbf1a28a78b17c12c9"
+    },
+    "src/billing.py#RATE": {
+      "tier": "python-ast",
+      "fingerprint": "sha256:aea68db48eba55644795a4973057243563057bcf457335471e2ac5cdfb56992c"
+    },
+    "src/billing.py#LIMIT": {
+      "tier": "python-ast",
+      "fingerprint": "sha256:f3c3aa30b8a40df6b62188a0d59ac81bd6e21e04cebea791b9b5622d0d97e260"
+    },
+    "src/billing.py#Invoice": {
+      "tier": "python-ast",
+      "fingerprint": "sha256:fbf3204de332769764e91dfcbbc97519598900fc2f80f13d8349997d7de807c3"
+    },
+    "src/billing.py#Invoice.total": {
+      "tier": "python-ast",
+      "fingerprint": "sha256:6aa611389e00eeb7f6ec923fec39f158671f66b2d37967ed52a9e4790f91878b"
+    },
+    "src/notes.txt": {
+      "tier": "content",
+      "fingerprint": "sha256:62e810ef3cc5372dda68bb58a2020b3ddaac03e3b497edb4c89928c9ec3f7520"
+    }
+  },
+  "python": "3.12"
+}

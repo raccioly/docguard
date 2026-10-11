@@ -126,6 +126,7 @@
         "suppressions":       { "type": "boolean" },
         "specRegistry":       { "type": "boolean" },
         "docDependency":      { "type": "boolean" },
+        "requirementAnchors": { "type": "boolean" },
         "pathScopedRules":    { "type": "boolean" },
         "docOwnership":       { "type": "boolean" },
         "evidence":           { "type": "boolean" },
@@ -285,6 +286,75 @@
         }
       },
       "additionalProperties": false
+    },
+    "anchors": {
+      "type": "object",
+      "description": "Requirement anchors (`docguard anchors`, specs/070-requirement-anchors): code→requirement tags anchored to the symbol, statement or route below them. Active when `.docguard-anchor-lock.jsonl` exists or `enabled` is true.",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Report requirement anchors in guard before the project has an anchor lock. Default false." },
+        "fanOutLimit": { "type": "integer", "minimum": 1, "description": "Most files a changed anchor's ripple lists before it collapses into one summary. Default 10." },
+        "failOn": { "enum": ["none", "reviewed-exact"], "description": "Which suspect or lost links fail guard. reviewed-exact (the measured default): reviewed, exact-tier links at symbol, statement or route scope. none: anchors only warn. A requirement-side change never fails." },
+        "import": {
+          "type": "array",
+          "items": { "enum": ["strictdoc", "openfasttrace"] },
+          "uniqueItems": true,
+          "description": "Read StrictDoc @relation(...) and OpenFastTrace [impl->...] tags as anchors, through importMap. Read-only: DocGuard never writes them."
+        },
+        "importMap": {
+          "type": "object",
+          "description": "Foreign ID → requirement. Keys are strictdoc:<ID> or oft:<type>~<name>; a value is \"<specId>#<REQ>\", or, for OpenFastTrace, { requirement, revision } so a tag behind that revision is reported outdated.",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "required": ["requirement"],
+                "properties": {
+                  "requirement": { "type": "string", "minLength": 1 },
+                  "revision": { "type": "integer", "minimum": 0 }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "orphanPaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Where `docguard anchors --orphans` looks for untagged symbols: globs, files or directories. Default: the scope.sourcePaths of current specs."
+        },
+        "treeSitter": {
+          "type": "object",
+          "description": "Opt-in tree-sitter tier: tree-sitter spans and exact fingerprints for symbols the pattern tier finds. Each named file must match a sha256 in schemas/docguard-anchor-treesitter.manifest.json; it is staged under .docguard/ts/ and never resolved through node_modules. Never auto-detected.",
+          "properties": {
+            "artifacts": {
+              "type": "object",
+              "required": ["runtime", "runtimeWasm", "grammars"],
+              "properties": {
+                "runtime": { "type": "string", "minLength": 1, "description": "web-tree-sitter.js from the pinned web-tree-sitter version" },
+                "runtimeWasm": { "type": "string", "minLength": 1, "description": "web-tree-sitter.wasm from the same version" },
+                "grammars": {
+                  "type": "object",
+                  "propertyNames": { "enum": ["go", "rust", "java", "csharp", "php", "ruby", "c", "cpp"] },
+                  "additionalProperties": { "type": "string", "minLength": 1 },
+                  "description": "Language → the grammar .wasm the manifest pins"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "testguard": {
+          "type": "object",
+          "description": "Where `docguard anchors` reads saved TestGuard output to mark the tests of a changed requirement re-verified. Read only; DocGuard never runs TestGuard or a test.",
+          "properties": {
+            "evidence": { "type": "string", "minLength": 1, "description": "Project-relative TestGuard evidence file. Default .testguard/evidence.json." },
+            "claims": { "type": "string", "minLength": 1, "description": "Project-relative TestGuard claims file. Default testguard.claims.json." }
+          },
+          "additionalProperties": false
+        }
+      }
     },
     "specFirst": {
       "type": "object",

@@ -54,6 +54,7 @@ import { runArchive } from './commands/retire.mjs';
 import { runSpecs } from './commands/specs.mjs';
 import { runReconcile } from './commands/reconcile.mjs';
 import { runReview } from './commands/review.mjs';
+import { runAnchors } from './commands/anchors.mjs';
 import { runRules } from './commands/rules.mjs';
 import { runIgnore } from './commands/ignore.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
@@ -110,6 +111,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}approve${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
+  ${c.green}anchors${c.reset}    Code→requirement links, what each anchors to and whether it changed since review (${c.cyan}accept${c.reset}, ${c.cyan}--state <s>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -286,13 +288,16 @@ const COMMAND_HELP = {
   },
   trace: {
     summary: 'Requirements traceability matrix.',
-    usage: 'docguard trace [--reverse <path>] [--features] [--owners [--suggest]]',
+    usage: 'docguard trace [--reverse <path>] [--features] [--owners [--suggest]] | docguard trace --matrix [--format csv|reqif|json] [--spec <id>] [--out <path>]',
     flags: [
+      ['--matrix', 'Export every requirement → anchor → test path (CSV by default, or --format reqif|json)'],
+      ['--out <path>', 'With --matrix: write the export to this file instead of stdout (also --output)'],
+      ['--spec <id>', 'With --matrix: only this Spec ID\'s requirements'],
       ['--reverse', 'Code→doc map instead of doc→code (the declared owner first, when an ownership map exists)'],
       ['--owners', 'The ownership map: files per entry, unowned directories, ties'],
       ['--owners --suggest', 'Print a draft ownership block from the source layout; never writes'],
     ],
-    examples: ['docguard trace', 'docguard trace --reverse'],
+    examples: ['docguard trace', 'docguard trace --reverse', 'docguard trace --matrix --format reqif --out trace.reqif'],
   },
   upgrade: {
     // docguard.output-ux#FR-006: two jobs, both named.
@@ -384,6 +389,29 @@ const COMMAND_HELP = {
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
     examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs approve --id acme.feature --delivery implemented --write', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
+  },
+  anchors: {
+    summary: 'List every code→requirement link, the symbol, statement, route or file it anchors to, and the tier that resolved it.',
+    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors --orphans [--spec <id>] [--file <path>] [--format json] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text> | docguard anchors disposition (--symbol <file>#<name> | --file <path> --bulk) --kind derived|dead|infrastructure --reason <text> | docguard anchors disposition --remove <file>#<name> --reason <text>',
+    flags: [
+      ['accept', 'Record a review of the selected links in .docguard-anchor-lock.jsonl, bound to the fingerprints it saw'],
+      ['disposition', 'Record why an untagged symbol implements no requirement: --kind derived, dead or infrastructure'],
+      ['--orphans', 'List the exported or top-level symbols under the governed paths that no tag anchors'],
+      ['--symbol <file>#<name>', 'With disposition: the one untagged symbol'],
+      ['--kind <kind>', 'With disposition: derived (an unwritten requirement), dead, or infrastructure'],
+      ['--spec <id>', 'Only links to this Spec ID (with accept: select them)'],
+      ['--file <path>', 'Only links in this file (with accept: select them)'],
+      ['--link <key>', 'With accept: the one link to accept'],
+      ['--state <state>', 'Only links in this state: unreviewed, baselined, reviewed, suspect, lost, retired-target, unverifiable'],
+      ['--reason <text>', 'With accept: what you checked (10-500 characters)'],
+      ['--bulk', 'With accept: confirm a selection of more than one link'],
+      ['--baseline', 'With accept --bulk: stamp every unreviewed link as baselined (adoption), never as reviewed'],
+      ['--remove <key>', 'With accept: delete a lock entry, such as a lost link; with disposition: <file>#<name>'],
+      ['--gitattributes', 'With accept: also add the lock\'s merge=union line to .gitattributes'],
+      ['--no-cache', 'Ignore the per-file extraction cache in .docguard/'],
+      ['--format json', 'Machine-readable output'],
+    ],
+    examples: ['docguard anchors', 'docguard anchors --state suspect --format json', 'docguard anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"', "docguard anchors accept --link 'acme.billing#FR-003|src/pricing.mjs|applyDiscount|symbol' --reason \"rounding fix keeps FR-003\""],
   },
   review: {
     summary: 'Track which code each doc section describes, and review a section when that code changes.',
@@ -488,7 +516,7 @@ async function main() {
       i++;
     } else if (args[i] === '--list') {
       flags.list = true;
-    } else if (args[i] === '--remove') {
+    } else if (args[i] === '--remove' && command !== 'anchors') {
       flags.remove = true;
     } else if (args[i] === '--threshold' && args[i + 1]) {
       flags.threshold = args[i + 1];
@@ -678,7 +706,7 @@ async function main() {
     } else if (args[i] === '--root' && args[i + 1]) {
       // mcp: another directory tree tool calls may target with projectDir
       // (repeatable). The served directory is always one
-      // @implements docguard.mcp-project-confinement#FR-005
+      // @implements docguard.mcp-project-confinement#FR-005 {scope=statement}
       flags.roots = flags.roots || [];
       flags.roots.push(args[i + 1]);
       i++;
@@ -706,6 +734,36 @@ async function main() {
       else flags.suggest = true;
     } else if (args[i] === '--prune' && command === 'review') {
       flags.prune = true;
+    } else if (args[i] === '--spec' && args[i + 1] && command === 'anchors') {
+      flags.spec = args[++i];
+    } else if (args[i] === '--file' && args[i + 1] && command === 'anchors') {
+      flags.file = args[++i];
+    } else if (args[i] === '--state' && args[i + 1] && command === 'anchors') {
+      flags.state = args[++i];
+    } else if (args[i] === '--no-cache' && command === 'anchors') {
+      flags.noCache = true;
+    } else if (args[i] === '--link' && args[i + 1] && command === 'anchors') {
+      flags.link = args[++i];
+    } else if (args[i] === '--remove' && args[i + 1] && command === 'anchors') {
+      flags.remove = args[++i];
+    } else if (args[i] === '--bulk' && command === 'anchors') {
+      flags.bulk = true;
+    } else if (args[i] === '--baseline' && command === 'anchors') {
+      flags.baseline = true;
+    } else if (args[i] === '--gitattributes' && command === 'anchors') {
+      flags.gitattributes = true;
+    } else if (args[i] === '--matrix' && command === 'trace') {
+      flags.matrix = true;
+    } else if (args[i] === '--output' && args[i + 1] && command === 'trace') {
+      flags.out = args[++i];
+    } else if (args[i] === '--spec' && args[i + 1] && command === 'trace') {
+      flags.spec = args[++i];
+    } else if (args[i] === '--orphans' && command === 'anchors') {
+      flags.orphans = true;
+    } else if (args[i] === '--symbol' && args[i + 1] && command === 'anchors') {
+      flags.symbol = args[++i];
+    } else if (args[i] === '--kind' && args[i + 1] && command === 'anchors') {
+      flags.kind = args[++i];
     } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {
       flags.from = args[++i];
     } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {
@@ -793,6 +851,10 @@ async function main() {
     process.exit(0);
   }
 
+  // `trace --matrix` exports CSV unless asked for ReqIF or JSON
+  // (docguard.requirement-anchors#FR-037); the export is the whole of stdout.
+  if (command === 'trace' && flags.matrix && !args.includes('--format')) flags.format = 'csv';
+
   // In JSON mode the entire stdout MUST be parseable JSON. The banner would
   // corrupt the output for any
   // programmatic consumer (CI, dashboards, the Score-on-PR Action recipe).
@@ -806,7 +868,9 @@ async function main() {
   // artifact belongs here, or the banner corrupts the payload.
   // v0.33: 'junit' joins for the same reason (GitLab/Jenkins parse stdout XML).
   // 'claimspec' (docguard ignore): stdout IS the claimspec document.
-  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit' || flags.format === 'claimspec';
+  // 'csv' and 'reqif' (`trace --matrix`): stdout IS the exported matrix.
+  const jsonMode = flags.format === 'json' || flags.format === 'sarif' || flags.format === 'junit' || flags.format === 'claimspec'
+    || flags.format === 'csv' || flags.format === 'reqif';
   // `agent` emits a machine task graph (JSON by default) — it must be banner-
   // free and side-effect-free like the other read-only commands.
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
@@ -849,10 +913,10 @@ async function main() {
   // read-only commands that gated a dispatcher-wide install here failed open:
   // `rules`, `reconcile`, `upgrade`, `watch`, the `generate --spec` and `sync`
   // previews, and even an unknown command name scaffolded ~17 files.
-  // @implements docguard.read-only-commands#FR-001
-  // @implements docguard.read-only-commands#FR-002
-  // @implements docguard.read-only-commands#FR-003
-  // @implements docguard.read-only-commands#FR-004
+  // @implements docguard.read-only-commands#FR-001 {scope=file}
+  // @implements docguard.read-only-commands#FR-002 {scope=file}
+  // @implements docguard.read-only-commands#FR-003 {scope=file}
+  // @implements docguard.read-only-commands#FR-004 {scope=file}
 
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode
@@ -940,7 +1004,7 @@ async function main() {
     case 'agent':
       // v0.26 (field report §2): one-shot, dependency-ordered task graph with
       // pre-filled code-truth + per-task verify. Read-only; JSON by default.
-      // @implements docguard.task-specific-agent-context#FR-010
+      // @implements docguard.task-specific-agent-context#FR-010 {scope=statement}
       runAgent(projectDir, config, flags);
       break;
     case 'hooks':
@@ -1040,6 +1104,10 @@ async function main() {
     case 'review':
       // docguard.doc-dependency-lock#FR-005: the doc lock's only writer.
       runReview(projectDir, config, flags);
+      break;
+    case 'anchors':
+      // docguard.requirement-anchors#FR-021: read-only listing.
+      runAnchors(projectDir, config, flags);
       break;
     case 'rules':
       // docguard.path-scoped-rules#FR-005: read-only.

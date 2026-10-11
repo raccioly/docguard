@@ -5,9 +5,9 @@ import { remapDocPath } from '../shared-doc-roles.mjs';
  * v0.29: migrated to structured findings (STR001–STR003).
  * STR004/STR005 measure agent instruction chains against a byte budget.
  *
- * @implements docguard.agent-instruction-budget#FR-002
- * @implements docguard.agent-instruction-budget#FR-003
- * @implements docguard.agent-instruction-budget#FR-004 Messages are
+ * @implements docguard.agent-instruction-budget#FR-002 {scope=file}
+ * @implements docguard.agent-instruction-budget#FR-003 {scope=file}
+ * @implements docguard.agent-instruction-budget#FR-004 {scope=file} Messages are
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.

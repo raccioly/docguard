@@ -2,6 +2,14 @@
  * Requirement identity parsing shared by traceability and lifecycle recovery.
  * Only declaration-shaped Markdown counts; prose, comments, code fences, and
  * example sections cannot mint identities.
+ *
+ * Each identity carries `text`, the declaration line (what the TF-IDF test
+ * hint and preflight overlap detection read), and `block`, every line of the
+ * requirement: a list item with its nested bullets and indented continuation,
+ * a heading through the next heading, a table row, or a paragraph. A
+ * requirement fingerprint hashes the block, so an edit to its third line is
+ * seen (docguard.requirement-anchors#FR-014).
+ * @implements docguard.requirement-anchors#FR-014
  */
 
 export const DEFAULT_REQ_PATTERNS = [
@@ -39,6 +47,7 @@ export function collectRequirementIdsFromContent(content, docName, patterns = DE
   if (!hasMatch) return reqIds;
 
   const lines = content.split('\n');
+  const declarations = [];
   let fence = null;
   let exampleLevel = null;
   let inComment = false;
@@ -83,9 +92,49 @@ export function collectRequirementIdsFromContent(content, docName, patterns = DE
         const key = `${docName}#${reqId}`;
         if (!reqIds.has(key)) {
           reqIds.set(key, { id: reqId, file: docName, line: i + 1, text: line.trim() });
+          declarations.push({ key, index: i, prefix });
         }
       }
     }
   }
+  if (declarations.length) attachBlocks(lines, declarations, reqIds);
   return reqIds;
+}
+
+/** Which raw lines sit inside a fenced code block. */
+function fencedLines(lines) {
+  const inFence = new Array(lines.length).fill(false);
+  let fence = null;
+  for (let i = 0; i < lines.length; i++) {
+    const marker = lines[i].match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      inFence[i] = true;
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length
+        && lines[i].slice(marker[0].length).trim() === '') fence = null;
+    } else if (marker) { fence = marker[1]; inFence[i] = true; }
+  }
+  return inFence;
+}
+
+function attachBlocks(lines, declarations, reqIds) {
+  const inFence = fencedLines(lines);
+  const declared = new Set(declarations.map(d => d.index));
+  for (const { key, index, prefix } of declarations) {
+    const list = prefix.match(/^(\s*)(?:[-*+]|\d+[.)])\s/);
+    const kind = /^\s{0,3}#{1,6}\s/.test(prefix) ? 'heading'
+      : /^\s{0,3}\|/.test(prefix) ? 'table'
+        : list ? 'list' : 'plain';
+    const indent = list ? list[1].length : 0;
+    let end = index;
+    for (let j = index + 1; j < lines.length && kind !== 'table'; j++) {
+      const raw = lines[j];
+      if (declared.has(j)) break;
+      if (!inFence[j] && /^\s{0,3}#{1,6}\s/.test(raw)) break;
+      const blank = raw.trim() === '';
+      if (kind === 'plain' && blank) break;
+      if (kind === 'list' && !blank && !inFence[j] && raw.match(/^\s*/)[0].length <= indent) break;
+      if (!blank) end = j;
+    }
+    reqIds.get(key).block = lines.slice(index, end + 1).join('\n');
+  }
 }

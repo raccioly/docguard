@@ -1290,12 +1290,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 646
+            "line": 648
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 673
+            "line": 675
           },
           {
             "requirementId": "FR-021",
@@ -2034,7 +2034,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 236
+            "line": 254
           },
           {
             "requirementId": "FR-003",
@@ -2703,7 +2703,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/trace.mjs",
-            "line": 53
+            "line": 57
           },
           {
             "requirementId": "FR-007",
@@ -4928,7 +4928,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 345
+            "line": 363
           },
           {
             "requirementId": "FR-006",
@@ -4948,7 +4948,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 953
+            "line": 1013
           },
           {
             "requirementId": "FR-008",
@@ -5188,7 +5188,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 558
+            "line": 494
           },
           {
             "requirementId": "FR-005",
@@ -5963,23 +5963,18 @@
           },
           {
             "requirementId": "FR-005",
-            "file": "cli/findings.mjs",
-            "line": 927
-          },
-          {
-            "requirementId": "FR-005",
             "file": "cli/validators/suppressions.mjs",
             "line": 12
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1189
+            "line": 1249
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1199
+            "line": 1259
           },
           {
             "requirementId": "FR-006",
@@ -8081,7 +8076,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 681
+            "line": 709
           },
           {
             "requirementId": "FR-006",
@@ -8665,12 +8660,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 91
+            "line": 95
           },
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 92
+            "line": 96
           },
           {
             "requirementId": "FR-009",
@@ -8705,12 +8700,12 @@
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 196
+            "line": 161
           },
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 198
+            "line": 163
           },
           {
             "requirementId": "FR-014",
@@ -8720,7 +8715,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 193
+            "line": 194
           },
           {
             "requirementId": "FR-016",
@@ -9976,7 +9971,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 192
+            "line": 193
           },
           {
             "requirementId": "FR-011",
@@ -10220,7 +10215,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 852
+            "line": 916
           },
           {
             "requirementId": "FR-001",
@@ -10230,17 +10225,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 853
+            "line": 917
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 854
+            "line": 918
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 855
+            "line": 919
           },
           {
             "requirementId": "FR-005",
@@ -11102,7 +11097,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 79
+            "line": 80
           }
         ],
         "testEvidence": [
@@ -11274,6 +11269,745 @@
             "requirementId": "SC-002",
             "file": "tests/removed-file-attribution.test.mjs",
             "line": 10
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.requirement-anchors",
+      "path": "specs/070-requirement-anchors/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ],
+          "assetPaths": [
+            "tests/fixtures/anchors/",
+            "tools/anchor-oracle/corpus/"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.requirement-anchors#FR-001",
+          "docguard.requirement-anchors#FR-002",
+          "docguard.requirement-anchors#FR-003",
+          "docguard.requirement-anchors#FR-004",
+          "docguard.requirement-anchors#FR-005",
+          "docguard.requirement-anchors#FR-006",
+          "docguard.requirement-anchors#FR-007",
+          "docguard.requirement-anchors#FR-008",
+          "docguard.requirement-anchors#FR-009",
+          "docguard.requirement-anchors#FR-010",
+          "docguard.requirement-anchors#FR-011",
+          "docguard.requirement-anchors#FR-012",
+          "docguard.requirement-anchors#FR-013",
+          "docguard.requirement-anchors#FR-014",
+          "docguard.requirement-anchors#FR-015",
+          "docguard.requirement-anchors#FR-016",
+          "docguard.requirement-anchors#FR-017",
+          "docguard.requirement-anchors#FR-018",
+          "docguard.requirement-anchors#FR-019",
+          "docguard.requirement-anchors#FR-020",
+          "docguard.requirement-anchors#FR-021",
+          "docguard.requirement-anchors#FR-022",
+          "docguard.requirement-anchors#FR-023",
+          "docguard.requirement-anchors#FR-024",
+          "docguard.requirement-anchors#FR-025",
+          "docguard.requirement-anchors#FR-026",
+          "docguard.requirement-anchors#FR-027",
+          "docguard.requirement-anchors#FR-028",
+          "docguard.requirement-anchors#FR-029",
+          "docguard.requirement-anchors#FR-030",
+          "docguard.requirement-anchors#FR-031",
+          "docguard.requirement-anchors#FR-032",
+          "docguard.requirement-anchors#FR-033",
+          "docguard.requirement-anchors#FR-034",
+          "docguard.requirement-anchors#FR-035",
+          "docguard.requirement-anchors#FR-036",
+          "docguard.requirement-anchors#FR-037",
+          "docguard.requirement-anchors#FR-038",
+          "docguard.requirement-anchors#FR-039",
+          "docguard.requirement-anchors#FR-040",
+          "docguard.requirement-anchors#FR-041",
+          "docguard.requirement-anchors#FR-042",
+          "docguard.requirement-anchors#FR-043",
+          "docguard.requirement-anchors#SC-001",
+          "docguard.requirement-anchors#SC-002",
+          "docguard.requirement-anchors#SC-003",
+          "docguard.requirement-anchors#SC-004",
+          "docguard.requirement-anchors#SC-005",
+          "docguard.requirement-anchors#SC-006",
+          "docguard.requirement-anchors#SC-007",
+          "docguard.requirement-anchors#SC-008",
+          "docguard.requirement-anchors#SC-009",
+          "docguard.requirement-anchors#SC-010"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/070-requirement-anchors/spec.md",
+            "digest": "sha256:2e204bee0b290441b7703e9bfa80a11526e3c8df70bf44d36d8b0ff7ab457a56"
+          },
+          {
+            "path": "specs/070-requirement-anchors/plan.md",
+            "digest": "sha256:2345627f1e4e6c84a76015ffbb9b3115e0c1dec26f6a4985481d6edcf06cffa4"
+          },
+          {
+            "path": "specs/070-requirement-anchors/tasks.md",
+            "digest": "sha256:092bdc3916cd373ede3ce890e8ed660f727f1f5bffb4086e83daba756c116c33"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 77,
+          "total": 79
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 33
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 36
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 107
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 110
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/requirement-evidence.mjs",
+            "line": 111
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 34
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 37
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 35
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 38
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-anchors-child.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-anchors.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-decls.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 39
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/requirement-docs.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-requirements.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-requirements.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/py-anchors.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/anchors.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/commands/anchors.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/commands/anchors.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/commands/anchors.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "cli/commands/anchors.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-025",
+            "file": "cli/commands/anchors.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-027",
+            "file": "tools/anchor-churn-replay.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-027",
+            "file": "tools/anchor-churn-replay.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-031",
+            "file": "cli/commands/impact.mjs",
+            "line": 271
+          },
+          {
+            "requirementId": "FR-032",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 540
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "cli/scanners/semantic-claims.mjs",
+            "line": 77
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "cli/scanners/testguard-evidence.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-034",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 748
+          },
+          {
+            "requirementId": "FR-034",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 621
+          },
+          {
+            "requirementId": "FR-035",
+            "file": "cli/commands/anchors.mjs",
+            "line": 141
+          },
+          {
+            "requirementId": "FR-036",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 688
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "cli/commands/trace.mjs",
+            "line": 232
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 719
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "cli/writers/trace-matrix.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-038",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 113
+          },
+          {
+            "requirementId": "FR-040",
+            "file": ".github/workflows/ci.yml",
+            "line": 335
+          },
+          {
+            "requirementId": "FR-040",
+            "file": "tools/anchor-oracle/run.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchor-cache.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchor-cache.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "SC-003",
+            "file": ".github/workflows/ci.yml",
+            "line": 291
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/requirement-anchors-treesitter.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/shared-requirements-block.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/fingerprint-shared.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-025",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-027",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-029",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-030",
+            "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-031",
+            "file": "tests/impact-walk-relocation.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-031",
+            "file": "tests/requirement-anchors-ripple.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-032",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-034",
+            "file": "tests/requirement-anchors-orphans.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-035",
+            "file": "tests/requirement-anchors-orphans.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-036",
+            "file": "tests/requirement-anchors-orphans.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "tests/trace-matrix.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-038",
+            "file": "tests/requirement-anchors-import.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-039",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-040",
+            "file": "tests/anchor-oracle.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-040",
+            "file": "tests/requirement-anchors-treesitter.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-042",
+            "file": "tests/requirement-anchors-adoption.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-043",
+            "file": "tests/requirement-anchors-adoption.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/requirement-anchors-adoption.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/anchor-oracle.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-009",
+            "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-010",
+            "file": "tests/trace-matrix.test.mjs",
+            "line": 8
           }
         ]
       }
@@ -12744,7 +13478,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 943
+            "line": 1007
           },
           {
             "requirementId": "FR-011",

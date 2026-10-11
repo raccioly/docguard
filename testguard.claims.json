@@ -1635,7 +1635,7 @@
           "id": "F1",
           "description": "AST metadata (positions) is fingerprinted, so a line move fires.",
           "faultClass": "return-altered",
-          "file": "cli/scanners/doc-deps.mjs",
+          "file": "cli/scanners/fingerprint.mjs",
           "find": "  return JSON.stringify(node, (key, value) => (AST_METADATA.has(key) ? undefined : value));",
           "replace": "  return JSON.stringify(node);",
           "producedBy": {
@@ -1648,7 +1648,7 @@
           "description": "Symbols fall back to whole-file bytes, so unrelated edits fire.",
           "faultClass": "return-altered",
           "file": "cli/scanners/doc-deps.mjs",
-          "find": "      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeAst(node)) };",
+          "find": "      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeJsV0(node)) };",
           "replace": "      return { ok: true, tier: 'ast', fingerprint: sha256(bytes) };",
           "producedBy": {
             "producer": "agent",
@@ -1660,8 +1660,8 @@
           "description": "A changed dependency is reported as current.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/doc-deps.mjs",
-          "find": "        else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';",
-          "replace": "        else if (false) state = 'changed';",
+          "find": "      else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';",
+          "replace": "      else if (false) state = 'changed';",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 030)"
@@ -1749,6 +1749,1248 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 spec 030)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-SCOPE-RESOLVES-SYMBOLS",
+      "statement": "A requirement tag anchors to the code directly below it at the narrowest scope its position allows, with a fingerprint that ignores formatting, comments and the symbol's own name but not directive comments; tags inside literals, test files and unresolvable positions never create a precise anchor, and guard reports anchors only for projects that opted in.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-002"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 1)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors.test.mjs",
+        "tests/requirement-evidence-literals.test.mjs",
+        "tests/requirement-anchors-golden.test.mjs",
+        "tests/pattern-lexer.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Implementation evidence reads the whole file, so a tag quoted in a string counts.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/requirement-evidence.mjs",
+          "find": "  return realComments(content, filename)",
+          "replace": "  return [{ text: content, line: 1 }]",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A tag directly above a declaration falls back to file scope.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (name) return symbolAnchor(tag, next, [...loc.owners.map(o => o.name), name].join('.'), ctx);",
+          "replace": "    if (name) return file();",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "The symbol's own name is fingerprinted, so a rename reads as a change.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    if (this === node && (key === 'id' || key === 'key')) return undefined;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Directive comments are ignored, so adding @ts-ignore is invisible.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    .filter(c => c.start >= node.start && c.end <= node.end && DIRECTIVE_RE.test(c.value))",
+          "replace": "    .filter(() => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A file header directly above a declaration is no longer reported ambiguous.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (DECLARATION_TYPES.has(next.type)) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A cache that git tracks is trusted.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-cache.mjs",
+          "find": "  if (tracked.length) return off(`ignored: git tracks ${tracked.length} file(s) under ${STATE_DIR}/ (${tracked.slice(0, 3).join(', ')}), so a cache there may have been planted`, tracked);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Guard reports anchors in a project that never opted in.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/requirement-anchors.mjs",
+          "find": "  if (!status && !anchorsActivated(projectDir, config)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A comma list of requirements in one tag is accepted silently.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (extra.length) problems.push(`lists ${extra.length + 1} requirements in one tag; only ${m[2]} anchors. Write one tag per requirement, one per line`);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file the pattern lexer cannot balance still gets precise anchors.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (lexed.error) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A trailing comment on a declaration line detaches the tag above it, so the link falls back to file scope.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    if (before.trim() !== '' || after.trim() !== '') continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "Layout markers at a span edge enter the floor, so a trailing comment changes it.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "  while (last > first && out[last - 1].layout) last--;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-SUSPECT-ON-CHANGE",
+      "statement": "A baselined or reviewed requirement link turns suspect when its code or its requirement changes and lost when its tag is deleted; an accept is bound to the fingerprints it saw, needs a reason and --bulk for more than one link, records what it replaced, and refuses when a file changed during the run; a conflicting or unreadable lock never reads as current; only an explicit flag edits .gitattributes.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-019"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 2)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-lock.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A code change never makes a link suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  const codeSame = sameTier ? entry.code === link.exact : entry.floor === link.floor;",
+          "replace": "  const codeSame = true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A requirement change never makes a link suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  const reqSame = link.req === null || entry.req === link.req;",
+          "replace": "  const reqSame = true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Two different lock lines for one link: the first one silently wins.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-lock.mjs",
+          "find": "    if (conflicted.has(key)) continue; // fail closed: neither side counts",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An accept of many links needs no --bulk.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (selected.length > 1 && !flags.bulk) return fail(`The selection matches ${selected.length} links; add --bulk to accept them all, or use --link for one.`, flags);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An accept needs no reason.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "  if (reason.length < 10 || reason.length > 500) return fail('anchors accept needs --reason \"<what you checked>\" (10-500 characters).', flags);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A baseline stamps links as reviewed.",
+          "faultClass": "literal-changed",
+          "file": "cli/commands/anchors.mjs",
+          "find": "        state: flags.baseline ? 'baselined' : 'reviewed', revision, date, reason, bulk,",
+          "replace": "        state: 'reviewed', revision, date, reason, bulk,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A deleted tag of a reviewed link is never reported lost.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (current.has(key) || movedTo.has(key)) continue;",
+          "replace": "    if (true) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": ".gitattributes is edited without --gitattributes.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "  if (flags.gitattributes && !gitattributesDeclaresUnion(projectDir)) {",
+          "replace": "  if (!gitattributesDeclaresUnion(projectDir)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file that changed during the run is not detected.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (now !== shaOf.get(path)) changed.push(path);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "An accept does not record the fingerprints it replaced.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/anchors.mjs",
+          "find": "        prev: prior ? { code: prior.code, floor: prior.floor, req: prior.req } : null,",
+          "replace": "        prev: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "An unreadable lock lets every link read as reviewed.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "      links: base.links.map(l => ({ ...l, state: 'unverifiable', reason: 'the anchor lock cannot be read' })) };",
+          "replace": "      links: base.links.map(l => ({ ...l, state: 'reviewed' })) };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "A tag citing a retired requirement is reported as unknown.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (index.retired.has(key)) return { retired: true, identity: key };",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-FAIL-POLICY-SCOPED",
+      "statement": "Under anchors.failOn reviewed-exact, a suspect or lost requirement link fails guard only when it was reviewed, sits at symbol, statement or route scope and was read at an exact tier; a requirement-side change never fails; the shipped default equals the committed replay evidence; and a spec's own failing anchors never block its completion.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-028"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 3)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-policy.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A baselined link fails like a reviewed one.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && problem.reviewedState === 'reviewed';",
+          "replace": "    && true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A file-scope link fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && PRECISE_SCOPES.has(problem.scope)",
+          "replace": "    && true",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A pattern-tier link fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && isExactTier(problem.tier)",
+          "replace": "    && true",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A requirement-side change fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && (problem.code === 'ANC001' || problem.code === 'ANC003')",
+          "replace": "    && (problem.code === 'ANC001' || problem.code === 'ANC002' || problem.code === 'ANC003')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unknown failOn value is honoured instead of falling back to the measured default.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  return FAIL_POLICIES.includes(value) ? value : ANCHOR_FAIL_DEFAULT;",
+          "replace": "  return value || ANCHOR_FAIL_DEFAULT;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The validator never raises a failing problem to an error.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/requirement-anchors.mjs",
+          "find": "    const severity = isFailingProblem(p, policy) ? 'error' : rule.severity;",
+          "replace": "    const severity = rule.severity;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The completing spec's own failing anchors count toward SPC007.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "  const anchorFindings = spec ? ownFailingAnchors(projectDir, config, spec.specId) : [];",
+          "replace": "  const anchorFindings = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Another spec's failing anchors are exempted too.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "    .filter(p => isFailingProblem(p, policy) && typeof p.requirement === 'string' && p.requirement.startsWith(`${specId}#`))",
+          "replace": "    .filter(p => isFailingProblem(p, policy))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-MOVE-CARRIES-REVIEW",
+      "statement": "A reviewed link whose code was renamed or moved with an unchanged body carries its review over as moved, only when exactly one new link for the same requirement has the same fingerprint; the next accept rewrites the key and drops the old entry; otherwise the old link is lost.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-030"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 4)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-rename.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Several candidates still carry the review over.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (candidates.length === 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);",
+          "replace": "    if (candidates.length >= 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A moved link is still reported lost.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (current.has(key) || movedTo.has(key)) continue;",
+          "replace": "    if (current.has(key)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Accepting a moved link keeps the old entry.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "      if (l.movedFrom) links.delete(l.movedFrom);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-RIPPLE-NAME-FILTERED",
+      "statement": "Ripple lists the anchored links in files that import a changed anchored symbol and bind its name (named, default or namespace use), up to two hops, never a hub, collapsing wide fan-out, and only as advisory output; impact keeps the same two-hop, hub-suppressed walk.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-031"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 5)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-ripple.test.mjs",
+        "tests/impact-walk-relocation.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Every importer qualifies, whatever it imports.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "        if (name && !bindsName(projectDir, file, edgeNames.get(`${file}\\u0000${link.file}`), name)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Hubs are not excluded.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "      if (isHub(file)) continue;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Fan-out never collapses.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    link.ripple = hits.length > limit",
+          "replace": "    link.ripple = false",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The walk is not capped at two hops.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "export function reverseImportAncestors(file, reverseEdges, maxHops = 2) {",
+          "replace": "export function reverseImportAncestors(file, reverseEdges, maxHops = 3) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A namespace import is never matched.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    return new RegExp(`\\\\b${ns}\\\\.${name}\\\\b`).test(text);",
+          "replace": "    return false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 5)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-TESTCHAIN-NEEDS-REVERIFY",
+      "statement": "For a code-side suspect, every test citing the requirement needs re-verification; saved TestGuard evidence re-verifies a test only when its revision carried the anchored code at today's fingerprint, a claim names the requirement through a structured req: reference, the test defended that claim, and every fault was killed with the claim, targets and defenders unchanged; unreadable, provisional, foreign or stale evidence is inconclusive, and DocGuard runs nothing.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-033"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 6)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-testchain.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Evidence from before the change re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (atRevision !== 'unchanged') {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A claim counts whatever its source reference says.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  const naming = [...evidence.claims.values()].filter(e => structuredRequirement(e.claim.source) === requirement);",
+          "replace": "  const naming = [...evidence.claims.values()];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A test that did not defend the claim is re-verified.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  const defending = naming.filter(e => e.records.some(r => strings(r.defenders?.resolved) && r.defenders.resolved.includes(testFile)));",
+          "replace": "  const defending = naming;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A surviving fault still re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "e.records.filter(r => r.verdict !== 'killed')",
+          "replace": "e.records.filter(r => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A file or claim edited since the probe still re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "    if (stale) return stale;",
+          "replace": "    if (false) return stale;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Provisional evidence (one confirmation run) counts.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (doc.run.provisional === true || !(Number.isInteger(doc.run.confirmRuns) && doc.run.confirmRuns >= 3)) {",
+          "replace": "  if (doc.run.provisional === true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "An evidence path that leaves the project is followed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "    || path.split('/').some(part => part === '..');",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A report head that is not a commit id reaches git.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (!COMMIT.test(String(doc.run.repo.head))) return 'run.repo.head is not a commit id';",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A fault added since the probe is ignored.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (unprobed.length) return answer(",
+          "replace": "  if (false) return answer(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A requirement-side suspect lists tests too.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "const isCodeSuspect = link => link.state === 'suspect' && (link.side === 'code' || link.side === 'both');",
+          "replace": "const isCodeSuspect = link => link.state === 'suspect';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-ORPHANS-DETERMINISTIC",
+      "statement": "anchors --orphans lists each exported or top-level unit under the governed paths that no tag anchors exactly once, in file and line order, honouring each language's visibility and file-scope coverage; a disposition is recorded only for a current untagged symbol, needs --bulk for several, and goes stale when its symbol is gone; score and trace show anchor granularity only once a project opted in.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-034"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 7)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-orphans.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A file-scope tag no longer covers the symbols in its file.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (link.scope === 'file') return true;",
+          "replace": "  if (false) return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Orphans are listed in reverse file order.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  orphans.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 :",
+          "replace": "  orphans.sort((a, b) => (a.file < b.file ? 1 : a.file > b.file ? -1 :",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Go lowercase (unexported) functions are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    case 'go': return /^[A-Z]/.test(sym.name);",
+          "replace": "    case 'go': return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Rust items without pub are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    case 'rust': return /\\bpub\\b/.test(header);",
+          "replace": "    case 'rust': return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Python private functions are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": ".filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class') && !sym.name.startsWith('_'))",
+          "replace": ".filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class'))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A disposition is accepted for a symbol that is not an untagged one.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "      if (!selected.length) return fail(`${flags.symbol} is not an untagged symbol",
+          "replace": "      if (false) return fail(`${flags.symbol} is not an untagged symbol",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A multi-symbol disposition needs no --bulk.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (selected.length > 1 && !flags.bulk) return fail(`The selection matches ${selected.length} symbols",
+          "replace": "    if (false) return fail(`The selection matches ${selected.length} symbols",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The command no longer checks the kind itself.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (!DISPOSITION_KINDS.includes(flags.kind)) return fail(",
+          "replace": "    if (false) return fail(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A disposition whose symbol is gone is not reported stale.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    .filter(d => !candidates.has(d.key) && (!options.spec || governed.matches(d.file)))",
+          "replace": "    .filter(d => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Granularity is computed for a project that has not opted in.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (!anchorsActivated(projectDir, config)) return null;\n  const { summary } = computeLinks(projectDir, config);",
+          "replace": "  const { summary } = computeLinks(projectDir, config);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A JS module that exports nothing lists no top-level functions.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (!exports) {\n    for (const stmt of body) {",
+          "replace": "  if (false) {\n    for (const stmt of body) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "TRACE-MATRIX-COMPLETE",
+      "statement": "trace --matrix exports every requirement, link and test exactly once: CSV with the documented columns in UTF-8 byte order, RFC 4180 quoting and formula-injection prefixes, and well-formed ReqIF 1.2 with escaped values and a fixed creation time, byte-identical across runs, banner-free on stdout or written through the safe write.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-037"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 8)"
+      },
+      "defendedBy": [
+        "tests/trace-matrix.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A formula-like cell reaches the spreadsheet unprefixed.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  if (FORMULA_START.test(text)) text = `'${text}`;",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A cell with a comma or quote is not quoted.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  return /[\",\\n\\r]/.test(text) ? `\"${text.replaceAll('\"', '\"\"')}\"` : text;",
+          "replace": "  return text;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Rows keep whatever order links were found in.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  rows.sort((a, b) => byteCompare(a.requirement, b.requirement) || byteCompare(a.file, b.file) || byteCompare(a.anchor, b.anchor)",
+          "replace": "  rows.sort((a, b) => 0 || byteCompare(a.file, b.file) || byteCompare(a.anchor, b.anchor)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A requirement with no link is left out.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!links.length) {\n      const empty",
+          "replace": "    if (!links.length) { continue;\n      const empty",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A changed link's tests are reported as merely linked.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "test_status: chain ? chain.status : 'linked' });",
+          "replace": "test_status: 'linked' });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "XML special characters are written raw.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "    .replace(/[&<>\"']/g, ch => XML_ESCAPES[ch]);",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A test cited by two links becomes two ReqIF objects.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "      if (!prior) {",
+          "replace": "      if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The ReqIF creation time is the wall clock.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  const time = xmlEscape(options.creationTime || FIXED_CREATION_TIME);",
+          "replace": "  const time = xmlEscape(options.creationTime || new Date().toISOString());",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The export is preceded by the banner.",
+          "faultClass": "condition-forced",
+          "file": "cli/docguard.mjs",
+          "find": "    || flags.format === 'csv' || flags.format === 'reqif';",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "--out writes without the safe write and still prints to stdout.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/trace.mjs",
+          "find": "    safeWrite(target, text);",
+          "replace": "    process.stdout.write(text);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The requirement object carries its ReqIF identifier as its ID.",
+          "faultClass": "condition-forced",
+          "file": "cli/writers/trace-matrix.mjs",
+          "find": "  { key: 'Requirement', attrs: [['ID', 'key'],",
+          "replace": "  { key: 'Requirement', attrs: [['ID', 'id'],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 8)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-IMPORTERS-READ-ONLY",
+      "statement": "With anchors.import, StrictDoc @relation and OpenFastTrace [impl->...] tags anchor by position to the requirement anchors.importMap names, and are plain text without it; an unmapped ID is ANC007, native and imported tags for different requirements on one symbol are ANC006, an OFT tag behind the mapped revision is an outdated code-side suspect, the import settings are part of the cache identity, and foreign tags are never written.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-038"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 9)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-import.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Every importer is on when anchors.import is unset.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (!kinds.size) return null;",
+          "replace": "  if (!kinds.size) return { kinds: new Set(IMPORTERS), map: {} };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "An unmapped ID silently makes no link and no finding.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "        problems.push({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref}",
+          "replace": "        void ({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Native and imported tags for different requirements pass silently.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!o.native.size || !o.foreign.size) continue;",
+          "replace": "    continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An OFT tag behind the mapped revision is not outdated.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  const outdated = source === 'openfasttrace' && expected !== null && revision !== expected;",
+          "replace": "  const outdated = false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The import map is not part of the cache identity.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "|req:${patternIdentity}${importIdentity}",
+          "replace": "|req:${patternIdentity}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A file with only imported tags is skipped by the prefilter.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (!hint.test(content)) continue;",
+          "replace": "    if (!/@(?:implements|req)\\b/.test(content)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "StrictDoc scope=file anchors the symbol below instead of the file.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "const STRICTDOC_SCOPE = { file: 'file',",
+          "replace": "const STRICTDOC_SCOPE = { file: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Only the first enabled importer is read.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (importers.kinds.has('openfasttrace')) {\n    for (const m of text.matchAll(OFT_RE)) {",
+          "replace": "  if (importers.kinds.has('openfasttrace') && !importers.kinds.has('strictdoc')) {\n    for (const m of text.matchAll(OFT_RE)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 9)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-FINGERPRINT-GOLDEN",
+      "statement": "Golden fingerprints pin every language, tier and Python version, so any change to a fingerprint fails until the algorithm version is bumped, and an entry under an unsupported algorithm is unverifiable, not suspect; the opt-in tree-sitter tier loads only hash-pinned artifacts, never by detection, from the staged copy in a child with no environment, keeps keys and floors unchanged, and its fingerprint ignores formatting.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-039"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 10)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-golden.test.mjs",
+        "tests/requirement-anchors-treesitter.test.mjs",
+        "tests/requirement-anchors-lock.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "An artifact whose hash the manifest does not pin is loaded.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "  if (actual !== expected) return { error:",
+          "replace": "  if (false) return { error:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The tier is auto-detected from the project's node_modules.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "  if (!artifacts || typeof artifacts !== 'object') return null;",
+          "replace": "  if (!artifacts || typeof artifacts !== 'object') return { runtime: 'node_modules/web-tree-sitter/web-tree-sitter.js', runtimeWasm: 'node_modules/web-tree-sitter/web-tree-sitter.wasm', grammars: {} };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "The parser process inherits the environment.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "maxBuffer: 256 * 1024 * 1024, env: {},",
+          "replace": "maxBuffer: 256 * 1024 * 1024, env: process.env,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The parser process imports the configured file instead of the verified copy.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.mjs'),",
+          "replace": "    runtime: { js: String(artifacts.runtime),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The floor follows the tree-sitter fingerprint, so it differs between machines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
+          "replace": "          floor: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A JS fingerprint includes the symbol's own name.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    if (this === node && (key === 'id' || key === 'key')) return undefined;",
+          "replace": "    if (false) return undefined;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The Python fingerprint serializes differently.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "  return dg1([serialized, ...directives.map(d => `directive:${d.trim()}`)].join('\\u0000'));",
+          "replace": "  return dg1([String(serialized).toUpperCase(), ...directives.map(d => `directive:${d.trim()}`)].join('\\u0000'));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "An entry under an unsupported algorithm is compared, and so turns suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (!entry.code.startsWith('dg1:')) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "Redundant parentheses change the tree-sitter fingerprint.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-decls.mjs",
+          "find": "    if (n.type === 'parenthesized_expression' && n.namedChildCount === 1) { visit(n.namedChild(0)); return; }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
           }
         }
       ]

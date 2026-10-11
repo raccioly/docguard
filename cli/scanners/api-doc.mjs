@@ -51,7 +51,7 @@ export function normalizePath(raw) {
   // collapse every param syntax to {}: Next.js [id]/[...slug]/[[...slug]],
   // OpenAPI {param}, Django/Flask <int:pk> and <pk> (before the colon rule,
   // which would otherwise leave `<int{}`), and colon :param (incl. catch-all
-  // :param*). @implements docguard.python-extraction#FR-004
+  // :param*). @implements docguard.python-extraction#FR-004 {scope=statement}
   p = p
     .replace(/\[{1,2}[^\]]*\]{1,2}/g, '{}')
     .replace(/\{[^}/]+\}/g, '{}')

@@ -1,0 +1,4 @@
+# Requirement anchors (specs/070-requirement-anchors, CI recipe 3f): DocGuard
+# records a reason for every accepted link but authenticates nobody, so a person
+# reviews every change to the anchor lock.
+.docguard-anchor-lock.jsonl @raccioly

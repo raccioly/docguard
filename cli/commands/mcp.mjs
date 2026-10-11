@@ -46,6 +46,7 @@ import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/sem
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { docsForPath, docStructure, readSection, READ_DEFAULT_BYTES, READ_MAX_BYTES } from '../scanners/doc-references.mjs';
 import { buildTaskContextPacket } from '../scanners/task-context.mjs';
+import { computeAnchorStatus } from '../scanners/anchors.mjs';
 import { releaseAge, updateHintText } from '../release-age.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
@@ -202,6 +203,20 @@ const TOOLS = [
       type: 'object',
       properties: { task: { type: 'string', description: 'What the agent is about to do' }, ...PROJECT_DIR_PROP },
       required: ['task'],
+    },
+    annotations: READONLY_ANNOTATIONS,
+  },
+  {
+    name: 'docguard_anchors',
+    title: 'Code→requirement anchors',
+    description: 'The same listing as `docguard anchors --format json`: each @implements/@req tag, the requirement it resolves to, and the file, symbol, statement or route it anchors to with the tier that resolved it, plus problems. Read-only; bounded to 200 links.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        spec: { type: 'string', description: 'Only links to this Spec ID' },
+        file: { type: 'string', description: 'Only links in this project-relative file' },
+        ...PROJECT_DIR_PROP,
+      },
     },
     annotations: READONLY_ANNOTATIONS,
   },
@@ -389,6 +404,23 @@ const TOOL_HANDLERS = {
     const task = String((args && args.task) || '').trim();
     if (!task) throw new Error('Missing required argument "task".');
     return buildTaskContextPacket(dir, config, task);
+  },
+
+  // docguard.requirement-anchors#FR-021: read-only; the lock is written only by the CLI.
+  docguard_anchors(args, serving) {
+    const { dir, config } = resolveTarget(args, serving);
+    const computed = computeAnchorStatus(dir, config, { ripple: true, tests: true });
+    const spec = args && typeof args.spec === 'string' ? args.spec : null;
+    const file = args && typeof args.file === 'string' ? args.file : null;
+    const links = computed.links.filter(l => (!spec || l.specId === spec) && (!file || l.file === file));
+    return {
+      activated: computed.activated,
+      summary: { ...computed.summary, links: links.length },
+      links: links.slice(0, 200).map(({ entry, ...rest }) => rest),
+      lost: computed.lost.filter(l => (!spec || l.requirement.startsWith(`${spec}#`)) && (!file || l.file === file)).slice(0, 100).map(({ entry, ...rest }) => rest),
+      truncated: links.length > 200,
+      problems: computed.problems.filter(p => !file || p.file === file).slice(0, 100),
+    };
   },
 
   docguard_diagnose(args, serving) {

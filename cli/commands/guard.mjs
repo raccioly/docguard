@@ -2,9 +2,9 @@ import { compactGuardResult } from '../shared-guard-json.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
- * @implements docguard.evidence-scoped-verification#FR-010
- * @implements docguard.output-ux#FR-001
- * @implements docguard.output-ux#FR-008
+ * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
+ * @implements docguard.output-ux#FR-001 {scope=file}
+ * @implements docguard.output-ux#FR-008 {scope=file}
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
  *
@@ -166,6 +166,7 @@ import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs'
 import { validateSuppressions } from '../validators/suppressions.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
+import { validateRequirementAnchors } from '../validators/requirement-anchors.mjs';
 import { validatePathScopedRules } from '../validators/path-scoped-rules.mjs';
 import { validateDocOwnership } from '../validators/doc-ownership.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
@@ -372,6 +373,7 @@ export function runGuardInternal(projectDir, config) {
     { key: 'documentLifecycle', name: 'Document-Lifecycle', fn: () => validateDocumentLifecycle(projectDir, config) },
     { key: 'specRegistry', name: 'Spec-Registry', fn: () => validateSpecRegistry(projectDir, config) },
     { key: 'docDependency', name: 'Doc-Dependency', fn: () => validateDocDependency(projectDir, config) },
+    { key: 'requirementAnchors', name: 'Requirement-Anchors', fn: () => validateRequirementAnchors(projectDir, config) },
     { key: 'pathScopedRules', name: 'Path-Scoped-Rules', fn: () => validatePathScopedRules(projectDir, config) },
     { key: 'docOwnership', name: 'Doc-Ownership', fn: () => validateDocOwnership(projectDir, config) },
     { key: 'evidence', name: 'Evidence', fn: () => validateEvidence(projectDir, config) },
@@ -711,7 +713,7 @@ export function liteValidatorsConfig(config = {}) {
     'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-    'evidence', 'docDependency', 'pathScopedRules', 'docOwnership', 'suppressions',
+    'evidence', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'suppressions',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

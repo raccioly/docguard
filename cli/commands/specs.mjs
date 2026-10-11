@@ -24,6 +24,7 @@ import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
+import { anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
 import { checkSpecFirst } from '../scanners/spec-first.mjs';
 
 const CONTEXT_PATH = '.docguard/current-context.json';
@@ -84,6 +85,17 @@ function completionTransition(spec) {
   return `${delivery}→verified`;
 }
 
+
+/** The completing spec's anchor findings that fail guard under its policy (FR-029). */
+function ownFailingAnchors(projectDir, config, specId) {
+  if (!anchorsActivated(projectDir, config)) return [];
+  const status = computeAnchorStatus(projectDir, config);
+  const policy = failOnPolicy(config);
+  return status.problems
+    .filter(p => isFailingProblem(p, policy) && typeof p.requirement === 'string' && p.requirement.startsWith(`${specId}#`))
+    .map(p => ({ code: p.code, requirement: p.requirement, file: p.file, key: p.key,
+      acceptCommand: p.code === 'ANC003' ? `docguard anchors accept --remove '${p.key}' --reason "…"` : `docguard anchors accept --link '${p.key}' --reason "<what you checked>"` }));
+}
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   const loaded = readSpecRegistry(projectDir);
@@ -151,13 +163,19 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     }
   }
   const guard = options.guardResult || runGuardInternal(projectDir, config);
-  if ((guard.errors || 0) > 0) blockers.push({ code: 'SPC007', message: `Guard has ${guard.errors} error(s).` });
+  // docguard.requirement-anchors#FR-029: a spec's own failing anchor findings
+  // never block its completion; completing is how they get reviewed. They are
+  // listed instead, with their accept commands. Another spec's still count.
+  const anchorFindings = spec ? ownFailingAnchors(projectDir, config, spec.specId) : [];
+  const guardErrors = Math.max(0, (guard.errors || 0) - anchorFindings.length);
+  if (guardErrors > 0) blockers.push({ code: 'SPC007', message: `Guard has ${guardErrors} error(s).` });
   return {
     status: blockers.length ? 'BLOCKED' : 'READY',
     specId: flags.id || null,
     revision,
     transition: completionTransition(spec),
     blockers,
+    anchorFindings,
     reconciliation: reconcile,
     evidence: spec ? [...new Set([
       ...spec.observed.implementationEvidence.map(item => item.file),
@@ -396,6 +414,10 @@ function printResult(result) {
     console.log(`${result.specId || '<missing>'}: ${result.transition || 'no transition (unknown spec)'}`);
     if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
     for (const warning of result.warnings || []) console.log(`  ⚠ ${warning}`);
+    if (result.anchorFindings?.length) {
+      console.log(`  ${result.anchorFindings.length} of this spec's anchor finding(s) do not block completion; review them:`);
+      for (const f of result.anchorFindings) console.log(`    ${f.code} ${f.requirement} (${f.file}): ${f.acceptCommand}`);
+    }
     return;
   }
   if (result.command === 'approve') {

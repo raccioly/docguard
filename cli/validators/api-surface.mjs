@@ -23,12 +23,12 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
  *
  * OpenAPI discovery lives in cli/shared-openapi.mjs so no validator imports
  * another (Constitution IV).
- * @implements docguard.spec-kit-artifact-coverage#FR-007
- * @implements docguard.fallback-language-coverage#FR-001
- * @implements docguard.fallback-language-coverage#FR-007
- * @implements docguard.fallback-language-coverage#FR-009
- * @implements docguard.coverage-followups#FR-003
- * @implements docguard.coverage-followups#FR-004
+ * @implements docguard.spec-kit-artifact-coverage#FR-007 {scope=file}
+ * @implements docguard.fallback-language-coverage#FR-001 {scope=file}
+ * @implements docguard.fallback-language-coverage#FR-007 {scope=file}
+ * @implements docguard.fallback-language-coverage#FR-009 {scope=file}
+ * @implements docguard.coverage-followups#FR-003 {scope=file}
+ * @implements docguard.coverage-followups#FR-004 {scope=file}
  */
 
 import { existsSync, readFileSync } from 'node:fs';

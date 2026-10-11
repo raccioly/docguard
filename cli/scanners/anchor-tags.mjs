@@ -1,0 +1,797 @@
+/**
+ * Requirement tags in source code, and what each one anchors to.
+ *
+ * Spec: specs/070-requirement-anchors (docguard.requirement-anchors).
+ * Contract: specs/070-requirement-anchors/contracts/tag-grammar.md.
+ *
+ * A tag is `@implements <specId|path>#<REQ>` or `@req <REQ>` inside a
+ * COMMENT, never inside a string, template or regex literal (FR-005). Where it
+ * sits decides what it anchors to (FR-002):
+ *
+ *   - the file's leading comment block, followed by imports or another
+ *     comment: the whole file;
+ *   - directly above a declaration (decorators and annotations may sit
+ *     between, no blank line): that symbol, by qualified path (FR-003);
+ *   - a leading header directly above a declaration: still the file, flagged
+ *     ambiguous (ANC006), never silently reinterpreted;
+ *   - inside a function body, or above any other top-level statement: that
+ *     statement; above a recognised route registration: the route;
+ *   - inside a Python docstring: the docstring's owner.
+ *
+ * Three tiers resolve positions: Babel for JS/TS, one batched `python3` run
+ * for Python (py-anchors.mjs), and the self-checking pattern lexer for every
+ * other language (pattern-lexer.mjs). A file the pattern lexer cannot balance
+ * keeps every tag at file scope with the reason (FR-008); a language with no
+ * lexer at all is file tier. Each anchor carries an exact fingerprint (the
+ * resolving tier's) and a floor fingerprint (the pattern lexer's, computed
+ * for every language so any two machines can compare; FR-011).
+ *
+ * @implements docguard.requirement-anchors#FR-001
+ * @implements docguard.requirement-anchors#FR-002
+ * @implements docguard.requirement-anchors#FR-003
+ * @implements docguard.requirement-anchors#FR-004
+ * @implements docguard.requirement-anchors#FR-005
+ * @implements docguard.requirement-anchors#FR-007
+ * @implements docguard.requirement-anchors#FR-008
+ */
+
+import { BABEL_TIER, DIRECTIVE_RE, dg1, jsFingerprintV1, pyFingerprintV1 } from './fingerprint.mjs';
+import { extractJsRouteCalls, parseJsTs } from './js-ast.mjs';
+import { PATTERN_TIER, floorFingerprint, languageOf, lex, outline, statementSpan } from './pattern-lexer.mjs';
+
+export const SCOPES = Object.freeze(['file', 'symbol', 'statement', 'route']);
+export const FILE_TIER = 'file';
+const LOW_CONFIDENCE_LANGS = new Set(['c', 'cpp']);
+const AST_KEYS_SKIP = new Set(['loc', 'start', 'end', 'range', 'extra', 'comments', 'leadingComments',
+  'trailingComments', 'innerComments', 'tokens', 'errors']);
+
+// Shapes: `@implements <specId>#<REQ>`, `@req <REQ>, <REQ>`, `@implements <specId>#<REQ> {scope=symbol}`
+const TAG_RE = /@(implements|req)\b[ \t]+([^\s,{}]+)((?:[ \t]*,[ \t]*[^\s,{}]+)*)(?:[ \t]*\{([^}\n]*)\})?/g;
+
+/** True when `id` is a whole requirement ID under the configured patterns. */
+function isRequirementId(id, patterns) {
+  return patterns.some(pattern => {
+    pattern.lastIndex = 0;
+    const m = pattern.exec(id);
+    return m && m.index === 0 && m[0] === id;
+  });
+}
+
+function splitRequirement(token, patterns) {
+  const clean = token.replace(/[.,;:)\]'"`]+$/, '');
+  const hash = clean.lastIndexOf('#');
+  const id = hash < 0 ? clean : clean.slice(hash + 1);
+  if (!isRequirementId(id, patterns)) return null;
+  const qualifier = hash < 0 ? null : clean.slice(0, hash).replaceAll('\\', '/').replace(/^\.\//, '');
+  return { id, qualifier: qualifier || null };
+}
+
+/**
+ * Tags in one comment body. `line` is the comment's first line; `offset` maps
+ * a position inside `text` back to its line.
+ * @returns {{ verb, id, qualifier, line, extra: string[], scope: string|null, problems: string[] }[]}
+ */
+export function tagsInComment(text, line, patterns, importers = null) {
+  const tags = [];
+  TAG_RE.lastIndex = 0;
+  let m;
+  while ((m = TAG_RE.exec(text)) !== null) {
+    const requirement = splitRequirement(m[2], patterns);
+    if (!requirement) continue;
+    const problems = [];
+    const extra = m[3] ? m[3].split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (extra.length) problems.push(`lists ${extra.length + 1} requirements in one tag; only ${m[2]} anchors. Write one tag per requirement, one per line`);
+    let scope = null;
+    if (m[4] !== undefined) {
+      const block = m[4].trim();
+      const kv = /^scope\s*=\s*(\w+)$/.exec(block);
+      if (kv && SCOPES.includes(kv[1])) scope = kv[1];
+      else problems.push(`has an unknown scope block {${block}}; expected {scope=file|symbol|statement|route}. The tag counts at file scope`);
+    }
+    tags.push({
+      verb: m[1], id: requirement.id, qualifier: requirement.qualifier,
+      line: line + (text.slice(0, m.index).match(/\n/g) || []).length,
+      extra, scope, invalidScopeBlock: m[4] !== undefined && scope === null, problems,
+    });
+  }
+  if (importers) tags.push(...foreignTags(text, line, patterns, importers));
+  return tags;
+}
+
+/* ───────────────────────────── Importers (US9, FR-038) ───────────────────────────── */
+
+export const IMPORTERS = Object.freeze(['strictdoc', 'openfasttrace']);
+// StrictDoc: @relation(REQ-1, scope=function) or @relation{REQ-1, scope=function}.
+const STRICTDOC_RE = /@relation[ \t]*[({][ \t]*([^\s,(){}]+)((?:[ \t]*,[ \t]*\w+[ \t]*=[ \t]*[\w-]+)*)[ \t]*[)}]/g;
+// OpenFastTrace: [impl->dsn~name~3], [impl~x~1->req~y~2>>impl,test].
+const OFT_RE = /\[[ \t]*(\w+(?:~[\w.-]+~\d+)?)[ \t]*->[ \t]*(\w+)~([\w.-]+)~(\d+)[ \t]*(?:>>[ \t]*[\w, \t]+)?\]/g;
+const STRICTDOC_SCOPE = { file: 'file', class: 'symbol', function: 'symbol', line: 'statement', range_start: 'statement' };
+
+/**
+ * `anchors.import` and `anchors.importMap`, normalized, or null when no
+ * importer is enabled (then foreign syntax is plain text).
+ * @implements docguard.requirement-anchors#FR-038
+ */
+export function importSettings(config = {}) {
+  const kinds = new Set((Array.isArray(config.anchors?.import) ? config.anchors.import : []).filter(k => IMPORTERS.includes(k)));
+  if (!kinds.size) return null;
+  const raw = config.anchors?.importMap;
+  const map = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  return { kinds, map };
+}
+
+/** The prefilter for a file worth reading: native tags, plus any enabled foreign syntax. */
+export function tagHint(importers) {
+  const parts = ['@(?:implements|req)\\b'];
+  if (importers?.kinds.has('strictdoc')) parts.push('@relation[ \\t]*[({]');
+  if (importers?.kinds.has('openfasttrace')) parts.push('\\[[ \\t]*\\w+(?:~[\\w.-]+~\\d+)?[ \\t]*->');
+  return new RegExp(parts.join('|'));
+}
+
+function mappedTag({ verb, source, ref, key, line, scope, problems, revision }, patterns, importers) {
+  const value = Object.hasOwn(importers.map, key) ? importers.map[key] : undefined;
+  const target = typeof value === 'string' ? value : (value && typeof value === 'object' ? value.requirement : null);
+  const requirement = typeof target === 'string' ? splitRequirement(target, patterns) : null;
+  const base = { verb, line, extra: [], scope, invalidScopeBlock: false, problems };
+  if (!requirement) {
+    return { ...base, id: null, qualifier: null, foreign: { source, ref, key },
+      unmapped: value === undefined
+        ? `has no anchors.importMap entry "${key}"; map it to "<specId>#<REQ>"`
+        : `maps "${key}" to ${JSON.stringify(target ?? value)}, which is not a requirement ID` };
+  }
+  const expected = value && typeof value === 'object' && Number.isInteger(value.revision) ? value.revision : null;
+  const outdated = source === 'openfasttrace' && expected !== null && revision !== expected;
+  return { ...base, id: requirement.id, qualifier: requirement.qualifier, foreign: { source, ref, key, revision: revision ?? null, expected, outdated } };
+}
+
+/** StrictDoc and OpenFastTrace tags in one comment, mapped to requirements; never written back. */
+function foreignTags(text, line, patterns, importers) {
+  const tags = [];
+  const lineOf = index => line + (text.slice(0, index).match(/\n/g) || []).length;
+  if (importers.kinds.has('strictdoc')) {
+    for (const m of text.matchAll(STRICTDOC_RE)) {
+      const params = Object.fromEntries([...m[2].matchAll(/(\w+)[ \t]*=[ \t]*([\w-]+)/g)].map(p => [p[1], p[2]]));
+      if (params.scope === 'range_end') continue; // closes a range_start, which carries the link
+      const problems = [];
+      let scope = null;
+      if (params.scope !== undefined) {
+        scope = STRICTDOC_SCOPE[params.scope] || null;
+        if (!scope) problems.push(`has an unknown StrictDoc scope ${params.scope}; it is read by position`);
+      }
+      tags.push(mappedTag({ verb: 'relation', source: 'strictdoc', ref: m[1], key: `strictdoc:${m[1]}`, line: lineOf(m.index), scope, problems }, patterns, importers));
+    }
+  }
+  if (importers.kinds.has('openfasttrace')) {
+    for (const m of text.matchAll(OFT_RE)) {
+      tags.push(mappedTag({ verb: 'oft', source: 'openfasttrace', ref: `${m[2]}~${m[3]}~${m[4]}`, key: `oft:${m[2]}~${m[3]}`,
+        line: lineOf(m.index), scope: null, problems: [], revision: Number(m[4]) }, patterns, importers));
+    }
+  }
+  return tags;
+}
+
+/** Offsets of each line start (0-based index → offset). */
+function lineStarts(content) {
+  const starts = [0];
+  for (let i = 0; i < content.length; i++) if (content[i] === '\n') starts.push(i + 1);
+  return starts;
+}
+
+function lineSpanOffsets(starts, content, startLine, endLine) {
+  const s = starts[startLine - 1] ?? 0;
+  const e = endLine < starts.length ? starts[endLine] - 1 : content.length;
+  return { s, e: Math.max(s, e) };
+}
+
+/**
+ * Lines that hold nothing but comment text. A trailing comment on a code line
+ * (`func f() {  // note`) does not make that line part of a comment block, so
+ * it cannot detach a tag from the declaration on that line.
+ */
+function commentOnlyLines(content, comments) {
+  const starts = lineStarts(content);
+  const lineEnd = line => (line < starts.length ? starts[line] - 1 : content.length);
+  const lines = new Set();
+  for (const c of comments) {
+    const before = content.slice(starts[c.startLine - 1], c.s);
+    const after = content.slice(c.e, lineEnd(c.endLine));
+    if (before.trim() !== '' || after.trim() !== '') continue;
+    for (let l = c.startLine; l <= c.endLine; l++) lines.add(l);
+  }
+  return lines;
+}
+
+/** True when every line strictly between `fromLine` and `toLine` is a comment line (no blank, no code). */
+function onlyCommentsBetween(fromLine, toLine, commentLines) {
+  for (let l = fromLine + 1; l < toLine; l++) if (!commentLines.has(l)) return false;
+  return true;
+}
+
+/**
+ * Last line of the file's leading comment block: the first run of contiguous
+ * comment lines, when it comes before any code. A later comment run, still
+ * before code but separated by a blank line, is not the header: it sits above
+ * whatever follows it.
+ */
+function leadingBlockEnd(firstCommentLine, firstCodeLine, commentLines) {
+  if (firstCommentLine === null || (firstCodeLine !== null && firstCommentLine >= firstCodeLine)) return 0;
+  let end = firstCommentLine;
+  while (commentLines.has(end + 1)) end++;
+  return end;
+}
+
+function fileAnchor(tag, { tier, exact, floor, confidence, problems = [] }) {
+  return { tag, scope: 'file', anchor: '*', owner: null, kind: 'file', startLine: 1, endLine: null, tier, exact, floor, confidence, problems: [...tag.problems, ...problems] };
+}
+
+/* ───────────────────────────── JS / TS (Babel) ───────────────────────────── */
+
+const LIST_OWNERS = new Set(['Program', 'BlockStatement', 'ClassBody', 'TSModuleBlock', 'StaticBlock', 'SwitchCase']);
+// A `case` lists its statements in `consequent`; every other list owner in `body`.
+const listOf = node => (node.type === 'SwitchCase' ? node.consequent : node.body);
+const FUNCTION_TYPES = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ClassMethod', 'ClassPrivateMethod', 'ObjectMethod']);
+const DECLARATION_TYPES = new Set(['FunctionDeclaration', 'ClassDeclaration', 'VariableDeclaration', 'TSInterfaceDeclaration',
+  'TSTypeAliasDeclaration', 'TSEnumDeclaration', 'TSModuleDeclaration', 'TSDeclareFunction']);
+
+function children(node) {
+  const out = [];
+  for (const key of Object.keys(node)) {
+    if (AST_KEYS_SKIP.has(key)) continue;
+    const value = node[key];
+    if (Array.isArray(value)) { for (const v of value) if (v && typeof v.type === 'string') out.push(v); }
+    else if (value && typeof value.type === 'string') out.push(value);
+  }
+  return out;
+}
+
+/** The name a node adds to a qualified path, or null. */
+function nameOf(node) {
+  switch (node.type) {
+    case 'FunctionDeclaration': case 'ClassDeclaration': case 'TSModuleDeclaration': case 'TSInterfaceDeclaration':
+    case 'TSTypeAliasDeclaration': case 'TSEnumDeclaration': case 'TSDeclareFunction':
+      return node.id?.name ?? node.id?.value ?? null;
+    case 'VariableDeclarator':
+      return node.id?.type === 'Identifier' ? node.id.name : null;
+    case 'ClassMethod': case 'ClassPrivateMethod': case 'ClassProperty': case 'ClassPrivateProperty': case 'TSDeclareMethod':
+      return node.key?.name ?? node.key?.value ?? node.key?.id?.name ?? null;
+    case 'ExportDefaultDeclaration':
+      return node.declaration?.id?.name ?? 'default';
+    default:
+      return null;
+  }
+}
+
+const startOf = node => Math.min(node.start, ...(node.decorators || []).map(d => d.start));
+
+/**
+ * Locate the comment: the innermost statement list that holds it between two
+ * elements, the element after it, and the owner chain.
+ */
+function locateInList(root, comment) {
+  let node = root;
+  const owners = [];
+  for (let guard = 0; guard < 10000; guard++) {
+    if (LIST_OWNERS.has(node.type)) {
+      const list = listOf(node);
+      const elements = Array.isArray(list) ? list : [];
+      const inside = elements.find(el => startOf(el) <= comment.start && comment.end <= el.end);
+      if (!inside) {
+        const next = elements.find(el => startOf(el) >= comment.end) || null;
+        return { found: true, listType: node.type, next, owners };
+      }
+    }
+    const child = children(node).find(c => startOf(c) <= comment.start && comment.end <= c.end);
+    if (!child) return { found: false, owners };
+    const name = nameOf(child);
+    if (name !== null && (child.type !== 'VariableDeclarator' || FUNCTION_TYPES.has(child.init?.type) || child.init?.type === 'ClassExpression')) {
+      owners.push({ name, node: child });
+    }
+    node = child;
+  }
+  return { found: false, owners };
+}
+
+function unwrapExport(node) {
+  if (node?.type === 'ExportNamedDeclaration' && node.declaration) return node.declaration;
+  if (node?.type === 'ExportDefaultDeclaration' && node.declaration && /Declaration$/.test(node.declaration.type)) return node.declaration;
+  return node;
+}
+
+const isRequireDeclaration = node => node?.type === 'VariableDeclaration'
+  && node.declarations.every(d => d.init?.type === 'CallExpression' && d.init.callee?.name === 'require');
+
+function resolveJs(content, relPath, patterns, parsed, importers = null) {
+  const { ast } = parsed;
+  const comments = ast.comments || [];
+  const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.start, e: c.end, startLine: c.loc.start.line, endLine: c.loc.end.line })));
+  const lexedJs = lex(content, languageOf(relPath) || 'js');
+  const floor = (s, e) => floorFingerprint(lexedJs, s, e);
+  const fileExact = jsFingerprintV1(ast.program, comments);
+  const fileFloor = floor(0, content.length);
+  const tier = BABEL_TIER;
+  let routes;
+  const routeAt = (s, e) => {
+    if (routes === undefined) routes = extractJsRouteCalls(content, relPath) || [];
+    return routes.find(r => r.start >= s && r.start < e) || null;
+  };
+  const anchors = [];
+  const firstStatement = ast.program.body[0] || null;
+  const headerEnd = leadingBlockEnd(comments[0]?.loc.start.line ?? null, firstStatement ? lineOfOffset(content, startOf(firstStatement)) : null, commentLines);
+  for (const comment of comments) {
+    const tags = tagsInComment(comment.value, comment.loc.start.line, patterns, importers);
+    if (!tags.length) continue;
+    // The whole run of comments this one belongs to: its last line decides adjacency.
+    let blockEnd = comment.loc.end.line;
+    while (commentLines.has(blockEnd + 1)) blockEnd++;
+    const leading = comment.loc.start.line <= headerEnd;
+    const loc = locateInList(ast.program, comment);
+    for (const tag of tags) anchors.push(resolveJsTag(tag, { blockEnd, leading, loc, commentLines, comments, content, floor, fileExact, fileFloor, tier, routeAt }));
+  }
+  return { tier, confidence: 'high', error: null, anchors, fileExact, fileFloor };
+}
+
+function resolveJsTag(tag, ctx) {
+  const { blockEnd, leading, loc, commentLines, fileExact, fileFloor, tier, routeAt } = ctx;
+  const file = (problems = []) => fileAnchor(tag, { tier, exact: fileExact, floor: fileFloor, confidence: 'high', problems });
+  if (tag.scope === 'file' || tag.invalidScopeBlock) return file();
+  const next = loc.found ? unwrapExport(loc.next) : null;
+  const nextStart = loc.next ? startOf(loc.next) : null;
+  const nextLine = loc.next ? lineOfOffset(ctx.content, nextStart) : null;
+  const adjacent = loc.next && nextLine > blockEnd && onlyCommentsBetween(blockEnd, nextLine, commentLines);
+  const owner = loc.owners.map(o => o.name).join('.') || '<module>';
+
+  if (!loc.found) {
+    // Inside an expression (an object literal, a call argument): the nearest named owner.
+    if (loc.owners.length) {
+      const target = loc.owners[loc.owners.length - 1].node;
+      return symbolAnchor(tag, target, loc.owners.map(o => o.name).join('.'), ctx, [`sits inside an expression, so it anchors to the enclosing ${owner}; move it directly above a declaration or statement for a narrower anchor`]);
+    }
+    return file();
+  }
+  if (leading && loc.listType === 'Program' && !tag.scope) {
+    if (!next || next.type === 'ImportDeclaration' || isRequireDeclaration(next) || !adjacent) return file();
+    if (DECLARATION_TYPES.has(next.type)) {
+      return file([`is in the file's leading comment block directly above ${describeJs(next)}, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm`]);
+    }
+    return file();
+  }
+  if (!next) {
+    if (loc.owners.length) {
+      const target = loc.owners[loc.owners.length - 1].node;
+      return symbolAnchor(tag, target, owner, ctx, ['follows the last statement of its block, so it anchors to the enclosing symbol']);
+    }
+    return file(['follows the last statement of the file; it is read as file scope']);
+  }
+  // A module header that sits among or above imports describes the module (FR-002).
+  if (next.type === 'ImportDeclaration' || isRequireDeclaration(next)) return tag.scope && tag.scope !== 'file' ? file([`asks for {scope=${tag.scope}} but sits above imports`]) : file();
+  if (!adjacent) {
+    if (tag.scope) return file([`asks for {scope=${tag.scope}} but is not directly above a declaration or statement (a blank line separates them)`]);
+    return file(['is not directly above a declaration or statement (a blank line separates them), so it is read as file scope']);
+  }
+  const declaration = isSymbolNode(next, loc.listType);
+  if (tag.scope === 'statement') return statementAnchor(tag, loc.next, owner, ctx);
+  const route = routeAt(nextStart, loc.next.end);
+  if (tag.scope === 'route') {
+    return route ? routeAnchor(tag, loc.next, route, owner, ctx) : file([`asks for {scope=route} but no route registration follows it`]);
+  }
+  if (declaration) {
+    const name = nameOfDeclaration(next);
+    if (name) return symbolAnchor(tag, next, [...loc.owners.map(o => o.name), name].join('.'), ctx);
+  }
+  if (tag.scope === 'symbol') return file([`asks for {scope=symbol} but ${describeJs(next)} is not a named declaration`]);
+  if (route) return routeAnchor(tag, loc.next, route, owner, ctx);
+  return statementAnchor(tag, loc.next, owner, ctx);
+}
+
+function isSymbolNode(node, listType) {
+  if (listType === 'ClassBody') return true;
+  if (DECLARATION_TYPES.has(node.type)) {
+    if (node.type !== 'VariableDeclaration') return true;
+    if (listType === 'Program' || listType === 'TSModuleBlock') return node.declarations[0]?.id?.type === 'Identifier';
+    // Inside a function body, a variable is a symbol only when it holds a function or class.
+    const init = node.declarations[0]?.init;
+    return node.declarations[0]?.id?.type === 'Identifier' && (FUNCTION_TYPES.has(init?.type) || init?.type === 'ClassExpression');
+  }
+  return false;
+}
+
+function nameOfDeclaration(node) {
+  if (node.type === 'VariableDeclaration') return node.declarations[0]?.id?.name || null;
+  return nameOf(node);
+}
+
+function describeJs(node) {
+  const name = nameOfDeclaration(node);
+  return name ? `${node.type.replace(/Declaration$/, '').toLowerCase()} ${name}` : `a ${node.type}`;
+}
+
+function lineOfOffset(content, offset) {
+  let line = 1;
+  for (let i = 0; i < offset && i < content.length; i++) if (content[i] === '\n') line++;
+  return line;
+}
+
+function jsExact(node, comments) {
+  if (node.type === 'VariableDeclaration') {
+    // Leave the variable's own name out (FR-010), keep `const`/`let` and the initializer.
+    const synthetic = { type: node.type, kind: node.kind, declare: node.declare, start: node.start, end: node.end,
+      declarations: node.declarations.map(d => ({ type: d.type, init: d.init, definite: d.definite, typeAnnotation: d.id?.typeAnnotation })) };
+    return jsFingerprintV1(synthetic, comments);
+  }
+  return jsFingerprintV1(node, comments);
+}
+
+function spanOf(node, content) {
+  const s = startOf(node);
+  return { s, e: node.end, startLine: lineOfOffset(content, s), endLine: node.loc?.end?.line ?? lineOfOffset(content, node.end) };
+}
+
+function symbolAnchor(tag, node, qual, ctx, problems = []) {
+  const span = spanOf(node, ctx.content);
+  return { tag, scope: 'symbol', anchor: qual, owner: null, kind: node.type, startLine: span.startLine, endLine: span.endLine,
+    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems, ...problems] };
+}
+
+function statementAnchor(tag, node, owner, ctx) {
+  const span = spanOf(node, ctx.content);
+  return { tag, scope: 'statement', anchor: null, owner, kind: node.type, startLine: span.startLine, endLine: span.endLine,
+    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems] };
+}
+
+function routeAnchor(tag, node, route, owner, ctx) {
+  const span = spanOf(node, ctx.content);
+  return { tag, scope: 'route', anchor: `route:${route.method} ${route.path}`, owner, kind: node.type, startLine: span.startLine, endLine: span.endLine,
+    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems] };
+}
+
+/* ───────────────────────────── Python ───────────────────────────── */
+
+const PY_IMPORT = /^\s*(?:import|from)\s/;
+
+/** Line numbers py-anchors must resolve "what follows" for. */
+export function pythonCandidateLines(content, hint = /@(?:implements|req)\b/) {
+  const lines = content.split('\n');
+  const wanted = new Set([0]);
+  for (let i = 0; i < lines.length; i++) {
+    if (!hint.test(lines[i])) continue;
+    let end = i + 1;
+    while (end < lines.length && /^\s*#/.test(lines[end])) end++;
+    wanted.add(end); // the last comment line of the run (1-based = end)
+    wanted.add(i);   // an inline comment: the statement on its own line
+  }
+  return [...wanted].sort((a, b) => a - b);
+}
+
+function resolvePython(content, relPath, patterns, py, pyTier, importers = null) {
+  const outline = py.outline;
+  const starts = lineStarts(content);
+  const rawLines = content.split('\n');
+  const lexed = lex(content, 'python');
+  const floor = (startLine, endLine) => { const { s, e } = lineSpanOffsets(starts, content, startLine, endLine); return floorFingerprint(lexed, s, e); };
+  const directives = (startLine, endLine) => outline.comments
+    .filter(c => c.line >= startLine && c.line <= endLine && DIRECTIVE_RE.test(c.text)).map(c => c.text);
+  const fileExact = pyFingerprintV1(outline.moduleV1 || '', directives(1, rawLines.length));
+  const fileFloor = floorFingerprint(lexed, 0, content.length);
+  const commentLines = new Set(outline.comments.filter(c => rawLines[c.line - 1].slice(0, c.col).trim() === '').map(c => c.line));
+  const first = outline.following['0'] || null;
+  const firstCommentLine = outline.comments.length ? Math.min(...outline.comments.filter(c => commentLines.has(c.line)).map(c => c.line)) : null;
+  const headerEnd = leadingBlockEnd(Number.isFinite(firstCommentLine) ? firstCommentLine : null, first ? first.start : null, commentLines);
+  const anchors = [];
+  const file = (tag, problems = []) => fileAnchor(tag, { tier: pyTier, exact: fileExact, floor: fileFloor, confidence: 'high', problems });
+  const symbolFor = (tag, sym, problems = []) => ({
+    tag, scope: 'symbol', anchor: sym.qual, owner: null, kind: sym.kind, startLine: sym.start, endLine: sym.end,
+    tier: pyTier, exact: pyFingerprintV1(sym.v1, directives(sym.start, sym.end)), floor: floor(sym.start, sym.end), confidence: 'high',
+    problems: [...tag.problems, ...problems],
+  });
+  for (const c of outline.comments) {
+    const tags = tagsInComment(c.text, c.line, patterns, importers);
+    if (!tags.length) continue;
+    const inline = !commentLines.has(c.line);
+    let blockEnd = c.line;
+    while (!inline && commentLines.has(blockEnd + 1)) blockEnd++;
+    for (const tag of tags) {
+      if (tag.scope === 'file' || tag.invalidScopeBlock) { anchors.push(file(tag)); continue; }
+      // Between a decorator and its def: that symbol.
+      const decorated = outline.symbols.find(s => s.start <= c.line && c.line < s.line);
+      if (decorated) { anchors.push(symbolFor(tag, decorated)); continue; }
+      if (!inline && c.line <= headerEnd && !tag.scope) {
+        const adjacent = first && first.start === blockEnd + 1;
+        if (!adjacent || PY_IMPORT.test(rawLines[first.line - 1]) || first.kind === 'stmt') { anchors.push(file(tag)); continue; }
+        anchors.push(file(tag, ['is in the file\'s leading comment block directly above a declaration, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm']));
+        continue;
+      }
+      const next = outline.following[String(inline ? c.line - 1 : blockEnd)] || null;
+      if (next && PY_IMPORT.test(rawLines[next.line - 1])) { anchors.push(file(tag)); continue; }
+      const adjacent = next && (inline ? next.start === c.line : next.start === blockEnd + 1);
+      if (!next || !adjacent) {
+        anchors.push(file(tag, [next ? 'is not directly above a declaration or statement (a blank line separates them), so it is read as file scope' : 'follows the last statement of the file; it is read as file scope']));
+        continue;
+      }
+      const sym = (next.kind === 'def' || next.kind === 'assign')
+        ? outline.symbols.find(s => s.start === next.start && s.line === next.line) : null;
+      if (sym && tag.scope !== 'statement' && tag.scope !== 'route') { anchors.push(symbolFor(tag, sym)); continue; }
+      if (tag.scope === 'symbol' || tag.scope === 'route') { anchors.push(file(tag, [`asks for {scope=${tag.scope}} but what follows is not a ${tag.scope === 'symbol' ? 'named declaration' : 'route registration DocGuard recognises in Python'}`])); continue; }
+      anchors.push({
+        tag, scope: 'statement', anchor: null, owner: next.owner, kind: next.kind, startLine: next.start, endLine: next.end,
+        tier: pyTier, exact: pyFingerprintV1(next.v1, directives(next.start, next.end)), floor: floor(next.start, next.end), confidence: 'high', problems: [...tag.problems],
+      });
+    }
+  }
+  // Tags inside docstrings belong to the docstring's owner.
+  const docTags = (from, to, onTag) => {
+    for (let l = from; l <= to; l++) for (const tag of tagsInComment(rawLines[l - 1] || '', l, patterns, importers)) onTag(tag);
+  };
+  if (outline.moduleDocstring) docTags(outline.moduleDocstring[0], outline.moduleDocstring[1], tag => anchors.push(file(tag)));
+  for (const sym of outline.symbols) {
+    if (sym.docstring) docTags(sym.docstring[0], sym.docstring[1], tag => anchors.push(tag.scope === 'file' ? file(tag) : symbolFor(tag, sym)));
+  }
+  return { tier: pyTier, confidence: 'high', error: null, anchors, fileExact, fileFloor };
+}
+
+/* ───────────────────────────── Pattern tier ───────────────────────────── */
+
+const IMPORT_KEYWORDS = new Set(['package', 'import', 'use', 'using', 'require', 'require_once', 'include', 'include_once', 'extern', 'namespace', 'module', '#include', 'from']);
+
+function resolvePattern(content, relPath, patterns, lang, importers = null, treeSitter = null) {
+  const lexed = lex(content, lang);
+  const confidence = LOW_CONFIDENCE_LANGS.has(lang) ? 'low' : 'medium';
+  const tier = PATTERN_TIER;
+  const fileFloor = floorFingerprint(lexed, 0, content.length);
+  const anchors = [];
+  const comments = lexed.comments || [];
+  const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.s, e: c.e, startLine: c.line, endLine: c.endLine })));
+  const file = (tag, problems = []) => fileAnchor(tag, { tier, exact: fileFloor, floor: fileFloor, confidence, problems });
+  if (lexed.error) {
+    for (const c of comments) for (const tag of tagsInComment(c.text, c.line, patterns, importers)) {
+      anchors.push(file(tag, [`cannot be placed precisely: the ${lang} pattern lexer could not balance this file (${lexed.error}), so every tag in it is read as file scope`]));
+    }
+    return { tier, confidence, error: lexed.error, anchors, fileExact: fileFloor, fileFloor };
+  }
+  const { symbols } = outline(content, lang);
+  const tokens = lexed.tokens;
+  const firstToken = tokens[0] || null;
+  const tokenAfter = offset => tokens.find(t => t.s >= offset && t.t !== 'semi') || null;
+  const headerEnd = leadingBlockEnd(comments[0]?.line ?? null, firstToken ? firstToken.line : null, commentLines);
+  // Overloads and trait impls share a qualified name; only then does the signature join the anchor (FR-003).
+  const qualCount = new Map();
+  for (const sym of symbols) qualCount.set(sym.qual, (qualCount.get(sym.qual) || 0) + 1);
+  const anchorName = sym => (qualCount.get(sym.qual) > 1 && sym.sig ? `${sym.qual}(${sym.sig})` : sym.qual);
+  // FR-009: the tree-sitter tier refines a symbol the pattern tier found (same
+  // name, same line), never adds one, so a link's key is the same on every machine.
+  const tsSymbol = sym => treeSitter?.symbols?.find(t => t.name === String(sym.name).replace(/!$/, '') && t.nameLine === sym.nameLine) || null;
+  for (const c of comments) {
+    const tags = tagsInComment(c.text, c.line, patterns, importers);
+    if (!tags.length) continue;
+    let blockEnd = c.endLine;
+    while (commentLines.has(blockEnd + 1)) blockEnd++;
+    const next = tokenAfter(c.e);
+    const leading = c.line <= headerEnd;
+    const adjacent = next && next.line > blockEnd && onlyCommentsBetween(blockEnd, next.line, commentLines);
+    for (const tag of tags) {
+      if (tag.scope === 'file' || tag.invalidScopeBlock || !next) { anchors.push(file(tag)); continue; }
+      const sym = symbols.find(s => s.start === next.s);
+      if (leading && !tag.scope) {
+        if (!adjacent || IMPORT_KEYWORDS.has(next.v) || !sym) { anchors.push(file(tag)); continue; }
+        anchors.push(file(tag, ['is in the file\'s leading comment block directly above a declaration, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm']));
+        continue;
+      }
+      if (IMPORT_KEYWORDS.has(next.v)) { anchors.push(file(tag)); continue; }
+      if (!adjacent) { anchors.push(file(tag, ['is not directly above a declaration or statement (a blank line separates them), so it is read as file scope'])); continue; }
+      if (sym && tag.scope !== 'statement' && tag.scope !== 'route') {
+        const ts = tsSymbol(sym);
+        anchors.push({
+          tag, scope: 'symbol', anchor: anchorName(sym), owner: null, kind: sym.kind,
+          startLine: ts ? ts.startLine : sym.startLine, endLine: ts ? ts.endLine : sym.endLine,
+          tier: ts ? treeSitter.tier : tier, exact: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end),
+          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence, problems: [...tag.problems],
+        });
+        continue;
+      }
+      if (tag.scope === 'symbol' || tag.scope === 'route') {
+        anchors.push(file(tag, [`asks for {scope=${tag.scope}} but what follows is not a ${tag.scope === 'symbol' ? 'declaration the pattern tier recognises' : 'route registration DocGuard recognises in this language'}`]));
+        continue;
+      }
+      const span = statementSpan(lexed, next.s);
+      if (!span) { anchors.push(file(tag, ['is above code the pattern tier cannot delimit, so it is read as file scope'])); continue; }
+      const enclosing = symbols.filter(s => s.start <= span.s && span.e <= s.end).sort((a, b) => (b.start - a.start))[0];
+      anchors.push({
+        tag, scope: 'statement', anchor: null, owner: enclosing ? enclosing.qual : '<module>', kind: 'statement',
+        startLine: lineOfOffset(content, span.s), endLine: lineOfOffset(content, span.e), tier,
+        exact: floorFingerprint(lexed, span.s, span.e), floor: floorFingerprint(lexed, span.s, span.e), confidence, problems: [...tag.problems],
+      });
+    }
+  }
+  return { tier, confidence, error: null, anchors, fileExact: fileFloor, fileFloor };
+}
+
+/* ───────────────────────────── No lexer: file tier ───────────────────────────── */
+
+/** `#` and `//` comments outside quotes, for YAML, shell and other languages DocGuard cannot lex. */
+export function plainComments(content, { hash = true, slashes = false } = {}) {
+  const out = [];
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let quote = null;
+    for (let j = 0; j < line.length; j++) {
+      const ch = line[j];
+      if (quote) { if (ch === '\\' && quote === '"') j++; else if (ch === quote) quote = null; continue; }
+      if (ch === '"' || ch === "'") { quote = ch; continue; }
+      const startsComment = (hash && ch === '#' && (j === 0 || /\s/.test(line[j - 1])))
+        || (slashes && ch === '/' && line[j + 1] === '/');
+      if (startsComment) { out.push({ line: i + 1, text: line.slice(j + (ch === '#' ? 1 : 2)) }); break; }
+    }
+  }
+  return out;
+}
+
+function resolveFileTier(content, relPath, patterns, importers = null) {
+  const exact = dg1(content);
+  const anchors = [];
+  for (const c of plainComments(content, { hash: true, slashes: false })) {
+    for (const tag of tagsInComment(c.text, c.line, patterns, importers)) anchors.push(fileAnchor(tag, { tier: FILE_TIER, exact, floor: exact, confidence: 'low' }));
+  }
+  return { tier: FILE_TIER, confidence: 'low', error: null, anchors, fileExact: exact, fileFloor: exact };
+}
+
+/* ───────────────────────────── Entry point ───────────────────────────── */
+
+/**
+ * Every tag in one file and what it anchors to.
+ * @param {string} content
+ * @param {string} relPath  project-relative POSIX path
+ * @param {RegExp[]} patterns  requirement ID patterns
+ * @param {{ python?: { outline?: object, error?: string } | null, pythonTier?: string|null, pythonReason?: string|null }} [options]
+ * @returns {{ tier, confidence, error, anchors: object[], fileExact, fileFloor, degraded?: string }}
+ */
+export function resolveFileAnchors(content, relPath, patterns, options = {}) {
+  const lang = languageOf(relPath);
+  const importers = options.importers || null;
+  if (lang === 'js' || lang === 'ts') {
+    const parsed = parseJsTs(content, relPath);
+    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return resolveJs(content, relPath, patterns, parsed, importers);
+    const fallback = resolvePattern(content, relPath, patterns, lang, importers);
+    return { ...fallback, degraded: parsed.ok ? 'Babel recovered from syntax errors, so the pattern tier was used' : (parsed.error || 'Babel is unavailable') };
+  }
+  if (lang === 'python') {
+    const py = options.python;
+    if (py?.outline && !py.outline.error && options.pythonTier) return resolvePython(content, relPath, patterns, py, options.pythonTier, importers);
+    const fallback = resolvePattern(content, relPath, patterns, 'python', importers);
+    return { ...fallback, degraded: py?.error || py?.outline?.error || options.pythonReason || 'python3 is unavailable' };
+  }
+  if (lang) return resolvePattern(content, relPath, patterns, lang, importers, options.treeSitter || null);
+  return resolveFileTier(content, relPath, patterns, importers);
+}
+
+/* ───────────────────────────── Orphan candidates (FR-034) ───────────────────────────── */
+
+const UNIT_KINDS = new Set(['function', 'method', 'class', 'struct', 'enum', 'def']);
+const isUnitInit = init => FUNCTION_TYPES.has(init?.type) || init?.type === 'ClassExpression';
+
+/** The top-level implementation units one JS/TS statement declares: `[name, kind, line]`. */
+function jsUnits(node, line) {
+  if (!node) return [];
+  if ((node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && node.id?.name) {
+    return [[node.id.name, node.type === 'ClassDeclaration' ? 'class' : 'function', line]];
+  }
+  if (node.type === 'TSEnumDeclaration' && !node.declare && node.id?.name) return [[node.id.name, 'enum', line]];
+  if (node.type === 'VariableDeclaration' && !node.declare) {
+    return node.declarations.filter(d => d.id?.type === 'Identifier' && isUnitInit(d.init))
+      .map(d => [d.id.name, d.init.type === 'ClassExpression' ? 'class' : 'function', line]);
+  }
+  return [];
+}
+
+/**
+ * JS/TS: what the module exports (named, default, or a local name in an
+ * export list), or, for a module that exports nothing, its top-level
+ * functions and classes. Re-exports belong to the module that declares them,
+ * and type-only declarations implement nothing.
+ */
+function jsCandidates(ast) {
+  const body = ast.program?.body || [];
+  const local = new Map();
+  for (const stmt of body) {
+    for (const [name, kind, line] of jsUnits(unwrapExport(stmt), stmt.loc.start.line)) if (!local.has(name)) local.set(name, { kind, line });
+  }
+  const out = [];
+  let exports = false;
+  for (const stmt of body) {
+    const line = stmt.loc.start.line;
+    if (stmt.type === 'ExportAllDeclaration') { exports = true; continue; }
+    if (stmt.type === 'ExportNamedDeclaration') {
+      exports = true;
+      if (stmt.exportKind === 'type') continue;
+      if (stmt.declaration) { for (const [name, kind] of jsUnits(stmt.declaration, line)) out.push({ name, kind, line }); continue; }
+      if (stmt.source) continue;
+      for (const spec of stmt.specifiers || []) {
+        const name = spec.local?.name;
+        if (spec.exportKind !== 'type' && local.has(name)) out.push({ name, ...local.get(name) });
+      }
+      continue;
+    }
+    if (stmt.type === 'ExportDefaultDeclaration') {
+      exports = true;
+      const d = stmt.declaration;
+      if ((d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') && !d.id) out.push({ name: 'default', kind: d.type === 'ClassDeclaration' ? 'class' : 'function', line });
+      else if (d?.id?.name && (d.type === 'FunctionDeclaration' || d.type === 'ClassDeclaration')) out.push({ name: d.id.name, kind: d.type === 'ClassDeclaration' ? 'class' : 'function', line });
+      else if (d?.type === 'Identifier' && local.has(d.name)) out.push({ name: d.name, ...local.get(d.name) });
+    }
+  }
+  if (!exports) {
+    for (const stmt of body) {
+      if (stmt.type === 'FunctionDeclaration' || stmt.type === 'ClassDeclaration') out.push(...jsUnits(stmt, stmt.loc.start.line).map(([name, kind, line]) => ({ name, kind, line })));
+    }
+  }
+  return out;
+}
+
+/** Pattern languages: whether a top-level unit is visible outside its file. */
+function patternExported(lang, sym, header) {
+  switch (lang) {
+    case 'go': return /^[A-Z]/.test(sym.name);
+    case 'rust': return /\bpub\b/.test(header);
+    case 'java': case 'kotlin': case 'csharp': case 'swift': return !/\b(?:private|fileprivate|internal)\b/.test(header);
+    case 'c': case 'cpp': return !/\bstatic\b/.test(header);
+    case 'python': return !sym.name.startsWith('_');
+    default: return true;
+  }
+}
+
+/**
+ * The exported or top-level implementation units of one file, named the way
+ * an anchor would name them, for `docguard anchors --orphans` (FR-034).
+ * Functions, classes, structs, enums and top-level methods count; type-only
+ * declarations, plain variables and private names (`_name`, Go lowercase,
+ * Rust without `pub`, `static` C) do not.
+ *
+ * @implements docguard.requirement-anchors#FR-034
+ * @returns {{ tier: string, error: string|null, symbols: { name: string, kind: string, line: number }[] }}
+ */
+export function orphanCandidates(content, relPath, options = {}) {
+  const lang = languageOf(relPath);
+  if (lang === 'js' || lang === 'ts') {
+    const parsed = parseJsTs(content, relPath);
+    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return { tier: BABEL_TIER, error: null, symbols: jsCandidates(parsed.ast) };
+  }
+  if (lang === 'python' && options.python?.outline && !options.python.outline.error && options.pythonTier) {
+    const symbols = options.python.outline.symbols
+      .filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class') && !sym.name.startsWith('_'))
+      .map(sym => ({ name: sym.qual, kind: sym.kind, line: sym.line }));
+    return { tier: options.pythonTier, error: null, symbols };
+  }
+  if (!lang) return { tier: FILE_TIER, error: 'no symbol reader for this language', symbols: [] };
+  const lexed = lex(content, lang);
+  if (lexed.error) return { tier: PATTERN_TIER, error: lexed.error, symbols: [] };
+  const { symbols } = outline(content, lang);
+  const qualCount = new Map();
+  for (const sym of symbols) qualCount.set(sym.qual, (qualCount.get(sym.qual) || 0) + 1);
+  const anchorName = sym => (qualCount.get(sym.qual) > 1 && sym.sig ? `${sym.qual}(${sym.sig})` : sym.qual);
+  const out = [];
+  for (const sym of symbols) {
+    if (!sym.topLevel || !UNIT_KINDS.has(sym.kind)) continue;
+    const at = content.indexOf(sym.name, sym.start);
+    const header = content.slice(sym.start, at < 0 ? sym.start : at);
+    if (patternExported(lang, sym, header)) out.push({ name: anchorName(sym), kind: sym.kind, line: sym.startLine });
+  }
+  return { tier: PATTERN_TIER, error: null, symbols: out };
+}
+
+/**
+ * Comments that may hold requirement tags, string-aware in every tier
+ * (FR-005): Babel's comment list for JS/TS, the pattern lexer for every
+ * language it knows, and a quote-aware scanner for YAML and shell.
+ * @returns {{ text: string, line: number }[]}
+ */
+export function realComments(content, relPath) {
+  const lang = languageOf(relPath);
+  if (lang === 'js' || lang === 'ts') {
+    const parsed = parseJsTs(content, relPath);
+    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return (parsed.ast.comments || []).map(c => ({ text: c.value, line: c.loc.start.line }));
+  }
+  if (lang) {
+    const lexed = lex(content, lang);
+    return (lexed.comments || []).map(c => ({ text: c.text, line: c.line }));
+  }
+  return plainComments(content, { hash: true, slashes: false });
+}

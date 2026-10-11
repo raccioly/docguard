@@ -101,6 +101,7 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
+| `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, lock merge conflicts (ANC009), and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
 
@@ -368,6 +369,33 @@ doc section declares the code it describes:
 review in `.docguard-doc-lock.json` (commit it). Set
 `"validators": { "docDependency": false }` to turn the check off. See
 [`docguard review`](commands.md#docguard-review).
+
+## Requirement anchors — `anchors` and `validators.requirementAnchors`
+
+`docguard anchors` lists, in any project, what each `@implements` / `@req` tag
+anchors to.
+
+Guard reports on anchors only once the project opts in. That means either a
+committed `.docguard-anchor-lock.jsonl` or this setting:
+
+```json
+"anchors": { "enabled": true }
+```
+
+| Key | Default | Meaning |
+|---|---|---|
+| `anchors.enabled` | `false` | Report ANC findings in guard before the project has an anchor lock |
+| `anchors.fanOutLimit` | `10` | Most importing files `docguard anchors` lists as ripple for one changed anchor before it collapses them into a count |
+| `anchors.failOn` | `reviewed-exact` | Which suspect (ANC001) and lost (ANC003) links fail guard. `reviewed-exact` fails only links someone accepted as reviewed (never baselined ones), at symbol, statement or route scope, read at an exact tier (Babel, python3 `ast`). File-scope and pattern-tier links warn, because they change on edits that leave the requirement alone. `none` makes every anchor finding a warning. A requirement-text change (ANC002) never fails. The default comes from a replay of 150 commits of this repository, in which no exact-tier link was flagged by a formatting-only commit |
+| `anchors.import` | `[]` | Also read `strictdoc` `@relation(...)` and `openfasttrace` `[impl->dsn~name~3]` tags as anchors. Read-only: DocGuard never writes them |
+| `anchors.importMap` | `{}` | Foreign ID → requirement: `"strictdoc:REQ-1": "acme.billing#FR-001"`, or `"oft:dsn~refund": { "requirement": "acme.billing#FR-002", "revision": 2 }` so an OpenFastTrace tag behind revision 2 is reported outdated (ANC001). An unmapped ID is ANC007 |
+| `anchors.orphanPaths` | the `scope.sourcePaths` of current specs | Where `docguard anchors --orphans` looks for untagged symbols: globs (`src/**/*.go`), files or directories. Nothing is listed when neither is set |
+| `anchors.treeSitter.artifacts` | unset | The opt-in tree-sitter tier. Set `runtime` and `runtimeWasm` to the `web-tree-sitter` files, and set `grammars` to one `.wasm` per language (`go`, `rust`, `java`, `csharp`, `php`, `ruby`, `c`, `cpp`). Each file must match the sha256 that `schemas/docguard-anchor-treesitter.manifest.json` pins, the versions vetted in `tools/anchor-oracle/VETTING.md`. A missing or mismatched file is ANC010, and the pattern tier answers. Never auto-detected |
+| `anchors.testguard.evidence` | `.testguard/evidence.json` | The saved TestGuard evidence `docguard anchors` reads to mark the tests of a changed requirement re-verified. Project-relative; read through the same no-symlink, inside-the-project reader as other evidence. DocGuard never runs TestGuard or a test |
+| `anchors.testguard.claims` | `testguard.claims.json` | The TestGuard claims file. A claim counts only while its statement, source and fault set still match what was probed |
+| `validators.requirementAnchors` | `true` | Set `false` to turn the Requirement-Anchors validator off |
+
+See [`docguard anchors`](commands.md#docguard-anchors).
 
 ## Doc ownership — `ownership`
 

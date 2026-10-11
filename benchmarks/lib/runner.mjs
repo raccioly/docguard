@@ -33,7 +33,8 @@ function fixtureDigest(root) {
   const hash = createHash('sha256');
   function visit(dir) {
     for (const name of readdirSync(dir).sort()) {
-      if (['.git', '.local'].includes(name.toLowerCase())) continue;
+      // DocGuard's own local state (.docguard/, gitignored) is never fixture content.
+      if (['.git', '.local', '.docguard'].includes(name.toLowerCase())) continue;
       const path = join(dir, name);
       const info = lstatSync(path);
       if (info.isSymbolicLink()) throw new Error(`Fixture symlink is not allowed: ${relative(root, path)}`);

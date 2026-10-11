@@ -37,6 +37,10 @@ templates/demo-fixture/
 templates/demo-fixture/**
 benchmarks/fixtures/
 benchmarks/fixtures/**
+# Requirement-anchor fixture projects (specs/070): their tags cite the fixture's
+# own example specs (acme.billing), not this repository's requirements.
+tests/fixtures/anchors/
+tests/fixtures/anchors/**
 packaging/
 packaging/**
 
@@ -51,3 +55,9 @@ graphify-out/**
 # tests/user-docs.test.mjs). Each code's help quotes the phrases its detector
 # looks for, so validating the page would report the detectors' own examples.
 docs/reference/findings.md
+
+# Anchor-oracle corpus: idiomatic code in every pattern-tier language, parsed by
+# tree-sitter in CI to measure the pattern tier (specs/070-requirement-anchors
+# FR-040). It is a measurement input, not project source.
+tools/anchor-oracle/corpus/
+tools/anchor-oracle/corpus/**

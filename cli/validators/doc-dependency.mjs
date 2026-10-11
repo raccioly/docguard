@@ -77,6 +77,6 @@ export function validateDocDependency(projectDir, config = {}) {
   const shown = findings.slice(0, MAX_FINDINGS);
   const result = resultFromFindings(shown, { passed: Math.max(0, total - findings.length - unverifiable), total, applicable: true });
   return unverifiable
-    ? { ...result, applicability: { status: 'partial', reason: `${unverifiable} covered section(s) could not be compared at their recorded fingerprint tier (a parser is unavailable here)` } }
+    ? { ...result, applicability: { status: 'partial', reason: `${unverifiable} covered section(s) could not be compared at their recorded fingerprint tier (a parser is unavailable here, or a different python3 serializes the code differently)` } }
     : result;
 }

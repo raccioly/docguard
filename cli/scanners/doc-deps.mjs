@@ -26,25 +26,21 @@
  * @implements docguard.doc-dependency-lock#FR-008
  */
 
-import { createHash } from 'node:crypto';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { buildIgnoreFilter, globMatch, listCanonicalDocs, loadDocguardIgnore, relPosix, walkFiles } from '../shared-ignore.mjs';
-import { listTrackedFiles } from '../shared-git.mjs';
+import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { inspectSections } from '../writers/sections.mjs';
+import { findJsSymbol, normalizeJsV0, sha256 } from './fingerprint.mjs';
 import { parseJsTs } from './js-ast.mjs';
-import { pythonCommand } from './py-ast.mjs';
+import { pythonBatch, pythonVersion } from './py-anchors.mjs';
 
 export const DOC_LOCK_PATH = '.docguard-doc-lock.json';
 export const DOC_LOCK_SCHEMA_VERSION = 1;
 const JS_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
 const PY_EXT = new Set(['.py']);
-const AST_METADATA = new Set(['start', 'end', 'loc', 'range', 'extra', 'comments', 'leadingComments',
-  'trailingComments', 'innerComments', 'tokens', 'errors']);
 const REVISION_RE = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
-
-const sha256 = text => `sha256:${createHash('sha256').update(text).digest('hex')}`;
 
 /** `a.mjs#fn, dir/**` → ['a.mjs#fn', 'dir/**'] */
 export function parseCovers(value) {
@@ -82,64 +78,6 @@ export function candidateDocs(projectDir, config = {}) {
   return [...out.keys()].sort();
 }
 
-function normalizeAst(node) {
-  return JSON.stringify(node, (key, value) => (AST_METADATA.has(key) ? undefined : value));
-}
-
-/** Top-level declaration (or Class.method) named `symbol` in a Babel AST. */
-function findJsSymbol(ast, symbol) {
-  const [name, member] = symbol.split('.');
-  const body = ast?.program?.body || [];
-  const locals = new Map();
-  const exportsByName = new Map();
-  const add = (id, node) => { if (id && !locals.has(id)) locals.set(id, node); };
-  const declare = decl => {
-    if (!decl) return;
-    if (decl.type === 'VariableDeclaration') for (const d of decl.declarations) add(d.id?.name, d);
-    else add(decl.id?.name, decl);
-  };
-  for (const stmt of body) {
-    if (stmt.type === 'ExportNamedDeclaration') {
-      declare(stmt.declaration);
-      for (const s of stmt.specifiers || []) {
-        const exported = s.exported?.name ?? s.exported?.value;
-        if (exported && s.local?.name) exportsByName.set(exported, s.local.name);
-      }
-    } else if (stmt.type === 'ExportDefaultDeclaration') {
-      add('default', stmt.declaration);
-      declare(stmt.declaration?.id ? stmt.declaration : null);
-    } else declare(stmt);
-  }
-  const node = locals.get(name) || locals.get(exportsByName.get(name));
-  if (!node) return null;
-  if (!member) return node;
-  const classBody = node.body?.body || node.init?.body?.body || [];
-  return classBody.find(m => (m.key?.name ?? m.key?.value) === member) || null;
-}
-
-const PY_SCRIPT = `
-import ast, json, sys
-path, names = sys.argv[1], json.loads(sys.argv[2])
-tree = ast.parse(open(path, encoding='utf-8').read(), filename=path)
-top = {}
-for node in tree.body:
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-        top.setdefault(node.name, node)
-    elif isinstance(node, ast.Assign):
-        for t in node.targets:
-            if isinstance(t, ast.Name): top.setdefault(t.id, node)
-    elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-        top.setdefault(node.target.id, node)
-out = {}
-for name in names:
-    head, _, member = name.partition('.')
-    node = top.get(head)
-    if node is not None and member:
-        node = next((m for m in getattr(node, 'body', []) if getattr(m, 'name', None) == member), None)
-    out[name] = ast.dump(node, include_attributes=False) if node is not None else None
-print(json.dumps(out))
-`;
-
 /**
  * A per-run context: parse caches (FR-008) and the ignore filter.
  */
@@ -151,6 +89,7 @@ export function createContext(projectDir, config = {}) {
     contents: new Map(),
     jsAsts: new Map(),
     pySymbols: new Map(),
+    pyUnavailable: null,
     files: null,
     config,
   };
@@ -174,19 +113,45 @@ function read(ctx, abs) {
   return ctx.contents.get(abs);
 }
 
-function pySymbolDump(ctx, abs, symbol) {
-  const py = pythonCommand();
-  if (!py) return { unavailable: true };
-  const key = abs;
-  if (!ctx.pySymbols.has(key)) ctx.pySymbols.set(key, new Map());
-  const cache = ctx.pySymbols.get(key);
-  if (!cache.has(symbol)) {
-    const r = spawnSync(py, ['-c', PY_SCRIPT, abs, JSON.stringify([symbol])], { encoding: 'utf8', timeout: 15000 });
-    let dump = null;
-    try { dump = r.status === 0 ? JSON.parse(r.stdout)[symbol] : undefined; } catch { dump = undefined; }
-    cache.set(symbol, dump);
+/**
+ * Load the doclock-v0 `ast.dump` of every requested Python symbol in ONE
+ * interpreter run (docguard.requirement-anchors#FR-015). Results land in
+ * `ctx.pySymbols`: a dump string, `null` (no such symbol), or `undefined`
+ * (the file did not parse); `ctx.pyUnavailable` holds the reason python3
+ * could not run at all.
+ */
+export function prefetchPython(ctx, refs) {
+  const wanted = new Map();
+  for (const ref of refs) {
+    const hash = ref.indexOf('#');
+    if (hash < 0 || isGlob(ref)) continue;
+    const path = ref.slice(0, hash);
+    if (!PY_EXT.has(extname(path).toLowerCase())) continue;
+    const safe = safePath(ctx, path);
+    if (!safe.ok) continue;
+    const cached = ctx.pySymbols.get(safe.abs);
+    const symbol = ref.slice(hash + 1);
+    if (cached?.has(symbol)) continue;
+    if (!wanted.has(safe.abs)) wanted.set(safe.abs, new Set());
+    wanted.get(safe.abs).add(symbol);
   }
-  const dump = cache.get(symbol);
+  if (!wanted.size || ctx.pyUnavailable) return;
+  const batch = pythonBatch([...wanted].map(([abs, symbols]) => ({
+    key: abs, content: read(ctx, abs).toString('utf8'), v0: [...symbols],
+  })));
+  if (!batch.ok) { ctx.pyUnavailable = batch.reason; return; }
+  for (const [abs, symbols] of wanted) {
+    if (!ctx.pySymbols.has(abs)) ctx.pySymbols.set(abs, new Map());
+    const cache = ctx.pySymbols.get(abs);
+    const file = batch.files[abs] || {};
+    for (const symbol of symbols) cache.set(symbol, file.error ? undefined : file.v0?.[symbol] ?? null);
+  }
+}
+
+function pySymbolDump(ctx, abs, symbol) {
+  if (!ctx.pySymbols.get(abs)?.has(symbol)) prefetchPython(ctx, [`${relPosix(ctx.projectDir, abs)}#${symbol}`]);
+  if (ctx.pyUnavailable) return { unavailable: true };
+  const dump = ctx.pySymbols.get(abs)?.get(symbol);
   return dump === undefined ? { parseFailed: true } : { dump };
 }
 
@@ -244,7 +209,7 @@ export function fingerprint(ctx, ref, { preferTier = null } = {}) {
     if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) {
       const node = findJsSymbol(parsed.ast, symbol);
       if (!node) return { ok: false, missing: true, reason: `${path} has no top-level symbol ${symbol}` };
-      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeAst(node)) };
+      return { ok: true, tier: 'ast', fingerprint: sha256(normalizeJsV0(node)) };
     }
     if (preferTier === 'ast') return { ok: false, unverifiable: true, reason: `${path} did not parse, so its ${symbol} AST fingerprint cannot be compared` };
     return { ok: true, tier: 'content', fingerprint: sha256(bytes) };
@@ -315,38 +280,65 @@ export function docLockStatus(projectDir, config = {}, ctx = createContext(proje
   const entries = lock?.sections || {};
   const sections = [];
   const seen = new Set();
+  const covered = [];
   for (const doc of candidateDocs(projectDir, config)) {
     let content;
     try { content = readFileSync(resolve(projectDir, doc), 'utf8'); } catch { continue; }
-    for (const section of coveredSections(content)) {
-      const key = `${doc}#${section.id}`;
-      seen.add(key);
-      const entry = entries[key];
-      const deps = section.covers.map(ref => {
-        const locked = entry?.dependencies?.[ref];
-        const current = fingerprint(ctx, ref, { preferTier: locked?.tier || null });
-        let state;
-        if (!current.ok) state = current.unverifiable ? 'unverifiable' : 'missing';
-        else if (!locked) state = 'unlocked';
-        else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';
-        else state = 'current';
-        const path = ref.includes('#') ? ref.slice(0, ref.indexOf('#')) : ref;
-        return { ref, path, state, tier: current.tier || locked?.tier || null, reason: current.reason || null, locked: locked || null, current: current.ok ? { tier: current.tier, fingerprint: current.fingerprint } : null };
-      });
-      const droppedRefs = entry ? Object.keys(entry.dependencies).filter(ref => !section.covers.includes(ref)) : [];
+    for (const section of coveredSections(content)) covered.push({ doc, section });
+  }
+  prefetchPython(ctx, covered.flatMap(({ section }) => section.covers));
+  for (const { doc, section } of covered) {
+    const key = `${doc}#${section.id}`;
+    seen.add(key);
+    const entry = entries[key];
+    const deps = section.covers.map(ref => {
+      const locked = entry?.dependencies?.[ref];
+      const current = fingerprint(ctx, ref, { preferTier: locked?.tier || null });
       let state;
-      if (!section.covers.length) state = 'empty';
-      else if (!entry) state = 'unaccepted';
-      else if (deps.some(d => d.state === 'missing')) state = 'missing-dependency';
-      else if (deps.some(d => d.state === 'changed')) state = 'changed';
-      else if (deps.some(d => d.state === 'unlocked') || droppedRefs.length) state = 'unaccepted';
-      else if (deps.some(d => d.state === 'unverifiable')) state = 'unverifiable';
+      if (!current.ok) state = current.unverifiable ? 'unverifiable' : 'missing';
+      else if (!locked) state = 'unlocked';
+      else if (locked.tier !== current.tier || locked.fingerprint !== current.fingerprint) state = 'changed';
       else state = 'current';
-      sections.push({ key, doc, id: section.id, line: section.line, state, deps, droppedRefs, entry: entry || null });
-    }
+      const path = ref.includes('#') ? ref.slice(0, ref.indexOf('#')) : ref;
+      let reason = current.reason || null;
+      if (state === 'changed' && locked.tier === 'python-ast' && current.tier === 'python-ast'
+        && interpreterOnlyChange(ctx, projectDir, ref, path, entry?.reviewedRevision, current.fingerprint)) {
+        state = 'unverifiable';
+        reason = `${ref} is unchanged since ${entry.reviewedRevision.slice(0, 12)}, but python3 ${pythonVersion() || ''} serializes it differently from the interpreter that recorded the lock; accept the section again to record this interpreter's fingerprint`.replace('  ', ' ');
+      }
+      return { ref, path, state, tier: current.tier || locked?.tier || null, reason, locked: locked || null, current: current.ok ? { tier: current.tier, fingerprint: current.fingerprint } : null };
+    });
+    const droppedRefs = entry ? Object.keys(entry.dependencies).filter(ref => !section.covers.includes(ref)) : [];
+    let state;
+    if (!section.covers.length) state = 'empty';
+    else if (!entry) state = 'unaccepted';
+    else if (deps.some(d => d.state === 'missing')) state = 'missing-dependency';
+    else if (deps.some(d => d.state === 'changed')) state = 'changed';
+    else if (deps.some(d => d.state === 'unlocked') || droppedRefs.length) state = 'unaccepted';
+    else if (deps.some(d => d.state === 'unverifiable')) state = 'unverifiable';
+    else state = 'current';
+    sections.push({ key, doc, id: section.id, line: section.line, state, deps, droppedRefs, entry: entry || null });
   }
   const orphans = Object.keys(entries).filter(key => !seen.has(key)).sort().map(key => ({ key, entry: entries[key] }));
   return { lockExists: exists, lockError: error, sections, orphans, anyCovered: sections.length > 0 };
+}
+
+/**
+ * True when a python-ast mismatch is the interpreter's doing, not the code's:
+ * the symbol read from the reviewed revision, dumped by TODAY's python3,
+ * equals today's dump. `ast.dump` output differs between Python versions
+ * (3.13 dropped empty fields), so without this an interpreter upgrade read as
+ * DLK001 on every Python dependency (research P8). History only breaks the
+ * tie; it is never the comparison itself.
+ */
+function interpreterOnlyChange(ctx, projectDir, ref, path, revision, currentFingerprint) {
+  if (!revisionResolves(projectDir, revision)) return false;
+  const before = fileContentAtRev(projectDir, revision, path);
+  if (before === null) return false;
+  const symbol = ref.slice(ref.indexOf('#') + 1);
+  const batch = pythonBatch([{ key: `${path}@${revision}`, content: before, v0: [symbol] }]);
+  const dump = batch.ok ? batch.files[`${path}@${revision}`]?.v0?.[symbol] : null;
+  return typeof dump === 'string' && sha256(dump) === currentFingerprint;
 }
 
 /** The lock entry `review --accept` writes for one section. */

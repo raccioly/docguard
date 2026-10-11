@@ -545,6 +545,215 @@ resolves, **DLK003** a section never accepted or whose `covers=` changed,
 Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
 `fix` and agents never do.
 
+### `docguard anchors`
+
+**Which code each requirement tag points at.** A tag anchors to the code
+directly below it, not to the whole file:
+
+```js
+/** @implements acme.billing#FR-002 */
+export function applyDiscount(total, coupon) {
+  // @implements acme.billing#FR-003
+  const rate = coupon ? 0.1 : 0;
+  ...
+}
+```
+
+```bash
+npx docguard-cli anchors                                  # every link, grouped by file
+npx docguard-cli anchors --spec acme.billing --format json
+npx docguard-cli anchors --file src/pricing.mjs
+```
+
+Each tag anchors as follows:
+
+| Where the tag sits | What it anchors to |
+|---|---|
+| The file's leading comment block, followed by imports | the whole file |
+| Directly above a function, class, method or top-level variable (decorators may sit between, no blank line) | that symbol, by qualified path (`Cart.total`) |
+| Inside a function body, or above another top-level statement | that statement |
+| Above a route registration DocGuard recognises (JS/TS) | the route (`route:POST /login`) |
+| Inside a Python docstring | the docstring's owner |
+
+Add `{scope=file|symbol|statement|route}` after the requirement to say which
+scope you mean.
+
+A leading header directly above a declaration stays at file scope and is
+reported ambiguous (**ANC006**). A tag inside a string, template, regex or
+quoted YAML value is not a tag.
+
+Every link names the tier that placed it:
+- `babel@7` for JS/TS;
+- `python-ast@3.12` for Python, from the machine's `python3` in one run;
+- `pattern@1` for Go, Rust, Java, Kotlin, C#, PHP, Ruby, Swift, C and C++,
+  using a string-aware lexer that falls back to file scope when it cannot
+  balance a file;
+- `treesitter@<hash>` when the opt-in tree-sitter tier is configured;
+- `file` for YAML and shell.
+
+**The tree-sitter tier.** With `anchors.treeSitter.artifacts` set, tree-sitter
+refines each symbol the pattern tier finds in Go, Rust, Java, C#, PHP, Ruby, C
+or C++.
+- **What changes.** The span and the exact fingerprint come from tree-sitter.
+  The anchor name, the key and the floor fingerprint stay the pattern tier's,
+  so links compare across machines with and without it.
+- **What loads.** Only files whose sha256 matches
+  `schemas/docguard-anchor-treesitter.manifest.json`. DocGuard stages them
+  under `.docguard/ts/` and parses in one child process with no environment.
+  It never searches `node_modules`.
+- **Kotlin and Swift.** They have no tier: their grammars fail the dependency
+  vetting.
+- **Measurement.** A CI job uses the same grammars to measure the pattern
+  tier, and fails when a high-confidence language disagrees with tree-sitter
+  on more than 1% of declarations (`tools/anchor-oracle`).
+
+Only files git tracks are scanned, the same files the spec registry reads; a
+new file's tags appear once it is added. Outside git, the working tree is
+scanned.
+
+The listing works in any project. Guard reports on anchors only after you opt
+in, with a committed `.docguard-anchor-lock.jsonl` or `anchors.enabled: true`.
+It then reports **ANC007** for a tag that cites a requirement nobody declares
+and **ANC010** for files read below their exact tier.
+
+The per-file cache lives in `.docguard/anchors.cache.json`, keyed by each
+file's bytes. It is off in CI and with `--no-cache`, and it is ignored and
+reported when git tracks anything under `.docguard/`.
+
+**Reviewing links.** `docguard anchors accept` records that someone read the
+code against the requirement:
+
+```bash
+npx docguard-cli anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"   # once
+npx docguard-cli anchors --state suspect                    # what changed since its review
+npx docguard-cli anchors accept --link '<key>' --reason "rounding fix keeps FR-003"
+npx docguard-cli anchors accept --spec acme.billing --bulk --reason "re-read billing after the rewrite"
+npx docguard-cli anchors accept --remove '<key>' --reason "implementation moved to the ledger service"
+```
+
+Rules for an accept:
+- It is bound to the fingerprints it saw, so a later change flags the link
+  again.
+- It refuses when a file changed during the run, when more than one link is
+  selected without `--bulk`, or when the reason is shorter than 10
+  characters.
+- `--baseline` stamps links as baselined, never as reviewed.
+
+**Renaming and moving.** The fingerprint leaves out a symbol's own name, so a
+function renamed or moved with an unchanged body is reported **moved**. Its
+review carries over, and the next accept rewrites its key. The carry-over
+needs exactly one new link for the same requirement with the same
+fingerprint; two identical bodies, or none, leave the old link **lost**.
+
+A tag that ends up as the first thing in a new file is read as that file's
+header. Put an import above it, or write `{scope=symbol}`.
+
+**Ripple.** When an anchored function's code changes, `docguard anchors`
+also lists the anchored links in files that might be affected, as
+`↳ may affect` lines and `ripple[]` in JSON:
+- **One hop:** files that import the changed file and use the changed name
+  (named import, default, or `ns.name`).
+- **Two hops:** files one import further, at low confidence.
+- **Excluded:** hub modules, those with more than 15 imports.
+- **Collapsed:** more than `anchors.fanOutLimit` files (default 10) become
+  one count.
+
+Ripple uses the same reverse-import walk as `diff --since`. It covers JS/TS
+and Python, and it is advisory: it never adds a guard finding.
+
+**Tests of a changed requirement.** Under each link whose code changed, the
+listing names every test that cites the requirement (`@req`, `@covers`, or the
+ID in a test name) as `⊢ test` lines, and `tests[]` in JSON. Each test is
+**needs re-verification** until saved TestGuard evidence proves otherwise. A
+test is **re-verified at `<revision>`** only when all of these hold:
+- the evidence revision exists here and carried the anchored code with
+  today's fingerprint;
+- a TestGuard claim names the requirement as
+  `"source": { "kind": "spec", "ref": "req:acme.billing#FR-002" }`;
+- the test is among the defenders TestGuard recorded for that claim;
+- every fault of the claim was killed, and the claim, its faults, its targets
+  and its defenders are unchanged since the probe.
+
+Evidence that cannot be trusted is **inconclusive**, with the reason. That
+covers an unreadable or provisional report, a revision this clone lacks, or a
+file or claim edited since the probe. A claim that names the requirement by
+file path instead gets the `req:` form to write. DocGuard reads
+`anchors.testguard.evidence` (default `.testguard/evidence.json`) and
+`anchors.testguard.claims` (default `testguard.claims.json`). It never runs a
+test or TestGuard, and guard never reads the chain.
+
+**StrictDoc and OpenFastTrace tags.** With `anchors.import`, a project that
+already tags code for StrictDoc or OpenFastTrace keeps its tags:
+
+```json
+"anchors": {
+  "import": ["strictdoc", "openfasttrace"],
+  "importMap": {
+    "strictdoc:REQ-1": "acme.billing#FR-001",
+    "oft:dsn~refund": { "requirement": "acme.billing#FR-002", "revision": 2 }
+  }
+}
+```
+
+How imported tags are read:
+- **Placement.** `@relation(REQ-1, scope=function)` and `[impl->dsn~refund~2]`
+  anchor by position like native tags. StrictDoc's `scope=file`, `class`,
+  `function` and `line` choose file, symbol or statement scope; `range_start`
+  anchors the statement after it, and `range_end` is ignored.
+- **Unmapped IDs.** An ID with no `importMap` entry is **ANC007**.
+- **Mixed tagging.** A symbol tagged natively and through an importer for
+  different requirements is **ANC006**.
+- **Outdated tags.** An OpenFastTrace tag behind the mapped revision is
+  reported **outdated**: a code-side suspect, ANC001 with
+  `cause: "oft-outdated"`.
+
+Fingerprints, reviews and the test chain then work as for native tags.
+DocGuard never writes foreign tags.
+
+**Code without a requirement.** `docguard anchors --orphans` lists each
+exported or top-level unit that no tag anchors, once, ordered by file and line:
+functions, classes, structs, enums and top-level methods. Type-only
+declarations, plain constants and private names are not listed: a name
+starting with `_` in Python, a lowercase name in Go, Rust without `pub`, and
+`static` in C. A file-scope tag covers every symbol in its file, and a tagged
+method covers its class.
+
+It looks under `anchors.orphanPaths`, else under the `scope.sourcePaths` of
+current specs; `--spec <id>` narrows it to one spec. It is a report: it exits
+0 and guard never reads it. For each symbol, either tag it with the
+requirement it implements or record why none applies:
+
+```bash
+npx docguard-cli anchors --orphans --format json
+npx docguard-cli anchors disposition --symbol src/log.mjs#format --kind infrastructure --reason "log formatting, no product requirement"
+npx docguard-cli anchors disposition --file src/legacy.mjs --kind dead --bulk --reason "legacy export path, removed next release"
+npx docguard-cli anchors disposition --remove src/log.mjs#format --reason "now tagged with the audit requirement"
+```
+
+The kinds are:
+- `derived`: implements a requirement nobody has written down yet;
+- `dead`;
+- `infrastructure`.
+
+Dispositions live in the anchor lock, so they are reviewed through CODEOWNERS
+like links. A disposition whose symbol was tagged, renamed or removed is
+listed as stale. DocGuard proposes no requirement text and calls no model;
+agents read the JSON.
+
+`score` and `trace` show how many links sit at each scope and tier, as
+information that never changes the score.
+
+With the lock committed, guard reports:
+- **ANC001**: a link whose code changed;
+- **ANC002**: a link whose requirement changed;
+- **ANC003**: a reviewed link whose tag is gone;
+- **ANC005**: an unreadable lock (an error);
+- **ANC008**: a tag citing a retired requirement;
+- **ANC009**: a merge conflict in the lock.
+
+DocGuard authenticates nobody. Require review of the lock through CODEOWNERS
+([CI recipe 3f](../docs-canonical/CI-RECIPES.md)).
+
 ### `docguard rules`
 
 **Which instructions an agent loads for a path.** Each harness finds its
@@ -635,7 +844,40 @@ npx docguard-cli trace --reverse src/api/x.ts  # code → doc: the declared owne
 npx docguard-cli trace --features              # per-feature Spec Kit adherence
 npx docguard-cli trace --owners                # the ownership map: files per entry, unowned code, ties
 npx docguard-cli trace --owners --suggest      # a draft ownership block; never writes
+npx docguard-cli trace --matrix                # requirement → anchor → test, as CSV
+npx docguard-cli trace --matrix --format reqif --out trace.reqif   # ReqIF 1.2 for DOORS or Polarion
 ```
+
+**The trace matrix.** `trace --matrix` exports every requirement → anchor →
+test path from the requirement anchors. The CSV columns are:
+
+```text
+requirement,requirement_fp,spec_state,file,anchor,scope,tier,confidence,link_state,suspect_side,code_fp,reviewed_revision,reviewed_date,test_file,test_line,test_status
+```
+
+Rows:
+- **One per link and test.** A link with no test has empty test columns.
+- **Missing links.** A requirement with no link has `link_state: missing`:
+  one row per test that cites it, or a single row.
+- **`test_status`.** It is `linked`, or, for a link whose code changed, the
+  test chain's `needs-reverification`, `re-verified` or `inconclusive`.
+- **Order.** Rows sort by requirement, file, anchor and test (UTF-8 byte
+  order), so two runs give the same bytes.
+- **Cells.** Quoted per RFC 4180. A cell that starts with `=`, `+`, `-`, `@`,
+  a tab or a carriage return gets a `'` prefix, so a spreadsheet does not run
+  it as a formula.
+
+`--format reqif` writes ReqIF 1.2:
+- requirements, anchors and tests are spec objects;
+- `implements` (anchor → requirement) and `verifies` (test → requirement) are
+  spec relations;
+- identifiers are a hash of each key, so they are stable;
+- the creation time is fixed at the epoch, so the file only changes when the
+  matrix does.
+
+`--format json` gives the same rows. `--spec <id>` keeps one spec. `--out`
+(or `--output`) writes the file through DocGuard's safe write, which backs up
+an existing file first; otherwise the export is the whole of stdout.
 
 `--owners` reads the `ownership` block in `.docguard.json`
 ([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds
@@ -743,7 +985,7 @@ read-only core as native agent tools
 (`docguard_guard`, `docguard_score`, `docguard_explain`,
 `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
 `docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,
-`docguard_task_context`, `docguard_diagnose`). `docguard_guard` returns each
+`docguard_task_context`, `docguard_anchors`, `docguard_diagnose`). `docguard_guard` returns each
 fact once by default; pass `detail: "full"` for the complete contract. The four navigation tools answer
 "which docs describe this file?" and read one bounded section at a time, so an
 agent does not load whole documents; none of them calls a model.

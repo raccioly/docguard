@@ -14,8 +14,8 @@
  * @implements docguard.document-lifecycle#FR-013
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, basename, extname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 /** @implements docguard.adoption-workflow-integrity#FR-006 */
@@ -33,6 +33,9 @@ import {
   requirementPatterns,
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
+import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
+
+export { collectRequirementIds };
 import { docAnnotationsIn } from '../scanners/doc-references.mjs';
 import {
   parseSpecId,
@@ -416,24 +419,6 @@ function loadRetiredRequirementIds(projectDir) {
   return ids;
 }
 
-export function collectRequirementIds(projectDir, config, patterns = DEFAULT_REQ_PATTERNS) {
-  const reqIds = new Map(); // reqId → { file, line }
-  const docSearchPaths = getRequirementDocPaths(projectDir, config);
-
-  for (const docPath of docSearchPaths) {
-    if (!existsSync(docPath)) continue;
-
-    const docName = relative(projectDir, docPath).replaceAll("\\", "/");
-    const content = readFileSync(docPath, 'utf-8');
-    const specId = parseSpecId(content);
-    for (const [key, definition] of collectRequirementIdsFromContent(content, docName, patterns)) {
-      if (!reqIds.has(key)) reqIds.set(key, { ...definition, specId });
-    }
-  }
-
-  return reqIds;
-}
-
 /** Resolve positive test links without sharing evidence between document scopes. */
 export function resolveRequirementReferences(definitions, references, retiredDefinitions = new Set()) {
   return resolveRequirementReferencesShared(definitions, references, retiredDefinitions);
@@ -454,55 +439,6 @@ export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
  * Get all file paths where requirement IDs might be defined.
  * Checks: docs-canonical/*.md, spec.md, REQUIREMENTS.md, specs/[feature]/spec.md
  */
-function getRequirementDocPaths(projectDir, config) {
-  const paths = [];
-
-  // docs-canonical/ directory — recursive. Consumer re-derives the display
-  // path via relative(projectDir, docPath), so nested docs already report
-  // their real path with no further change needed there.
-  for (const doc of listCanonicalDocs(projectDir, { config })) paths.push(doc.abs);
-
-  // Root-level docs
-  const rootDocs = ['REQUIREMENTS.md', 'spec.md', 'README.md'];
-  for (const doc of rootDocs) {
-    const p = resolve(projectDir, doc);
-    if (existsSync(p)) paths.push(p);
-  }
-
-  // User-configured requirement docs
-  const configDocs = [...(config.requiredFiles?.canonical || []), ...(config.traceability?.requirementDocs || [])];
-  for (const doc of configDocs) {
-    const p = resolve(projectDir, doc);
-    const rel = relative(projectDir, p);
-    if (rel === '..' || rel.startsWith('../') || rel.split(/[\\/]/).includes('.local')) continue;
-    try {
-      if (statSync(p).isFile() && !paths.includes(p)) paths.push(p);
-      else if (statSync(p).isDirectory()) {
-        for (const entry of listCanonicalDocs(projectDir, { dirName: doc, config: {} })) {
-          if (!paths.includes(entry.abs)) paths.push(entry.abs);
-        }
-      }
-    } catch { /* Structural validators own missing or unreadable doc paths. */ }
-  }
-
-  // Spec Kit artifacts: .specify/specs/*/spec.md (v3+) and specs/*/spec.md (legacy)
-  const specKitDirs = [
-    resolve(projectDir, '.specify', 'specs'),  // v3+ standard
-    resolve(projectDir, 'specs'),               // legacy
-  ];
-  for (const specsDir of specKitDirs) {
-    if (existsSync(specsDir)) {
-      try {
-        for (const feature of readdirSync(specsDir)) {
-          const specPath = join(specsDir, feature, 'spec.md');
-          if (existsSync(specPath) && !paths.includes(specPath)) paths.push(specPath);
-        }
-      } catch { /* ignore */ }
-    }
-  }
-
-  return paths;
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
