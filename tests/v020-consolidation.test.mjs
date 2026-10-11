@@ -55,9 +55,14 @@ describe('v0.20 — init --with <name> dispatcher', () => {
 
   it('init --with agents,hooks dispatches both in order', () => {
     dir = makeFixture();
+    // `hooks` refuses a global core.hooksPath by design (spec 065); this case
+    // is about dispatch order, so it runs on a machine without one.
+    const isolated = join(dir, '.isolated-gitconfig');
+    writeFileSync(isolated, '');
     const r = spawnSync('node', [CLI, 'init', '--skip-prompts', '--with', 'agents,hooks'], {
       cwd: dir,
       encoding: 'utf-8',
+      env: { ...process.env, GIT_CONFIG_GLOBAL: isolated, GIT_CONFIG_NOSYSTEM: '1' },
     });
     assert.equal(r.status, 0, `exit 0; got ${r.status}\n${r.stderr}`);
     assert.match(r.stdout, /── agents ──/);

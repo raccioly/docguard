@@ -116,10 +116,15 @@ describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', () =>
     const { dir, bare } = setup;
     const { newPath, logFile } = installGhStub(base);
 
+    // The happy path needs a machine where the commit and push can succeed: a
+    // global pre-push hook or mandatory signing makes them fail, and that case
+    // (rollback) is tested in tests/hooks-repo-scope.test.mjs (spec 065).
+    const isolated = join(base, 'isolated.gitconfig');
+    writeFileSync(isolated, '');
     const r = spawnSync('node', [CLI, 'upgrade', '--apply', '--pr', '--quiet'], {
       cwd: dir,
       encoding: 'utf-8',
-      env: { ...process.env, PATH: newPath },
+      env: { ...process.env, PATH: newPath, GIT_CONFIG_GLOBAL: isolated, GIT_CONFIG_NOSYSTEM: '1' },
     });
 
     if (r.status !== 0) {
