@@ -11620,6 +11620,11 @@
             "line": 14
           },
           {
+            "requirementId": "FR-010",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-011",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 15
@@ -11655,9 +11660,19 @@
             "line": 18
           },
           {
+            "requirementId": "FR-039",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 15
+          },
+          {
             "requirementId": "FR-041",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 19
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/requirement-anchors-golden.test.mjs",
+            "line": 16
           },
           {
             "requirementId": "SC-002",
