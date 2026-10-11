@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.3] - 2026-10-11
+
 ### Fixed
 
 - **Route readers that undercounted real projects**
@@ -39,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (`route-unresolved-path`, `-prefix`, `-method`, `-declaration`), so the
     API-surface check reports `partial` instead of a silent zero; a Laravel
     route file no application loads is one of them.
+
+### Commits
+
+- chore: verify spec 071; review docs after specs 065-071 (#559)
+- fix: route readers that undercounted real projects (spec 071) (#558)
+- chore: verify spec 051 maintenance; map sync-tests.mjs in TEST-SPEC (#557)
+- test: replace typeof-only export checks with behaviour tests (#556)
 
 ## [0.44.2] - 2026-10-11
 
