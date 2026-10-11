@@ -11970,6 +11970,11 @@
             "line": 20
           },
           {
+            "requirementId": "SC-003",
+            "file": "tests/requirement-anchors-adoption.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "SC-004",
             "file": "tests/requirement-anchors-lock.test.mjs",
             "line": 18
