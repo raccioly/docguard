@@ -2703,7 +2703,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/trace.mjs",
-            "line": 54
+            "line": 57
           },
           {
             "requirementId": "FR-007",
@@ -8076,7 +8076,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 706
+            "line": 709
           },
           {
             "requirementId": "FR-006",
@@ -8660,12 +8660,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 92
+            "line": 95
           },
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 93
+            "line": 96
           },
           {
             "requirementId": "FR-009",
@@ -10215,7 +10215,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 901
+            "line": 916
           },
           {
             "requirementId": "FR-001",
@@ -10225,17 +10225,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 902
+            "line": 917
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 903
+            "line": 918
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 904
+            "line": 919
           },
           {
             "requirementId": "FR-005",
@@ -11369,11 +11369,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:000ae5ffb8acaa3d4f9b2bd6347a58155693002f261863cb2686f15d5f80d240"
+            "digest": "sha256:c48168301f2cd78f38c8f4bde220f053a33b6cb3b21e797fceffed337dd42155"
           }
         ],
         "taskCompletion": {
-          "checked": 62,
+          "checked": 66,
           "total": 79
         },
         "implementationEvidence": [
@@ -11618,6 +11618,21 @@
             "line": 623
           },
           {
+            "requirementId": "FR-037",
+            "file": "cli/commands/trace.mjs",
+            "line": 232
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 654
+          },
+          {
+            "requirementId": "FR-037",
+            "file": "cli/writers/trace-matrix.mjs",
+            "line": 9
+          },
+          {
             "requirementId": "FR-041",
             "file": "cli/scanners/anchor-cache.mjs",
             "line": 5
@@ -11840,6 +11855,11 @@
             "line": 10
           },
           {
+            "requirementId": "FR-037",
+            "file": "tests/trace-matrix.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-039",
             "file": "tests/requirement-anchors-golden.test.mjs",
             "line": 15
@@ -11882,6 +11902,11 @@
           {
             "requirementId": "SC-009",
             "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-010",
+            "file": "tests/trace-matrix.test.mjs",
             "line": 8
           }
         ]
@@ -13353,7 +13378,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 992
+            "line": 1007
           },
           {
             "requirementId": "FR-011",
