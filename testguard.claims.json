@@ -2822,8 +2822,8 @@
           "description": "The import map is not part of the cache identity.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/anchors.mjs",
-          "find": "${pyTier || 'no-python'}${importIdentity}`;",
-          "replace": "${pyTier || 'no-python'}`;",
+          "find": "|req:${patternIdentity}${importIdentity}",
+          "replace": "|req:${patternIdentity}",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 9)"

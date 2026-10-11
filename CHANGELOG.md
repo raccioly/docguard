@@ -224,6 +224,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   implementation-evidence scanner read `// @req FR-012` inside a help string
   (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
   every language it can lex, and quote-aware `#` comments in YAML and shell.
+  - **What changes on DocGuard itself.** Four implementation-evidence
+    entries that 0.44.3 recorded disappear. Each came from a `/*` inside a
+    string (a glob) that the old regex took for the start of a comment,
+    swallowing the code after it:
+    - `cli/commands/trace.mjs` for `docguard.doc-ownership-map#FR-004`,
+      `docguard.mcp-doc-tools#FR-003` and `docguard.output-ux#FR-009`;
+    - `cli/findings.mjs` for `docguard.ignore-reasons#FR-005`.
+
+    The spec registry's projection changes accordingly. Guard output is
+    otherwise unchanged against 0.44.3 on this repository and on the
+    projects in the release gate.
 - **A Python interpreter upgrade no longer reads as a code change in the doc
   lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
   revision, re-read with today's interpreter, is now unverifiable instead of
