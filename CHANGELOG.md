@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **A Jules pull request auto-merges only when it adds new test files**
+  (`specs/067-jules-policy`). `.github/workflows/auto-merge.yml` merged a
+  green Jules PR whenever every path was under `tests/` or `docs/` or ended
+  in `.md`: that admitted `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, the
+  constitution, and prompt files that ship to npm (`commands/`, `templates/`,
+  `extensions/**/commands/`), as well as edits to existing tests (#421, #451
+  and #516 each edited one), deletions, renames and fixtures. Now
+  `.github/scripts/jules-policy.mjs` decides: 1 to 10 files, each a newly
+  added `tests/<name>.test.mjs`; everything else waits for a maintainer. The
+  files come from comparing the PR base with the exact head commit CI
+  verified, not from one 100-file page of the live branch, and every merge
+  (Dependabot's too) is pinned to that commit with `sha`, so a push after CI
+  makes GitHub refuse it.
+
+### Changed
+
+- **Jules triage is a tested policy, and Jules runs repository routines**
+  (`specs/067-jules-policy`). `jules-triage.yml` now runs
+  `.github/scripts/jules-triage.mjs`, which closes a Jules PR that is empty,
+  a duplicate of an open PR (same `[jules:<routine>] <target>` or same
+  files), work declined in the last 60 days, over a five-PR review queue, or
+  off its routine's contract, reading every page of PRs and files. It no
+  longer closes PRs by title keyword, so a new security or performance fix
+  reaches a maintainer, and its comments no longer mention the agent, which
+  in Jules' Reactive Mode is an instruction. Three weekly routines live in
+  `.jules/routines/` (`bug-hunt`, `test-gaps`, `docs-drift`), each started
+  by `.jules/preflight.mjs`, which answers STOP when the queue is full or the
+  routine already has a PR waiting; `.jules/RULES.md` tells them never to
+  ask a question. `.jules/setup.sh` replaces `.jules-setup.sh`: it fails
+  unless the suite and guard pass on the full history, and sets no dummy API
+  keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
 ### Fixed
 
 - **The test suite no longer depends on the machine's git config**

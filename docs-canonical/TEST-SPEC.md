@@ -132,6 +132,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/config.mjs`, `cli/shared-doc-roles.mjs`, `cli/validators/metrics-consistency.mjs` (dogfood fixes) | `tests/dogfood-findings.test.mjs` | ✅ |
 | `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, the CI runtime budget | `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs` | ✅ |
 | `tools/generate-docs-reference.mjs`, `docs/` site navigation and links | `tests/user-docs.test.mjs` | ✅ |
+| `.github/scripts/jules-policy.mjs`, `.github/scripts/jules-triage.mjs`, `.jules/preflight.mjs`, `.jules/setup.sh`, the Jules branch of `auto-merge.yml` | `tests/jules-policy.test.mjs` | ✅ |
 
 Completion tests cover initial `implemented → verified` delivery, evidence and
 dirty-tree blockers, living-spec `verified → verified` maintenance, and refusal

@@ -1,23 +1,35 @@
 name: Jules PR Triage
 
-# Auto-triage PRs opened by the Google Jules agents (Sentinel/Bolt/Palette).
-# Keeps Jules ON (it stays useful for genuinely-new work) while automatically
-# clearing the duplicate/already-resolved noise it tends to produce, and giving
-# it per-PR feedback (a comment mentioning @jules) so it learns.
+# Closes Google Jules PRs that are noise, duplicates, previously declined
+# work, over the review queue cap, or off their routine's contract; labels the
+# rest for a maintainer or as eligible for auto-merge. Every decision is made
+# by .github/scripts/jules-policy.mjs (pure, unit-tested in
+# tests/jules-policy.test.mjs; specs/067-jules-policy). No rule looks at what a
+# PR is about, so a real security or speed fix reaches a maintainer.
 #
-# SECURITY: uses pull_request_target (needs write to comment/close/label on the
-# PR), but reads only PR METADATA (title, author) via the API and NEVER checks
-# out or runs the PR's code — so the elevated token is never exposed to
-# PR-controlled content. (Matches the AGENTS.md CI rule.)
+# SECURITY: pull_request_target carries write scope (to label, comment and
+# close), so nothing here checks out or runs PR code. The checkout is the
+# default branch, credentials are not persisted, and the PR is read through
+# the API only. (Matches the AGENTS.md CI rule.)
+#
+# @implements docguard.jules-policy#FR-004
+# @implements docguard.jules-policy#FR-005
+# @implements docguard.jules-policy#FR-006
+# @implements docguard.jules-policy#FR-007
 
 on:
   pull_request_target:
     types: [opened, reopened]
 
 permissions:
+  contents: read
   pull-requests: write
   issues: write
-  contents: read
+
+# One at a time: duplicate detection compares a PR with the ones before it.
+concurrency:
+  group: jules-triage
+  cancel-in-progress: false
 
 jobs:
   triage:
@@ -25,86 +37,15 @@ jobs:
     if: github.event.pull_request.user.login == 'google-labs-jules[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Triage the Jules PR
+      - name: Check out the policy from the default branch (never the PR head)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Triage
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const pr = context.payload.pull_request;
-            const num = pr.number;
-            const title = pr.title || '';
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Known-noise classes for THIS repo (see .jules/*.md RESOLVED markers).
-            const NOISE = [
-              /command injection|exec(File)?Sync/i,                                   // Sentinel — fixed v0.21.1 + #296
-              /performance|optimi[sz]e|precompute|pre-?compile|O\(N|single-pass|\bset\b.*comparison|tolowercase|basenames?/i, // Bolt — applied + refactored
-              /no (web )?ui|no changes? (needed|required)|no ux|no-op/i,               // Palette — no UI in this repo
-            ];
-            const isNoise = NOISE.some((re) => re.test(title));
-
-            // Duplicate detection: another OPEN Jules PR with an equivalent title.
-            const norm = (s) => (s || '')
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, ' ')
-              .replace(/\b(sentinel|bolt|palette|critical|high|medium|low|fix|the|a|an|via|in|of|for|to|and)\b/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            const mine = norm(title);
-            const { data: open } = await github.rest.pulls.list({ owner, repo, state: 'open', per_page: 100 });
-            let dup = mine && open.find((p) => p.number !== num && norm(p.title) === mine);
-
-            // Title-equality alone is too strict: #324 "add tests for untested
-            // shared-ignore utilities", #325 "add missing tests for
-            // shared-ignore functions" and #329 "Add unit tests for
-            // shared-ignore detection utilities" were the SAME work, all three
-            // sat open, and two of them would have collided on the same import
-            // block if merged together. So also treat a PR as a duplicate when
-            // it touches an identical file set to another open Jules PR.
-            // Still metadata-only (listFiles) — never checks out PR code.
-            if (!dup) {
-              const fileSet = async (n) => {
-                const { data } = await github.rest.pulls.listFiles({ owner, repo, pull_number: n, per_page: 300 });
-                return data.map((f) => f.filename).sort().join('|');
-              };
-              try {
-                const mineFiles = await fileSet(num);
-                if (mineFiles) {
-                  for (const p of open) {
-                    if (p.number === num) continue;
-                    if (p.user.login !== 'google-labs-jules[bot]') continue;
-                    if (await fileSet(p.number) === mineFiles) { dup = p; break; }
-                  }
-                }
-              } catch (e) { core.info(`file-overlap dup check skipped: ${e.message}`); }
-            }
-
-            const addLabel = async (name) => {
-              try {
-                await github.rest.issues.addLabels({ owner, repo, issue_number: num, labels: [name] });
-              } catch (e) { core.info(`label "${name}" skipped: ${e.message}`); }
-            };
-
-            if (isNoise || dup) {
-              const reason = dup
-                ? `a duplicate of #${dup.number}`
-                : 'a class already resolved or not applicable in this repo';
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: num,
-                body:
-                  `🤖 **Auto-triaged as stale** — ${reason}.\n\n` +
-                  `@jules please stop opening PRs for this topic: it is covered by the RESOLVED markers in \`.jules/sentinel.md\` / \`.jules/bolt.md\` / \`.jules/palette.md\` and the **Automated agents** rule in \`AGENTS.md\` (search open **and** closed PRs first; never duplicate; only open a new PR for a genuinely-new finding with evidence — an exploit/failing test for security, or a >20% real-workload benchmark for performance). Closing to keep the queue clean.`,
-              });
-              await addLabel('jules-autoclosed');
-              await github.rest.pulls.update({ owner, repo, pull_number: num, state: 'closed' });
-              core.notice(`Closed #${num} (${reason}).`);
-            } else {
-              await addLabel('jules-review');
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: num,
-                body:
-                  `🔎 **Flagged for human review** — this looks like a *new, non-duplicate* change from @jules. ` +
-                  `A maintainer should verify it against \`docguard guard\` + the test suite before merge.`,
-              });
-              core.notice(`#${num} flagged for human review.`);
-            }
+            const { run } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/jules-triage.mjs`);
+            await run({ github, context, core });
