@@ -158,9 +158,46 @@ describe('docguard sync', () => {
 });
 
 describe('sync-tests cli commands', () => {
-  it('should export discoverTestPairs and runSyncTests', () => {
-    assert.equal(typeof discoverTestPairs, 'function');
-    assert.equal(typeof runSyncTests, 'function');
+  // runSyncTests is the `sync --tests` command around reconcileTestMap: a dry
+  // run reports and writes nothing; --write applies the same reconciliation.
+  it('runSyncTests reports a ghost-source row on a dry run and removes it only with --write', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'docguard-sync-tests-'));
+    const doc = join(tmp, 'docs-canonical', 'TEST-SPEC.md');
+    const capture = flags => {
+      const out = [];
+      const log = console.log;
+      console.log = (...args) => { out.push(args.join(' ')); };
+      try { runSyncTests(tmp, { projectName: 'svc' }, flags); } finally { console.log = log; }
+      return out.join('\n');
+    };
+    try {
+      mkdirSync(join(tmp, 'docs-canonical'), { recursive: true });
+      mkdirSync(join(tmp, 'src'), { recursive: true });
+      writeFileSync(join(tmp, 'src', 'keep.ts'), 'export const k = 1;\n');
+      writeFileSync(join(tmp, 'src', 'keep.test.ts'), 'test();\n');
+      const before = [
+        '# Test Specification', '', '## Source-to-Test Map', '',
+        '| Source File | Unit Test | Status |', '|---|---|---|',
+        '| `src/keep.ts` | `src/keep.test.ts` | ✅ |',
+        '| `src/gone.ts` | `src/gone.test.ts` | ✅ |',
+        '',
+      ].join('\n');
+      writeFileSync(doc, before);
+
+      const dry = JSON.parse(capture({ format: 'json' }));
+      assert.equal(dry.applicable, true);
+      assert.equal(dry.applied, false);
+      assert.deepEqual(dry.removed.map(r => r.source), ['src/gone.ts']);
+      assert.equal(readFileSync(doc, 'utf-8'), before, 'a dry run writes nothing');
+
+      const applied = JSON.parse(capture({ format: 'json', write: true }));
+      assert.equal(applied.applied, true);
+      const after = readFileSync(doc, 'utf-8');
+      assert.doesNotMatch(after, /src\/gone\.ts/);
+      assert.match(after, /src\/keep\.ts/, 'rows whose source exists are kept');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it('discoverTestPairs should find basic pairs', () => {
