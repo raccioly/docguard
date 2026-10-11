@@ -10349,11 +10349,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
+          "lastReviewedRevision": "3790177e60ccd360e94e2193579a8209efe146ea",
           "outcomes": [
             {
               "revision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
               "reason": "Reviewed at f130626 on main: all 9 tasks are checked and were delivered by #510; the full suite (2920 tests) passes on Node 18, 20, 22 and 24 in CI, a local replay of the v0.43.0 cut passes the suite, guard and the candidate validation, and guard reports 0 errors at this revision.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/release-cut-green.test.mjs",
+                "tests/release-version-sync.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "3790177e60ccd360e94e2193579a8209efe146ea",
+              "reason": "Maintenance review at 3790177: release-cut guarantees extended, none weakened. #543 lints out [Unreleased]-only CHANGELOG reads; #522 widened the version sync; #536 made budget timing deterministic; #546 made its fixture git hermetic; #549 moved CI-RECIPES to the least-privilege layout. v0.44.1 and v0.44.2 cut green end to end; typeof-only tests replaced by behaviour tests (#556). Deviations: none.",
               "evidence": [
                 ".github/scripts/sync-release-version.mjs",
                 "cli/release-pr-policy.mjs",
@@ -10385,7 +10398,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:c89ddac42504f4fd45a8b9e5e0ca713c09489cf8e76af2ffb36b325289311e55"
+            "digest": "sha256:c18d421141f79bd20dc72b4c37cc50401a208c93d8b3117fd748bed88be38591"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
