@@ -1,9 +1,9 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.15.0 -->
+<!-- docguard:version 0.16.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 ## Overview
 
@@ -90,6 +90,8 @@ Paths that come from documents or configuration are checked before use. A `cover
 
 Only `init`, and the aliases that run it (`setup`, `agents`, `hooks`, `badge`, `llms`, `publish`), installs DocGuard's agent skills and slash commands or prints the Spec Kit setup hint; `upgrade --apply` refreshes copies that are out of date. They go where the project's agent reads them: the skills directory in Spec Kit's install manifest, else a known integration folder (`.claude/skills/`, `.cursor/skills/`, `.agents/skills/`), else `.agent/skills/` and `.agent/commands/`. A directory read from `.specify/*.json` must stay inside the project. No other command installs them, in any mode, and an unknown command name writes nothing. Read, report, check and preview modes leave the working tree unchanged. The only place they may write is DocGuard's own state directory, `.docguard/`, which ignores itself: each writer creates `.docguard/.gitignore` containing `*` when it is missing and keeps an existing one. DocGuard's dirty-tree checks (`memory --pack`, `report`, `reconcile`, `specs complete`) leave `.docguard/` out.
 
+Git hooks are written, replaced or removed only in a hooks folder the repository owns: `.git/hooks`, or a `core.hooksPath` from the repository's local or worktree configuration that points inside it. `hooks` (including `--force` and `--remove`) and `setup` refuse a `core.hooksPath` from the global, system or command-line configuration, or one outside the repository, because every repository using that folder would run the change (spec 065).
+
 | Operation | Source writes | Auxiliary writes / effects |
 |---|---|---|
 | guard, score, diff, diagnose | None by default | Plan caching may write into the self-ignoring `.docguard/`; explicit mutation flags change behavior. `guard --update-baseline` writes `.docguard.baseline.json` at the project root |
@@ -156,6 +158,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
 | 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
