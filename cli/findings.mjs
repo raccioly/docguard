@@ -981,7 +981,7 @@ export const BLOCKER_CODES = {
   SPC006: {
     command: 'docguard specs complete',
     title: 'Reconciliation incomplete',
-    help: 'Completion reconciles every file changed since the review baseline. It blocks when there is no baseline (pass `--since <ref>` the first time), when the plan is unsupported, when a changed file traces to no spec (annotate it, or list files that cannot carry an annotation under `reviewed.scope.assetPaths`), or when a living spec\'s maintenance completion has no new linked change since its last reviewed revision. `docguard reconcile --since <ref>` shows the classification.',
+    help: 'Completion reconciles every file changed since the review baseline. It blocks when there is no baseline (pass `--since <ref>` the first time), when the plan is unsupported, when a changed file traces to no spec (annotate it, list files that cannot carry an annotation under `reviewed.scope.assetPaths`, or, for a removed file, name its path in the spec that removes it), or when a living spec\'s maintenance completion has no new linked change since its last reviewed revision. `docguard reconcile --since <ref>` shows the classification.',
   },
   SPC007: {
     command: 'docguard specs complete',

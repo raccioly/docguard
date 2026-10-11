@@ -6,6 +6,9 @@
  * @implements docguard.canonical-requirement-links#FR-001
  * @implements docguard.canonical-requirement-links#FR-002
  * @implements docguard.asset-path-attribution#FR-002
+ * @implements docguard.removed-file-attribution#FR-001
+ * @implements docguard.removed-file-attribution#FR-002
+ * @implements docguard.removed-file-attribution#FR-003
  */
 
 import { execFileSync } from 'node:child_process';
@@ -54,6 +57,51 @@ function directSpecLinks(path, text, registry) {
     if (evidencePaths.includes(path) || explicit || asset) links.push(spec.specId);
   }
   return [...new Set(links)].sort();
+}
+
+// docguard.removed-file-attribution: a deleted file cannot carry an annotation,
+// and an assetPaths entry for it would cover nothing (SPR009). Its reviewed
+// owner is the current, approved spec whose own documents name the removal:
+// the exact path, or a directory that is gone entirely. Only deletions use
+// this; a file that still exists needs evidence.
+const PATH_EDGE = String.raw`[\s\x60'"()\[\],;:]`;
+const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function namesWholePath(text, name) {
+  return new RegExp(`(?:^|${PATH_EDGE})${escapeRegExp(name)}(?=$|${PATH_EDGE}|\\.(?:\\s|$))`, 'm').test(text);
+}
+
+function removalLinks(projectDir, path, registry, cache) {
+  const parts = path.split('/');
+  // A directory is gone when HEAD tracks nothing under it (Git keeps no
+  // empty directories, so one left on disk does not count).
+  const removedDirs = parts.slice(1).map((_, i) => `${parts.slice(0, i + 1).join('/')}/`)
+    .filter(dir => {
+      const key = `dir:${dir}`;
+      if (!cache.has(key)) {
+        let tracked = true;
+        try {
+          tracked = execFileSync('git', ['ls-files', '-z', '--', dir], { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) !== '';
+        } catch { /* unknown: treat as still present */ }
+        cache.set(key, tracked);
+      }
+      return !cache.get(key);
+    });
+  const links = [];
+  for (const spec of registry.specs) {
+    const { approval, context } = spec.reviewed.lifecycle;
+    if (approval !== 'approved' || context !== 'current') continue;
+    const text = spec.observed.artifacts.map(({ path: artifact }) => {
+      if (!cache.has(artifact)) {
+        let body = '';
+        try { body = readFileSync(resolve(projectDir, artifact), 'utf8'); } catch { /* unreadable: names nothing */ }
+        cache.set(artifact, body);
+      }
+      return cache.get(artifact);
+    }).join('\n');
+    if ([path, ...removedDirs].some(name => namesWholePath(text, name))) links.push(spec.specId);
+  }
+  return links.sort();
 }
 
 // A change that cites a requirement declared in a canonical document
@@ -174,6 +222,11 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
     }
     return item;
   });
+  const deleted = new Set(snapshot.changedFiles.filter(file => file.status.startsWith('D')).map(file => file.oldPath));
+  const artifactCache = new Map();
+  for (const item of preliminary) {
+    if (item.specs.length === 0 && deleted.has(item.path)) item.specs = removalLinks(projectDir, item.path, projection.registry, artifactCache);
+  }
   const changedPaths = new Set(preliminary.map(item => item.path));
   const currentSpecs = new Set(projection.registry.specs
     .filter(spec => spec.reviewed.lifecycle.context === 'current' && spec.reviewed.lifecycle.approval === 'approved')
