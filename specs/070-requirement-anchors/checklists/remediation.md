@@ -112,7 +112,22 @@ the exact commit being released. The results are recorded under
 
 ### Gate results
 
-Items 1 to 9 pass at c22a6da (the release candidate as of 2026-10-11). Item 10 waits for Ricardo. If more commits land before the release, items 1, 2 and 9 are re-run on the final commit.
+Items 1 to 10 pass at c644672, main after #562 (2026-10-11). The squash of #562 has the same tree as the branch tip 1f43006. The release cut adds the version bump, the CHANGELOG cut and this verification record; it changes no code.
+
+| Item | Commit | Result | Evidence |
+|------|--------|--------|----------|
+| 1 | c644672 | PASS | Node 24 locally: 3,714/3,714, none skipped beyond the documented python-present and opt-in stress cases. CI `test` on Node 18, 20, 22 and 24 green on main |
+| 2 | c644672 | PASS | `docguard guard`: no error findings. Its 9 DSP001 warnings come from the doc-diff window (`HEAD~1..HEAD` is now the whole squash), and 0.44.3 reports the same 9 on this commit. The named docs (ARCHITECTURE, SECURITY, TEST-SPEC, AGENTS) were reviewed: they already name the modules the code moved to (`fingerprint.mjs`, `py-anchors.mjs`, `requirement-docs.mjs`, the shared reverse-import walk). SECURITY gained the anchor cache's `ls-files` call |
+| 3 | c644672 | PASS | Same result as at 1b232b1: 73 shared findings identical; base only SPR001 (FR-005 projection) and MET001 ×2 (validator count); candidate only none; 35 validators, the new one `requirementAnchors`. `specs --check` CURRENT for the candidate |
+| 4 | c644672 | PASS | Identical guard output, base 0.44.3 against the candidate, on testguard (3), web-security-validator (18) and the seven local projects (9 to 183). `requirementAnchors` not applicable on all nine; `docguard anchors` runs on each, with the same reviewed ANC006 ×2 and ANC010 ×2 as before |
+| 5 | c644672 | PASS | No DLK finding |
+| 6 | 1f43006 | PASS | CI `budget` job green on #562's last run; 1f43006 has the same tree as c644672. `anchor-oracle` green on main |
+| 7 | c644672 | PASS | `node benchmarks/run.mjs --baseline benchmarks/baseline.json`: core PASS, 0 regressions |
+| 8 | c644672 | PASS | 689 links (file 492, statement 12, symbol 185; babel@7 660, file 28, python-ast@3.12 1). The 28 file-tier links are in YAML (26) and shell (2), which have no parser tier. Reviewed 100, baselined 589. No ANC006, no ANC007 |
+| 9 | 1b232b1, c22a6da | PASS | 98/98 faults caught at 1b232b1 (row below). Since then the code changed only by two comment-only tag lines and the staged runtime's name (`web-tree-sitter.mjs`), which ANCHOR-FINGERPRINT-GOLDEN re-probed 9/9 at c22a6da. A confirmation re-run on c644672 was in progress when this was recorded: 50 of 98 faults caught, none survived |
+| 10 | — | PASS | Ricardo asked for the release in this session ("Do it all … do the rest needed") |
+
+Earlier runs, kept for the record:
 
 | Item | Commit | Result | Evidence |
 |------|--------|--------|----------|
