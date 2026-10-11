@@ -101,7 +101,7 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
-| `requirementAnchors` | `true` | Code→requirement tags that cite no declared requirement (ANC007) and files anchored below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
+| `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, lock merge conflicts (ANC009), and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
 

@@ -111,7 +111,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}approve${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
-  ${c.green}anchors${c.reset}    Code→requirement links and what each anchors to (${c.cyan}--spec <id>${c.reset}, ${c.cyan}--file <path>${c.reset}, ${c.cyan}--format json${c.reset})
+  ${c.green}anchors${c.reset}    Code→requirement links, what each anchors to and whether it changed since review (${c.cyan}accept${c.reset}, ${c.cyan}--state <s>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -389,15 +389,22 @@ const COMMAND_HELP = {
   },
   anchors: {
     summary: 'List every code→requirement link, the symbol, statement, route or file it anchors to, and the tier that resolved it.',
-    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache]',
+    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text>',
     flags: [
-      ['--spec <id>', 'Only links to this Spec ID'],
-      ['--file <path>', 'Only links in this file'],
-      ['--state <state>', 'Only links in this state'],
+      ['accept', 'Record a review of the selected links in .docguard-anchor-lock.jsonl, bound to the fingerprints it saw'],
+      ['--spec <id>', 'Only links to this Spec ID (with accept: select them)'],
+      ['--file <path>', 'Only links in this file (with accept: select them)'],
+      ['--link <key>', 'With accept: the one link to accept'],
+      ['--state <state>', 'Only links in this state: unreviewed, baselined, reviewed, suspect, lost, retired-target, unverifiable'],
+      ['--reason <text>', 'With accept: what you checked (10-500 characters)'],
+      ['--bulk', 'With accept: confirm a selection of more than one link'],
+      ['--baseline', 'With accept --bulk: stamp every unreviewed link as baselined (adoption), never as reviewed'],
+      ['--remove <key>', 'With accept: delete a lock entry, such as a lost link'],
+      ['--gitattributes', 'With accept: also add the lock\'s merge=union line to .gitattributes'],
       ['--no-cache', 'Ignore the per-file extraction cache in .docguard/'],
-      ['--format json', 'Machine-readable listing (links, problems, tiers)'],
+      ['--format json', 'Machine-readable output'],
     ],
-    examples: ['docguard anchors', 'docguard anchors --spec acme.billing --format json', 'docguard anchors --file src/pricing.mjs'],
+    examples: ['docguard anchors', 'docguard anchors --state suspect --format json', 'docguard anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"', "docguard anchors accept --link 'acme.billing#FR-003|src/pricing.mjs|applyDiscount|symbol' --reason \"rounding fix keeps FR-003\""],
   },
   review: {
     summary: 'Track which code each doc section describes, and review a section when that code changes.',
@@ -502,7 +509,7 @@ async function main() {
       i++;
     } else if (args[i] === '--list') {
       flags.list = true;
-    } else if (args[i] === '--remove') {
+    } else if (args[i] === '--remove' && command !== 'anchors') {
       flags.remove = true;
     } else if (args[i] === '--threshold' && args[i + 1]) {
       flags.threshold = args[i + 1];
@@ -728,6 +735,16 @@ async function main() {
       flags.state = args[++i];
     } else if (args[i] === '--no-cache' && command === 'anchors') {
       flags.noCache = true;
+    } else if (args[i] === '--link' && args[i + 1] && command === 'anchors') {
+      flags.link = args[++i];
+    } else if (args[i] === '--remove' && args[i + 1] && command === 'anchors') {
+      flags.remove = args[++i];
+    } else if (args[i] === '--bulk' && command === 'anchors') {
+      flags.bulk = true;
+    } else if (args[i] === '--baseline' && command === 'anchors') {
+      flags.baseline = true;
+    } else if (args[i] === '--gitattributes' && command === 'anchors') {
+      flags.gitattributes = true;
     } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {
       flags.from = args[++i];
     } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {

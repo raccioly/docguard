@@ -599,6 +599,36 @@ The per-file cache lives in `.docguard/anchors.cache.json`, keyed by each
 file's bytes. It is off in CI and with `--no-cache`, and it is ignored and
 reported when git tracks anything under `.docguard/`.
 
+**Reviewing links.** `docguard anchors accept` records that someone read the
+code against the requirement:
+
+```bash
+npx docguard-cli anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"   # once
+npx docguard-cli anchors --state suspect                    # what changed since its review
+npx docguard-cli anchors accept --link '<key>' --reason "rounding fix keeps FR-003"
+npx docguard-cli anchors accept --spec acme.billing --bulk --reason "re-read billing after the rewrite"
+npx docguard-cli anchors accept --remove '<key>' --reason "implementation moved to the ledger service"
+```
+
+Rules for an accept:
+- It is bound to the fingerprints it saw, so a later change flags the link
+  again.
+- It refuses when a file changed during the run, when more than one link is
+  selected without `--bulk`, or when the reason is shorter than 10
+  characters.
+- `--baseline` stamps links as baselined, never as reviewed.
+
+With the lock committed, guard reports:
+- **ANC001**: a link whose code changed;
+- **ANC002**: a link whose requirement changed;
+- **ANC003**: a reviewed link whose tag is gone;
+- **ANC005**: an unreadable lock (an error);
+- **ANC008**: a tag citing a retired requirement;
+- **ANC009**: a merge conflict in the lock.
+
+DocGuard authenticates nobody. Require review of the lock through CODEOWNERS
+([CI recipe 3f](../docs-canonical/CI-RECIPES.md)).
+
 ### `docguard rules`
 
 **Which instructions an agent loads for a path.** Each harness finds its

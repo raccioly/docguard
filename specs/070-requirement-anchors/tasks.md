@@ -161,15 +161,15 @@ accept refusal path refuses.
 
 ### Tests first
 
-- [ ] T026 [P] [US2] Billing fixture `tests/fixtures/anchors/billing/` (git-initialized in the test via the fixture-git helper from spec 066), with a script of edits: five non-semantic edits, one identifier edit, one requirement edit, one whitespace-only requirement edit, one tag deletion, and one tag citing a retired spec (FR-019)
-- [ ] T027 [P] [US2] `tests/requirement-anchors-lock.test.mjs`:
+- [x] T026 [P] [US2] Billing fixture `tests/fixtures/anchors/billing/` (git-initialized in the test via the fixture-git helper from spec 066), with a script of edits: five non-semantic edits, one identifier edit, one requirement edit, one whitespace-only requirement edit, one tag deletion, and one tag citing a retired spec (FR-019)
+- [x] T027 [P] [US2] `tests/requirement-anchors-lock.test.mjs`:
   - header and line rules, any order, identical duplicates collapsing;
   - a differing duplicate gives ANC009 and reads as suspect;
   - a malformed line or unsupported version gives ANC005 with the line number;
   - deterministic re-serialization.
 
   (FR-016 to FR-018)
-- [ ] T028 [P] [US2] `tests/requirement-anchors.test.mjs`, the US2 block, covering every acceptance scenario in spec US2:
+- [x] T028 [P] [US2] `tests/requirement-anchors.test.mjs`, the US2 block, covering every acceptance scenario in spec US2:
   1. suspect on the code side;
   2. suspect on the requirement side, and the whitespace-only edit is silent;
   3. accept;
@@ -190,10 +190,10 @@ accept refusal path refuses.
 
 ### Implementation
 
-- [ ] T029 [US2] Create `cli/scanners/anchor-lock.mjs`: read, validate, serialize and detect duplicates per contracts/anchor-lock.md. Write `schemas/docguard-anchor-lock.schema.json` with `reason` 10–500 characters, `state` ∈ {reviewed, baselined}, fingerprints matching `^dg1:sha256:[0-9a-f]{64}$`, `revision` as 40/64 hex or null, and `date` as `YYYY-MM-DD` (FR-016 to FR-018)
-- [ ] T030 [US2] Add the state machine to `cli/scanners/anchors.mjs`, following the plan's table and the comparison order in contracts/fingerprint.md: exact, then floor, then the stored algorithm version, then unverifiable. Side attribution and retired-target come from the registry lifecycle (FR-011, FR-012, FR-019)
-- [ ] T031 [US2] Add ANC001–ANC005, ANC008 and ANC009 to `cli/validators/requirement-anchors.mjs`. Code-side findings carry a `git diff` command when the revision resolves (`revisionResolves`) and otherwise an "open file" hint. ANC004 is emitted only when a lock exists (FR-020)
-- [ ] T032 [US2] Implement `anchors accept` in `cli/commands/anchors.mjs`:
+- [x] T029 [US2] Create `cli/scanners/anchor-lock.mjs`: read, validate, serialize and detect duplicates per contracts/anchor-lock.md. Write `schemas/docguard-anchor-lock.schema.json` with `reason` 10–500 characters, `state` ∈ {reviewed, baselined}, fingerprints matching `^dg1:sha256:[0-9a-f]{64}$`, `revision` as 40/64 hex or null, and `date` as `YYYY-MM-DD` (FR-016 to FR-018)
+- [x] T030 [US2] Add the state machine to `cli/scanners/anchors.mjs`, following the plan's table and the comparison order in contracts/fingerprint.md: exact, then floor, then the stored algorithm version, then unverifiable. Side attribution and retired-target come from the registry lifecycle (FR-011, FR-012, FR-019)
+- [x] T031 [US2] Add ANC001–ANC005, ANC008 and ANC009 to `cli/validators/requirement-anchors.mjs`. Code-side findings carry a `git diff` command when the revision resolves (`revisionResolves`) and otherwise an "open file" hint. ANC004 is emitted only when a lock exists (FR-020)
+- [x] T032 [US2] Implement `anchors accept` in `cli/commands/anchors.mjs`:
   - selection by `--link`, or by `--spec` or `--file`, which exclude lost and retired-target links;
   - `--bulk` when more than one link is selected; reason of 10–500 characters;
   - re-fingerprint and refuse on any byte change;
@@ -205,15 +205,15 @@ accept refusal path refuses.
   - `--spec <id>` for requirement-side suspects.
 
   (FR-016, FR-017, FR-022 to FR-024)
-- [ ] T033 [US2] Show the baselined share in listing JSON and text. Add the note that DocGuard authenticates no reviewer (FR-023, FR-025)
-- [ ] T034 [P] [US2] Add a CODEOWNERS recipe for the lock to `docs-canonical/CI-RECIPES.md`. Document the lock format, states and findings in `docs-canonical/DATA-MODEL.md`. Document the commands in `docs/commands.md` and `README.md` (FR-025, FR-042)
-- [ ] T035 [US2] Dogfood:
+- [x] T033 [US2] Show the baselined share in listing JSON and text. Add the note that DocGuard authenticates no reviewer (FR-023, FR-025)
+- [x] T034 [P] [US2] Add a CODEOWNERS recipe for the lock to `docs-canonical/CI-RECIPES.md`. Document the lock format, states and findings in `docs-canonical/DATA-MODEL.md`. Document the commands in `docs/commands.md` and `README.md` (FR-025, FR-042)
+- [x] T035 [US2] Dogfood:
   - run `node cli/docguard.mjs anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors (spec 070)"` on this repository;
   - commit `.docguard-anchor-lock.jsonl` and `.gitattributes`;
   - add `.github/CODEOWNERS` with `.docguard-anchor-lock.jsonl @raccioly`.
 
   (FR-043)
-- [ ] T036 [US2] Verify and close story 2:
+- [x] T036 [US2] Verify and close story 2:
   - add the claim `ANCHOR-SUSPECT-ON-CHANGE`;
   - pass the budget (SC-003);
   - update `CHANGELOG.md`, run `npm run llms` and `npm run docs:reference`, run `specs --write`;

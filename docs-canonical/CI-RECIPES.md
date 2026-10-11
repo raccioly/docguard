@@ -231,6 +231,43 @@ moves the two medians only one sample apart. A difference under the floor
 `--samples 1`, one delayed process decides the verdict
 (`specs/062-budget-deterministic`).
 
+## Recipe 3f — Requirement anchors under human review
+
+`docguard anchors accept` records a reviewed link in
+`.docguard-anchor-lock.jsonl`, together with a reason, the fingerprints it
+replaced, and a `bulk` flag when it covers more than one link.
+
+**DocGuard authenticates nobody.** An agent can run `accept` as easily as a
+person, so require human review of the lock in the forge. Add this to
+`CODEOWNERS`, and require review from code owners in branch protection:
+
+```text
+.docguard-anchor-lock.jsonl @your-org/requirement-owners
+```
+
+**Merging.** Declare the lock `merge=union` in `.gitattributes`, so two
+branches that review links of the same spec merge without a conflict:
+
+```text
+.docguard-anchor-lock.jsonl merge=union
+```
+
+`docguard anchors accept … --gitattributes` adds that line; DocGuard never
+edits `.gitattributes` without the flag. If a union merge keeps two different
+lines for one link, guard reports ANC009 and treats the link as unreviewed
+until someone accepts it again.
+
+**Adoption.** Run `docguard anchors accept --baseline --bulk --reason "<why>"`
+once, and commit the lock. Baselined links are never counted as reviewed;
+`docguard anchors --format json` reports the baselined share.
+
+**Warnings.** Guard warns on:
+- a link whose code changed (ANC001);
+- a link whose requirement changed (ANC002);
+- a reviewed link whose tag is gone (ANC003).
+
+Read the change, then `docguard anchors accept --link '<key>' --reason "<what you checked>"`.
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.

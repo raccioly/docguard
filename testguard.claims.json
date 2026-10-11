@@ -1849,7 +1849,7 @@
           "description": "Guard reports anchors in a project that never opted in.",
           "faultClass": "condition-forced",
           "file": "cli/validators/requirement-anchors.mjs",
-          "find": "  if (!links && !anchorsActivated(projectDir, config)) {",
+          "find": "  if (!status && !anchorsActivated(projectDir, config)) {",
           "replace": "  if (false) {",
           "producedBy": {
             "producer": "agent",
@@ -1902,6 +1902,168 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 1)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-SUSPECT-ON-CHANGE",
+      "statement": "A baselined or reviewed requirement link turns suspect when its code or its requirement changes and lost when its tag is deleted; an accept is bound to the fingerprints it saw, needs a reason and --bulk for more than one link, records what it replaced, and refuses when a file changed during the run; a conflicting or unreadable lock never reads as current; only an explicit flag edits .gitattributes.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-019"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 2)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-lock.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A code change never makes a link suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  const codeSame = sameTier ? entry.code === link.exact : entry.floor === link.floor;",
+          "replace": "  const codeSame = true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A requirement change never makes a link suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  const reqSame = link.req === null || entry.req === link.req;",
+          "replace": "  const reqSame = true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Two different lock lines for one link: the first one silently wins.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchor-lock.mjs",
+          "find": "    if (conflicted.has(key)) continue; // fail closed: neither side counts",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An accept of many links needs no --bulk.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (selected.length > 1 && !flags.bulk) return fail(`The selection matches ${selected.length} links; add --bulk to accept them all, or use --link for one.`, flags);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An accept needs no reason.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "  if (reason.length < 10 || reason.length > 500) return fail('anchors accept needs --reason \"<what you checked>\" (10-500 characters).', flags);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A baseline stamps links as reviewed.",
+          "faultClass": "literal-changed",
+          "file": "cli/commands/anchors.mjs",
+          "find": "        state: flags.baseline ? 'baselined' : 'reviewed', revision, date, reason, bulk,",
+          "replace": "        state: 'reviewed', revision, date, reason, bulk,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A deleted tag of a reviewed link is never reported lost.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (current.has(key)) continue;",
+          "replace": "    if (true) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": ".gitattributes is edited without --gitattributes.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "  if (flags.gitattributes && !gitattributesDeclaresUnion(projectDir)) {",
+          "replace": "  if (!gitattributesDeclaresUnion(projectDir)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file that changed during the run is not detected.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (now !== shaOf.get(path)) changed.push(path);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "An accept does not record the fingerprints it replaced.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/anchors.mjs",
+          "find": "        prev: prior ? { code: prior.code, floor: prior.floor, req: prior.req } : null,",
+          "replace": "        prev: null,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "An unreadable lock lets every link read as reviewed.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "      links: base.links.map(l => ({ ...l, state: 'unverifiable', reason: 'the anchor lock cannot be read' })) };",
+          "replace": "      links: base.links.map(l => ({ ...l, state: 'reviewed' })) };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "A tag citing a retired requirement is reported as unknown.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (index.retired.has(key)) return { retired: true, identity: key };",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 2)"
           }
         }
       ]

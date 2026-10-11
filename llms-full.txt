@@ -548,6 +548,43 @@ moves the two medians only one sample apart. A difference under the floor
 `--samples 1`, one delayed process decides the verdict
 (`specs/062-budget-deterministic`).
 
+## Recipe 3f — Requirement anchors under human review
+
+`docguard anchors accept` records a reviewed link in
+`.docguard-anchor-lock.jsonl`, together with a reason, the fingerprints it
+replaced, and a `bulk` flag when it covers more than one link.
+
+**DocGuard authenticates nobody.** An agent can run `accept` as easily as a
+person, so require human review of the lock in the forge. Add this to
+`CODEOWNERS`, and require review from code owners in branch protection:
+
+```text
+.docguard-anchor-lock.jsonl @your-org/requirement-owners
+```
+
+**Merging.** Declare the lock `merge=union` in `.gitattributes`, so two
+branches that review links of the same spec merge without a conflict:
+
+```text
+.docguard-anchor-lock.jsonl merge=union
+```
+
+`docguard anchors accept … --gitattributes` adds that line; DocGuard never
+edits `.gitattributes` without the flag. If a union merge keeps two different
+lines for one link, guard reports ANC009 and treats the link as unreviewed
+until someone accepts it again.
+
+**Adoption.** Run `docguard anchors accept --baseline --bulk --reason "<why>"`
+once, and commit the lock. Baselined links are never counted as reviewed;
+`docguard anchors --format json` reports the baselined share.
+
+**Warnings.** Guard warns on:
+- a link whose code changed (ANC001);
+- a link whose requirement changed (ANC002);
+- a reviewed link whose tag is gone (ANC003).
+
+Read the change, then `docguard anchors accept --link '<key>' --reason "<what you checked>"`.
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.
@@ -866,6 +903,40 @@ Positions, whitespace, ordinary comments, docstrings and the symbol's own
 name are left out. A rename with an unchanged body therefore keeps its
 fingerprint, and adding a directive changes it.
 
+### Anchor lock: `.docguard-anchor-lock.jsonl`
+
+This file holds the reviewed state of links. Normative schema:
+`schemas/docguard-anchor-lock.schema.json`.
+
+**Layout:**
+- Line 1 is `{"kind":"docguard-anchor-lock","schemaVersion":1}`.
+- Every other line is one entry with sorted keys: `key`, `requirement`,
+  `file`, `anchor`, `scope`, `tier`, `code`, `floor` and `req` (the
+  fingerprints at accept time), `prev` (the fingerprints this accept
+  replaced, or `null`), `state` (`reviewed` or `baselined`), `revision`
+  (HEAD, used only to show the diff), `date`, `reason` (10–500 characters)
+  and `bulk`.
+
+**Reading and writing:**
+- The reader accepts any line order. Identical duplicates collapse.
+- Two different lines for one key are a conflict (ANC009), and the link
+  reads as unreviewed.
+- Only `docguard anchors accept` writes the file.
+
+**Link state:** derived from the lock and the current fingerprints.
+
+| State | Meaning |
+|---|---|
+| `unreviewed` | No entry |
+| `baselined`, `reviewed` | Every fingerprint matches |
+| `suspect` (`code`, `requirement` or `both`) | ANC001 / ANC002 |
+| `lost` | An entry whose tag is gone (ANC003) |
+| `retired-target` | The tag cites a retired requirement (ANC008) |
+| `unverifiable` | No comparison is possible |
+
+**Comparison:** when the tier is unchanged, the exact fingerprints are
+compared. Otherwise the pattern-tier floor is compared.
+
 ## Doc Ownership Map: `ownership`
 
 The `ownership` block in `.docguard.json` maps doc sections to the source
@@ -987,41 +1058,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 
 ## Task Context Packet
 
-`docguard agent --task <text> --format json` emits a transient
-`docguard.task-context` object governed by
-`schemas/docguard-task-context.schema.json`. The command does not persist the
-task or packet.
-
-| Field | Description |
-|-------|-------------|
-| `task.digest`, `task.characters` | Normalized task identity and bounded length; raw task text is omitted |
-| `provenance.git`, `provenance.registry` | Captured Git and lifecycle-registry state |
-| `assurance` | Retrieval-only scope, unknown factual accuracy, and unverified status |
-| `selection` | Targeted or abstained state, threshold, candidate/omission counts, excluded lifecycle documents, and fixed budgets |
-| `excerpts[]` | Repository-relative path, line range, content/file hashes, kind, optional spec ID, score, reasons, and bounded content |
-| `pointers[]` | Safe task, cited-source, implementation, or test paths with hashes and qualified requirements |
-| `verification[]` | Commands and purposes that still need execution |
-| `navigation` | Safe canonical-document inventory and approved current spec paths |
-| `limitations`, `coreDigest` | Explicit epistemic limits and deterministic packet-core identity |
-
-Selection reads at most 32 documents and 256 chunks, emits at most six
-16-line excerpts totaling 6,000 characters and eight pointers, and limits task
-input to 2,000 characters. An abstention emits no excerpts or pointers.
-
-## Document Metadata Headers
-
-Every CDD document includes DocGuard metadata as HTML comments at the top:
-
-| Header | Type | Required | Description |
-|--------|------|----------|-------------|
-| `docguard:version` | `string` | Yes | Semantic version of the document |
-| `docguard:status` | `string` | Yes | One of: `draft`, `active`, `deprecated` |
-| `docguard:last-reviewed` | `string` | Yes | ISO date (`YYYY-MM-DD`) |
-| `docguard:generated` | `boolean` | No | `true` if auto-generated by DocGuard |
-
-### Example Metadata Header
-
-<!-- truncated: 229 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 263 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1557,7 +1594,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
-| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC006/ANC007/ANC010) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs` | ✅ |
+| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC010) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -1832,6 +1870,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **ANC010**: a file was read below its exact tier.
 
     Projects that have not opted in see no new findings.
+- **Reviewed requirement links turn suspect when the code or the requirement
+  changes** (`specs/070-requirement-anchors`, user story 2).
+  - **Lock.** `docguard anchors accept` records a review in a committed
+    `.docguard-anchor-lock.jsonl`, one link per line so reviews on two
+    branches merge with `merge=union`.
+  - **Accept rules.** An accept:
+    - is bound to the exact fingerprints it saw, so a later change flags
+      the link again;
+    - records the fingerprints it replaced;
+    - needs a reason of 10–500 characters;
+    - needs `--bulk` for more than one link;
+    - refuses when a file changed during the run.
+  - **Adoption.** `--baseline` stamps every link as baselined, never as
+    reviewed, and the baselined share is reported. `--remove` deletes an
+    entry.
+  - **Guard findings:**
+    - ANC001: a link whose code changed (formatting, comments and line moves
+      do not count);
+    - ANC002: a link whose requirement text changed (whitespace does not
+      count);
+    - ANC003: a reviewed link whose tag is gone;
+    - ANC005: an unreadable lock, which fails;
+    - ANC008: a tag citing a retired requirement;
+    - ANC009: two different lock lines for one link after a merge.
+  - **What DocGuard does not do.** It edits `.gitattributes` only with
+    `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
+    to require human review of the lock through CODEOWNERS.
 
 ### Changed
 
@@ -2166,35 +2231,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writes nothing. `docguard ignore --format claimspec` prints a claimspec v1
   `ignore` document holding only the `.docguardignore` entries whose reason
   (8 to 2000 characters), expiry and scope survive exactly; every other
-  suppression is listed or counted on stderr with the reason it was left out,
-  and no reason is invented. The claimspec `ignore` and `common` schemas are
-  vendored from raccioly/testguard and every document is validated before it
-  is printed.
-- **The symbol map's benchmark has run, and it stays opt-in**
-  (`specs/036-symbol-map`). Agent-context protocol v2 could not run: its pinned
-  Codex CLI is no longer installed, and its model is refused for
-  ChatGPT-account Codex. Protocol v3 (`benchmarks/agent-context/manifest-v3.json`)
-  changes only that executable pin, to `codex-cli 0.162.0-alpha.17.2` and
-  `gpt-6.1-sol` at low reasoning. It was frozen and committed before the first
-  trial, and the runner rejects a v3 manifest that differs from v2 anywhere
-  else (`--protocol v3`). All 54 trials succeeded. With the map, median
-  uncached input rose 1.0% and median steps did not change. On the
-  navigation-bound tasks, median latency fell 6.0%, short of the 15% threshold.
-  The frozen rule therefore computed `opt-in`: `memory --pack --symbols` stays
-  available, and the default pack is unchanged
-  (`benchmarks/agent-context/results/README-v3.md`).
 
-- **A documentation site with the guides a larger project ships**
-  (`specs/053-user-documentation`). The GitHub Pages site
-  (raccioly.github.io/docguard) now has a landing page, sidebar navigation and
-  search, using the Just the Docs theme that Pages builds itself, with no
-  build step or dependency. New pages:
-  - guides for existing projects, Spec Kit, CI, monorepos, upgrading and
-    troubleshooting;
-  - references for languages and frameworks, coding agents, the MCP server and
-    every finding code;
-
-<!-- truncated: 5347 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5374 more lines — read CHANGELOG.md directly -->
 
 ---
 

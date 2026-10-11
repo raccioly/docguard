@@ -46,7 +46,7 @@ import { extractSemanticClaims, buildSemanticVerifyTasks } from '../scanners/sem
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { docsForPath, docStructure, readSection, READ_DEFAULT_BYTES, READ_MAX_BYTES } from '../scanners/doc-references.mjs';
 import { buildTaskContextPacket } from '../scanners/task-context.mjs';
-import { computeLinks } from '../scanners/anchors.mjs';
+import { computeAnchorStatus } from '../scanners/anchors.mjs';
 import { releaseAge, updateHintText } from '../release-age.mjs';
 
 const _PKG = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json'), 'utf-8'));
@@ -409,14 +409,15 @@ const TOOL_HANDLERS = {
   // docguard.requirement-anchors#FR-021: read-only; the lock is written only by the CLI.
   docguard_anchors(args, serving) {
     const { dir, config } = resolveTarget(args, serving);
-    const computed = computeLinks(dir, config);
+    const computed = computeAnchorStatus(dir, config);
     const spec = args && typeof args.spec === 'string' ? args.spec : null;
     const file = args && typeof args.file === 'string' ? args.file : null;
     const links = computed.links.filter(l => (!spec || l.specId === spec) && (!file || l.file === file));
     return {
       activated: computed.activated,
       summary: { ...computed.summary, links: links.length },
-      links: links.slice(0, 200),
+      links: links.slice(0, 200).map(({ entry, ...rest }) => rest),
+      lost: computed.lost.filter(l => (!spec || l.requirement.startsWith(`${spec}#`)) && (!file || l.file === file)).slice(0, 100).map(({ entry, ...rest }) => rest),
       truncated: links.length > 200,
       problems: computed.problems.filter(p => !file || p.file === file).slice(0, 100),
     };

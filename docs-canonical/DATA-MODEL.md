@@ -244,6 +244,40 @@ Positions, whitespace, ordinary comments, docstrings and the symbol's own
 name are left out. A rename with an unchanged body therefore keeps its
 fingerprint, and adding a directive changes it.
 
+### Anchor lock: `.docguard-anchor-lock.jsonl`
+
+This file holds the reviewed state of links. Normative schema:
+`schemas/docguard-anchor-lock.schema.json`.
+
+**Layout:**
+- Line 1 is `{"kind":"docguard-anchor-lock","schemaVersion":1}`.
+- Every other line is one entry with sorted keys: `key`, `requirement`,
+  `file`, `anchor`, `scope`, `tier`, `code`, `floor` and `req` (the
+  fingerprints at accept time), `prev` (the fingerprints this accept
+  replaced, or `null`), `state` (`reviewed` or `baselined`), `revision`
+  (HEAD, used only to show the diff), `date`, `reason` (10–500 characters)
+  and `bulk`.
+
+**Reading and writing:**
+- The reader accepts any line order. Identical duplicates collapse.
+- Two different lines for one key are a conflict (ANC009), and the link
+  reads as unreviewed.
+- Only `docguard anchors accept` writes the file.
+
+**Link state:** derived from the lock and the current fingerprints.
+
+| State | Meaning |
+|---|---|
+| `unreviewed` | No entry |
+| `baselined`, `reviewed` | Every fingerprint matches |
+| `suspect` (`code`, `requirement` or `both`) | ANC001 / ANC002 |
+| `lost` | An entry whose tag is gone (ANC003) |
+| `retired-target` | The tag cites a retired requirement (ANC008) |
+| `unverifiable` | No comparison is possible |
+
+**Comparison:** when the tier is unchanged, the exact fingerprints are
+compared. Otherwise the pattern-tier floor is compared.
+
 ## Doc Ownership Map: `ownership`
 
 The `ownership` block in `.docguard.json` maps doc sections to the source

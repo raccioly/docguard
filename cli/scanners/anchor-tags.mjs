@@ -45,7 +45,7 @@ const LOW_CONFIDENCE_LANGS = new Set(['c', 'cpp']);
 const AST_KEYS_SKIP = new Set(['loc', 'start', 'end', 'range', 'extra', 'comments', 'leadingComments',
   'trailingComments', 'innerComments', 'tokens', 'errors']);
 
-// `@implements a.b#FR-001`, `@req FR-001, FR-002`, `@implements x#FR-1 {scope=symbol}`
+// Shapes: `@implements <specId>#<REQ>`, `@req <REQ>, <REQ>`, `@implements <specId>#<REQ> {scope=symbol}`
 const TAG_RE = /@(implements|req)\b[ \t]+([^\s,{}]+)((?:[ \t]*,[ \t]*[^\s,{}]+)*)(?:[ \t]*\{([^}\n]*)\})?/g;
 
 /** True when `id` is a whole requirement ID under the configured patterns. */

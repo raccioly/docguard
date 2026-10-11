@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/raccioly/docguard/schemas/docguard-anchor-lock.schema.json",
+  "title": "DocGuard anchor lock line",
+  "description": "One line of .docguard-anchor-lock.jsonl (specs/070-requirement-anchors). The first line is the header; every other line is a reviewed or baselined requirement link, or a disposition of an untagged symbol. Written only by `docguard anchors accept` and `docguard anchors disposition`.",
+  "oneOf": [
+    {
+      "title": "Header",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schemaVersion"],
+      "properties": {
+        "kind": { "const": "docguard-anchor-lock" },
+        "schemaVersion": { "const": 1 }
+      }
+    },
+    {
+      "title": "Link",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "requirement", "file", "anchor", "scope", "tier", "code", "floor", "req", "state", "revision", "date", "reason", "bulk"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "description": "<requirement>|<file>|<anchor>|<scope>, with | and % percent-encoded inside parts." },
+        "requirement": { "type": "string", "minLength": 1 },
+        "file": { "type": "string", "minLength": 1 },
+        "anchor": { "type": "string", "minLength": 1 },
+        "scope": { "enum": ["file", "symbol", "statement", "route"] },
+        "tier": { "type": "string", "minLength": 1, "description": "The exact tier at accept time, e.g. babel@7, python-ast@3.12, pattern@1, file." },
+        "code": { "$ref": "#/definitions/fingerprint" },
+        "floor": { "$ref": "#/definitions/fingerprint" },
+        "req": { "$ref": "#/definitions/fingerprint" },
+        "prev": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "floor", "req"],
+              "properties": {
+                "code": { "$ref": "#/definitions/fingerprint" },
+                "floor": { "$ref": "#/definitions/fingerprint" },
+                "req": { "$ref": "#/definitions/fingerprint" }
+              }
+            }
+          ],
+          "description": "The fingerprints this accept replaced, so the diff of the lock shows what was reviewed."
+        },
+        "state": { "enum": ["reviewed", "baselined"] },
+        "revision": { "$ref": "#/definitions/revision" },
+        "date": { "$ref": "#/definitions/date" },
+        "reason": { "$ref": "#/definitions/reason" },
+        "bulk": { "type": "boolean", "description": "True when the accept covered more than one link." }
+      }
+    },
+    {
+      "title": "Disposition",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "file", "anchor", "kind", "reason", "date", "revision", "bulk"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^disposition\\|" },
+        "file": { "type": "string", "minLength": 1 },
+        "anchor": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["derived", "dead", "infrastructure"] },
+        "reason": { "$ref": "#/definitions/reason" },
+        "date": { "$ref": "#/definitions/date" },
+        "revision": { "$ref": "#/definitions/revision" },
+        "bulk": { "type": "boolean" }
+      }
+    }
+  ],
+  "definitions": {
+    "fingerprint": { "type": "string", "pattern": "^dg\\d+:sha256:[0-9a-f]{64}$" },
+    "revision": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }] },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "reason": { "type": "string", "minLength": 10, "maxLength": 500 }
+  }
+}

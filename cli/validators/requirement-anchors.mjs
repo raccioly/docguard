@@ -1,6 +1,7 @@
 /**
- * Requirement-Anchors validator: code→requirement tags whose requirement does
- * not exist, and anchors read below their exact tier.
+ * Requirement-Anchors validator: reviewed code→requirement links whose code or
+ * requirement changed, links whose code is gone, tags that cite nothing, and
+ * anchors read below their exact tier.
  *
  * Spec: specs/070-requirement-anchors (docguard.requirement-anchors).
  *
@@ -14,7 +15,8 @@
  */
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-import { anchorsActivated, computeLinks } from '../scanners/anchors.mjs';
+import { revisionResolves } from '../scanners/doc-deps.mjs';
+import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus } from '../scanners/anchors.mjs';
 
 const MAX_FINDINGS = 25;
 
@@ -27,33 +29,57 @@ export function parserTierOf(tier) {
   return 'not-applicable';
 }
 
-export function validateRequirementAnchors(projectDir, config = {}, { links = null } = {}) {
+export const acceptCommand = key => `docguard anchors accept --link '${key}' --reason "<what you checked>"`;
+
+/** The guard-reportable codes, with their fixed severity and disposition (FR-020). */
+const CODES = {
+  ANC001: { severity: 'warn', disposition: 'escalate' },
+  ANC002: { severity: 'warn', disposition: 'escalate' },
+  ANC003: { severity: 'warn', disposition: 'escalate' },
+  ANC005: { severity: 'error', disposition: 'act' },
+  ANC007: { severity: 'warn', disposition: 'act' },
+  ANC008: { severity: 'warn', disposition: 'act' },
+  ANC009: { severity: 'warn', disposition: 'act' },
+  ANC010: { severity: 'warn', disposition: 'escalate' },
+};
+
+function suggestionFor(projectDir, p) {
+  switch (p.code) {
+    case 'ANC001': {
+      const diff = p.revision && revisionResolves(projectDir, p.revision) ? `git diff ${p.revision.slice(0, 12)} -- ${p.file}` : `open ${p.file}`;
+      return { kind: 'review', text: `Review the change (${diff}); if the code still meets the requirement, run \`${acceptCommand(p.key)}\``, command: diff };
+    }
+    case 'ANC002': return { kind: 'review', text: `Read the new requirement text against the code, then run \`${acceptCommand(p.key)}\`` };
+    case 'ANC003': return { kind: 'review', text: 'Restore the tag where the requirement is now implemented, or remove the link with `docguard anchors accept --remove <key> --reason "…"`' };
+    case 'ANC005': return { kind: 'review', text: `Restore ${ANCHOR_LOCK_PATH} from git, or delete it and baseline again with \`docguard anchors accept --baseline --bulk --reason "…"\`` };
+    case 'ANC007': return { kind: 'review', text: 'Qualify the tag with the Spec ID that declares the requirement, fix the ID, or remove the tag' };
+    case 'ANC008': return { kind: 'review', text: 'Point the tag at the requirement that replaced the retired one, or remove it' };
+    case 'ANC009': return { kind: 'review', text: 'Review the link, then accept it again; that rewrites one entry and resolves the conflict' };
+    default: return { kind: 'review', text: 'Install the missing parser or fix the file; untrack a committed .docguard/ with `git rm --cached -r .docguard`' };
+  }
+}
+
+export function validateRequirementAnchors(projectDir, config = {}, { status = null } = {}) {
   // Decide applicability BEFORE reading any source: a project that has not
   // opted in pays nothing for this validator (FR-026, FR-041).
-  if (!links && !anchorsActivated(projectDir, config)) {
+  if (!status && !anchorsActivated(projectDir, config)) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
-  const computed = links || computeLinks(projectDir, config);
+  const computed = status || computeAnchorStatus(projectDir, config);
   const findings = [];
   for (const p of computed.problems) {
-    if (p.code === 'ANC007') {
-      findings.push(mkFinding({
-        code: 'ANC007', validator: 'requirementAnchors', severity: 'warn', confidence: 'high', disposition: 'act',
-        parserTier: parserTierOf(p.tier), message: p.message,
-        location: p.line ? { file: p.file, line: p.line } : p.file,
-        suggestion: { kind: 'review', text: 'Qualify the tag with the Spec ID that declares the requirement, fix the ID, or remove the tag' },
-      }));
-    } else if (p.code === 'ANC010') {
-      findings.push(mkFinding({
-        code: 'ANC010', validator: 'requirementAnchors', severity: 'warn', confidence: p.confidence === 'low' ? 'low' : 'high', disposition: 'escalate',
-        parserTier: parserTierOf(p.tier), message: p.message, location: p.file,
-        suggestion: { kind: 'review', text: 'Install the missing parser or fix the file; untrack a committed .docguard/ with `git rm --cached -r .docguard`' },
-      }));
-    }
+    const rule = CODES[p.code];
+    if (!rule) continue; // ANC004 and ANC006 are listed by `docguard anchors` only
+    findings.push(mkFinding({
+      code: p.code, validator: 'requirementAnchors', severity: rule.severity, confidence: p.confidence === 'low' ? 'low' : 'high',
+      disposition: rule.disposition, parserTier: parserTierOf(p.tier), message: p.message,
+      location: p.line ? { file: p.file, line: p.line } : p.file,
+      suggestion: suggestionFor(projectDir, p),
+    }));
   }
-  const total = computed.links.length + findings.filter(f => f.code === 'ANC007').length;
+  const counted = computed.links.filter(l => l.state === 'reviewed' || l.state === 'baselined' || l.state === 'unreviewed').length;
   const shown = findings.slice(0, MAX_FINDINGS);
-  const result = resultFromFindings(shown, { passed: computed.links.length, total: Math.max(1, total), applicable: true });
+  const result = resultFromFindings(shown, { passed: counted, total: Math.max(1, computed.links.length + (computed.lost?.length || 0)), applicable: true });
   const degraded = computed.files.filter(f => f.degraded).length;
   return degraded
     ? { ...result, applicability: { status: 'partial', reason: `${degraded} tagged file(s) were anchored below their exact tier` } }

@@ -16,17 +16,17 @@ named test or recorded measurement that fails without it).
 
 | ID | Finding | Docs | Code (PR) | Proof | Status |
 |----|---------|------|-----------|-------|--------|
-| C1 | `.gitattributes` must change only with an explicit flag (Constitution VI) | FR-017; plan "Lock"; contracts/anchor-lock.md rule 7, anchors-cli.md; T028, T032, T035 | PR 2 (US2) | T028: untouched without `--gitattributes`, added exactly once with it, listing note while missing | docs ✅, code pending PR 2 |
+| C1 | `.gitattributes` must change only with an explicit flag (Constitution VI) | FR-017; plan "Lock"; contracts/anchor-lock.md rule 7, anchors-cli.md; T028, T032, T035 | PR 2 (US2) | `tests/requirement-anchors-lock.test.mjs`: untouched without `--gitattributes`, added exactly once with it, listing note while missing | ✅ (story 2) |
 | C2 | Every tree-sitter oracle package passes Constitution II | FR-040; plan "Golden fixtures and oracle", Complexity Tracking; T071 | PR 10 (US10) | `tools/anchor-oracle/VETTING.md` with `npm view` and download evidence per package; a failing grammar leaves its language "no oracle" | docs ✅, code pending PR 10 |
 | H1 | A tag above a top-level variable is symbol scope, above another top-level statement is statement scope under `<module>`; YAML and shell are file tier | FR-002, FR-007; contracts/tag-grammar.md; T015 | PR 1 (US1), `cli/scanners/anchor-tags.mjs` | `tests/requirement-anchors.test.mjs`: `LIMITS` (symbol), `registerPlugin(...)` → `<module>>stmt:…#1`, `workflow.yml` (file tier) | ✅ (1512f20) |
 | H2 | "Byte-identical for non-adopters" carves out only the FR-005 literal-tag fix | FR-026, SC-002, US1 scenario 7; T025 | PR 1 | Release gate items 3 and 4: an A/B against the base release on this repository and the Guard-family repos; every evidence difference is listed in `CHANGELOG.md` | docs ✅, proof pending |
-| M1 | A baselined link whose tag is deleted is lost | spec state table, US2 scenario 9, Edge Cases; data-model transitions; plan state machine | PR 2 | T028 scenario 9 for a baselined link and a reviewed one | docs ✅, code pending PR 2 |
+| M1 | A baselined link whose tag is deleted is lost | spec state table, US2 scenario 9, Edge Cases; data-model transitions; plan state machine | PR 2 | `tests/requirement-anchors-lock.test.mjs`: a deleted tag of a baselined link is lost | ✅ (story 2) |
 | M2 | The churn classifier is the measurable `git diff -w` rule | FR-027; research P6 | PR 3 | `tools/anchor-churn-replay.mjs` output records the rule it applied | docs ✅, code pending PR 3 |
 | M3 | The oracle fails only for high-confidence languages | FR-040; plan; T072 | PR 10 | CI `anchor-oracle` job: C/C++ disagreement reported, never failed | docs ✅, code pending PR 10 |
 | M4 | Requirement `text` consumers stay unchanged | FR-014 (the `block` field instead of a changed `text`); T017 | PR 1, `cli/shared-requirements.mjs` | `tests/shared-requirements-block.test.mjs` (6 pass); traceability and trace tests unchanged (80 pass) | ✅ |
 | M5 | PRs that grow agent-facing bytes declare `Budget-Exempt` | tasks Delivery block | every PR | CI `budget` job green, or a declared exemption with its reason | docs ✅, per PR |
 | L1 | ANC001 and ANC003 become errors only under `failOn` | FR-020; finding catalog help text | PR 1 (catalog), PR 3 (policy) | `tests/requirement-anchors-policy.test.mjs` (T037) | catalog ✅, policy pending PR 3 |
-| L2 | One rule for `--spec` and `--file` selection | FR-022; contracts/anchors-cli.md; T028, T032 | PR 2 | T028 selection case | docs ✅, code pending PR 2 |
+| L2 | One rule for `--spec` and `--file` selection | FR-022; contracts/anchors-cli.md; T028, T032 | PR 2 | `tests/requirement-anchors-lock.test.mjs`: `--spec` selection, `--bulk` refusal | ✅ (story 2) |
 | L3 | Anchors come only from `@implements` and `@req` in non-test files | FR-001; contracts/tag-grammar.md; data-model | PR 1, `cli/scanners/anchor-tags.mjs`, `anchors.mjs` | `tests/requirement-anchors.test.mjs` "no anchor" cases: `@covers` in source; a tag in `tests/` | ✅ (1512f20) |
 | L4 | `\|` and `%` in key parts are percent-encoded | FR-016; contracts/anchor-lock.md rule 8; data-model | PR 1, `linkKey` | `tests/requirement-anchors.test.mjs` key test | ✅ (1512f20) |
 | L5 | The budget check cites SC-003 | T025, T036 | every PR | CI `budget` job | ✅ |
@@ -85,6 +85,8 @@ the exact commit being released. The results are recorded under
 
 ### Gate results
 
+These are interim runs. The gate itself is the run on the final commit.
+
 | Item | Commit | Result | Evidence |
 |------|--------|--------|----------|
-| | | | |
+| 6 (interim, story 2) | working tree after story 2 | PASS | `tools/budget.mjs ab` against main 512974d: guard +94 ms on `.` (limit +1,630); no new errors; tools/list +834 B (limit +878, close); package +5.5% (limit 10%); no new dependencies |

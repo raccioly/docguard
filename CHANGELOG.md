@@ -37,6 +37,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **ANC010**: a file was read below its exact tier.
 
     Projects that have not opted in see no new findings.
+- **Reviewed requirement links turn suspect when the code or the requirement
+  changes** (`specs/070-requirement-anchors`, user story 2).
+  - **Lock.** `docguard anchors accept` records a review in a committed
+    `.docguard-anchor-lock.jsonl`, one link per line so reviews on two
+    branches merge with `merge=union`.
+  - **Accept rules.** An accept:
+    - is bound to the exact fingerprints it saw, so a later change flags
+      the link again;
+    - records the fingerprints it replaced;
+    - needs a reason of 10–500 characters;
+    - needs `--bulk` for more than one link;
+    - refuses when a file changed during the run.
+  - **Adoption.** `--baseline` stamps every link as baselined, never as
+    reviewed, and the baselined share is reported. `--remove` deletes an
+    entry.
+  - **Guard findings:**
+    - ANC001: a link whose code changed (formatting, comments and line moves
+      do not count);
+    - ANC002: a link whose requirement text changed (whitespace does not
+      count);
+    - ANC003: a reviewed link whose tag is gone;
+    - ANC005: an unreadable lock, which fails;
+    - ANC008: a tag citing a retired requirement;
+    - ANC009: two different lock lines for one link after a merge.
+  - **What DocGuard does not do.** It edits `.gitattributes` only with
+    `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
+    to require human review of the lock through CODEOWNERS.
 
 ### Changed
 
