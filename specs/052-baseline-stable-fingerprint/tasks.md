@@ -20,3 +20,7 @@
 ## Phase 3: Docs and verification
 
 - [x] T004 `docs/configuration.md`; `CHANGELOG.md` (FR-005); `npm test`; `docguard specs --write`; `docguard guard` (SC-002).
+
+## Phase 4: Amendment (2026-10-10)
+
+- [x] T005 FR-006: try the exact fingerprint before the stable one; reproduction in `tests/baseline-stable-fingerprint.test.mjs` (failed first). Found by dogfooding wu-whatsappinbox: 163 suppressed under v0.43.1, 160 after #518, 163 with this fix.

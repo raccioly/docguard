@@ -360,7 +360,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tails, declared per finding code; TRC004's hint is the only one. Every other
   fingerprint is unchanged. An existing `.docguard.baseline.json` keeps working:
   guard also accepts the old fingerprint, and `guard --update-baseline` rewrites
-  it in the new form.
+  it in the new form. Guard tries the exact fingerprint first: findings that
+  differ only in digits and in the hint share one stable fingerprint, and trying
+  that first let a hinted finding spend another finding's entry (found
+  dogfooding a real repository before release, where 3 of 163 frozen findings
+  came back).
 
 ## [0.43.1] - 2026-10-05
 

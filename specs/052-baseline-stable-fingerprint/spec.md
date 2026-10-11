@@ -41,6 +41,7 @@ Adding an unrelated test file can change that best match. The message then chang
 - **FR-002**: Guard MUST also accept the legacy fingerprint (the full message), so a baseline written by an earlier release keeps suppressing what it froze. A finding consumes budget from at most one entry.
 - **FR-003**: `guard --update-baseline` MUST write only the new fingerprints.
 - **FR-004**: A finding with no declared tail MUST keep its current fingerprint byte for byte.
+- **FR-006** (amendment, 2026-10-10): Guard MUST try a finding's exact (legacy) fingerprint before its stable one. Findings that differ only in digits and in their advisory tail share a stable fingerprint; tried first, it let a hinted finding consume the unit a legacy baseline recorded for an unhinted one, which resurfaced. Found by dogfooding a real repository: 3 of 163 frozen findings resurfaced.
 - **FR-005**: The CHANGELOG and the baseline section of `docs/configuration.md` MUST state which text is excluded and how legacy baselines behave.
 
 ## Success Criteria *(mandatory)*

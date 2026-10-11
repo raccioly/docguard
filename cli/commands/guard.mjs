@@ -481,12 +481,15 @@ export function runGuardInternal(projectDir, config) {
       if (!Array.isArray(r.findings) || r.findings.length === 0) continue;
       if (r.errors.length + r.warnings.length !== r.findings.length) continue;
       const kept = r.findings.filter(f => {
-        // The stable fingerprint first, then the legacy one a baseline from an
-        // earlier release holds; one finding consumes one unit from one entry
-        // (docguard.baseline-stable-fingerprint#FR-002).
+        // The exact (legacy) fingerprint first, then the stable one; one finding
+        // consumes one unit from one entry (docguard.baseline-stable-fingerprint
+        // #FR-002). Exact first because findings that differ only in digits and
+        // in their advisory tail share a stable fingerprint: tried first, it let
+        // a hinted finding spend the unit a legacy baseline holds for an
+        // unhinted one (FR-006). For a finding without a tail both are equal.
         const stable = fingerprintFinding(f);
         const legacy = legacyFingerprint(f);
-        const fp = (remaining.get(stable) || 0) > 0 ? stable : legacy;
+        const fp = (remaining.get(legacy) || 0) > 0 ? legacy : stable;
         const budget = remaining.get(fp) || 0;
         if (budget <= 0) return true;
         remaining.set(fp, budget - 1);
