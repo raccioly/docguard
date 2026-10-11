@@ -80,3 +80,9 @@ A maintainer of an Actix Web API runs `docguard guard`.
 - A Starlette `Route(...)` list built inside a library class (sqladmin) mounts at a path the host application chooses; a library has no served path of its own.
 - Auth detection for Actix `.wrap(...)` and Axum `.layer(...)` / `.route_layer(...)` middleware: the Rust builder readers report `auth: false`, as the pattern readers did.
 - Axum routers built by reassignment (`app = app.route(…)`) are read as unprefixed registrations, as before.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `11ad93a5e0a44c92430d31e36df0eb1a20e3b6e4` — Reviewed at 11ad93a (main after #558): Actix 0-19 under /api, Axum 12-19, Symfony 0-19, Koa paths gain /api; pass-through JWT marks nothing auth (Koa auth on exactly 12 routes). Re-run on 11 public apps and 10 Hono examples: no other count changed. tests/real-project-route-gaps.test.mjs (17), full suite 3,394. Deviations: none; limits in languages.md. Evidence: `cli/scanners/php-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/rust-routes.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `tests/real-project-route-gaps.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -10328,7 +10328,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10353,8 +10353,23 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "11ad93a5e0a44c92430d31e36df0eb1a20e3b6e4",
+          "outcomes": [
+            {
+              "revision": "11ad93a5e0a44c92430d31e36df0eb1a20e3b6e4",
+              "reason": "Reviewed at 11ad93a (main after #558): Actix 0->19 under /api, Axum 12->19, Symfony 0->19, Koa paths gain /api; pass-through JWT marks nothing auth (Koa auth on exactly 12 routes). Re-run on 11 public apps and 10 Hono examples: no other count changed. tests/real-project-route-gaps.test.mjs (17), full suite 3,394. Deviations: none; limits in languages.md.",
+              "evidence": [
+                "cli/scanners/php-routes.mjs",
+                "cli/scanners/router-routes.mjs",
+                "cli/scanners/rust-routes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/real-project-route-gaps.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -10375,7 +10390,7 @@
         "artifacts": [
           {
             "path": "specs/071-real-project-route-gaps/spec.md",
-            "digest": "sha256:42398ab3da89a307ddd39ba897309eb98bbf67ceace950075aa6a7e03a6c67d8"
+            "digest": "sha256:9f8f0bb775f3e83571788c80120117e306e67fbb033c7861d0d1a522084677e1"
           },
           {
             "path": "specs/071-real-project-route-gaps/plan.md",
