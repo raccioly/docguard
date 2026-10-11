@@ -60,3 +60,9 @@
 
 - Making the rest of the test suite hermetic under a hostile global Git configuration (`docguard.test-git-hermeticity`, spec 066).
 - The hook content `docguard setup` writes (it still differs from the managed hook `docguard hooks` writes).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `bc28a68109745855fd96156f822f490706864f61` — Reviewed at main after #545 and #551: hooks, setup and upgrade --pr refuse or roll back as specified; tests/hooks-repo-scope.test.mjs passes under a real failing global core.hooksPath, the full suite passes on Node 18-24 and in the hostile-config CI job, and the peer session confirmed hooks/--force leave a global folder untouched. Deviations: none. Evidence: `cli/commands/hooks.mjs`, `cli/commands/setup.mjs`, `cli/commands/upgrade.mjs`, `cli/shared-git.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/REQUIREMENTS.md`, `tests/field-report-followups.test.mjs`, `tests/hook-fail-open.test.mjs`, `tests/hooks-contract.test.mjs`, `tests/hooks-repo-scope.test.mjs`, `tests/hooks.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
