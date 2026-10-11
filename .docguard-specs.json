@@ -11361,19 +11361,19 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:ea934f02533b13eaee33b3f284beaeb36a05824aaa0243218c7ce490f9d3414b"
+            "digest": "sha256:2e204bee0b290441b7703e9bfa80a11526e3c8df70bf44d36d8b0ff7ab457a56"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
-            "digest": "sha256:69361fb550dbae6eaa3ab7e5a611eabf36e890a5607e22c65a74eb265fc40758"
+            "digest": "sha256:960a2383a3f0d838e6fa09c27b8153a429841e90583873a087f0436c8c95a205"
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:913b9e08bbf421304268df937af1ea322de7c2f16b95f87871ad206689b962bc"
+            "digest": "sha256:0c501649646c7b19ae664cf96323b6fa51f0c4eb138bd29c8b201713f61eefe5"
           }
         ],
         "taskCompletion": {
-          "checked": 52,
+          "checked": 57,
           "total": 79
         },
         "implementationEvidence": [
@@ -11588,6 +11588,16 @@
             "line": 15
           },
           {
+            "requirementId": "FR-032",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 474
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "cli/scanners/testguard-evidence.mjs",
+            "line": 21
+          },
+          {
             "requirementId": "FR-041",
             "file": "cli/scanners/anchor-cache.mjs",
             "line": 5
@@ -11783,6 +11793,16 @@
             "requirementId": "FR-031",
             "file": "tests/requirement-anchors-ripple.test.mjs",
             "line": 7
+          },
+          {
+            "requirementId": "FR-032",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-033",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-039",
