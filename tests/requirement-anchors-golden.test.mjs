@@ -24,6 +24,9 @@ import { computeLinks } from '../cli/scanners/anchors.mjs';
 import { pythonVersion } from '../cli/scanners/py-anchors.mjs';
 
 const FIXTURE = resolve('tests/fixtures/anchors/golden');
+// Every language the anchors read, each with an FR-001 and an FR-002 symbol.
+const LANGUAGE_FILES = ['src/sample.mjs', 'src/sample.ts', 'src/sample.py', 'src/sample.go', 'src/sample.rs', 'src/Sample.java',
+  'src/Sample.kt', 'src/Sample.cs', 'src/sample.php', 'src/sample.rb', 'src/Sample.swift', 'src/sample.c', 'src/sample.cpp'];
 const GOLDEN_PATH = join(FIXTURE, 'golden.json');
 const WRITE = process.env.DOCGUARD_WRITE_GOLDEN === '1';
 const dirs = [];
@@ -49,7 +52,8 @@ if (WRITE) {
   const stable = {};
   const py = {};
   for (const l of current) (l.tier.startsWith('python-ast@') ? py : stable)[keyOf(l)] = entry(l);
-  const golden = { stable, python: { ...previous.python, ...(python ? { [python]: py } : {}) } };
+  const merged = { ...previous.python, ...(python ? { [python]: py } : {}) };
+  const golden = { stable, python: Object.fromEntries(Object.keys(merged).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map(v => [v, merged[v]])) };
   writeFileSync(GOLDEN_PATH, `${JSON.stringify(golden, null, 2)}\n`);
 }
 
@@ -68,13 +72,13 @@ describe('frozen fingerprints (FR-039)', () => {
   }
   it('every language in the fixture is pinned', () => {
     const files = new Set(Object.keys(GOLDEN.stable).map(k => k.split(' ')[0]));
-    for (const f of ['src/sample.mjs', 'src/sample.ts', 'src/sample.go', 'src/sample.rs', 'src/Sample.java']) assert.ok(files.has(f), f);
+    for (const f of LANGUAGE_FILES.filter(f => !f.endsWith('.py'))) assert.ok(files.has(f), f);
     assert.ok(Object.keys(GOLDEN.python).length >= 1);
   });
 });
 
 // Formatting edits, applied to every source file of the fixture.
-const COMMENT = { '.py': '# note', default: '// note' };
+const COMMENT = { '.py': '# note', '.rb': '# note', default: '// note' };
 const ext = file => file.slice(file.lastIndexOf('.'));
 const TRANSFORMS = {
   'halve the indentation (tabs become two spaces)': (text) => text.split('\n')
@@ -91,7 +95,7 @@ describe('formatting never changes an exact fingerprint, in any language (SC-001
   for (const [name, transform] of Object.entries(TRANSFORMS)) {
     it(name, () => {
       const dir = copy();
-      for (const file of ['src/sample.mjs', 'src/sample.ts', 'src/sample.py', 'src/sample.go', 'src/sample.rs', 'src/Sample.java']) {
+      for (const file of LANGUAGE_FILES) {
         const path = join(dir, file);
         writeFileSync(path, transform(readFileSync(path, 'utf8'), file));
       }
@@ -127,6 +131,13 @@ describe('formatting never changes an exact fingerprint, in any language (SC-001
       'src/sample.go': ['1 - rate', '2 - rate'],
       'src/sample.rs': ['1.0 - rate', '2.0 - rate'],
       'src/Sample.java': ['1 - rate', '2 - rate'],
+      'src/Sample.kt': ['1 - rate', '2 - rate'],
+      'src/Sample.cs': ['1 - rate', '2 - rate'],
+      'src/sample.php': ['1 - $rate', '2 - $rate'],
+      'src/sample.rb': ['1 - rate', '2 - rate'],
+      'src/Sample.swift': ['1 - rate', '2 - rate'],
+      'src/sample.c': ['1 - rate', '2 - rate'],
+      'src/sample.cpp': ['1 - rate', '2 - rate'],
     };
     for (const [file, [from, to]] of Object.entries(edits)) {
       const path = join(dir, file);

@@ -1,11 +1,46 @@
 {
   "stable": {
+    "src/Sample.cs acme.golden#FR-001": {
+      "anchor": "Sample.Pricing.Total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:c123b0d028a72d1487eca4fc521fccc998cc46aebb88547d8f544b93daefa3ac",
+      "floor": "dg1:sha256:c123b0d028a72d1487eca4fc521fccc998cc46aebb88547d8f544b93daefa3ac"
+    },
     "src/Sample.java acme.golden#FR-001": {
       "anchor": "Sample.total",
       "scope": "symbol",
       "tier": "pattern@1",
       "exact": "dg1:sha256:74cc9bf9fb702d24cfcbca2870fa3ca6246543dde27fcc0154d56c242c60d141",
       "floor": "dg1:sha256:74cc9bf9fb702d24cfcbca2870fa3ca6246543dde27fcc0154d56c242c60d141"
+    },
+    "src/Sample.kt acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:3abeecb337dd43a376052effe700cf70eab623166483e90d47b039bcb7047f43",
+      "floor": "dg1:sha256:3abeecb337dd43a376052effe700cf70eab623166483e90d47b039bcb7047f43"
+    },
+    "src/Sample.swift acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:65ccdf3f1efef2c2db5e71678bb66aed1e1f06f8c90328e573a169c632bccf49",
+      "floor": "dg1:sha256:65ccdf3f1efef2c2db5e71678bb66aed1e1f06f8c90328e573a169c632bccf49"
+    },
+    "src/sample.cpp acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:4c148e3cc3af28cfc26a00d47b5d6d90eb822c0f63a179e0ae28fa422e266b51",
+      "floor": "dg1:sha256:4c148e3cc3af28cfc26a00d47b5d6d90eb822c0f63a179e0ae28fa422e266b51"
+    },
+    "src/sample.c acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:1b4d98830b85d458fce4bccd75d79d3632959ff066490ca136421bb0a608e643",
+      "floor": "dg1:sha256:1b4d98830b85d458fce4bccd75d79d3632959ff066490ca136421bb0a608e643"
     },
     "src/sample.go acme.golden#FR-001": {
       "anchor": "Total",
@@ -21,6 +56,20 @@
       "exact": "dg1:sha256:e03f95bcb364a9b07754ce9383229c321eeb042741a0e21df235f1fe8d6fd2f9",
       "floor": "dg1:sha256:d3b6956b55e1d8eeeb13c16ec2bfac7348be329b6c132b2702058f53fa5da02c"
     },
+    "src/sample.php acme.golden#FR-001": {
+      "anchor": "Sample.total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:20429b5f6840b4d35cc1194c1b0192bd9aa283fd6818e0bea04ca4380d0e3eca",
+      "floor": "dg1:sha256:20429b5f6840b4d35cc1194c1b0192bd9aa283fd6818e0bea04ca4380d0e3eca"
+    },
+    "src/sample.rb acme.golden#FR-001": {
+      "anchor": "total",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:57e007bb69e066e0ebeaac2d82cc5f6a9abee17402e231040c635a89b99414ef",
+      "floor": "dg1:sha256:57e007bb69e066e0ebeaac2d82cc5f6a9abee17402e231040c635a89b99414ef"
+    },
     "src/sample.rs acme.golden#FR-001": {
       "anchor": "total",
       "scope": "symbol",
@@ -35,12 +84,47 @@
       "exact": "dg1:sha256:0a8aeda22ae3425c5df49f21739f6d8f905baebd395e370c0f9940217ba3a83b",
       "floor": "dg1:sha256:1bcc0d56a9c67dd7284d7b1c2af336c2ec323a713a966e0ff6381f32cd7a0d65"
     },
+    "src/Sample.cs acme.golden#FR-002": {
+      "anchor": "Sample.Cart.Add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:f6935a798bdad3b9fb1275a243a05432bb39b44730f970128e63817f9a7627c9",
+      "floor": "dg1:sha256:f6935a798bdad3b9fb1275a243a05432bb39b44730f970128e63817f9a7627c9"
+    },
     "src/Sample.java acme.golden#FR-002": {
       "anchor": "Sample.add",
       "scope": "symbol",
       "tier": "pattern@1",
       "exact": "dg1:sha256:0f303356a768765ebe378dab14628e99da8c72227c6b7fdec46361c21ca460cd",
       "floor": "dg1:sha256:0f303356a768765ebe378dab14628e99da8c72227c6b7fdec46361c21ca460cd"
+    },
+    "src/Sample.kt acme.golden#FR-002": {
+      "anchor": "Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:f661efbcee6a3e270c858fd8a3d303e82091f27c80f71de6ff08eefd9cb56092",
+      "floor": "dg1:sha256:f661efbcee6a3e270c858fd8a3d303e82091f27c80f71de6ff08eefd9cb56092"
+    },
+    "src/Sample.swift acme.golden#FR-002": {
+      "anchor": "Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:ca9fc1124e833f2e0e1a796dea942aa891e2ea218400c474e9b834a0d5fbd0eb",
+      "floor": "dg1:sha256:ca9fc1124e833f2e0e1a796dea942aa891e2ea218400c474e9b834a0d5fbd0eb"
+    },
+    "src/sample.cpp acme.golden#FR-002": {
+      "anchor": "Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:6eefbd2053cbe1b4a42669db8ecfc5513873b758c1c821661f66e7b158efba4f",
+      "floor": "dg1:sha256:6eefbd2053cbe1b4a42669db8ecfc5513873b758c1c821661f66e7b158efba4f"
+    },
+    "src/sample.c acme.golden#FR-002": {
+      "anchor": "add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:8ba3ce1345b7abd13ea4f8babc5bc5fc5cf0693feab5086b0a18b7d786ad1045",
+      "floor": "dg1:sha256:8ba3ce1345b7abd13ea4f8babc5bc5fc5cf0693feab5086b0a18b7d786ad1045"
     },
     "src/sample.go acme.golden#FR-002": {
       "anchor": "Cart.Add",
@@ -55,6 +139,20 @@
       "tier": "babel@7",
       "exact": "dg1:sha256:048f30f2e957a2ace76f6ccb1f72c51c707975b38b370484d3ecbe3f5c9d2e41",
       "floor": "dg1:sha256:ac9cd186f4400003aa5dab98335f9e70d942da296b194394dbf0a4db13ae46d8"
+    },
+    "src/sample.php acme.golden#FR-002": {
+      "anchor": "Sample.Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:e2114c2c36dc57434cd2defd77a3ceb75850323bc52bd9be941895dc3f3a41c3",
+      "floor": "dg1:sha256:e2114c2c36dc57434cd2defd77a3ceb75850323bc52bd9be941895dc3f3a41c3"
+    },
+    "src/sample.rb acme.golden#FR-002": {
+      "anchor": "Cart.add",
+      "scope": "symbol",
+      "tier": "pattern@1",
+      "exact": "dg1:sha256:2a7e4464c9a30eecf4b838b51c300cf89129a94945dc7f00963a403962dc9ff9",
+      "floor": "dg1:sha256:2a7e4464c9a30eecf4b838b51c300cf89129a94945dc7f00963a403962dc9ff9"
     },
     "src/sample.rs acme.golden#FR-002": {
       "anchor": "Cart.add",
@@ -79,6 +177,22 @@
     }
   },
   "python": {
+    "3.11": {
+      "src/sample.py acme.golden#FR-001": {
+        "anchor": "total",
+        "scope": "symbol",
+        "tier": "python-ast@3.11",
+        "exact": "dg1:sha256:97f2e3b73a535ac1cad2638b66713c18d9e8ff5a2fb78b097348034d4b6ddbf3",
+        "floor": "dg1:sha256:4702974ac3a161e6678fadc8d452b6434df17bf537b6de275346e91c56294d0b"
+      },
+      "src/sample.py acme.golden#FR-002": {
+        "anchor": "Cart",
+        "scope": "symbol",
+        "tier": "python-ast@3.11",
+        "exact": "dg1:sha256:4ec8dd992e65e56d03ffb36d06e9cd9640b83b0bf00f147f62e7bef5d73d4ee6",
+        "floor": "dg1:sha256:4cac9fdde2c3c790cfe6aaf942bf8d24a9a134a8dcefb38c8567b4af50b5a641"
+      }
+    },
     "3.12": {
       "src/sample.py acme.golden#FR-001": {
         "anchor": "total",
@@ -91,6 +205,38 @@
         "anchor": "Cart",
         "scope": "symbol",
         "tier": "python-ast@3.12",
+        "exact": "dg1:sha256:4ec8dd992e65e56d03ffb36d06e9cd9640b83b0bf00f147f62e7bef5d73d4ee6",
+        "floor": "dg1:sha256:4cac9fdde2c3c790cfe6aaf942bf8d24a9a134a8dcefb38c8567b4af50b5a641"
+      }
+    },
+    "3.13": {
+      "src/sample.py acme.golden#FR-001": {
+        "anchor": "total",
+        "scope": "symbol",
+        "tier": "python-ast@3.13",
+        "exact": "dg1:sha256:97f2e3b73a535ac1cad2638b66713c18d9e8ff5a2fb78b097348034d4b6ddbf3",
+        "floor": "dg1:sha256:4702974ac3a161e6678fadc8d452b6434df17bf537b6de275346e91c56294d0b"
+      },
+      "src/sample.py acme.golden#FR-002": {
+        "anchor": "Cart",
+        "scope": "symbol",
+        "tier": "python-ast@3.13",
+        "exact": "dg1:sha256:4ec8dd992e65e56d03ffb36d06e9cd9640b83b0bf00f147f62e7bef5d73d4ee6",
+        "floor": "dg1:sha256:4cac9fdde2c3c790cfe6aaf942bf8d24a9a134a8dcefb38c8567b4af50b5a641"
+      }
+    },
+    "3.14": {
+      "src/sample.py acme.golden#FR-001": {
+        "anchor": "total",
+        "scope": "symbol",
+        "tier": "python-ast@3.14",
+        "exact": "dg1:sha256:97f2e3b73a535ac1cad2638b66713c18d9e8ff5a2fb78b097348034d4b6ddbf3",
+        "floor": "dg1:sha256:4702974ac3a161e6678fadc8d452b6434df17bf537b6de275346e91c56294d0b"
+      },
+      "src/sample.py acme.golden#FR-002": {
+        "anchor": "Cart",
+        "scope": "symbol",
+        "tier": "python-ast@3.14",
         "exact": "dg1:sha256:4ec8dd992e65e56d03ffb36d06e9cd9640b83b0bf00f147f62e7bef5d73d4ee6",
         "floor": "dg1:sha256:4cac9fdde2c3c790cfe6aaf942bf8d24a9a134a8dcefb38c8567b4af50b5a641"
       }

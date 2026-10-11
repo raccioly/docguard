@@ -14,6 +14,7 @@
  * @req docguard.requirement-anchors#FR-023
  * @req docguard.requirement-anchors#FR-024
  * @req docguard.requirement-anchors#FR-025
+ * @req docguard.requirement-anchors#FR-012
  * @req docguard.requirement-anchors#SC-004
  */
 import { describe, it, after } from 'node:test';
@@ -150,6 +151,25 @@ describe('the lock file (FR-016 to FR-018)', () => {
       assert.equal(out.status, 'FAIL');
       assert.ok(out.findings.some(f => f.code === 'ANC005' && f.severity === 'error'));
     }
+  });
+});
+
+describe('fingerprint algorithm versions (FR-012)', () => {
+  it('an entry stamped under an algorithm this DocGuard does not compute is unverifiable, never suspect', () => {
+    const dir = project({ git: false });
+    baseline(dir);
+    const path = join(dir, ANCHOR_LOCK_PATH);
+    const lock = readAnchorLock(dir);
+    const [key, entry] = [...lock.links].find(([k]) => k.includes('FR-002'));
+    lock.links.set(key, { ...entry, code: entry.code.replace(/^dg1:/, 'dg9:') });
+    writeFileSync(path, serializeAnchorLock(lock.links, lock.dispositions));
+    const s = status(dir);
+    const link = s.links.find(l => l.key === key);
+    assert.equal(link.state, 'unverifiable');
+    assert.match(link.reason, /dg9/);
+    assert.ok(!s.problems.some(p => p.code === 'ANC001'), 'not suspect');
+    assert.ok(s.problems.some(p => p.code === 'ANC010' && p.message.includes('dg9')));
+    assert.ok(s.links.filter(l => l.key !== key).every(l => l.state === 'baselined'), 'other entries still compare');
   });
 });
 

@@ -26,6 +26,8 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } 
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { computeLinks, linkKey, requirementFingerprint } from '../cli/scanners/anchors.mjs';
+import { resolveFileAnchors } from '../cli/scanners/anchor-tags.mjs';
+import { requirementPatterns } from '../cli/shared-requirements.mjs';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -88,6 +90,26 @@ describe('anchors resolve to the code under the tag (FR-001 to FR-008)', () => {
     const keys = result.links.map(l => l.key);
     assert.deepEqual(keys, [...new Set(keys)].sort());
     assert.equal(linkKey({ requirement: 'a#FR-001', file: 'x|y%.mjs', anchor: 'f', scope: 'symbol' }), 'a#FR-001|x%7Cy%25.mjs|f|symbol');
+  });
+});
+
+describe('an explicit scope overrides position, in the leading block too (FR-002)', () => {
+  const resolve1 = (src, file) => resolveFileAnchors(src, file, requirementPatterns({})).anchors[0];
+  it('JS: {scope=symbol} in the file header anchors the declaration below, with no ANC006', () => {
+    const a = resolve1('/**\n * Helpers.\n * @implements acme.cli#FR-001 {scope=symbol}\n */\nexport function build(x) { return x; }\n', 'src/a.mjs');
+    assert.deepEqual([a.scope, a.anchor, a.problems], ['symbol', 'build', []]);
+  });
+  it('pattern tier: {scope=symbol} in the file header anchors the declaration below', () => {
+    const a = resolve1('// Server.\n// @implements acme.cli#FR-001 {scope=symbol}\nfunc Serve() int {\n\treturn 1\n}\n', 'src/a.go');
+    assert.deepEqual([a.scope, a.anchor, a.problems], ['symbol', 'Serve', []]);
+  });
+});
+
+describe('a tag inside a switch case (FR-002)', () => {
+  it('anchors the statement under it, not the whole enclosing function', () => {
+    const src = 'export function main(cmd) {\n  switch (cmd) {\n    case "agent":\n      // @implements acme.cli#FR-001\n      runAgent(cmd);\n      break;\n    default:\n      break;\n  }\n}\n';
+    const [a] = resolveFileAnchors(src, 'src/cli.mjs', requirementPatterns({})).anchors;
+    assert.deepEqual([a.scope, a.owner, a.startLine, a.endLine, a.problems], ['statement', 'main', 5, 5, []]);
   });
 });
 
@@ -160,6 +182,18 @@ describe('opt-in and the cache (FR-026, FR-041)', () => {
     assert.equal(json.activated, false);
     assert.ok(json.links.length >= 20);
     assert.ok(json.problems.some(p => p.code === 'ANC006' && p.severity === 'info'));
+  });
+
+  it('the cache identity covers the resolver code and the requirement patterns', () => {
+    const dir = copyFixture();
+    const env = {};
+    const before = computeLinks(dir, {}, { env }).links.length;
+    const cache = JSON.parse(readFileSync(join(dir, '.docguard/anchors.cache.json'), 'utf8'));
+    assert.match(JSON.stringify(cache), /\|code:[0-9a-f]{16}\|req:[0-9a-f]{16}/);
+    // A pattern that recognizes no requirement ID: a stale cache would still answer with every link.
+    const narrowed = computeLinks(dir, { traceability: { requirementPattern: 'NOPE-\\d{3}' } }, { env }).links.length;
+    assert.ok(before > 0);
+    assert.equal(narrowed, 0);
   });
 
   it('a warm run reuses the cache; a cache git tracks is ignored and reported', () => {

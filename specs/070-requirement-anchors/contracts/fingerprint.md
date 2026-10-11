@@ -63,3 +63,18 @@
    version. Equal means current, with a "restamp" note. An unsupported version
    is unverifiable (ANC010).
 4. Neither comparison is possible: unverifiable (ANC010).
+
+## Tree-sitter tier (`treesitter@<hash8>`, opt-in, FR-009)
+
+- **Scope.** Only symbols the pattern tier found, matched by name and name
+  line. It never adds an anchor, so a key does not depend on the tier.
+- **Exact.** `dg1:sha256:` of the declaration's leaves in source order:
+  - a named leaf is `type:text`, and an anonymous leaf is its text;
+  - comments, the declaration's own name, `,` and `;` are skipped;
+  - a parenthesized expression contributes only what it encloses.
+- **Floor.** The pattern tier's, over the pattern tier's span, so a machine
+  without the tier still compares at the floor.
+- **Tier id.** `treesitter@` followed by the first 8 hex digits of a sha256
+  over the runtime, its wasm, and each language's grammar hash.
+- **Declarations.** The node types per language are in
+  `cli/scanners/ts-decls.mjs`, shared with the CI oracle.

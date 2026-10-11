@@ -2868,6 +2868,134 @@
       ]
     },
     {
+      "id": "ANCHOR-FINGERPRINT-GOLDEN",
+      "statement": "Golden fingerprints pin every language, tier and Python version, so any change to a fingerprint fails until the algorithm version is bumped, and an entry under an unsupported algorithm is unverifiable, not suspect; the opt-in tree-sitter tier loads only hash-pinned artifacts, never by detection, from the staged copy in a child with no environment, keeps keys and floors unchanged, and its fingerprint ignores formatting.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-039"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 10)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-golden.test.mjs",
+        "tests/requirement-anchors-treesitter.test.mjs",
+        "tests/requirement-anchors-lock.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "An artifact whose hash the manifest does not pin is loaded.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "  if (actual !== expected) return { error:",
+          "replace": "  if (false) return { error:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The tier is auto-detected from the project's node_modules.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "  if (!artifacts || typeof artifacts !== 'object') return null;",
+          "replace": "  if (!artifacts || typeof artifacts !== 'object') return { runtime: 'node_modules/web-tree-sitter/web-tree-sitter.js', runtimeWasm: 'node_modules/web-tree-sitter/web-tree-sitter.wasm', grammars: {} };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "The parser process inherits the environment.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "maxBuffer: 256 * 1024 * 1024, env: {},",
+          "replace": "maxBuffer: 256 * 1024 * 1024, env: process.env,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The parser process imports the configured file instead of the verified copy.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-anchors.mjs",
+          "find": "    runtime: { js: copyOf(projectDir, runtimeJs, 'web-tree-sitter.js'),",
+          "replace": "    runtime: { js: String(artifacts.runtime),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The floor follows the tree-sitter fingerprint, so it differs between machines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
+          "replace": "          floor: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A JS fingerprint includes the symbol's own name.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    if (this === node && (key === 'id' || key === 'key')) return undefined;",
+          "replace": "    if (false) return undefined;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The Python fingerprint serializes differently.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "  return dg1([serialized, ...directives.map(d => `directive:${d.trim()}`)].join('\\u0000'));",
+          "replace": "  return dg1([String(serialized).toUpperCase(), ...directives.map(d => `directive:${d.trim()}`)].join('\\u0000'));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "An entry under an unsupported algorithm is compared, and so turns suspect.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (!entry.code.startsWith('dg1:')) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "Redundant parentheses change the tree-sitter fingerprint.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-decls.mjs",
+          "find": "    if (n.type === 'parenthesized_expression' && n.namedChildCount === 1) { visit(n.namedChild(0)); return; }",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 10)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {

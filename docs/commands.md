@@ -588,7 +588,24 @@ Every link names the tier that placed it:
 - `pattern@1` for Go, Rust, Java, Kotlin, C#, PHP, Ruby, Swift, C and C++,
   using a string-aware lexer that falls back to file scope when it cannot
   balance a file;
+- `treesitter@<hash>` when the opt-in tree-sitter tier is configured;
 - `file` for YAML and shell.
+
+**The tree-sitter tier.** With `anchors.treeSitter.artifacts` set, tree-sitter
+refines each symbol the pattern tier finds in Go, Rust, Java, C#, PHP, Ruby, C
+or C++.
+- **What changes.** The span and the exact fingerprint come from tree-sitter.
+  The anchor name, the key and the floor fingerprint stay the pattern tier's,
+  so links compare across machines with and without it.
+- **What loads.** Only files whose sha256 matches
+  `schemas/docguard-anchor-treesitter.manifest.json`. DocGuard stages them
+  under `.docguard/ts/` and parses in one child process with no environment.
+  It never searches `node_modules`.
+- **Kotlin and Swift.** They have no tier: their grammars fail the dependency
+  vetting.
+- **Measurement.** A CI job uses the same grammars to measure the pattern
+  tier, and fails when a high-confidence language disagrees with tree-sitter
+  on more than 1% of declarations (`tools/anchor-oracle`).
 
 Only files git tracks are scanned, the same files the spec registry reads; a
 new file's tags appear once it is added. Outside git, the working tree is

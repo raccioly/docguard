@@ -1435,6 +1435,19 @@ function stmtEnd(E, k, hi) {
   return { last, next: j };
 }
 
+/**
+ * The end of an expression body (`=> expr;`, `= expr;`). In C#, braces inside
+ * one belong to the expression (switch expressions, initializers, lambdas),
+ * so it runs to its `;`. Elsewhere it ends like a statement.
+ */
+function exprEnd(E, k, hi) {
+  if (E.lang === 'csharp') {
+    const term = termAfter(E, k, hi);
+    if (term >= 0 && !E.T[term].virtual) return { last: term, next: term + 1 };
+  }
+  return stmtEnd(E, k, hi);
+}
+
 // ── Statement spans ──────────────────────────────────────────────────────────
 
 const PY_CLAUSES = new Set(['elif', 'else', 'except', 'finally']);
@@ -1741,7 +1754,7 @@ function finishFn(E, ctx, d) {
   }
   if (b.eq >= 0 || b.arrow >= 0) {
     const at = b.eq >= 0 ? b.eq : b.arrow;
-    const r = stmtEnd(E, at + (b.eq >= 0 ? 1 : 2), d.hi);
+    const r = exprEnd(E, at + (b.eq >= 0 ? 1 : 2), d.hi);
     addSym(E, ctx, { ...d, end: T[Math.max(r.last, at)].e, bodyIdx: at });
     return { next: r.next };
   }
@@ -2172,8 +2185,10 @@ function memberName(E, i, lo) {
   let first;
   let op = -1;
   for (let q = n; q >= Math.max(lo, n - 3); q--) if (isId(T[q], 'operator')) { op = q; break; }
-  if (op >= 0 && (op === n || T.slice(op + 1, n + 1).every(x => x.t === 'punct' || x.t === 'id'))) {
-    const rest = joinTokens(T, op + 1, n + 1);
+  // `operator+=`, `operator()`, `operator""_usd` (a user-defined literal: an empty string, then the suffix)
+  if (op >= 0 && (op === n || T.slice(op + 1, n + 1).every(x => x.t === 'punct' || x.t === 'id' || (x.t === 'str' && x.v === '""')))) {
+    const literal = T[op + 1]?.t === 'str' && T[op + 1].v === '""';
+    const rest = literal ? `""${T.slice(op + 2, n + 1).map(x => x.v).join('')}` : joinTokens(T, op + 1, n + 1);
     name = `operator${/^\w/.test(rest) ? ' ' : ''}${rest}`;
     first = op;
   } else if (t.t === 'id') {
@@ -2206,6 +2221,10 @@ function afterParamsOk(E, a, b) {
     const t = T[k];
     if (t.t === 'semi') continue;
     if (t.t === 'id') {
+      // An annotation element's default value (`String name() default "x";`) ends the qualifiers.
+      if (lang === 'java' && t.v === 'default') return true;
+      // `Foo(const Foo &) = delete;`, `~Foo() = default;`
+      if ((lang === 'c' || lang === 'cpp') && (t.v === 'delete' || t.v === 'default') && isP(T[k - 1], '=')) continue;
       if (AFTER_PARAMS_BAD.has(t.v)) return false;
       continue;
     }
@@ -2259,6 +2278,14 @@ function javaDecl(E, i, hi, ctx) {
     if (isP(T[i - 1], '.')) return null;
     const v = t.v;
     const record = v === 'record' && isId(T[i + 1]) && (isP(T[i + 2], '(') || isP(T[i + 2], '<'));
+    // A record's compact constructor: `[modifiers] Name { ... }`.
+    if (ctx.mode === 'member' && ctx.container?.kind === 'class' && v === ctx.container.name && isP(T[i + 1], '{') && E.P[i + 1] > i + 1) {
+      const start = declStart(E, i, ctx.lo, true);
+      if (start < 0) return null;
+      const close = E.P[i + 1];
+      addSym(E, ctx, { name: v, kind: 'method', start, nameIdx: i, end: T[close].e, bodyIdx: i + 1, sig: '' });
+      return { next: close + 1 };
+    }
     if (v !== 'class' && v !== 'interface' && v !== 'enum' && !record) return null;
     const annotationType = v === 'interface' && isP(T[i - 1], '@') && adjacent(T[i - 1], t);
     return typeDecl(E, i, hi, ctx, { kind: v === 'record' ? 'class' : v, nameIdx: i + 1, kwIdx: annotationType ? i - 1 : i });
@@ -2292,7 +2319,7 @@ function csProperty(E, i, hi, ctx) {
     if (isP(T[last + 1], '=')) last = stmtEnd(E, last + 1, hi).last;
   } else if (isP(nx, '=') && isP(T[i + 2], '>') && adjacent(nx, T[i + 2])) {
     bodyIdx = i + 1;
-    last = stmtEnd(E, i + 3, hi).last;
+    last = exprEnd(E, i + 3, hi).last;
   } else return null;
   const start = declStart(E, i, ctx.lo, true);
   if (start < 0 || !hasTypeTokens(E, start, i)) return null;
@@ -2343,6 +2370,8 @@ function csDecl(E, i, hi, ctx) {
 const C_MODS = new Set(['static', 'inline', 'extern', 'const', 'volatile', 'register', 'virtual', 'explicit', 'constexpr', 'consteval', 'constinit', 'friend', 'mutable', 'thread_local', 'typename', '_Noreturn', '__inline', '__forceinline', 'noexcept']);
 const C_NOT_DECL = new Set(['return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'goto', 'break', 'continue', 'template', 'static_assert', 'using', 'typedef', 'namespace', 'class', 'struct', 'union', 'enum', 'extern', 'public', 'private', 'protected', 'friend', 'operator', 'sizeof', 'delete', 'new', 'throw']);
 
+const C_RECORD_ATTRS = new Set(['alignas', '_Alignas', '__declspec', '__attribute__', '__attribute']);
+
 /** `class|struct|union|enum [class] [attrs] Name [final] [: bases] { … }` or a forward declaration. */
 function cRecord(E, i, hi, ctx) {
   const { T, P } = E;
@@ -2353,7 +2382,8 @@ function cRecord(E, i, hi, ctx) {
   for (; k < hi; k++) {
     const t = T[k];
     if (isP(t, '[') && P[k] > k) { k = P[k]; continue; }  // [[attr]]
-    if (isId(t) && isP(T[k + 1], '(') && P[k + 1] > k) { k = P[k + 1]; continue; }  // alignas(8), __declspec(x)
+    // alignas(8), __declspec(x): only these take parentheses here; `struct token make_token(` is a function
+    if (isId(t) && C_RECORD_ATTRS.has(t.v) && isP(T[k + 1], '(') && P[k + 1] > k) { k = P[k + 1]; continue; }
     if (isId(t)) {
       if (t.v === 'final' && nameIdx >= 0) continue;
       nameIdx = k;
@@ -2428,6 +2458,7 @@ function cDecl(E, i, hi, ctx) {
     if (isP(p, '.') || (isP(p, '>') && isP(T[i - 2], '-'))) return null;
     switch (t.v) {
       case 'namespace': return isP(T[i + 2], '=') ? null : nsDecl(E, i, hi, ctx);
+      case 'inline': return isId(T[i + 1], 'namespace') && !isP(T[i + 3], '=') ? nsDecl(E, i + 1, hi, ctx) : null;  // inline namespace v2 { … }
       case 'class': case 'struct': case 'union': case 'enum': return cRecord(E, i, hi, ctx);
       case 'extern':
         if (T[i + 1] && T[i + 1].t === 'str' && isP(T[i + 2], '{') && P[i + 2] > i + 2) {
@@ -2995,6 +3026,23 @@ function rbConstPath(T, q) {
 }
 
 /** Ruby-aware statement end: blocks opened inside the statement close before it can end. */
+/**
+ * `Const = Struct.new(...) do`, `Data.define(...) do`, `Class.new(Base) do`,
+ * `Module.new do`: the index of the `do` that opens a class body, or -1.
+ */
+function rbClassBlockDo(E, k) {
+  const { T, P } = E;
+  const factory = T[k + 2];
+  if (!factory || factory.t !== 'id' || !isP(T[k + 3], '.')) return -1;
+  const method = T[k + 4];
+  const known = (factory.v === 'Struct' && method?.v === 'new') || (factory.v === 'Data' && method?.v === 'define')
+    || ((factory.v === 'Class' || factory.v === 'Module') && method?.v === 'new');
+  if (!known) return -1;
+  let j = k + 5;
+  if (isP(T[j], '(') && P[j] >= 0) j = P[j] + 1;
+  return T[j] && T[j].t === 'id' && T[j].v === 'do' && T[j].line === T[k].line ? j : -1;
+}
+
 function rbStmtEnd(E, k) {
   const { T, P } = E;
   let depth = 0;
@@ -3102,6 +3150,17 @@ function rubyOutline(E) {
         break;
       }
       default:
+        // `Entry = Struct.new(:a) do ... end`: a class whose body is the block.
+        if (/^[A-Z]/.test(t.v) && (k === 0 || isTerm(T[k - 1])) && isP(T[k + 1], '=') && !inDef()) {
+          const doIdx = rbClassBlockDo(E, k);
+          if (doIdx >= 0) {
+            const sc = scope();
+            const idx = addSym(E, ctxOf(sc), { name: t.v, kind: 'class', start: k, nameIdx: k, end: T[doIdx].e, bodyIdx: -1 });
+            stack.push({ kind: 'class', sym: idx, path: [E.syms[idx].qual] });
+            k = doIdx;
+            break;
+          }
+        }
         // a constant at class, module or file level: `TAX = 0.2`
         if (/^[A-Z]/.test(t.v) && (k === 0 || isTerm(T[k - 1])) && isP(T[k + 1], '=') && !(adjacent(T[k + 1], T[k + 2]) && /^[=~>]$/.test(T[k + 2].v)) && !inDef()) {
           const r = rbStmtEnd(E, k + 2);

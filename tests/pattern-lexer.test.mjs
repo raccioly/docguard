@@ -733,3 +733,51 @@ describe('floor edges ignore layout markers', () => {
     assert.notEqual(floorFingerprint(lex(a, 'go'), 0, a.length), floorFingerprint(lex(b, 'go'), 0, b.length));
   });
 });
+
+// Gaps the tree-sitter oracle found (tools/anchor-oracle, FR-040): each was a
+// declaration the pattern tier missed or misplaced on idiomatic code.
+describe('oracle-found declarations', () => {
+  it('Ruby: `Const = Struct.new(...) do ... end` is a class whose methods are members', () => {
+    const src = 'class Store\n  Entry = Struct.new(:key, :value) do\n    def expired?(now) = now > 0\n\n    def inspect\n      "entry"\n    end\n  end\n\n  Response = Data.define(:status) do\n    def self.ok = new(status: 200)\n  end\nend\n';
+    const out = outline(src, 'ruby');
+    const entry = one(out, 'Store.Entry');
+    assert.deepEqual([entry.kind, entry.startLine, entry.endLine], ['class', 2, 8]);
+    assert.deepEqual([one(out, 'Store.Entry.expired?').kind, one(out, 'Store.Entry.inspect').endLine], ['method', 7]);
+    assert.equal(one(out, 'Store.Response').endLine, 12);
+    assert.ok(quals(out).includes('Store.Response.ok'), quals(out).join(', '));
+  });
+
+  it('Java: a record\'s compact constructor is a member', () => {
+    const src = 'public record Money(long cents, String currency) {\n    public Money {\n        if (cents < 0) throw new IllegalArgumentException("negative");\n    }\n\n    long doubled() { return cents * 2; }\n}\n';
+    const ctor = bySym(outline(src, 'java'), 'Money.Money')[0];
+    assert.ok(ctor, quals(outline(src, 'java')).join(', '));
+    assert.deepEqual([ctor.kind, ctor.startLine, ctor.endLine], ['method', 2, 4]);
+  });
+
+  it('Java: an annotation element with a default value is a member', () => {
+    const src = 'public @interface Param {\n    String name();\n\n    String pattern() default "[^/]+";\n\n    int[] sizes() default {1, 2};\n}\n';
+    const out = outline(src, 'java');
+    assert.deepEqual(['Param.name', 'Param.pattern', 'Param.sizes'].map(q => one(out, q).startLine), [2, 4, 6]);
+  });
+
+  it('C#: an expression body runs to its `;`, past a switch expression\'s braces', () => {
+    const src = 'class Tax {\n    public decimal RateFor(string r) =>\n        r.Length > 0\n            ? r switch\n            {\n                "a" => 1m,\n                _ => 0m,\n            }\n            : throw new System.Exception(r);\n\n    public int Size => Items switch { [] => 0, _ => 1 }\n        + 1;\n}\n';
+    const out = outline(src, 'csharp');
+    assert.equal(one(out, 'Tax.RateFor').endLine, 9);
+    assert.equal(one(out, 'Tax.Size').endLine, 12);
+  });
+});
+
+describe('oracle-found C and C++ declarations', () => {
+  it('C: a function returning `struct x` is the function, not a struct named x', () => {
+    const src = 'struct token { int kind; };\n\nstatic struct token\nmake_token(int kind)\n{\n    struct token t = { kind };\n    return t;\n}\n';
+    const out = outline(src, 'c');
+    assert.deepEqual(quals(out), ['token', 'make_token']);
+    assert.deepEqual([one(out, 'make_token').startLine, one(out, 'make_token').endLine], [3, 8]);
+  });
+
+  it('C++: an inline namespace, a user-defined literal and deleted or defaulted members', () => {
+    const src = 'namespace money {\ninline namespace literals {\nconstexpr int operator""_usd(unsigned long long w) noexcept { return 1; }\n}\nstruct Fee { int cents; };\n}\nclass S {\npublic:\n  S(const S &) = delete;\n  S &operator=(const S &) = delete;\n  ~S() = default;\n};\n';
+    assert.deepEqual(quals(outline(src, 'cpp')), ['money', 'money.literals', 'money.literals.operator""_usd', 'money.Fee', 'S', 'S.S', 'S.operator=', 'S.~S']);
+  });
+});

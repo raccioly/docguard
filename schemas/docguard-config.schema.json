@@ -323,6 +323,28 @@
           "items": { "type": "string", "minLength": 1 },
           "description": "Where `docguard anchors --orphans` looks for untagged symbols: globs, files or directories. Default: the scope.sourcePaths of current specs."
         },
+        "treeSitter": {
+          "type": "object",
+          "description": "Opt-in tree-sitter tier: tree-sitter spans and exact fingerprints for symbols the pattern tier finds. Each named file must match a sha256 in schemas/docguard-anchor-treesitter.manifest.json; it is staged under .docguard/ts/ and never resolved through node_modules. Never auto-detected.",
+          "properties": {
+            "artifacts": {
+              "type": "object",
+              "required": ["runtime", "runtimeWasm", "grammars"],
+              "properties": {
+                "runtime": { "type": "string", "minLength": 1, "description": "web-tree-sitter.js from the pinned web-tree-sitter version" },
+                "runtimeWasm": { "type": "string", "minLength": 1, "description": "web-tree-sitter.wasm from the same version" },
+                "grammars": {
+                  "type": "object",
+                  "propertyNames": { "enum": ["go", "rust", "java", "csharp", "php", "ruby", "c", "cpp"] },
+                  "additionalProperties": { "type": "string", "minLength": 1 },
+                  "description": "Language → the grammar .wasm the manifest pins"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "testguard": {
           "type": "object",
           "description": "Where `docguard anchors` reads saved TestGuard output to mark the tests of a changed requirement re-verified. Read only; DocGuard never runs TestGuard or a test.",

@@ -226,7 +226,9 @@ function fileAnchor(tag, { tier, exact, floor, confidence, problems = [] }) {
 
 /* ───────────────────────────── JS / TS (Babel) ───────────────────────────── */
 
-const LIST_OWNERS = new Set(['Program', 'BlockStatement', 'ClassBody', 'TSModuleBlock', 'StaticBlock']);
+const LIST_OWNERS = new Set(['Program', 'BlockStatement', 'ClassBody', 'TSModuleBlock', 'StaticBlock', 'SwitchCase']);
+// A `case` lists its statements in `consequent`; every other list owner in `body`.
+const listOf = node => (node.type === 'SwitchCase' ? node.consequent : node.body);
 const FUNCTION_TYPES = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression', 'ClassMethod', 'ClassPrivateMethod', 'ObjectMethod']);
 const DECLARATION_TYPES = new Set(['FunctionDeclaration', 'ClassDeclaration', 'VariableDeclaration', 'TSInterfaceDeclaration',
   'TSTypeAliasDeclaration', 'TSEnumDeclaration', 'TSModuleDeclaration', 'TSDeclareFunction']);
@@ -270,7 +272,7 @@ function locateInList(root, comment) {
   const owners = [];
   for (let guard = 0; guard < 10000; guard++) {
     if (LIST_OWNERS.has(node.type)) {
-      const list = node.body;
+      const list = listOf(node);
       const elements = Array.isArray(list) ? list : [];
       const inside = elements.find(el => startOf(el) <= comment.start && comment.end <= el.end);
       if (!inside) {
@@ -346,7 +348,7 @@ function resolveJsTag(tag, ctx) {
     }
     return file();
   }
-  if (leading && loc.listType === 'Program') {
+  if (leading && loc.listType === 'Program' && !tag.scope) {
     if (!next || next.type === 'ImportDeclaration' || isRequireDeclaration(next) || !adjacent) return file();
     if (DECLARATION_TYPES.has(next.type)) {
       return file([`is in the file's leading comment block directly above ${describeJs(next)}, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm`]);
@@ -492,7 +494,7 @@ function resolvePython(content, relPath, patterns, py, pyTier, importers = null)
       // Between a decorator and its def: that symbol.
       const decorated = outline.symbols.find(s => s.start <= c.line && c.line < s.line);
       if (decorated) { anchors.push(symbolFor(tag, decorated)); continue; }
-      if (!inline && c.line <= headerEnd) {
+      if (!inline && c.line <= headerEnd && !tag.scope) {
         const adjacent = first && first.start === blockEnd + 1;
         if (!adjacent || PY_IMPORT.test(rawLines[first.line - 1]) || first.kind === 'stmt') { anchors.push(file(tag)); continue; }
         anchors.push(file(tag, ['is in the file\'s leading comment block directly above a declaration, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm']));
@@ -530,7 +532,7 @@ function resolvePython(content, relPath, patterns, py, pyTier, importers = null)
 
 const IMPORT_KEYWORDS = new Set(['package', 'import', 'use', 'using', 'require', 'require_once', 'include', 'include_once', 'extern', 'namespace', 'module', '#include', 'from']);
 
-function resolvePattern(content, relPath, patterns, lang, importers = null) {
+function resolvePattern(content, relPath, patterns, lang, importers = null, treeSitter = null) {
   const lexed = lex(content, lang);
   const confidence = LOW_CONFIDENCE_LANGS.has(lang) ? 'low' : 'medium';
   const tier = PATTERN_TIER;
@@ -554,6 +556,9 @@ function resolvePattern(content, relPath, patterns, lang, importers = null) {
   const qualCount = new Map();
   for (const sym of symbols) qualCount.set(sym.qual, (qualCount.get(sym.qual) || 0) + 1);
   const anchorName = sym => (qualCount.get(sym.qual) > 1 && sym.sig ? `${sym.qual}(${sym.sig})` : sym.qual);
+  // FR-009: the tree-sitter tier refines a symbol the pattern tier found (same
+  // name, same line), never adds one, so a link's key is the same on every machine.
+  const tsSymbol = sym => treeSitter?.symbols?.find(t => t.name === String(sym.name).replace(/!$/, '') && t.nameLine === sym.nameLine) || null;
   for (const c of comments) {
     const tags = tagsInComment(c.text, c.line, patterns, importers);
     if (!tags.length) continue;
@@ -565,7 +570,7 @@ function resolvePattern(content, relPath, patterns, lang, importers = null) {
     for (const tag of tags) {
       if (tag.scope === 'file' || tag.invalidScopeBlock || !next) { anchors.push(file(tag)); continue; }
       const sym = symbols.find(s => s.start === next.s);
-      if (leading) {
+      if (leading && !tag.scope) {
         if (!adjacent || IMPORT_KEYWORDS.has(next.v) || !sym) { anchors.push(file(tag)); continue; }
         anchors.push(file(tag, ['is in the file\'s leading comment block directly above a declaration, so it is read as file scope. Add {scope=symbol} to anchor it to the declaration, or {scope=file} to confirm']));
         continue;
@@ -573,10 +578,12 @@ function resolvePattern(content, relPath, patterns, lang, importers = null) {
       if (IMPORT_KEYWORDS.has(next.v)) { anchors.push(file(tag)); continue; }
       if (!adjacent) { anchors.push(file(tag, ['is not directly above a declaration or statement (a blank line separates them), so it is read as file scope'])); continue; }
       if (sym && tag.scope !== 'statement' && tag.scope !== 'route') {
+        const ts = tsSymbol(sym);
         anchors.push({
           tag, scope: 'symbol', anchor: anchorName(sym), owner: null, kind: sym.kind,
-          startLine: sym.startLine, endLine: sym.endLine, tier, exact: floorFingerprint(lexed, sym.start, sym.end),
-          floor: floorFingerprint(lexed, sym.start, sym.end), confidence, problems: [...tag.problems],
+          startLine: ts ? ts.startLine : sym.startLine, endLine: ts ? ts.endLine : sym.endLine,
+          tier: ts ? treeSitter.tier : tier, exact: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end),
+          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence, problems: [...tag.problems],
         });
         continue;
       }
@@ -652,7 +659,7 @@ export function resolveFileAnchors(content, relPath, patterns, options = {}) {
     const fallback = resolvePattern(content, relPath, patterns, 'python', importers);
     return { ...fallback, degraded: py?.error || py?.outline?.error || options.pythonReason || 'python3 is unavailable' };
   }
-  if (lang) return resolvePattern(content, relPath, patterns, lang, importers);
+  if (lang) return resolvePattern(content, relPath, patterns, lang, importers, options.treeSitter || null);
   return resolveFileTier(content, relPath, patterns, importers);
 }
 

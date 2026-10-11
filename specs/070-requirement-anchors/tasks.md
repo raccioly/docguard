@@ -340,8 +340,8 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 12: US10, provably deterministic fingerprints (P3, PR 10)
 
-- [ ] T070 [P] [US10] Complete the golden set for Kotlin, C#, PHP, Ruby, Swift, C and C++. Add python-ast golden values per CI interpreter minor version, and make the test skip, with a message, any key the local interpreter lacks (FR-039)
-- [ ] T071 [P] [US10] Create `tools/anchor-oracle/{package.json,package-lock.json,run.mjs,VETTING.md}`:
+- [x] T070 [P] [US10] Complete the golden set for Kotlin, C#, PHP, Ruby, Swift, C and C++. Add python-ast golden values per CI interpreter minor version, and make the test skip, with a message, any key the local interpreter lacks (FR-039)
+- [x] T071 [P] [US10] Create `tools/anchor-oracle/{package.json,package-lock.json,run.mjs,VETTING.md}`:
   - first, check every candidate package (`web-tree-sitter` and each grammar) against Constitution II: `npm view <pkg> --json` for the official registry, maintainers and first-publish date, and api.npmjs.org weekly downloads for more than 10k. Record the evidence in `VETTING.md`, and drop any grammar that fails, so its language is "no oracle";
   - exact pinned versions;
   - a lockfile with integrity hashes;
@@ -349,16 +349,16 @@ follow the policy, and completion is not deadlocked.
   - a per-language agreement report.
 
   (FR-040, Constitution II)
-- [ ] T072 [US10] Add an `anchor-oracle` job to `.github/workflows/ci.yml` with `permissions: contents: read`. It runs `npm ci --ignore-scripts` in `tools/anchor-oracle`, uses SHA-pinned actions, and fails only when disagreement exceeds 1% for a high-confidence language. C and C++ are reported, never failed (FR-040, SC-007)
-- [ ] T073 [US10] Add the user-side tree-sitter tier:
+- [x] T072 [US10] Add an `anchor-oracle` job to `.github/workflows/ci.yml` with `permissions: contents: read`. It runs `npm ci --ignore-scripts` in `tools/anchor-oracle`, uses SHA-pinned actions, and fails only when disagreement exceeds 1% for a high-confidence language. C and C++ are reported, never failed (FR-040, SC-007)
+- [x] T073 [US10] Add the user-side tree-sitter tier:
   - `schemas/docguard-anchor-treesitter.manifest.json` with the pinned sha256 of each runtime and grammar file;
   - in `cli/scanners/anchor-tags.mjs`, read the config `anchors.treeSitter.artifacts`, verify the hashes, copy the bytes to `.docguard/ts/<hash>/` and import that copy;
   - never use project module resolution;
   - a mismatch gives ANC010 and falls back.
 
   (FR-009, research P7)
-- [ ] T074 [US10] Add a test `tests/requirement-anchors-treesitter.test.mjs`. The tier is unavailable with a wrong hash and with a missing file, and is never auto-detected. Use a fake artifact, with no network (FR-009)
-- [ ] T075 [US10] Docs (`docs-canonical/SECURITY.md` tree-sitter loading, `docs-canonical/TEST-SPEC.md`). Close story 10 with the claim `ANCHOR-FINGERPRINT-GOLDEN`, `CHANGELOG.md` and `specs --write`
+- [x] T074 [US10] Add a test `tests/requirement-anchors-treesitter.test.mjs`. The tier is unavailable with a wrong hash and with a missing file, and is never auto-detected. Use a fake artifact, with no network (FR-009)
+- [x] T075 [US10] Docs (`docs-canonical/SECURITY.md` tree-sitter loading, `docs-canonical/TEST-SPEC.md`). Close story 10 with the claim `ANCHOR-FINGERPRINT-GOLDEN`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 13: Polish and completion
 

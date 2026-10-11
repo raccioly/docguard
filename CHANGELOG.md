@@ -162,6 +162,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `cause: "oft-outdated"`).
   - **Cache.** The import settings are part of the anchor cache's identity,
     so editing the map is never answered from the cache.
+- **Requirement anchors: provably deterministic fingerprints, and an opt-in
+  tree-sitter tier** (`specs/070-requirement-anchors`, user story 10).
+  - **Golden fixtures.** The golden set covers all 13 languages the anchors
+    read. Python `ast` values are recorded for 3.11 through 3.14, because
+    they differ between versions. Any change to a fingerprint fails the
+    suite until the algorithm version is bumped. An entry stamped under an
+    algorithm this DocGuard does not compute is unverifiable, never suspect.
+  - **Oracle.** A CI-only job (`tools/anchor-oracle`) measures the pattern
+    tier against tree-sitter on a vendored corpus of idiomatic code and the
+    anchor fixtures. It fails when a high-confidence language disagrees on
+    more than 1% of declarations. Every package in it passes the dependency
+    vetting recorded in `VETTING.md` (Kotlin's and Swift's grammars do not,
+    so those languages have no oracle). It installs from a lockfile with no
+    install scripts, and nothing in it ships.
+  - **Tree-sitter tier.** `anchors.treeSitter.artifacts` lets tree-sitter
+    refine the span and exact fingerprint of each pattern-tier symbol in Go,
+    Rust, Java, C#, PHP, Ruby, C and C++, keeping keys and floors unchanged.
+    Only files matching the hashes in
+    `schemas/docguard-anchor-treesitter.manifest.json` load. They are staged
+    under `.docguard/ts/` and parsed in a child process with no environment,
+    never through `node_modules`. Anything missing or mismatched is ANC010,
+    and the pattern tier answers.
+  - **Pattern tier fixes the oracle found.** These are:
+    - Ruby `Const = Struct.new … do` class bodies;
+    - Java compact constructors, and annotation elements with defaults;
+    - C# expression bodies that span a switch expression;
+    - C functions returning `struct x`;
+    - C++ inline namespaces, user-defined literal operators, and
+      `= delete` / `= default` members.
+
+    On the corpus, every measured language agrees 100% with tree-sitter.
+  - **Explicit scope wins.** `{scope=symbol}` in a file's leading comment
+    block now anchors the declaration below, as ANC006's advice says. A tag
+    inside a `switch` case anchors its statement.
+  - **Cache identity.** The anchor cache is keyed by the resolver code and the
+    requirement patterns too, so an upgrade or a custom
+    `traceability.requirementPattern` is never answered with stale anchors.
 
 ### Changed
 

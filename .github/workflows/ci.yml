@@ -325,6 +325,40 @@ jobs:
             --message-file "$RUNNER_TEMP/pr-body.txt" \
             --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/budget.json"
 
+  # ── Anchor oracle (specs/070-requirement-anchors FR-040, SC-007) ──
+  # tree-sitter is the independent parser the pattern tier is measured
+  # against. It is CI-only: tools/anchor-oracle has its own lockfile with
+  # integrity hashes, every package is vetted in VETTING.md, and no install
+  # script runs. Fails only when a high-confidence language disagrees on more
+  # than 1% of declarations; C, C++, Kotlin and Swift are reported.
+  # @implements docguard.requirement-anchors#FR-040
+  anchor-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install DocGuard and the oracle (lockfiles, no scripts)
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund --prefix tools/anchor-oracle
+
+      - name: Compare pattern-tier spans with tree-sitter
+        run: node tools/anchor-oracle/run.mjs --json "$RUNNER_TEMP/anchor-oracle.json"
+
+      # The opt-in tier with the real vetted artifacts: hashes, staging,
+      # golden spans and formatting stability (FR-009).
+      - name: Tree-sitter tier with the vetted artifacts
+        run: node --test tests/requirement-anchors-treesitter.test.mjs
+
   # ── npm publish dry-run on tags ──
   publish-check:
     runs-on: ubuntu-latest

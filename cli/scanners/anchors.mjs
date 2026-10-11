@@ -26,6 +26,7 @@
  * @implements docguard.requirement-anchors#FR-041
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildIgnoreFilter, compileGlob, relPosix, walkFiles } from '../shared-ignore.mjs';
@@ -39,6 +40,7 @@ import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
 import { pythonBatch, pythonTier } from './py-anchors.mjs';
 import { isTestSource, resolveRequirementReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
 import { readSpecRegistry } from './spec-registry.mjs';
+import { prepareTreeSitter, treeSitterBatch } from './ts-anchors.mjs';
 import { loadTestguardEvidence, structuredHint, testStatus } from './testguard-evidence.mjs';
 import { collectRequirementIds } from './requirement-docs.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
@@ -106,6 +108,23 @@ export function requirementFingerprint(block) {
 /** True when the project opted in: a committed lock, or `anchors.enabled`. */
 export function anchorsActivated(projectDir, config = {}) {
   return existsSync(resolve(projectDir, ANCHOR_LOCK_PATH)) || config.anchors?.enabled === true;
+}
+
+/**
+ * The code that turns a file's bytes into anchors. Its hash joins the cache
+ * identity, so an upgrade that changes how tags resolve is never answered
+ * with anchors an older resolver computed for the same bytes.
+ */
+const EXTRACTOR_MODULES = ['./anchor-tags.mjs', './anchors.mjs', './pattern-lexer.mjs', './py-anchors.mjs', './fingerprint.mjs',
+  './ts-decls.mjs', './ts-anchors.mjs', './js-ast.mjs', '../shared-requirements.mjs'];
+let extractorHash = null;
+function extractorIdentity() {
+  if (!extractorHash) {
+    const h = createHash('sha256');
+    for (const m of EXTRACTOR_MODULES) { try { h.update(readFileSync(new URL(m, import.meta.url))); } catch { h.update(`missing:${m}`); } }
+    extractorHash = h.digest('hex').slice(0, 16);
+  }
+  return extractorHash;
 }
 
 function candidateFiles(projectDir, config) {
@@ -194,7 +213,12 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   const importers = importSettings(config);
   const hint = tagHint(importers);
   const importIdentity = importers ? `|import:${dg1(JSON.stringify([[...importers.kinds].sort(), Object.entries(importers.map).sort(([a], [b]) => (a < b ? -1 : 1))]))}` : '';
-  const identity = `anchors-v${ANCHOR_ALGO}|${V1_PREFIX}|pattern@${PATTERN_ALGO}|${BABEL_TIER}|${pyTier || 'no-python'}${importIdentity}`;
+  // FR-009: the opt-in tree-sitter tier, verified and staged, or a reason it is unavailable.
+  // `treeSitterManifest` is a test seam for fake artifacts; production always uses the shipped manifest.
+  const ts = prepareTreeSitter(projectDir, config, { manifest: options.treeSitterManifest });
+  // The requirement patterns decide which comment text is a tag, so they are part of it too.
+  const patternIdentity = dg1(patterns.map(p => `${p.source}/${p.flags}`).join('\n')).slice(-16);
+  const identity = `anchors-v${ANCHOR_ALGO}|${V1_PREFIX}|pattern@${PATTERN_ALGO}|${BABEL_TIER}|${pyTier || 'no-python'}|code:${extractorIdentity()}|req:${patternIdentity}${importIdentity}${ts.ok ? `|${ts.tier}` : ''}`;
   const cache = openAnchorCache(projectDir, { identity, noCache: options.noCache, env: options.env });
   const index = requirementIndex(projectDir, config, patterns);
 
@@ -226,16 +250,22 @@ export function computeLinks(projectDir, config = {}, options = {}) {
     python = pythonBatch(pyMisses.map(s => ({ key: s.rel, content: s.content, outline: true, lines: pythonCandidateLines(s.content, hint) })));
   }
   const pythonReason = !pyTier ? 'python3 is unavailable' : (python.ok ? null : python.reason);
+  const tsMisses = ts.ok ? sources.filter(s => !resolved.has(s.rel) && ts.languages.includes(languageOf(s.rel))) : [];
+  const tsOut = tsMisses.length ? treeSitterBatch(ts, tsMisses.map(s => ({ key: s.rel, lang: languageOf(s.rel), content: s.content }))) : { ok: true, files: {} };
   for (const source of sources) {
     if (resolved.has(source.rel)) continue;
+    const tsFile = tsOut.ok ? tsOut.files?.[source.rel] : null;
     const result = resolveFileAnchors(source.content, source.rel, patterns, {
       python: python.ok ? python.files?.[source.rel] || null : null,
       pythonTier: python.ok ? pyTier : null,
       pythonReason,
       importers,
+      treeSitter: tsFile?.symbols ? { tier: ts.tier, symbols: tsFile.symbols } : null,
     });
     resolved.set(source.rel, result);
-    if (!result.degraded) cache.set(source.rel, source.sha, result);
+    // A file the tree-sitter process should have read but did not is not cached under its identity.
+    const tsMissing = ts.ok && ts.languages.includes(languageOf(source.rel)) && !tsOut.ok;
+    if (!result.degraded && !tsMissing) cache.set(source.rel, source.sha, result);
   }
   cache.save();
 
@@ -324,6 +354,11 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   }
   if (cache.tracked.length) {
     problems.push({ code: 'ANC010', file: cache.tracked[0], line: null, tier: FILE_TIER, confidence: 'high', message: `The anchor cache was ${cache.reason}` });
+  }
+  const tsReasons = [...(ts.configured && !ts.ok ? [ts.reason] : []), ...(ts.problems || []), ...(tsOut.ok ? [] : [tsOut.reason])];
+  for (const reason of tsReasons) {
+    problems.push({ code: 'ANC010', file: '.docguard.json', line: null, tier: 'pattern@' + PATTERN_ALGO, confidence: 'high',
+      message: `The tree-sitter tier is unavailable: ${reason}; the pattern tier anchors these files` });
   }
 
   const summary = {

@@ -48,7 +48,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
-| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
+| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written. The opt-in tree-sitter tier (`ts-anchors.mjs`, `ts-decls.mjs`, `ts-anchors-child.mjs`) refines pattern-tier symbols from hash-pinned artifacts; `tools/anchor-oracle` measures the pattern tier against it in CI | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/scanners/ts-anchors.mjs`, `cli/scanners/ts-decls.mjs`, `cli/scanners/ts-anchors-child.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
@@ -1394,6 +1394,10 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 Every other subprocess also takes an argv array and no shell:
 
 - Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`). A saved TestGuard report is untrusted input: its revision reaches `cat-file -e` and `show <rev>:<path>` only after matching the commit-id pattern, and its paths and the claims file's are read through the evidence reader (`cli/scanners/testguard-evidence.mjs`). DocGuard never runs TestGuard or a test.
+- The opt-in tree-sitter tier (`cli/scanners/ts-anchors.mjs`) runs `node --no-addons` on one fixed script, `ts-anchors-child.mjs`, with no environment, file content on stdin and a timeout. It runs only when `anchors.treeSitter.artifacts` names the files, never by detection.
+  - Each file is read once, and its sha256 must equal the hash `schemas/docguard-anchor-treesitter.manifest.json` pins. The manifest covers the `web-tree-sitter` and grammar versions vetted in `tools/anchor-oracle/VETTING.md`.
+  - Those same bytes are written to `.docguard/ts/<sha256>/`. The child imports the runtime from that copy by absolute file URL and loads each grammar from its bytes, so module resolution never runs and a project's `node_modules` cannot supply code.
+  - A mismatch, a missing file or a failed child is ANC010, and the pattern tier answers.
 - `python3 -c` with one fixed script (`cli/scanners/py-anchors.mjs`) that receives file CONTENT as JSON on stdin, never a path, and only calls `ast.parse` and `tokenize` on it, never importing or executing it. One run per batch, with a timeout of 15 seconds plus 1 second per 64 KiB of input. The doc lock and requirement anchors share it; doc-lock paths are checked by the doc lock's path guard before they are read. `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
 - `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
 - Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`.
@@ -1440,7 +1444,7 @@ ownership, and treats `--force` as overwrite intent rather than authorization.
 
 ## Supply Chain
 
-The package declares one exact-pinned dependency, `@babel/parser`, with its transitive Babel dependencies recorded in `package-lock.json`. AST extraction degrades to a regex fallback when Babel is unavailable. Python AST extraction optionally uses the installed `python3` runtime. No additional runtime package is introduced by the trust improvements.
+The package declares one exact-pinned dependency, `@babel/parser`, with its transitive Babel dependencies recorded in `package-lock.json`. AST extraction degrades to a regex fallback when Babel is unavailable. Python AST extraction optionally uses the installed `python3` runtime. No additional runtime package is introduced by the trust improvements. tree-sitter is not a dependency. `tools/anchor-oracle/` is a CI-only tool outside the package's `files`, with its own lockfile. Every package in it is vetted in `VETTING.md`, and it installs with `npm ci --ignore-scripts`. A user who enables the tree-sitter tier supplies the artifacts, and DocGuard loads them only when they match the shipped manifest.
 
 Cloudflare binding extraction reads source and Wrangler file presence only. It
 does not load configuration, import application modules, contact Cloudflare, or
@@ -1616,6 +1620,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Anchor orphans, dispositions and granularity in `score`/`trace` | `tests/requirement-anchors-orphans.test.mjs` | ✅ |
 | Trace-matrix export: CSV columns and order, RFC 4180 quoting, formula injection, ReqIF 1.2 structure and escaping, byte-identical runs, `--out` | `tests/trace-matrix.test.mjs` | ✅ |
 | StrictDoc and OpenFastTrace importers: opt-in, mapping, ANC007/ANC006, OFT outdated, cache identity, never written | `tests/requirement-anchors-import.test.mjs` | ✅ |
+| Golden fingerprints for 13 languages and python-ast 3.11–3.14; formatting stability; algorithm-version handling (FR-012) | `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| Tree-sitter tier: never auto-detected, hash pinning, staged copy, no environment, fallback; with the vetted artifacts, golden spans and formatting stability (the anchor-oracle CI job) | `tests/requirement-anchors-treesitter.test.mjs` | ✅ |
+| Pattern tier against tree-sitter: per-language declaration agreement on `tools/anchor-oracle/corpus` and the anchor fixtures | `tools/anchor-oracle/run.mjs` (CI job `anchor-oracle`) | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -2015,6 +2022,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `cause: "oft-outdated"`).
   - **Cache.** The import settings are part of the anchor cache's identity,
     so editing the map is never answered from the cache.
+- **Requirement anchors: provably deterministic fingerprints, and an opt-in
+  tree-sitter tier** (`specs/070-requirement-anchors`, user story 10).
+  - **Golden fixtures.** The golden set covers all 13 languages the anchors
+    read. Python `ast` values are recorded for 3.11 through 3.14, because
+    they differ between versions. Any change to a fingerprint fails the
+    suite until the algorithm version is bumped. An entry stamped under an
+    algorithm this DocGuard does not compute is unverifiable, never suspect.
+  - **Oracle.** A CI-only job (`tools/anchor-oracle`) measures the pattern
+    tier against tree-sitter on a vendored corpus of idiomatic code and the
+    anchor fixtures. It fails when a high-confidence language disagrees on
+    more than 1% of declarations. Every package in it passes the dependency
+    vetting recorded in `VETTING.md` (Kotlin's and Swift's grammars do not,
+    so those languages have no oracle). It installs from a lockfile with no
+    install scripts, and nothing in it ships.
+  - **Tree-sitter tier.** `anchors.treeSitter.artifacts` lets tree-sitter
+    refine the span and exact fingerprint of each pattern-tier symbol in Go,
+    Rust, Java, C#, PHP, Ruby, C and C++, keeping keys and floors unchanged.
+    Only files matching the hashes in
+    `schemas/docguard-anchor-treesitter.manifest.json` load. They are staged
+    under `.docguard/ts/` and parsed in a child process with no environment,
+    never through `node_modules`. Anything missing or mismatched is ANC010,
+    and the pattern tier answers.
+  - **Pattern tier fixes the oracle found.** These are:
+    - Ruby `Const = Struct.new … do` class bodies;
+    - Java compact constructors, and annotation elements with defaults;
+    - C# expression bodies that span a switch expression;
+    - C functions returning `struct x`;
+    - C++ inline namespaces, user-defined literal operators, and
+      `= delete` / `= default` members.
+
+    On the corpus, every measured language agrees 100% with tree-sitter.
+  - **Explicit scope wins.** `{scope=symbol}` in a file's leading comment
+    block now anchors the declaration below, as ANC006's advice says. A tag
+    inside a `switch` case anchors its statement.
+  - **Cache identity.** The anchor cache is keyed by the resolver code and the
+    requirement patterns too, so an upgrade or a custom
+    `traceability.requirementPattern` is never answered with stale anchors.
 
 ### Changed
 
@@ -2214,45 +2258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to leave you on its new branch with the migration half applied. It now
   returns to the branch (or commit) you started from, restores
   `.docguard.json`, deletes the branch unless it was pushed, and names the
-  pushed branch when only `gh pr create` failed.
 
-### Commits
-
-- fix: Jules auto-merges only new test files; tested triage and routines (spec 067) (#547)
-- fix: test suite independent of the machine's git config (spec 066) (#546)
-- fix: Git hooks stay inside the repository (spec 065) (#545)
-
-## [0.44.0] - 2026-10-11
-
-### Added
-
-- **Koa mounts, Cloudflare Pages Functions and `@hono/zod-openapi` routes
-  are read** (`specs/064-js-route-shapes`, part of #519). Three JavaScript
-  route shapes spec 058 left out:
-  - Koa: routers move to the router reader, so `new Router({ prefix })`,
-    `router.prefix()`, nested `router.use('/users', users.routes())` and
-    koa-mount `mount('/admin', admin)` compose across files (also through
-    `require`/`module.exports`); `router.del()` and named routes are read,
-    a `use()` path guards everything under it, and routes now carry their
-    tier. Every literal-path route the old scanner found is still reported.
-  - Cloudflare Pages: a Wrangler file with `pages_build_output_dir`, or a
-    `functions/` tree exporting `onRequest` handlers, is labelled Cloudflare
-    Pages (a Wrangler file without that key stays a Worker). Each
-    `onRequest*` export is a route at the path its file serves (`[id]` as
-    `:id`, `[[path]]` as `:path*`, `index` for its directory), and a
-    `_middleware` file that checks credentials marks the routes below it as
-    auth (`cli/scanners/pages-routes.mjs`).
-  - `@hono/zod-openapi`: `app.openapi(createRoute({ method, path }), h)`,
-    with the definition inline, in a variable or imported from another file,
-    is read under `basePath()` and `route()` mounts, `{id}` as `:id`; `doc()`
-    serves `GET` at its path.
-  - Pages advanced mode: a `_worker.js` in the output directory (or a
-    `_worker.ts` source) is read as a Worker `fetch` entry and `functions/`
-    is ignored, as Pages ignores it; `_routes.json` include/exclude rules
-    drop the Functions requests never reach.
-  - koa-router `redirect('/from', to)` is a route, `ALL /from`.
-
-<!-- truncated: 5472 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5509 more lines — read CHANGELOG.md directly -->
 
 ---
 
