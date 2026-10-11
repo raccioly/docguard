@@ -198,19 +198,26 @@ extensions/spec-kit-docguard/
 
 ## Agent Rules
 
-### Automated agents / bots (Jules "Sentinel", "Bolt", "Palette", and any auto-PR agent)
-- **Never open a duplicate PR.** Before opening ANY PR, search existing **open
-  AND closed** PRs and issues for the same topic/title. If it exists, STOP — do
-  not open another. (Dozens of duplicate command-injection and diff-optimization
-  PRs were closed as noise.)
-- **Do not re-open resolved work.** See `.jules/sentinel.md` (execSync/command
-  injection — RESOLVED in v0.21.1 + #296) and `.jules/bolt.md` (diff/scan
-  micro-optimizations — already applied; code refactored since). These are
-  historical learnings, **not** standing mandates to re-scan every run.
-- **Bar for a new PR:** a genuinely new, unaddressed finding, with evidence — a
-  concrete exploit path / failing test (security) or a benchmark showing >20%
-  real-workload improvement (performance). A Big-O note alone is insufficient.
-- This repo has **no web UI and no VS Code extension** — skip all UX tasks.
+### Automated agents / bots (Google Jules and any auto-PR agent)
+- **Jules runs only the routines in `.jules/routines/`** (`bug-hunt`,
+  `test-gaps`, `docs-drift`, weekly), after `.jules/RULES.md`. Each starts with
+  `node .jules/preflight.mjs <routine>`; on `STOP` it ends with no PR.
+  **Never ask a question:** take the pessimistic in-scope option, or end the
+  task with a summary and no PR.
+- **One PR per routine target**, titled `[jules:<routine>] <target> — …`.
+  `.github/scripts/jules-policy.mjs` (via `jules-triage.yml`) closes a PR that
+  is empty, a duplicate of an open PR, work declined in the last 60 days, over
+  the five-PR queue, or off its routine's contract. It never closes a PR for
+  its subject: a security or performance fix reaches a maintainer.
+- **Only new test files merge alone.** `auto-merge.yml` merges a green Jules PR
+  only when every file is a newly added `tests/<name>.test.mjs`, pinned to the
+  head CI verified. Edited tests, fixtures, any Markdown (instruction and
+  prompt files ship to npm), code and CI wait for a maintainer.
+- **Agents never edit an existing test, `CHANGELOG.md`, `.github/`, `.jules/`
+  or instruction files**, and never mention an agent by handle: in Jules'
+  Reactive Mode a mention is an instruction. Setup: `bash .jules/setup.sh`
+  (fails unless the suite and guard are green). Spec:
+  `specs/067-jules-policy`.
 
 ### Dependencies
 - Never add a package without first verifying it exists on the official registry (npm/PyPI).

@@ -6904,6 +6904,257 @@
       }
     },
     {
+      "specId": "docguard.jules-policy",
+      "path": "specs/067-jules-policy/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.tokenless-scheduled-releases"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.jules-policy#FR-001",
+          "docguard.jules-policy#FR-002",
+          "docguard.jules-policy#FR-003",
+          "docguard.jules-policy#FR-004",
+          "docguard.jules-policy#FR-005",
+          "docguard.jules-policy#FR-006",
+          "docguard.jules-policy#FR-007",
+          "docguard.jules-policy#FR-008",
+          "docguard.jules-policy#FR-009",
+          "docguard.jules-policy#FR-010",
+          "docguard.jules-policy#FR-011",
+          "docguard.jules-policy#FR-012",
+          "docguard.jules-policy#FR-013",
+          "docguard.jules-policy#SC-001",
+          "docguard.jules-policy#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/067-jules-policy/spec.md",
+            "digest": "sha256:2fca2cc6f2bb155fa2c0bce1ad55ba0374395ba71aee4c9e7edf8e9284ad5c3b"
+          },
+          {
+            "path": "specs/067-jules-policy/plan.md",
+            "digest": "sha256:34e00fcd8371213b1d13e6683a845238b59d5c6702d5c0e35a778bffc4296ed3"
+          },
+          {
+            "path": "specs/067-jules-policy/tasks.md",
+            "digest": "sha256:2ad95bd901f206ad73137ecbcfb94e2d8aa954c00df5f78180a734b5d9fbbe7a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-001",
+            "file": ".github/workflows/auto-merge.yml",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-002",
+            "file": ".github/workflows/auto-merge.yml",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-003",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/scripts/jules-triage.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-004",
+            "file": ".github/workflows/jules-triage.yml",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/scripts/jules-triage.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/workflows/jules-triage.yml",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-006",
+            "file": ".github/workflows/jules-triage.yml",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/scripts/jules-triage.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/workflows/jules-triage.yml",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-009",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-009",
+            "file": ".jules/preflight.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-010",
+            "file": ".github/scripts/jules-policy.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-010",
+            "file": ".jules/preflight.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-011",
+            "file": ".jules/setup.sh",
+            "line": 13
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/jules-policy.test.mjs",
+            "line": 19
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.language-repository-coverage",
       "path": "specs/009-language-repository-coverage/spec.md",
       "reviewed": {
