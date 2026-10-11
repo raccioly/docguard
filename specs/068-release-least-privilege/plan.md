@@ -6,13 +6,13 @@
 
 | FR | Change |
 |---|---|
-| FR-001 | `release.yml` and `scheduled-release.yml` default to `contents: read`; each writing job asks for its own scope. |
+| FR-001 | Every workflow defaults to `contents: read` (`release.yml`, `scheduled-release.yml`, `auto-merge.yml`, `jules-triage.yml`, `supply-chain.yml`, `sync-speckit-catalog.yml`); each writing job asks for its own scope. |
 | FR-002 | `release.yml` `test` and `ci.yml`'s jobs that run tests or DocGuard set `persist-credentials: false` and hold read only. |
 | FR-003, FR-004 | `release.yml`: `build-extension` and `build-mcpb` build read-only and upload artifacts; a new `attach-assets` job (contents: write, no checkout) runs `gh release upload`. `build-pypi` (read-only) builds `dist/`; `publish-pypi` (environment `pypi`, `id-token: write`) downloads it and runs the PyPA action only. |
 | FR-005 | `scheduled-release.yml` becomes four jobs: `cut` (read: check, bump, cut CHANGELOG, sync versions, validate the candidate, upload the patch), `verify` (read: apply the patch, `npm ci`, `npm test`, guard), `open-pr` (contents, pull-requests and actions write: check the patch's paths, apply it, push, open the PR, arm auto-merge, dispatch publication; only `git`, `gh`, `jq`), `recover` (actions write only, no checkout). |
 | FR-006 | `publish-ghcr`: `docker login` moves after build and smoke test. |
 | FR-007 | `tests/workflow-permissions.test.mjs` (NEW): a dependency-free reader of the workflow files checks FR-001–FR-003 on every workflow, plus FR-004–FR-006 on the release workflows, and proves itself on a violating sample. |
-| FR-008 | `docs-canonical/SECURITY.md`, `docs-canonical/ARCHITECTURE.md`, `CONTRIBUTING.md` release notes, `CHANGELOG.md`. |
+| FR-008 | `docs-canonical/SECURITY.md`, `docs-canonical/CI-RECIPES.md` (Recipe 3a), `docs/installation.md` (supply-chain table), `docs-canonical/TEST-SPEC.md`, `CHANGELOG.md`. |
 
 ## Technical Context
 
@@ -46,7 +46,8 @@ Pass.
 .github/workflows/release.yml            # FR-001–FR-004, FR-006
 .github/workflows/scheduled-release.yml  # FR-001, FR-002, FR-005
 .github/workflows/ci.yml                 # FR-002
+.github/workflows/auto-merge.yml, jules-triage.yml, supply-chain.yml, sync-speckit-catalog.yml   # FR-001
 tests/workflow-permissions.test.mjs      # NEW (FR-007)
 tests/scheduled-release.test.mjs, tests/release-readiness.test.mjs, tests/catalog-submission.test.mjs   # follow the new layout
-docs-canonical/SECURITY.md, docs-canonical/ARCHITECTURE.md, CONTRIBUTING.md, CHANGELOG.md   # FR-008
+docs-canonical/SECURITY.md, docs-canonical/CI-RECIPES.md, docs/installation.md, docs-canonical/TEST-SPEC.md, CHANGELOG.md   # FR-008
 ```

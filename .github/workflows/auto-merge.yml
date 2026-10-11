@@ -28,15 +28,19 @@ on:
     workflows: ["DocGuard CI"]
     types: [completed]
 
+# Read by default; the job asks for what merging needs
+# (specs/068-release-least-privilege, tests/workflow-permissions.test.mjs).
 permissions:
-  contents: write
-  pull-requests: write
-  checks: read
+  contents: read
 
 jobs:
   auto-merge:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
     steps:
       - name: Check out trusted auto-merge policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
