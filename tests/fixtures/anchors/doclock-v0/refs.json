@@ -1,0 +1,20 @@
+[
+  "src/pricing.mjs#applyDiscount",
+  "src/pricing.mjs#RATE",
+  "src/pricing.mjs#Cart",
+  "src/pricing.mjs#Cart.total",
+  "src/pricing.mjs#Cart.empty",
+  "src/pricing.mjs#exposed",
+  "src/pricing.mjs#default",
+  "src/pricing.mjs#main",
+  "src/pricing.mjs",
+  "src/types.ts#sum",
+  "src/types.ts#Line",
+  "src/types.ts#Mode",
+  "src/billing.py#apply_discount",
+  "src/billing.py#RATE",
+  "src/billing.py#LIMIT",
+  "src/billing.py#Invoice",
+  "src/billing.py#Invoice.total",
+  "src/notes.txt"
+]

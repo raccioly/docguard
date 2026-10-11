@@ -131,7 +131,7 @@ cli/scanners/anchor-cache.mjs       # NEW  per-file cache in .docguard/ (trusted
 cli/scanners/anchors.mjs            # NEW  link set, requirement fingerprints, state machine, carry-over (US4), ripple (US5), test chain (US6), orphans (US7)
 cli/scanners/doc-deps.mjs           # CHANGED  delegate to fingerprint.mjs (doclock-v0); batched python; nested lookup; interpreter-change disambiguation
 cli/scanners/requirement-evidence.mjs # CHANGED  comment extraction via anchor-tags (string-aware, FR-005)
-cli/shared-requirements.mjs         # CHANGED  full requirement block text (FR-014)
+cli/shared-requirements.mjs         # CHANGED  `block` field: full requirement block (FR-014)
 cli/scanners/import-graph.mjs       # CHANGED  export reverseImportAncestors + hub rule (moved from impact.mjs)
 cli/commands/impact.mjs             # CHANGED  import the moved walk; behavior unchanged
 cli/validators/requirement-anchors.mjs # NEW ANC001–ANC010
@@ -245,7 +245,7 @@ writer. This mirrors spec 030 exactly.
 
 ### Requirement fingerprints (US2, FR-014)
 
-- `shared-requirements.mjs` returns `text` as the whole block: lines through
+- `shared-requirements.mjs` adds a `block` field (`text` stays the first line): lines through
   the next requirement declaration, a heading, or a list item at the same or
   shallower indent.
 - The registry stores IDs only (`intent.requirements` holds strings), so the

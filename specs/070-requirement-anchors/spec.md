@@ -565,8 +565,11 @@ is reported unavailable and the pattern tier is used.
   - Normalization: Unicode NFC, unified line endings, collapsed whitespace
     runs.
   - It MUST exclude the implementation-outcomes block and review stamps.
-  - The parsed requirement text MUST be the whole block, which fixes
-    `cli/shared-requirements.mjs:76`.
+  - Requirement parsing MUST expose the whole block as a new `block` field,
+    which fixes the first-line-only capture at
+    `cli/shared-requirements.mjs:76`. The existing `text` field stays the
+    first line, because the traceability TF-IDF hint and preflight's overlap
+    detection depend on it.
 - **FR-015**: The doc-dependency lock and requirement anchors MUST share one
   fingerprint implementation. The doc lock MUST gain batched Python parsing,
   nested symbol lookup and parser-versioned tiers. It MUST report an

@@ -107,7 +107,7 @@ per tag, the string-literal tag is absent, and SC-002 and SC-008 hold.
 
   (FR-001 to FR-004, FR-008)
 - [ ] T016 [US1] Rewire `cli/scanners/requirement-evidence.mjs` `implementationDeclarations` and `testDeclarations` to the `anchor-tags.mjs` comment pass. For files with no tier, add a string-aware fallback tokenizer for `"`, `'` and backtick (FR-005, FR-006)
-- [ ] T017 [US1] Change `cli/shared-requirements.mjs` `collectRequirementIdsFromContent` to return the full requirement block as `text`. Before changing it, list every consumer of `text` (`grep -rn "\.text" cli/` on requirement results: trace, task-context, preflight, validators). Pin each one's current output in a test, and keep that output unchanged unless the consumer is meant to show the full block. Check that `.docguard-specs.json` regenerates byte-identically (FR-014)
+- [ ] T017 [US1] Add a `block` field (the full requirement block) to `cli/shared-requirements.mjs` `collectRequirementIdsFromContent`, and keep `text` as the first line. Its consumers are the traceability TF-IDF hint (`cli/validators/traceability.mjs:342`) and preflight overlaps (`cli/scanners/spec-registry.mjs:821-827`), and both stay unchanged. Check that `.docguard-specs.json` regenerates byte-identically (FR-014)
 - [ ] T018 [US1] Create `cli/scanners/anchor-cache.mjs`:
   - `.docguard/anchors.cache.json` keyed by sha256 of the working-tree bytes plus the algorithm and tier versions;
   - atomic temp-file-and-rename publish;
