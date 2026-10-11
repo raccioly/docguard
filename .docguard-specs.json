@@ -11509,8 +11509,23 @@
           },
           {
             "requirementId": "FR-016",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-016",
             "file": "cli/scanners/anchors.mjs",
             "line": 24
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 20
           },
           {
             "requirementId": "FR-020",
@@ -11665,6 +11680,31 @@
             "line": 8
           },
           {
+            "requirementId": "FR-016",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 12
+          },
+          {
             "requirementId": "FR-020",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 16
@@ -11673,6 +11713,26 @@
             "requirementId": "FR-021",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-025",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 16
           },
           {
             "requirementId": "FR-026",
@@ -11698,6 +11758,11 @@
             "requirementId": "SC-002",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 17
           },
           {
             "requirementId": "SC-008",
