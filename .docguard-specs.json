@@ -11369,11 +11369,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:72f795d5921def8882bb08ba8faca821f6a499482521553bcb111e6ef4c6ae83"
+            "digest": "sha256:3552d94f017f1c26e7c1def1593bd43094e9a9e63f81e0d185c01563c1b2e5a7"
           }
         ],
         "taskCompletion": {
-          "checked": 69,
+          "checked": 76,
           "total": 79
         },
         "implementationEvidence": [
@@ -11451,6 +11451,21 @@
             "requirementId": "FR-008",
             "file": "cli/scanners/pattern-lexer.mjs",
             "line": 38
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-anchors-child.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-anchors.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/ts-decls.mjs",
+            "line": 11
           },
           {
             "requirementId": "FR-010",
@@ -11590,7 +11605,7 @@
           {
             "requirementId": "FR-032",
             "file": "cli/scanners/anchors.mjs",
-            "line": 505
+            "line": 540
           },
           {
             "requirementId": "FR-033",
@@ -11600,12 +11615,12 @@
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchor-tags.mjs",
-            "line": 741
+            "line": 748
           },
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchors.mjs",
-            "line": 586
+            "line": 621
           },
           {
             "requirementId": "FR-035",
@@ -11615,7 +11630,7 @@
           {
             "requirementId": "FR-036",
             "file": "cli/scanners/anchors.mjs",
-            "line": 653
+            "line": 688
           },
           {
             "requirementId": "FR-037",
@@ -11625,7 +11640,7 @@
           {
             "requirementId": "FR-037",
             "file": "cli/scanners/anchors.mjs",
-            "line": 684
+            "line": 719
           },
           {
             "requirementId": "FR-037",
@@ -11636,6 +11651,16 @@
             "requirementId": "FR-038",
             "file": "cli/scanners/anchor-tags.mjs",
             "line": 113
+          },
+          {
+            "requirementId": "FR-040",
+            "file": ".github/workflows/ci.yml",
+            "line": 334
+          },
+          {
+            "requirementId": "FR-040",
+            "file": "tools/anchor-oracle/run.mjs",
+            "line": 29
           },
           {
             "requirementId": "FR-041",
@@ -11720,6 +11745,11 @@
             "line": 14
           },
           {
+            "requirementId": "FR-009",
+            "file": "tests/requirement-anchors-treesitter.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "FR-010",
             "file": "tests/requirement-anchors-golden.test.mjs",
             "line": 14
@@ -11728,6 +11758,11 @@
             "requirementId": "FR-011",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 17
           },
           {
             "requirementId": "FR-013",
@@ -11875,6 +11910,11 @@
             "line": 15
           },
           {
+            "requirementId": "FR-040",
+            "file": "tests/requirement-anchors-treesitter.test.mjs",
+            "line": 11
+          },
+          {
             "requirementId": "FR-041",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 19
@@ -11892,7 +11932,7 @@
           {
             "requirementId": "SC-004",
             "file": "tests/requirement-anchors-lock.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "SC-005",

@@ -2059,6 +2059,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Cache identity.** The anchor cache is keyed by the resolver code and the
     requirement patterns too, so an upgrade or a custom
     `traceability.requirementPattern` is never answered with stale anchors.
+- **DocGuard's own requirement tags name their scope.** Every tag that sat
+  below an import, inside a function, or in a header directly above a
+  declaration now says `{scope=file}`, `{scope=symbol}` or
+  `{scope=statement}`. `docguard anchors` on this repository reports no ANC006
+  or ANC007, and every link is reviewed or baselined.
 
 ### Changed
 
@@ -2253,13 +2258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docguard setup` installs its hook where Git runs it.** Its hook step
   hard-coded `.git/hooks`, which is wrong in a linked worktree and with a
   repo-local `core.hooksPath`. It now uses the same rule as `docguard hooks`
-  and does not offer to install into a shared folder.
-- **A failed `upgrade --apply --pr` leaves the repository as it was.** It used
-  to leave you on its new branch with the migration half applied. It now
-  returns to the branch (or commit) you started from, restores
-  `.docguard.json`, deletes the branch unless it was pushed, and names the
 
-<!-- truncated: 5509 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5514 more lines — read CHANGELOG.md directly -->
 
 ---
 
