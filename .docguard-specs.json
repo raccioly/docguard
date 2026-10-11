@@ -11077,6 +11077,113 @@
       }
     },
     {
+      "specId": "docguard.requirement-anchors",
+      "path": "specs/070-requirement-anchors/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.requirement-anchors#FR-001",
+          "docguard.requirement-anchors#FR-002",
+          "docguard.requirement-anchors#FR-003",
+          "docguard.requirement-anchors#FR-004",
+          "docguard.requirement-anchors#FR-005",
+          "docguard.requirement-anchors#FR-006",
+          "docguard.requirement-anchors#FR-007",
+          "docguard.requirement-anchors#FR-008",
+          "docguard.requirement-anchors#FR-009",
+          "docguard.requirement-anchors#FR-010",
+          "docguard.requirement-anchors#FR-011",
+          "docguard.requirement-anchors#FR-012",
+          "docguard.requirement-anchors#FR-013",
+          "docguard.requirement-anchors#FR-014",
+          "docguard.requirement-anchors#FR-015",
+          "docguard.requirement-anchors#FR-016",
+          "docguard.requirement-anchors#FR-017",
+          "docguard.requirement-anchors#FR-018",
+          "docguard.requirement-anchors#FR-019",
+          "docguard.requirement-anchors#FR-020",
+          "docguard.requirement-anchors#FR-021",
+          "docguard.requirement-anchors#FR-022",
+          "docguard.requirement-anchors#FR-023",
+          "docguard.requirement-anchors#FR-024",
+          "docguard.requirement-anchors#FR-025",
+          "docguard.requirement-anchors#FR-026",
+          "docguard.requirement-anchors#FR-027",
+          "docguard.requirement-anchors#FR-028",
+          "docguard.requirement-anchors#FR-029",
+          "docguard.requirement-anchors#FR-030",
+          "docguard.requirement-anchors#FR-031",
+          "docguard.requirement-anchors#FR-032",
+          "docguard.requirement-anchors#FR-033",
+          "docguard.requirement-anchors#FR-034",
+          "docguard.requirement-anchors#FR-035",
+          "docguard.requirement-anchors#FR-036",
+          "docguard.requirement-anchors#FR-037",
+          "docguard.requirement-anchors#FR-038",
+          "docguard.requirement-anchors#FR-039",
+          "docguard.requirement-anchors#FR-040",
+          "docguard.requirement-anchors#FR-041",
+          "docguard.requirement-anchors#FR-042",
+          "docguard.requirement-anchors#FR-043",
+          "docguard.requirement-anchors#SC-001",
+          "docguard.requirement-anchors#SC-002",
+          "docguard.requirement-anchors#SC-003",
+          "docguard.requirement-anchors#SC-004",
+          "docguard.requirement-anchors#SC-005",
+          "docguard.requirement-anchors#SC-006",
+          "docguard.requirement-anchors#SC-007",
+          "docguard.requirement-anchors#SC-008",
+          "docguard.requirement-anchors#SC-009",
+          "docguard.requirement-anchors#SC-010"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/070-requirement-anchors/spec.md",
+            "digest": "sha256:e86a83d86a5faa4c53ba576111e0f7f899f6ae3b481c7cad58bc4448d2a1ecc9"
+          },
+          {
+            "path": "specs/070-requirement-anchors/plan.md",
+            "digest": "sha256:dbe3357705ec3075434a39d675a69c636dcbbeeb2bb0dc5b117c20515c4d3183"
+          },
+          {
+            "path": "specs/070-requirement-anchors/tasks.md",
+            "digest": "sha256:2ba5bee1e78da4c638b8fe2e7d5e5e129cce3a7275234ce975124ac32418aad3"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 78
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.spec-first-gate",
       "path": "specs/015-spec-first-gate/spec.md",
       "reviewed": {
