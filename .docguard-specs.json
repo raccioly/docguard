@@ -4583,7 +4583,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1204
+            "line": 1191
           },
           {
             "requirementId": "FR-009",
@@ -8237,12 +8237,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 23
+            "line": 27
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 24
+            "line": 28
           },
           {
             "requirementId": "FR-005",
@@ -8257,7 +8257,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/rust-routes.mjs",
-            "line": 25
+            "line": 29
           },
           {
             "requirementId": "FR-005",
@@ -10318,6 +10318,195 @@
       }
     },
     {
+      "specId": "docguard.real-project-route-gaps",
+      "path": "specs/071-real-project-route-gaps/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.js-framework-routes",
+            "docguard.js-route-shapes",
+            "docguard.more-route-frameworks",
+            "docguard.php-dotnet-routes"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "11ad93a5e0a44c92430d31e36df0eb1a20e3b6e4",
+          "outcomes": [
+            {
+              "revision": "11ad93a5e0a44c92430d31e36df0eb1a20e3b6e4",
+              "reason": "Reviewed at 11ad93a (main after #558): Actix 0->19 under /api, Axum 12->19, Symfony 0->19, Koa paths gain /api; pass-through JWT marks nothing auth (Koa auth on exactly 12 routes). Re-run on 11 public apps and 10 Hono examples: no other count changed. tests/real-project-route-gaps.test.mjs (17), full suite 3,394. Deviations: none; limits in languages.md.",
+              "evidence": [
+                "cli/scanners/php-routes.mjs",
+                "cli/scanners/router-routes.mjs",
+                "cli/scanners/rust-routes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/real-project-route-gaps.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.real-project-route-gaps#FR-001",
+          "docguard.real-project-route-gaps#FR-002",
+          "docguard.real-project-route-gaps#FR-003",
+          "docguard.real-project-route-gaps#FR-004",
+          "docguard.real-project-route-gaps#FR-005",
+          "docguard.real-project-route-gaps#FR-006",
+          "docguard.real-project-route-gaps#FR-007",
+          "docguard.real-project-route-gaps#FR-008",
+          "docguard.real-project-route-gaps#SC-001",
+          "docguard.real-project-route-gaps#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/071-real-project-route-gaps/spec.md",
+            "digest": "sha256:9f8f0bb775f3e83571788c80120117e306e67fbb033c7861d0d1a522084677e1"
+          },
+          {
+            "path": "specs/071-real-project-route-gaps/plan.md",
+            "digest": "sha256:6f862a536d4397ed2c707e284f7f7cd292efcb86f73d888f79380b35701d7977"
+          },
+          {
+            "path": "specs/071-real-project-route-gaps/tasks.md",
+            "digest": "sha256:a71b3b2dd8f90faab9f99c5b610898eaceed7e98b5ec5f124e6ebd10e93dbab2"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 763
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 764
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 835
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/router-routes.mjs",
+            "line": 40
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 295
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/php-routes.mjs",
+            "line": 836
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/rust-routes.mjs",
+            "line": 765
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/real-project-route-gaps.test.mjs",
+            "line": 17
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.release-cut-green",
       "path": "specs/051-release-cut-green/spec.md",
       "reviewed": {
@@ -10344,11 +10533,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
+          "lastReviewedRevision": "3790177e60ccd360e94e2193579a8209efe146ea",
           "outcomes": [
             {
               "revision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
               "reason": "Reviewed at f130626 on main: all 9 tasks are checked and were delivered by #510; the full suite (2920 tests) passes on Node 18, 20, 22 and 24 in CI, a local replay of the v0.43.0 cut passes the suite, guard and the candidate validation, and guard reports 0 errors at this revision.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/release-cut-green.test.mjs",
+                "tests/release-version-sync.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "3790177e60ccd360e94e2193579a8209efe146ea",
+              "reason": "Maintenance review at 3790177: release-cut guarantees extended, none weakened. #543 lints out [Unreleased]-only CHANGELOG reads; #522 widened the version sync; #536 made budget timing deterministic; #546 made its fixture git hermetic; #549 moved CI-RECIPES to the least-privilege layout. v0.44.1 and v0.44.2 cut green end to end; typeof-only tests replaced by behaviour tests (#556). Deviations: none.",
               "evidence": [
                 ".github/scripts/sync-release-version.mjs",
                 "cli/release-pr-policy.mjs",
@@ -10380,7 +10582,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:c89ddac42504f4fd45a8b9e5e0ca713c09489cf8e76af2ffb36b325289311e55"
+            "digest": "sha256:c18d421141f79bd20dc72b4c37cc50401a208c93d8b3117fd748bed88be38591"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
@@ -11176,6 +11378,36 @@
         },
         "implementationEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 33
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 36
+          },
+          {
             "requirementId": "FR-005",
             "file": "cli/scanners/requirement-evidence.mjs",
             "line": 107
@@ -11187,13 +11419,38 @@
           },
           {
             "requirementId": "FR-006",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-006",
             "file": "cli/scanners/requirement-evidence.mjs",
             "line": 111
           },
           {
             "requirementId": "FR-007",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 34
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 37
+          },
+          {
+            "requirementId": "FR-007",
             "file": "cli/scanners/py-anchors.mjs",
             "line": 26
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 35
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 38
           },
           {
             "requirementId": "FR-010",
@@ -11207,8 +11464,28 @@
           },
           {
             "requirementId": "FR-011",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-011",
             "file": "cli/scanners/fingerprint.mjs",
             "line": 25
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 39
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/scanners/requirement-docs.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-014",
@@ -11229,13 +11506,168 @@
             "requirementId": "FR-015",
             "file": "cli/scanners/py-anchors.mjs",
             "line": 28
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/commands/anchors.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/commands/anchors.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchor-cache.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchor-cache.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 26
           }
         ],
         "testEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/pattern-lexer.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/shared-requirements-block.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-015",
             "file": "tests/fingerprint-shared.test.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-041",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-008",
+            "file": "tests/requirement-evidence-literals.test.mjs",
+            "line": 9
           }
         ]
       }

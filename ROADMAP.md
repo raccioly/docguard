@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -13,14 +13,13 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-Specs 014–051 shipped in v0.43.0 (2026-10-01). Spec 052 (baseline fingerprints)
-and spec 053 (the documentation site) wait for the next release; the
-`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's `tasks.md`
-is its checklist. One item remains open:
-
-- **Native suppressions for claimspec (issue #420).** Whether DocGuard adopts
-  the claimspec ignore format depends on reason-bearing suppressions; the
-  decision is open.
+Specs 014–051 shipped in v0.43.0 (2026-10-01); specs 036 and 052–064 in
+v0.44.0, 065–067 in v0.44.1 and 068–069 in v0.44.2 (all 2026-10-11). Native
+suppressions for claimspec (issue #420) shipped as spec 057. Spec 071 (route
+readers checked against public projects) is merged and waits for the next
+release; the `[Unreleased]` section of `CHANGELOG.md` lists it. Spec 070
+(symbol-level requirement anchors) is in progress. Each spec's `tasks.md` is
+its checklist.
 
 New work starts with a reviewed specification and measurable acceptance
 criteria rather than an evergreen task list that can become stale.

@@ -3,20 +3,20 @@ name: docguard-score
 description: CDD maturity assessment with category-aware improvement roadmap. Runs scoring
   engine, analyzes category breakdown, identifies highest-impact improvements, and
   generates a before/after improvement plan with projected score gains.
-compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.44.2)
+compatibility: Requires DocGuard CLI installed (npm i -g docguard-cli, or npx --yes docguard-cli@0.44.3)
 metadata:
   author: docguard
-  version: 0.44.2
+  version: 0.44.3
   source: extensions/spec-kit-docguard/skills/docguard-score
 ---
-<!-- docguard:version: 0.44.2 -->
+<!-- docguard:version: 0.44.3 -->
 
 # DocGuard Score Skill
 
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.44.2`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.44.3`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
 
 ## User Input

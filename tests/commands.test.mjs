@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { runCI } from '../cli/commands/ci.mjs';
 import { runSpecs } from '../cli/commands/specs.mjs';
+import { loadConfig } from '../cli/config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
@@ -1045,9 +1046,97 @@ describe('docguard watch', () => {
   });
 });
 
-describe('Unreferenced cli exports', () => {
-  it('should export runCI and runSpecs', () => {
-    assert.equal(typeof runCI, 'function');
-    assert.equal(typeof runSpecs, 'function');
+// runCI and runSpecs called in-process, as the MCP server and the GitHub
+// Action do. Both report through process.exitCode instead of exiting, so each
+// case resets it; a leftover non-zero code would fail the test runner.
+describe('runCI and runSpecs report through their return value and process.exitCode', () => {
+  const captured = fn => {
+    const out = [];
+    const write = process.stdout.write;
+    const log = console.log;
+    const error = console.error;
+    process.stdout.write = chunk => { out.push(String(chunk)); return true; };
+    console.log = (...args) => { out.push(args.join(' ')); };
+    console.error = () => {};
+    process.exitCode = 0;
+    try { return { value: fn(), out: out.join('') }; } finally {
+      process.stdout.write = write;
+      console.log = log;
+      console.error = error;
+    }
+  };
+  const fixture = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-inproc-'));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'inproc', profile: 'starter' }));
+    writeFileSync(join(dir, 'README.md'), '# inproc\n');
+    return dir;
+  };
+
+  it('runCI: the exit code follows the JSON status, and an unreachable threshold fails', () => {
+    const dir = fixture();
+    try {
+      const { out } = captured(() => runCI(dir, loadConfig(dir), { format: 'json', threshold: '101', noHistory: true }));
+      const code = process.exitCode;
+      process.exitCode = 0;
+      const result = JSON.parse(out);
+      assert.equal(result.threshold, 101);
+      assert.equal(result.thresholdMet, false, 'no project scores above 100');
+      assert.equal(result.status, 'FAIL');
+      assert.equal(code, 1, 'FAIL exits 1');
+      assert.equal(existsSync(join(dir, '.docguard', 'history.jsonl')), false, '--no-history writes nothing');
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it('runCI: records one history line carrying the reported score', () => {
+    const dir = fixture();
+    try {
+      const { out } = captured(() => runCI(dir, loadConfig(dir), { format: 'json' }));
+      const code = process.exitCode;
+      process.exitCode = 0;
+      const result = JSON.parse(out);
+      assert.equal(code, { FAIL: 1, WARN: 2, PASS: 0 }[result.status], `exit ${code} for ${result.status}`);
+      const lines = readFileSync(join(dir, '.docguard', 'history.jsonl'), 'utf-8').trim().split('\n');
+      assert.equal(lines.length, 1);
+      const entry = JSON.parse(lines[0]);
+      assert.equal(entry.score, result.score);
+      assert.equal(entry.status, result.status);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it('runSpecs: --check reports a missing registry, --write creates it, then --check is CURRENT', () => {
+    const dir = fixture();
+    mkdirSync(join(dir, '.specify', 'memory'), { recursive: true });
+    writeFileSync(join(dir, '.specify', 'memory', 'constitution.md'), '# Constitution\n');
+    mkdirSync(join(dir, 'specs', '001-alpha'), { recursive: true });
+    writeFileSync(join(dir, 'specs', '001-alpha', 'spec.md'), '# Feature Specification: Alpha\n\n**Spec ID**: `inproc.alpha`\n\n## Requirements\n\n- **FR-001**: Alpha works.\n');
+    const config = loadConfig(dir);
+    try {
+      const missing = captured(() => runSpecs(dir, config, { check: true })).value;
+      assert.equal(missing.status, 'MISSING');
+      assert.equal(process.exitCode, 2, '--check fails on a missing registry');
+
+      const written = captured(() => runSpecs(dir, config, { write: true })).value;
+      assert.equal(written.status, 'WRITTEN');
+      assert.equal(written.specs, 1);
+      assert.ok(existsSync(join(dir, '.docguard-specs.json')));
+
+      const current = captured(() => runSpecs(dir, config, { check: true })).value;
+      assert.equal(current.status, 'CURRENT');
+      assert.equal(process.exitCode, 0);
+    } finally {
+      process.exitCode = 0;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('runSpecs: an unknown action is an error, not a silent success', () => {
+    const dir = fixture();
+    try {
+      captured(() => runSpecs(dir, loadConfig(dir), { args: ['bogus'] }));
+      assert.equal(process.exitCode, 1);
+    } finally {
+      process.exitCode = 0;
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

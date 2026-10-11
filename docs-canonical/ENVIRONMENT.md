@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.13.0 -->
+<!-- docguard:version 0.14.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.13.0` |
+| **Version** | `0.14.0` |
 
 ---
 
@@ -128,6 +128,11 @@ What must be visible:
   `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
   prefixes and Django URL configurations the same way, so on standard layouts it reports the
   same facts.
+- **The Git configuration's `core.hooksPath`.** `docguard hooks` and the hook step of
+  `docguard setup` write only into a hooks folder the repository owns. A sandbox or machine
+  whose global, system or command-line configuration sets `core.hooksPath` gets a refusal
+  that names the folder and the alternatives; `core.hooksPath=/dev/null` (hooks disabled, as
+  in the Jules VM) falls back to the repository's `.git/hooks` (specs/065-hooks-repo-scope).
 - **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit and
   for `docguard upgrade --apply` to refresh the registered DocGuard extension.
 
@@ -135,6 +140,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.14.0 | 2026-10-11 | DocGuard Team | A global `core.hooksPath` makes `hooks` refuse; `/dev/null` falls back to `.git/hooks` (spec 065) |
 | 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |

@@ -11,7 +11,7 @@
 
 # Architecture
 
-<!-- docguard:version 1.13.0 -->
+<!-- docguard:version 1.14.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-11 -->
 
@@ -70,10 +70,10 @@ It targets development teams and AI coding agents that need to maintain document
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
-| **Sinatra, Starlette, Warp and Tide routes** | Reads the frameworks spec 060 added (#519). Sinatra: classic and modular apps (classes inheriting from `Sinatra::Base` across files), `namespace` prefixes, `register`ed extensions, and the prefixes `config.ru` maps or a host app `use`s. Starlette: `Starlette`/`Router` objects join the FastAPI/Flask graph, with their `routes=` lists, `Mount` children and `add_route`. Warp: filter expressions evaluated to path/method alternatives through `and`/`or`, `let` bindings and functions across files, from what `warp::serve` runs. Tide: `at()` trees and `nest()` mounts resolved after every file is read. A Go module with only `net/http` is classified so `go-routes.mjs` runs | `cli/scanners/sinatra-routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs` | No parser for Ruby or Rust: a tokenizer (Ruby) or the shared lexer (Rust) masks comments and strings first. Ruby and Rust routes carry `parserTier: fallback-language`, Starlette routes the Python tier. A path that is not literal is omitted, and the API-surface coverage reason counts the omissions (specs/060-more-route-frameworks) |
-| **Laravel, Symfony and ASP.NET Core routes** | Reports each route at the path it is served under. Laravel: the route files the app loads (`bootstrap/app.php` `withRouting`, else `RouteServiceProvider` mappings, else `routes/web.php` and `routes/api.php` under `/api`), with `prefix`/`middleware`/`group` chains and resource expansion. Symfony: `#[Route]` attributes and `@Route` annotations under the class-level route, and `config/routes.yaml` routes and prefixed imports. ASP.NET Core: attribute-routed controllers (inherited class routes, verb attributes, `[controller]`/`[action]`/`[area]` tokens) and minimal APIs (`Map*` under `MapGroup` prefixes, followed into the methods a group is passed to). The classifier labels a `Microsoft.NET.Sdk.Web` project ASP.NET Core | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/project-type.mjs`, `cli/validators/api-surface.mjs` | No parser: per-language lexers mask comments and strings (PHP `#` comments, heredocs, interpolation; C# verbatim, interpolated and raw strings) and reuse the shared bracket pairing. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal is omitted, counted, and reported in the API-surface coverage reason with its first locations (specs/059-php-dotnet-routes). ASP.NET Core routes carry `caseInsensitive: true`, and `compareEndpoints` (`cli/scanners/api-doc.mjs`) ignores case for them only, as ASP.NET Core does; every other framework compares exactly (specs/063-coverage-followups) |
-| **JS/TS extraction** | Route case sensitivity per router (`cli/scanners/route-case.mjs`: each JavaScript framework's router options and app setting, carried down the mount chain, and the NestJS adapter; an unreadable setting compares exactly and is noted, specs/063-coverage-followups); router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher; env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. A route path that is not literal or a resolvable constant (a runtime template value, a regular expression) is not reported at a placeholder; it goes to `scan.unresolved` and makes the API-surface check `partial`; a path or mount prefix built from same-file or imported `const` strings (through `import` or `require()`) is resolved, and a prefix that cannot be read leaves the routers below it out instead of at the root (specs/064-js-route-shapes). Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; decorated entity classes and model-definition calls are read as decorator and argument text by both tiers and interpreted once; every table, document schema and entity class read records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
-| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), of the small edge and Node routers (`basePath`, `base`, `prefix`, `route()` and `use(sub.routes())` mounts and application mounts across files, through `import` and `require`, and OpenAPI route definitions whose `{param}` segments become `:param`), and of file-routed edge functions (each `onRequest*` export of a file under `functions/` at the path its location names, with `_middleware` files as auth evidence for the routes below them, kept only where the output directory's include/exclude routing file lets requests reach them; an output-directory worker file replaces that tree and is read as a `fetch` entry). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a constant the reader resolves (same-file; for the router readers also `const` strings imported from project files) is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. A router below a prefix that is not literal reports no route. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes, specs/064-js-route-shapes) |
+| **Sinatra, Starlette, Rust builder, Warp and Tide routes** | Reads the frameworks spec 060 added (#519), and the Actix, Axum and Rocket builders spec 071 composes. Sinatra: classic and modular apps (classes inheriting from `Sinatra::Base` across files), `namespace` prefixes, `register`ed extensions, and the prefixes `config.ru` maps or a host app `use`s. Starlette: `Starlette`/`Router` objects join the FastAPI/Flask graph, with their `routes=` lists, `Mount` children and `add_route`. Warp: filter expressions evaluated to path/method alternatives through `and`/`or`, `let` bindings and functions across files, from what `warp::serve` runs. Tide: `at()` trees and `nest()` mounts resolved after every file is read. Actix, Axum and Rocket: `web::scope`/`web::resource`, `Router::new()` and `rocket::build()` nodes mounted by `.service()`, `.configure()`, `.nest()`, `.merge()` and `.mount()` across functions and files, every method of an Axum method router, and handler macros under the scope or mount that registers them. A Go module with only `net/http` is classified so `go-routes.mjs` runs | `cli/scanners/sinatra-routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs` | No parser for Ruby or Rust: a tokenizer (Ruby) or the shared lexer (Rust) masks comments and strings first. Ruby and Rust routes carry `parserTier: fallback-language`, Starlette routes the Python tier. A path that is not literal is omitted, and the API-surface coverage reason counts the omissions (specs/060-more-route-frameworks); the builder reader records what it recognised but could not place in `scan.unresolved` (specs/071-real-project-route-gaps) |
+| **Laravel, Symfony and ASP.NET Core routes** | Reports each route at the path it is served under. Laravel: the route files the app loads (`bootstrap/app.php` `withRouting`, else `RouteServiceProvider` mappings, else `routes/web.php` and `routes/api.php` under `/api`), with `prefix`/`middleware`/`group` chains and resource expansion. Symfony: `#[Route]` attributes and `@Route` annotations under the class-level route (the route itself on an invokable controller), and `config/routes.yaml` routes and prefixed imports; a declaration no controller reads, and a Laravel route file no application loads, are recorded in `scan.unresolved` (specs/071-real-project-route-gaps). ASP.NET Core: attribute-routed controllers (inherited class routes, verb attributes, `[controller]`/`[action]`/`[area]` tokens) and minimal APIs (`Map*` under `MapGroup` prefixes, followed into the methods a group is passed to). The classifier labels a `Microsoft.NET.Sdk.Web` project ASP.NET Core | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/project-type.mjs`, `cli/validators/api-surface.mjs` | No parser: per-language lexers mask comments and strings (PHP `#` comments, heredocs, interpolation; C# verbatim, interpolated and raw strings) and reuse the shared bracket pairing. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal is omitted, counted, and reported in the API-surface coverage reason with its first locations (specs/059-php-dotnet-routes). ASP.NET Core routes carry `caseInsensitive: true`, and `compareEndpoints` (`cli/scanners/api-doc.mjs`) ignores case for them only, as ASP.NET Core does; every other framework compares exactly (specs/063-coverage-followups) |
+| **JS/TS extraction** | Route case sensitivity per router (`cli/scanners/route-case.mjs`: each JavaScript framework's router options and app setting, carried down the mount chain, and the NestJS adapter; an unreadable setting compares exactly and is noted, specs/063-coverage-followups); router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher (a JWT middleware built to let unauthenticated requests through, `passthrough: true` or `credentialsRequired: false`, marks nothing; spec 071); env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. A route path that is not literal or a resolvable constant (a runtime template value, a regular expression) is not reported at a placeholder; it goes to `scan.unresolved` and makes the API-surface check `partial`; a path or mount prefix built from same-file or imported `const` strings (through `import` or `require()`) is resolved, and a prefix that cannot be read leaves the routers below it out instead of at the root (specs/064-js-route-shapes). Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; decorated entity classes and model-definition calls are read as decorator and argument text by both tiers and interpreted once; every table, document schema and entity class read records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
+| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), of the small edge and Node routers (`basePath`, `base`, `prefix`, `route()` and `use(sub.routes())` mounts and application mounts across files, through `import` and `require`, including a module that exports `sub.routes()`, and OpenAPI route definitions whose `{param}` segments become `:param`), and of file-routed edge functions (each `onRequest*` export of a file under `functions/` at the path its location names, with `_middleware` files as auth evidence for the routes below them, kept only where the output directory's include/exclude routing file lets requests reach them; an output-directory worker file replaces that tree and is read as a `fetch` entry). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a constant the reader resolves (same-file; for the router readers also `const` strings imported from project files) is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. A router below a prefix that is not literal reports no route. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes, specs/064-js-route-shapes) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
 | **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
@@ -276,6 +276,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.14.0 | 2026-10-11 | DocGuard Team | Pass-through JWT middleware marks no route auth (spec 071); review after specs 065–071 |
 | 1.13.0 | 2026-10-11 | DocGuard Team | Reconciliation links a deleted file to the current, approved spec that names its removal (spec 069) |
 | 1.12.0 | 2026-10-11 | DocGuard Team | Managed Git hooks write only into a hooks folder the repository owns (spec 065) |
 | 1.11.0 | 2026-10-10 | DocGuard Team | Coverage follow-ups: Python route limitations reach API-surface coverage, ASP.NET Core routes, and JavaScript framework routes as their router settings decide, compare case-insensitively, fallback advice names the missing prerequisite, .NET `obj/`/`bin/` and `_build/` are not source (spec 063) |
@@ -623,7 +624,7 @@ Read the outputs declared in `action.yml` and the command's JSON schema before w
 
 <!-- docguard:version 0.16.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -1020,7 +1021,7 @@ Every CDD document includes DocGuard metadata as HTML comments at the top:
 
 ### Example Metadata Header
 
-<!-- truncated: 226 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 229 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1031,16 +1032,16 @@ Every CDD document includes DocGuard metadata as HTML comments at the top:
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.13.0 -->
+<!-- docguard:version 0.14.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.13.0` |
+| **Version** | `0.14.0` |
 
 ---
 
@@ -1157,6 +1158,11 @@ What must be visible:
   `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
   prefixes and Django URL configurations the same way, so on standard layouts it reports the
   same facts.
+- **The Git configuration's `core.hooksPath`.** `docguard hooks` and the hook step of
+  `docguard setup` write only into a hooks folder the repository owns. A sandbox or machine
+  whose global, system or command-line configuration sets `core.hooksPath` gets a refusal
+  that names the folder and the alternatives; `core.hooksPath=/dev/null` (hooks disabled, as
+  in the Jules VM) falls back to the repository's `.git/hooks` (specs/065-hooks-repo-scope).
 - **The `specify` CLI (optional).** It is only needed for `docguard init` to set up Spec Kit and
   for `docguard upgrade --apply` to refresh the registered DocGuard extension.
 
@@ -1164,6 +1170,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.14.0 | 2026-10-11 | DocGuard Team | A global `core.hooksPath` makes `hooks` refuse; `/dev/null` falls back to `.git/hooks` (spec 065) |
 | 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |
 | 0.11.0 | 2026-09-30 | DocGuard Team | `DOCGUARD_NO_UPDATE_HINT` and the `CI` rule for the version-age note (spec 038) |
@@ -1442,7 +1449,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.4.4 -->
+<!-- docguard:version 1.4.5 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-11 -->
 
@@ -1508,6 +1515,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/diagnose.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/badge.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/ci.mjs` | `tests/commands.test.mjs` | ✅ |
+| `cli/commands/sync-tests.mjs` (`sync --tests`) | `tests/sync.test.mjs`, `tests/field-report-3-deferred.test.mjs` | ✅ |
 | `cli/commands/fix.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/commands/watch.mjs` | `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs` | ✅ pass |
 | `cli/commands/demo.mjs` | `tests/demo-command.test.mjs`, `tests/test-git-hermeticity.test.mjs` | ✅ pass |
@@ -1621,6 +1629,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.5 | 2026-10-11 | DocGuard Team | Map `sync-tests.mjs` to its tests; `runCI`, `runSpecs` and `runSyncTests` have behaviour tests (#556) |
 | 1.4.4 | 2026-10-11 | DocGuard Team | Map the workflow permission rules to `tests/workflow-permissions.test.mjs` (spec 068) |
 | 1.4.3 | 2026-10-11 | DocGuard Team | Fixture git goes through `tests/helpers/git.mjs`; the CI `hermeticity` job; map `demo.mjs` to its tests (spec 066) |
 | 1.4.2 | 2026-10-10 | DocGuard Team | Record the scripted timing source behind the budget tests (spec 062) |
@@ -1847,6 +1856,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
   revision, re-read with today's interpreter, is now unverifiable instead of
   DLK001.
+
+## [0.44.3] - 2026-10-11
+
+### Fixed
+
+- **Route readers that undercounted real projects**
+  (`specs/071-real-project-route-gaps`). Run on the public RealWorld example
+  applications, which all serve the same 19 endpoints:
+  - **Actix Web** read 0 routes and reported nothing missing. The builder
+    style (`web::scope("/api").service(web::resource("users").route(web::post().to(h)))`,
+    `.configure(f)`, functions returning a `Scope`) is now read, with scope
+    prefixes composed across functions and files, and `#[get("/p")]` handlers
+    take the prefix of the scope that registers them. Rocket's
+    `.mount("/p", routes![a, b])` prefixes its handlers the same way.
+  - **Axum** kept only the first method of `.route("/x", get(a).put(b))`
+    (12 of 19). Every chained method is now reported, with `on(MethodFilter::…)`,
+    `any` and `*_service`, and `.nest("/p", r)` / `.merge(r)` prefixes apply.
+  - **Symfony** read 0: an invokable controller declares its route on the
+    class (`@Route` or `#[Route]` above a class with `__invoke`), which was read
+    only as a prefix. It is now the route of `__invoke` when no method declares
+    one, as Symfony's loader does.
+  - **Koa** dropped `/api` from all 19 paths: a module ending
+    `module.exports = router.routes()` mounted with `api.use(users)` lost the
+    prefix above it. Such exports (and `router.middleware()`,
+    `export default router.routes()`) are now followed.
+  - A JWT middleware built to let unauthenticated requests through (koa-jwt
+    `passthrough: true`, express-jwt `credentialsRequired: false`) no longer
+    marks every route below it as requiring auth; route-level auth middleware
+    still does. On the Koa app, auth now sits on exactly the 12 routes that
+    carry `auth`, not on `POST /api/users/login`.
+  - A declaration an Actix, Axum, Rocket, Symfony or Laravel reader recognises
+    but cannot turn into a route is listed in `scan.unresolved`
+    (`route-unresolved-path`, `-prefix`, `-method`, `-declaration`), so the
+    API-surface check reports `partial` instead of a silent zero; a Laravel
+    route file no application loads is one of them.
+
+### Commits
+
+- chore: verify spec 071; review docs after specs 065-071 (#559)
+- fix: route readers that undercounted real projects (spec 071) (#558)
+- chore: verify spec 051 maintenance; map sync-tests.mjs in TEST-SPEC (#557)
+- test: replace typeof-only export checks with behaviour tests (#556)
 
 ## [0.44.2] - 2026-10-11
 
@@ -2142,50 +2193,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     troubleshooting;
   - references for languages and frameworks, coding agents, the MCP server and
     every finding code;
-  - a fuller installation page.
 
-  The finding-code reference is generated from the code registry
-  (`npm run docs:reference`), and a test fails when it is stale. Existing page
-  paths are unchanged. The Spanish and Portuguese READMEs link the English
-  guides.
-
-### Removed
-
-- **`templates/commands/`**, an old copy of the slash commands that nothing
-  installed (the installer reads `commands/`). Its `/docguard.init` and
-  `/docguard.update` were listed in the README although no agent ever received
-  them. The README, `ai-integration.md`, `quickstart.md` and CLI help now match
-  what DocGuard installs and does (`specs/053-user-documentation` FR-009).
-
-### Fixed
-
-- **Coverage follow-ups from specs 056–061** (`specs/063-coverage-followups`).
-  - `generate --plan` called pattern-read output complete. Endpoints and
-    entities read in a language with no parser (Go, Java, Kotlin, Ruby, Rust,
-    PHP, C#) reported `degraded: false` with no partial marking, and a project
-    mixing JavaScript with Go was reported `degraded` and told to install
-    `python3`. `surface.parserTiers` now reports `patternRead` and
-    `patternLanguages` per surface and for the plan, beside `degraded`, which
-    keeps its meaning (a file whose language has a parser read by the pattern
-    fallback). Pattern-read sections are marked partial with a note naming the
-    languages, and confidence is unchanged. Go, Rust, JPA and Rails entities
-    now carry their file's tier. `generate --spec` likewise lowers confidence
-    only for the pattern fallback, not for a `mixed` tier.
-  - .NET build output was scanned as source. `obj/` and `_build/` (Mix, dune,
-    Sphinx) are skipped everywhere, and `bin/` is skipped when the directory
-    holding it has a `*.csproj`, `*.fsproj` or `*.vbproj`; a Node CLI's
-    `bin/cli.js` is still read.
-  - ASP.NET Core routes compared case-sensitively, so `[controller]` routes
-    (`/api/Users`) documented as `/api/users` showed a false gap in guard and
-    `diff`. ASP.NET Core routes now carry `caseInsensitive: true` and compare
-    ignoring case; Spring, Laravel and every other framework compare exactly.
-  - Express and Koa routers match ignoring case by default, but their routes
-    compared exactly. Each route is now marked from its own router's options
-    (`express.Router({ caseSensitive })`, Koa `new Router({ sensitive })`),
-    the Express app's `case sensitive routing` setting for app routes and the
-    mount prefixes the app matches, Fastify's `caseSensitive: false`, and
-
-<!-- truncated: 5305 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5347 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2194,7 +2203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -2207,14 +2216,13 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 
 ## Active roadmap
 
-Specs 014–051 shipped in v0.43.0 (2026-10-01). Spec 052 (baseline fingerprints)
-and spec 053 (the documentation site) wait for the next release; the
-`[Unreleased]` section of `CHANGELOG.md` lists them, and each spec's `tasks.md`
-is its checklist. One item remains open:
-
-- **Native suppressions for claimspec (issue #420).** Whether DocGuard adopts
-  the claimspec ignore format depends on reason-bearing suppressions; the
-  decision is open.
+Specs 014–051 shipped in v0.43.0 (2026-10-01); specs 036 and 052–064 in
+v0.44.0, 065–067 in v0.44.1 and 068–069 in v0.44.2 (all 2026-10-11). Native
+suppressions for claimspec (issue #420) shipped as spec 057. Spec 071 (route
+readers checked against public projects) is merged and waits for the next
+release; the `[Unreleased]` section of `CHANGELOG.md` lists it. Spec 070
+(symbol-level requirement anchors) is in progress. Each spec's `tasks.md` is
+its checklist.
 
 New work starts with a reviewed specification and measurable acceptance
 criteria rather than an evergreen task list that can become stale.
@@ -2515,7 +2523,7 @@ systems cannot meet a concrete team need. They are not active commitments.
 
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -2705,6 +2713,20 @@ extensions/spec-kit-docguard/
 - If code deviates from docs, add `// DRIFT: reason`
 - Security rules in SECURITY.md are mandatory
 - Test requirements in TEST-SPEC.md must be met
+- **Tests that build Git repositories pass the fixture options per call.** Every
+  fixture `git` call goes through `tests/helpers/git.mjs` (`FIXTURE_GIT`,
+  `fixtureGit`): hooks and signing off for that call, never for the whole
+  environment, so DocGuard's own Git calls still meet the machine's config. A
+  scan test rejects a direct `git` spawn without a `fixture-git-exempt:`
+  reason, and the CI `hermeticity` job runs the suite under a hostile global
+  config (specs/066-test-git-hermeticity).
+- **Workflow jobs run code without a repository write token.** Workflows default
+  to `contents: read`; a job asks for its own scope. A job that runs tests or
+  DocGuard holds no write permission and checks out with
+  `persist-credentials: false`; a job holding `contents`, `actions`,
+  `pull-requests` or `issues` write runs no package manager, build tool or test.
+  `tests/workflow-permissions.test.mjs` enforces it
+  (specs/068-release-least-privilege).
 - Run `docguard guard` before pushing — all checks must pass
 - Standalone file writes use `safeWrite()` with backups before overwrite.
   Lifecycle operations spanning multiple files use `commitFileTransaction()` so
@@ -2777,4 +2799,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.44.2 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.44.3 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)

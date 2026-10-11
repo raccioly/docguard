@@ -37,6 +37,7 @@
  * @implements docguard.js-route-shapes#FR-004
  * @implements docguard.js-route-shapes#FR-005
  * @implements docguard.js-route-shapes#FR-009
+ * @implements docguard.real-project-route-gaps#FR-004
  */
 
 import { walk, isAuthMiddlewareNode, isAuthMiddlewareName, functionBodies, topLevelStaticStrings, pathArgValue, AUTH_CHECK_RE, parseJsTs, exportedStaticStrings, importedStaticStrings } from './js-ast.mjs';
@@ -55,6 +56,7 @@ const FUNCTION_TYPES = new Set(['FunctionExpression', 'ArrowFunctionExpression']
 const KOA_ROUTER_MODULES = new Set(['@koa/router', 'koa-router']);
 const ZOD_OPENAPI = '@hono/zod-openapi';
 /** Calls a `use()` hands a router or application to (koa-router's `routes()` and its alias). */
+const PASS_THROUGH_JWT = /\b(?:passthrough\s*:\s*true|credentialsRequired\s*:\s*false)\b/;
 const MOUNT_METHODS = new Set(['routes', 'middleware']);
 /** A `use()` argument that names a path through a value this reader cannot read. */
 const PATH_LIKE_NAME = /^(?:process\.env\.|[A-Z][A-Z0-9_]*\b)|(?:path|prefix|base|url)$/i;
@@ -88,6 +90,7 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   // prefixes; a file outside `sources` (a config module with no router call)
   // is read through `loadSource` (docguard.js-route-shapes#FR-011).
   const contentOf = new Map(sources.map(s => [s.abs, s.content]));
+  const sourceOf = (abs) => contentOf.get(abs) ?? (loadSource ? loadSource(abs) : null);
   const exportedCache = new Map();
   const exportedConstantsOf = (abs) => {
     if (!exportedCache.has(abs)) {
@@ -101,7 +104,7 @@ export function extractRouterRoutes(sources, resolveImport, { framework = 'Hono'
   for (const src of sources) {
     const { ast, tier, tierReason } = parseWithTier(src.content, src.abs);
     fileTiers.push({ file: src.file, tier, tierReason });
-    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource, exportedConstantsOf };
+    const ctx = { src, tier, tierReason, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, defaultSource, exportedConstantsOf, sourceOf };
     if (ast) readAst(ast, ctx);
     else readByPattern(ctx);
   }
@@ -239,8 +242,16 @@ function requireSpec(node) {
     && n.arguments?.length === 1 && n.arguments[0].type === 'StringLiteral' ? n.arguments[0].value : null;
 }
 
+/** `x.routes()` / `x.middleware()` → `x`: the router a koa-router dispatch function belongs to. */
+function mountedRouter(node) {
+  const n = unwrap(node);
+  const callee = n?.type === 'CallExpression' ? n.callee : null;
+  return callee?.type === 'MemberExpression' && !callee.computed && MOUNT_METHODS.has(callee.property?.name)
+    && !(n.arguments || []).length && callee.object?.type === 'Identifier' ? callee.object.name : null;
+}
+
 function readAst(ast, ctx) {
-  const { src, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport } = ctx;
+  const { src, nodes, aliases, exportsByFile, edges, uses, records, prefixOps, routeDefs, limit, resolveImport, sourceOf } = ctx;
   const { abs, file, content } = src;
   const constants = topLevelStaticStrings(ast);
   const bodies = functionBodies(ast);
@@ -301,6 +312,9 @@ function readAst(ast, ctx) {
       }
     } else if (st.type === 'ExportDefaultDeclaration' && st.declaration?.type === 'Identifier') {
       exportsMap.set('default', st.declaration.name);
+    } else if (st.type === 'ExportDefaultDeclaration' && mountedRouter(st.declaration)) {
+      // `export default router.routes()` (docguard.real-project-route-gaps#FR-004).
+      exportsMap.set('default', mountedRouter(st.declaration));
     } else if (st.type === 'ExportNamedDeclaration') {
       for (const d of st.declaration?.declarations || []) if (d.id?.type === 'Identifier') exportsMap.set(d.id.name, d.id.name);
       for (const sp of st.specifiers || []) {
@@ -314,6 +328,9 @@ function readAst(ast, ctx) {
       const value = unwrap(right);
       if (isModuleExports(left)) {
         if (value?.type === 'Identifier') exportsMap.set('default', value.name);
+        // `module.exports = router.routes()`: the module exports that router's
+        // dispatch, which a parent `use()` mounts (docguard.real-project-route-gaps#FR-004).
+        else if (mountedRouter(value)) exportsMap.set('default', mountedRouter(value));
         else if (value?.type === 'ObjectExpression') {
           for (const p of value.properties || []) {
             if (p.type === 'ObjectProperty' && !p.computed && p.value?.type === 'Identifier') exportsMap.set(p.key?.name ?? p.key?.value, p.value.name);
@@ -465,7 +482,30 @@ function readAst(ast, ctx) {
   };
   const handlerName = (h) => (h?.type === 'Identifier' ? h.name : FUNCTION_TYPES.has(h?.type) ? (h.id?.name || 'inline') : h?.type === 'MemberExpression' ? (h.property?.name || '') : '');
   const pathLike = p => typeof p === 'string' && (p.startsWith('/') || p === '*');
-  const middlewareAuth = (args) => args.some(a => isAuthMiddlewareNode(a) || (FUNCTION_TYPES.has(a?.type) && AUTH_CHECK_RE.test(content.slice(a.start, a.end))));
+  // A JWT middleware built to let unauthenticated requests through (koa-jwt
+  // `passthrough: true`, express-jwt `credentialsRequired: false`) protects
+  // nothing by itself, wherever it is built: inline, in a local binding or in
+  // the module an imported name comes from (docguard.real-project-route-gaps#FR-008).
+  const passThroughJwt = (arg) => {
+    const a = unwrap(arg);
+    if (a?.type === 'CallExpression') return PASS_THROUGH_JWT.test(content.slice(a.start, a.end));
+    if (a?.type !== 'Identifier') return false;
+    if (imports.has(a.name) && !bound.has(a.name)) {
+      const target = resolveImport(abs, imports.get(a.name).spec);
+      const text = target ? sourceOf?.(target) : null;
+      return Boolean(text && /jwt/i.test(text) && PASS_THROUGH_JWT.test(text));
+    }
+    const decl = new RegExp(`\\b(?:const|let|var)\\s+${a.name}\\s*=\\s*[\\w.$]+\\s*\\(`).exec(content);
+    if (!decl) return false;
+    const open = decl.index + decl[0].length - 1;
+    let depth = 0;
+    for (let i = open; i < content.length; i++) {
+      if (content[i] === '(') depth++;
+      else if (content[i] === ')' && --depth === 0) return PASS_THROUGH_JWT.test(content.slice(open, i));
+    }
+    return false;
+  };
+  const middlewareAuth = (args) => args.some(a => !passThroughJwt(a) && (isAuthMiddlewareNode(a) || (FUNCTION_TYPES.has(a?.type) && AUTH_CHECK_RE.test(content.slice(a.start, a.end)))));
   // What a `use()` argument mounts: `sub.routes()`, `sub.middleware()`, or
   // koa-mount's `mount('/x', appOrRouter)`.
   const mountOf = (arg) => {
@@ -490,6 +530,18 @@ function readAst(ast, ctx) {
     }
     return null;
   };
+  // Koa: `api.use(users)` with `users` an imported module's export (often
+  // `router.routes()`) mounts that router with no path. An auth middleware,
+  // a path-like name or a value that is not imported stays a middleware
+  // (docguard.real-project-route-gaps#FR-004).
+  const importedRouterMount = (arg, recvId) => {
+    const a = unwrap(arg);
+    if (a?.type !== 'Identifier' || !imports.has(a.name) || bound.has(a.name)) return null;
+    if (ctx.defaultSource !== 'koa' && nodes.get(recvId)?.kind !== 'koa') return null;
+    if (isAuthMiddlewareName(a.name) || /^[A-Z][A-Z0-9_]*$/.test(a.name) || /(?:path|prefix|base|url)$/i.test(a.name)) return null;
+    const child = importedId(a.name);
+    return child ? { child, prefix: '', unresolved: false } : null;
+  };
   const koaLocalNode = expr => expr?.type === 'Identifier' && bound.has(expr.name) && nodes.get(idOf(expr.name))?.kind === 'koa';
   // A first `use()` argument that is a path this reader cannot read (an
   // imported constant, `process.env.X`), rather than a middleware.
@@ -510,7 +562,7 @@ function readAst(ast, ctx) {
     const start = node.start ?? 0;
 
     if (prop === 'use') {
-      const mounts = args.map(mountOf);
+      const mounts = args.map(a => mountOf(a) || importedRouterMount(a, recv.id));
       if (mounts.some(Boolean)) {
         // Koa: `use(path?, ...middleware, sub.routes())`.
         let prefixes = [''];
