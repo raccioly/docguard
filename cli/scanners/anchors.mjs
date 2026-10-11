@@ -29,7 +29,7 @@
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildIgnoreFilter, relPosix, walkFiles } from '../shared-ignore.mjs';
-import { listTrackedFiles } from '../shared-git.mjs';
+import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { openAnchorCache, contentSha } from './anchor-cache.mjs';
 import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock } from './anchor-lock.mjs';
@@ -37,7 +37,8 @@ import { FILE_TIER, pythonCandidateLines, resolveFileAnchors } from './anchor-ta
 import { BABEL_TIER, V1_PREFIX, dg1 } from './fingerprint.mjs';
 import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
 import { pythonBatch, pythonTier } from './py-anchors.mjs';
-import { isTestSource } from './requirement-evidence.mjs';
+import { isTestSource, resolveRequirementReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
+import { loadTestguardEvidence, structuredHint, testStatus } from './testguard-evidence.mjs';
 import { collectRequirementIds } from './requirement-docs.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
 import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from './import-graph.mjs';
@@ -177,7 +178,7 @@ function requirementIndex(projectDir, config, patterns) {
       }
     }
   }
-  return { byQualified, byId, retired };
+  return { byQualified, byId, retired, definitions };
 }
 
 /**
@@ -193,10 +194,15 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   const cache = openAnchorCache(projectDir, { identity, noCache: options.noCache, env: options.env });
   const index = requirementIndex(projectDir, config, patterns);
 
-  // 1. Read candidate files, keep the ones that mention a tag.
+  // 1. Read candidate files, keep the ones that mention a tag. With
+  // `revision`, read the named files as that commit had them (the test chain
+  // compares the anchored code at a TestGuard evidence revision, FR-033).
   const sources = [];
-  for (const rel of candidateFiles(projectDir, config)) {
-    const bytes = readSource(projectDir, rel);
+  const atRevision = options.revision
+    ? rel => { const text = fileContentAtRev(projectDir, options.revision, rel); return text === null ? null : Buffer.from(text, 'utf8'); }
+    : null;
+  for (const rel of atRevision ? options.files || [] : candidateFiles(projectDir, config)) {
+    const bytes = atRevision ? atRevision(rel) : readSource(projectDir, rel);
     if (!bytes) continue;
     const content = bytes.toString('utf8');
     if (!TAG_HINT.test(content)) continue;
@@ -304,7 +310,7 @@ export function computeLinks(projectDir, config = {}, options = {}) {
     files: files.length,
   };
   const requirements = new Set([...index.byQualified.values()].map(e => e.identity));
-  return { activated: anchorsActivated(projectDir, config), links, problems, files, summary, cache: { enabled: cache.enabled, reason: cache.reason }, python: { tier: pyTier, reason: pythonReason }, requirements, retired: index.retired };
+  return { activated: anchorsActivated(projectDir, config), links, problems, files, summary, cache: { enabled: cache.enabled, reason: cache.reason }, python: { tier: pyTier, reason: pythonReason }, requirements, retired: index.retired, index };
 }
 
 function tally(items, keyOf) {
@@ -383,6 +389,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     }
     if (cmp.side === 'requirement' || cmp.side === 'both') {
       problems.push({ code: 'ANC002', file: link.file, line: link.tagLine, tier: link.tier, confidence: 'high', key: link.key, requirement: link.requirement,
+        scope: link.scope, reviewedState: entry.state,
         message: `${link.requirement} changed its text since ${describeLink(link)} was ${entry.state} (${entry.date})` });
     }
     return { ...withEntry, state: 'suspect', side: cmp.side };
@@ -430,11 +437,68 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
       message: `${describeLink(entry)} was ${entry.state} on ${entry.date}, but no tag anchors it any more${exists ? ' while the requirement still exists' : ' and the requirement is no longer declared'}; restore the tag where the requirement is implemented, or run \`docguard anchors accept --remove '${key}' --reason "…"\`` });
   }
   if (options.ripple) addRipple(projectDir, config, links);
+  if (options.tests) addTestChain(projectDir, config, links, base);
   const byState = {};
   for (const l of [...links, ...lost]) byState[l.state] = (byState[l.state] || 0) + 1;
   const baselined = byState.baselined || 0;
   const summary = { ...base.summary, byState, baselinedShare: links.length ? Number((baselined / links.length).toFixed(3)) : 0 };
   return { ...base, links, lost, problems, lock: lockSummary, notes, summary };
+}
+
+/** A code-side suspect: the anchored code changed since its review (FR-032). */
+const isCodeSuspect = link => link.state === 'suspect' && (link.side === 'code' || link.side === 'both');
+
+/** Every test reference (`@req`, `@covers`, a test label) per requirement identity. */
+function testReferences(projectDir, config, index) {
+  const patterns = requirementPatterns(config);
+  const files = listTrackedFiles(projectDir) || (() => { const out = []; walkFiles(projectDir, abs => { out.push(relPosix(projectDir, abs)); }); return out; })();
+  const ignored = buildIgnoreFilter(config.ignore || []);
+  const refs = scanTestFilesForReferences(projectDir, files.filter(f => !ignored(f)), patterns);
+  const byRequirement = new Map();
+  for (const [key, list] of resolveRequirementReferences(index.definitions, refs, index.retired)) {
+    const def = index.definitions.get(key);
+    const identity = def?.specId ? `${def.specId}#${def.id}` : key;
+    const seen = byRequirement.get(identity) || new Map();
+    for (const r of list) seen.set(`${r.file}:${r.line}`, { file: r.file, line: r.line });
+    byRequirement.set(identity, seen);
+  }
+  return byRequirement;
+}
+
+/**
+ * FR-032/FR-033: each code-side suspect lists the tests that cite its
+ * requirement, as needing re-verification; a saved TestGuard evidence file
+ * upgrades a test to re-verified only when it proves the code as it is now.
+ * Advisory: guard never reads this.
+ *
+ * @implements docguard.requirement-anchors#FR-032
+ */
+function addTestChain(projectDir, config, links, base) {
+  const suspects = links.filter(isCodeSuspect);
+  if (!suspects.length) return;
+  const refs = testReferences(projectDir, config, base.index);
+  const evidence = loadTestguardEvidence(projectDir, config);
+  // The anchored code at the evidence revision, read once for every suspect file.
+  let atRevision = new Map();
+  if (evidence.status === 'ok') {
+    const files = [...new Set(suspects.map(l => l.file))].sort();
+    const then = computeLinks(projectDir, config, { revision: evidence.revision, files, noCache: true });
+    atRevision = new Map(then.links.map(l => [l.key, l]));
+  }
+  const resolveRef = ref => base.index.byQualified.get(ref)?.identity || null;
+  for (const link of suspects) {
+    const then = atRevision.get(link.key);
+    const state = !then ? 'missing'
+      : (then.tier === link.tier ? then.exact === link.exact : then.floor === link.floor) ? 'unchanged' : 'changed';
+    const hasSpecId = Boolean(link.specId);
+    let hint;
+    link.tests = [...(refs.get(link.requirement)?.values() || [])]
+      .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line))
+      .map(t => {
+        if (hint === undefined) hint = structuredHint(evidence, link.requirement, resolveRef, hasSpecId);
+        return { file: t.file, line: t.line, ...testStatus(evidence, { requirement: link.requirement, testFile: t.file, atRevision: state, hint }) };
+      });
+  }
 }
 
 const GRAPH_LANGS = new Set(['js', 'ts', 'python']);

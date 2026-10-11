@@ -104,6 +104,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     and ripple share one implementation; `impact`'s output is unchanged.
   - **Edge names.** Import-graph edges now record the names each import
     binds.
+- **Requirement anchors: the tests of a changed requirement need
+  re-verification** (`specs/070-requirement-anchors`, user story 6).
+  - **Listed.** Under each link whose code changed, `docguard anchors` names
+    every test that cites the requirement, as `⊢ test` lines and `tests[]` in
+    JSON.
+  - **Re-verified from saved TestGuard evidence.** A test is re-verified only
+    when all of these hold:
+    - the evidence revision carried the anchored code at today's fingerprint;
+    - a claim names the requirement as `req:<spec-id>#<requirement-id>` (the
+      structured `source.ref` TestGuard validates);
+    - the test defended that claim;
+    - every fault was killed, with the claim, targets and defenders unchanged
+      since the probe.
+  - **Inconclusive.** An unreadable, provisional, foreign-revision or stale
+    report is inconclusive, never re-verified. A claim that names the
+    requirement by file path gets the `req:` form to write.
+  - **Reads files only.** DocGuard reads `anchors.testguard.evidence` and
+    `anchors.testguard.claims` and never runs a test or TestGuard.
+  - **ANC002 data.** Requirement-side findings now carry `scope` and
+    `reviewedState`, like ANC001.
 
 ### Changed
 

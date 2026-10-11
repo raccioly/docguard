@@ -41,6 +41,12 @@ named test or recorded measurement that fails without it).
 | Requirement docs collector moved to `cli/scanners/requirement-docs.mjs` | A scanner may not import a validator (Constitution IV) | ARCHITECTURE module table |
 | The pattern tier is a self-contained tokenizer (`cli/scanners/pattern-lexer.mjs`) instead of an extension of `lexCLike` | `lexCLike` masks literals and drops comments; the anchors need comment records, raw, verbatim and interpolated strings, and per-language statement ends. `route-lexing.mjs` and the route readers stay untouched (a parallel spec, 071, owns them) | plan, T014 |
 | Python's pattern tier emits indent/dedent markers | Re-indenting keeps the floor; moving a statement out of a block changes it | contracts/fingerprint.md |
+| The structured TestGuard reference is `req:<spec-id>#<req>`, not a bare `<spec-id>#<req>` | A bare form collides with the path refs claims already use (`spec.md#FR-001`). The prefix is unambiguous, and every released TestGuard reader accepts it as an opaque string, so adopting it needs no TestGuard upgrade | TestGuard companion spec 003, contracts/testguard-evidence.md |
+| The TestGuard adapter is `cli/scanners/testguard-evidence.mjs`, not part of `cli/evidence/adapters.mjs` | The evidence layer may not run an external tool, and the chain must ask git whether the evidence revision exists; scanners may not import the evidence layer either (ARCHITECTURE layer table) | plan, T055, ARCHITECTURE module table |
+| The adapter also reads the TestGuard claims file | Evidence alone cannot show a fault added, or a claim edited, after the probe. TestGuard's own status calls that stale, so DocGuard does too (never optimistic) | contracts/testguard-evidence.md |
+| An unstructured claim leaves the test "needs re-verification" with a hint, not "inconclusive" | Inconclusive means the evidence cannot be evaluated. A readable report that simply has no structured claim cannot help this test, and the hint names the `req:` form to write | spec FR-033, US6 acceptance 3 |
+| Config is `anchors.testguard.{evidence, claims}` instead of `anchors.testguardEvidence` | Two paths belong together | contracts/testguard-evidence.md, docs/configuration.md |
+| ANC002 problems carry `scope` and `reviewedState` | The re-probe found the requirement-side exemption untested: ANC002 lacked the fields, so the code check was never what stopped it failing | tests/requirement-anchors-policy.test.mjs |
 
 ## Release gate
 

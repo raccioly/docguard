@@ -299,9 +299,11 @@ re-verification with a hint about the unstructured reference.
    requirement is listed as needing re-verification.
 2. **Given** a TestGuard evidence file that matches the fingerprint and the
    requirement, with killed verdicts, **Then** those tests are re-verified.
-3. **Given** an evidence file that is unreadable, stale against its declared
-   inputs, or unstructured, **Then** the result is inconclusive with a reason,
-   never re-verified.
+3. **Given** an evidence file that is unreadable, provisional, from a
+   revision this clone lacks, or stale against its declared inputs, **Then**
+   the result is inconclusive with a reason, never re-verified. **Given** one
+   with no structured claim for the requirement, **Then** the test still needs
+   re-verification, with the `req:` form to write.
 
 ---
 
@@ -727,7 +729,10 @@ is reported unavailable and the pattern tier is used.
   - Tests are re-verified only when the evidence's recorded revision carried
     the anchored code at today's fingerprint, a claim's structured source
     reference names the requirement, and its faults were killed.
-  - Unreadable, stale or unstructured evidence is inconclusive, with a reason.
+  - Unreadable, provisional, foreign-revision or stale evidence is
+    inconclusive, with a reason. Evidence with no structured claim for the
+    requirement leaves the test needing re-verification, with the `req:` form
+    to write.
   - DocGuard MUST NOT run tests.
 
 #### Orphans, granularity, export, interop

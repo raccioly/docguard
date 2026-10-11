@@ -336,12 +336,13 @@ How "code fp equal" is decided:
 
 - Test references come from the existing `testEvidence` (`@req`, `@covers`, and
   test labels).
-- Adapter `testguard-evidence` in `evidence/adapters.mjs`: it reads the saved
-  evidence path (config `anchors.testguardEvidence`, default
-  `.testguard/evidence.json`, checked against the TestGuard repo's evidence
-  schema).
+- Adapter `cli/scanners/testguard-evidence.mjs` (a scanner, because it asks
+  git whether the evidence revision exists and the evidence layer runs no
+  external tool). It reads the saved evidence and claims paths (config
+  `anchors.testguard.{evidence, claims}`, defaults `.testguard/evidence.json`
+  and `testguard.claims.json`) and checks by hand the fields it uses.
 - Each claim is matched by its structured `source.ref`
-  (`<specId>#<REQ>`, the companion spec).
+  (`req:<specId>#<REQ>`, TestGuard companion spec 003).
 - The anchored code fingerprint at evidence `head` is computed from blobs at
   that revision. When `head` is not resolvable, the result is inconclusive.
 - Input hashes are checked the same way as the existing adapters

@@ -101,8 +101,9 @@ suspect).
 
 ## Test-chain view (US6)
 
-For each requirement with a code-side suspect, the view has one row per test
-reference: `{testFile, line, status: needs-reverification|re-verified|inconclusive, evidenceHead?, reason?}`.
+For each code-side suspect link, `tests[]` has one row per test reference:
+`{file, line, status: needs-reverification|re-verified|inconclusive, reason, message, evidenceHead?, claims?}`.
+`reason` is one of the codes in contracts/testguard-evidence.md.
 
 ## Cache (`.docguard/anchors.cache.json`, untracked)
 

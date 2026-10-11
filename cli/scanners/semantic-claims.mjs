@@ -69,10 +69,12 @@ function privateSegment(part) {
 }
 
 /** Per-run bounded cache. Never follows symlinks, reads secrets, or leaves root. */
-export function createEvidenceReader(projectDir) {
+export function createEvidenceReader(projectDir, { maxFileBytes = MAX_EVIDENCE_FILE_BYTES } = {}) {
   let root;
   try { root = realpathSync(projectDir); } catch { /* unknown root */ }
   const cache = new Map();
+  // A larger per-file cap (a saved TestGuard report) adds its own allowance to the budget.
+  const maxBytes = MAX_EVIDENCE_BYTES + Math.max(0, maxFileBytes - MAX_EVIDENCE_FILE_BYTES);
   let bytes = 0;
   return (citation) => {
     const path = typeof citation === 'string' ? citation.replace(/:\d+(?:-\d+)?$/, '') : null;
@@ -102,8 +104,8 @@ export function createEvidenceReader(projectDir) {
       const stat = fstatSync(fd);
       if (!stat.isFile()) throw new Error('not-file');
       if (stat.dev !== inspected?.dev || stat.ino !== inspected?.ino) throw new Error('changed-during-read');
-      if (stat.size > MAX_EVIDENCE_FILE_BYTES) throw new Error('file-too-large');
-      if (bytes + stat.size > MAX_EVIDENCE_BYTES) throw new Error('byte-budget');
+      if (stat.size > maxFileBytes) throw new Error('file-too-large');
+      if (bytes + stat.size > maxBytes) throw new Error('byte-budget');
       const buffer = Buffer.alloc(stat.size);
       let offset = 0;
       while (offset < buffer.length) {

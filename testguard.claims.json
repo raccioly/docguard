@@ -2316,6 +2316,144 @@
       ]
     },
     {
+      "id": "ANCHOR-TESTCHAIN-NEEDS-REVERIFY",
+      "statement": "For a code-side suspect, every test citing the requirement needs re-verification; saved TestGuard evidence re-verifies a test only when its revision carried the anchored code at today's fingerprint, a claim names the requirement through a structured req: reference, the test defended that claim, and every fault was killed with the claim, targets and defenders unchanged; unreadable, provisional, foreign or stale evidence is inconclusive, and DocGuard runs nothing.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-033"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 6)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-testchain.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Evidence from before the change re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (atRevision !== 'unchanged') {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A claim counts whatever its source reference says.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  const naming = [...evidence.claims.values()].filter(e => structuredRequirement(e.claim.source) === requirement);",
+          "replace": "  const naming = [...evidence.claims.values()];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A test that did not defend the claim is re-verified.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  const defending = naming.filter(e => e.records.some(r => strings(r.defenders?.resolved) && r.defenders.resolved.includes(testFile)));",
+          "replace": "  const defending = naming;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A surviving fault still re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "e.records.filter(r => r.verdict !== 'killed')",
+          "replace": "e.records.filter(r => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A file or claim edited since the probe still re-verifies the test.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "    if (stale) return stale;",
+          "replace": "    if (false) return stale;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Provisional evidence (one confirmation run) counts.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (doc.run.provisional === true || !(Number.isInteger(doc.run.confirmRuns) && doc.run.confirmRuns >= 3)) {",
+          "replace": "  if (doc.run.provisional === true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "An evidence path that leaves the project is followed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "    || path.split('/').some(part => part === '..');",
+          "replace": ";",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "A report head that is not a commit id reaches git.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (!COMMIT.test(String(doc.run.repo.head))) return 'run.repo.head is not a commit id';",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A fault added since the probe is ignored.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/testguard-evidence.mjs",
+          "find": "  if (unprobed.length) return answer(",
+          "replace": "  if (false) return answer(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A requirement-side suspect lists tests too.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "const isCodeSuspect = link => link.state === 'suspect' && (link.side === 'code' || link.side === 'both');",
+          "replace": "const isCodeSuspect = link => link.state === 'suspect';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 6)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {

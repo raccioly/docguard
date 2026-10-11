@@ -71,6 +71,12 @@ function printText(result) {
     } else if (link.ripple?.collapsed) {
       console.log(`      ${c.dim}↳ may affect ${link.ripple.count} files (${link.ripple.files.join(', ')}, …)${c.reset}`);
     }
+    for (const t of link.tests || []) {
+      const label = t.status === 're-verified' ? `${c.green}re-verified at ${t.evidenceHead.slice(0, 12)}${c.reset}${c.dim} (${t.claims.join(', ')})`
+        : t.status === 'inconclusive' ? `${c.yellow}inconclusive${c.reset}${c.dim}: ${t.message}`
+          : `needs re-verification: ${t.message}`;
+      console.log(`      ${c.dim}⊢ test ${t.file}:${t.line} ${label}${c.reset}`);
+    }
   }
   if (result.problems.length) {
     console.log(`\n${c.yellow}${result.problems.length} problem(s)${c.reset}`);
@@ -81,7 +87,7 @@ function printText(result) {
 }
 
 function list(projectDir, config, flags) {
-  const computed = computeAnchorStatus(projectDir, config, { noCache: flags.noCache === true, ripple: true });
+  const computed = computeAnchorStatus(projectDir, config, { noCache: flags.noCache === true, ripple: true, tests: true });
   const links = filterLinks(computed.links, flags);
   const lost = filterLinks(computed.lost, flags);
   const infoCodes = new Set(['ANC004', 'ANC006']);

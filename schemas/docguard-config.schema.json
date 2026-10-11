@@ -293,7 +293,16 @@
       "properties": {
         "enabled": { "type": "boolean", "description": "Report requirement anchors in guard before the project has an anchor lock. Default false." },
         "fanOutLimit": { "type": "integer", "minimum": 1, "description": "Most files a changed anchor's ripple lists before it collapses into one summary. Default 10." },
-        "failOn": { "enum": ["none", "reviewed-exact"], "description": "Which suspect or lost links fail guard. reviewed-exact (the measured default): reviewed, exact-tier links at symbol, statement or route scope. none: anchors only warn. A requirement-side change never fails." }
+        "failOn": { "enum": ["none", "reviewed-exact"], "description": "Which suspect or lost links fail guard. reviewed-exact (the measured default): reviewed, exact-tier links at symbol, statement or route scope. none: anchors only warn. A requirement-side change never fails." },
+        "testguard": {
+          "type": "object",
+          "description": "Where `docguard anchors` reads saved TestGuard output to mark the tests of a changed requirement re-verified. Read only; DocGuard never runs TestGuard or a test.",
+          "properties": {
+            "evidence": { "type": "string", "minLength": 1, "description": "Project-relative TestGuard evidence file. Default .testguard/evidence.json." },
+            "claims": { "type": "string", "minLength": 1, "description": "Project-relative TestGuard claims file. Default testguard.claims.json." }
+          },
+          "additionalProperties": false
+        }
       }
     },
     "specFirst": {

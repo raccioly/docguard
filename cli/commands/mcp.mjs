@@ -409,7 +409,7 @@ const TOOL_HANDLERS = {
   // docguard.requirement-anchors#FR-021: read-only; the lock is written only by the CLI.
   docguard_anchors(args, serving) {
     const { dir, config } = resolveTarget(args, serving);
-    const computed = computeAnchorStatus(dir, config, { ripple: true });
+    const computed = computeAnchorStatus(dir, config, { ripple: true, tests: true });
     const spec = args && typeof args.spec === 'string' ? args.spec : null;
     const file = args && typeof args.file === 'string' ? args.file : null;
     const links = computed.links.filter(l => (!spec || l.specId === spec) && (!file || l.file === file));

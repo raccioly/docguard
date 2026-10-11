@@ -284,9 +284,9 @@ follow the policy, and completion is not deadlocked.
 **Depends on** the TestGuard companion spec merging in `raccioly/testguard`
 (structured `source.ref`).
 
-- [ ] T053 [US6] In `raccioly/testguard`, run the Spec Kit pipeline for the companion spec: the claim `source.ref` for `kind: "spec"` accepts and validates `<specId>#<REQ>`, documented in the claims schema and the conformance tests, then open its own PR (cross-repo dependency)
-- [ ] T054 [P] [US6] TestGuard fixture `tests/fixtures/anchors/testchain/` with three evidence variants (matching, stale fingerprint, unstructured) and `tests/requirement-anchors-testchain.test.mjs` per contracts/testguard-evidence.md (FR-032, FR-033)
-- [ ] T055 [US6] Add the adapter `testguard-evidence` to `cli/evidence/adapters.mjs`:
+- [x] T053 [US6] In `raccioly/testguard`, run the Spec Kit pipeline for the companion spec: the claim `source.ref` for `kind: "spec"` accepts and validates `<specId>#<REQ>`, documented in the claims schema and the conformance tests, then open its own PR (cross-repo dependency)
+- [x] T054 [P] [US6] TestGuard fixture (built in a temporary git repository, since evidence must name real commits) with the three evidence variants plus every inconclusive cause (matching, stale fingerprint, unstructured) and `tests/requirement-anchors-testchain.test.mjs` per contracts/testguard-evidence.md (FR-032, FR-033)
+- [x] T055 [US6] Add the TestGuard evidence adapter as `cli/scanners/testguard-evidence.mjs` (a scanner rather than an evidence-layer adapter: see remediation, "Changes made while implementing"):
   - safePath rules;
   - input-hash staleness;
   - `head` resolution;
@@ -295,8 +295,8 @@ follow the policy, and completion is not deadlocked.
   - never executes anything.
 
   (FR-033)
-- [ ] T056 [US6] Add the test-chain view to `cli/scanners/anchors.mjs` and the listing's `tests[]` (FR-032)
-- [ ] T057 [US6] Docs. Close story 6 with the claim `ANCHOR-TESTCHAIN-NEEDS-REVERIFY`, `CHANGELOG.md` and `specs --write`
+- [x] T056 [US6] Add the test-chain view to `cli/scanners/anchors.mjs` and the listing's `tests[]` (FR-032)
+- [x] T057 [US6] Docs. Close story 6 with the claim `ANCHOR-TESTCHAIN-NEEDS-REVERIFY`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 9: US7, inventory of code without a requirement (P3, PR 7)
 

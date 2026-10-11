@@ -48,7 +48,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
-| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1` | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
+| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
@@ -61,7 +61,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Suppressions** | Parses `.docguardignore` entries with an optional `expires:` day and `# reason`, and applies only the active ones everywhere the file is read; models every native suppression (ignore file, config arrays, inline pragmas, N/A markers, baseline) with its reason and state; the Suppressions validator reports expired, unreadable and (opt-in) reason-less entries (IGN001–IGN003); `docguard ignore --format claimspec` exports the entries whose reason, expiry and scope survive exactly | `cli/shared-ignore.mjs` (`parseDocguardIgnore`), `cli/scanners/suppressions.mjs`, `cli/validators/suppressions.mjs`, `cli/commands/ignore.mjs`, `cli/writers/claimspec-ignore.mjs`, `cli/claimspec-schema.mjs`, `schemas/claimspec/v1/` | Read-only. Expired and unreadable entries exclude nothing. The claimspec schemas are vendored byte-identical and checked by a keyword-limited validator that refuses keywords it does not implement; nothing is exported without a written reason (specs/057-ignore-reasons) |
 | **Doc ownership map** | Resolves each tracked file to the one doc section responsible for it (exact path beats glob; longer literal prefix beats shorter), reports unowned code and ties, and lints a committed `.devin/wiki.json` | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs`, `cli/commands/trace.mjs` | The map is declared by people in `.docguard.json`; `trace --owners --suggest` drafts one and never writes |
 | **Path-scoped agent rules** | Derives each agent instruction file's scope per harness (Codex, Claude Code, Cursor, Copilot, OpenHands) and checks it against the tracked files; `rules --for` resolves what an agent loads for a path | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` | Tracked files only in guard; formats verified 2026-09-30 and recorded in `docs/ai-integration.md`; patterns DocGuard does not evaluate are reported as not checked |
-| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer. JS/TS aliases resolve through the nearest `tsconfig.json`/`jsconfig.json` (`compilerOptions.paths` and `baseUrl`, following `extends`) | `cli/scanners/import-graph.mjs`, `cli/scanners/ts-paths.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations. An alias that names no project file adds no edge; configs are read as JSONC, never executed; `extends` stops at depth 8 or a cycle |
+| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer. It also owns the reverse-import walk (two hops, modules with more than 15 imports excluded) that `impact` and requirement-anchor ripple share, and records the names each import binds so ripple keeps only importers of the changed name. JS/TS aliases resolve through the nearest `tsconfig.json`/`jsconfig.json` (`compilerOptions.paths` and `baseUrl`, following `extends`) | `cli/scanners/import-graph.mjs`, `cli/scanners/ts-paths.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs`, `cli/commands/impact.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations. An alias that names no project file adds no edge; configs are read as JSONC, never executed; `extends` stops at depth 8 or a cycle |
 | **Symbol map** | `memory --pack --symbols`: ranks source files by PageRank over the cached import graph and lists their exported names within a byte budget; symbols are read only for the files that fit | `cli/scanners/symbol-map.mjs`, `cli/scanners/js-ast.mjs` (`moduleSymbols`), `cli/scanners/py-ast.mjs` | Opt-in by benchmark decision: frozen agent-context protocol v3 (`benchmarks/agent-context/manifest-v3.json`, v2 with only the executable pin changed) computed `opt-in`, with no regression and no predeclared benefit; names only, no claim about behavior |
 | **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
@@ -1393,7 +1393,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 
 Every other subprocess also takes an argv array and no shell:
 
-- Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`).
+- Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`). A saved TestGuard report is untrusted input: its revision reaches `cat-file -e` and `show <rev>:<path>` only after matching the commit-id pattern, and its paths and the claims file's are read through the evidence reader (`cli/scanners/testguard-evidence.mjs`). DocGuard never runs TestGuard or a test.
 - `python3 -c` with one fixed script (`cli/scanners/py-anchors.mjs`) that receives file CONTENT as JSON on stdin, never a path, and only calls `ast.parse` and `tokenize` on it, never importing or executing it. One run per batch, with a timeout of 15 seconds plus 1 second per 64 KiB of input. The doc lock and requirement anchors share it; doc-lock paths are checked by the doc lock's path guard before they are read. `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
 - `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
 - Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`.
@@ -1609,6 +1609,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
+| Anchor test chain; TestGuard evidence adapter (every re-verified, needs-reverification and inconclusive cause, path and revision safety) | `tests/requirement-anchors-testchain.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -1950,6 +1951,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     and ripple share one implementation; `impact`'s output is unchanged.
   - **Edge names.** Import-graph edges now record the names each import
     binds.
+- **Requirement anchors: the tests of a changed requirement need
+  re-verification** (`specs/070-requirement-anchors`, user story 6).
+  - **Listed.** Under each link whose code changed, `docguard anchors` names
+    every test that cites the requirement, as `⊢ test` lines and `tests[]` in
+    JSON.
+  - **Re-verified from saved TestGuard evidence.** A test is re-verified only
+    when all of these hold:
+    - the evidence revision carried the anchored code at today's fingerprint;
+    - a claim names the requirement as `req:<spec-id>#<requirement-id>` (the
+      structured `source.ref` TestGuard validates);
+    - the test defended that claim;
+    - every fault was killed, with the claim, targets and defenders unchanged
+      since the probe.
+  - **Inconclusive.** An unreadable, provisional, foreign-revision or stale
+    report is inconclusive, never re-verified. A claim that names the
+    requirement by file path gets the `req:` form to write.
+  - **Reads files only.** DocGuard reads `anchors.testguard.evidence` and
+    `anchors.testguard.claims` and never runs a test or TestGuard.
+  - **ANC002 data.** Requirement-side findings now carry `scope` and
+    `reviewedState`, like ANC001.
 
 ### Changed
 
@@ -2224,28 +2245,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   API-surface coverage reason says how many were omitted.
 - **Laravel, Symfony and ASP.NET Core routes are read**
   (`specs/059-php-dotnet-routes`, part of #519). These frameworks were
-  classified but no scanner read their routes, so guard's API-surface check,
-  `diff` and `generate` saw no endpoints. Two new pattern readers
-  (`php-routes.mjs`, `dotnet-routes.mjs`) now report:
-  - Laravel routes from the files the app loads (`routes/web.php`, and
-    `routes/api.php` under `/api`, or what `bootstrap/app.php` or
-    `RouteServiceProvider` maps), with `prefix`/`middleware`/`group` chains
-    and `resource`, `apiResource` and `singleton` expanded; `auth` and `can:`
-    middleware count as auth evidence;
-  - Symfony `#[Route]` attributes and `@Route` annotations under their class
-    route, and `config/routes.yaml` routes and prefixed imports;
-  - ASP.NET Core attribute-routed controllers (with `[controller]`,
-    `[action]` and `[area]` tokens and `[Authorize]`/`[AllowAnonymous]`) and
-    minimal APIs (`MapGet` and the other `Map*` calls under `MapGroup`
-    prefixes, including groups passed to extension methods).
 
-  A route whose path is not literal text is omitted, never guessed, and the
-  API-surface check now reports how many were omitted and where. A `.csproj`
-  using the `Microsoft.NET.Sdk.Web` SDK (every `dotnet new webapi` project)
-  is now labelled ASP.NET Core; before, the check tested the wrong string and
-  never matched.
-
-<!-- truncated: 5414 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5434 more lines — read CHANGELOG.md directly -->
 
 ---
 

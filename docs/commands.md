@@ -644,6 +644,27 @@ also lists the anchored links in files that might be affected, as
 Ripple uses the same reverse-import walk as `diff --since`. It covers JS/TS
 and Python, and it is advisory: it never adds a guard finding.
 
+**Tests of a changed requirement.** Under each link whose code changed, the
+listing names every test that cites the requirement (`@req`, `@covers`, or the
+ID in a test name) as `⊢ test` lines, and `tests[]` in JSON. Each test is
+**needs re-verification** until saved TestGuard evidence proves otherwise. A
+test is **re-verified at `<revision>`** only when all of these hold:
+- the evidence revision exists here and carried the anchored code with
+  today's fingerprint;
+- a TestGuard claim names the requirement as
+  `"source": { "kind": "spec", "ref": "req:acme.billing#FR-002" }`;
+- the test is among the defenders TestGuard recorded for that claim;
+- every fault of the claim was killed, and the claim, its faults, its targets
+  and its defenders are unchanged since the probe.
+
+Evidence that cannot be trusted is **inconclusive**, with the reason. That
+covers an unreadable or provisional report, a revision this clone lacks, or a
+file or claim edited since the probe. A claim that names the requirement by
+file path instead gets the `req:` form to write. DocGuard reads
+`anchors.testguard.evidence` (default `.testguard/evidence.json`) and
+`anchors.testguard.claims` (default `testguard.claims.json`). It never runs a
+test or TestGuard, and guard never reads the chain.
+
 With the lock committed, guard reports:
 - **ANC001**: a link whose code changed;
 - **ANC002**: a link whose requirement changed;

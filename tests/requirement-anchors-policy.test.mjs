@@ -18,7 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ANCHOR_FAIL_DEFAULT, failOnPolicy } from '../cli/scanners/anchors.mjs';
+import { ANCHOR_FAIL_DEFAULT, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../cli/scanners/anchors.mjs';
 import { planSpecCompletion } from '../cli/commands/specs.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -85,12 +85,15 @@ describe('which suspects fail under failOn: reviewed-exact (FR-028)', () => {
     assert.equal(severities(dir).bySeverity['ANC001 acme.billing#FR-002'], 'warn');
   });
 
-  it('a requirement-side suspect never fails', () => {
+  it('a requirement-side suspect never fails, even on a reviewed, symbol-scope, exact-tier link', () => {
     const dir = project('reviewed-exact');
     accept(dir, ['--spec', 'acme.billing', '--bulk', '--reason', 'reviewed the billing links']);
     edit(dir, 'specs/001-billing/spec.md', '- **FR-002**: Discounts.', '- **FR-002**: Discounts over 100.');
     const { bySeverity } = severities(dir);
     assert.equal(bySeverity['ANC002 acme.billing#FR-002'], 'warn');
+    assert.ok(!Object.values(bySeverity).includes('error'), JSON.stringify(bySeverity));
+    const anc002 = computeAnchorStatus(dir, { anchors: { failOn: 'reviewed-exact' } }, { noCache: true }).problems.find(p => p.code === 'ANC002');
+    assert.deepEqual([anc002.scope, anc002.reviewedState, anc002.tier], ['symbol', 'reviewed', 'babel@7']);
   });
 
   it('a reviewed symbol whose tag is gone fails; with failOn none it only warns', () => {
@@ -134,8 +137,9 @@ describe('completion is never deadlocked by the spec\'s own anchors (FR-029, SC-
     write(dir, 'specs/001-billing/tasks.md', '# Tasks\n\n- [x] T001 Build.\n');
     write(dir, 'tests/billing.test.mjs', '// @req acme.billing#FR-001\n// @req acme.billing#FR-002\n// @req acme.billing#FR-003\n// @req acme.billing#FR-004\ntest("x", () => {});\n');
     write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n');
+    write(dir, 'src/math.mjs', 'export const round = n => Math.round(n);\n');
     write(dir, 'specs/002-other/spec.md', '# Other\n\n**Spec ID**: `acme.other`\n\n- **FR-001**: Other.\n');
-    write(dir, 'src/other.mjs', '// @implements acme.other#FR-001\nexport function other() { return 1; }\n');
+    write(dir, 'src/other.mjs', "import { round } from './math.mjs';\n\n// @implements acme.other#FR-001\nexport function other() { return round(1); }\n");
     fixtureGit(dir, ['add', '-A']);
     fixtureGit(dir, ['commit', '-qm', 'tasks']);
     const registry = projectSpecRegistry(dir).registry;
@@ -168,8 +172,12 @@ describe('completion is never deadlocked by the spec\'s own anchors (FR-029, SC-
     const dir = completable('reviewed-exact');
     const base = fixtureGit(dir, ['rev-parse', 'HEAD']).trim();
     edit(dir, 'src/pricing.mjs', 'total * 0.9', 'total * 0.8');
-    edit(dir, 'src/other.mjs', 'return 1', 'return 2');
+    edit(dir, 'src/other.mjs', 'round(1)', 'round(2)');
     commitAll(dir);
+    // Both changes are real failures, so the exemption is what decides SPC007.
+    const failing = computeAnchorStatus(dir, { anchors: { failOn: 'reviewed-exact' } }, { noCache: true }).problems
+      .filter(p => isFailingProblem(p, 'reviewed-exact')).map(p => p.requirement).sort();
+    assert.deepEqual(failing, ['acme.billing#FR-002', 'acme.other#FR-001']);
     const plan = planSpecCompletion(dir, { anchors: { failOn: 'reviewed-exact' } }, { id: 'acme.billing', since: base }, { guardResult: { status: 'FAIL', errors: 2, warnings: 0 } });
     assert.ok(plan.blockers.some(b => b.code === 'SPC007' && /1 error/.test(b.message)), JSON.stringify(plan.blockers));
   });
