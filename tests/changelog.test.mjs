@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { validateChangelog } from '../cli/validators/changelog.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 describe('validateChangelog', () => {
   let tempDir;
@@ -112,7 +113,7 @@ describe('validateChangelog', () => {
 
 describe('validateChangelog — staged-change check (STANDARD.md)', () => {
   let repo;
-  const git = (args) => execFileSync('git', args, { cwd: repo, stdio: ['ignore', 'pipe', 'ignore'] });
+  const git = (args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: repo, stdio: ['ignore', 'pipe', 'ignore'] });
   const goodChangelog = '# Changelog\n## [Unreleased]\n- wip\n## [1.0.0]\n- init\n';
 
   beforeEach(() => {

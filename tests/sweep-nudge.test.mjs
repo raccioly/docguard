@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -30,9 +31,9 @@ function makeRepo(files) {
 
 function gitInit(dir, opts = {}) {
   const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', ...opts };
-  spawnSync('git', ['init', '-q'], { cwd: dir, env });
-  spawnSync('git', ['add', '.'], { cwd: dir, env });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir, env });
+  fixtureGit(dir, ['init', '-q'], { env });
+  fixtureGit(dir, ['add', '.'], { env });
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
 }
 
 describe('K-6 — sweep-needed nudge', () => {
@@ -81,8 +82,8 @@ describe('K-6 — sweep-needed nudge', () => {
     const env = { ...process.env, GIT_AUTHOR_DATE: '2020-01-02T00:00:00Z', GIT_COMMITTER_DATE: '2020-01-02T00:00:00Z' };
     for (let i = 0; i < 11; i++) {
       writeFileSync(join(dir, 'main.js'), 'export const value = ' + i + ';');
-      assert.equal(spawnSync('git', ['add', 'main.js'], { cwd: dir, env }).status, 0);
-      assert.equal(spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'change'], { cwd: dir, env }).status, 0);
+      assert.equal(spawnSync('git', [...FIXTURE_GIT, 'add', 'main.js'], { cwd: dir, env }).status, 0);
+      assert.equal(spawnSync('git', [...FIXTURE_GIT, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'change'], { cwd: dir, env }).status, 0);
     }
     const r = spawnSync(process.execPath, [CLI, 'guard'], { cwd: dir, encoding: 'utf8' });
     assert.match(r.stdout, /documents have repository-history review signals/);

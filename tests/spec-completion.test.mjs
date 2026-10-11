@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { completeSpec, normalizeExternalDeliveryStatus, planSpecCompletion } from '../cli/commands/specs.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 /**
  * @req docguard.document-lifecycle#FR-016
@@ -22,7 +23,7 @@ function write(dir, path, content) {
 }
 
 function git(dir, args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
 function fixture(t, { checked = true, implementation = true, test = true, tasks = true, persistenceModel = null } = {}) {

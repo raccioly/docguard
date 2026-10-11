@@ -18,6 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const run = (args, cwd) => spawnSync(process.execPath, args, {
   cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' },
@@ -53,7 +54,7 @@ describe('packed adopter workflow', () => {
     }));
     mkdirSync(join(project, 'specs/001-existing'), { recursive: true });
     writeFileSync(join(project, 'specs/001-existing/spec.md'), '# Existing feature\n\n## Requirements\n\n- **FR-001**: It works.\n');
-    spawnSync('git', ['init', '-q'], { cwd: project });
+    fixtureGit(project, ['init', '-q']);
     mkdirSync(join(project, '.git/hooks'), { recursive: true });
     writeFileSync(join(project, '.git/hooks/pre-commit'), '#!/bin/sh\nnpm test\n');
   });

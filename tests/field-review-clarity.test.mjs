@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 let dir;
 const put = (path, content) => safeWrite(join(dir, path), content);
@@ -14,7 +15,7 @@ beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'dg-review-clarity-')); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 function git(...args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: 'pipe',
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: 'pipe',
     env: { ...process.env, GIT_AUTHOR_DATE: '2025-01-01T12:00:00Z', GIT_COMMITTER_DATE: '2025-01-01T12:00:00Z' } });
 }
 function history(count = 3) {
@@ -124,7 +125,7 @@ describe('Field review clarity: freshness', () => {
     put('deviations.md', oldReview);
     // Tracking logs are committed with an old date while source history remains newer.
     git('add', 'release-notes.md', 'deviations.md');
-    execFileSync('git', ['commit', '-qm', 'Synthetic old tracking logs'], { cwd: dir, stdio: 'pipe',
+    execFileSync('git', [...FIXTURE_GIT, 'commit', '-qm', 'Synthetic old tracking logs'], { cwd: dir, stdio: 'pipe',
       env: { ...process.env, GIT_AUTHOR_DATE: '2020-01-01T12:00:00Z', GIT_COMMITTER_DATE: '2020-01-01T12:00:00Z' } });
     const config = { requiredFiles: { changelog: 'release-notes.md', driftLog: 'deviations.md' },
       documentTypes: { 'release-notes.md': { category: 'tracking' }, 'deviations.md': { category: 'tracking' } } };

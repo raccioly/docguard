@@ -16,6 +16,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { projectSpecRegistry } from '../cli/scanners/spec-registry.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -25,7 +26,7 @@ const SPEC = '# Feature\n\n**Spec ID**: `acme.feature`\n\n## Requirements\n\n- *
 function repo(files, { commit = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'lifecycle-gaps-'));
   dirs.push(dir);
-  const git = (...a) => spawnSync('git', a, { cwd: dir, encoding: 'utf8' });
+  const git = (...a) => fixtureGit(dir, a);
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
@@ -108,8 +109,10 @@ describe('evidence is counted once per file during a conflicted merge', () => {
     git('checkout', '-q', '-');
     writeFileSync(join(dir, 'src/app.mjs'), '// @implements acme.feature#FR-001\nexport const x = 3;\n');
     git('commit', '-qam', 'main');
-    git('merge', '-q', 'other');
-    assert.match(git('status', '--porcelain').stdout, /^UU src\/app\.mjs/m, 'fixture must leave an unmerged file');
+    // The merge is meant to conflict, so its status is not checked; the
+    // assertion below proves the conflict happened.
+    spawnSync('git', [...FIXTURE_GIT, 'merge', '-q', 'other'], { cwd: dir, encoding: 'utf8' });
+    assert.match(git('status', '--porcelain'), /^UU src\/app\.mjs/m, 'fixture must leave an unmerged file');
     const spec = projectSpecRegistry(dir, {}).registry.specs.find(s => s.specId === 'acme.feature');
     const files = spec.observed.implementationEvidence.map(e => e.file);
     assert.equal(new Set(files).size, files.length, JSON.stringify(files));

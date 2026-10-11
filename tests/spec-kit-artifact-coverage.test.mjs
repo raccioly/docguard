@@ -18,6 +18,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -31,16 +32,16 @@ function write(dir, rel, content) {
 function project(files) {
   const dir = mkdtempSync(join(tmpdir(), 'speckit-cov-'));
   dirs.push(dir);
-  spawnSync('git', ['init', '-q'], { cwd: dir });
-  spawnSync('git', ['config', 'user.email', 't@t'], { cwd: dir });
-  spawnSync('git', ['config', 'user.name', 't'], { cwd: dir });
+  fixtureGit(dir, ['init', '-q']);
+  fixtureGit(dir, ['config', 'user.email', 't@t']);
+  fixtureGit(dir, ['config', 'user.name', 't']);
   for (const [rel, content] of Object.entries(files)) write(dir, rel, content);
   return dir;
 }
 
 function commitAll(dir, message) {
-  spawnSync('git', ['add', '-A'], { cwd: dir });
-  spawnSync('git', ['commit', '-q', '-m', message], { cwd: dir });
+  fixtureGit(dir, ['add', '-A']);
+  fixtureGit(dir, ['commit', '-q', '-m', message]);
 }
 
 function guard(dir) {

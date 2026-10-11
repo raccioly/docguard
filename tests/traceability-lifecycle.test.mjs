@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 function write(dir, path, content) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -16,7 +17,7 @@ function write(dir, path, content) {
 }
 
 function git(dir, ...args) {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  return execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
 function fixture(t, { commitRegistry = true } = {}) {

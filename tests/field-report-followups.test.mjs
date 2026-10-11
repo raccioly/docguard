@@ -18,6 +18,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CURRENT_SCHEMA_VERSION } from '../cli/shared.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -27,7 +28,7 @@ const strip = s => s.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '');
 function project(files = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'frf-'));
   dirs.push(dir);
-  spawnSync('git', ['init', '-q'], { cwd: dir });
+  fixtureGit(dir, ['init', '-q']);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), content);
@@ -119,7 +120,7 @@ describe('#454 — never advise disabling a hook manager', () => {
       '.husky/_/pre-commit': '#!/usr/bin/env sh\n. "$(dirname "$0")/h"\n',
       '.husky/pre-commit': 'npm test\n',
     });
-    spawnSync('git', ['config', 'core.hooksPath', '.husky/_'], { cwd: dir });
+    fixtureGit(dir, ['config', 'core.hooksPath', '.husky/_']);
     return dir;
   };
 

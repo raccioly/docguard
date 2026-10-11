@@ -15,6 +15,7 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync, execSync } from 'node:child_process';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -28,7 +29,7 @@ describe('starter profile is minimal (no heavy spec-kit scaffold) + commands at 
 
   it('skips the .specify/ framework scaffold and installs commands under .agent/', () => {
     dir = mkdtempSync(join(tmpdir(), 'docguard-starter-'));
-    execSync('git init -q', { cwd: dir });
+    execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: dir });
 
     const r = runInit(dir, ['--profile', 'starter', '--skip-prompts', '--quiet']);
     assert.match(r.stdout, /Spec Kit framework scaffold skipped/,

@@ -23,15 +23,16 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-v020-'));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'v020-test', version: '0.0.1' }));
-  spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: dir });
-  spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: dir });
+  fixtureGit(dir, ['init', '-q', '-b', 'main']);
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']);
+  fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init']);
   return dir;
 }
 

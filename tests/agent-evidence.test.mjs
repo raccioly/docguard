@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks, createEvidenceReader, contentHash, gitEvidence, taskEvidence } from '../cli/scanners/semantic-claims.mjs';
 import { buildAgentTaskGraph } from '../cli/commands/agent.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = new URL('../cli/docguard.mjs', import.meta.url).pathname;
 const DOC = 'docs-canonical/LIMITS.md';
@@ -41,7 +42,7 @@ function cli(dir, ...args) {
 }
 
 function git(dir, ...args) {
-  const result = spawnSync('git', args, {
+  const result = spawnSync('git', [...FIXTURE_GIT, ...args], {
     cwd: dir, encoding: 'utf8', timeout: 5000,
     env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' },
   });
@@ -233,7 +234,7 @@ describe('agent evidence and context provenance', () => {
   it('records Git revision and dirty state and invalidates pack source fingerprints', () => {
     git(dir, 'init', '-q');
     git(dir, 'add', '.');
-    git(dir, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
+    git(dir, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'fixture');
     const revision = git(dir, 'rev-parse', 'HEAD');
     assert.deepEqual(gitEvidence(dir), { revision, dirty: false, status: 'snapshot' });
     const first = cli(dir, 'memory', '--pack', '--stdout');

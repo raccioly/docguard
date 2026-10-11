@@ -1,12 +1,12 @@
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
-function git(dir, ...args) { spawnSync('git', args, { cwd: dir, encoding: 'utf-8' }); }
+function git(dir, ...args) { fixtureGit(dir, args); }
 
 describe('validateReferenceExistence', () => {
   let dir;

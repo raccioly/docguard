@@ -15,9 +15,10 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync, execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
-const git = (args, cwd) => execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
+const git = (args, cwd) => execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
 const run = (args, cwd) => spawnSync('node', [CLI, ...args], { cwd, encoding: 'utf-8', timeout: 60000 });
 
 describe('uninitialised projects are not blocked', () => {

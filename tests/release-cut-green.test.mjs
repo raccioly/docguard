@@ -21,6 +21,7 @@ import { cutChangelog, inferBump } from '../.github/scripts/release-changelog.mj
 import { ensureSkills } from '../cli/ensure-skills.mjs';
 import { RELEASE_PATH_ALLOWLIST } from '../cli/release-pr-policy.mjs';
 import { execFileSync } from 'node:child_process';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const BASE = '# Changelog\n\n## [Unreleased]\n\n### Added\n\n- **feature X** ships.\n\n### Fixed\n\n- bug Y.\n\n## [0.42.1] - 2026-09-22\n\n### Fixed\n\n- old fix Z\n';
 const cut = (text, version, commits = []) => cutChangelog(text, { version, date: '2026-10-01', lastTag: 'v0.42.1', commits });
@@ -69,7 +70,7 @@ describe('ensureSkills requires the agent surface (FR-005)', () => {
 
 describe('the release commits and admits every synchronized path (FR-006)', () => {
   // The files sync-release-version.mjs rewrites in this repository, mirrors included.
-  const synchronized = execFileSync('git', ['ls-files', 'commands', 'extensions/spec-kit-docguard', '.agent/skills', '.agent/commands', 'templates/ci', '.pre-commit-hooks.yaml'], { encoding: 'utf8' })
+  const synchronized = execFileSync('git', [...FIXTURE_GIT, 'ls-files', 'commands', 'extensions/spec-kit-docguard', '.agent/skills', '.agent/commands', 'templates/ci', '.pre-commit-hooks.yaml'], { encoding: 'utf8' })
     .split('\n').filter(p => /^(commands\/docguard\.[a-z-]+\.md|extensions\/spec-kit-docguard\/(extension\.yml|commands\/.+\.md|skills\/[^/]+\/SKILL\.md|templates\/github-workflows\/.+\.yml)|\.agent\/(skills\/[^/]+\/SKILL\.md|commands\/docguard\..+\.md)|templates\/ci\/(github-actions|gitlab-component)\.yml|\.pre-commit-hooks\.yaml)$/.test(p));
 
   it('the release-candidate policy admits each one', () => {
@@ -91,7 +92,7 @@ describe('the release commits and admits every synchronized path (FR-006)', () =
 describe("replaying the cut on this repository's release surfaces (SC-001)", () => {
   it('cuts, synchronizes, validates and stages a candidate whose CHANGELOG checks still hold', () => {
     const dir = mkdtempSync(join(tmpdir(), 'docguard-release-replay-'));
-    const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+    const git = (...args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8' });
     try {
       // The tracked release surfaces at HEAD, in a repository of their own.
       const surfaces = ['package.json', 'package-lock.json', 'pyproject.toml', 'server.json', 'action.yml', 'README.md',

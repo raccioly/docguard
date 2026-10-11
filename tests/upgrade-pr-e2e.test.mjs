@@ -25,6 +25,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
@@ -40,10 +41,10 @@ function makeProjectWithBareRemote() {
   mkdirSync(bare, { recursive: true });
 
   // Init the bare remote
-  spawnSync('git', ['init', '--bare', '-q'], { cwd: bare });
+  fixtureGit(bare, ['init', '--bare', '-q']);
 
   // Init the project + commit
-  spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
+  fixtureGit(dir, ['init', '-q', '-b', 'main']);
   // v0.20: persist user.email / user.name in the test repo's LOCAL git config
   // so that subsequent `git commit` calls made by `docguard upgrade --apply --pr`
   // (which run as separate processes without the `-c` flags) inherit a valid
@@ -51,19 +52,19 @@ function makeProjectWithBareRemote() {
   // runners with "Author identity unknown" — they have no global git config.
   // The earlier `-c user.email=…` approach only configured the FIRST commit;
   // it didn't survive into the production upgrade code path.
-  spawnSync('git', ['config', 'user.email', 't@t'], { cwd: dir });
-  spawnSync('git', ['config', 'user.name', 't'], { cwd: dir });
+  fixtureGit(dir, ['config', 'user.email', 't@t']);
+  fixtureGit(dir, ['config', 'user.name', 't']);
   // No `version` field + uses legacy `project` (pre-0.4 schema) so the
   // upgrade migration chain (0.0 → 0.4 → 0.5 → 0.6) actually fires end-to-end.
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
     project: 'legacy-name', profile: 'starter',
   }, null, 2));
   writeFileSync(join(dir, 'README.md'), '# pr-test\n');
-  spawnSync('git', ['add', '-A'], { cwd: dir });
-  spawnSync('git', ['commit', '-q', '-m', 'init'], { cwd: dir });
+  fixtureGit(dir, ['add', '-A']);
+  fixtureGit(dir, ['commit', '-q', '-m', 'init']);
 
   // Wire the remote
-  spawnSync('git', ['remote', 'add', 'origin', bare], { cwd: dir });
+  fixtureGit(dir, ['remote', 'add', 'origin', bare]);
 
   return { dir, bare, base };
 }
@@ -128,7 +129,7 @@ describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', () =>
     assert.equal(r.status, 0, `upgrade --pr should exit 0; got ${r.status}`);
 
     // 1. Branch was created
-    const branchesRes = spawnSync('git', ['branch'], { cwd: dir, encoding: 'utf-8' });
+    const branchesRes = spawnSync('git', [...FIXTURE_GIT, 'branch'], { cwd: dir, encoding: 'utf-8' });
     assert.match(branchesRes.stdout, /docguard\/upgrade-schema-/,
       `expected an upgrade-schema branch; got: ${branchesRes.stdout}`);
 
@@ -139,7 +140,7 @@ describe('upgrade --apply --pr — end-to-end with bare remote + stub gh', () =>
     assert.ok(!cfg.project, 'legacy `project` field should be renamed');
 
     // 3. The commit landed on the bare remote (verify ref exists)
-    const lsRemoteRes = spawnSync('git', ['ls-remote', '--heads', bare], {
+    const lsRemoteRes = spawnSync('git', [...FIXTURE_GIT, 'ls-remote', '--heads', bare], {
       encoding: 'utf-8',
     });
     assert.match(lsRemoteRes.stdout, /docguard\/upgrade-schema-/,

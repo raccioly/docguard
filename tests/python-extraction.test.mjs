@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 import { endpointKey } from '../cli/scanners/api-doc.mjs';
 import { detectEcosystems } from '../cli/scanners/project-type.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -66,7 +67,7 @@ function writeFiles(dir, files) {
 function project(files, { git = false } = {}) {
   const dir = writeFiles(tempDir('dg-py046-'), files);
   if (git) {
-    const run = (...a) => spawnSync('git', a, { cwd: dir, encoding: 'utf8' });
+    const run = (...a) => fixtureGit(dir, a);
     run('init', '-q'); run('config', 'user.email', 't@t'); run('config', 'user.name', 't');
     run('add', '-A'); run('commit', '-q', '-m', 'fixture');
   }

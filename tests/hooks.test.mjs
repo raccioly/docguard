@@ -1,11 +1,11 @@
 import { describe, it, afterEach, beforeEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { runHooks } from '../cli/commands/hooks.mjs';
 import { getHooksDir } from '../cli/shared-git.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 describe('runHooks function', () => {
     let tmpDir;
@@ -238,8 +238,8 @@ describe('getHooksDir with core.hooksPath=/dev/null', () => {
 
     beforeEach(() => {
         tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-devnull-'));
-        spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: tmpDir });
-        spawnSync('git', ['config', 'core.hooksPath', '/dev/null'], { cwd: tmpDir });
+        fixtureGit(tmpDir, ['init', '-q', '-b', 'main']);
+        fixtureGit(tmpDir, ['config', 'core.hooksPath', '/dev/null']);
         oldLog = console.log;
         logs = [];
         console.log = (...args) => { logs.push(args.join(' ')); };

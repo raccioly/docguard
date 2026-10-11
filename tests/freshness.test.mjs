@@ -7,9 +7,10 @@ import childProcess, { execSync } from 'node:child_process';
 import { syncBuiltinESMExports } from 'node:module';
 
 import { validateFreshness, readLastReviewedDate } from '../cli/validators/freshness.mjs';
+import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 
 const runGit = (args, cwd) => {
-  return execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
+  return execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
 };
 
 describe('readLastReviewedDate — future dates cannot mask staleness', () => {
@@ -231,7 +232,7 @@ describe('Freshness Validator', () => {
     writeFileSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md'), '# Arch');
     runGit('add docs-canonical/ARCHITECTURE.md', tmpDir);
 
-    execSync(`git commit -m "add arch" --date="${oldDateStr}"`, {
+    execSync(`git ${FIXTURE_GIT_SHELL} commit -m "add arch" --date="${oldDateStr}"`, {
       cwd: tmpDir,
       env: { ...process.env, GIT_COMMITTER_DATE: oldDateStr }
     });
@@ -243,7 +244,7 @@ describe('Freshness Validator', () => {
     for (let i = 1; i <= 2; i++) {
       writeFileSync(join(tmpDir, `test${i}.js`), `const a = ${i};`);
       runGit(`add test${i}.js`, tmpDir);
-      execSync(`git commit -m "commit ${i}" --date="${recentDateStr}"`, {
+      execSync(`git ${FIXTURE_GIT_SHELL} commit -m "commit ${i}" --date="${recentDateStr}"`, {
         cwd: tmpDir,
         env: { ...process.env, GIT_COMMITTER_DATE: recentDateStr }
       });
@@ -272,7 +273,7 @@ describe('Freshness Validator', () => {
       for (let i = 1; i <= 3; i++) {
         writeFileSync(join(dir, `code${i}.js`), `const a = ${i};`);
         runGit(`add code${i}.js`, dir);
-        execSync(`git commit -m "code ${i}" --date="${iso}"`, {
+        execSync(`git ${FIXTURE_GIT_SHELL} commit -m "code ${i}" --date="${iso}"`, {
           cwd: dir,
           env: { ...process.env, GIT_COMMITTER_DATE: iso },
         });
@@ -297,7 +298,7 @@ describe('Freshness Validator', () => {
       );
       runGit('add docs-canonical/ARCHITECTURE.md', tmpDir);
       const oldIsoStr = oldIso.toISOString();
-      execSync(`git commit -m "doc" --date="${oldIsoStr}"`, {
+      execSync(`git ${FIXTURE_GIT_SHELL} commit -m "doc" --date="${oldIsoStr}"`, {
         cwd: tmpDir,
         env: { ...process.env, GIT_COMMITTER_DATE: oldIsoStr },
       });

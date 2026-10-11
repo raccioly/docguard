@@ -31,6 +31,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fixtureGit } from './helpers/git.mjs';
 
 // Skip if NPM_PACK_SMOKE=0 — opt-out only. By default this runs in regular
 // CI because catching publish-time gaps is core hygiene.
@@ -138,9 +139,9 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     writeFileSync(join(fixtureDir, 'DRIFT-LOG.md'), '# Drift\n');
     writeFileSync(join(fixtureDir, '.docguard.json'),
       JSON.stringify({ projectName: 'smoke', profile: 'starter', version: '0.6' }));
-    spawnSync('git', ['init', '-q'], { cwd: fixtureDir });
-    spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A'], { cwd: fixtureDir });
-    spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { cwd: fixtureDir });
+    fixtureGit(fixtureDir, ['init', '-q']);
+    fixtureGit(fixtureDir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']);
+    fixtureGit(fixtureDir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init']);
 
     const cli = join(extractDir, 'package/cli/docguard.mjs');
     const r = spawnSync('node', [cli, 'guard', '--quiet', '--format', 'json'], {
