@@ -341,6 +341,26 @@ Re-freezing captures every finding that fires at that moment. Run
 `fixtures/ # test data` excluded nothing before v0.44 (the comment was read as
 part of the pattern) and excludes `fixtures/` now.
 
+## `docguard hooks` refuses: core.hooksPath points at a shared folder
+
+When `core.hooksPath` comes from your global or system Git config, the command
+line, or points outside the repository, every repository that uses that folder
+runs its hooks. DocGuard will not install, replace or remove hooks there,
+because the change would reach every one of those repositories. Pick one:
+
+- Add DocGuard's check to the shared hooks yourself. The refusal prints the
+  line, for example `npx docguard-cli guard --changed-only` for `pre-commit`.
+- Give this repository its own hooks folder, then install. Git stops running
+  the shared hooks in this repository:
+
+  ```bash
+  git config --local core.hooksPath .githooks
+  docguard hooks
+  ```
+
+Find where the setting comes from with `git config --show-scope --show-origin --get core.hooksPath`.
+`docguard setup` follows the same rule and does not offer to install there.
+
 ## Still stuck
 
 - `docguard explain <CODE>` and the [finding reference](../reference/findings.md).

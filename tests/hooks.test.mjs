@@ -7,6 +7,15 @@ import { runHooks } from '../cli/commands/hooks.mjs';
 import { getHooksDir } from '../cli/shared-git.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
+// Hooks install only into this repository's own folder (spec 065). Isolate the
+// global and system Git configuration, so a contributor's global core.hooksPath
+// neither receives these hooks nor makes the installer refuse.
+// @req docguard.hooks-repo-scope#FR-006
+const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+writeFileSync(isolatedGitConfig, '');
+process.env.GIT_CONFIG_GLOBAL = isolatedGitConfig;
+process.env.GIT_CONFIG_NOSYSTEM = '1';
+
 describe('runHooks function', () => {
     let tmpDir;
     let oldLog;

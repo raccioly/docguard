@@ -12,8 +12,8 @@
  */
 
 import { execFileSync, execSync, spawnSync } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, realpathSync, statSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 /**
  * Three git states (docguard.unreadable-git-metadata#FR-001):
@@ -514,4 +514,70 @@ export function getHooksDir(dir) {
     }
   } catch { /* ignore */ }
   return null;
+}
+
+// Scopes whose core.hooksPath this repository set for itself.
+const REPO_SCOPES = new Set(['local', 'worktree']);
+
+// realpath of the nearest existing ancestor, so a hooks folder that does not
+// exist yet still compares correctly against symlinked roots (macOS /tmp).
+function canonicalPath(p) {
+  try { return realpathSync(p); } catch { /* not there yet */ }
+  const parent = dirname(p);
+  return parent === p ? p : join(canonicalPath(parent), basename(p));
+}
+
+function isInside(root, target) {
+  const rel = relative(root, target);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
+/**
+ * Where DocGuard may write Git hooks for `dir`, and whether that folder belongs
+ * to the repository. A `core.hooksPath` from the global, system or command-line
+ * configuration — or one resolving outside the working tree and the Git
+ * directory — is shared with other repositories, so `owned` is false and
+ * callers must not write, overwrite or remove hooks there.
+ *
+ * @implements docguard.hooks-repo-scope#FR-001
+ * @implements docguard.hooks-repo-scope#FR-003
+ * @returns {{ dir: string|null, owned: boolean, scope: string|null, configured: string|null, reason: 'not-a-repo'|'scope'|'outside'|null }}
+ */
+export function resolveHooksTarget(dir) {
+  const hooksDir = getHooksDir(dir);
+  if (!hooksDir) return { dir: null, owned: false, scope: null, configured: null, reason: 'not-a-repo' };
+  const git = args => spawnSync('git', args, { cwd: dir, encoding: 'utf-8' });
+
+  let scope = null;
+  let configured = null;
+  const scoped = git(['config', '--show-scope', '--get', 'core.hooksPath']);
+  if (scoped.status === 0) {
+    const [s, ...value] = scoped.stdout.replace(/\r?\n$/, '').split('\t');
+    scope = s;
+    configured = value.join('\t');
+  } else if (scoped.status !== 1) {
+    // Git before 2.26 has no --show-scope: a value the repository's own
+    // configuration does not hold came from somewhere else.
+    const effective = git(['config', '--get', 'core.hooksPath']);
+    if (effective.status === 0) {
+      configured = effective.stdout.trim();
+      const holds = args => { const r = git(args); return r.status === 0 && r.stdout.trim() === configured; };
+      scope = holds(['config', '--worktree', '--get', 'core.hooksPath']) ? 'worktree'
+        : holds(['config', '--local', '--get', 'core.hooksPath']) ? 'local' : 'unknown';
+    }
+  }
+
+  // Unset, or /dev/null (getHooksDir then falls back to .git/hooks, bug-200):
+  // the folder is the repository's own.
+  if (configured === null || configured === '/dev/null') {
+    return { dir: hooksDir, owned: true, scope, configured, reason: null };
+  }
+  if (!REPO_SCOPES.has(scope)) return { dir: hooksDir, owned: false, scope, configured, reason: 'scope' };
+
+  const roots = [git(['rev-parse', '--show-toplevel']), git(['rev-parse', '--git-common-dir'])]
+    .filter(r => r.status === 0 && r.stdout.trim())
+    .map(r => canonicalPath(resolve(dir, r.stdout.trim())));
+  const target = canonicalPath(hooksDir);
+  const inside = roots.some(root => isInside(root, target));
+  return { dir: hooksDir, owned: inside, scope, configured, reason: inside ? null : 'outside' };
 }

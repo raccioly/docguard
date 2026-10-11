@@ -25,6 +25,7 @@ import { c, CURRENT_SCHEMA_VERSION } from '../shared.mjs';
 import { autoDetectProjectType } from '../config.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
+import { resolveHooksTarget } from '../shared-git.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -389,11 +390,16 @@ export async function runSetup(projectDir, config, flags) {
 
   console.log(`  ${c.bold}Step 7/7: Git Hooks${c.reset}`);
 
-  const gitDir = resolve(projectDir, '.git');
-  if (!existsSync(gitDir)) {
+  // The folder Git actually runs hooks from (linked worktrees, core.hooksPath),
+  // and never a folder shared with other repositories.
+  // @implements docguard.hooks-repo-scope#FR-004
+  const hooksTarget = resolveHooksTarget(projectDir);
+  if (!hooksTarget.dir) {
     console.log(`  ${c.dim}──${c.reset}  No .git directory ${c.dim}(not a git repo)${c.reset}`);
+  } else if (!hooksTarget.owned) {
+    console.log(`  ${c.yellow}⚠${c.reset}   pre-commit hook ${c.dim}(core.hooksPath is a shared folder: ${hooksTarget.dir} — DocGuard will not install there; run ${c.cyan}docguard hooks${c.dim} for the options)${c.reset}`);
   } else {
-    const preCommitHook = resolve(gitDir, 'hooks', 'pre-commit');
+    const preCommitHook = resolve(hooksTarget.dir, 'pre-commit');
     let hasDocguardHook = false;
 
     if (existsSync(preCommitHook)) {
@@ -410,7 +416,7 @@ export async function runSetup(projectDir, config, flags) {
         const install = await askYesNo(`     → Install docguard guard as pre-commit hook?`, false);
         if (install) {
           try {
-            const hooksDir = resolve(gitDir, 'hooks');
+            const hooksDir = hooksTarget.dir;
             if (!existsSync(hooksDir)) mkdirSync(hooksDir, { recursive: true });
 
             const hookContent = existsSync(preCommitHook)

@@ -35,7 +35,16 @@ function project(files = {}) {
   }
   return dir;
 }
+// `hooks` meets an isolated global and system Git configuration, so a
+// contributor's global core.hooksPath neither receives the hooks nor makes the
+// installer refuse (spec 065). Other commands keep the real environment.
+// @req docguard.hooks-repo-scope#FR-006
+const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+writeFileSync(isolatedGitConfig, '');
+const HOOKS_ENV = { GIT_CONFIG_GLOBAL: isolatedGitConfig, GIT_CONFIG_NOSYSTEM: '1' };
+
 function cli(dir, args, env = {}, extraNodeArgs = []) {
+  if (args[0] === 'hooks') env = { ...HOOKS_ENV, ...env };
   const r = spawnSync(process.execPath, [...extraNodeArgs, CLI, ...args], {
     cwd: dir, encoding: 'utf-8', env: { ...process.env, NO_COLOR: '1', ...env },
   });
