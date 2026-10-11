@@ -11279,7 +11279,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "planned",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
