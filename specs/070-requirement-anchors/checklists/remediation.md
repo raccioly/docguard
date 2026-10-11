@@ -124,7 +124,7 @@ Items 1 to 10 pass at c644672, main after #562 (2026-10-11). The squash of #562 
 | 6 | 1f43006 | PASS | CI `budget` job green on #562's last run; 1f43006 has the same tree as c644672. `anchor-oracle` green on main |
 | 7 | c644672 | PASS | `node benchmarks/run.mjs --baseline benchmarks/baseline.json`: core PASS, 0 regressions |
 | 8 | c644672 | PASS | 689 links (file 492, statement 12, symbol 185; babel@7 660, file 28, python-ast@3.12 1). The 28 file-tier links are in YAML (26) and shell (2), which have no parser tier. Reviewed 100, baselined 589. No ANC006, no ANC007 |
-| 9 | 1b232b1, c22a6da | PASS | 98/98 faults caught at 1b232b1 (row below). Since then the code changed only by two comment-only tag lines and the staged runtime's name (`web-tree-sitter.mjs`), which ANCHOR-FINGERPRINT-GOLDEN re-probed 9/9 at c22a6da. A confirmation re-run on c644672 was in progress when this was recorded: 50 of 98 faults caught, none survived |
+| 9 | c644672 | PASS | TestGuard 0.15.0 `--confirm 3 --serial` on all 11 spec 070 claims: 98 faults probed, 98 killed, 0 unproven ("Probed c644672") |
 | 10 | — | PASS | Ricardo asked for the release in this session ("Do it all … do the rest needed") |
 
 Earlier runs, kept for the record:
