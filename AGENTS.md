@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -190,6 +190,20 @@ extensions/spec-kit-docguard/
 - If code deviates from docs, add `// DRIFT: reason`
 - Security rules in SECURITY.md are mandatory
 - Test requirements in TEST-SPEC.md must be met
+- **Tests that build Git repositories pass the fixture options per call.** Every
+  fixture `git` call goes through `tests/helpers/git.mjs` (`FIXTURE_GIT`,
+  `fixtureGit`): hooks and signing off for that call, never for the whole
+  environment, so DocGuard's own Git calls still meet the machine's config. A
+  scan test rejects a direct `git` spawn without a `fixture-git-exempt:`
+  reason, and the CI `hermeticity` job runs the suite under a hostile global
+  config (specs/066-test-git-hermeticity).
+- **Workflow jobs run code without a repository write token.** Workflows default
+  to `contents: read`; a job asks for its own scope. A job that runs tests or
+  DocGuard holds no write permission and checks out with
+  `persist-credentials: false`; a job holding `contents`, `actions`,
+  `pull-requests` or `issues` write runs no package manager, build tool or test.
+  `tests/workflow-permissions.test.mjs` enforces it
+  (specs/068-release-least-privilege).
 - Run `docguard guard` before pushing — all checks must pass
 - Standalone file writes use `safeWrite()` with backups before overwrite.
   Lifecycle operations spanning multiple files use `commitFileTransaction()` so
