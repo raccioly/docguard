@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.2] - 2026-10-11
+
 ### Fixed
 
 - **A spec that removes a file can be completed**
@@ -44,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   `tests/workflow-permissions.test.mjs` reads every workflow and fails one
   that breaks these rules.
+
+### Commits
+
+- chore: verify specs 065-069 (#553)
+- fix: a spec that removes a file can be completed (spec 069) (#552)
+- test: name spec 066 in the test files it moved onto the fixture-git helper (#551)
+- fix: workflow jobs run code without repository write tokens (spec 068) (#549)
 
 ## [0.44.1] - 2026-10-11
 
