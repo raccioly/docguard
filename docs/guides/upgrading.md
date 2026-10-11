@@ -197,9 +197,13 @@ written in place. It needs the GitHub CLI (`gh`). DocGuard then:
 4. opens the pull request with `gh pr create`.
 
 You are left on the new branch. Start from a clean working tree. If any step
-fails, the command exits `1`; run it without `--pr` to migrate in place. When
-the schema is already current, there is nothing to migrate and no pull request
-is opened.
+fails, the command exits `1` and undoes its own work: you are back on the
+branch (or commit) you started from, `.docguard.json` is as it was, and the new
+branch is deleted unless it was already pushed. When only `gh pr create`
+failed, the message names the pushed branch so you can open the pull request
+yourself. Any step DocGuard could not undo is printed with the command to run.
+Run without `--pr` to migrate in place. When the schema is already current,
+there is nothing to migrate and no pull request is opened.
 
 `--pr` covers only the schema. Without `--schema-only`, the same run can still
 install the CLI globally and refresh agent files in your working tree.

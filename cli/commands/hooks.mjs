@@ -133,7 +133,7 @@ import { resolve, relative, basename } from 'node:path';
 import { c } from '../shared.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
-import { getHooksDir } from '../shared-git.mjs';
+import { resolveHooksTarget } from '../shared-git.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // Git enforcement is offline and fail-closed; agent nudges stay best-effort.
@@ -328,6 +328,43 @@ fi
 :
 `;
 
+/** Who set a core.hooksPath that is not this repository's own. */
+function sharedFolderOrigin(target) {
+  if (target.reason === 'outside') return `set in this repository's ${target.scope} config, but outside the repository, where other repositories can use it`;
+  if (target.scope === 'global') return 'core.hooksPath from your global Git config, shared by every repository on this machine';
+  if (target.scope === 'system') return 'core.hooksPath from the system Git config, shared by every repository on this machine';
+  if (target.scope === 'command') return 'core.hooksPath from the command line or GIT_CONFIG_* environment, not from this repository';
+  return 'core.hooksPath from a configuration outside this repository';
+}
+
+/**
+ * @implements docguard.hooks-repo-scope#FR-001
+ */
+function refuseSharedFolder(target, hookTypes, flags) {
+  console.log(`  ${c.red}❌ core.hooksPath points at ${target.dir}${c.reset}`);
+  console.log(`     ${sharedFolderOrigin(target)}.`);
+  console.log(`     DocGuard writes, replaces and removes hooks only in this repository's own folder, so it changed nothing.\n`);
+  if (flags.remove) {
+    const present = hookTypes.map(name => hookState(name, target.dir)).filter(s => s.kind === 'managed' || s.kind === 'legacy');
+    if (present.length) {
+      console.log(`  ${c.dim}To remove DocGuard's hooks from the shared folder (every repository that uses it loses them):${c.reset}`);
+      for (const s of present) console.log(`     ${c.cyan}rm ${s.path}${c.reset}`);
+    } else {
+      console.log(`  ${c.dim}No DocGuard hook is installed there.${c.reset}`);
+    }
+  } else {
+    console.log(`  ${c.dim}Choose one:${c.reset}`);
+    console.log(`   ${c.dim}• Add DocGuard to the shared hooks yourself:${c.reset}`);
+    for (const name of hookTypes) {
+      if (MANAGER_COMMANDS[name]) console.log(`       ${name}: ${c.cyan}${MANAGER_COMMANDS[name]}${c.reset}`);
+    }
+    console.log(`   ${c.dim}• Or give this repository its own hooks folder (Git then skips the shared hooks here):${c.reset}`);
+    console.log(`       ${c.cyan}git config --local core.hooksPath .githooks && docguard hooks${c.reset}`);
+  }
+  console.log('');
+  process.exit(1);
+}
+
 export function runHooks(projectDir, config, flags) {
   console.log(`${c.bold}🪝 DocGuard Hooks — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
@@ -344,7 +381,8 @@ export function runHooks(projectDir, config, flags) {
   // Resolve the real hooks dir via git — NOT `<projectDir>/.git/hooks`, which
   // is wrong inside a linked worktree (where `.git` is a file, not a dir) and
   // ignores a custom core.hooksPath.
-  const hooksDir = getHooksDir(projectDir);
+  const target = resolveHooksTarget(projectDir);
+  const hooksDir = target.dir;
   if (!hooksDir) {
     console.log(`  ${c.red}❌ Not a git repository. Run ${c.cyan}git init${c.red} first.${c.reset}\n`);
     process.exit(1);
@@ -369,6 +407,9 @@ export function runHooks(projectDir, config, flags) {
 
   // List mode
   if (flags.list) {
+    if (!target.owned) {
+      console.log(`  ${c.yellow}⚠ These hooks come from a shared folder: ${hooksDir} (${sharedFolderOrigin(target)}).${c.reset}\n`);
+    }
     console.log(`  ${c.bold}Available hooks:${c.reset}\n`);
     for (const [name, hook] of Object.entries(HOOKS)) {
       const state = hookState(name, hooksDir);
@@ -387,6 +428,10 @@ export function runHooks(projectDir, config, flags) {
     console.log(`  ${c.dim}Install all: docguard hooks${c.reset}\n`);
     return;
   }
+
+  // A shared hooks folder runs in other repositories too: installing, forcing
+  // or removing there would change every one of them.
+  if (!target.owned) refuseSharedFolder(target, hookTypes, flags);
 
   // Remove mode
   if (flags.remove) {

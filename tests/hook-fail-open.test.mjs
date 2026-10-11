@@ -18,7 +18,16 @@ import { fileURLToPath } from 'node:url';
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 const git = (args, cwd) => execSync(`git ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
-const run = (args, cwd) => spawnSync('node', [CLI, ...args], { cwd, encoding: 'utf-8', timeout: 60000 });
+// The CLI meets an isolated global and system Git configuration: these tests
+// install hooks, and a contributor's global core.hooksPath must neither receive
+// them nor make the installer refuse (spec 065).
+// @req docguard.hooks-repo-scope#FR-006
+const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+writeFileSync(isolatedGitConfig, '');
+const run = (args, cwd) => spawnSync('node', [CLI, ...args], {
+  cwd, encoding: 'utf-8', timeout: 60000,
+  env: { ...process.env, GIT_CONFIG_GLOBAL: isolatedGitConfig, GIT_CONFIG_NOSYSTEM: '1' },
+});
 
 describe('uninitialised projects are not blocked', () => {
   let dir;
