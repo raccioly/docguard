@@ -10543,22 +10543,31 @@
       "path": "specs/068-release-least-privilege/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
-          "extends": [],
+          "extends": [
+            "docguard.jules-policy",
+            "docguard.release-dispatch-window",
+            "docguard.release-readiness",
+            "docguard.tokenless-scheduled-releases"
+          ],
           "duplicates": [],
           "conflictsWith": [],
           "supersedes": [],
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/CI-RECIPES.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
