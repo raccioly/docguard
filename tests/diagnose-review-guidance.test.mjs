@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const cli = resolve('cli/docguard.mjs');
 

@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -79,6 +79,20 @@ either the sweep or the next release
 schedule sees the current package version without a tag and retries publication
 before considering another bump. An orphaned release branch fails closed; an
 existing open release PR is reused and has auto-merge re-armed.
+
+The scheduler is four jobs, so no test runs beside a write token
+(`specs/068-release-least-privilege`). `cut` (read-only) decides whether a
+release is due, bumps the version, cuts the changelog, synchronizes the package
+surfaces, runs the candidate validation above, and uploads the result as a
+patch before any test runs. `verify` (read-only) applies that patch and runs the
+suite and guard. `open-pr` holds the write scopes and runs no repository code:
+it checks every path in the patch against the release path list, applies it,
+pushes the branch, opens the pull request, arms auto-merge and waits.
+`recover` holds only `actions: write` and dispatches the release workflow when
+the current version has no tag. In the release workflow, the test job is
+read-only, the Spec Kit ZIP, the Claude Desktop bundle and the PyPI
+distribution are built without credentials, and `attach-assets` and
+`publish-pypi` receive only the built files.
 
 The bump is `auto` unless a maintainer dispatches `patch` or `minor`
 (`specs/026-release-readiness`). `.github/scripts/release-changelog.mjs infer`

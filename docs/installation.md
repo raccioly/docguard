@@ -372,10 +372,10 @@ repository; delete the ones you no longer want:
 | Artifact | Built by | Verification |
 |---|---|---|
 | npm package | `release.yml`, `publish-npm` job, with npm Trusted Publishing (OIDC) | npm provenance attestation, generated automatically on publish. Check it with `npm audit signatures` in a project that installs it. |
-| PyPI package | `release.yml`, `publish-pypi` job, with PyPI Trusted Publishing (OIDC) | PyPI attestations published by the publishing action. |
+| PyPI package | `release.yml`: built by `build-pypi` without credentials, published by `publish-pypi` with PyPI Trusted Publishing (OIDC) | PyPI attestations published by the publishing action. |
 | Homebrew formula | `release.yml`, `publish-homebrew` job | Built from the published npm tarball after checking npm's `dist.integrity`. The formula pins its SHA-256. |
 | GHCR image | `release.yml`, `publish-ghcr` job, with the Docker CLI | The job checks that the image answers an MCP `initialize` before it pushes. The image is not signed and has no attestation. |
-| Spec Kit ZIP, MCPB bundle | `release.yml`, `build-extension` and `build-mcpb` jobs | Attached to the GitHub release. No checksum file or attestation is published for them. |
+| Spec Kit ZIP, MCPB bundle | `release.yml`: built by `build-extension` and `build-mcpb` without credentials, attached by `attach-assets` | Attached to the GitHub release. No checksum file or attestation is published for them. |
 | GitHub Action | `action.yml` at the release tag | The actions it uses are pinned to commit SHAs. Pin `raccioly/docguard` to a reviewed tag or commit. |
 
 The npm and PyPI jobs authenticate with OIDC; no long-lived registry token is

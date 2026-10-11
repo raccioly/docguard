@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateDiffSuspicion } from '../cli/validators/diff-suspicion.mjs';
 import { fixtureGit } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 // Build a real git repo: commit code + doc, then change the code (remove a
 // symbol the doc talks about) so HEAD~1..HEAD carries a removed token.

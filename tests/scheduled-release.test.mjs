@@ -45,7 +45,10 @@ const validator = readFileSync(new URL('../.github/scripts/validate-release-cand
 
 describe('scheduled release workflow', () => {
   it('uses only the ephemeral repository token and arms protected native auto-merge', () => {
-    assert.match(workflow, /permissions:\n  actions: write\n  contents: write\n  pull-requests: write\n/);
+    // Read by default; only open-pr, which runs no repository code, holds the
+    // write scopes (docguard.release-least-privilege#FR-005).
+    assert.match(workflow, /^permissions:\n  contents: read\n/m);
+    assert.match(workflow, /  open-pr:\n(?:.*\n)*?    permissions:\n      actions: write\n      contents: write\n      pull-requests: write\n/);
     assert.match(workflow, /gh pr create/);
     assert.match(workflow, /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
     assert.doesNotMatch(workflow, /secrets\.(RELEASE_PR_TOKEN|APP_PRIVATE_KEY|GH_PAT)/);
@@ -220,10 +223,14 @@ describe('scheduled release workflow', () => {
 
   it('pins third-party actions to reviewed commit SHAs', () => {
     const uses = [...workflow.matchAll(/uses:\s*([^@\s]+)@([^\s]+)/g)];
-    assert.deepEqual(uses.map(([, action]) => action), ['actions/checkout', 'actions/setup-node']);
-    for (const [, , revision] of uses) assert.match(revision, /^[a-f0-9]{40}$/);
-    assert.equal(uses[0][2], '3d3c42e5aac5ba805825da76410c181273ba90b1');
-    assert.equal(uses[1][2], '820762786026740c76f36085b0efc47a31fe5020');
+    const reviewed = {
+      'actions/checkout': '3d3c42e5aac5ba805825da76410c181273ba90b1',
+      'actions/setup-node': '820762786026740c76f36085b0efc47a31fe5020',
+      'actions/upload-artifact': '043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
+      'actions/download-artifact': '3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
+    };
+    assert.ok(uses.length > 0);
+    for (const [, action, revision] of uses) assert.equal(revision, reviewed[action], `${action} is pinned to its reviewed SHA`);
   });
 
 });

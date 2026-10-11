@@ -8,6 +8,7 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks, createEvidenceReader, contentHash, gitEvidence, taskEvidence } from '../cli/scanners/semantic-claims.mjs';
 import { buildAgentTaskGraph } from '../cli/commands/agent.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = new URL('../cli/docguard.mjs', import.meta.url).pathname;
 const DOC = 'docs-canonical/LIMITS.md';

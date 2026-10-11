@@ -30,6 +30,7 @@ import { tmpdir } from 'node:os';
 
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { fixtureGit } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function makeRepo(files) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-fixture-'));

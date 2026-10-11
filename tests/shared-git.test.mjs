@@ -28,6 +28,7 @@ import {
   symbolExistsAtRev,
 } from '../cli/shared-git.mjs';
 import { fixtureGit } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function tmp() {
   return mkdtempSync(join(tmpdir(), 'docguard-git-'));

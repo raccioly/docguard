@@ -17,8 +17,14 @@ on:
     paths:
       - 'package.json' # Only run when package.json changes (version bump)
 
+# Read by default. A job that writes asks for its own scope, and no job that
+# runs the test suite, a package manager or a build tool holds a token that can
+# write to the repository: a bot may merge new test files (spec 067), and the
+# assets are built where no write token exists (specs/068-release-least-privilege).
+# Enforced by tests/workflow-permissions.test.mjs.
+# @implements docguard.release-least-privilege#FR-001
 permissions:
-  contents: write # Needed to create tags and releases
+  contents: read
 
 concurrency:
   group: docguard-release
@@ -84,6 +90,9 @@ jobs:
     needs: detect-version
     if: needs.detect-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    # @implements docguard.release-least-privilege#FR-002
+    permissions:
+      contents: read
     strategy:
       matrix:
         # 24 = npm 11 coverage (18/20/22 ship npm 10). Gates releases on the
@@ -93,6 +102,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
@@ -108,6 +118,9 @@ jobs:
     needs: [detect-version, test]
     if: needs.detect-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    # Tags and creates the release with git, awk and gh only: no build, no tests.
+    permissions:
+      contents: write
     outputs:
       tag: v${{ needs.detect-version.outputs.version }}
     steps:
@@ -164,11 +177,17 @@ jobs:
           fi
 
   # ── Step 4: Build and attach spec-kit extension ZIP ────────────────────
+  # Built without credentials; attach-assets uploads it.
+  # @implements docguard.release-least-privilege#FR-004
   build-extension:
     needs: [detect-version, create-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build extension ZIP
         run: |
@@ -179,14 +198,13 @@ jobs:
           echo "--- ZIP contents ---"
           unzip -l "spec-kit-docguard-v${VERSION}.zip"
 
-      - name: Upload to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ needs.detect-version.outputs.version }}"
-          gh release upload "v${VERSION}" \
-            "spec-kit-docguard-v${VERSION}.zip" \
-            --clobber
+      - name: Hand the ZIP to attach-assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spec-kit-extension
+          path: spec-kit-docguard-v${{ needs.detect-version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 3
 
   # ── Step 4c: Publish the MCP server image to GHCR ──────────────────────
   # The Dockerfile already existed but was only ever built FROM SOURCE by MCP
@@ -214,11 +232,13 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Build and push image
+      # The registry login comes after the build and the smoke run, so neither
+      # runs with a credential on the runner.
+      # @implements docguard.release-least-privilege#FR-006
+      - name: Build and smoke-test the image
         run: |
           VERSION="${{ needs.detect-version.outputs.version }}"
           # GHCR requires a lowercase path; github.repository is already
@@ -237,6 +257,13 @@ jobs:
           echo "response: ${OUT:0:200}"
           echo "$OUT" | grep -q '"jsonrpc"' || { echo "::error::Image did not answer an MCP initialize over stdio — not publishing."; exit 1; }
 
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push the image
+        run: |
+          VERSION="${{ needs.detect-version.outputs.version }}"
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           docker push "$IMAGE:$VERSION"
           docker push "$IMAGE:latest"
           echo "Published $IMAGE:$VERSION and :latest"
@@ -246,11 +273,17 @@ jobs:
   # Stages the exact npm-pack payload + the one production dep, stamps the
   # manifest template, and packs with the official @anthropic-ai/mcpb tool
   # (its schema is strict — the template must contain no unknown keys).
+  # npm pack, npm install and npx run here without credentials; attach-assets
+  # uploads the bundle. @implements docguard.release-least-privilege#FR-004
   build-mcpb:
     needs: [detect-version, create-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 20
@@ -265,14 +298,41 @@ jobs:
           sed "s/__VERSION__/${VERSION}/" "$GITHUB_WORKSPACE/mcpb/manifest.template.json" > manifest.json
           npx -y @anthropic-ai/mcpb pack . "/tmp/docguard-v${VERSION}.mcpb"
 
-      - name: Upload to release
+      - name: Hand the bundle to attach-assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claude-desktop-bundle
+          path: /tmp/docguard-v${{ needs.detect-version.outputs.version }}.mcpb
+          if-no-files-found: error
+          retention-days: 3
+
+  # ── Step 4d: Attach the built assets to the GitHub Release ─────────────
+  # The only job here that writes release assets. It checks nothing out and
+  # runs no build: it receives the files the read-only jobs produced.
+  # @implements docguard.release-least-privilege#FR-004
+  attach-assets:
+    needs: [detect-version, create-release, build-extension, build-mcpb]
+    if: needs.detect-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Receive the built assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: ${{ runner.temp }}/assets
+          merge-multiple: true
+
+      - name: Upload to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ needs.detect-version.outputs.version }}"
+          ls -l "$RUNNER_TEMP/assets"
           gh release upload "v${VERSION}" \
-            "/tmp/docguard-v${VERSION}.mcpb" \
-            --clobber
+            "$RUNNER_TEMP/assets/spec-kit-docguard-v${VERSION}.zip" \
+            "$RUNNER_TEMP/assets/docguard-v${VERSION}.mcpb" \
+            --clobber --repo "${{ github.repository }}"
 
   # ── Step 5b: Homebrew tap ──────────────────────────────────────────────
   # Renders packaging/homebrew/docguard.rb from the PUBLISHED tarball (checked
@@ -293,6 +353,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
@@ -326,6 +388,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           # MUST be >= 22.14.0. npm Trusted Publishing (OIDC) requires
@@ -419,9 +483,49 @@ jobs:
       - name: Publish (provenance is automatic under Trusted Publishing)
         run: npm publish --loglevel verbose
 
-  # ── Step 6: Publish to PyPI ────────────────────────────────────────────
+  # ── Step 6: Build, then publish to PyPI ───────────────────────────────
+  # The build (pip, setuptools, the repository's packaging) runs without any
+  # credential and hands dist/ over as an artifact; the publishing job only
+  # downloads it and holds the OIDC permission. PyPI's trusted publisher is
+  # bound to this workflow file and the `pypi` environment, not to a job name.
+  # @implements docguard.release-least-privilege#FR-004
+  build-pypi:
+    needs: [detect-version, test]
+    if: needs.detect-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Sync version in pyproject.toml
+        run: |
+          VERSION="${{ needs.detect-version.outputs.version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          echo "Building version $VERSION"
+          grep 'version' pyproject.toml
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build
+        run: python -m build
+
+      - name: Hand dist/ to publish-pypi
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pypi-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
+
   publish-pypi:
-    needs: [detect-version, test, create-release]
+    needs: [detect-version, create-release, build-pypi]
     runs-on: ubuntu-latest
     # PyPI Trusted Publishing (OIDC) — same rationale as publish-npm: a stored
     # API token is a credential that expires silently and takes the release
@@ -434,26 +538,13 @@ jobs:
     # Mirrors the working setup in raccioly/websec-validator's publish.yml.
     environment: pypi
     permissions:
-      contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Receive the built distribution
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          python-version: '3.12'
-
-      - name: Sync version in pyproject.toml
-        run: |
-          VERSION="${{ needs.detect-version.outputs.version }}"
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
-          echo "Publishing version $VERSION"
-          grep 'version' pyproject.toml
-
-      - name: Install build tools
-        run: pip install build
-
-      - name: Build
-        run: python -m build
+          name: pypi-dist
+          path: dist/
 
       # Assert the OIDC precondition before publishing, rather than finding out
       # via an auth error that doesn't name the cause (the npm lesson).
@@ -490,7 +581,7 @@ jobs:
   # builds a prefilled issue-form link and opens a one-click reminder issue
   # in THIS repo. A human submits the real form (so labels/assignment fire).
   sync-catalog:
-    needs: [detect-version, build-extension, publish-npm, publish-pypi]
+    needs: [detect-version, attach-assets, publish-npm, publish-pypi]
     if: needs.detect-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -499,6 +590,8 @@ jobs:
     steps:
       - name: Checkout docguard repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Get version and metadata
         id: meta

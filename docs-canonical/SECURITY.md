@@ -1,7 +1,7 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.16.0 -->
+<!-- docguard:version 0.17.0 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-10-11 -->
 
@@ -138,6 +138,8 @@ change the directory passed to a command.
 
 Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile. The release workflow's `publish-homebrew` job holds the only stored release secret, `HOMEBREW_TAP_DEPLOY_KEY`, a write deploy key scoped to `raccioly/homebrew-tap`. It checks the downloaded npm tarball against `dist.integrity` and pins GitHub's SSH host keys before pushing.
 
+No workflow job runs code beside a token that can write to the repository. Every workflow defaults to `contents: read`, and a job that writes asks for its own scope. A job that runs the test suite or DocGuard on itself holds no write permission and checks out with `persist-credentials: false`, because a bot may merge new test files without a maintainer (spec 067). A job holding `contents`, `actions`, `pull-requests` or `issues` write runs no package manager, build tool or test: the release assets (Spec Kit ZIP, Claude Desktop bundle, PyPI distribution) are built in read-only jobs and handed over as workflow artifacts, the scheduled release cuts and tests in read-only jobs and pushes the exact patch it validated from a job that runs only `git`, `gh` and `jq`, and the GHCR job logs in only after building and smoke-testing the image. The publishing jobs hold only their registry credential (`id-token` or `packages`). `tests/workflow-permissions.test.mjs` fails any workflow that breaks these rules (spec 068).
+
 ## .gitignore Audit
 
 Exclude `node_modules`, environment values, generated build output, and private local files from version control. `.docguardignore` controls analysis coverage separately; it is not a secrecy boundary for every tool that runs in the repository.
@@ -158,6 +160,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.17.0 | 2026-10-11 | Workflow jobs run tests, package managers and build tools without a repository write token; release assets are built read-only (spec 068) |
 | 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
