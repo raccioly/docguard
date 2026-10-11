@@ -185,7 +185,7 @@ function techStackDiff(dir, config = {}) {
   // Monorepo-aware and ecosystem-aware: package.json files (root, source root,
   // workspaces) and every other manifest detectEcosystems parses. A repo with
   // no manifest anywhere yields no code-side truth → return null.
-  // @implements docguard.dogfood-round-2#FR-007
+  // @implements docguard.dogfood-round-2#FR-007 {scope=statement}
   const scan = scanCodeTechnologies(dir, config);
   if (!scan.hasManifest) return null;
 

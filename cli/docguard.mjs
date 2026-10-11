@@ -706,7 +706,7 @@ async function main() {
     } else if (args[i] === '--root' && args[i + 1]) {
       // mcp: another directory tree tool calls may target with projectDir
       // (repeatable). The served directory is always one
-      // @implements docguard.mcp-project-confinement#FR-005
+      // @implements docguard.mcp-project-confinement#FR-005 {scope=statement}
       flags.roots = flags.roots || [];
       flags.roots.push(args[i + 1]);
       i++;
@@ -913,10 +913,10 @@ async function main() {
   // read-only commands that gated a dispatcher-wide install here failed open:
   // `rules`, `reconcile`, `upgrade`, `watch`, the `generate --spec` and `sync`
   // previews, and even an unknown command name scaffolded ~17 files.
-  // @implements docguard.read-only-commands#FR-001
-  // @implements docguard.read-only-commands#FR-002
-  // @implements docguard.read-only-commands#FR-003
-  // @implements docguard.read-only-commands#FR-004
+  // @implements docguard.read-only-commands#FR-001 {scope=file}
+  // @implements docguard.read-only-commands#FR-002 {scope=file}
+  // @implements docguard.read-only-commands#FR-003 {scope=file}
+  // @implements docguard.read-only-commands#FR-004 {scope=file}
 
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode
@@ -1004,7 +1004,7 @@ async function main() {
     case 'agent':
       // v0.26 (field report §2): one-shot, dependency-ordered task graph with
       // pre-filled code-truth + per-task verify. Read-only; JSON by default.
-      // @implements docguard.task-specific-agent-context#FR-010
+      // @implements docguard.task-specific-agent-context#FR-010 {scope=statement}
       runAgent(projectDir, config, flags);
       break;
     case 'hooks':

@@ -392,7 +392,7 @@ export async function runSetup(projectDir, config, flags) {
 
   // The folder Git actually runs hooks from (linked worktrees, core.hooksPath),
   // and never a folder shared with other repositories.
-  // @implements docguard.hooks-repo-scope#FR-004
+  // @implements docguard.hooks-repo-scope#FR-004 {scope=statement}
   const hooksTarget = resolveHooksTarget(projectDir);
   if (!hooksTarget.dir) {
     console.log(`  ${c.dim}──${c.reset}  No .git directory ${c.dim}(not a git repo)${c.reset}`);

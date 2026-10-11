@@ -1,6 +1,6 @@
 /**
  * Combine the guard verdict and optional CI policy into one readiness result.
- * @implements docguard.adoption-workflow-integrity#FR-009
+ * @implements docguard.adoption-workflow-integrity#FR-009 {scope=symbol}
  *
  * Structural maturity remains an independent 0-100 measure. It can explain
  * the quality of the documentation system, but it cannot override a failed

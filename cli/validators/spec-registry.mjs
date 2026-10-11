@@ -12,7 +12,6 @@ import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
  * @implements docguard.completion-revision-anchoring#FR-002
  * @implements docguard.asset-path-attribution#FR-003
  */
-
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   if (projection.detected === 0 && !projection.exists) {

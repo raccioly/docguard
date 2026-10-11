@@ -229,7 +229,7 @@ export function resolveSourceRoots(projectDir, config = {}) {
   // Next.js keeps pages and UI at the top level (`src/` forms are already under
   // `src`). Added only for a Next.js project, so every other project's roots —
   // and every scanner that reads them — stay unchanged.
-  // @implements docguard.js-ts-extraction#FR-004
+  // @implements docguard.js-ts-extraction#FR-004 {scope=statement}
   if (isNextJsProject(projectDir)) {
     for (const nr of NEXT_JS_ROOTS) add(resolve(projectDir, nr));
   }

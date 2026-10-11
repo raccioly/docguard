@@ -199,6 +199,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Cache identity.** The anchor cache is keyed by the resolver code and the
     requirement patterns too, so an upgrade or a custom
     `traceability.requirementPattern` is never answered with stale anchors.
+- **DocGuard's own requirement tags name their scope.** Every tag that sat
+  below an import, inside a function, or in a header directly above a
+  declaration now says `{scope=file}`, `{scope=symbol}` or
+  `{scope=statement}`. `docguard anchors` on this repository reports no ANC006
+  or ANC007, and every link is reviewed or baselined.
 
 ### Changed
 
