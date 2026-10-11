@@ -3435,12 +3435,12 @@
           {
             "requirementId": "FR-018",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 18
+            "line": 27
           },
           {
             "requirementId": "FR-019",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 19
+            "line": 28
           },
           {
             "requirementId": "FR-020",
@@ -4365,22 +4365,22 @@
           {
             "requirementId": "FR-001",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 272
+            "line": 281
           },
           {
             "requirementId": "FR-002",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 273
+            "line": 282
           },
           {
             "requirementId": "FR-003",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 274
+            "line": 283
           },
           {
             "requirementId": "FR-004",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 275
+            "line": 284
           },
           {
             "requirementId": "FR-005",
@@ -4390,12 +4390,12 @@
           {
             "requirementId": "FR-006",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 276
+            "line": 285
           },
           {
             "requirementId": "SC-001",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 277
+            "line": 286
           },
           {
             "requirementId": "SC-002",
@@ -4405,7 +4405,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/hooks-contract.test.mjs",
-            "line": 278
+            "line": 287
           }
         ]
       }
@@ -5530,6 +5530,155 @@
             "requirementId": "SC-003",
             "file": "tests/go-spring-rails-routes.test.mjs",
             "line": 23
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.hooks-repo-scope",
+      "path": "specs/065-hooks-repo-scope/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.hooks-repo-scope#FR-001",
+          "docguard.hooks-repo-scope#FR-002",
+          "docguard.hooks-repo-scope#FR-003",
+          "docguard.hooks-repo-scope#FR-004",
+          "docguard.hooks-repo-scope#FR-005",
+          "docguard.hooks-repo-scope#FR-006",
+          "docguard.hooks-repo-scope#SC-001",
+          "docguard.hooks-repo-scope#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/065-hooks-repo-scope/spec.md",
+            "digest": "sha256:b5dad772f702b8a8ad068762dfd95db11c709f4853472c9d40325a906c3b57a3"
+          },
+          {
+            "path": "specs/065-hooks-repo-scope/plan.md",
+            "digest": "sha256:119b493d46cdd027d85b7c19d37564e38784665134a7854fa2fa2a1d40ab162b"
+          },
+          {
+            "path": "specs/065-hooks-repo-scope/tasks.md",
+            "digest": "sha256:52ebbca104e8839b7034d974820b456253452a3afc2e02aa97c0bce35de5dc6c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/hooks.mjs",
+            "line": 341
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-git.mjs",
+            "line": 542
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-git.mjs",
+            "line": 543
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/setup.mjs",
+            "line": 395
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/upgrade.mjs",
+            "line": 253
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/field-report-followups.test.mjs",
+            "line": 40
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/hook-fail-open.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/hooks-contract.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/hooks.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/hooks-repo-scope.test.mjs",
+            "line": 14
           }
         ]
       }
@@ -10832,7 +10981,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 433
+            "line": 492
           },
           {
             "requirementId": "FR-004",

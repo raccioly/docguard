@@ -10,6 +10,15 @@ import { tmpdir } from 'node:os';
 import { runHooks } from '../cli/commands/hooks.mjs';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
+// Hooks install only into this repository's own folder (spec 065). Isolate the
+// global and system Git configuration, so a contributor's global core.hooksPath
+// neither receives these hooks nor makes the installer refuse.
+// @req docguard.hooks-repo-scope#FR-006
+const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+writeFileSync(isolatedGitConfig, '');
+process.env.GIT_CONFIG_GLOBAL = isolatedGitConfig;
+process.env.GIT_CONFIG_NOSYSTEM = '1';
+
 // Full-suite runs execute several subprocess-heavy files in parallel. Keep this
 // deadline bounded while allowing for scheduler contention on slower CI hosts.
 const PROCESS_TIMEOUT_MS = 15000;

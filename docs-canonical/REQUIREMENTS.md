@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.1 -->
+<!-- docguard:version 0.9.2 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-10 -->
+<!-- docguard:last-reviewed 2026-10-11 -->
 
 ## Functional Requirements
 
@@ -32,7 +32,7 @@
 | FR-015 | P1 | JavaScript route discovery excludes HTTP-client calls and non-product helpers before deduplication, and composes static Express mounts (literal or built from `const` strings) across imported routers; a route path or mount prefix that cannot be read is recorded as partial coverage, never reported at a placeholder or at the root. | tests/js-ast.test.mjs, tests/routes-express-mounts.test.mjs, tests/js-route-shapes.test.mjs |
 | FR-022 | P1 | API contract omissions remain review-only because negative route extraction cannot prove runtime absence or authorize deletion. | tests/api-authority-precision.test.mjs, tests/api-write.test.mjs, tests/doc-role-boundaries.test.mjs |
 | FR-023 | P1 | Field warning precision preserves historical prose, multiline skip reasons, test-fixture context, package-local capability counts, package-local env templates, authoritative OpenAPI selection, route-parameter equivalence, service boundaries, and runtime/schema parity. | tests/metrics-consistency.test.mjs, tests/todo-tracking.test.mjs, tests/field-context-precision.test.mjs, tests/environment.test.mjs, tests/docs-sync.test.mjs, tests/docguard-config-schema.test.mjs |
-| FR-024 | P1 | A repo-wide Git hook must not block a working tree that never adopted DocGuard: guard reports errors in a project without `.docguard.json` as exit 3 rather than 1, the installed hook skips such a tree and permits exit 3, and adopted projects stay gated. Overwriting a foreign hook requires explicit repeated `--force` and never silently discards its backup. | tests/hook-fail-open.test.mjs, tests/hooks-contract.test.mjs |
+| FR-024 | P1 | A repo-wide Git hook must not block a working tree that never adopted DocGuard: guard reports errors in a project without `.docguard.json` as exit 3 rather than 1, the installed hook skips such a tree and permits exit 3, and adopted projects stay gated. Overwriting a foreign hook requires explicit repeated `--force` and never silently discards its backup. Hooks are installed, replaced or removed only in a hooks folder the repository owns, never in a global, system, command-line or out-of-repository `core.hooksPath`. | tests/hook-fail-open.test.mjs, tests/hooks-contract.test.mjs, tests/hooks-repo-scope.test.mjs |
 | FR-025 | P2 | Metrics-Consistency compares a documented count with what ships (validators counted from `cli/validators/`), and reports one drifted value once per file and label, not once per occurrence. | tests/metrics-dedup.test.mjs |
 
 ## Non-Functional Requirements
@@ -60,6 +60,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.2 | 2026-10-11 | FR-024: hooks are written only into a folder the repository owns (spec 065) |
 | 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |
 | 0.9.0 | 2026-09-30 | Add FR-025 (Metrics-Consistency counts what ships and reports each drifted value once); record that the symbol map stays opt-in until the v2 protocol runs |
 | 0.8.0 | 2026-09-29 | Renumber the second FR-016/017/018 rows to FR-022/023/024: each ID was used for two different requirements, and path-qualified test annotations bound to the second meaning |
