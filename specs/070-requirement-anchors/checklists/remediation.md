@@ -112,10 +112,13 @@ the exact commit being released. The results are recorded under
 
 ### Gate results
 
-These are interim runs. The gate itself is the run on the final commit.
+Items 1 to 9 pass at c22a6da (the release candidate as of 2026-10-11). Item 10 waits for Ricardo. If more commits land before the release, items 1, 2 and 9 are re-run on the final commit.
 
 | Item | Commit | Result | Evidence |
 |------|--------|--------|----------|
+| 1 | c22a6da | PASS | CI `test` on Node 18, 20, 22 and 24 green. Locally: Node 24 3,706/3,707 before the llms refresh (that one fixed), and Node 18 3,712/3,713, whose one failure was a private name in uncommitted gate notes, removed before commit. No skips beyond the documented python-version and oracle-install ones |
+| 2 | c22a6da | PASS | `docguard guard`: PASS, no findings |
+| 9 | 1b232b1, c22a6da | PASS | TestGuard 0.15.0 `--confirm 3 --serial` on all 11 spec 070 claims: 98/98 faults killed at 1b232b1, and ANCHOR-FINGERPRINT-GOLDEN 9/9 again at c22a6da after the `.mjs` staging fix. The claims file's 10 invalid anchors are the same 10 that predate spec 070 on main |
 | 3 | 1b232b1 | PASS | `guard --format json` from 0.44.3 and from the candidate on a `git archive` export of the same commit. 73 shared findings, identical (the bare export has no history). Base only: SPR001 (the FR-005 evidence projection) and MET001 ×2 (the validator count: 34 with `requirementAnchors`). Candidate only: none. The four evidence differences are listed in CHANGELOG. `specs --check` is CURRENT for the candidate; the base disagrees only through that projection. Run in place, 0.44.3 also flags two TODOs in `cli/validators/todo-tracking.mjs` that the candidate skips: `isSelfPath` skips the running validator's own source, a pre-existing behavior, not spec 070 |
 | 4 | 1b232b1 | PASS | `git archive` exports, base 0.44.3 against the candidate. Identical guard output on testguard (3 findings), web-security-validator (18), and seven local projects of mixed stacks (TypeScript/React, Python, Python with TypeScript, 9 to 183 findings each). `requirementAnchors` is not applicable on all nine. `docguard anchors` runs on each. ANC006 ×2 on one project, reviewed: header comments directly above a variable, correctly ambiguous. ANC010 on two projects, reviewed: they commit `.docguard/plan.cache.json`, so the anchor cache correctly refuses `.docguard/`. The spec-071 public clones were temporary and no longer exist, so the local projects stand in for that corpus |
 | 5 | 1b232b1 | PASS | guard PASS with no findings: no DLK001 |
