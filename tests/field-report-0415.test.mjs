@@ -17,6 +17,7 @@ import { digestSource } from '../cli/scanners/spec-registry.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validateDocsCoverage } from '../cli/validators/docs-coverage.mjs';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const runGit = (args, cwd) => execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });
 

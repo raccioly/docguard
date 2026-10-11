@@ -9,6 +9,7 @@ import { removedTokens } from '../cli/shared-diff.mjs';
 import { validateDiffSuspicion } from '../cli/validators/diff-suspicion.mjs';
 import { diffTechStack, validateDocsDiff } from '../cli/validators/docs-diff.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'dg-field-diff-'));

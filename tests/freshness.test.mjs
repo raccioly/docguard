@@ -8,6 +8,7 @@ import { syncBuiltinESMExports } from 'node:module';
 
 import { validateFreshness, readLastReviewedDate } from '../cli/validators/freshness.mjs';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const runGit = (args, cwd) => {
   return execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, encoding: 'utf-8', stdio: 'pipe' });

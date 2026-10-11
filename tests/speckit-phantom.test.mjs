@@ -14,6 +14,7 @@ const CBU = '- [ ' + '] ';
 
 import { validateSpecKitIntegration, parseCheckedTasks } from '../cli/scanners/speckit.mjs';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 let hasGit = true;
 try { execSync(`git ${FIXTURE_GIT_SHELL} --version`, { stdio: 'ignore' }); } catch { hasGit = false; }

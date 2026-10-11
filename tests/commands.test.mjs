@@ -889,6 +889,7 @@ describe('docguard trace error handling', () => {
 
 import { getTestFilesFromPatterns } from '../cli/validators/docs-diff.mjs';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
+// @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 describe('getTestFilesFromPatterns', () => {
   it('should return empty array if directory does not exist', () => {
     const results = getTestFilesFromPatterns('/path/that/does/not/exist/for/sure/12345', ['**/*.test.js']);
