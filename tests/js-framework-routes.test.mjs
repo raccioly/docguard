@@ -33,6 +33,7 @@ import {
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { validateApiSurface, detectRouteFramework } from '../cli/validators/api-surface.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
@@ -327,7 +328,7 @@ describe('FR-008: the docs say what is read', () => {
   it('names the readers in the architecture and the change in the changelog', () => {
     const arch = read('docs-canonical/ARCHITECTURE.md');
     for (const file of ['nest-routes.mjs', 'worker-routes.mjs', 'router-routes.mjs']) assert.ok(arch.includes(file), file);
-    const unreleased = read('CHANGELOG.md').split(/^## \[/m)[1];
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.43.1');
     assert.match(unreleased, /specs\/058-js-framework-routes/);
   });
 });

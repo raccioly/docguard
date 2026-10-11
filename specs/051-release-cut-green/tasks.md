@@ -25,3 +25,7 @@
 
 - [x] T006 Replay the cut on a scratch worktree and run the full suite (SC-001).
 - [x] T007 `CHANGELOG.md`; `npm test`; `npm run llms`; `docguard specs --write`; `docguard guard` (SC-002).
+
+## Phase 4: Amendment (2026-10-10)
+
+- [x] T010 FR-008: lint test in `tests/release-cut-green.test.mjs`; `tests/js-framework-routes.test.mjs` and `tests/js-route-shapes.test.mjs` read `notesSince(…, '0.43.1')`.
