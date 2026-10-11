@@ -254,14 +254,14 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 6: US4, moving or renaming keeps the review (P2, PR 4)
 
-- [ ] T044 [P] [US4] Rename fixture `tests/fixtures/anchors/rename/` and `tests/requirement-anchors-rename.test.mjs`:
+- [x] T044 [P] [US4] Rename fixture `tests/fixtures/anchors/rename/` and `tests/requirement-anchors-rename.test.mjs`:
   - rename plus move with an unchanged body gives moved, 0 suspect and 0 lost;
   - duplicate identical bodies give lost;
   - the only implementation deleted gives exactly 1 lost.
 
   (FR-030, SC-009)
-- [ ] T045 [US4] Add carry-over to `cli/scanners/anchors.mjs`. A reviewed entry with no resolving anchor becomes moved only when exactly one unreviewed link has the same requirement and the same v1 exact fingerprint. The lock is never written; the next accept rewrites the key. Add the info note to the validator (FR-030)
-- [ ] T046 [US4] Docs (`docs-canonical/DATA-MODEL.md` transitions). Close story 4 with the claim `ANCHOR-MOVE-CARRIES-REVIEW`, `CHANGELOG.md` and `specs --write`
+- [x] T045 [US4] Add carry-over to `cli/scanners/anchors.mjs`. A reviewed entry with no resolving anchor becomes moved only when exactly one unreviewed link has the same requirement and the same v1 exact fingerprint. The lock is never written; the next accept rewrites the key. Add the info note to the validator (FR-030)
+- [x] T046 [US4] Docs (`docs-canonical/DATA-MODEL.md` transitions). Close story 4 with the claim `ANCHOR-MOVE-CARRIES-REVIEW`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 7: US5, see what else a change may affect (P2, PR 5)
 

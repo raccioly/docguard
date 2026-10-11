@@ -82,6 +82,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Completion.** `specs complete` no longer counts the completing spec's
     own failing anchors toward SPC007; it lists them with their accept
     commands.
+- **A renamed or moved function keeps its review**
+  (`specs/070-requirement-anchors`, user story 4).
+  - **Moved.** The anchor fingerprint leaves out the symbol's own name, so a
+    function renamed or moved with an unchanged body is reported as moved,
+    not lost and unreviewed. The next accept rewrites its lock key.
+  - **Lost.** Two identical candidate bodies, or a changed body, leave the
+    old link lost (ANC003). DocGuard does no similarity matching.
 
 ### Changed
 

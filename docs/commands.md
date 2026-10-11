@@ -622,6 +622,15 @@ Rules for an accept:
   characters.
 - `--baseline` stamps links as baselined, never as reviewed.
 
+**Renaming and moving.** The fingerprint leaves out a symbol's own name, so a
+function renamed or moved with an unchanged body is reported **moved**. Its
+review carries over, and the next accept rewrites its key. The carry-over
+needs exactly one new link for the same requirement with the same
+fingerprint; two identical bodies, or none, leave the old link **lost**.
+
+A tag that ends up as the first thing in a new file is read as that file's
+header. Put an import above it, or write `{scope=symbol}`.
+
 With the lock committed, guard reports:
 - **ANC001**: a link whose code changed;
 - **ANC002**: a link whose requirement changed;

@@ -81,7 +81,7 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
       suggestion: suggestionFor(projectDir, p),
     }));
   }
-  const counted = computed.links.filter(l => l.state === 'reviewed' || l.state === 'baselined' || l.state === 'unreviewed').length;
+  const counted = computed.links.filter(l => ['reviewed', 'baselined', 'unreviewed', 'moved'].includes(l.state)).length;
   // Every error is shown (an error count must equal what `specs complete`
   // exempts, FR-029); warnings are capped to keep the report readable.
   const shown = [...findings.filter(f => f.severity === 'error'), ...findings.filter(f => f.severity !== 'error').slice(0, MAX_FINDINGS)];

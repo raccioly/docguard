@@ -161,7 +161,9 @@ function accept(projectDir, config, flags) {
     const date = today();
     const bulk = selected.length > 1;
     for (const l of selected) {
-      const prior = links.get(l.key);
+      // A moved link's review lives under its old key: rewrite it (FR-030).
+      if (l.movedFrom) links.delete(l.movedFrom);
+      const prior = links.get(l.key) || l.entry || null;
       links.set(l.key, {
         key: l.key, requirement: l.requirement, file: l.file, anchor: l.anchor, scope: l.scope, tier: l.tier,
         code: l.exact, floor: l.floor, req: l.req,

@@ -11369,11 +11369,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:590d62f37f3a4f4034ff3412050ea8e12d5b8b4cbb02aeb702e5a4d5be0fed07"
+            "digest": "sha256:de825ad0ccb6293c86fe7da6f7b735902b81c478f697911dda03ff316d6f753e"
           }
         ],
         "taskCompletion": {
-          "checked": 43,
+          "checked": 46,
           "total": 79
         },
         "implementationEvidence": [
@@ -11770,6 +11770,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-030",
+            "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-039",
             "file": "tests/requirement-anchors-golden.test.mjs",
             "line": 15
@@ -11808,6 +11813,11 @@
             "requirementId": "SC-008",
             "file": "tests/requirement-evidence-literals.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "SC-009",
+            "file": "tests/requirement-anchors-rename.test.mjs",
+            "line": 8
           }
         ]
       }

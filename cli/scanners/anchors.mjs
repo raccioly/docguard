@@ -386,9 +386,40 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     }
     return { ...withEntry, state: 'suspect', side: cmp.side };
   });
+  // FR-030: a reviewed entry whose anchor no longer resolves carries over to
+  // the ONE unreviewed link with the same requirement and the same code
+  // fingerprint (a rename or move with an unchanged body: v1 leaves the
+  // symbol's own name out). Zero or several candidates is lost; no similarity
+  // matching, because trivial bodies collide. Nothing is written: the next
+  // accept rewrites the key.
+  const unreviewedByCode = new Map();
+  for (const l of links) {
+    if (l.state !== 'unreviewed') continue;
+    const k = `${l.requirement}\u0000${l.exact}`;
+    unreviewedByCode.set(k, [...(unreviewedByCode.get(k) || []), l]);
+  }
+  const claims = new Map(); // candidate key → lost entry keys that point at it
+  const orphaned = [...lock.links].filter(([key]) => !current.has(key));
+  for (const [key, entry] of orphaned) {
+    const candidates = unreviewedByCode.get(`${entry.requirement}\u0000${entry.code}`) || [];
+    if (candidates.length === 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);
+  }
+  const movedTo = new Map(); // old key → new link
+  for (const [candidateKey, oldKeys] of claims) {
+    if (oldKeys.length !== 1) continue; // two vanished entries, one body: ambiguous
+    movedTo.set(oldKeys[0], links.find(l => l.key === candidateKey));
+  }
+  for (const [oldKey, target] of movedTo) {
+    const entry = lock.links.get(oldKey);
+    const index = links.indexOf(target);
+    links[index] = { ...target, state: 'moved', entry, reviewedState: entry.state, movedFrom: oldKey };
+    const unreviewedNote = problems.findIndex(p => p.code === 'ANC004' && p.file === target.file && p.line === target.tagLine && p.message.startsWith(target.requirement));
+    if (unreviewedNote >= 0) problems.splice(unreviewedNote, 1);
+    notes.push(`${target.requirement} moved from ${entry.file}${entry.scope === 'file' ? '' : ` ${entry.anchor}`} to ${target.file}${target.scope === 'file' ? '' : ` ${target.anchor}`} with its code unchanged; its ${entry.state} review carries over until the next accept rewrites the key.`);
+  }
   const lost = [];
   for (const [key, entry] of lock.links) {
-    if (current.has(key)) continue;
+    if (current.has(key) || movedTo.has(key)) continue;
     const exists = base.requirements?.has(entry.requirement);
     const retired = !exists && base.retired?.has(entry.requirement);
     const item = { key, requirement: entry.requirement, file: entry.file, anchor: entry.anchor, scope: entry.scope, tier: entry.tier, entry, state: retired ? 'retired-target' : 'lost' };

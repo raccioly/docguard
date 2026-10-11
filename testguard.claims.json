@@ -1999,7 +1999,7 @@
           "description": "A deleted tag of a reviewed link is never reported lost.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/anchors.mjs",
-          "find": "    if (current.has(key)) continue;",
+          "find": "    if (current.has(key) || movedTo.has(key)) continue;",
           "replace": "    if (true) continue;",
           "producedBy": {
             "producer": "agent",
@@ -2178,6 +2178,60 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ANCHOR-MOVE-CARRIES-REVIEW",
+      "statement": "A reviewed link whose code was renamed or moved with an unchanged body carries its review over as moved, only when exactly one new link for the same requirement has the same fingerprint; the next accept rewrites the key and drops the old entry; otherwise the old link is lost.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-030"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 4)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-rename.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Several candidates still carry the review over.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (candidates.length === 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);",
+          "replace": "    if (candidates.length >= 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A moved link is still reported lost.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    if (current.has(key) || movedTo.has(key)) continue;",
+          "replace": "    if (current.has(key)) continue;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Accepting a moved link keeps the old entry.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/anchors.mjs",
+          "find": "      if (l.movedFrom) links.delete(l.movedFrom);",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 4)"
           }
         }
       ]

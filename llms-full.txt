@@ -1925,6 +1925,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Completion.** `specs complete` no longer counts the completing spec's
     own failing anchors toward SPC007; it lists them with their accept
     commands.
+- **A renamed or moved function keeps its review**
+  (`specs/070-requirement-anchors`, user story 4).
+  - **Moved.** The anchor fingerprint leaves out the symbol's own name, so a
+    function renamed or moved with an unchanged body is reported as moved,
+    not lost and unreviewed. The next accept rewrites its lock key.
+  - **Lost.** Two identical candidate bodies, or a changed body, leave the
+    old link lost (ANC003). DocGuard does no similarity matching.
 
 ### Changed
 
@@ -2234,15 +2241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Object's `fetch` is not public and is not read.
   - itty-router (with `base`) and Hono on Workers. Hono now applies
     `basePath()` and `app.route('/prefix', subApp)` across files, with or
-    without Wrangler, and reads routers with any name.
 
-  These routes carry the tier they were read at (`js-ast`, or
-  `regex-fallback` for a file that does not parse). A path DocGuard cannot
-  read statically, such as an imported constant or a `startsWith` dispatch, is
-  left out, and the API-surface check reports `partial` with the count and the
-  first location.
-
-<!-- truncated: 5392 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5399 more lines — read CHANGELOG.md directly -->
 
 ---
 
