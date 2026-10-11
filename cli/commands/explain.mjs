@@ -320,7 +320,7 @@ const EXPLAINERS = {
       ['documents declare', 'Qualify the bare ID with its Spec ID.'],
       ['anchored at a lower tier', 'Install the missing parser (python3) or fix the file that does not parse; the anchors still count, less precisely.'],
       ['The anchor cache was ignored', 'Untrack `.docguard/` with `git rm --cached -r .docguard`.'],
-      ['changed since it was', 'Read the change (the finding carries the git diff command), then `docguard anchors accept --link \'<key>\' --reason "<what you checked>"`.'],
+      ['changed since it was', 'Read the change (the finding carries the git diff command), then `docguard anchors accept --link \'<key>\' --reason "<what you checked>"`. It is an error only under anchors.failOn reviewed-exact (the default) for a reviewed, exact-tier link at symbol, statement or route scope.'],
       ['changed its text since', 'Read the new requirement text against the code, then accept the link again.'],
       ['no tag anchors it any more', 'Restore the tag where the requirement is implemented, or `docguard anchors accept --remove \'<key>\' --reason "…"`.'],
       ['retired or superseded spec', 'Point the tag at the requirement that replaced it, or remove it.'],

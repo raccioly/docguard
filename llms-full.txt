@@ -307,7 +307,7 @@ Requirement definitions are identified by immutable spec ID plus requirement ID 
 
 Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness. Each definition also carries its whole `block` (a list item with its nested lines, a heading through the next heading, a table row, or a paragraph) so a requirement fingerprint sees every line of it, while `text` stays the declaration line that the TF-IDF test hint and preflight overlap detection read.
 
-Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded.
+Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
 <!-- /docguard:section -->
 
 
@@ -584,6 +584,16 @@ once, and commit the lock. Baselined links are never counted as reviewed;
 - a reviewed link whose tag is gone (ANC003).
 
 Read the change, then `docguard anchors accept --link '<key>' --reason "<what you checked>"`.
+
+**Failures.** Under the default `anchors.failOn: reviewed-exact`, ANC001 and
+ANC003 fail guard only for a link that was accepted as reviewed, is anchored
+to a symbol, statement or route, and was read by Babel or python3's `ast`.
+Everything else stays a warning. Set `"anchors": { "failOn": "none" }` to keep
+anchors advisory.
+
+`docguard specs complete` never counts the completing spec's own failing
+anchors toward SPC007. It lists them with their accept commands instead,
+because completing a spec is how its links get reviewed.
 
 ## Recipe 4 — Score (track CDD maturity over time)
 
@@ -1897,6 +1907,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **What DocGuard does not do.** It edits `.gitattributes` only with
     `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
     to require human review of the lock through CODEOWNERS.
+- **A reviewed link fails guard only where the signal is proven**
+  (`specs/070-requirement-anchors`, user story 3).
+  - **Policy.** Under `anchors.failOn: reviewed-exact`, ANC001 and ANC003
+    are errors for links that:
+    - someone accepted as reviewed (never merely baselined);
+    - sit at symbol, statement or route scope;
+    - were read by Babel or python3's `ast`.
+
+    Every other anchor finding warns, and a requirement-text change never
+    fails.
+  - **How the default was chosen.** `tools/anchor-churn-replay.mjs`
+    replayed 150 commits of this repository: 1,058 flags, all from commits
+    that changed code, none from formatting-only ones. `reviewed-exact` is
+    therefore the default, and a test keeps the shipped default equal to the
+    committed evidence.
+  - **Completion.** `specs complete` no longer counts the completing spec's
+    own failing anchors toward SPC007; it lists them with their accept
+    commands.
 
 ### Changed
 
@@ -2214,25 +2242,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left out, and the API-surface check reports `partial` with the count and the
   first location.
 
-- **Suppressions that say why, and until when** (`specs/057-ignore-reasons`,
-  #420). A `.docguardignore` line can now end with an expiry and a reason:
-  `src/legacy/**  expires:2026-12-31  # removed with the v2 API`. A `#` starts
-  the reason only after whitespace, so `C#/` is still a pattern, and a line
-  without the new parts reads exactly as before; a line such as
-  `fixtures/ # test data`, which used to match nothing, now excludes
-  `fixtures/`. An entry applies through its expiry day (UTC) and then excludes
-  nothing. A new Suppressions validator reports an expired entry (IGN001), an
-  entry whose expiry is not a calendar date, which also excludes nothing
-  (IGN003), and, with `"suppressions": { "requireReason": true }`, an entry
-  without a reason (IGN002). `docguard ignore` lists every suppression the
-  project has (ignore file, `.docguard.json` arrays, inline `docguard:ignore`
-  pragmas with the reason written after the codes, validator and section N/A
-  markers, baseline fingerprints) with its reason, expiry and state, and
-  writes nothing. `docguard ignore --format claimspec` prints a claimspec v1
-  `ignore` document holding only the `.docguardignore` entries whose reason
-  (8 to 2000 characters), expiry and scope survive exactly; every other
-
-<!-- truncated: 5374 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5392 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -590,6 +590,10 @@ Every link names the tier that placed it:
   balance a file;
 - `file` for YAML and shell.
 
+Only files git tracks are scanned, the same files the spec registry reads; a
+new file's tags appear once it is added. Outside git, the working tree is
+scanned.
+
 The listing works in any project. Guard reports on anchors only after you opt
 in, with a committed `.docguard-anchor-lock.jsonl` or `anchors.enabled: true`.
 It then reports **ANC007** for a tag that cites a requirement nobody declares

@@ -2034,7 +2034,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 236
+            "line": 254
           },
           {
             "requirementId": "FR-003",
@@ -4928,7 +4928,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 345
+            "line": 363
           },
           {
             "requirementId": "FR-006",
@@ -11361,7 +11361,7 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:fc04c909758b0d65579e629696c7d731cdaf10e58fc13b282151eeeb923f0389"
+            "digest": "sha256:ea934f02533b13eaee33b3f284beaeb36a05824aaa0243218c7ce490f9d3414b"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
@@ -11369,11 +11369,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:489644d4173083876cedc6db7833e8b832a7e4d049f069b2bea13edda3c4245f"
+            "digest": "sha256:590d62f37f3a4f4034ff3412050ea8e12d5b8b4cbb02aeb702e5a4d5be0fed07"
           }
         ],
         "taskCompletion": {
-          "checked": 36,
+          "checked": 43,
           "total": 79
         },
         "implementationEvidence": [
@@ -11573,6 +11573,21 @@
             "line": 14
           },
           {
+            "requirementId": "FR-027",
+            "file": "tools/anchor-churn-replay.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-027",
+            "file": "tools/anchor-churn-replay.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "cli/validators/requirement-anchors.mjs",
+            "line": 15
+          },
+          {
             "requirementId": "FR-041",
             "file": "cli/scanners/anchor-cache.mjs",
             "line": 5
@@ -11740,6 +11755,21 @@
             "line": 18
           },
           {
+            "requirementId": "FR-027",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-029",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 11
+          },
+          {
             "requirementId": "FR-039",
             "file": "tests/requirement-anchors-golden.test.mjs",
             "line": 15
@@ -11763,6 +11793,16 @@
             "requirementId": "SC-004",
             "file": "tests/requirement-anchors-lock.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/requirement-anchors-policy.test.mjs",
+            "line": 13
           },
           {
             "requirementId": "SC-008",

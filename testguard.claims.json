@@ -2069,6 +2069,120 @@
       ]
     },
     {
+      "id": "ANCHOR-FAIL-POLICY-SCOPED",
+      "statement": "Under anchors.failOn reviewed-exact, a suspect or lost requirement link fails guard only when it was reviewed, sits at symbol, statement or route scope and was read at an exact tier; a requirement-side change never fails; the shipped default equals the committed replay evidence; and a spec's own failing anchors never block its completion.",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/070-requirement-anchors/spec.md#FR-028"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 3)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-policy.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A baselined link fails like a reviewed one.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && problem.reviewedState === 'reviewed';",
+          "replace": "    && true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A file-scope link fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && PRECISE_SCOPES.has(problem.scope)",
+          "replace": "    && true",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A pattern-tier link fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && isExactTier(problem.tier)",
+          "replace": "    && true",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A requirement-side change fails.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    && (problem.code === 'ANC001' || problem.code === 'ANC003')",
+          "replace": "    && (problem.code === 'ANC001' || problem.code === 'ANC002' || problem.code === 'ANC003')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unknown failOn value is honoured instead of falling back to the measured default.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  return FAIL_POLICIES.includes(value) ? value : ANCHOR_FAIL_DEFAULT;",
+          "replace": "  return value || ANCHOR_FAIL_DEFAULT;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The validator never raises a failing problem to an error.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/requirement-anchors.mjs",
+          "find": "    const severity = isFailingProblem(p, policy) ? 'error' : rule.severity;",
+          "replace": "    const severity = rule.severity;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The completing spec's own failing anchors count toward SPC007.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "  const anchorFindings = spec ? ownFailingAnchors(projectDir, config, spec.specId) : [];",
+          "replace": "  const anchorFindings = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Another spec's failing anchors are exempted too.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "    .filter(p => isFailingProblem(p, policy) && typeof p.requirement === 'string' && p.requirement.startsWith(`${specId}#`))",
+          "replace": "    .filter(p => isFailingProblem(p, policy))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 3)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {

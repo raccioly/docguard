@@ -64,6 +64,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **What DocGuard does not do.** It edits `.gitattributes` only with
     `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
     to require human review of the lock through CODEOWNERS.
+- **A reviewed link fails guard only where the signal is proven**
+  (`specs/070-requirement-anchors`, user story 3).
+  - **Policy.** Under `anchors.failOn: reviewed-exact`, ANC001 and ANC003
+    are errors for links that:
+    - someone accepted as reviewed (never merely baselined);
+    - sit at symbol, statement or route scope;
+    - were read by Babel or python3's `ast`.
+
+    Every other anchor finding warns, and a requirement-text change never
+    fails.
+  - **How the default was chosen.** `tools/anchor-churn-replay.mjs`
+    replayed 150 commits of this repository: 1,058 flags, all from commits
+    that changed code, none from formatting-only ones. `reviewed-exact` is
+    therefore the default, and a test keeps the shipped default equal to the
+    committed evidence.
+  - **Completion.** `specs complete` no longer counts the completing spec's
+    own failing anchors toward SPC007; it lists them with their accept
+    commands.
 
 ### Changed
 

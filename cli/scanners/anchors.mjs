@@ -43,6 +43,42 @@ import { readRetirementManifest } from './retirement-manifest.mjs';
 
 export { ANCHOR_LOCK_PATH };
 export const ANCHOR_ALGO = 1;
+
+/**
+ * The `anchors.failOn` default, decided by measurement, not by taste (FR-027,
+ * FR-028): `tools/anchor-churn-replay.mjs --write-default` sets it from the
+ * committed replay evidence (specs/070-requirement-anchors/evidence/), and a
+ * drift test keeps the two equal. `reviewed-exact` only if the replay saw zero
+ * formatting-only suspects among exact-tier links.
+ */
+export const ANCHOR_FAIL_DEFAULT = 'reviewed-exact';
+export const FAIL_POLICIES = Object.freeze(['none', 'reviewed-exact']);
+const PRECISE_SCOPES = new Set(['symbol', 'statement', 'route']);
+
+/** True for the tiers that read code exactly: Babel, python3's ast, tree-sitter. */
+export const isExactTier = tier => /^(?:babel|python-ast|treesitter)@/.test(tier || '');
+
+/** The project's failure policy: `anchors.failOn`, else the measured default. */
+export function failOnPolicy(config = {}) {
+  const value = config.anchors?.failOn;
+  return FAIL_POLICIES.includes(value) ? value : ANCHOR_FAIL_DEFAULT;
+}
+
+/**
+ * Whether a problem fails guard under the policy (FR-028): a code-side
+ * suspect (ANC001) or a lost link (ANC003) whose link was REVIEWED (never
+ * merely baselined), sits at symbol, statement or route scope, and was read
+ * at an exact tier. A file-scope link changes on any edit in its file, and a
+ * pattern-tier span is an estimate; neither is precise enough to fail a build.
+ * A requirement-side suspect (ANC002) never fails.
+ */
+export function isFailingProblem(problem, policy) {
+  return policy === 'reviewed-exact'
+    && (problem.code === 'ANC001' || problem.code === 'ANC003')
+    && PRECISE_SCOPES.has(problem.scope)
+    && isExactTier(problem.tier)
+    && problem.reviewedState === 'reviewed';
+}
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const TAG_HINT = /@(?:implements|req)\b/;
 const SOURCE_EXT = /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|kts|rb|php|sh|cs|swift|c|h|cc|cpp|cxx|hh|hpp|hxx|ya?ml)$/i;
@@ -340,12 +376,12 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     }
     if (cmp.verdict !== 'suspect') return { ...withEntry, state: cmp.verdict };
     if (cmp.side === 'code' || cmp.side === 'both') {
-      problems.push({ code: 'ANC001', file: link.file, line: link.startLine || link.tagLine, tier: link.tier, confidence: 'high', key: link.key,
+      problems.push({ code: 'ANC001', file: link.file, line: link.startLine || link.tagLine, tier: link.tier, confidence: 'high', key: link.key, requirement: link.requirement,
         scope: link.scope, reviewedState: entry.state, revision: entry.revision,
         message: `${describeLink(link)} changed since it was ${entry.state} (${entry.date}${cmp.tierChanged ? `, compared at the pattern floor because the tier changed from ${entry.tier}` : `, ${link.tier}`})` });
     }
     if (cmp.side === 'requirement' || cmp.side === 'both') {
-      problems.push({ code: 'ANC002', file: link.file, line: link.tagLine, tier: link.tier, confidence: 'high', key: link.key,
+      problems.push({ code: 'ANC002', file: link.file, line: link.tagLine, tier: link.tier, confidence: 'high', key: link.key, requirement: link.requirement,
         message: `${link.requirement} changed its text since ${describeLink(link)} was ${entry.state} (${entry.date})` });
     }
     return { ...withEntry, state: 'suspect', side: cmp.side };
@@ -358,7 +394,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     const item = { key, requirement: entry.requirement, file: entry.file, anchor: entry.anchor, scope: entry.scope, tier: entry.tier, entry, state: retired ? 'retired-target' : 'lost' };
     lost.push(item);
     if (retired) continue;
-    problems.push({ code: 'ANC003', file: entry.file, line: null, tier: entry.tier, confidence: 'high', key, scope: entry.scope, reviewedState: entry.state,
+    problems.push({ code: 'ANC003', file: entry.file, line: null, tier: entry.tier, confidence: 'high', key, scope: entry.scope, reviewedState: entry.state, requirement: entry.requirement,
       message: `${describeLink(entry)} was ${entry.state} on ${entry.date}, but no tag anchors it any more${exists ? ' while the requirement still exists' : ' and the requirement is no longer declared'}; restore the tag where the requirement is implemented, or run \`docguard anchors accept --remove '${key}' --reason "…"\`` });
   }
   const byState = {};

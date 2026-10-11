@@ -228,18 +228,18 @@ follow the policy, and completion is not deadlocked.
 
 ### Tests first
 
-- [ ] T037 [P] [US3] `tests/requirement-anchors-policy.test.mjs`:
+- [x] T037 [P] [US3] `tests/requirement-anchors-policy.test.mjs`:
   - with `failOn: reviewed-exact`, a reviewed symbol-scope exact-tier suspect exits 1;
   - the same change on baselined, file-scope and pattern-tier links exits 2;
   - ANC002 never errors;
   - `ANCHOR_FAIL_DEFAULT` matches the committed evidence (drift test).
 
   (FR-028)
-- [ ] T038 [P] [US3] `tests/requirement-anchors-complete.test.mjs`: `specs complete --id X` succeeds while X's own links are suspect, and lists them with accept commands. Another spec's anchor errors still block SPC007 (FR-029, SC-006)
+- [x] T038 [P] [US3] `tests/requirement-anchors-complete.test.mjs`: `specs complete --id X` succeeds while X's own links are suspect, and lists them with accept commands. Another spec's anchor errors still block SPC007 (FR-029, SC-006)
 
 ### Implementation
 
-- [ ] T039 [US3] Create `tools/anchor-churn-replay.mjs`:
+- [x] T039 [US3] Create `tools/anchor-churn-replay.mjs`:
   - walk first-parent history, reading blobs via `git show` with no checkout;
   - baseline in memory at the start revision;
   - compute states per commit;
@@ -247,10 +247,10 @@ follow the policy, and completion is not deadlocked.
   - write `specs/070-requirement-anchors/evidence/churn-replay.json` and regenerate the `ANCHOR_FAIL_DEFAULT` constant in `cli/scanners/anchors.mjs`.
 
   (FR-027)
-- [ ] T040 [US3] Run the replay over at least the last 100 first-parent commits of this repository and commit the evidence. Record the outcome and the resulting default in `spec.md` under a "Measured outcome" note in the Assumptions section (FR-027, FR-028, SC-005)
-- [ ] T041 [US3] Implement `failOn` in `cli/validators/requirement-anchors.mjs`. Severity becomes error only under FR-028's conditions (FR-028)
-- [ ] T042 [US3] Add the SPC007 exemption in `cli/commands/specs.mjs` `planSpecCompletion`: drop the completing spec's own ANC findings from the error count and print them (FR-029)
-- [ ] T043 [US3] Document the policy, the replay and its evidence in `docs-canonical/CI-RECIPES.md` and `docs/configuration.md`. Close story 3 with the claim `ANCHOR-FAIL-POLICY-SCOPED`, `CHANGELOG.md` and `specs --write`
+- [x] T040 [US3] Run the replay over at least the last 100 first-parent commits of this repository and commit the evidence. Record the outcome and the resulting default in `spec.md` under a "Measured outcome" note in the Assumptions section (FR-027, FR-028, SC-005)
+- [x] T041 [US3] Implement `failOn` in `cli/validators/requirement-anchors.mjs`. Severity becomes error only under FR-028's conditions (FR-028)
+- [x] T042 [US3] Add the SPC007 exemption in `cli/commands/specs.mjs` `planSpecCompletion`: drop the completing spec's own ANC findings from the error count and print them (FR-029)
+- [x] T043 [US3] Document the policy, the replay and its evidence in `docs-canonical/CI-RECIPES.md` and `docs/configuration.md`. Close story 3 with the claim `ANCHOR-FAIL-POLICY-SCOPED`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 6: US4, moving or renaming keeps the review (P2, PR 4)
 

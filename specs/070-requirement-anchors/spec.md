@@ -854,6 +854,24 @@ is reported unavailable and the pattern tier is used.
 - Python's `ast` and Babel stay optional. When they are absent, extraction
   drops to the pattern or file tier and says so (Constitution II, IX).
 
+### Measured outcome (FR-027, recorded 2026-10-11)
+
+`tools/anchor-churn-replay.mjs --commits 150` on this repository
+(`dd44e7c2..86b01828`, evidence in
+[evidence/churn-replay.json](evidence/churn-replay.json)):
+
+- **Flags.** 1,058 flags across 83 of the 150 commits (median 9 per flagged
+  commit, at most 54). All 1,058 came from code-changing commits; 0 came
+  from formatting-only ones. 1,006 of them were at an exact tier.
+- **Lost links.** 5.
+- **Default.** `anchors.failOn` defaults to `reviewed-exact`, the value the
+  replay wrote.
+- **Caveat.** This repository runs no formatter, so formatter churn (for
+  example Prettier's trailing commas) is covered by the golden tests rather
+  than by history.
+- **Who it affects.** Failing applies only to links someone accepted as
+  reviewed. A freshly baselined project fails nothing until it reviews links.
+
 ## Out of Scope
 
 - Similarity or fuzzy re-linking, function-level call graphs, and SCIP or LSIF

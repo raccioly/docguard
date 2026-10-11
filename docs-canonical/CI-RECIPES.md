@@ -268,6 +268,16 @@ once, and commit the lock. Baselined links are never counted as reviewed;
 
 Read the change, then `docguard anchors accept --link '<key>' --reason "<what you checked>"`.
 
+**Failures.** Under the default `anchors.failOn: reviewed-exact`, ANC001 and
+ANC003 fail guard only for a link that was accepted as reviewed, is anchored
+to a symbol, statement or route, and was read by Babel or python3's `ast`.
+Everything else stays a warning. Set `"anchors": { "failOn": "none" }` to keep
+anchors advisory.
+
+`docguard specs complete` never counts the completing spec's own failing
+anchors toward SPC007. It lists them with their accept commands instead,
+because completing a spec is how its links get reviewed.
+
 ## Recipe 4 — Score (track CDD maturity over time)
 
 `score --format json` reports structural maturity. Its numeric threshold is stable, while `assurance` explicitly states that factual accuracy remains unverified. Comparing scores is meaningful only with the same tool/configuration and a comparable coverage scope.

@@ -385,6 +385,7 @@ committed `.docguard-anchor-lock.jsonl` or this setting:
 | Key | Default | Meaning |
 |---|---|---|
 | `anchors.enabled` | `false` | Report ANC findings in guard before the project has an anchor lock |
+| `anchors.failOn` | `reviewed-exact` | Which suspect (ANC001) and lost (ANC003) links fail guard. `reviewed-exact` fails only links someone accepted as reviewed (never baselined ones), at symbol, statement or route scope, read at an exact tier (Babel, python3 `ast`). File-scope and pattern-tier links warn, because they change on edits that leave the requirement alone. `none` makes every anchor finding a warning. A requirement-text change (ANC002) never fails. The default comes from a replay of 150 commits of this repository, in which no exact-tier link was flagged by a formatting-only commit |
 | `validators.requirementAnchors` | `true` | Set `false` to turn the Requirement-Anchors validator off |
 
 See [`docguard anchors`](commands.md#docguard-anchors).

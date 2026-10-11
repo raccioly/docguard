@@ -1,0 +1,1072 @@
+{
+  "schemaVersion": 1,
+  "spec": "docguard.requirement-anchors",
+  "requirement": "FR-027",
+  "head": "86b0182858b37cae623d3ede22b63382d09b545d",
+  "from": "dd44e7c209d827e1c491b1d44fe017d1809466e1",
+  "commits": 150,
+  "rule": "formatting-only = every `git diff -w -U0` hunk touching the anchored span changes only blank or comment lines; anything else is code-changing",
+  "totals": {
+    "flags": 1058,
+    "codeChanging": 1058,
+    "formattingOnly": 0,
+    "formattingOnlyExact": 0,
+    "codeChangingExact": 1006,
+    "lost": 5
+  },
+  "failOnDefault": "reviewed-exact",
+  "decision": "No exact-tier link was flagged by a formatting-only commit, so reviewed, exact-tier, precisely scoped suspects fail guard by default.",
+  "formattingOnlyExamples": [],
+  "perCommit": [
+    {
+      "rev": "e20f0df7c755",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "276b193b50a5",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "5e6f6b1c1209",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "fe5540a56137",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "9d597f0a7f61",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f925e4082575",
+      "flags": 25,
+      "codeChanging": 25,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7ec63560be0e",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "2ff1baaefdeb",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "2a47de58f155",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "a3ce56296507",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "cf24023ba005",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "778d5b626387",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3dbcc190c9d2",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "dda772c572a7",
+      "flags": 7,
+      "codeChanging": 7,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "04cf5706fb66",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "9073cadc2f52",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3550f257cb75",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "25c0fe6d026b",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "c75fe4ffdf73",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7a4e2f5de1fd",
+      "flags": 5,
+      "codeChanging": 5,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "e602ec35c234",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "318fdeaeb0c6",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b86418b2c54d",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "bee4daad0e71",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "48358dae0a65",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "302672b9290b",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "5a93a701a646",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "85a4fdf62988",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "e5d192e5f396",
+      "flags": 7,
+      "codeChanging": 7,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "e0c98dd696de",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ed407153938d",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f3e5b378f24d",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "620f83c9f8e4",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b72ebdccf07c",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7061a1425a86",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "157802e87e56",
+      "flags": 5,
+      "codeChanging": 5,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f5d2204cc97a",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "eeb63499d0f5",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "08e7e2c2aafa",
+      "flags": 5,
+      "codeChanging": 5,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ee3fc880f1c3",
+      "flags": 21,
+      "codeChanging": 21,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "00de59adb4b6",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "9e141244ed36",
+      "flags": 10,
+      "codeChanging": 10,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6a81e5f175cc",
+      "flags": 1,
+      "codeChanging": 1,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "423ad2ed8c9e",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "a093d1a784cf",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "574ff01a9645",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "90684da66d52",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f14ca79fdd63",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "29d6e46f558b",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "47fda0e6121c",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "8a3a6615e827",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ad75cc6c7432",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "9666cce9780c",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "1c34a1e776ef",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "939a58deab5b",
+      "flags": 6,
+      "codeChanging": 6,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "96f94d7404ed",
+      "flags": 10,
+      "codeChanging": 10,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "cd9a19ddb9c4",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f4dd8b7eb8a9",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "491e2cef569d",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "95a3b99caf58",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ea5714bb91c4",
+      "flags": 18,
+      "codeChanging": 18,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "358ff6d9620e",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "cda826e30925",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "542b9c54995c",
+      "flags": 18,
+      "codeChanging": 18,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6922e7b7a57e",
+      "flags": 1,
+      "codeChanging": 1,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "0818c2b3dca1",
+      "flags": 15,
+      "codeChanging": 15,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6798395b23cb",
+      "flags": 24,
+      "codeChanging": 24,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b9d130fa3a71",
+      "flags": 1,
+      "codeChanging": 1,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "afdf0f6849ae",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "604e551c883c",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6d1ef6c2950c",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b676a532fcd2",
+      "flags": 18,
+      "codeChanging": 18,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ee81435c4334",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "de3335edf5bc",
+      "flags": 6,
+      "codeChanging": 6,
+      "formattingOnly": 0,
+      "lost": 4
+    },
+    {
+      "rev": "29ef8815c947",
+      "flags": 18,
+      "codeChanging": 18,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "044a816440b0",
+      "flags": 23,
+      "codeChanging": 23,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "dfa1385749b6",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "17d499f7a5a1",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3f88bdf87cc9",
+      "flags": 13,
+      "codeChanging": 13,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3b8a2ac12f34",
+      "flags": 7,
+      "codeChanging": 7,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "0b63ceb498a2",
+      "flags": 2,
+      "codeChanging": 2,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "223934c77188",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "532cf4b8fa1d",
+      "flags": 15,
+      "codeChanging": 15,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "1de4333d068a",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7f7921f83901",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6e741a221587",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "5052f653bd1c",
+      "flags": 20,
+      "codeChanging": 20,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7cb3e5b7efcb",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "78b3b30dfb50",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "896e3a9dd92c",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f077ece1b0b2",
+      "flags": 5,
+      "codeChanging": 5,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ce0057f76a13",
+      "flags": 23,
+      "codeChanging": 23,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6e3a13e18b23",
+      "flags": 39,
+      "codeChanging": 39,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "80bc45df81d2",
+      "flags": 22,
+      "codeChanging": 22,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b86b6e8d7479",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "67d6108a3639",
+      "flags": 26,
+      "codeChanging": 26,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "c91fc661e784",
+      "flags": 17,
+      "codeChanging": 17,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "fea24feff6ae",
+      "flags": 53,
+      "codeChanging": 53,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "1e1f890d8f8c",
+      "flags": 54,
+      "codeChanging": 54,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "32cc6a44bae6",
+      "flags": 32,
+      "codeChanging": 32,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b2d83a695186",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "d17dee0a5924",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6004d4416f57",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f130626775eb",
+      "flags": 15,
+      "codeChanging": 15,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "442bd4ba955f",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "df0346ad935c",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "35f3941005ce",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "68665822ea70",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "42e06b46eb92",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "cb13a6a5e66a",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "9be45f7ea5ed",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "c53c264a3117",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "68e7c8753b1e",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7cec55ca7335",
+      "flags": 31,
+      "codeChanging": 31,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ca6906dd18f6",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "52fb9ce26cee",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "8b8ef2ea9c19",
+      "flags": 14,
+      "codeChanging": 14,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "2b1b2e9fc824",
+      "flags": 15,
+      "codeChanging": 15,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "034ecfa8ae74",
+      "flags": 22,
+      "codeChanging": 22,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "147a1b1647cd",
+      "flags": 8,
+      "codeChanging": 8,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "b95817045aec",
+      "flags": 9,
+      "codeChanging": 9,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "a608469b8830",
+      "flags": 8,
+      "codeChanging": 8,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "07232bf21940",
+      "flags": 15,
+      "codeChanging": 15,
+      "formattingOnly": 0,
+      "lost": 1
+    },
+    {
+      "rev": "c1412e2bcbe5",
+      "flags": 5,
+      "codeChanging": 5,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7eb77a7eae15",
+      "flags": 44,
+      "codeChanging": 44,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "cdf35252487a",
+      "flags": 19,
+      "codeChanging": 19,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "1c3268b169b1",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "218ac8c0c7fb",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "c0b12d4a6147",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "a4e3c6be6f82",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "783d41c5d4c3",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "469de57c5cfb",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3ccbf4126c6e",
+      "flags": 3,
+      "codeChanging": 3,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6537bdbb44c1",
+      "flags": 10,
+      "codeChanging": 10,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "a1c5e72ee600",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "3445e63c99e4",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "08b555eed612",
+      "flags": 13,
+      "codeChanging": 13,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "7bd8e79ed3ad",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "bc28a6810974",
+      "flags": 16,
+      "codeChanging": 16,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "d4a25ea6b4b0",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "59b77583e81f",
+      "flags": 4,
+      "codeChanging": 4,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "6606f50c9c6f",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "ec7b5804f567",
+      "flags": 6,
+      "codeChanging": 6,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "1512f2085ba9",
+      "flags": 43,
+      "codeChanging": 43,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "f1301282f99d",
+      "flags": 28,
+      "codeChanging": 28,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "d8ef5baa9cec",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "8330c0ff9759",
+      "flags": 11,
+      "codeChanging": 11,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "5a5a1da399b7",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "596d79cab2aa",
+      "flags": 29,
+      "codeChanging": 29,
+      "formattingOnly": 0,
+      "lost": 0
+    },
+    {
+      "rev": "86b0182858b3",
+      "flags": 0,
+      "codeChanging": 0,
+      "formattingOnly": 0,
+      "lost": 0
+    }
+  ]
+}

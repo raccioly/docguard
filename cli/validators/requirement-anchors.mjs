@@ -12,11 +12,12 @@
  *
  * @implements docguard.requirement-anchors#FR-020
  * @implements docguard.requirement-anchors#FR-026
+ * @implements docguard.requirement-anchors#FR-028
  */
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { revisionResolves } from '../scanners/doc-deps.mjs';
-import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus } from '../scanners/anchors.mjs';
+import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
 
 const MAX_FINDINGS = 25;
 
@@ -66,19 +67,24 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
   const computed = status || computeAnchorStatus(projectDir, config);
+  const policy = failOnPolicy(config);
   const findings = [];
   for (const p of computed.problems) {
     const rule = CODES[p.code];
     if (!rule) continue; // ANC004 and ANC006 are listed by `docguard anchors` only
+    // FR-028: only reviewed, exact-tier, precisely scoped links fail, and only under failOn.
+    const severity = isFailingProblem(p, policy) ? 'error' : rule.severity;
     findings.push(mkFinding({
-      code: p.code, validator: 'requirementAnchors', severity: rule.severity, confidence: p.confidence === 'low' ? 'low' : 'high',
+      code: p.code, validator: 'requirementAnchors', severity, confidence: p.confidence === 'low' ? 'low' : 'high',
       disposition: rule.disposition, parserTier: parserTierOf(p.tier), message: p.message,
       location: p.line ? { file: p.file, line: p.line } : p.file,
       suggestion: suggestionFor(projectDir, p),
     }));
   }
   const counted = computed.links.filter(l => l.state === 'reviewed' || l.state === 'baselined' || l.state === 'unreviewed').length;
-  const shown = findings.slice(0, MAX_FINDINGS);
+  // Every error is shown (an error count must equal what `specs complete`
+  // exempts, FR-029); warnings are capped to keep the report readable.
+  const shown = [...findings.filter(f => f.severity === 'error'), ...findings.filter(f => f.severity !== 'error').slice(0, MAX_FINDINGS)];
   const result = resultFromFindings(shown, { passed: counted, total: Math.max(1, computed.links.length + (computed.lost?.length || 0)), applicable: true });
   const degraded = computed.files.filter(f => f.degraded).length;
   return degraded
