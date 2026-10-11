@@ -5,12 +5,13 @@
  * @req docguard.release-cut-green#FR-005
  * @req docguard.release-cut-green#FR-006
  * @req docguard.release-cut-green#FR-007
+ * @req docguard.release-cut-green#FR-008
  * @req docguard.release-cut-green#SC-001
  * @req docguard.release-cut-green#SC-002
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { syncReleaseVersion } from '../.github/scripts/sync-release-version.mjs';
@@ -143,5 +144,21 @@ describe('the CI runtime budget keeps headroom and still catches a runaway (FR-0
     const pr328Regression = 165_000;
     assert.ok(budget >= slowestNormal * 1.4, `budget ${budget} leaves headroom over ${slowestNormal}`);
     assert.ok(budget < 235_000 + pr328Regression, `budget ${budget} still trips the PR #328 class`);
+  });
+});
+
+describe('no test reads the CHANGELOG through [Unreleased] alone (FR-008)', () => {
+  // The cut empties [Unreleased] before the suite runs on the release commit,
+  // so such a test passes on every PR and fails only on release day — which is
+  // how the v0.43.0 cut (spec 051) and the first v0.44.0 cut failed.
+  it('every test that checks the repository CHANGELOG reads the notes since a release', () => {
+    const offenders = [];
+    for (const name of readdirSync('tests').filter(f => f.endsWith('.test.mjs'))) {
+      const text = readFileSync(join('tests', name), 'utf8');
+      text.split('\n').forEach((line, i) => {
+        if (/CHANGELOG\.md/.test(line) && (/split\(\/\^## \\\[/.test(line) || /indexOf\('## \[Unreleased\]'\)/.test(line))) offenders.push(`tests/${name}:${i + 1}`);
+      });
+    }
+    assert.deepEqual(offenders, [], 'use notesSince(changelog, <previous release>) from tests/fixtures/changelog-notes.mjs');
   });
 });

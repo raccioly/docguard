@@ -41,6 +41,8 @@ The cut moves `[Unreleased]` under the new version, synchronizes release surface
 - **FR-006**: The release commit MUST stage, and the release-candidate policy MUST admit, every path the synchronization rewrites. That includes `commands/docguard.*.md` (pinned since spec 048 but never staged) and both `.agent/` mirrors.
 - **FR-007**: The CI test runtime budget MUST stay above normal runs, with room for runner noise, and MUST still trip on a PR #328-class regression (+165s). This PR's Node 18 run failed at 241.5s against 240s with every test passing; normal runs are now 211–241s. The budget becomes 360s, and the measurements are recorded beside it.
 
+- **FR-008** (amendment, 2026-10-10): A test MUST fail on every pull request, not only on the release commit, when it reads the repository CHANGELOG through `[Unreleased]` alone. The first v0.44.0 cut failed on two such tests added after this spec.
+
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: Replaying the cut locally (version bump, `release-changelog.mjs cut`, `sync-release-version.mjs`) on a scratch copy of main gives a full suite with 0 failures. `validate-release-candidate.mjs` accepts the resulting diff.

@@ -374,6 +374,8 @@ history-based checks.
 
 **Option A: the GitHub Action.**
 
+> Replace `X.Y.Z` with the release you pin; [Installation](../installation.md) shows how to find the latest.
+
 ```yaml
 name: DocGuard
 on: [pull_request, push]
@@ -384,7 +386,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.43.1
+      - uses: raccioly/docguard@vX.Y.Z
         with:
           command: guard
 ```
@@ -445,7 +447,7 @@ The [pre-commit](https://pre-commit.com) framework is also supported, with the
 ```yaml
 repos:
   - repo: https://github.com/raccioly/docguard
-    rev: v0.43.1
+    rev: vX.Y.Z
     hooks: [{ id: docguard-guard }]
 ```
 

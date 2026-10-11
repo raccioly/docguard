@@ -37,6 +37,7 @@ import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { detectProjectProfile } from '../cli/scanners/project-type.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
 import { extractJsRouteCalls } from '../cli/scanners/js-ast.mjs';
+import { notesSince } from './fixtures/changelog-notes.mjs';
 
 const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
@@ -632,7 +633,7 @@ describe('FR-006: the docs say what is read', () => {
 
   it('names the reader in the architecture and the change in the changelog', () => {
     assert.ok(read('docs-canonical/ARCHITECTURE.md').includes('pages-routes.mjs'));
-    const unreleased = read('CHANGELOG.md').split(/^## \[/m)[1];
+    const unreleased = notesSince(read('CHANGELOG.md'), '0.43.1');
     assert.match(unreleased, /specs\/064-js-route-shapes/);
   });
 });

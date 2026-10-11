@@ -146,7 +146,7 @@ docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:X.Y.Z
 | Property | Value |
 |---|---|
 | Image | `ghcr.io/raccioly/docguard` |
-| Tags | The bare version (`0.43.1`, no `v`) and `latest`. Pin a version. |
+| Tags | The bare version (`X.Y.Z`, no `v`) and `latest`. Pin a version. |
 | Platform | `linux/amd64` only. On an arm64 host, Docker needs amd64 emulation (`--platform linux/amd64`). |
 | Base | `node:20-alpine` |
 | Entrypoint | `node /app/cli/docguard.mjs mcp`: the stdio MCP transport. stdout is the JSON-RPC channel, so send nothing else to it. |

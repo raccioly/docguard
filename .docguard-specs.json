@@ -9932,6 +9932,7 @@
           "docguard.release-cut-green#FR-005",
           "docguard.release-cut-green#FR-006",
           "docguard.release-cut-green#FR-007",
+          "docguard.release-cut-green#FR-008",
           "docguard.release-cut-green#SC-001",
           "docguard.release-cut-green#SC-002"
         ]
@@ -9940,7 +9941,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:3ccd65896904f205bd568b1dba17ab3b15938e8df5c45e0a19c7fbb414ea58ff"
+            "digest": "sha256:c89ddac42504f4fd45a8b9e5e0ca713c09489cf8e76af2ffb36b325289311e55"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
@@ -9948,12 +9949,12 @@
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:64457e085a0b1757b537e53c1c7c7d6627efe1c07b43618349a0f7f97fbaac1c"
+            "digest": "sha256:668cdffe1828789adfd935bea8159ad5fd3cc37582d2557d62cd12d0fe3dac73"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
-          "total": 9
+          "checked": 10,
+          "total": 10
         },
         "implementationEvidence": [
           {
@@ -10009,14 +10010,19 @@
             "line": 7
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-008",
             "file": "tests/release-cut-green.test.mjs",
             "line": 8
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/release-cut-green.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 10
           }
         ]
       }
