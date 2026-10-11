@@ -8,7 +8,8 @@ docguard anchors --orphans [--spec <id>] [--format text|json]
 docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes]
 docguard anchors accept --baseline --bulk --reason <text> [--gitattributes]
 docguard anchors accept --remove <key> --reason <text>
-docguard anchors disposition --symbol <file>#<anchor> --kind derived|dead|infrastructure --reason <text>
+docguard anchors disposition (--symbol <file>#<anchor> | --file <path> --bulk) --kind derived|dead|infrastructure --reason <text>
+docguard anchors disposition --remove <file>#<anchor> --reason <text>
 docguard trace --matrix --format csv|reqif [--output <path>]
 ```
 
@@ -48,6 +49,30 @@ docguard trace --matrix --format csv|reqif [--output <path>]
   case `links` is still computed for `anchors`, but `guard` reports nothing
   (FR-026).
 - `ripple` appears from US5, and `tests` from US6.
+
+## Orphans: `--orphans --format json`
+
+```json
+{
+  "command": "anchors --orphans",
+  "governed": { "source": "anchors.orphanPaths", "paths": ["src"] },
+  "files": 12, "symbols": 40,
+  "orphans": [ { "file": "src/billing.mjs", "anchor": "refund", "line": 6, "kind": "function", "tier": "babel@7", "disposition": null } ],
+  "undispositioned": 1,
+  "staleDispositions": [ { "key": "disposition|src/old.mjs|f", "file": "src/old.mjs", "anchor": "f", "kind": "dead", "date": "2026-10-11", "why": "no untagged symbol by that name any more (tagged, renamed or removed)" } ],
+  "notes": []
+}
+```
+
+- A candidate is a function, class, struct, enum or top-level method. JS/TS
+  lists exports (named, default, or a local name in an export list; never a
+  re-export or a type), or the top-level functions and classes of a module
+  that exports nothing. Python skips `_names`, Go lowercase names, Rust items
+  without `pub`, C `static`, and Java, Kotlin, C# and Swift `private`,
+  `internal` and `fileprivate` items.
+- A file-scope link covers every candidate in its file. A link at `X`, `X.m`,
+  `X#2`, `X(sig)` or a statement inside `X` covers `X`.
+- Order: file, then line, then name. The listing exits 0.
 
 ## Exit codes
 

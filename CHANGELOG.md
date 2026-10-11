@@ -124,6 +124,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `anchors.testguard.claims` and never runs a test or TestGuard.
   - **ANC002 data.** Requirement-side findings now carry `scope` and
     `reviewedState`, like ANC001.
+- **Requirement anchors: code that implements no requirement**
+  (`specs/070-requirement-anchors`, user story 7).
+  - **`docguard anchors --orphans`** lists each exported or top-level function,
+    class, struct, enum or top-level method that no tag anchors, once, in file
+    and line order. It reads under `anchors.orphanPaths` or the current specs'
+    `scope.sourcePaths`; `--spec` narrows to one spec. Each language keeps
+    its own idea of private: `_name` in Python, lowercase in Go, Rust without
+    `pub`, `static` in C.
+  - **`docguard anchors disposition`** records why one implements no
+    requirement (`derived`, `dead` or `infrastructure`, with a 10–500
+    character reason) in the anchor lock. `--file … --bulk` covers a file,
+    and `--remove` deletes one. A disposition whose symbol is gone is listed
+    as stale. No requirement text is proposed and no model is called.
+  - **Granularity.** `score` and `trace` report links by scope and tier as
+    information, once a project has opted in.
 
 ### Changed
 

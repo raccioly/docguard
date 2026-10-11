@@ -300,16 +300,16 @@ follow the policy, and completion is not deadlocked.
 
 ## Phase 9: US7, inventory of code without a requirement (P3, PR 7)
 
-- [ ] T058 [P] [US7] Orphan fixture `tests/fixtures/anchors/orphans/` and `tests/requirement-anchors-orphans.test.mjs`:
+- [x] T058 [P] [US7] Orphan fixture (built in a temporary git repository, since dispositions live in the lock) and `tests/requirement-anchors-orphans.test.mjs`:
   - three exported functions, one of them tagged, so 2 orphans;
   - one disposition, so 1 left;
   - `score --format json` granularity.
 
   (FR-034 to FR-036)
-- [ ] T059 [US7] Implement `anchors --orphans` in `cli/scanners/anchors.mjs` and `cli/commands/anchors.mjs`. Candidates come from `moduleSymbols`, `py-anchors` and the pattern symbol finder, under current specs' `scope.sourcePaths` or `anchors.orphanPaths`, in deterministic order (FR-034)
-- [ ] T060 [US7] Implement `anchors disposition` with a lock entry `disposition|<file>|<anchor>`, `kind` ∈ {derived, dead, infrastructure} and a reason of 10–500 characters, through `commitFileTransaction` (FR-035)
-- [ ] T061 [US7] Show anchor granularity (by scope and tier) as info in `cli/commands/score.mjs` and `cli/commands/trace.mjs` (FR-036)
-- [ ] T062 [US7] Docs. Close story 7 with the claim `ANCHOR-ORPHANS-DETERMINISTIC`, `CHANGELOG.md` and `specs --write`
+- [x] T059 [US7] Implement `anchors --orphans` in `cli/scanners/anchors.mjs` and `cli/commands/anchors.mjs`. Candidates come from Babel (exports, else top-level functions and classes, the `moduleSymbols` rule), `py-anchors` and the pattern outline, under current specs' `scope.sourcePaths` or `anchors.orphanPaths`, in deterministic order (FR-034)
+- [x] T060 [US7] Implement `anchors disposition` with a lock entry `disposition|<file>|<anchor>`, `kind` ∈ {derived, dead, infrastructure} and a reason of 10–500 characters, through `commitFileTransaction` (FR-035)
+- [x] T061 [US7] Show anchor granularity (by scope and tier) as info in `cli/commands/score.mjs` and `cli/commands/trace.mjs` (FR-036)
+- [x] T062 [US7] Docs. Close story 7 with the claim `ANCHOR-ORPHANS-DETERMINISTIC`, `CHANGELOG.md` and `specs --write`
 
 ## Phase 10: US8, export the trace matrix (P3, PR 8)
 

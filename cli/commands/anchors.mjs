@@ -32,10 +32,10 @@ import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { contentSha } from '../scanners/anchor-cache.mjs';
-import { GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock, serializeAnchorLock } from '../scanners/anchor-lock.mjs';
-import { ANCHOR_LOCK_PATH, computeAnchorStatus } from '../scanners/anchors.mjs';
+import { DISPOSITION_KINDS, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock, serializeAnchorLock } from '../scanners/anchor-lock.mjs';
+import { ANCHOR_LOCK_PATH, computeAnchorStatus, computeOrphans, dispositionKey } from '../scanners/anchors.mjs';
 
-const ACTIONS = new Set(['accept']);
+const ACTIONS = new Set(['accept', 'disposition']);
 const STATE_ICON = { reviewed: '✅', baselined: '◐ ', unreviewed: '○ ', suspect: '⚠️ ', lost: '❌', 'retired-target': '⊘ ', unverifiable: '? ' };
 
 function headRevision(projectDir) {
@@ -114,8 +114,90 @@ function list(projectDir, config, flags) {
   else if (result.status === 'WARN') process.exitCode = 2;
 }
 
-function fail(message, flags) {
-  if (flags.format === 'json') console.log(JSON.stringify({ command: 'anchors accept', status: 'REFUSED', message }, null, 2));
+/** FR-034: the orphan inventory. A report: it exits 0 whatever it finds. */
+function listOrphans(projectDir, config, flags) {
+  const result = { command: 'anchors --orphans', ...computeOrphans(projectDir, config, { spec: flags.spec || null, noCache: flags.noCache === true }) };
+  if (flags.file) result.orphans = result.orphans.filter(o => o.file === flags.file);
+  if (flags.format === 'json') { console.log(JSON.stringify(result, null, 2)); return; }
+  console.log(`${c.bold}Untagged symbols${c.reset} under ${result.governed.paths.join(', ') || '(no governed paths)'} ${c.dim}(${result.governed.source})${c.reset}`);
+  console.log(`  ${result.symbols} exported or top-level symbol(s) in ${result.files} file(s); ${result.orphans.length} untagged, ${result.undispositioned} without a disposition`);
+  let file = null;
+  for (const o of result.orphans) {
+    if (o.file !== file) { file = o.file; console.log(`\n${c.cyan}${file}${c.reset}`); }
+    const d = o.disposition ? `${c.dim}${o.disposition.kind}: ${o.disposition.reason}${c.reset}` : `${c.yellow}no disposition${c.reset}`;
+    console.log(`  ${o.anchor.padEnd(40)} ${c.dim}${o.kind}, line ${o.line} [${o.tier}]${c.reset} ${d}`);
+  }
+  for (const st of result.staleDispositions) console.log(`${c.yellow}stale disposition${c.reset} ${st.file}#${st.anchor} (${st.kind}): ${st.why}`);
+  for (const note of result.notes) console.log(`${c.dim}${note}${c.reset}`);
+  if (result.orphans.some(o => !o.disposition)) {
+    console.log(`${c.dim}Tag each one with the requirement it implements, or record why none applies: docguard anchors disposition --symbol <file>#<name> --kind derived|dead|infrastructure --reason "…"${c.reset}`);
+  }
+}
+
+/**
+ * FR-035: record why an untagged symbol implements no requirement. The lock
+ * is the only store; DocGuard proposes no requirement text.
+ *
+ * @implements docguard.requirement-anchors#FR-035
+ */
+function disposition(projectDir, config, flags) {
+  const label = 'anchors disposition';
+  const reason = typeof flags.reason === 'string' ? flags.reason.trim() : '';
+  if (reason.length < 10 || reason.length > 500) return fail(`${label} needs --reason "<why no requirement applies>" (10-500 characters).`, flags, label);
+  const lockNow = readAnchorLock(projectDir);
+  if (lockNow.error) return fail(`${lockNow.error}. Restore the lock before recording a disposition.`, flags, label);
+  const dispositions = new Map(lockNow.dispositions);
+  const written = [];
+  const removed = [];
+  if (flags.remove) {
+    const at = flags.remove.indexOf('#');
+    const key = at > 0 ? dispositionKey(flags.remove.slice(0, at), flags.remove.slice(at + 1)) : flags.remove;
+    if (!dispositions.has(key)) return fail(`No disposition for ${flags.remove} in ${ANCHOR_LOCK_PATH}.`, flags, label);
+    dispositions.delete(key);
+    removed.push(key);
+  } else {
+    if (!DISPOSITION_KINDS.includes(flags.kind)) return fail(`${label} needs --kind ${DISPOSITION_KINDS.join('|')}.`, flags, label);
+    const { orphans } = computeOrphans(projectDir, config, { noCache: true });
+    let selected;
+    if (flags.symbol) {
+      const at = flags.symbol.indexOf('#');
+      if (at <= 0) return fail('--symbol takes <file>#<name>, as `docguard anchors --orphans` prints it.', flags, label);
+      const file = flags.symbol.slice(0, at);
+      const anchor = flags.symbol.slice(at + 1);
+      selected = orphans.filter(o => o.file === file && o.anchor === anchor);
+      if (!selected.length) return fail(`${flags.symbol} is not an untagged symbol under the governed paths (it is tagged, private, outside them, or does not exist). Run \`docguard anchors --orphans\`.`, flags, label);
+    } else if (flags.file) {
+      selected = orphans.filter(o => o.file === flags.file);
+      if (!selected.length) return fail(`${flags.file} has no untagged symbol under the governed paths.`, flags, label);
+    } else {
+      return fail(`${label} needs --symbol <file>#<name>, --file <path> or --remove <file>#<name>.`, flags, label);
+    }
+    if (selected.length > 1 && !flags.bulk) return fail(`The selection matches ${selected.length} symbols; add --bulk to record them all, or use --symbol for one.`, flags, label);
+    const revision = headRevision(projectDir);
+    const date = today();
+    const bulk = selected.length > 1;
+    for (const o of selected) {
+      const key = dispositionKey(o.file, o.anchor);
+      dispositions.set(key, { key, file: o.file, anchor: o.anchor, kind: flags.kind, reason, date, revision, bulk });
+      written.push(key);
+    }
+  }
+  commitFileTransaction([{ path: resolve(projectDir, ANCHOR_LOCK_PATH), content: serializeAnchorLock(lockNow.links, dispositions) }], {
+    validate: () => {
+      const back = readAnchorLock(projectDir);
+      if (back.error) throw new Error(back.error);
+    },
+  });
+  const summary = { command: label, status: 'WRITTEN', written: written.length, removed, kind: flags.remove ? null : flags.kind, keys: written };
+  if (flags.format === 'json') console.log(JSON.stringify(summary, null, 2));
+  else {
+    if (written.length) console.log(`${c.green}✓ RECORDED${c.reset} ${written.length} disposition(s) (${flags.kind}) in ${ANCHOR_LOCK_PATH}`);
+    for (const key of removed) console.log(`${c.green}✓ REMOVED${c.reset} ${key} (${reason})`);
+  }
+}
+
+function fail(message, flags, label = 'anchors accept') {
+  if (flags.format === 'json') console.log(JSON.stringify({ command: label, status: 'REFUSED', message }, null, 2));
   else console.error(`${c.red}${message}${c.reset}`);
   process.exitCode = 1;
 }
@@ -220,6 +302,8 @@ export function runAnchors(projectDir, config, flags = {}) {
   }
   try {
     if (action === 'accept') accept(projectDir, config, flags);
+    else if (action === 'disposition') disposition(projectDir, config, flags);
+    else if (flags.orphans) listOrphans(projectDir, config, flags);
     else list(projectDir, config, flags);
   } catch (e) {
     fail(e.message, flags);

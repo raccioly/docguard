@@ -28,16 +28,17 @@
 
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { buildIgnoreFilter, relPosix, walkFiles } from '../shared-ignore.mjs';
+import { buildIgnoreFilter, compileGlob, relPosix, walkFiles } from '../shared-ignore.mjs';
 import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { openAnchorCache, contentSha } from './anchor-cache.mjs';
 import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock } from './anchor-lock.mjs';
-import { FILE_TIER, pythonCandidateLines, resolveFileAnchors } from './anchor-tags.mjs';
+import { FILE_TIER, orphanCandidates, pythonCandidateLines, resolveFileAnchors } from './anchor-tags.mjs';
 import { BABEL_TIER, V1_PREFIX, dg1 } from './fingerprint.mjs';
 import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
 import { pythonBatch, pythonTier } from './py-anchors.mjs';
 import { isTestSource, resolveRequirementReferences, scanTestFilesForReferences } from './requirement-evidence.mjs';
+import { readSpecRegistry } from './spec-registry.mjs';
 import { loadTestguardEvidence, structuredHint, testStatus } from './testguard-evidence.mjs';
 import { collectRequirementIds } from './requirement-docs.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
@@ -499,6 +500,132 @@ function addTestChain(projectDir, config, links, base) {
         return { file: t.file, line: t.line, ...testStatus(evidence, { requirement: link.requirement, testFile: t.file, atRevision: state, hint }) };
       });
   }
+}
+
+/* ───────────────────────────── Orphans and granularity (US7) ───────────────────────────── */
+
+const GLOB_CHARS = /[*?{]/;
+
+/** A governed-path entry: a glob, or a file or directory prefix. */
+function pathMatcher(entry) {
+  const clean = String(entry).replace(/^\.\//, '').replace(/\/+$/, '');
+  if (GLOB_CHARS.test(clean)) { const re = compileGlob(clean); return rel => re.test(rel); }
+  return rel => rel === clean || rel.startsWith(`${clean}/`);
+}
+
+/**
+ * Where orphans are looked for (FR-034): `anchors.orphanPaths`, else the
+ * `scope.sourcePaths` of current specs in the committed registry. `spec`
+ * narrows to one spec's paths.
+ */
+export function governedPaths(projectDir, config = {}, spec = null) {
+  const registry = readSpecRegistry(projectDir);
+  const specs = (registry.value?.specs || []).filter(e => e.reviewed?.lifecycle?.context === 'current');
+  let paths = [];
+  let source;
+  if (spec) {
+    const entry = specs.find(e => e.specId === spec);
+    paths = entry?.reviewed?.scope?.sourcePaths || [];
+    source = `the scope.sourcePaths of ${spec}`;
+  } else if (Array.isArray(config.anchors?.orphanPaths) && config.anchors.orphanPaths.length) {
+    paths = config.anchors.orphanPaths.filter(p => typeof p === 'string' && p);
+    source = 'anchors.orphanPaths';
+  } else {
+    paths = [...new Set(specs.flatMap(e => e.reviewed?.scope?.sourcePaths || []))].sort();
+    source = 'the scope.sourcePaths of current specs';
+  }
+  const matchers = paths.map(pathMatcher);
+  return { paths, source, matches: rel => matchers.some(m => m(rel)) };
+}
+
+const DISPOSITION_PREFIX = 'disposition|';
+export const dispositionKey = (file, anchor) => `${DISPOSITION_PREFIX}${encodeKeyPart(file)}|${encodeKeyPart(anchor)}`;
+
+/** Whether a link in the same file anchors this unit, or inside it. */
+function covers(link, name) {
+  if (link.scope === 'file') return true;
+  const anchor = link.scope === 'statement' ? link.anchor.split('>stmt:')[0] : link.anchor;
+  return anchor === name || ['.', '#', '(', '>'].some(sep => anchor.startsWith(`${name}${sep}`));
+}
+
+/**
+ * FR-034/FR-035: every exported or top-level implementation unit under the
+ * governed paths that no tag anchors, once, ordered by file, line and name,
+ * with any disposition recorded for it. A report, never a guard finding; it
+ * proposes no requirement text and calls no model.
+ * @implements docguard.requirement-anchors#FR-034
+ */
+export function computeOrphans(projectDir, config = {}, options = {}) {
+  const governed = governedPaths(projectDir, config, options.spec || null);
+  const lock = readAnchorLock(projectDir);
+  const notes = [];
+  if (!governed.paths.length) {
+    notes.push(options.spec
+      ? `${options.spec} declares no scope.sourcePaths, so it governs no code.`
+      : 'No governed paths: set anchors.orphanPaths in .docguard.json (globs, files or directories), or give a spec scope.sourcePaths.');
+  }
+  const files = governed.paths.length ? candidateFiles(projectDir, config).filter(governed.matches) : [];
+  const sources = [];
+  for (const rel of files) {
+    const bytes = readSource(projectDir, rel);
+    if (bytes) sources.push({ rel, content: bytes.toString('utf8') });
+  }
+  const pyTier = pythonTier();
+  const pySources = sources.filter(src => languageOf(src.rel) === 'python');
+  const python = pySources.length && pyTier ? pythonBatch(pySources.map(src => ({ key: src.rel, content: src.content, outline: true, lines: [] }))) : { ok: false };
+  const links = governed.paths.length ? computeLinks(projectDir, config, { noCache: options.noCache }).links : [];
+  const linksByFile = new Map();
+  for (const l of links) linksByFile.set(l.file, [...(linksByFile.get(l.file) || []), l]);
+  const orphans = [];
+  const candidates = new Set();
+  const unreadable = [];
+  let symbols = 0;
+  for (const src of sources) {
+    const result = orphanCandidates(src.content, src.rel, { python: python.ok ? python.files?.[src.rel] || null : null, pythonTier: python.ok ? pyTier : null });
+    if (result.error && !result.symbols.length) { unreadable.push(`${src.rel} (${result.error})`); continue; }
+    const fileLinks = linksByFile.get(src.rel) || [];
+    const seen = new Set();
+    for (const sym of result.symbols) {
+      if (seen.has(sym.name)) continue;
+      seen.add(sym.name);
+      symbols++;
+      if (fileLinks.some(l => covers(l, sym.name))) continue;
+      const key = dispositionKey(src.rel, sym.name);
+      candidates.add(key);
+      const d = lock.dispositions.get(key);
+      orphans.push({ file: src.rel, anchor: sym.name, line: sym.line, kind: sym.kind, tier: result.tier,
+        disposition: d ? { kind: d.kind, reason: d.reason, date: d.date } : null });
+    }
+  }
+  orphans.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line || (a.anchor < b.anchor ? -1 : a.anchor > b.anchor ? 1 : 0)));
+  if (unreadable.length) notes.push(`${unreadable.length} governed file(s) could not be read for symbols: ${unreadable.slice(0, 3).join(', ')}${unreadable.length > 3 ? ', …' : ''}`);
+  const staleDispositions = [...lock.dispositions.values()]
+    .filter(d => !candidates.has(d.key) && (!options.spec || governed.matches(d.file)))
+    .map(d => ({ key: d.key, file: d.file, anchor: d.anchor, kind: d.kind, date: d.date,
+      why: !governed.matches(d.file) ? 'outside the governed paths' : 'no untagged symbol by that name any more (tagged, renamed or removed)' }))
+    .sort((a, b) => (a.key < b.key ? -1 : 1));
+  return {
+    governed: { source: governed.source, paths: governed.paths },
+    files: sources.length,
+    symbols,
+    orphans,
+    undispositioned: orphans.filter(o => !o.disposition).length,
+    staleDispositions,
+    lock: { error: lock.error },
+    notes,
+  };
+}
+
+/**
+ * FR-036: how precisely this project's links are anchored, by scope and tier.
+ * Information only, and only once the project opted in (FR-041: a project
+ * that has not pays nothing).
+ * @implements docguard.requirement-anchors#FR-036
+ */
+export function anchorGranularity(projectDir, config = {}) {
+  if (!anchorsActivated(projectDir, config)) return null;
+  const { summary } = computeLinks(projectDir, config);
+  return { links: summary.links, byScope: summary.byScope, byTier: summary.byTier };
 }
 
 const GRAPH_LANGS = new Set(['js', 'ts', 'python']);

@@ -665,6 +665,39 @@ file path instead gets the `req:` form to write. DocGuard reads
 `anchors.testguard.claims` (default `testguard.claims.json`). It never runs a
 test or TestGuard, and guard never reads the chain.
 
+**Code without a requirement.** `docguard anchors --orphans` lists each
+exported or top-level unit that no tag anchors, once, ordered by file and line:
+functions, classes, structs, enums and top-level methods. Type-only
+declarations, plain constants and private names are not listed: a name
+starting with `_` in Python, a lowercase name in Go, Rust without `pub`, and
+`static` in C. A file-scope tag covers every symbol in its file, and a tagged
+method covers its class.
+
+It looks under `anchors.orphanPaths`, else under the `scope.sourcePaths` of
+current specs; `--spec <id>` narrows it to one spec. It is a report: it exits
+0 and guard never reads it. For each symbol, either tag it with the
+requirement it implements or record why none applies:
+
+```bash
+npx docguard-cli anchors --orphans --format json
+npx docguard-cli anchors disposition --symbol src/log.mjs#format --kind infrastructure --reason "log formatting, no product requirement"
+npx docguard-cli anchors disposition --file src/legacy.mjs --kind dead --bulk --reason "legacy export path, removed next release"
+npx docguard-cli anchors disposition --remove src/log.mjs#format --reason "now tagged with the audit requirement"
+```
+
+The kinds are:
+- `derived`: implements a requirement nobody has written down yet;
+- `dead`;
+- `infrastructure`.
+
+Dispositions live in the anchor lock, so they are reviewed through CODEOWNERS
+like links. A disposition whose symbol was tagged, renamed or removed is
+listed as stale. DocGuard proposes no requirement text and calls no model;
+agents read the JSON.
+
+`score` and `trace` show how many links sit at each scope and tier, as
+information that never changes the score.
+
 With the lock committed, guard reports:
 - **ANC001**: a link whose code changed;
 - **ANC002**: a link whose requirement changed;

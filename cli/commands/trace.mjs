@@ -32,6 +32,7 @@ import { TEST_PATTERNS, TRACE_MAP, isTraceableSource } from '../shared-trace-pat
 import { referenceKind, docAnnotationsIn } from '../scanners/doc-references.mjs';
 import { defaultOwnershipRoots, ownerOf, ownershipReport, SOURCE_RE, projectFiles } from '../scanners/doc-ownership.mjs';
 import { scanComponents } from '../scanners/inventory.mjs';
+import { anchorGranularity } from '../scanners/anchors.mjs';
 
 
 /**
@@ -319,14 +320,20 @@ export function runTrace(projectDir, config, flags) {
   }
 
   // ── 5. Output ──
+  // docguard.requirement-anchors#FR-036: anchor granularity, information only.
+  const granularity = anchorGranularity(projectDir, config);
   if (flags.format === 'json') {
-    outputJSON(config.projectName, matrix, orphanedDocs);
+    outputJSON(config.projectName, matrix, orphanedDocs, granularity);
   } else {
     outputText(config.projectName, matrix, canonicalDocs, orphanedDocs);
+    if (granularity) {
+      const tally = t => Object.entries(t).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
+      console.log(`  ${c.dim}Anchor granularity (info): ${granularity.links} link(s); by scope ${tally(granularity.byScope)}; by tier ${tally(granularity.byTier)}${c.reset}\n`);
+    }
   }
 }
 
-function outputJSON(projectName, matrix, orphanedDocs) {
+function outputJSON(projectName, matrix, orphanedDocs, granularity = null) {
   const result = {
     project: projectName,
     traceability: matrix.map(m => ({
@@ -348,6 +355,7 @@ function outputJSON(projectName, matrix, orphanedDocs) {
       missing: matrix.filter(m => m.coverageSignal === 'MISSING').length,
       orphaned: orphanedDocs.length,
     },
+    ...(granularity ? { anchorGranularity: { ...granularity, info: 'How precisely requirement tags anchor; information only.' } } : {}),
     timestamp: new Date().toISOString(),
   };
   console.log(JSON.stringify(result, null, 2));

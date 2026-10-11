@@ -582,6 +582,120 @@ export function resolveFileAnchors(content, relPath, patterns, options = {}) {
   return resolveFileTier(content, relPath, patterns);
 }
 
+/* ───────────────────────────── Orphan candidates (FR-034) ───────────────────────────── */
+
+const UNIT_KINDS = new Set(['function', 'method', 'class', 'struct', 'enum', 'def']);
+const isUnitInit = init => FUNCTION_TYPES.has(init?.type) || init?.type === 'ClassExpression';
+
+/** The top-level implementation units one JS/TS statement declares: `[name, kind, line]`. */
+function jsUnits(node, line) {
+  if (!node) return [];
+  if ((node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && node.id?.name) {
+    return [[node.id.name, node.type === 'ClassDeclaration' ? 'class' : 'function', line]];
+  }
+  if (node.type === 'TSEnumDeclaration' && !node.declare && node.id?.name) return [[node.id.name, 'enum', line]];
+  if (node.type === 'VariableDeclaration' && !node.declare) {
+    return node.declarations.filter(d => d.id?.type === 'Identifier' && isUnitInit(d.init))
+      .map(d => [d.id.name, d.init.type === 'ClassExpression' ? 'class' : 'function', line]);
+  }
+  return [];
+}
+
+/**
+ * JS/TS: what the module exports (named, default, or a local name in an
+ * export list), or, for a module that exports nothing, its top-level
+ * functions and classes. Re-exports belong to the module that declares them,
+ * and type-only declarations implement nothing.
+ */
+function jsCandidates(ast) {
+  const body = ast.program?.body || [];
+  const local = new Map();
+  for (const stmt of body) {
+    for (const [name, kind, line] of jsUnits(unwrapExport(stmt), stmt.loc.start.line)) if (!local.has(name)) local.set(name, { kind, line });
+  }
+  const out = [];
+  let exports = false;
+  for (const stmt of body) {
+    const line = stmt.loc.start.line;
+    if (stmt.type === 'ExportAllDeclaration') { exports = true; continue; }
+    if (stmt.type === 'ExportNamedDeclaration') {
+      exports = true;
+      if (stmt.exportKind === 'type') continue;
+      if (stmt.declaration) { for (const [name, kind] of jsUnits(stmt.declaration, line)) out.push({ name, kind, line }); continue; }
+      if (stmt.source) continue;
+      for (const spec of stmt.specifiers || []) {
+        const name = spec.local?.name;
+        if (spec.exportKind !== 'type' && local.has(name)) out.push({ name, ...local.get(name) });
+      }
+      continue;
+    }
+    if (stmt.type === 'ExportDefaultDeclaration') {
+      exports = true;
+      const d = stmt.declaration;
+      if ((d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') && !d.id) out.push({ name: 'default', kind: d.type === 'ClassDeclaration' ? 'class' : 'function', line });
+      else if (d?.id?.name && (d.type === 'FunctionDeclaration' || d.type === 'ClassDeclaration')) out.push({ name: d.id.name, kind: d.type === 'ClassDeclaration' ? 'class' : 'function', line });
+      else if (d?.type === 'Identifier' && local.has(d.name)) out.push({ name: d.name, ...local.get(d.name) });
+    }
+  }
+  if (!exports) {
+    for (const stmt of body) {
+      if (stmt.type === 'FunctionDeclaration' || stmt.type === 'ClassDeclaration') out.push(...jsUnits(stmt, stmt.loc.start.line).map(([name, kind, line]) => ({ name, kind, line })));
+    }
+  }
+  return out;
+}
+
+/** Pattern languages: whether a top-level unit is visible outside its file. */
+function patternExported(lang, sym, header) {
+  switch (lang) {
+    case 'go': return /^[A-Z]/.test(sym.name);
+    case 'rust': return /\bpub\b/.test(header);
+    case 'java': case 'kotlin': case 'csharp': case 'swift': return !/\b(?:private|fileprivate|internal)\b/.test(header);
+    case 'c': case 'cpp': return !/\bstatic\b/.test(header);
+    case 'python': return !sym.name.startsWith('_');
+    default: return true;
+  }
+}
+
+/**
+ * The exported or top-level implementation units of one file, named the way
+ * an anchor would name them, for `docguard anchors --orphans` (FR-034).
+ * Functions, classes, structs, enums and top-level methods count; type-only
+ * declarations, plain variables and private names (`_name`, Go lowercase,
+ * Rust without `pub`, `static` C) do not.
+ *
+ * @implements docguard.requirement-anchors#FR-034
+ * @returns {{ tier: string, error: string|null, symbols: { name: string, kind: string, line: number }[] }}
+ */
+export function orphanCandidates(content, relPath, options = {}) {
+  const lang = languageOf(relPath);
+  if (lang === 'js' || lang === 'ts') {
+    const parsed = parseJsTs(content, relPath);
+    if (parsed.ok && parsed.ast && !parsed.ast.errors?.length) return { tier: BABEL_TIER, error: null, symbols: jsCandidates(parsed.ast) };
+  }
+  if (lang === 'python' && options.python?.outline && !options.python.outline.error && options.pythonTier) {
+    const symbols = options.python.outline.symbols
+      .filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class') && !sym.name.startsWith('_'))
+      .map(sym => ({ name: sym.qual, kind: sym.kind, line: sym.line }));
+    return { tier: options.pythonTier, error: null, symbols };
+  }
+  if (!lang) return { tier: FILE_TIER, error: 'no symbol reader for this language', symbols: [] };
+  const lexed = lex(content, lang);
+  if (lexed.error) return { tier: PATTERN_TIER, error: lexed.error, symbols: [] };
+  const { symbols } = outline(content, lang);
+  const qualCount = new Map();
+  for (const sym of symbols) qualCount.set(sym.qual, (qualCount.get(sym.qual) || 0) + 1);
+  const anchorName = sym => (qualCount.get(sym.qual) > 1 && sym.sig ? `${sym.qual}(${sym.sig})` : sym.qual);
+  const out = [];
+  for (const sym of symbols) {
+    if (!sym.topLevel || !UNIT_KINDS.has(sym.kind)) continue;
+    const at = content.indexOf(sym.name, sym.start);
+    const header = content.slice(sym.start, at < 0 ? sym.start : at);
+    if (patternExported(lang, sym, header)) out.push({ name: anchorName(sym), kind: sym.kind, line: sym.startLine });
+  }
+  return { tier: PATTERN_TIER, error: null, symbols: out };
+}
+
 /**
  * Comments that may hold requirement tags, string-aware in every tier
  * (FR-005): Babel's comment list for JS/TS, the pattern lexer for every

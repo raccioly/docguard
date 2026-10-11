@@ -48,7 +48,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Documentation site and generated references** | `docs/` is the GitHub Pages site (Just the Docs remote theme in `docs/_config.yml`, which Pages builds itself; no build step or dependency in the repository). `npm run docs:reference` renders `docs/reference/findings.md` from the `CODES` and `BLOCKER_CODES` registries and `explain`'s `DISPLAY_NAMES`; `npm run llms` renders `llms.txt`/`llms-full.txt` | `docs/`, `tools/generate-docs-reference.mjs`, `tools/generate-llms.mjs` | `tests/user-docs.test.mjs` and `tests/llms-bundle-drift.test.mjs` fail on a stale generated file and name the command. `docs/` ships in the npm package (PDFs excluded); `tools/` does not (specs/053-user-documentation) |
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
-| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
+| **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
@@ -1610,6 +1610,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
 | Anchor test chain; TestGuard evidence adapter (every re-verified, needs-reverification and inconclusive cause, path and revision safety) | `tests/requirement-anchors-testchain.test.mjs` | ✅ |
+| Anchor orphans, dispositions and granularity in `score`/`trace` | `tests/requirement-anchors-orphans.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -1971,6 +1972,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `anchors.testguard.claims` and never runs a test or TestGuard.
   - **ANC002 data.** Requirement-side findings now carry `scope` and
     `reviewedState`, like ANC001.
+- **Requirement anchors: code that implements no requirement**
+  (`specs/070-requirement-anchors`, user story 7).
+  - **`docguard anchors --orphans`** lists each exported or top-level function,
+    class, struct, enum or top-level method that no tag anchors, once, in file
+    and line order. It reads under `anchors.orphanPaths` or the current specs'
+    `scope.sourcePaths`; `--spec` narrows to one spec. Each language keeps
+    its own idea of private: `_name` in Python, lowercase in Go, Rust without
+    `pub`, `static` in C.
+  - **`docguard anchors disposition`** records why one implements no
+    requirement (`derived`, `dead` or `infrastructure`, with a 10–500
+    character reason) in the anchor lock. `--file … --bulk` covers a file,
+    and `--remove` deletes one. A disposition whose symbol is gone is listed
+    as stale. No requirement text is proposed and no model is called.
+  - **Granularity.** `score` and `trace` report links by scope and tier as
+    information, once a project has opted in.
 
 ### Changed
 
@@ -2230,23 +2246,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   frameworks were classified but no scanner read them, so `generate`, `diff`
   and guard's API-surface check saw no endpoint. Now:
   - Sinatra: classic and modular apps across files, nested `namespace`
-    prefixes, `register`ed extensions, and `config.ru` `map`/`Rack::URLMap`
-    mounts (`cli/scanners/sinatra-routes.mjs`).
-  - Starlette: `Route`, `Mount`, `Router` and `Starlette(routes=...)` lists,
-    `add_route` and `@app.route`, in the same graph as FastAPI and Flask, at the
-    Python parser tier (`cli/scanners/python-routes.mjs`).
-  - Warp: filter chains evaluated through `and`/`or`, `let` bindings and
-    functions in other files; Tide: `at()` trees and `nest()` mounts
-    (`cli/scanners/rust-routes.mjs`).
-  - Go: a module with no router dependency that serves HTTP with `net/http` is
-    classified `net/http`, so its routes are read.
 
-  A route whose path is not literal text is omitted, never guessed, and the
-  API-surface coverage reason says how many were omitted.
-- **Laravel, Symfony and ASP.NET Core routes are read**
-  (`specs/059-php-dotnet-routes`, part of #519). These frameworks were
-
-<!-- truncated: 5434 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5449 more lines — read CHANGELOG.md directly -->
 
 ---
 

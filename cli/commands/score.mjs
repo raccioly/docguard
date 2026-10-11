@@ -16,6 +16,7 @@ import { assessAgentReadability } from '../scanners/agent-readability.mjs';
 import { loadHistory, sparkline } from '../writers/history.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
+import { anchorGranularity } from '../scanners/anchors.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -148,6 +149,8 @@ const WEIGHTS = {
   architecture: 5,   // Layer boundary compliance
 };
 
+const formatTally = tally => Object.entries(tally).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
+
 export function runScore(projectDir, config, flags) {
   config = applyDocRoles(projectDir, config);
   // v0.33: `--trend` renders the local score history recorded by `docguard
@@ -184,6 +187,9 @@ export function runScore(projectDir, config, flags) {
     };
   })();
 
+  // docguard.requirement-anchors#FR-036: information only; it never changes the score.
+  const granularity = anchorGranularity(projectDir, config);
+
   // ── Display Results ──
   if (flags.format === 'json') {
     const result = {
@@ -203,6 +209,7 @@ export function runScore(projectDir, config, flags) {
         axis: COMPLETENESS.has(cat) ? 'completeness' : 'structuralAlignment',
       };
     }
+    if (granularity) result.anchorGranularity = { ...granularity, info: 'How precisely requirement tags anchor; information only, not part of the score.' };
     console.log(JSON.stringify(result, null, 2));
     return;
   }
@@ -237,6 +244,7 @@ export function runScore(projectDir, config, flags) {
     'F': 'Not Started — Run `docguard init` first',
   };
   console.log(`  ${c.dim}${descriptions[grade]}${c.reset}\n`);
+  if (granularity) console.log(`  ${c.dim}Anchor granularity (info): ${granularity.links} link(s); by scope ${formatTally(granularity.byScope)}; by tier ${formatTally(granularity.byTier)}${c.reset}\n`);
   console.log(`  ${c.dim}${assurance.unverifiedClaims ?? 'Unknown number of'} extracted claim(s) await verification. No extracted claims does not prove correctness.${c.reset}\n`);
 
   // Suggestions

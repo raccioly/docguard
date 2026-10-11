@@ -389,9 +389,13 @@ const COMMAND_HELP = {
   },
   anchors: {
     summary: 'List every code→requirement link, the symbol, statement, route or file it anchors to, and the tier that resolved it.',
-    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text>',
+    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors --orphans [--spec <id>] [--file <path>] [--format json] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text> | docguard anchors disposition (--symbol <file>#<name> | --file <path> --bulk) --kind derived|dead|infrastructure --reason <text> | docguard anchors disposition --remove <file>#<name> --reason <text>',
     flags: [
       ['accept', 'Record a review of the selected links in .docguard-anchor-lock.jsonl, bound to the fingerprints it saw'],
+      ['disposition', 'Record why an untagged symbol implements no requirement: --kind derived, dead or infrastructure'],
+      ['--orphans', 'List the exported or top-level symbols under the governed paths that no tag anchors'],
+      ['--symbol <file>#<name>', 'With disposition: the one untagged symbol'],
+      ['--kind <kind>', 'With disposition: derived (an unwritten requirement), dead, or infrastructure'],
       ['--spec <id>', 'Only links to this Spec ID (with accept: select them)'],
       ['--file <path>', 'Only links in this file (with accept: select them)'],
       ['--link <key>', 'With accept: the one link to accept'],
@@ -399,7 +403,7 @@ const COMMAND_HELP = {
       ['--reason <text>', 'With accept: what you checked (10-500 characters)'],
       ['--bulk', 'With accept: confirm a selection of more than one link'],
       ['--baseline', 'With accept --bulk: stamp every unreviewed link as baselined (adoption), never as reviewed'],
-      ['--remove <key>', 'With accept: delete a lock entry, such as a lost link'],
+      ['--remove <key>', 'With accept: delete a lock entry, such as a lost link; with disposition: <file>#<name>'],
       ['--gitattributes', 'With accept: also add the lock\'s merge=union line to .gitattributes'],
       ['--no-cache', 'Ignore the per-file extraction cache in .docguard/'],
       ['--format json', 'Machine-readable output'],
@@ -745,6 +749,12 @@ async function main() {
       flags.baseline = true;
     } else if (args[i] === '--gitattributes' && command === 'anchors') {
       flags.gitattributes = true;
+    } else if (args[i] === '--orphans' && command === 'anchors') {
+      flags.orphans = true;
+    } else if (args[i] === '--symbol' && args[i + 1] && command === 'anchors') {
+      flags.symbol = args[++i];
+    } else if (args[i] === '--kind' && args[i + 1] && command === 'anchors') {
+      flags.kind = args[++i];
     } else if (args[i] === '--from' && args[i + 1] && command === 'specs') {
       flags.from = args[++i];
     } else if (args[i] === '--to' && args[i + 1] && command === 'specs') {

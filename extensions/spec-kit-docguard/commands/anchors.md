@@ -40,12 +40,25 @@ docguard anchors --format json $ARGUMENTS
    - **ANC010**: links were placed below their exact tier. Report it; do not
      edit code to silence it.
 
-3. When implementing a requirement, put its tag directly above the function,
+3. For each link whose code changed (`state: suspect`, `side: code`), read
+   its `tests[]`. A test marked `needs-reverification` should be run, or its
+   TestGuard claim probed. A claim names the requirement as
+   `"source": { "kind": "spec", "ref": "req:<spec-id>#<REQ>" }`. Treat
+   `inconclusive` as unproven, never as passing.
+
+4. When implementing a requirement, put its tag directly above the function,
    class or statement that implements it, not in the file header, so the
    link names that code.
+
+5. For code with no requirement, run `docguard anchors --orphans --format json`.
+   For each orphan, tag it with the requirement it implements. If none
+   applies, tell the user which disposition fits (`derived`, `dead` or
+   `infrastructure`) and why. Recording one writes the anchor lock, which is
+   the user's sign-off, not yours.
 
 ## Flags
 
 - `--spec <id>`: only links to this Spec ID
 - `--file <path>`: only links in this file
+- `--orphans`: list untagged exported or top-level symbols instead of links
 - `--format json`: machine-readable output

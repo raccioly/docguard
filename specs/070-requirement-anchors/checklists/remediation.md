@@ -47,6 +47,10 @@ named test or recorded measurement that fails without it).
 | An unstructured claim leaves the test "needs re-verification" with a hint, not "inconclusive" | Inconclusive means the evidence cannot be evaluated. A readable report that simply has no structured claim cannot help this test, and the hint names the `req:` form to write | spec FR-033, US6 acceptance 3 |
 | Config is `anchors.testguard.{evidence, claims}` instead of `anchors.testguardEvidence` | Two paths belong together | contracts/testguard-evidence.md, docs/configuration.md |
 | ANC002 problems carry `scope` and `reviewedState` | The re-probe found the requirement-side exemption untested: ANC002 lacked the fields, so the code check was never what stopped it failing | tests/requirement-anchors-policy.test.mjs |
+| An orphan is an implementation unit (function, class, struct, enum, top-level method), not every top-level name | Exported constants and type-only declarations implement nothing; listing them would bury the real gaps. Visibility follows each language (Python `_`, Go case, Rust `pub`, C `static`) | contracts/anchors-cli.md, docs/commands.md |
+| `anchors disposition` also takes `--file … --bulk` and `--remove` | Adoption needs to disposition a whole infrastructure file, and a disposition must be removable when a requirement appears | contracts/anchors-cli.md |
+| Granularity is computed only once a project opted in | FR-041: a project that has not opted in pays nothing, including in `score` and `trace` | FR-036 test |
+| SECURITY.md's write table gained the `anchors` rows | Stories 1 and 2 added a lock writer without listing it there | docs-canonical/SECURITY.md |
 
 ## Release gate
 

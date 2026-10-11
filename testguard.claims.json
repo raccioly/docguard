@@ -2454,6 +2454,156 @@
       ]
     },
     {
+      "id": "ANCHOR-ORPHANS-DETERMINISTIC",
+      "statement": "anchors --orphans lists each exported or top-level unit under the governed paths that no tag anchors exactly once, in file and line order, honouring each language's visibility and file-scope coverage; a disposition is recorded only for a current untagged symbol, needs --bulk for several, and goes stale when its symbol is gone; score and trace show anchor granularity only once a project opted in.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.requirement-anchors#FR-034"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 070, user story 7)"
+      },
+      "defendedBy": [
+        "tests/requirement-anchors-orphans.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A file-scope tag no longer covers the symbols in its file.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (link.scope === 'file') return true;",
+          "replace": "  if (false) return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Orphans are listed in reverse file order.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  orphans.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 :",
+          "replace": "  orphans.sort((a, b) => (a.file < b.file ? 1 : a.file > b.file ? -1 :",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Go lowercase (unexported) functions are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    case 'go': return /^[A-Z]/.test(sym.name);",
+          "replace": "    case 'go': return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Rust items without pub are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "    case 'rust': return /\\bpub\\b/.test(header);",
+          "replace": "    case 'rust': return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Python private functions are listed.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": ".filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class') && !sym.name.startsWith('_'))",
+          "replace": ".filter(sym => sym.depth === 0 && (sym.kind === 'function' || sym.kind === 'class'))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A disposition is accepted for a symbol that is not an untagged one.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "      if (!selected.length) return fail(`${flags.symbol} is not an untagged symbol",
+          "replace": "      if (false) return fail(`${flags.symbol} is not an untagged symbol",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A multi-symbol disposition needs no --bulk.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (selected.length > 1 && !flags.bulk) return fail(`The selection matches ${selected.length} symbols",
+          "replace": "    if (false) return fail(`The selection matches ${selected.length} symbols",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The command no longer checks the kind itself.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "    if (!DISPOSITION_KINDS.includes(flags.kind)) return fail(",
+          "replace": "    if (false) return fail(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A disposition whose symbol is gone is not reported stale.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "    .filter(d => !candidates.has(d.key) && (!options.spec || governed.matches(d.file)))",
+          "replace": "    .filter(d => false)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Granularity is computed for a project that has not opted in.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  if (!anchorsActivated(projectDir, config)) return null;\n  const { summary } = computeLinks(projectDir, config);",
+          "replace": "  const { summary } = computeLinks(projectDir, config);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A JS module that exports nothing lists no top-level functions.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  if (!exports) {\n    for (const stmt of body) {",
+          "replace": "  if (false) {\n    for (const stmt of body) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 070, user story 7)"
+          }
+        }
+      ]
+    },
+    {
       "id": "METRICS-VALIDATOR-COUNT-IS-SHIPPED",
       "statement": "A documented DocGuard validator count is checked against the validator modules actually shipped, whatever a project enables.",
       "source": {
