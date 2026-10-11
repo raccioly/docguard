@@ -32,6 +32,7 @@ import {
   noiseReason, parseTag, pickTarget, tagTitle, triage, untestedExports,
 } from '../.github/scripts/jules-policy.mjs';
 import { run as runTriage } from '../.github/scripts/jules-triage.mjs';
+import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
@@ -578,7 +579,7 @@ describe('environment setup fails closed (FR-011)', () => {
       GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1',
       GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com',
     };
-    const git = (...args) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], { cwd: join(dir, 'repo'), env, stdio: 'pipe' });
+    const git = (...args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: join(dir, 'repo'), env, stdio: 'pipe' });
     git('init', '-q');
     git('add', '.');
     git('commit', '-q', '-m', 'init');
