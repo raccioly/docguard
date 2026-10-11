@@ -57,3 +57,9 @@
 
 - Changing how npm is published: `publish-npm` keeps `id-token: write` (Trusted Publishing and provenance need it) and runs `npm publish`, whose `prepublishOnly` runs the CLI's `--version`. It holds no repository write permission.
 - `publish-homebrew` keeps its deploy key, scoped to `raccioly/homebrew-tap`.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `bc28a68109745855fd96156f822f490706864f61` — Reviewed at main after #549: every workflow defaults to contents: read; no job runs tests, package managers or build tools beside a repository write token (tests/workflow-permissions.test.mjs, 0 violations, 16 before); the scheduled cut/verify/open-pr split was replayed locally to an identical 44-file commit. Deviations: none; the next release run is the end-to-end check. Evidence: `.github/workflows/release.yml`, `.github/workflows/scheduled-release.yml`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/workflow-permissions.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

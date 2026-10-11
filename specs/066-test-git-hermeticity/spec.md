@@ -66,3 +66,9 @@
 - `docguard hooks`, `setup`'s hook step and `upgrade --pr` under a global or system `core.hooksPath` (spec 065). Under the hostile config their tests still fail: `tests/hook-fail-open.test.mjs` (3), `tests/commands.test.mjs` ("distinguishes an existing foreign hook"), `tests/field-report-followups.test.mjs` ("names lefthook and simple-git-hooks configuration") and `tests/upgrade-pr-e2e.test.mjs` ("full happy path"). This spec converts only their fixture git calls.
 - Git spawned indirectly by a test through a variable command name or a shell script (for example a fake `git` on `PATH`); the bypass scan reads direct spawns of `git`.
 - Background `git gc`/maintenance in fixtures (#486); CI already disables it, and the hostile config keeps the same settings.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `bc28a68109745855fd96156f822f490706864f61` — Reviewed at main after #546 and #551: npm test passes under the hostile global git config (0 of 3,310 failing, down from 189) and normally; the CI hermeticity job proves the config bites before running the suite; docguard demo commits past global hooks. The 31 converted tests carry a reconciliation-only @implements reference. Deviations: none. Evidence: `.github/workflows/ci.yml`, `benchmarks/agent-context/run.mjs`, `cli/commands/demo.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/test-git-hermeticity.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -5540,7 +5540,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -5563,8 +5563,28 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "bc28a68109745855fd96156f822f490706864f61",
+          "outcomes": [
+            {
+              "revision": "bc28a68109745855fd96156f822f490706864f61",
+              "reason": "Reviewed at main after #545 and #551: hooks, setup and upgrade --pr refuse or roll back as specified; tests/hooks-repo-scope.test.mjs passes under a real failing global core.hooksPath, the full suite passes on Node 18-24 and in the hostile-config CI job, and the peer session confirmed hooks/--force leave a global folder untouched. Deviations: none.",
+              "evidence": [
+                "cli/commands/hooks.mjs",
+                "cli/commands/setup.mjs",
+                "cli/commands/upgrade.mjs",
+                "cli/shared-git.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/REQUIREMENTS.md",
+                "tests/field-report-followups.test.mjs",
+                "tests/hook-fail-open.test.mjs",
+                "tests/hooks-contract.test.mjs",
+                "tests/hooks-repo-scope.test.mjs",
+                "tests/hooks.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -5583,7 +5603,7 @@
         "artifacts": [
           {
             "path": "specs/065-hooks-repo-scope/spec.md",
-            "digest": "sha256:b5dad772f702b8a8ad068762dfd95db11c709f4853472c9d40325a906c3b57a3"
+            "digest": "sha256:521fe4a9e9d70515e2d99227da44481227f62352b202db4b7aed4ab632f2a303"
           },
           {
             "path": "specs/065-hooks-repo-scope/plan.md",
@@ -6909,7 +6929,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -6931,8 +6951,26 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "bc28a68109745855fd96156f822f490706864f61",
+          "outcomes": [
+            {
+              "revision": "bc28a68109745855fd96156f822f490706864f61",
+              "reason": "Reviewed at main after #547: auto-merge admits only 1-10 added tests/<name>.test.mjs files at the verified head; triage, preflight and the three routines are tested (tests/jules-policy.test.mjs); the Jules UI now runs .jules/setup.sh (snapshot green) and the three routines are active; the removal of .jules-setup.sh is attributed by spec 069. Deviations: test-only Jules PRs merge without a CHANGELOG entry, as recorded in the plan.",
+              "evidence": [
+                ".github/scripts/jules-policy.mjs",
+                ".github/scripts/jules-triage.mjs",
+                ".github/workflows/auto-merge.yml",
+                ".github/workflows/jules-triage.yml",
+                ".jules/preflight.mjs",
+                ".jules/setup.sh",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/jules-policy.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -6958,7 +6996,7 @@
         "artifacts": [
           {
             "path": "specs/067-jules-policy/spec.md",
-            "digest": "sha256:2fca2cc6f2bb155fa2c0bce1ad55ba0374395ba71aee4c9e7edf8e9284ad5c3b"
+            "digest": "sha256:d5f588dbb16edb417c7ee9d0bb9f6c6915c6561b5edb1c7aecef2d37ba93720c"
           },
           {
             "path": "specs/067-jules-policy/plan.md",
@@ -10544,7 +10582,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10570,8 +10608,23 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "bc28a68109745855fd96156f822f490706864f61",
+          "outcomes": [
+            {
+              "revision": "bc28a68109745855fd96156f822f490706864f61",
+              "reason": "Reviewed at main after #549: every workflow defaults to contents: read; no job runs tests, package managers or build tools beside a repository write token (tests/workflow-permissions.test.mjs, 0 violations, 16 before); the scheduled cut/verify/open-pr split was replayed locally to an identical 44-file commit. Deviations: none; the next release run is the end-to-end check.",
+              "evidence": [
+                ".github/workflows/release.yml",
+                ".github/workflows/scheduled-release.yml",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/workflow-permissions.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -10592,7 +10645,7 @@
         "artifacts": [
           {
             "path": "specs/068-release-least-privilege/spec.md",
-            "digest": "sha256:d975934bcf7e84e9aa42208912b3259f5262eca94bb894a62b350286f80d3c57"
+            "digest": "sha256:00a7611511222e6de599de68473da44cc8e3a43f8eced4449ccdd022cc968ae2"
           },
           {
             "path": "specs/068-release-least-privilege/plan.md",
@@ -10905,7 +10958,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10927,8 +10980,20 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "bc28a68109745855fd96156f822f490706864f61",
+          "outcomes": [
+            {
+              "revision": "bc28a68109745855fd96156f822f490706864f61",
+              "reason": "Reviewed at main after #552: a deleted file links only to a current, approved spec naming its exact path or a fully removed directory; modified, re-added, near-miss and draft-spec cases stay unresolved (tests/removed-file-attribution.test.mjs); specs 065-068 completed with it. Deviations: none.",
+              "evidence": [
+                "cli/scanners/reconciliation.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/removed-file-attribution.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -10945,7 +11010,7 @@
         "artifacts": [
           {
             "path": "specs/069-removed-file-attribution/spec.md",
-            "digest": "sha256:3436606efe9213c20a2b7e5bc29cd46904544af4bd65c499035dce41ff4470e3"
+            "digest": "sha256:30b57c6765a4f7ae83b370e1768d3ac078e3c4ea9f96d177daabf5ec1cd5389a"
           },
           {
             "path": "specs/069-removed-file-attribution/plan.md",
@@ -12620,7 +12685,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -12641,8 +12706,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "bc28a68109745855fd96156f822f490706864f61",
+          "outcomes": [
+            {
+              "revision": "bc28a68109745855fd96156f822f490706864f61",
+              "reason": "Reviewed at main after #546 and #551: npm test passes under the hostile global git config (0 of 3,310 failing, down from 189) and normally; the CI hermeticity job proves the config bites before running the suite; docguard demo commits past global hooks. The 31 converted tests carry a reconciliation-only @implements reference. Deviations: none.",
+              "evidence": [
+                ".github/workflows/ci.yml",
+                "benchmarks/agent-context/run.mjs",
+                "cli/commands/demo.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/test-git-hermeticity.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -12663,7 +12742,7 @@
         "artifacts": [
           {
             "path": "specs/066-test-git-hermeticity/spec.md",
-            "digest": "sha256:edca5c329d61332aabd17c639038b31bcf7968582370e2ce8babb015be7ef5a3"
+            "digest": "sha256:ed5321c7c7f4647102a6755a6c956f75b47d1932885c0fc1fc31909f32f86574"
           },
           {
             "path": "specs/066-test-git-hermeticity/plan.md",

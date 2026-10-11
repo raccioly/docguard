@@ -76,3 +76,9 @@ Jules found real defects here: new tests (#324, #337, #339, #421, #451, #516) an
 - Deleting the leftover Jules branches on the remote.
 - Moving `npm test` in `.github/workflows/scheduled-release.yml` and the `test` job of `.github/workflows/release.yml` out of jobs that hold a write-scoped token. Any merged test file, from Jules or a person, runs there; that is a release-workflow change for its own spec.
 - `SUPPLY-CHAIN-AUDIT.md`, a read-only audit prompt that predates the routines.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `bc28a68109745855fd96156f822f490706864f61` — Reviewed at main after #547: auto-merge admits only 1-10 added tests/name.test.mjs files at the verified head; triage, preflight and the three routines are tested (tests/jules-policy.test.mjs); the Jules UI now runs .jules/setup.sh (snapshot green) and the three routines are active; the removal of .jules-setup.sh is attributed by spec 069. Deviations: test-only Jules PRs merge without a CHANGELOG entry, as recorded in the plan. Evidence: `.github/scripts/jules-policy.mjs`, `.github/scripts/jules-triage.mjs`, `.github/workflows/auto-merge.yml`, `.github/workflows/jules-triage.yml`, `.jules/preflight.mjs`, `.jules/setup.sh`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/jules-policy.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

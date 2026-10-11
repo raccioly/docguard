@@ -44,3 +44,9 @@ Reconciliation links a changed file to a spec when the file is the spec's record
 ## Out of Scope
 
 - Linking a deleted file to the spec whose evidence it was at the base revision. That needs the registry as it stood at the base; naming the removal is the reviewed signal.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `bc28a68109745855fd96156f822f490706864f61` — Reviewed at main after #552: a deleted file links only to a current, approved spec naming its exact path or a fully removed directory; modified, re-added, near-miss and draft-spec cases stay unresolved (tests/removed-file-attribution.test.mjs); specs 065-068 completed with it. Deviations: none. Evidence: `cli/scanners/reconciliation.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/removed-file-attribution.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
