@@ -4,6 +4,7 @@
  * @req docguard.release-cut-green#FR-003
  * @req docguard.docs-verification-findings#FR-005
  * @req docguard.volatile-anchor-lines#FR-006
+ * @req docguard.volatile-anchor-lines#SC-002
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

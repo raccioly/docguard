@@ -12,11 +12,15 @@
  * @req docguard.volatile-anchor-lines#FR-003
  * @req docguard.volatile-anchor-lines#FR-004
  * @req docguard.volatile-anchor-lines#FR-005
+ * @req docguard.volatile-anchor-lines#FR-006
+ * @req docguard.volatile-anchor-lines#FR-007
+ * @req docguard.volatile-anchor-lines#SC-001
+ * @req docguard.volatile-anchor-lines#SC-003
  */
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { computeAnchorStatus, computeLinks } from '../cli/scanners/anchors.mjs';
@@ -25,6 +29,8 @@ import { floorTokens, lex } from '../cli/scanners/pattern-lexer.mjs';
 import { pythonRuns } from '../cli/scanners/py-anchors.mjs';
 import { treeSitterManifest } from '../cli/scanners/ts-anchors.mjs';
 import { validateRequirementAnchors } from '../cli/validators/requirement-anchors.mjs';
+import { CODES } from '../cli/findings.mjs';
+import { loadConfig } from '../cli/config.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const ORACLE_NM = resolve('tools/anchor-oracle/node_modules');
@@ -225,5 +231,38 @@ describe('an anchor made only of volatile lines is listed (FR-005)', () => {
     const listed = out.problems.filter(p => p.code === 'ANC011');
     assert.equal(listed.length, 1);
     assert.equal(listed[0].severity, 'info');
+  });
+});
+
+describe('documented (FR-007)', () => {
+  const read = rel => readFileSync(resolve(rel), 'utf8');
+  it('docs/commands.md describes the marker, the placeholder rule and ANC011', () => {
+    const text = read('docs/commands.md');
+    assert.match(text, /docguard:volatile/);
+    assert.match(text, /placeholder/);
+    assert.match(text, /ANC011/);
+    assert.match(text, /crosses onto another line/);
+  });
+  it('SECURITY.md says marked lines are outside change detection and that adding a marker is detected', () => {
+    const text = read('docs-canonical/SECURITY.md');
+    assert.match(text, /`docguard:volatile` is outside requirement-anchor change detection/);
+    assert.match(text, /adding or removing it turns a reviewed link over that line suspect/);
+  });
+  it('the finding catalog carries ANC011', () => {
+    assert.equal(CODES.ANC011.validator, 'requirementAnchors');
+    assert.match(CODES.ANC011.help, /never by guard/);
+  });
+});
+
+describe('this repository (FR-006, SC-003)', () => {
+  it('marks its two release-managed version lines', () => {
+    assert.match(readFileSync(resolve('action.yml'), 'utf8'), /DOCGUARD_RELEASED_VERSION: '\d+\.\d+\.\d+' # docguard:volatile/);
+    assert.match(readFileSync(resolve('extensions/spec-kit-docguard/extension.yml'), 'utf8'), /^ {2}version: "\d+\.\d+\.\d+" # docguard:volatile/m);
+  });
+  it('every link is reviewed or baselined, and no anchor is made only of marked lines', () => {
+    const status = computeAnchorStatus(resolve('.'), loadConfig(resolve('.')), { noCache: true });
+    const open = status.links.filter(l => !['reviewed', 'baselined'].includes(l.state)).map(l => `${l.state} ${l.key}`);
+    assert.deepEqual(open, []);
+    assert.deepEqual(status.problems.filter(p => p.code === 'ANC011'), []);
   });
 });

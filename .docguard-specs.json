@@ -10628,7 +10628,7 @@
           {
             "requirementId": "FR-003",
             "file": "tests/release-version-sync.test.mjs",
-            "line": 96
+            "line": 97
           },
           {
             "requirementId": "FR-004",
@@ -14803,11 +14803,11 @@
           },
           {
             "path": "specs/072-volatile-anchor-lines/tasks.md",
-            "digest": "sha256:404d7bbdfeec5f8345124ba07834ce36436f720ef676afdf90d40adeb7e8b7f1"
+            "digest": "sha256:31f3da4f277b934bd2fd16663b788e50c5780b68312e66b03807bc88d46ece73"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 8,
           "total": 10
         },
         "implementationEvidence": [
@@ -14844,6 +14844,31 @@
         ],
         "testEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-006",
             "file": "tests/release-version-sync.test.mjs",
             "line": 6
@@ -14851,7 +14876,32 @@
           {
             "requirementId": "FR-006",
             "file": "tests/release-version-sync.test.mjs",
-            "line": 116
+            "line": 117
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/volatile-anchor-lines.test.mjs",
+            "line": 18
           }
         ]
       }
