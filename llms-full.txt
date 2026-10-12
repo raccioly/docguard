@@ -2099,6 +2099,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Two `docguard watch` tests no longer race the watcher's output**
+  (`docguard.watch-deterministic` FR-004). Each waited on an earlier or weaker
+  marker than the line it then asserted, so a slow runner could read the
+  header before the next line arrived (CI run 38300989325). Both now wait on
+  the pattern they assert; the block passed 10 sequential and 3×4 concurrent
+  runs. No sleep added.
+
 - **A quoted `<!--` no longer hides the rest of a spec**
   (`docguard.quoted-comment-openers`). A requirement line that quoted an HTML
   comment opener in backticks, such as ``- **FR-001**: Strip the `<!--`
@@ -2257,14 +2264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Dependabot's too) is pinned to that commit with `sha`, so a push after CI
   makes GitHub refuse it.
 
-### Changed
-
-- **Jules triage is a tested policy, and Jules runs repository routines**
-  (`specs/067-jules-policy`). `jules-triage.yml` now runs
-  `.github/scripts/jules-triage.mjs`, which closes a Jules PR that is empty,
-  a duplicate of an open PR (same `[jules:<routine>] <target>` or same
-
-<!-- truncated: 5570 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5577 more lines — read CHANGELOG.md directly -->
 
 ---
 

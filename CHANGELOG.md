@@ -234,6 +234,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Two `docguard watch` tests no longer race the watcher's output**
+  (`docguard.watch-deterministic` FR-004). Each waited on an earlier or weaker
+  marker than the line it then asserted, so a slow runner could read the
+  header before the next line arrived (CI run 38300989325). Both now wait on
+  the pattern they assert; the block passed 10 sequential and 3×4 concurrent
+  runs. No sleep added.
+
 - **A quoted `<!--` no longer hides the rest of a spec**
   (`docguard.quoted-comment-openers`). A requirement line that quoted an HTML
   comment opener in backticks, such as ``- **FR-001**: Strip the `<!--`

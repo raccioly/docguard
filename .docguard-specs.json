@@ -15102,15 +15102,17 @@
           "docguard.watch-deterministic#FR-001",
           "docguard.watch-deterministic#FR-002",
           "docguard.watch-deterministic#FR-003",
+          "docguard.watch-deterministic#FR-004",
           "docguard.watch-deterministic#SC-001",
-          "docguard.watch-deterministic#SC-002"
+          "docguard.watch-deterministic#SC-002",
+          "docguard.watch-deterministic#SC-003"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/055-watch-deterministic/spec.md",
-            "digest": "sha256:d6f5e2cf874d3f84a498f2277f3847e4cfc9d7db4e4ea2c586f38fe1c8de97ee"
+            "digest": "sha256:0e0e012e72758b73d6186740d931d9daf40dd9f10d1b68d3004fd87627c43f2d"
           },
           {
             "path": "specs/055-watch-deterministic/plan.md",
@@ -15118,12 +15120,12 @@
           },
           {
             "path": "specs/055-watch-deterministic/tasks.md",
-            "digest": "sha256:bb9bd866d9e069115c35e87ccd5384c1cd4b1fb0082155253402ef9fd84c4190"
+            "digest": "sha256:b67e147bea0e441ed22556994ed5d84a1b23491bd3af009cf42e472507d13a5a"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
-          "total": 5
+          "checked": 6,
+          "total": 6
         },
         "implementationEvidence": [
           {
@@ -15149,6 +15151,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-004",
+            "file": "tests/commands.test.mjs",
+            "line": 939
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/watch-reliability.test.mjs",
             "line": 12
@@ -15157,6 +15164,11 @@
             "requirementId": "SC-002",
             "file": "tests/watch-reliability.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/commands.test.mjs",
+            "line": 940
           }
         ]
       }

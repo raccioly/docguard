@@ -29,6 +29,9 @@ describe('requirements after a quoted comment opener (FR-001)', () => {
   it('a double-backtick span opens nothing either', () => {
     assert.deepEqual(ids('# S\n\n- **FR-001**: Quote ``a `<!--` b`` here.\n- **FR-002**: Second.\n'), ['FR-001', 'FR-002']);
   });
+  it('only a run of the same length closes a span: a lone backtick inside a double-backtick span does not', () => {
+    assert.deepEqual(ids('# S\n\n- **FR-001**: Quote ``x ` y <!-- z`` here.\n- **FR-002**: Second.\n'), ['FR-001', 'FR-002']);
+  });
   it('inside a real comment, backticks are comment text: the comment ends at its first `-->`', () => {
     assert.deepEqual(ids('# S\n\n- **FR-001**: First.\n<!-- hidden: `-->`\n- **FR-009**: after the comment\n- **FR-002**: Second.\n'), ['FR-001', 'FR-009', 'FR-002']);
   });
