@@ -53,4 +53,5 @@
 ## Implementation Outcomes
 
 - `cdf35252487a397598f75026daa96b4a8d946e70` — Reviewed at cdf3525 on main: all 5 tasks are checked and were delivered by #528; the full suite (3279 tests) passes at this revision and on Node 18, 20, 22 and 24 in CI, and guard reports 0 errors. Evidence: `cli/commands/watch.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/watch-reliability.test.mjs`. Accepted deviations: none. Successor: none.
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Maintenance reviewed at 4f46e9f: FR-004 and SC-003 amendment (#572). Both docguard watch spawn tests wait on the pattern they assert (the auto-fix prompt race of CI run 38300989325 and the Changed: line); 10 sequential and 3x4 concurrent runs pass, no sleep added. Evidence: `cli/commands/watch.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/commands.test.mjs`, `tests/watch-reliability.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

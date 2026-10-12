@@ -2797,11 +2797,11 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2811,11 +2811,31 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (shipped in #575): Docs-Sync ignores names in comments, names Next.js handlers by URL path, shared files by unique path tail, and reads drawn trees. A/B on 38 projects: +173 DSY001, +11 DSY002 on 9, none removed, severities unchanged; 24 hand-reviewed, no false positive; budget PASS; TestGuard 52/52. Canonical docs updated in the verify PR. Deviations: none.",
+              "evidence": [
+                "cli/scanners/doc-references.mjs",
+                "cli/scanners/routes.mjs",
+                "cli/shared-html-comments.mjs",
+                "cli/validators/docs-sync.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/docs-sync-specific-evidence.test.mjs",
+                "tests/generated-docs-e2e.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2836,7 +2856,7 @@
         "artifacts": [
           {
             "path": "specs/078-docs-sync-specific-evidence/spec.md",
-            "digest": "sha256:98a0753c51a4da08a0949f11fd7d21705768f34bef262e194d9102ee23056f85"
+            "digest": "sha256:56d2818037e95068dac6e400e94841dc4c0ae0394d5d31b9edc30ffd64a30430"
           },
           {
             "path": "specs/078-docs-sync-specific-evidence/plan.md",
@@ -6528,11 +6548,11 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [
@@ -6551,8 +6571,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (shipped in #573): JS/TS imports read from the Babel tree with the text-pattern fallback; multi-line clauses become edges, names stay null where they cannot be listed. Graph on this repo 1,382 to 1,441 edges, no Architecture finding change; budget and benchmark PASS; TestGuard JS-IMPORT-EDGES + ANCHOR-RIPPLE-NAME-FILTERED 23/23. Deviations: none.",
+              "evidence": [
+                "cli/scanners/import-graph.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/js-import-edges.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -6574,7 +6607,7 @@
         "artifacts": [
           {
             "path": "specs/076-js-import-edges/spec.md",
-            "digest": "sha256:64648cd007e8fc1118fe9ff1f809d27d5d62d7639f760a40039ad9f016a841a9"
+            "digest": "sha256:35157c1f16cbd5b819e723a75c476ccbf12cb100d0fada7af77ab1368b26e431"
           },
           {
             "path": "specs/076-js-import-edges/plan.md",
@@ -10489,7 +10522,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10511,8 +10544,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (main after #574; shipped in #572): a <!-- quoted in a code span opens nothing for requirement IDs or instruction pointers; real comments still hide. 13 tests; inventory of 441 Markdown files unchanged (1,853 IDs, 34 pointers); TestGuard 7/7. Reused by specs 073 and 078. Deviations: none.",
+              "evidence": [
+                "cli/shared-html-comments.mjs",
+                "cli/shared-requirements.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/quoted-comment-openers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -10529,7 +10576,7 @@
         "artifacts": [
           {
             "path": "specs/074-quoted-comment-openers/spec.md",
-            "digest": "sha256:fc77e132223c1519ea5d657c3e6737763c599f14ee99a141382f11a19f45cab3"
+            "digest": "sha256:68227f84067ecee0f64c4595fb2772b0a6d87e21c9d96a10aab93d095fe340f4"
           },
           {
             "path": "specs/074-quoted-comment-openers/plan.md",
@@ -11010,7 +11057,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "3790177e60ccd360e94e2193579a8209efe146ea",
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
           "outcomes": [
             {
               "revision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
@@ -11028,6 +11075,19 @@
             {
               "revision": "3790177e60ccd360e94e2193579a8209efe146ea",
               "reason": "Maintenance review at 3790177: release-cut guarantees extended, none weakened. #543 lints out [Unreleased]-only CHANGELOG reads; #522 widened the version sync; #536 made budget timing deterministic; #546 made its fixture git hermetic; #549 moved CI-RECIPES to the least-privilege layout. v0.44.1 and v0.44.2 cut green end to end; typeof-only tests replaced by behaviour tests (#556). Deviations: none.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/release-cut-green.test.mjs",
+                "tests/release-version-sync.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Maintenance reviewed at 4f46e9f: FR-007 recalibration (#574). Normal suite runs 193-369s over 25 CI runs (median 305s) after specs 070-078; the budget becomes 465s, 1.26x the slowest normal run, and the PR #328 class on a typical run (470s) still trips it. tests/release-cut-green.test.mjs records the measurements.",
               "evidence": [
                 ".github/scripts/sync-release-version.mjs",
                 "cli/release-pr-policy.mjs",
@@ -11059,7 +11119,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:6e6630eea51022aaeb40d39aa35ecc1a4079a41efa9993aeca0fa183b31101d2"
+            "digest": "sha256:d88a1d32ad671f68d2dc00717c3b8f2530f81959e7e1569afc5c0d4e7c5bdf37"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
@@ -14305,11 +14365,11 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -14319,11 +14379,26 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (shipped in #574): TODO keywords in code spans or strings are not annotations; comments come from the string-aware reader; the self-path skip is gone, so results no longer depend on install location. TestGuard 40/40 across five claims; suite 3,914 pass. Deviations: none.",
+              "evidence": [
+                "cli/validators/todo-tracking.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/benchmark-runner.test.mjs",
+                "tests/todo-tracking.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -14345,7 +14420,7 @@
         "artifacts": [
           {
             "path": "specs/073-todo-quoted-forms/spec.md",
-            "digest": "sha256:35caa8b81d7209d112c8207d5caac71a4a38ae97b95cea54173536c5722e0ffe"
+            "digest": "sha256:79b7235555d0d39b5fbba18d1a8be3e0f837e356cd0102c9ed64e1e17b8b4a3f"
           },
           {
             "path": "specs/073-todo-quoted-forms/plan.md",
@@ -15597,7 +15672,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cdf35252487a397598f75026daa96b4a8d946e70",
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
           "outcomes": [
             {
               "revision": "cdf35252487a397598f75026daa96b4a8d946e70",
@@ -15605,6 +15680,18 @@
               "evidence": [
                 "cli/commands/watch.mjs",
                 "docs-canonical/TEST-SPEC.md",
+                "tests/watch-reliability.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Maintenance reviewed at 4f46e9f: FR-004 and SC-003 amendment (#572). Both docguard watch spawn tests wait on the pattern they assert (the auto-fix prompt race of CI run 38300989325 and the Changed: line); 10 sequential and 3x4 concurrent runs pass, no sleep added.",
+              "evidence": [
+                "cli/commands/watch.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/commands.test.mjs",
                 "tests/watch-reliability.test.mjs"
               ],
               "deviations": [],
@@ -15628,7 +15715,7 @@
         "artifacts": [
           {
             "path": "specs/055-watch-deterministic/spec.md",
-            "digest": "sha256:0e0e012e72758b73d6186740d931d9daf40dd9f10d1b68d3004fd87627c43f2d"
+            "digest": "sha256:096670577195846fc70c01b40022de3327c45930a4d629c25b65990a7a6a5462"
           },
           {
             "path": "specs/055-watch-deterministic/plan.md",
@@ -15695,7 +15782,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -15716,8 +15803,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (shipped in #571): doc references match whole file names, not substrings. This repo 894 to 828 references, 0 added, 66 removed (all collisions); four local projects 1,514 to 1,513; ripple unchanged. TestGuard DOC-REFERENCES-WHOLE-TOKEN 6/6, MCP-DOC-TOOLS-EXACT-AND-BOUNDED 15/15. Deviations: none.",
+              "evidence": [
+                "cli/commands/impact.mjs",
+                "cli/scanners/doc-references.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/doc-reference-tokens.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -15736,7 +15836,7 @@
         "artifacts": [
           {
             "path": "specs/075-whole-token-doc-references/spec.md",
-            "digest": "sha256:934620a1e46148cb22e94f5c6bdb540775ed1e488aef2331266ebef561cc290b"
+            "digest": "sha256:ce934dfbca93ba601b364369ff70726daef8ebb84810ce3441ae22348285c0b8"
           },
           {
             "path": "specs/075-whole-token-doc-references/plan.md",
@@ -15823,7 +15923,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -15839,11 +15939,31 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "outcomes": [
+            {
+              "revision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+              "reason": "Reviewed at 4f46e9f (shipped in #571 with 075): the nudge hook, Docs-Sync and Diff-Suspicion match whole tokens. A/B on 42 projects: 2,500 to 2,514 findings, +14 real DSY001/DSY002, none lost, no status change; this repo unchanged. TestGuard WHOLE-TOKEN-SIBLING-MATCHERS 15/15. Canonical docs updated in the 0.45.0 verify PR. Deviations: none.",
+              "evidence": [
+                "cli/commands/hooks.mjs",
+                "cli/scanners/doc-references.mjs",
+                "cli/validators/diff-suspicion.mjs",
+                "cli/validators/docs-sync.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/generated-docs-e2e.test.mjs",
+                "tests/whole-token-sibling-matchers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -15862,7 +15982,7 @@
         "artifacts": [
           {
             "path": "specs/077-whole-token-sibling-matchers/spec.md",
-            "digest": "sha256:2d172c82b02fb5f5cd5c3053c42a770f5c004ddcedc39cb2ccd51f1017b7ac0d"
+            "digest": "sha256:7b6c57c14ff06222add98b559187e218c79b4594044f80d886bef7f2aed5b47c"
           },
           {
             "path": "specs/077-whole-token-sibling-matchers/plan.md",

@@ -81,3 +81,9 @@ Every consumer of the matcher inherits the false reference. `trace --reverse src
 
 - Other text matchers with the same substring test: the post-commit nudge in `hooks`, the Docs-Sync route and service checks (DSY001, DSY002) and the path match in the diff-suspicion validator. They change guard findings or hook behaviour and are reviewed on their own.
 - Making the text match exact. The declared owner (`docguard.doc-ownership-map`) and `covers` (`docguard.doc-dependency-lock`) are the exact signals.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (shipped in #571): doc references match whole file names, not substrings. This repo 894 to 828 references, 0 added, 66 removed (all collisions); four local projects 1,514 to 1,513; ripple unchanged. TestGuard DOC-REFERENCES-WHOLE-TOKEN 6/6, MCP-DOC-TOOLS-EXACT-AND-BOUNDED 15/15. Deviations: none. Evidence: `cli/commands/impact.mjs`, `cli/scanners/doc-references.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/doc-reference-tokens.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

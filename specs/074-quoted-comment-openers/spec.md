@@ -60,3 +60,9 @@ An AGENTS.md line explains "wrap generated text in `<!-- docguard:section -->`",
 ## Out of Scope
 
 - The doc-section markers (`docguard:section`) and generated-section readers, which find their own literal markers and do not track comment state across lines.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (main after #574; shipped in #572): a !-- quoted in a code span opens nothing for requirement IDs or instruction pointers; real comments still hide. 13 tests; inventory of 441 Markdown files unchanged (1,853 IDs, 34 pointers); TestGuard 7/7. Reused by specs 073 and 078. Deviations: none. Evidence: `cli/shared-html-comments.mjs`, `cli/shared-requirements.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/quoted-comment-openers.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
