@@ -11,6 +11,7 @@
 | FR-003 | `cli/scanners/routes.mjs`: the Next.js App Router path derivation moves into an exported `appRouterPath(relDir)`, used by the route scanner as before. `cli/scanners/doc-references.mjs`: a new `createUrlPathMatcher(text)` reads every path token in the text once and answers whether it names a URL path. Paths compare after `normalizePath` from `cli/scanners/api-doc.mjs`. Docs-Sync uses both for each `route` file under `app/api/`. |
 | FR-004, FR-005 | `cli/validators/docs-sync.mjs`: `moduleIdentities(files)` gives each other file the shortest unshared tail of its extension-less path (at least two segments for `index` and `__init__`), and for `index` and `__init__` the directory path. `cli/scanners/doc-references.mjs`: a new `namesDirectory(text, parts)` beside `namesModule`. |
 | FR-006 | `validateDocsSync` selects every route and service file first, computes identities over all of them, then checks those in `--changed-only` scope. Messages and severities are unchanged; the suggestion names the expected form. |
+| FR-008 | `cli/scanners/doc-references.mjs`: a new `treePaths(text)` rebuilds the path of every entry of a drawn file tree. Docs-Sync appends those paths to the visible text, so every matcher sees them. |
 | FR-007 | `cli/findings.mjs` (DSY001, DSY002 help), `npm run docs:reference`; `cli/commands/explain.mjs` (`docsSync`); `tests/generated-docs-e2e.test.mjs` comment; `CHANGELOG.md`; `npm run llms`. |
 
 ## Technical Context
@@ -36,9 +37,10 @@
 - **Shared and directory names.** Among non-Next files, only one project has stems that several checked files share: 7 `index` and 5 `types`, plus 2 `email`, which documents already name by a qualified path. Its documents name files inside `services/auth/`, but never `auth/index`, `auth/types` or `services/auth` as a module. The rule gives 11 new warnings there; each was checked (tasks.md).
   - *Rejected:* the directory name as the module name of an `index` file (Node.js resolution). `src/routes/index.ts` would then be documented by the word "routes", which is the spec 077 problem.
   - *Rejected:* letting a sibling's path (`services/auth/OktaAuthService.ts`) document the barrel `services/auth/index.ts`. That names a different file; Docs-Sync checks files.
+- **Drawn file trees.** 15 of the 38 projects draw file trees in their canonical documents (`├──`, `└──`), and one lists Next.js handlers that way. A tree names a file across lines, so no line-based matcher sees it. `treePaths` keeps a stack of entries by the column of their connector, which tolerates any indent width, and joins them to the directory line above the tree. Measured: no Docs-Sync result changes on these projects (239 warnings either way), so it removes a class of false positives at no cost. *Rejected:* Markdown nested lists as trees; they are prose structure as often as paths.
 - **Shared is decided over every selected file.** Under `--changed-only`, deciding over the changed files alone would make the same file's result depend on what else changed (FR-006).
 - **Matchers live beside `namesToken` and `namesModule`.** `createUrlPathMatcher` and `namesDirectory` sit in `cli/scanners/doc-references.mjs` with the one file-name character set. The URL matcher is a factory because Docs-Sync asks it once per handler about the same text: it tokenizes once and answers from sets of path suffixes.
-- **Cost.** One pass over the canonical text for path tokens, and only when a Next.js handler is checked. One `visibleMarkdown` pass per document. Identities are counted in a map, O(files × depth). `coveredSections` runs only on documents that contain `covers=`. The budget job compares guard wall time on this repository, where Docs-Sync finds no route or service directory.
+- **Cost.** Nothing is read until Docs-Sync checks a file. Then one `visibleMarkdown` and one `treePaths` pass per document, and one pass for path tokens when a Next.js handler is checked. Identities are counted in a map, O(files × depth). `coveredSections` runs only on documents that contain `covers=`. The budget job compares guard wall time on this repository, where Docs-Sync finds no route or service directory.
 - **Messages stay byte-identical.** Baselines fingerprint `code`, location and message (`cli/writers/baseline.mjs`). Only the `suggestion` text changes, so a baselined DSY finding stays baselined.
 
 ## Constitution Check
@@ -56,7 +58,7 @@ Pass.
 
 ```text
 cli/shared-html-comments.mjs                  # FR-001: visibleMarkdown
-cli/scanners/doc-references.mjs               # FR-003, FR-005: createUrlPathMatcher, namesDirectory
+cli/scanners/doc-references.mjs               # FR-003, FR-005, FR-008: createUrlPathMatcher, namesDirectory, treePaths
 cli/scanners/routes.mjs                       # FR-003: appRouterPath (extracted, behaviour unchanged)
 cli/validators/docs-sync.mjs                  # FR-001–FR-006
 tests/docs-sync-specific-evidence.test.mjs    # NEW: FR-001–FR-007

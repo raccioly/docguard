@@ -2792,6 +2792,187 @@
       }
     },
     {
+      "specId": "docguard.docs-sync-specific-evidence",
+      "path": "specs/078-docs-sync-specific-evidence/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.docs-sync-specific-evidence#FR-001",
+          "docguard.docs-sync-specific-evidence#FR-002",
+          "docguard.docs-sync-specific-evidence#FR-003",
+          "docguard.docs-sync-specific-evidence#FR-004",
+          "docguard.docs-sync-specific-evidence#FR-005",
+          "docguard.docs-sync-specific-evidence#FR-006",
+          "docguard.docs-sync-specific-evidence#FR-007",
+          "docguard.docs-sync-specific-evidence#FR-008",
+          "docguard.docs-sync-specific-evidence#SC-001",
+          "docguard.docs-sync-specific-evidence#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/078-docs-sync-specific-evidence/spec.md",
+            "digest": "sha256:98a0753c51a4da08a0949f11fd7d21705768f34bef262e194d9102ee23056f85"
+          },
+          {
+            "path": "specs/078-docs-sync-specific-evidence/plan.md",
+            "digest": "sha256:7da1b7f0af83e85bc302de2403044387750b63e4422b9fb53472d64827e255ec"
+          },
+          {
+            "path": "specs/078-docs-sync-specific-evidence/tasks.md",
+            "digest": "sha256:747ed3355c7734748286b0e776a192ab5b8bb78811a64443eabe69ad94c1464f"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 74
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 152
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 134
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 153
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 162
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/routes.mjs",
+            "line": 254
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 87
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 88
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 94
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 89
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 114
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 154
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/docs-sync-specific-evidence.test.mjs",
+            "line": 16
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.docs-verification-findings",
       "path": "specs/054-docs-verification-findings/spec.md",
       "reviewed": {
@@ -4594,7 +4775,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1191
+            "line": 1202
           },
           {
             "requirementId": "FR-009",
@@ -6651,7 +6832,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 375
+            "line": 386
           },
           {
             "requirementId": "FR-008",
@@ -6676,12 +6857,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/routes.mjs",
-            "line": 636
+            "line": 647
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/routes.mjs",
-            "line": 642
+            "line": 653
           },
           {
             "requirementId": "FR-011",
@@ -6696,7 +6877,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/scanners/routes.mjs",
-            "line": 784
+            "line": 795
           }
         ],
         "testEvidence": [
@@ -6875,7 +7056,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 530
+            "line": 541
           },
           {
             "requirementId": "FR-002",
@@ -6895,22 +7076,22 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 519
+            "line": 530
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 580
+            "line": 591
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 583
+            "line": 594
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 640
+            "line": 651
           },
           {
             "requirementId": "FR-003",
@@ -6940,7 +7121,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 641
+            "line": 652
           },
           {
             "requirementId": "FR-005",
@@ -10367,7 +10548,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-html-comments.mjs",
-            "line": 7
+            "line": 8
           },
           {
             "requirementId": "FR-001",
@@ -10377,12 +10558,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-html-comments.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-html-comments.mjs",
-            "line": 9
+            "line": 10
           }
         ],
         "testEvidence": [
@@ -12680,7 +12861,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 11
+            "line": 14
           }
         ],
         "testEvidence": [
@@ -15402,17 +15583,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 69
+            "line": 70
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 90
+            "line": 186
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 91
+            "line": 187
           },
           {
             "requirementId": "FR-004",
@@ -15533,12 +15714,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 81
+            "line": 82
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 75
+            "line": 133
           },
           {
             "requirementId": "FR-004",
