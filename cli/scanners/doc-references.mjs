@@ -32,6 +32,7 @@ import { createEvidenceReader } from './semantic-claims.mjs';
 import { coveredSections, docLockStatus } from './doc-deps.mjs';
 import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './instruction-scopes.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
+import { normalizePath } from './api-doc.mjs';
 
 export const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 export const READ_DEFAULT_BYTES = 8 * 1024;
@@ -83,6 +84,101 @@ export function namesToken(line, name) {
 export function namesModule(text, stem) {
   if (!text.includes(stem)) return false;
   return new RegExp(`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`).test(text);
+}
+
+/**
+ * Does `text` name the directory `parts` (`['services', 'auth']`) as a module
+ * path, `services/auth` or `services.auth`, that goes no deeper? A file or a
+ * directory inside it (`services/auth/login.ts`, `services/auth.ts`) is not the
+ * directory, and `myservices/auth` is a longer name.
+ * @implements docguard.docs-sync-specific-evidence#FR-005
+ */
+export function namesDirectory(text, parts) {
+  for (const path of [parts.join('/'), parts.join('.')]) {
+    if (!text.includes(path)) continue;
+    if (new RegExp(`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(path)}(?!${NAME_CHAR_NOT_DOT}|[./]${NAME_CHAR_NOT_DOT})`).test(text)) return true;
+  }
+  return false;
+}
+
+// One entry of a drawn file tree (`├── route.ts`, `|-- auth/`): the drawing
+// before it, its connector and its name. A `│` line is a spacer inside a tree.
+const TREE_ENTRY = /^([\s│|]*?)(?:├──|└──|\|--|`--|\+--)[ \t]+([^\s#│|]+)/;
+const TREE_SPACER = /^[ \t]*[│|][\s│|]*$/;
+
+/**
+ * The paths a file tree in `text` draws, each joined to the directory line
+ * above the tree (`src/app/api/` then `├── users/` then `│   └── route.ts` is
+ * `src/app/api/users/route.ts`). A tree names files across lines, so the path
+ * matchers cannot see them in the text itself.
+ * @implements docguard.docs-sync-specific-evidence#FR-008
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function treePaths(text) {
+  const out = [];
+  let root = '';
+  let stack = [];
+  for (const line of String(text).split('\n')) {
+    const entry = TREE_ENTRY.exec(line);
+    if (!entry) {
+      if (TREE_SPACER.test(line)) continue;
+      stack = [];
+      const bare = line.replace(/#.*$/, '').trim().replace(/^`+|`+$/g, '');
+      root = /^[\w.@~\-/[\]()]+\/$/.test(bare) ? bare : '';
+      continue;
+    }
+    const column = entry[1].length;
+    while (stack.length && stack[stack.length - 1].column >= column) stack.pop();
+    stack.push({ column, name: entry[2].replace(/\/+$/, '') });
+    out.push(root + stack.map(item => item.name).join('/'));
+  }
+  return out;
+}
+
+// A URL path or file path in prose: runs of path characters, or a whole
+// `[id]`, `(group)`, `{id}` or `<id>` segment, joined by `/`. A bracket that
+// does not close a segment ends the path, so `[/api/users](#x)` is `/api/users`.
+const PATH_SEGMENT = String.raw`(?:\[{1,2}[^\]/\s]+\]{1,2}|\([^/()\s]+\)|\{[^}/\s]+\}|<[^>/\s]+>|[A-Za-z0-9_\-.~%:*@$+]+)`;
+const PATH_TOKEN = new RegExp(String.raw`(?<![A-Za-z0-9_\-.~%:*@$+\])}>])(?:${PATH_SEGMENT})?(?:\/${PATH_SEGMENT})+\/?`, 'g');
+const ROUTE_FILE = /^route\.(?:ts|tsx|js|jsx|mjs)$/;
+const WILDCARD = /^\*{1,2}$/;
+
+/** A path's segments for comparison: route groups and a trailing `route` file dropped, every parameter `{}`. */
+function urlSegments(path) {
+  const segments = path.split('/').filter(seg => seg && !/^\(.*\)$/.test(seg));
+  if (segments.length && ROUTE_FILE.test(segments[segments.length - 1])) segments.pop();
+  return normalizePath('/' + segments.join('/')).split('/').filter(Boolean);
+}
+
+/**
+ * The URL paths `text` names, read once. The matcher is true for `path`
+ * (`/api/users/:id`) when a path in the text ends with it, segment by segment
+ * after `normalizePath`, so `{id}`, `:id`, `[id]` and `<id>` are one parameter.
+ * A host, base path or directory may come before it (`https://x/api/…`,
+ * `src/app/api/…/route.ts`); the path must end there. A trailing `*` or `**`
+ * names the paths under a prefix of two segments or more: `/api/deals/*` names
+ * `/api/deals/:id/notes`, `/api/*` names nothing.
+ * @implements docguard.docs-sync-specific-evidence#FR-003
+ * @param {string} text
+ * @returns {(path: string) => boolean}
+ */
+export function createUrlPathMatcher(text) {
+  const named = new Set();
+  const under = new Set();
+  for (const [token] of String(text).matchAll(PATH_TOKEN)) {
+    const segments = urlSegments(token.replace(/[.:,;]+$/, ''));
+    const wildcard = segments.length > 0 && WILDCARD.test(segments[segments.length - 1]);
+    if (wildcard) segments.pop();
+    for (let i = 0; i < segments.length; i++) (wildcard ? under : named).add(segments.slice(i).join('/'));
+  }
+  return (path) => {
+    const segments = urlSegments(path);
+    if (named.has(segments.join('/'))) return true;
+    // A wildcard's prefix must have two segments: `/api/*` names nothing.
+    for (let n = 2; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;
+    return false;
+  };
 }
 
 /**

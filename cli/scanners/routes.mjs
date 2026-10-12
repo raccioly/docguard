@@ -247,6 +247,28 @@ export function scanRoutesDeep(dir, stack, docTools, opts = {}) {
 
 // ── Next.js App Router ──────────────────────────────────────────────────────
 
+/**
+ * The URL path a Next.js App Router directory serves, from its path below the
+ * directory that holds `api/`: `api/(admin)/users/[id]` → `/api/users/:id`.
+ * Shared with Docs-Sync, which names a route handler by this path.
+ * @implements docguard.docs-sync-specific-evidence#FR-003
+ * @param {string} relDir
+ * @returns {string}
+ */
+export function appRouterPath(relDir) {
+  return '/' + relDir
+    .replace(/\\/g, '/')
+    // Strip route-group segments like `(admin)` — they organize files but
+    // do NOT appear in the URL. The frontend scanner already does this; the
+    // route scanner used to leak them, e.g. `/api/(admin)/users`.
+    .split('/')
+    .filter(seg => seg && !/^\(.*\)$/.test(seg))
+    .join('/')
+    .replace(/\[\[\.\.\.(\w+)\]\]/g, ':$1*')  // Optional catch-all [[...slug]] — before [...slug]
+    .replace(/\[\.\.\.(\w+)\]/g, ':$1*')        // Catch-all [...slug]
+    .replace(/\[(\w+)\]/g, ':$1');               // Dynamic [id]
+}
+
 function scanNextJsRoutes(dir) {
   const routes = [];
   const middlewareAuth = nextMiddlewareAuth(dir);
@@ -271,18 +293,7 @@ function scanNextJsRoutes(dir) {
       // produce `/api/<segments>`. Previously `appDir.split('/')[0]` stripped
       // only `src/` for the src layout, leaking `app/` into the emitted path.
       const apiBase = appDir.slice(0, appDir.lastIndexOf('/'));
-      const relDir = relative(resolve(dir, apiBase), dirname(filePath));
-      const apiPath = '/' + relDir
-        .replace(/\\/g, '/')
-        // Strip route-group segments like `(admin)` — they organize files but
-        // do NOT appear in the URL. The frontend scanner already does this; the
-        // route scanner used to leak them, e.g. `/api/(admin)/users`.
-        .split('/')
-        .filter(seg => seg && !/^\(.*\)$/.test(seg))
-        .join('/')
-        .replace(/\[\[\.\.\.(\w+)\]\]/g, ':$1*')  // Optional catch-all [[...slug]] — before [...slug]
-        .replace(/\[\.\.\.(\w+)\]/g, ':$1*')        // Catch-all [...slug]
-        .replace(/\[(\w+)\]/g, ':$1');               // Dynamic [id]
+      const apiPath = appRouterPath(relative(resolve(dir, apiBase), dirname(filePath)));
 
       // Extract exported HTTP methods. Each handler is judged by its own body
       // (AST), or by its own export's text when the file does not parse, plus

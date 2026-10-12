@@ -8,6 +8,9 @@
  *
  * Reads OpenAPI discovery from cli/shared-openapi.mjs, never from another
  * validator (Constitution IV).
+ *
+ * A route or service is documented by text a reader sees, or by a `covers`
+ * declaration, that identifies it (specs/078-docs-sync-specific-evidence).
  * @implements docguard.spec-kit-artifact-coverage#FR-007
  */
 
@@ -17,7 +20,10 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
-import { namesModule } from '../scanners/doc-references.mjs';
+import { namesModule, namesDirectory, createUrlPathMatcher, treePaths } from '../scanners/doc-references.mjs';
+import { coveredSections } from '../scanners/doc-deps.mjs';
+import { appRouterPath } from '../scanners/routes.mjs';
+import { visibleMarkdown } from '../shared-html-comments.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -35,6 +41,10 @@ const TEST_FILE_RE = /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py|java|go)$/;
 // Other files in the app/api/ tree (helpers, types) are NOT routes.
 const NEXTJS_ROUTE_FILE_RE = /(^|\/)route\.(ts|tsx|js|jsx|mjs)$/;
 const NEXTJS_API_DIR_RE = /(^|\/)app\/api(\/|$)/;
+// A route handler's directory below `app/`: `src/app/api/users/[id]/route.ts` → `api/users/[id]`.
+const NEXTJS_HANDLER_DIR_RE = /(?:^|\/)app\/(api(?:\/.+)?)\/route\.(?:ts|tsx|js|jsx|mjs)$/;
+// Files that are their directory's module: Node.js resolves `./auth` to `auth/index.ts`.
+const DIRECTORY_MODULES = new Set(['index', '__init__']);
 
 function isTestFile(relPath) {
   return TEST_PATH_RE.test(relPath) || TEST_FILE_RE.test(relPath);
@@ -67,15 +77,94 @@ function isServiceCandidate(file, serviceDir) {
 }
 
 /**
- * A route or service file is documented when a canonical doc names its module
- * name (the file name without its extension) as a whole word. That covers its
- * path and file name too, since `/` and `.` are edges: `src/routes/user.js`,
- * `user.js`, `user` and `user.getById` name `user`; `users` and `user-service`
- * do not.
- * @implements docguard.whole-token-sibling-matchers#FR-003
+ * How a canonical doc names each checked file. A Next.js route handler is named
+ * by the URL path it serves, never by its module name `route`. Any other file is
+ * named by the shortest tail of its extension-less path that no other checked
+ * file shares, so a unique module name is its own tail (`payments`) and a shared
+ * one is qualified (`auth/types`). An `index` or `__init__` file is its
+ * directory's module: its tail includes the directory (`auth/index`), and the
+ * directory as a module path (`services/auth`) names it too.
+ * @implements docguard.docs-sync-specific-evidence#FR-003
+ * @implements docguard.docs-sync-specific-evidence#FR-004
+ * @implements docguard.docs-sync-specific-evidence#FR-005
+ * @param {string[]} relPaths every file Docs-Sync selects, whatever its scope
+ * @returns {Map<string, { url?: string, tail?: string[], directory?: string[] }>}
  */
-function isDocumented(canonicalContent, file) {
-  return namesModule(canonicalContent, basename(file, extname(file)));
+function identities(relPaths) {
+  const segmentsOf = rel => rel.slice(0, rel.length - extname(rel).length).split('/');
+  const unique = [...new Set(relPaths)];
+  const shared = new Map();
+  for (const rel of unique) {
+    const segments = segmentsOf(rel);
+    for (let k = 1; k <= segments.length; k++) {
+      const tail = segments.slice(-k).join('/');
+      shared.set(tail, (shared.get(tail) || 0) + 1);
+    }
+  }
+  const out = new Map();
+  for (const rel of unique) {
+    const handler = NEXTJS_HANDLER_DIR_RE.exec(rel);
+    if (handler) { out.set(rel, { url: appRouterPath(handler[1]) }); continue; }
+    const segments = segmentsOf(rel);
+    const directoryModule = DIRECTORY_MODULES.has(segments[segments.length - 1]);
+    let k = Math.min(directoryModule ? 2 : 1, segments.length);
+    while (k < segments.length && shared.get(segments.slice(-k).join('/')) > 1) k++;
+    const tail = segments.slice(-k);
+    let directory = null;
+    if (directoryModule) {
+      directory = tail.length > 2 ? tail.slice(0, -1) : segments.slice(-3, -1);
+      if (directory.length < 2) directory = null;
+    }
+    out.set(rel, { tail, directory });
+  }
+  return out;
+}
+
+/** The name a suggestion asks for, in backticks. */
+function expectedName(identity) {
+  if (identity.url) return `its URL path \`${identity.url}\``;
+  const tail = `\`${identity.tail.join('/')}\``;
+  return identity.directory ? `\`${identity.directory.join('/')}\` or ${tail}` : tail;
+}
+
+/**
+ * Is the file documented? By a `covers` declaration that lists it, or by its
+ * identity in the visible text of the canonical docs.
+ * @implements docguard.whole-token-sibling-matchers#FR-003
+ * @implements docguard.docs-sync-specific-evidence#FR-002
+ */
+function isDocumented(evidence, relPath, identity) {
+  if (evidence.covered.has(relPath)) return true;
+  if (identity.url) return evidence.urlPaths()(identity.url);
+  const { text } = evidence;
+  const { tail, directory } = identity;
+  if (tail.length === 1) return namesModule(text, tail[0]);
+  if (namesModule(text, tail.join('/')) || namesModule(text, tail.join('.'))) return true;
+  return Boolean(directory) && namesDirectory(text, directory);
+}
+
+/**
+ * What the canonical docs say, as a reader sees it: every HTML comment removed
+ * (a placeholder such as `<!-- e.g. users table -->` documents nothing), with
+ * the path of every file a drawn tree lists, plus the files that a
+ * `docguard:section` marker's `covers` lists, which DocGuard defines as the
+ * code that section documents.
+ * @implements docguard.docs-sync-specific-evidence#FR-001
+ * @implements docguard.docs-sync-specific-evidence#FR-002
+ * @implements docguard.docs-sync-specific-evidence#FR-008
+ */
+function readEvidence(contents) {
+  const visible = contents.map(visibleMarkdown).join('\n');
+  const text = `${visible}\n${treePaths(visible).join('\n')}`;
+  const covered = new Set();
+  for (const content of contents) {
+    if (!content.includes('covers=')) continue;
+    for (const section of coveredSections(content)) {
+      for (const ref of section.covers) covered.add(ref.split('#')[0].replace(/^\.\//, ''));
+    }
+  }
+  let matcher = null;
+  return { text, covered, urlPaths: () => (matcher ??= createUrlPathMatcher(text)) };
 }
 
 function normalizeApiPath(path) {
@@ -124,19 +213,21 @@ export function validateDocsSync(projectDir, config) {
   // Load all canonical doc content for checking. Recursive — docs grouped in
   // subfolders (docs-canonical/01-architecture/…) count as canonical too; a
   // flat read made every service they documented look undocumented.
-  let canonicalContent = '';
+  const contents = [];
   for (const doc of listCanonicalDocs(projectDir)) {
     try {
-      canonicalContent += readFileSync(doc.abs, 'utf-8') + '\n';
+      contents.push(readFileSync(doc.abs, 'utf-8'));
     } catch {
       // Skip if can't read
     }
   }
 
-  if (!canonicalContent) {
+  if (!contents.length) {
     // No canonical docs to check against
     return { name: 'docs-sync', ...resultFromFindings([], { passed: 0, total: 0 }) };
   }
+  // Read on first use: a project with no route or service file pays nothing.
+  let evidence = null;
 
   // N-1: When the guard runs in --changed-only mode, config.changedFiles is
   // populated with paths that changed since the given ref. We use it to scope
@@ -148,6 +239,11 @@ export function validateDocsSync(projectDir, config) {
     : null;
   // Closure: true if the given relative path should be considered.
   const inScope = (relPath) => !changedSet || changedSet.has(relPath);
+
+  // Every route and service file is selected before scoping: whether a name is
+  // shared by another file must not depend on which files changed
+  // (docguard.docs-sync-specific-evidence#FR-006).
+  const selected = [];
 
   // Find route/API files (monorepo-aware) and check they're mentioned in docs.
   // Note: bare 'api' is intentionally excluded — it collides with frontend
@@ -164,22 +260,7 @@ export function validateDocsSync(projectDir, config) {
       const relPath = relPosix(projectDir, file);
       if (isTestFile(relPath)) continue;
       if (!isValidRouteFile(relPath)) continue;
-      // N-1: skip files outside the --changed-only scope.
-      if (!inScope(relPath)) continue;
-
-      total++;
-      if (isDocumented(canonicalContent, file)) {
-        passed++;
-      } else {
-        findings.push(mkFinding({
-          code: 'DSY001',
-          validator: 'docsSync',
-          severity: 'warn',
-          message: `route ${relPath} not referenced in any canonical doc`,
-          location: relPath,
-          suggestion: { kind: 'fix', text: 'Reference this route (by path or name) in a canonical doc, e.g. ARCHITECTURE.md' },
-        }));
-      }
+      selected.push({ relPath, code: 'DSY001', kind: 'route', message: `route ${relPath} not referenced in any canonical doc` });
     }
   }
 
@@ -194,22 +275,29 @@ export function validateDocsSync(projectDir, config) {
       const relPath = relPosix(projectDir, file);
       if (isTestFile(relPath)) continue;
       if (!isServiceCandidate(file, serviceDir)) continue;
-      // N-1: skip files outside the --changed-only scope.
-      if (!inScope(relPath)) continue;
+      selected.push({ relPath, code: 'DSY002', kind: 'service', message: `Service ${relPath} not referenced in any canonical doc` });
+    }
+  }
 
-      total++;
-      if (isDocumented(canonicalContent, file)) {
-        passed++;
-      } else {
-        findings.push(mkFinding({
-          code: 'DSY002',
-          validator: 'docsSync',
-          severity: 'warn',
-          message: `Service ${relPath} not referenced in any canonical doc`,
-          location: relPath,
-          suggestion: { kind: 'fix', text: 'Reference this service (by path or name) in a canonical doc, e.g. ARCHITECTURE.md' },
-        }));
-      }
+  const named = identities(selected.map(entry => entry.relPath));
+  for (const { relPath, code, kind, message } of selected) {
+    // N-1: skip files outside the --changed-only scope.
+    if (!inScope(relPath)) continue;
+
+    total++;
+    const identity = named.get(relPath);
+    evidence ??= readEvidence(contents);
+    if (isDocumented(evidence, relPath, identity)) {
+      passed++;
+    } else {
+      findings.push(mkFinding({
+        code,
+        validator: 'docsSync',
+        severity: 'warn',
+        message,
+        location: relPath,
+        suggestion: { kind: 'fix', text: `Name this ${kind} in a canonical doc (e.g. ARCHITECTURE.md) as ${expectedName(identity)}, or by its file path` },
+      }));
     }
   }
 
