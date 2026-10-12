@@ -2844,7 +2844,7 @@
           },
           {
             "path": "specs/078-docs-sync-specific-evidence/tasks.md",
-            "digest": "sha256:cbc303347d7dc03b8723a9db70bad46fc955095b1af734158e72d8036a7add33"
+            "digest": "sha256:c864e8b727bb8c5f07b16289aea77debd4ad4b475adff9436383932c7f601fc4"
           }
         ],
         "taskCompletion": {
