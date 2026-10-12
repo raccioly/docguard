@@ -8657,8 +8657,8 @@
           "description": "A wildcard right after /api documents every handler.",
           "faultClass": "literal-changed",
           "file": "cli/scanners/doc-references.mjs",
-          "find": "    const shortest = wildcard ? 2 : 1;",
-          "replace": "    const shortest = 1;",
+          "find": "    for (let n = 2; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;",
+          "replace": "    for (let n = 1; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 078)"

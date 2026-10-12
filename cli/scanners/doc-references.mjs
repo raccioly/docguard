@@ -170,12 +170,12 @@ export function createUrlPathMatcher(text) {
     const segments = urlSegments(token.replace(/[.:,;]+$/, ''));
     const wildcard = segments.length > 0 && WILDCARD.test(segments[segments.length - 1]);
     if (wildcard) segments.pop();
-    const shortest = wildcard ? 2 : 1;
-    for (let i = 0; segments.length - i >= shortest; i++) (wildcard ? under : named).add(segments.slice(i).join('/'));
+    for (let i = 0; i < segments.length; i++) (wildcard ? under : named).add(segments.slice(i).join('/'));
   }
   return (path) => {
     const segments = urlSegments(path);
     if (named.has(segments.join('/'))) return true;
+    // A wildcard's prefix must have two segments: `/api/*` names nothing.
     for (let n = 2; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;
     return false;
   };
