@@ -11,7 +11,7 @@
 
 ## Phase 2: Implementation
 
-- [x] T004 FR-001, FR-002: `cli/validators/todo-tracking.mjs` `maskCodeSpans`, `annotationOn`
+- [x] T004 FR-001, FR-002: `cli/validators/todo-tracking.mjs` `annotationOn` over `maskCodeSpans` from `cli/shared-html-comments.mjs` (spec 074's rule, exported with a `fill`)
 - [x] T005 FR-003, FR-004: `commentLines` over `realComments` and `languageOf`, line scanner for the rest; `_scanTodoFile` reads through it
 - [x] T006 FR-005: remove `SELF_PATH` and `isSelfPath`
 - [x] T007 FR-007: TDO002 help in `cli/findings.mjs`; `npm run docs:reference`

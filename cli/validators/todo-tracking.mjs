@@ -28,6 +28,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { maskCodeSpans } from '../shared-html-comments.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findDocsByName } from '../shared-doc-roles.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
@@ -114,14 +115,12 @@ function commentLines(content, relPath) {
 
 // A keyword inside an inline code span is a quotation of the form, not an
 // annotation: a comment documenting the accepted forms quotes them in
-// backticks (docguard.todo-quoted-forms#FR-001). A span is a run of backticks
-// and the next run of exactly as many on the same line (CommonMark, on one
-// line); an unmatched run is literal, so a keyword after it still counts.
-const CODE_SPAN = /(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g;
-// The placeholder is neither space nor word: offsets still index the original
-// line, word boundaries hold, and an annotation whose text is all code keeps it.
+// backticks (docguard.todo-quoted-forms#FR-001). Spans follow the one-line
+// CommonMark rule the Markdown readers use (maskCodeSpans), so an unmatched
+// backtick is literal and a keyword after it still counts. The placeholder is
+// neither space nor word: offsets still index the original line, word
+// boundaries hold, and an annotation whose text is all code keeps it.
 const QUOTED = '\u0001';
-const maskCodeSpans = text => text.replace(CODE_SPAN, span => QUOTED.repeat(span.length));
 
 /**
  * The annotation on one comment line, or null. The spec 019 patterns run on
@@ -130,7 +129,7 @@ const maskCodeSpans = text => text.replace(CODE_SPAN, span => QUOTED.repeat(span
  * reads as written (docguard.todo-quoted-forms#FR-002).
  */
 function annotationOn(commentText) {
-  const masked = maskCodeSpans(commentText);
+  const masked = maskCodeSpans(commentText, QUOTED);
   if (!isTodoAnnotation(masked)) return null;
   const at = masked.match(TODO_EXTRACT);
   if (!at) return null;

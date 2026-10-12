@@ -480,10 +480,10 @@
         {
           "id": "F1",
           "description": "Code spans are not masked, so quoted forms are annotations.",
-          "faultClass": "return-altered",
+          "faultClass": "call-removed",
           "file": "cli/validators/todo-tracking.mjs",
-          "find": "const maskCodeSpans = text => text.replace(CODE_SPAN, span => QUOTED.repeat(span.length));",
-          "replace": "const maskCodeSpans = text => text;",
+          "find": "  const masked = maskCodeSpans(commentText, QUOTED);",
+          "replace": "  const masked = commentText;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 073)"
@@ -496,6 +496,18 @@
           "file": "cli/validators/todo-tracking.mjs",
           "find": "const QUOTED = '\\u0001';",
           "replace": "const QUOTED = ' ';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "The shared masker ignores its fill, so an annotation whose text is all code is dropped.",
+          "faultClass": "argument-swapped",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "    out += fill.repeat(close + run - i);",
+          "replace": "    out += ' '.repeat(close + run - i);",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 073)"
@@ -516,10 +528,10 @@
         {
           "id": "F4",
           "description": "A span closes on a backtick run of any length.",
-          "faultClass": "literal-changed",
-          "file": "cli/validators/todo-tracking.mjs",
-          "find": "const CODE_SPAN = /(?<!`)(`+)(?!`)[\\s\\S]*?(?<!`)\\1(?!`)/g;",
-          "replace": "const CODE_SPAN = /(?<!`)(`+)(?!`)[\\s\\S]*?`+/g;",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "      if (m - k === run) { close = k; break; }",
+          "replace": "      close = k; break;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 073)"

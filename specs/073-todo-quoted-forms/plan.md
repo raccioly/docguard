@@ -8,7 +8,7 @@ TODO tracking gets its comments from `realComments()` (`cli/scanners/anchor-tags
 
 | FR | Change |
 |---|---|
-| FR-001 | `cli/validators/todo-tracking.mjs` `maskCodeSpans(line)`: every code span (a backtick run and the next run of exactly as many backticks on the line, CommonMark's rule on one line) is replaced by a placeholder of the same length. The placeholder is a non-space, non-word character, so a keyword inside a span disappears while text after a keyword stays non-empty. |
+| FR-001 | `cli/shared-html-comments.mjs` `maskCodeSpans(line, fill)`, spec 074's one-line CommonMark rule (a backtick run and the next run of exactly as many backticks on the line), exported with a `fill` whose default keeps spec 074's behavior. `cli/validators/todo-tracking.mjs` masks each comment line with a non-space, non-word placeholder of the same length, so a keyword inside a span disappears while text after a keyword stays non-empty. |
 | FR-002 | `annotationOn(line)`: the spec 019 patterns (`isTodoAnnotation`, `TODO_EXTRACT`) run on the masked line; `TODO_EXTRACT` gives the index of the first keyword outside spans, and keyword and text are extracted from the original line at that index. |
 | FR-003, FR-004 | `commentLines(content, relPath)`: for a path `languageOf()` knows, `realComments(content, relPath)` with each comment's text split on newlines, line `c.line + k`; otherwise the existing `commentPortion()` line scanner. |
 | FR-005 | Remove `SELF_PATH` and `isSelfPath()`. |
@@ -28,6 +28,7 @@ TODO tracking gets its comments from `realComments()` (`cli/scanners/anchor-tags
 
 - **Reuse the requirement-tag reader, not a second string scanner.** Spec 070 FR-005 already answers "is this text a comment?" for JS/TS (Babel, then the pattern lexer when Babel fails or is unavailable), Python, Go, Rust, Java, C#, Ruby and the other lexer languages. A second masker inside the validator would be a third definition of a comment in the codebase and would drift. Rejected: extending the existing `maskJsNonCode()` (JavaScript only; Python, Go and Ruby strings would stay unread).
 - **Keep the line scanner where the reader has no language.** `.vue`, `.svelte` and `.astro` hold `<!-- -->`, `//` and `/* */` comments in one file; `realComments` would fall back to `#` comments only and lose them. They keep today's scanner, with code spans masked.
+- **One code-span rule.** Spec 074 (`docguard.quoted-comment-openers`) landed the same CommonMark rule for the Markdown readers while this spec was in review. TODO tracking reuses it, with a `fill` parameter, instead of keeping a second implementation (a regular expression with the same semantics) that could drift. Rejected: moving the function to a new module (it would move lines spec 074's TestGuard claim pins, for no behavioral gain).
 - **Mask code spans per comment line.** Annotations are reported per line, and a span is defined on the line it sits on. A backtick that closes on a later line is therefore literal and the keyword stays reportable: the miss, if any, is on the side of reporting. Rejected: spans across lines (needs paragraph rules; a `//` line sequence is several Babel comments, so it would work for block comments only).
 - **Same-length, non-space placeholder.** Blanking spans to spaces would make ``// HACK: `setTimeout(0)` `` look like a keyword with no text, and the spec 019 patterns, which require text after the separator, would drop a real annotation. A non-space, non-word placeholder keeps offsets, keeps `\b` boundaries and keeps "text follows" true.
 - **Extract from the original line.** The keyword's index comes from the masked line, the text from the original, so a reported TODO reads as written (``rename `foo` later``) and its tracking match against ROADMAP and similar docs is unchanged.
@@ -50,6 +51,7 @@ Pass.
 
 ```text
 cli/validators/todo-tracking.mjs   # FR-001–FR-005
+cli/shared-html-comments.mjs       # FR-001: maskCodeSpans exported, with a fill
 cli/findings.mjs                   # FR-007: TDO002 help
 docs/reference/findings.md         # FR-007: generated (npm run docs:reference)
 llms.txt, llms-full.txt            # generated (npm run llms)
