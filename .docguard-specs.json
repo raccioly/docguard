@@ -2840,15 +2840,15 @@
           },
           {
             "path": "specs/078-docs-sync-specific-evidence/plan.md",
-            "digest": "sha256:7da1b7f0af83e85bc302de2403044387750b63e4422b9fb53472d64827e255ec"
+            "digest": "sha256:bb928f0b0c8fcf208a8a55f226aad27c170b2c7662ddace850a498fe22013b14"
           },
           {
             "path": "specs/078-docs-sync-specific-evidence/tasks.md",
-            "digest": "sha256:747ed3355c7734748286b0e776a192ab5b8bb78811a64443eabe69ad94c1464f"
+            "digest": "sha256:cbc303347d7dc03b8723a9db70bad46fc955095b1af734158e72d8036a7add33"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 9,
           "total": 9
         },
         "implementationEvidence": [
