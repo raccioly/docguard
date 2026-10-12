@@ -46,6 +46,7 @@ Docs-Sync reads every canonical document raw and asks whether the module name ap
 3. **Given** a document that names `/api/users`, **Then** `src/app/api/users/route.ts` is documented and `src/app/api/users/[id]/route.ts` is not.
 4. **Given** a document that names `/api/audit` or `src/app/api/(admin)/audit/route.ts`, **Then** the route-group handler is documented.
 5. **Given** a document that names `/api/deals/*`, **Then** `src/app/api/deals/[dealId]/notes/route.ts` is documented; **Given** only `/api/*` or `src/app/api/*/route.ts`, **Then** it is not.
+6. **Given** a fenced file tree under `src/app/api/` that draws `users/` then `[id]/route.ts`, **Then** `src/app/api/users/[id]/route.ts` is documented; **Given** a tree that draws `auth/` then `register/route.ts`, **Then** `src/app/api/oauth/register/route.ts` is not.
 
 ### User Story 3 - A name that several files share is qualified by its directory (Priority: P2)
 
@@ -59,6 +60,7 @@ Docs-Sync reads every canonical document raw and asks whether the module name ap
 4. **Given** a document that names `src/routes` or `routes/index.ts`, **Then** `src/routes/index.ts` is documented; the word "routes" alone does not.
 5. **Given** a document that says only "payments", **Then** `src/services/payments.ts`, whose module name no other checked file shares, is documented, as under spec 077.
 6. **Given** `guard --changed-only` where only `src/services/auth/types.ts` changed, **Then** it is still qualified by its directory: whether a name is shared does not depend on which files changed.
+7. **Given** a file tree that draws `services/`, `auth/`, then `index.ts`, **Then** `src/services/auth/index.ts` is documented.
 
 ### Edge Cases
 
@@ -67,6 +69,8 @@ Docs-Sync reads every canonical document raw and asks whether the module name ap
 - A URL path ends where it ends: `/api/users/{id}` does not name `/api/users`, and `/api/users` does not name `/api/users/{id}`. A trailing slash, a sentence period, a query string or a fragment ends the path.
 - Any dynamic-segment syntax names any other (`[id]`, `[...slug]`, `[[...slug]]`, `{id}`, `:id`, `:id*`, `<id>`), as API-Surface compares them.
 - A prefix before the path is allowed: a host, a base path, `src/app` or a monorepo package directory.
+- A Next.js handler's directory is its identity, so naming the directory (`src/app/api/users/`, or `users/` drawn under `src/app/api/` in a tree) documents the handler in it.
+- A drawn file tree names a file across several lines. Each entry is joined to the entries it is drawn under and to the directory line just above the tree; a tree with no such line starts at its first entry. Trees drawn with `├──`/`└──` and with `|--`/`` `-- `` are read alike.
 - A trailing wildcard names the routes under its prefix only when the prefix has a segment below `/api`. `/api/*` is as unspecific as the word "routes".
 - A Next.js handler is never documented by its module name, even when it is the only handler.
 - Two files whose paths differ only by extension (`auth.ts`, `auth.js`) share every tail; either is documented by the path without extension.
@@ -82,13 +86,15 @@ Docs-Sync reads every canonical document raw and asks whether the module name ap
 - **FR-004**: Any other route or service file MUST be named by the shortest tail of its path, without the extension, that no other file Docs-Sync checks shares. The tail is matched as a whole word by `docguard.whole-token-sibling-matchers#FR-002`, with `/` or `.` between its segments. A module name that no other checked file shares is its own tail, so spec 077's rule is unchanged for it.
 - **FR-005**: An `index` or `__init__` file is its directory's module. Its tail MUST include its directory (`auth/index`), and a document that names the directory as a module path also names it. That path is `services/auth`, `src/services/auth/` or `app.services.auth`: the directory and its parent, not continuing into a file or a deeper directory.
 - **FR-006**: Which tails are shared MUST be decided over every file Docs-Sync selects, whatever `--changed-only` scopes. Which files it checks, its messages, its severities (warnings) and DSY003 MUST stay as they are. A finding's `suggestion` MUST say which name documents the file.
-- **FR-007**: The help for DSY001 and DSY002 and `docguard explain docsSync` MUST state FR-001 to FR-005. After `init --skip-prompts`, DSY001 and DSY002 stay among the requests to fill the blank templates of `docguard.generated-docs-consistency#SC-001`; after `init` then `generate --plan --write`, and after `generate --plan --write` alone, guard MUST report neither on any fixture stack.
+- **FR-007**: The help for DSY001 and DSY002 and `docguard explain docsSync` MUST state FR-001 to FR-005 and FR-008. After `init --skip-prompts`, DSY001 and DSY002 stay among the requests to fill the blank templates of `docguard.generated-docs-consistency#SC-001`; after `init` then `generate --plan --write`, and after `generate --plan --write` alone, guard MUST report neither on any fixture stack.
+
+- **FR-008**: A file tree drawn in a canonical document (`├──`, `└──`, `|--`, `` `-- ``) MUST name the path of each entry it draws, joined to the entries above it and to the directory line just above the tree, for FR-003 to FR-005.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: The User Story 1–3 cases that expect a warning fail before the change and pass after it. The neighbouring cases that expect a file to be documented pass before and after.
+- **SC-001**: The User Story 1–3 cases that expect a warning fail before the change and pass after it. Every case that expects a file to be documented passes after it; those whose evidence the old rule also accepted pass before it too.
 - **SC-002**: Run `guard --format json` with the base CLI and the new CLI on `git archive` copies of this repository and of the local projects with canonical documents, one copy per CLI. Findings differ only by added DSY001/DSY002 warnings, and none disappears. Every changed finding is recorded in tasks.md, a sample of at least 20 across every changed project is reviewed by hand, and any false positive found is recorded with how it was excluded. Guard on this repository is unchanged, and its wall time stays within the CI budget.
 
 ## Assumptions

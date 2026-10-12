@@ -20,7 +20,7 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
-import { namesModule, namesDirectory, createUrlPathMatcher } from '../scanners/doc-references.mjs';
+import { namesModule, namesDirectory, createUrlPathMatcher, treePaths } from '../scanners/doc-references.mjs';
 import { coveredSections } from '../scanners/doc-deps.mjs';
 import { appRouterPath } from '../scanners/routes.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
@@ -145,14 +145,17 @@ function isDocumented(evidence, relPath, identity) {
 
 /**
  * What the canonical docs say, as a reader sees it: every HTML comment removed
- * (a placeholder such as `<!-- e.g. users table -->` documents nothing), plus
- * the files that a `docguard:section` marker's `covers` lists, which DocGuard
- * defines as the code that section documents.
+ * (a placeholder such as `<!-- e.g. users table -->` documents nothing), with
+ * the path of every file a drawn tree lists, plus the files that a
+ * `docguard:section` marker's `covers` lists, which DocGuard defines as the
+ * code that section documents.
  * @implements docguard.docs-sync-specific-evidence#FR-001
  * @implements docguard.docs-sync-specific-evidence#FR-002
+ * @implements docguard.docs-sync-specific-evidence#FR-008
  */
 function readEvidence(contents) {
-  const text = contents.map(visibleMarkdown).join('\n');
+  const visible = contents.map(visibleMarkdown).join('\n');
+  const text = `${visible}\n${treePaths(visible).join('\n')}`;
   const covered = new Set();
   for (const content of contents) {
     if (!content.includes('covers=')) continue;

@@ -11,6 +11,7 @@
  * @req docguard.docs-sync-specific-evidence#FR-005
  * @req docguard.docs-sync-specific-evidence#FR-006
  * @req docguard.docs-sync-specific-evidence#FR-007
+ * @req docguard.docs-sync-specific-evidence#FR-008
  * @req docguard.docs-sync-specific-evidence#SC-001
  */
 import { describe, it, after } from 'node:test';
@@ -20,7 +21,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:
 import { delimiter, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { visibleMarkdown } from '../cli/shared-html-comments.mjs';
-import { createUrlPathMatcher, namesDirectory } from '../cli/scanners/doc-references.mjs';
+import { createUrlPathMatcher, namesDirectory, treePaths } from '../cli/scanners/doc-references.mjs';
 import { appRouterPath } from '../cli/scanners/routes.mjs';
 import { validateDocsSync } from '../cli/validators/docs-sync.mjs';
 import { CODES } from '../cli/findings.mjs';
@@ -135,6 +136,26 @@ describe('namesDirectory — a directory as a module path (FR-005)', () => {
   });
 });
 
+describe('treePaths — the paths a drawn file tree lists (FR-008)', () => {
+  it('joins each entry to the entries above it and to the directory line above the tree', () => {
+    const tree = '```\nsrc/app/api/           # API routes\n├── users/\n│   ├── route.ts      # GET, POST\n│   └── [id]/route.ts\n│\n└── deals/\n    └── route.ts\n```';
+    assert.deepEqual(treePaths(tree), [
+      'src/app/api/users', 'src/app/api/users/route.ts', 'src/app/api/users/[id]/route.ts',
+      'src/app/api/deals', 'src/app/api/deals/route.ts',
+    ]);
+  });
+
+  it('reads ASCII trees, and a tree with no directory line starts at its first entry', () => {
+    assert.deepEqual(treePaths('services/\n|-- auth/\n|   `-- index.ts\n`-- billing.ts'),
+      ['services/auth', 'services/auth/index.ts', 'services/billing.ts']);
+    assert.deepEqual(treePaths('```\n├── src/\n│   └── index.ts\n```'), ['src', 'src/index.ts']);
+  });
+
+  it('prose ends a tree', () => {
+    assert.deepEqual(treePaths('api/\n├── users/\nSee above.\n├── route.ts'), ['api/users', 'route.ts']);
+  });
+});
+
 describe('Docs-Sync — hidden text does not document a file (FR-001, FR-002, US1)', () => {
   const CODE = { 'src/routes/users.js': 'export const list = () => [];\n' };
 
@@ -202,6 +223,15 @@ describe('Docs-Sync — a Next.js route handler is documented by its URL path (F
     assert.deepEqual(dsy(CODE, { 'API.md': '# API\n\nAll of `/api/*` needs a session; handlers are `src/app/api/*/route.ts`.\n' }), ALL);
   });
 
+  it('a drawn file tree documents the handlers and directories it lists, under the right directory', () => {
+    const tree = '# API\n\n```\nsrc/app/api/\n├── users/\n│   └── [id]/route.ts   # GET\n└── auth/\n    └── register/route.ts\n```\n';
+    assert.deepEqual(dsy({ ...CODE, 'src/app/api/oauth/register/route.ts': 'export async function POST() {}\n' }, { 'API.md': tree }), [
+      'DSY001 src/app/api/(admin)/audit/route.ts',
+      'DSY001 src/app/api/deals/[dealId]/notes/route.ts',
+      'DSY001 src/app/api/oauth/register/route.ts',
+    ]);
+  });
+
   it('every handler documented together leaves no finding', () => {
     assert.deepEqual(dsy(CODE, {
       'API.md': '# API\n\n| `GET` | `/api/users` |\n| `GET` | `/api/users/{id}` |\n| `GET` | `/api/audit` |\n\nNotes: `/api/deals/:dealId/notes`.\n',
@@ -265,6 +295,12 @@ describe('Docs-Sync — a shared or directory name is qualified by its directory
     assert.deepEqual(dsy(CODE, { 'ARCH.md': `# Arch\n\nThe routes mount every router. ${PAYMENTS}` }), ALL);
   });
 
+  it('a drawn file tree documents an index file by its directory', () => {
+    const tree = '```\nsrc/services/\n├── auth/\n│   ├── index.ts\n│   └── types.ts\n└── payments.ts\n```\n';
+    assert.deepEqual(dsy(CODE, { 'ARCH.md': `# Arch\n\n${tree}` }),
+      ALL.filter(f => !f.includes('services/auth/')));
+  });
+
   it('a lone index file still needs its directory', () => {
     assert.deepEqual(dsy({ 'src/routes/users/index.ts': 'export {};\n' }, { 'A.md': '# A\n\nThe users index.\n' }),
       ['DSY001 src/routes/users/index.ts']);
@@ -291,11 +327,13 @@ describe('documented, and DocGuard\'s own init (FR-007)', () => {
       assert.match(CODES[code].help, /HTML comment/, code);
       assert.match(CODES[code].help, /`auth\/types`/, code);
       assert.match(CODES[code].help, /`covers`/, code);
+      assert.match(CODES[code].help, /file tree/, code);
     }
     assert.match(CODES.DSY001.help, /URL path/);
     const r = spawnSync(process.execPath, [CLI, 'explain', 'docsSync'], { encoding: 'utf-8' });
     assert.match(r.stdout, /HTML comment/);
     assert.match(r.stdout, /URL path/);
+    assert.match(r.stdout, /file tree/);
   });
 
   // Without `specify` on PATH, init behaves the same on every machine.

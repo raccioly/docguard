@@ -101,6 +101,41 @@ export function namesDirectory(text, parts) {
   return false;
 }
 
+// One entry of a drawn file tree (`├── route.ts`, `|-- auth/`): the drawing
+// before it, its connector and its name. A `│` line is a spacer inside a tree.
+const TREE_ENTRY = /^([\s│|]*?)(?:├──|└──|\|--|`--|\+--)[ \t]+([^\s#│|]+)/;
+const TREE_SPACER = /^[ \t]*[│|][\s│|]*$/;
+
+/**
+ * The paths a file tree in `text` draws, each joined to the directory line
+ * above the tree (`src/app/api/` then `├── users/` then `│   └── route.ts` is
+ * `src/app/api/users/route.ts`). A tree names files across lines, so the path
+ * matchers cannot see them in the text itself.
+ * @implements docguard.docs-sync-specific-evidence#FR-008
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function treePaths(text) {
+  const out = [];
+  let root = '';
+  let stack = [];
+  for (const line of String(text).split('\n')) {
+    const entry = TREE_ENTRY.exec(line);
+    if (!entry) {
+      if (TREE_SPACER.test(line)) continue;
+      stack = [];
+      const bare = line.replace(/#.*$/, '').trim().replace(/^`+|`+$/g, '');
+      root = /^[\w.@~\-/[\]()]+\/$/.test(bare) ? bare : '';
+      continue;
+    }
+    const column = entry[1].length;
+    while (stack.length && stack[stack.length - 1].column >= column) stack.pop();
+    stack.push({ column, name: entry[2].replace(/\/+$/, '') });
+    out.push(root + stack.map(item => item.name).join('/'));
+  }
+  return out;
+}
+
 // A URL path or file path in prose: runs of path characters, or a whole
 // `[id]`, `(group)`, `{id}` or `<id>` segment, joined by `/`. A bracket that
 // does not close a segment ends the path, so `[/api/users](#x)` is `/api/users`.
