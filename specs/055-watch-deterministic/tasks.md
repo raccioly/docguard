@@ -17,3 +17,7 @@
 
 - [x] T004 Repeat the T001 measurement on the new file (SC-001).
 - [x] T005 `docs-canonical/TEST-SPEC.md`, `CHANGELOG.md`; `docguard specs --write`; `docguard guard`; `npm test` (SC-002).
+
+## Phase 4: Amendment (2026-10-12)
+
+- [x] T006 FR-004, SC-003: both waits in the `docguard watch` block of `tests/commands.test.mjs` use the last asserted pattern (`docguard fix --doc`, `/Changed: .*index\.js/`); the block passes 10 sequential and 3×4 concurrent runs; `CHANGELOG.md`; `npm run llms`; `docguard specs --write`; `docguard guard`; `npm test`. Found by the session fixing the race (CI run 38300989325) and folded into the 0.45.0 combined PR.

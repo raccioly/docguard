@@ -8037,6 +8037,108 @@
       ]
     },
     {
+      "id": "QUOTED-COMMENT-OPENER-HIDES-NOTHING",
+      "statement": "The requirement parser and the instruction-pointer reader share one HTML-comment reader: <!-- or --> inside an inline code span (a backtick run closed by a run of the same length) is text, a real comment ends at its first -->, and real single- and multi-line comments still hide what they hold, so a quoted <!-- never drops the requirements or pointers after it.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.quoted-comment-openers#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 074)"
+      },
+      "defendedBy": [
+        "tests/quoted-comment-openers.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A <!-- inside a code span opens a comment again.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "    const open = maskCodeSpans(rest).indexOf('<!--');",
+          "replace": "    const open = rest.indexOf('<!--');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A lone backtick hides the rest of the line, real comment openers included.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "    if (close < 0) { out += line.slice(i, j); i = j; continue; }",
+          "replace": "    if (close < 0) { out += ' '.repeat(line.length - i); break; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Any backtick run closes a span, whatever its length.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "      if (m - k === run) { close = k; break; }",
+          "replace": "      close = k; break;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A comment ends at its last --> instead of its first.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "      const close = rest.indexOf('-->');",
+          "replace": "      const close = rest.lastIndexOf('-->');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unclosed real comment hides nothing.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "      if (close < 0) return { text, inComment: true };",
+          "replace": "      if (close < 0) return { text: text + rest, inComment: true };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The requirement parser stops reading at any <!--, quoted or not.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-requirements.mjs",
+          "find": "    ({ text: line, inComment } = stripHtmlComments(line, inComment));",
+          "replace": "    if (line.includes('<!--')) { line = line.slice(0, line.indexOf('<!--')); inComment = !line.includes('-->'); }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The instruction-pointer reader stops reading at any <!--, quoted or not.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/instruction-audit.mjs",
+          "find": "    ({ text: line, inComment } = stripHtmlComments(line, inComment));",
+          "replace": "    if (line.includes('<!--')) { line = line.slice(0, line.indexOf('<!--')); inComment = true; }",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 074)"
+          }
+        }
+      ]
+    },
+    {
       "id": "JS-IMPORT-EDGES",
       "statement": "JS/TS imports are read from the Babel syntax tree: import declarations of any shape and length, re-exports with a source, require() and TypeScript import = require() as static edges, import() and TypeScript or JSDoc import() type references as dynamic edges outside cycle adjacency, and nothing from other comments or strings; the names an edge binds come from the same parse, unknown when a form cannot list them; a file the parser cannot read falls back to a pattern whose clause spans lines but never a statement and which reads re-exports; the configured-layer check reads through the same function; every edge records its tier, a fallback read is a graph limitation, a missing parser makes the module diagram partial, and ARC findings carry the tier of the files they cite.",
       "source": {
