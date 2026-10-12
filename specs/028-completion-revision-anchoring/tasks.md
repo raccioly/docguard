@@ -18,3 +18,9 @@
 
 - [x] T005 `docs/commands.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/CI-RECIPES.md`, `CHANGELOG.md` (FR-005).
 - [x] T006 `testguard.claims.json`; probe; gate; `npm test`; `npm run llms`; stage, then `docguard specs --write`.
+
+## Phase 4: Canonical completion outcomes (FR-007)
+
+- [x] T007 `tests/completion-revision-anchoring.test.mjs`: deviations in reverse order complete and are recorded sorted; whitespace-only duplicates collapse and the outcome line follows the registry order; the bound of 20 counts distinct deviations; evidence whose code-unit and projection orders differ completes and the plan shows the recorded order; re-anchoring keeps the recorded deviations. Written first; four failed with the rollback and one on the plan's order.
+- [x] T008 `cli/scanners/spec-registry.mjs`, `cli/commands/specs.mjs`, `cli/writers/spec-outcomes.mjs`: one canonical outcome form, used by the projection and by completion (FR-007).
+- [x] T009 `docs-canonical/DATA-MODEL.md`, `docs/commands.md`, `CHANGELOG.md`, `testguard.claims.json`; `npm test`; `docguard guard`; `docguard specs --write`.

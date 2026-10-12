@@ -15,6 +15,7 @@
  * @req docguard.completion-revision-anchoring#FR-005
  * @req docguard.completion-revision-anchoring#FR-006
  * @req docguard.completion-revision-anchoring#SC-003
+ * @req docguard.completion-revision-anchoring#FR-007
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -64,7 +65,7 @@ function fixture(t) {
   return dir;
 }
 
-const complete = (dir, id, since) => completeSpec(dir, {}, { id, since, write: true, reason: 'Reviewed in the fixture' }, { guardResult: passingGuard });
+const complete = (dir, id, since, extra = {}) => completeSpec(dir, {}, { id, since, write: true, reason: 'Reviewed in the fixture', ...extra }, { guardResult: passingGuard });
 const recorded = (dir, id) => readSpecRegistry(dir).value.specs.find(s => s.specId === id).reviewed.reconciliation;
 const spr008 = dir => validateSpecRegistry(dir, {}).findings.filter(f => f.code === 'SPR008');
 
@@ -100,14 +101,14 @@ describe('several completions share one revision and one commit (FR-001, SC-001)
 });
 
 /** Complete on a PR branch, commit there, then squash-merge it into main. */
-function squashMerged(t) {
+function squashMerged(t, extra = {}) {
   const dir = fixture(t);
   const first = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
   git(dir, ['checkout', '-q', '-b', 'pr']);
   // A real PR has its own commits before the completion runs.
   write(dir, 'NOTES.md', '# Notes\n');
   git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'feature work on the PR branch']);
-  complete(dir, 'acme.alpha', first);
+  complete(dir, 'acme.alpha', first, extra);
   git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha on the PR branch']);
   const branchRevision = recorded(dir, 'acme.alpha').lastReviewedRevision;
   git(dir, ['checkout', '-q', 'main']);
@@ -234,6 +235,71 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
     assert.deepEqual(result.findings.filter(f => f.code === 'SPR008'), []);
     assert.equal(result.applicability?.status, 'partial');
     assert.match(result.applicability.reason, /shallow clone/);
+  });
+});
+
+describe('completion records the outcome in the form the registry projects (FR-007)', () => {
+  const outcomeLine = dir => readFileSync(join(dir, 'specs/001-alpha/spec.md'), 'utf8').split('\n').find(line => line.startsWith('- `'));
+
+  it('deviations given in reverse order complete, and are recorded sorted', t => {
+    const dir = fixture(t);
+    const first = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    const done = complete(dir, 'acme.alpha', first, { deviations: ['B kept the old flag', 'A skipped the cache'] });
+    assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).deviations, ['A skipped the cache', 'B kept the old flag']);
+    assert.deepEqual(done.outcome.deviations, ['A skipped the cache', 'B kept the old flag']);
+    assert.match(outcomeLine(dir), /Accepted deviations: A skipped the cache; B kept the old flag\./);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha']);
+    assert.equal(projectSpecRegistry(dir).current, true);
+  });
+
+  it('deviations that differ only in whitespace are one deviation, and the outcome line uses the registry order', t => {
+    const dir = fixture(t);
+    const first = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    const done = complete(dir, 'acme.alpha', first, { deviations: ['b  lower', 'C upper', 'b lower', ' a lower '] });
+    assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+    // Code-unit order would put "C upper" first; the projection's order does not.
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).deviations, ['a lower', 'b lower', 'C upper']);
+    assert.match(outcomeLine(dir), /Accepted deviations: a lower; b lower; C upper\./);
+  });
+
+  it('more than 20 distinct deviations are refused and nothing is written', t => {
+    const dir = fixture(t);
+    const first = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    const before = readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8');
+    const deviations = Array.from({ length: 21 }, (_, i) => `deviation ${String(i).padStart(2, '0')}`);
+    assert.throws(() => complete(dir, 'acme.alpha', first, { deviations }), /at most 20 deviations/);
+    assert.equal(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'), before);
+    // A duplicate does not count against the bound.
+    assert.equal(complete(dir, 'acme.alpha', first, { deviations: [...deviations.slice(0, 20), deviations[0]] }).status, 'VERIFIED');
+  });
+
+  it('evidence whose code-unit and projection orders differ completes, and the plan shows the recorded order', t => {
+    const dir = fixture(t);
+    const first = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    write(dir, 'src/Zeta.js', '/** @implements acme.alpha#FR-001 */\nexport const zeta = true;\n');
+    git(dir, ['add', '-A']);
+    write(dir, SPEC_REGISTRY_PATH, projectSpecRegistry(dir).serialized);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'add Zeta']);
+    const expected = ['docs-canonical/ARCHITECTURE.md', 'src/alpha.js', 'src/Zeta.js', 'tests/alpha.test.js'];
+    const plan = completeSpec(dir, {}, { id: 'acme.alpha', since: first }, { guardResult: passingGuard });
+    assert.equal(plan.status, 'READY', JSON.stringify(plan.blockers));
+    assert.deepEqual(plan.evidence, expected);
+    const done = complete(dir, 'acme.alpha', first);
+    assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).evidence, expected);
+    assert.match(outcomeLine(dir), /Evidence: `docs-canonical\/ARCHITECTURE\.md`, `src\/alpha\.js`, `src\/Zeta\.js`, `tests\/alpha\.test\.js`\./);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha']);
+    assert.equal(projectSpecRegistry(dir).current, true);
+  });
+
+  it('re-anchoring keeps the recorded deviations and leaves the registry current', t => {
+    const { dir } = squashMerged(t, { deviations: ['B kept the old flag', 'A skipped the cache'] });
+    const result = reanchorSpec(dir, {}, { id: 'acme.alpha', write: true });
+    assert.equal(result.status, 'REANCHORED', JSON.stringify(result.blockers));
+    assert.deepEqual(recorded(dir, 'acme.alpha').outcomes.at(-1).deviations, ['A skipped the cache', 'B kept the old flag']);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reanchor']);
+    assert.equal(projectSpecRegistry(dir).current, true);
   });
 });
 
