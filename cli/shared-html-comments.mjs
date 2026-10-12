@@ -1,8 +1,9 @@
 /**
  * HTML comments in Markdown, read one line at a time, for the readers that
- * must skip commented-out text: the requirement parser and the instruction-
- * pointer reader. `<!--` and `-->` inside an inline code span are text, as in
- * CommonMark, so a spec that quotes `<!--` does not lose every line after it.
+ * must skip commented-out text: the requirement parser, the instruction-
+ * pointer reader and Docs-Sync. `<!--` and `-->` inside an inline code span
+ * are text, as in CommonMark, so a spec that quotes `<!--` does not lose every
+ * line after it.
  *
  * @implements docguard.quoted-comment-openers#FR-001
  * @implements docguard.quoted-comment-openers#FR-003
@@ -65,4 +66,35 @@ export function stripHtmlComments(line, inComment) {
     rest = rest.slice(open + 4);
     inComment = true;
   }
+}
+
+const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
+
+/**
+ * A whole document as a reader sees it: every HTML comment removed, line
+ * breaks kept. A fenced code block is text, comments in it included, as in
+ * CommonMark; a fence that opens inside a comment is part of the comment.
+ * @implements docguard.docs-sync-specific-evidence#FR-001
+ * @param {string} content
+ * @returns {string}
+ */
+export function visibleMarkdown(content) {
+  const out = [];
+  let fence = null;
+  let inComment = false;
+  for (const line of String(content).split('\n')) {
+    if (fence) {
+      out.push(line);
+      const close = line.match(FENCE);
+      if (close && close[1][0] === fence[0] && close[1].length >= fence.length
+        && line.slice(close[0].length).trim() === '') fence = null;
+      continue;
+    }
+    const open = inComment ? null : line.match(FENCE);
+    if (open) { fence = open[1]; out.push(line); continue; }
+    let text;
+    ({ text, inComment } = stripHtmlComments(line, inComment));
+    out.push(text);
+  }
+  return out.join('\n');
 }

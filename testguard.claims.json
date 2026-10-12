@@ -8297,8 +8297,8 @@
           "description": "Docs-Sync finds the module name as a substring, so users documents user.",
           "faultClass": "condition-forced",
           "file": "cli/validators/docs-sync.mjs",
-          "find": "return namesModule(canonicalContent, basename(file, extname(file)));",
-          "replace": "return canonicalContent.includes(basename(file, extname(file)));",
+          "find": "if (tail.length === 1) return namesModule(text, tail[0]);",
+          "replace": "if (tail.length === 1) return text.includes(tail[0]);",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 077)"
@@ -8698,6 +8698,228 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 076)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DOCS-SYNC-SPECIFIC-EVIDENCE",
+      "statement": "Docs-Sync (DSY001, DSY002) counts a route or service as documented only by text a reader sees, or by a docguard:section covers declaration that lists it, and only by a name that identifies it: text inside an HTML comment (a template placeholder) documents nothing, while a quoted <!-- and a fenced code block stay text; a Next.js App Router handler is named by the URL path it serves (any parameter syntax, route groups dropped, ending there, or its file path; a trailing wildcard below /api names the routes under it, /api/* none), never by the word route; any other file by the shortest tail of its path that no other selected file shares, with index and __init__ also named by their directory as a module path that goes no deeper, decided over every selected file whatever --changed-only scopes; a drawn file tree names the path of each entry it lists.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.docs-sync-specific-evidence#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 078)"
+      },
+      "defendedBy": [
+        "tests/docs-sync-specific-evidence.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Docs-Sync reads the raw documents, so a placeholder comment documents a route.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "  const visible = contents.map(visibleMarkdown).join('\\n');",
+          "replace": "  const visible = contents.join('\\n');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A fence no longer protects its text, so an unclosed <!-- in a code block hides the rest of the document.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-html-comments.mjs",
+          "find": "    const open = inComment ? null : line.match(FENCE);",
+          "replace": "    const open = null;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A covers declaration no longer documents the file it lists.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "  if (evidence.covered.has(relPath)) return true;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A covers entry with a #symbol no longer names its file.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "covered.add(ref.split('#')[0].replace(/^\\.\\//, ''));",
+          "replace": "covered.add(ref.replace(/^\\.\\//, ''));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The word route documents a Next.js handler again.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "if (identity.url) return evidence.urlPaths()(identity.url);",
+          "replace": "if (identity.url) return evidence.urlPaths()(identity.url) || namesModule(evidence.text, 'route');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A URL path no longer has to end where the route path ends, so /api/users/{id} documents /api/users.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    if (named.has(segments.join('/'))) return true;",
+          "replace": "    if ([...named].some(name => name.startsWith(segments.join('/')))) return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A wildcard right after /api documents every handler.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    for (let n = 2; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;",
+          "replace": "    for (let n = 1; n <= segments.length; n++) if (under.has(segments.slice(0, n).join('/'))) return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Parameter syntaxes are compared literally, so {id} does not name :id.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  return normalizePath('/' + segments.join('/')).split('/').filter(Boolean);",
+          "replace": "  return segments;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A route group in a documented file path is kept, so the handler file path no longer names its URL.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  const segments = path.split('/').filter(seg => seg && !/^\\(.*\\)$/.test(seg));",
+          "replace": "  const segments = path.split('/').filter(Boolean);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "A handler file path keeps its route.ts segment, so naming the file no longer documents the handler.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "  if (segments.length && ROUTE_FILE.test(segments[segments.length - 1])) segments.pop();\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "A module name that several files share is not qualified, so the word types documents every types.ts.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "    while (k < segments.length && shared.get(segments.slice(-k).join('/')) > 1) k++;",
+          "replace": "    while (false) k++;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "An index file is named by the word index.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "    let k = Math.min(directoryModule ? 2 : 1, segments.length);",
+          "replace": "    let k = 1;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A path into a directory names the directory, so a sibling file documents the index barrel.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "(?!${NAME_CHAR_NOT_DOT}|[./]${NAME_CHAR_NOT_DOT})`).test(text)) return true;",
+          "replace": "(?!${NAME_CHAR_NOT_DOT})`).test(text)) return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "Shared names are decided over the --changed-only scope, so a changed types.ts is named by the word types.",
+          "faultClass": "other",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "  const named = identities(selected.map(entry => entry.relPath));",
+          "replace": "  const named = identities(selected.map(entry => entry.relPath).filter(inScope));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "The handler URL keeps its route groups.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/routes.mjs",
+          "find": "    .filter(seg => seg && !/^\\(.*\\)$/.test(seg))\n",
+          "replace": "    .filter(Boolean)\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "Drawn file trees are not read, so a tree that lists a handler no longer documents it.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "  const text = `${visible}\\n${treePaths(visible).join('\\n')}`;",
+          "replace": "  const text = visible;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "A tree entry is not joined to the entries it is drawn under.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "    while (stack.length && stack[stack.length - 1].column >= column) stack.pop();",
+          "replace": "    stack = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 078)"
           }
         }
       ]

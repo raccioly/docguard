@@ -373,6 +373,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     inside a longer file name (`cli/commands/sync.mjs` was matched by
     `schema-sync.mjs`). Across 41 other local projects, guard findings go
     from 2,500 to 2,514: the 14 DSY warnings above, and nothing removed.
+- **Docs-Sync counts only names a reader sees and that identify the file**
+  (`specs/078-docs-sync-specific-evidence`). DSY001 and DSY002 accepted a
+  file's module name anywhere in a canonical document, so after a blank
+  `init --skip-prompts` an Express route passed because DocGuard's own
+  templates say `<!-- e.g. users table -->`, and the word "route" documented
+  every Next.js `route.ts` handler.
+  - **Hidden text.** A name inside an HTML comment no longer documents a
+    file. A `<!--` quoted in a code span, and a fenced code block, are still
+    text. A `docguard:section` marker whose `covers` lists the file still
+    documents it.
+  - **Next.js route handlers — adds warnings.** A handler is documented by
+    the URL path it serves (`/api/users/{id}`, `GET /api/users/:id`,
+    `/api/users/[userId]`, with any host or base path before it) or by its
+    file or directory path, never by its module name. The path must end
+    there, so `/api/users/{id}` does not document `/api/users`. A trailing
+    wildcard below `/api` (`/api/deals/*`) documents the handlers under it;
+    `/api/*` documents none.
+  - **Shared names — adds warnings.** A module name that several checked
+    files share is qualified by its directory (`auth/types`), and an `index`
+    or `__init__` file is named by `auth/index` or by its directory as a
+    module path (`services/auth`). A unique module name keeps the whole-word
+    rule of spec 077.
+  - **File trees.** A tree drawn in a document (`├──`, `└──`, `|--`) names
+    the path of each entry, joined to the entries and the directory line
+    above it.
+  - **What changes.** Messages and severities are unchanged, so a baselined
+    finding stays baselined and a pipeline that passes keeps passing; the
+    suggestion now names the form that documents the file. DocGuard's own
+    guard is unchanged. On `git archive` copies of 38 other local projects,
+    findings go from 2,090 to 2,274 against the previous commit, with
+    nothing removed and no status changed: 173 Next.js handlers and 11
+    service barrels and `types.ts` files that no document names by path,
+    URL, wildcard or tree.
 - **A quoted TODO form is no longer reported as an untracked TODO**
   (`specs/073-todo-quoted-forms`). TODO tracking reports TDO002 only for an
   annotation a developer wrote in a comment:
