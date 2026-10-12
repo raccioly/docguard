@@ -712,6 +712,12 @@ export const CODES = {
     help: 'Some links could not be compared or placed at their exact tier: a parser is unavailable (Babel, python3), a file does not parse, a different interpreter version recorded the lock, or the anchor cache under `.docguard/` is tracked by git and was ignored. Those links fall back to the pattern or file tier, which is less precise. Install the parser or fix the file; untrack `.docguard/` with `git rm --cached -r .docguard`.',
     suppress: null,
   },
+  ANC011: {
+    validator: 'requirementAnchors',
+    title: 'Requirement anchor covers only volatile lines',
+    help: 'Every line of the code this tag anchors carries a `docguard:volatile` marker, so its fingerprint is a placeholder and the link can never turn suspect. A marker is for a release-managed value inside code that implements the requirement, not for the code itself. Anchor the tag to that code, or remove the marker. Reported by `docguard anchors` only, never by guard.',
+    suppress: null,
+  },
   OWN001: {
     validator: 'docOwnership',
     title: 'Source directory with no owning doc section',

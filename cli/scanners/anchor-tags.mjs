@@ -35,9 +35,9 @@
  * @implements docguard.requirement-anchors#FR-008
  */
 
-import { BABEL_TIER, DIRECTIVE_RE, dg1, jsFingerprintV1, pyFingerprintV1 } from './fingerprint.mjs';
+import { BABEL_TIER, DIRECTIVE_RE, dg1, jsFingerprintV1, maskVolatileLines, pyFingerprintV1, volatileLines } from './fingerprint.mjs';
 import { extractJsRouteCalls, parseJsTs } from './js-ast.mjs';
-import { PATTERN_TIER, floorFingerprint, languageOf, lex, outline, statementSpan } from './pattern-lexer.mjs';
+import { PATTERN_TIER, floorFingerprint, languageOf, lex, outline, statementSpan, volatileOnly } from './pattern-lexer.mjs';
 
 export const SCOPES = Object.freeze(['file', 'symbol', 'statement', 'route']);
 export const FILE_TIER = 'file';
@@ -220,8 +220,8 @@ function leadingBlockEnd(firstCommentLine, firstCodeLine, commentLines) {
   return end;
 }
 
-function fileAnchor(tag, { tier, exact, floor, confidence, problems = [] }) {
-  return { tag, scope: 'file', anchor: '*', owner: null, kind: 'file', startLine: 1, endLine: null, tier, exact, floor, confidence, problems: [...tag.problems, ...problems] };
+function fileAnchor(tag, { tier, exact, floor, confidence, problems = [], volatileOnly = false }) {
+  return { tag, scope: 'file', anchor: '*', owner: null, kind: 'file', startLine: 1, endLine: null, tier, exact, floor, confidence, problems: [...tag.problems, ...problems], volatileOnly };
 }
 
 /* ───────────────────────────── JS / TS (Babel) ───────────────────────────── */
@@ -305,9 +305,12 @@ function resolveJs(content, relPath, patterns, parsed, importers = null) {
   const comments = ast.comments || [];
   const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.start, e: c.end, startLine: c.loc.start.line, endLine: c.loc.end.line })));
   const lexedJs = lex(content, languageOf(relPath) || 'js');
-  const floor = (s, e) => floorFingerprint(lexedJs, s, e);
-  const fileExact = jsFingerprintV1(ast.program, comments);
+  const volatile = volatileLinesFor(content, relPath);
+  const floor = (s, e) => floorFingerprint(lexedJs, s, e, volatile);
+  const only = (s, e) => volatileOnly(lexedJs, s, e, volatile);
+  const fileExact = jsFingerprintV1(ast.program, comments, volatile);
   const fileFloor = floor(0, content.length);
+  const fileOnly = only(0, content.length);
   const tier = BABEL_TIER;
   let routes;
   const routeAt = (s, e) => {
@@ -325,14 +328,14 @@ function resolveJs(content, relPath, patterns, parsed, importers = null) {
     while (commentLines.has(blockEnd + 1)) blockEnd++;
     const leading = comment.loc.start.line <= headerEnd;
     const loc = locateInList(ast.program, comment);
-    for (const tag of tags) anchors.push(resolveJsTag(tag, { blockEnd, leading, loc, commentLines, comments, content, floor, fileExact, fileFloor, tier, routeAt }));
+    for (const tag of tags) anchors.push(resolveJsTag(tag, { blockEnd, leading, loc, commentLines, comments, content, floor, only, volatile, fileExact, fileFloor, fileOnly, tier, routeAt }));
   }
   return { tier, confidence: 'high', error: null, anchors, fileExact, fileFloor };
 }
 
 function resolveJsTag(tag, ctx) {
-  const { blockEnd, leading, loc, commentLines, fileExact, fileFloor, tier, routeAt } = ctx;
-  const file = (problems = []) => fileAnchor(tag, { tier, exact: fileExact, floor: fileFloor, confidence: 'high', problems });
+  const { blockEnd, leading, loc, commentLines, fileExact, fileFloor, fileOnly, tier, routeAt } = ctx;
+  const file = (problems = []) => fileAnchor(tag, { tier, exact: fileExact, floor: fileFloor, confidence: 'high', problems, volatileOnly: fileOnly });
   if (tag.scope === 'file' || tag.invalidScopeBlock) return file();
   const next = loc.found ? unwrapExport(loc.next) : null;
   const nextStart = loc.next ? startOf(loc.next) : null;
@@ -411,14 +414,14 @@ function lineOfOffset(content, offset) {
   return line;
 }
 
-function jsExact(node, comments) {
+function jsExact(node, comments, volatile) {
   if (node.type === 'VariableDeclaration') {
     // Leave the variable's own name out (FR-010), keep `const`/`let` and the initializer.
     const synthetic = { type: node.type, kind: node.kind, declare: node.declare, start: node.start, end: node.end,
       declarations: node.declarations.map(d => ({ type: d.type, init: d.init, definite: d.definite, typeAnnotation: d.id?.typeAnnotation })) };
-    return jsFingerprintV1(synthetic, comments);
+    return jsFingerprintV1(synthetic, comments, volatile);
   }
-  return jsFingerprintV1(node, comments);
+  return jsFingerprintV1(node, comments, volatile);
 }
 
 function spanOf(node, content) {
@@ -429,19 +432,22 @@ function spanOf(node, content) {
 function symbolAnchor(tag, node, qual, ctx, problems = []) {
   const span = spanOf(node, ctx.content);
   return { tag, scope: 'symbol', anchor: qual, owner: null, kind: node.type, startLine: span.startLine, endLine: span.endLine,
-    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems, ...problems] };
+    tier: ctx.tier, exact: jsExact(node, ctx.comments, ctx.volatile), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems, ...problems],
+    volatileOnly: ctx.only(span.s, span.e) };
 }
 
 function statementAnchor(tag, node, owner, ctx) {
   const span = spanOf(node, ctx.content);
   return { tag, scope: 'statement', anchor: null, owner, kind: node.type, startLine: span.startLine, endLine: span.endLine,
-    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems] };
+    tier: ctx.tier, exact: jsExact(node, ctx.comments, ctx.volatile), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems],
+    volatileOnly: ctx.only(span.s, span.e) };
 }
 
 function routeAnchor(tag, node, route, owner, ctx) {
   const span = spanOf(node, ctx.content);
   return { tag, scope: 'route', anchor: `route:${route.method} ${route.path}`, owner, kind: node.type, startLine: span.startLine, endLine: span.endLine,
-    tier: ctx.tier, exact: jsExact(node, ctx.comments), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems] };
+    tier: ctx.tier, exact: jsExact(node, ctx.comments, ctx.volatile), floor: ctx.floor(span.s, span.e), confidence: 'high', problems: [...tag.problems],
+    volatileOnly: ctx.only(span.s, span.e) };
 }
 
 /* ───────────────────────────── Python ───────────────────────────── */
@@ -467,21 +473,24 @@ function resolvePython(content, relPath, patterns, py, pyTier, importers = null)
   const starts = lineStarts(content);
   const rawLines = content.split('\n');
   const lexed = lex(content, 'python');
-  const floor = (startLine, endLine) => { const { s, e } = lineSpanOffsets(starts, content, startLine, endLine); return floorFingerprint(lexed, s, e); };
+  const volatile = volatileLinesFor(content, relPath);
+  const floor = (startLine, endLine) => { const { s, e } = lineSpanOffsets(starts, content, startLine, endLine); return floorFingerprint(lexed, s, e, volatile); };
+  const only = (startLine, endLine) => { const { s, e } = lineSpanOffsets(starts, content, startLine, endLine); return volatileOnly(lexed, s, e, volatile); };
   const directives = (startLine, endLine) => outline.comments
     .filter(c => c.line >= startLine && c.line <= endLine && DIRECTIVE_RE.test(c.text)).map(c => c.text);
   const fileExact = pyFingerprintV1(outline.moduleV1 || '', directives(1, rawLines.length));
-  const fileFloor = floorFingerprint(lexed, 0, content.length);
+  const fileFloor = floorFingerprint(lexed, 0, content.length, volatile);
+  const fileOnly = volatileOnly(lexed, 0, content.length, volatile);
   const commentLines = new Set(outline.comments.filter(c => rawLines[c.line - 1].slice(0, c.col).trim() === '').map(c => c.line));
   const first = outline.following['0'] || null;
   const firstCommentLine = outline.comments.length ? Math.min(...outline.comments.filter(c => commentLines.has(c.line)).map(c => c.line)) : null;
   const headerEnd = leadingBlockEnd(Number.isFinite(firstCommentLine) ? firstCommentLine : null, first ? first.start : null, commentLines);
   const anchors = [];
-  const file = (tag, problems = []) => fileAnchor(tag, { tier: pyTier, exact: fileExact, floor: fileFloor, confidence: 'high', problems });
+  const file = (tag, problems = []) => fileAnchor(tag, { tier: pyTier, exact: fileExact, floor: fileFloor, confidence: 'high', problems, volatileOnly: fileOnly });
   const symbolFor = (tag, sym, problems = []) => ({
     tag, scope: 'symbol', anchor: sym.qual, owner: null, kind: sym.kind, startLine: sym.start, endLine: sym.end,
     tier: pyTier, exact: pyFingerprintV1(sym.v1, directives(sym.start, sym.end)), floor: floor(sym.start, sym.end), confidence: 'high',
-    problems: [...tag.problems, ...problems],
+    problems: [...tag.problems, ...problems], volatileOnly: only(sym.start, sym.end),
   });
   for (const c of outline.comments) {
     const tags = tagsInComment(c.text, c.line, patterns, importers);
@@ -514,6 +523,7 @@ function resolvePython(content, relPath, patterns, py, pyTier, importers = null)
       anchors.push({
         tag, scope: 'statement', anchor: null, owner: next.owner, kind: next.kind, startLine: next.start, endLine: next.end,
         tier: pyTier, exact: pyFingerprintV1(next.v1, directives(next.start, next.end)), floor: floor(next.start, next.end), confidence: 'high', problems: [...tag.problems],
+        volatileOnly: only(next.start, next.end),
       });
     }
   }
@@ -536,11 +546,14 @@ function resolvePattern(content, relPath, patterns, lang, importers = null, tree
   const lexed = lex(content, lang);
   const confidence = LOW_CONFIDENCE_LANGS.has(lang) ? 'low' : 'medium';
   const tier = PATTERN_TIER;
-  const fileFloor = floorFingerprint(lexed, 0, content.length);
+  const volatile = volatileLinesFor(content, relPath);
+  const fileFloor = floorFingerprint(lexed, 0, content.length, volatile);
+  const only = (s, e) => volatileOnly(lexed, s, e, volatile);
+  const fileOnly = only(0, content.length);
   const anchors = [];
   const comments = lexed.comments || [];
   const commentLines = commentOnlyLines(content, comments.map(c => ({ s: c.s, e: c.e, startLine: c.line, endLine: c.endLine })));
-  const file = (tag, problems = []) => fileAnchor(tag, { tier, exact: fileFloor, floor: fileFloor, confidence, problems });
+  const file = (tag, problems = []) => fileAnchor(tag, { tier, exact: fileFloor, floor: fileFloor, confidence, problems, volatileOnly: fileOnly });
   if (lexed.error) {
     for (const c of comments) for (const tag of tagsInComment(c.text, c.line, patterns, importers)) {
       anchors.push(file(tag, [`cannot be placed precisely: the ${lang} pattern lexer could not balance this file (${lexed.error}), so every tag in it is read as file scope`]));
@@ -582,8 +595,9 @@ function resolvePattern(content, relPath, patterns, lang, importers = null, tree
         anchors.push({
           tag, scope: 'symbol', anchor: anchorName(sym), owner: null, kind: sym.kind,
           startLine: ts ? ts.startLine : sym.startLine, endLine: ts ? ts.endLine : sym.endLine,
-          tier: ts ? treeSitter.tier : tier, exact: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end),
-          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence, problems: [...tag.problems],
+          tier: ts ? treeSitter.tier : tier, exact: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end, volatile),
+          floor: floorFingerprint(lexed, sym.start, sym.end, volatile), confidence: ts ? 'high' : confidence, problems: [...tag.problems],
+          volatileOnly: only(sym.start, sym.end),
         });
         continue;
       }
@@ -597,7 +611,8 @@ function resolvePattern(content, relPath, patterns, lang, importers = null, tree
       anchors.push({
         tag, scope: 'statement', anchor: null, owner: enclosing ? enclosing.qual : '<module>', kind: 'statement',
         startLine: lineOfOffset(content, span.s), endLine: lineOfOffset(content, span.e), tier,
-        exact: floorFingerprint(lexed, span.s, span.e), floor: floorFingerprint(lexed, span.s, span.e), confidence, problems: [...tag.problems],
+        exact: floorFingerprint(lexed, span.s, span.e, volatile), floor: floorFingerprint(lexed, span.s, span.e, volatile), confidence, problems: [...tag.problems],
+        volatileOnly: only(span.s, span.e),
       });
     }
   }
@@ -626,10 +641,14 @@ export function plainComments(content, { hash = true, slashes = false } = {}) {
 }
 
 function resolveFileTier(content, relPath, patterns, importers = null) {
-  const exact = dg1(content);
+  const comments = plainComments(content, { hash: true, slashes: false });
+  // docguard.volatile-anchor-lines#FR-002: a marked line is the placeholder.
+  const volatile = volatileLinesFor(content, relPath);
+  const exact = dg1(maskVolatileLines(content, volatile));
+  const fileOnly = volatile.size > 0 && content.split('\n').every((l, i) => !l.trim() || volatile.has(i + 1));
   const anchors = [];
-  for (const c of plainComments(content, { hash: true, slashes: false })) {
-    for (const tag of tagsInComment(c.text, c.line, patterns, importers)) anchors.push(fileAnchor(tag, { tier: FILE_TIER, exact, floor: exact, confidence: 'low' }));
+  for (const c of comments) {
+    for (const tag of tagsInComment(c.text, c.line, patterns, importers)) anchors.push(fileAnchor(tag, { tier: FILE_TIER, exact, floor: exact, confidence: 'low', volatileOnly: fileOnly }));
   }
   return { tier: FILE_TIER, confidence: 'low', error: null, anchors, fileExact: exact, fileFloor: exact };
 }
@@ -783,6 +802,16 @@ export function orphanCandidates(content, relPath, options = {}) {
  * language it knows, and a quote-aware scanner for YAML and shell.
  * @returns {{ text: string, line: number }[]}
  */
+/**
+ * The lines a `docguard:volatile` comment marks, read from the same comments
+ * as requirement tags (so a marker inside a string marks nothing). Every tier,
+ * and the python and tree-sitter processes, use this one set.
+ * @implements docguard.volatile-anchor-lines#FR-001
+ */
+export function volatileLinesFor(content, relPath) {
+  return volatileLines(content, () => realComments(content, relPath));
+}
+
 export function realComments(content, relPath) {
   const lang = languageOf(relPath);
   if (lang === 'js' || lang === 'ts') {

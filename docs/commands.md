@@ -648,6 +648,28 @@ fingerprint; two identical bodies, or none, leave the old link **lost**.
 A tag that ends up as the first thing in a new file is read as that file's
 header. Put an import above it, or write `{scope=symbol}`.
 
+**Release-managed values.** A version string that your release tool rewrites
+would turn every link over its file suspect on every release. Mark the line
+with a `docguard:volatile` comment:
+
+```yaml
+# @implements acme.ci#FR-010
+env:
+  RELEASED_VERSION: '1.4.2' # docguard:volatile
+```
+
+- Whatever lies wholly on a marked line is fingerprinted as one placeholder,
+  at every tier. The value can change; the link stays current.
+- A construct that crosses onto another line (a multi-line string or call) is
+  fingerprinted as before.
+- Adding or removing the marker is itself a change: a reviewed link over that
+  line turns suspect once, so the marker gets reviewed like any other edit.
+- The marker counts only in a real comment, never inside a string, and only on
+  its own line. A file with no marker fingerprints exactly as it did before.
+- An anchor whose every line is marked can never turn suspect. `docguard
+  anchors` lists it as **ANC011** (info); guard does not report it.
+- The doc lock (`covers=` in doc sections) does not read the marker.
+
 **Ripple.** When an anchored function's code changes, `docguard anchors`
 also lists the anchored links in files that might be affected, as
 `↳ may affect` lines and `ripple[]` in JSON:

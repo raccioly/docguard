@@ -11,6 +11,8 @@
  * @implements docguard.requirement-anchors#FR-009
  */
 
+import { NO_VOLATILE, VOLATILE_PLACEHOLDER } from './fingerprint.mjs';
+
 const IDENTIFIER_TYPES = new Set(['identifier', 'field_identifier', 'type_identifier', 'destructor_name', 'operator_name', 'constant', 'name']);
 
 function lastIdentifier(node) {
@@ -131,12 +133,14 @@ function namedClassBlock(node) {
  * FR-030), the commas and semicolons formatters add or drop, and redundant
  * parentheses (FR-010).
  */
-export function declarationTokens(node, nameNode) {
+export function declarationTokens(node, nameNode, volatile = NO_VOLATILE) {
   const out = [];
   const skipId = nameNode ? nameNode.id : null;
   const visit = n => {
     if (n.id === skipId) return;
     if (/comment/.test(n.type)) return;
+    // docguard.volatile-anchor-lines#FR-002: a node wholly on a marked line is the placeholder.
+    if (volatile.size && n.startPosition.row === n.endPosition.row && volatile.has(n.startPosition.row + 1)) { out.push(VOLATILE_PLACEHOLDER); return; }
     // Redundant parentheses are formatting: keep what they enclose.
     if (n.type === 'parenthesized_expression' && n.namedChildCount === 1) { visit(n.namedChild(0)); return; }
     if (n.childCount === 0) {
@@ -155,7 +159,7 @@ export function declarationTokens(node, nameNode) {
  * and whether it is local (inside a function body, an anonymous class or a
  * plain block), where an anchor names a statement rather than a symbol.
  */
-export function declarations(tree, lang) {
+export function declarations(tree, lang, volatile = NO_VOLATILE) {
   const spec = TS_LANGUAGES[lang];
   if (!spec) return [];
   const out = [];
@@ -167,7 +171,7 @@ export function declarations(tree, lang) {
         out.push({
           name: spell(nameNode.text, lang), type: node.type, local,
           nameLine: nameNode.startPosition.row + 1, startLine: node.startPosition.row + 1, endLine: node.endPosition.row + 1,
-          start: node.startIndex, end: node.endIndex, tokens: declarationTokens(node, nameNode),
+          start: node.startIndex, end: node.endIndex, tokens: declarationTokens(node, nameNode, volatile),
         });
       }
     }

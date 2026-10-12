@@ -34,7 +34,7 @@ import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { openAnchorCache, contentSha } from './anchor-cache.mjs';
 import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock } from './anchor-lock.mjs';
-import { FILE_TIER, importSettings, orphanCandidates, pythonCandidateLines, resolveFileAnchors, tagHint } from './anchor-tags.mjs';
+import { FILE_TIER, importSettings, orphanCandidates, pythonCandidateLines, resolveFileAnchors, tagHint, volatileLinesFor } from './anchor-tags.mjs';
 import { BABEL_TIER, V1_PREFIX, dg1 } from './fingerprint.mjs';
 import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
 import { pythonBatch, pythonTier } from './py-anchors.mjs';
@@ -115,8 +115,18 @@ export function anchorsActivated(projectDir, config = {}) {
  * identity, so an upgrade that changes how tags resolve is never answered
  * with anchors an older resolver computed for the same bytes.
  */
+/**
+ * A python or tree-sitter request for one source, with the lines a
+ * `docguard:volatile` marker holds when there are any, so the out-of-process
+ * tiers use the same marked lines as the resolvers (docguard.volatile-anchor-lines#FR-002).
+ */
+function withVolatile(source, request) {
+  const volatile = volatileLinesFor(source.content, source.rel);
+  return volatile.size ? { ...request, volatile: [...volatile].sort((a, b) => a - b) } : request;
+}
+
 const EXTRACTOR_MODULES = ['./anchor-tags.mjs', './anchors.mjs', './pattern-lexer.mjs', './py-anchors.mjs', './fingerprint.mjs',
-  './ts-decls.mjs', './ts-anchors.mjs', './js-ast.mjs', '../shared-requirements.mjs'];
+  './ts-decls.mjs', './ts-anchors.mjs', './ts-anchors-child.mjs', './js-ast.mjs', '../shared-requirements.mjs'];
 let extractorHash = null;
 function extractorIdentity() {
   if (!extractorHash) {
@@ -247,11 +257,11 @@ export function computeLinks(projectDir, config = {}, options = {}) {
   }
   let python = { ok: true, files: {} };
   if (pyMisses.length && pyTier) {
-    python = pythonBatch(pyMisses.map(s => ({ key: s.rel, content: s.content, outline: true, lines: pythonCandidateLines(s.content, hint) })));
+    python = pythonBatch(pyMisses.map(s => withVolatile(s, { key: s.rel, content: s.content, outline: true, lines: pythonCandidateLines(s.content, hint) })));
   }
   const pythonReason = !pyTier ? 'python3 is unavailable' : (python.ok ? null : python.reason);
   const tsMisses = ts.ok ? sources.filter(s => !resolved.has(s.rel) && ts.languages.includes(languageOf(s.rel))) : [];
-  const tsOut = tsMisses.length ? treeSitterBatch(ts, tsMisses.map(s => ({ key: s.rel, lang: languageOf(s.rel), content: s.content }))) : { ok: true, files: {} };
+  const tsOut = tsMisses.length ? treeSitterBatch(ts, tsMisses.map(s => withVolatile(s, { key: s.rel, lang: languageOf(s.rel), content: s.content }))) : { ok: true, files: {} };
   for (const source of sources) {
     if (resolved.has(source.rel)) continue;
     const tsFile = tsOut.ok ? tsOut.files?.[source.rel] : null;
@@ -288,6 +298,11 @@ export function computeLinks(projectDir, config = {}, options = {}) {
       if (tag.unmapped) {
         problems.push({ code: 'ANC007', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence, message: `@${tag.verb} ${tag.foreign.ref} at ${source.rel}:${tag.line} ${tag.unmapped}` });
         continue;
+      }
+      // docguard.volatile-anchor-lines#FR-005: an anchor the marker silences entirely is said so.
+      if (a.volatileOnly) {
+        problems.push({ code: 'ANC011', file: source.rel, line: tag.line, tier: a.tier, confidence: a.confidence,
+          message: `@${tag.verb} ${tag.qualifier ? `${tag.qualifier}#` : ''}${tag.id} anchors only lines marked docguard:volatile (lines ${a.startLine}-${a.endLine ?? 'end'}), so it can never turn suspect. Anchor it to the code that implements the requirement, or remove the marker` });
       }
       const req = resolveRequirement(tag, index);
       if (req.retired) {

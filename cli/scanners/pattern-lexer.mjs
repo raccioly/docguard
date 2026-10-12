@@ -40,6 +40,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { NO_VOLATILE, VOLATILE_PLACEHOLDER, maskVolatileLines } from './fingerprint.mjs';
 
 /** Bump on any change to the floor token rules: every stored floor depends on them. */
 export const PATTERN_ALGO = 1;
@@ -1227,7 +1228,7 @@ export function lex(content, lang) {
   const src = typeof content === 'string' ? content : String(content ?? '');
   // Without a token stream the whole text is one literal, so a floor over it still changes when the file does.
   const opaque = error => ({
-    lang, comments: [], error, lineStarts: lineStartsOf(src),
+    lang, comments: [], error, opaque: true, lineStarts: lineStartsOf(src),
     tokens: src ? [{ t: 'str', v: src, s: 0, e: src.length, line: 1 }] : [],
     pairs: new Int32Array(src ? 1 : 0).fill(-1),
   });
@@ -1251,21 +1252,33 @@ export function lex(content, lang) {
  * source order. Whitespace and other comments are dropped; literals stay
  * verbatim (with `\r\n` read as `\n`, so a checkout's line endings do not
  * matter); virtual statement ends stay as `;`.
+ *
+ * On a line marked `docguard:volatile`, the tokens that lie wholly on it are
+ * one placeholder; a token that crosses onto another line, and layout (virtual
+ * statement ends, indent and dedent), stay as they are. A stream with no lexer
+ * (one opaque token) has its marked lines replaced in the text.
+ * @implements docguard.volatile-anchor-lines#FR-002
  * @returns {string[]}
  */
-export function floorTokens(lexed, s, e) {
+export function floorTokens(lexed, s, e, volatile = NO_VOLATILE) {
   const out = [];
   if (!lexed || !Array.isArray(lexed.tokens)) return out;
   const T = lexed.tokens;
   const C = Array.isArray(lexed.comments) ? lexed.comments : [];
   let ti = lowerBound(T, s);
   let ci = lowerBound(C, s);
+  const placed = new Set();
   for (;;) {
     const t = ti < T.length && T[ti].s < e ? T[ti] : null;
     const c = ci < C.length && C[ci].s < e ? C[ci] : null;
     if (!t && !c) break;
     if (t && (!c || t.s <= c.s)) {
-      if (t.e <= e) out.push({ v: t.t === 'str' ? t.v.replace(/\r\n/g, '\n') : t.v, layout: t.t === 'semi' });
+      if (t.e <= e) {
+        if (volatile.size && lexed.opaque) out.push({ v: maskVolatileLines(t.v, volatile).replace(/\r\n/g, '\n'), layout: false });
+        else if (volatile.size && t.t !== 'semi' && volatile.has(t.line) && lineOf(lexed.lineStarts, Math.max(t.s, t.e - 1)) === t.line) {
+          if (!placed.has(t.line)) { placed.add(t.line); out.push({ v: VOLATILE_PLACEHOLDER, layout: false }); }
+        } else out.push({ v: t.t === 'str' ? t.v.replace(/\r\n/g, '\n') : t.v, layout: t.t === 'semi' });
+      }
       ti++;
     } else {
       if (c.e <= e && DIRECTIVE_RE.test(c.text)) out.push({ v: `\u0001directive:${c.text.replace(/\r\n/g, '\n').trim()}`, layout: false });
@@ -1284,8 +1297,26 @@ export function floorTokens(lexed, s, e) {
 }
 
 /** `dg1:sha256:<hex>` of the floor tokens over `[s, e)` joined by NUL. */
-export function floorFingerprint(lexed, s, e) {
-  return `dg1:sha256:${createHash('sha256').update(floorTokens(lexed, s, e).join('\u0000')).digest('hex')}`;
+export function floorFingerprint(lexed, s, e, volatile = NO_VOLATILE) {
+  return `dg1:sha256:${createHash('sha256').update(floorTokens(lexed, s, e, volatile).join('\u0000')).digest('hex')}`;
+}
+
+/**
+ * Whether everything fingerprinted over `[s, e)` lies on marked lines, so an
+ * anchor there can never change (ANC011). In a stream with no lexer, every
+ * line that is not blank must be marked.
+ * @implements docguard.volatile-anchor-lines#FR-005
+ */
+export function volatileOnly(lexed, s, e, volatile = NO_VOLATILE) {
+  if (!volatile.size || !lexed) return false;
+  if (lexed.opaque) {
+    const text = (lexed.tokens[0]?.v || '').slice(s, e);
+    const lines = text.split('\n');
+    const first = lineOf(lexed.lineStarts, s);
+    return lines.some(l => l.trim()) && lines.every((l, i) => !l.trim() || volatile.has(first + i));
+  }
+  const tokens = floorTokens(lexed, s, e, volatile);
+  return tokens.length > 0 && tokens.every(t => t === VOLATILE_PLACEHOLDER);
 }
 
 // ── Token helpers for the outline ────────────────────────────────────────────

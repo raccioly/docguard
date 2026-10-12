@@ -71,7 +71,7 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
   const findings = [];
   for (const p of computed.problems) {
     const rule = CODES[p.code];
-    if (!rule) continue; // ANC004 and ANC006 are listed by `docguard anchors` only
+    if (!rule) continue; // ANC004, ANC006 and ANC011 are listed by `docguard anchors` only
     // FR-028: only reviewed, exact-tier, precisely scoped links fail, and only under failOn.
     const severity = isFailingProblem(p, policy) ? 'error' : rule.severity;
     findings.push(mkFinding({

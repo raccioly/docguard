@@ -108,7 +108,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
-| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC010) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
@@ -120,6 +120,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Golden fingerprints for 13 languages and python-ast 3.11–3.14; formatting stability; algorithm-version handling (FR-012) | `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | Tree-sitter tier: never auto-detected, hash pinning, staged copy, no environment, fallback; with the vetted artifacts, golden spans and formatting stability (the anchor-oracle CI job) | `tests/requirement-anchors-treesitter.test.mjs` | ✅ |
 | Pattern tier against tree-sitter: per-language declaration agreement on `tools/anchor-oracle/corpus` and the anchor fixtures (SC-007) | `tools/anchor-oracle/run.mjs`, `tests/anchor-oracle.test.mjs` (CI job `anchor-oracle`) | ✅ |
+| `docguard:volatile` lines (spec 072): placeholder at the Babel, python-ast, pattern, tree-sitter and file tiers with a control per case, multi-line constructs kept, marker-in-string ignored, ANC011 listed but not in guard; the release version sync keeps the marker and the anchors | `tests/volatile-anchor-lines.test.mjs` (tree-sitter cases in the CI job `anchor-oracle`), `tests/release-version-sync.test.mjs` | ✅ |
 | Anchors documented (every config key, flag, finding) and adopted by this repository (lock, CODEOWNERS, union merge, replay, no ANC006/ANC007) | `tests/requirement-anchors-adoption.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
