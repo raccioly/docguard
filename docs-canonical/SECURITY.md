@@ -31,6 +31,8 @@ The MCP server serves the directory it was started for (`--dir`, else its workin
 
 Git hooks provide local enforcement and can be bypassed by Git options. Protected merge policy supplies the central enforcement boundary. The shipped hooks prefer an installed local tool and fail when an enforcement runtime cannot execute. Reminder hooks remain best-effort.
 
+A line marked `docguard:volatile` is outside requirement-anchor change detection: whatever lies wholly on it is fingerprinted as a placeholder, so later edits there never turn a link suspect. The marker cannot be added silently. It replaces the line's code in the fingerprint, so adding or removing it turns a reviewed link over that line suspect, and a reviewer sees the marker in the diff. An anchor made only of marked lines is listed as ANC011 (`docguard.volatile-anchor-lines`).
+
 ## Secrets Management
 
 Core CLI analysis requires no API credential. Source scanners inspect usage patterns; environment values must not be included in generated public feedback. The optional HTTP MCP API key is supplied by its operator. Keep deployment credentials outside repository content and restrict access to process arguments and logs appropriately.

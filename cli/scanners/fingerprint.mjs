@@ -47,6 +47,47 @@ export const dg1 = text => `${V1_PREFIX}${sha256(text)}`;
 
 export const isV1 = fp => typeof fp === 'string' && /^dg1:sha256:[0-9a-f]{64}$/.test(fp);
 
+// ── Volatile lines (docguard.volatile-anchor-lines) ─────────────────────────
+//
+// A comment holding `docguard:volatile` marks its line: whatever lies wholly
+// on that line is fingerprinted as one placeholder, so a release-managed value
+// can change without turning a link suspect. Adding the marker replaces the
+// line's code, so the marker itself is a change someone reviews.
+
+/** `docguard:volatile` as a whole word inside a comment's text. */
+export const VOLATILE_MARKER = /(?<![\w-])docguard:volatile(?![\w-])/;
+
+/** What a node, a token run or a line wholly on a marked line becomes. */
+export const VOLATILE_PLACEHOLDER = '\u0001volatile';
+
+/** The empty set of marked lines: every unmarked file takes this path. */
+export const NO_VOLATILE = Object.freeze(new Set());
+
+/**
+ * The 1-based lines marked by a comment that contains the marker. A file
+ * whose text has no marker returns NO_VOLATILE without reading its comments,
+ * so its fingerprints are byte-identical to an unmarked run.
+ * @param {string} content
+ * @param {() => { text: string, line: number }[]} commentsOf  the file's real comments, read only when needed
+ * @implements docguard.volatile-anchor-lines#FR-001
+ * @implements docguard.volatile-anchor-lines#FR-004
+ */
+export function volatileLines(content, commentsOf) {
+  if (typeof content !== 'string' || !content.includes('docguard:volatile')) return NO_VOLATILE;
+  const lines = new Set();
+  for (const c of commentsOf()) if (VOLATILE_MARKER.test(c.text)) lines.add(c.line);
+  return lines.size ? lines : NO_VOLATILE;
+}
+
+/** Text with every marked line replaced by the placeholder (the file tier). */
+export function maskVolatileLines(text, volatile) {
+  if (!volatile?.size) return text;
+  return text.split('\n').map((line, i) => (volatile.has(i + 1) ? VOLATILE_PLACEHOLDER : line)).join('\n');
+}
+
+/** Whether a Babel `loc` starts and ends on one marked line. */
+const whollyVolatile = (loc, volatile) => !!loc && loc.start?.line === loc.end?.line && volatile.has(loc.start.line);
+
 /** doclock-v0 normalization of a Babel node (positions and comments removed, name kept). */
 export function normalizeJsV0(node) {
   return JSON.stringify(node, (key, value) => (AST_METADATA.has(key) ? undefined : value));
@@ -55,12 +96,15 @@ export function normalizeJsV0(node) {
 /**
  * v1 fingerprint of a Babel node: v0 normalization without the root's own
  * name (`id` of a function, class or variable declarator, `key` of a method),
- * followed by the directive comments inside the node's span, in order.
+ * followed by the directive comments inside the node's span, in order. A node
+ * wholly on a marked line is the placeholder (docguard.volatile-anchor-lines).
+ * @implements docguard.volatile-anchor-lines#FR-002
  */
-export function jsFingerprintV1(node, comments = []) {
+export function jsFingerprintV1(node, comments = [], volatile = NO_VOLATILE) {
   const json = JSON.stringify(node, function replacer(key, value) {
     if (AST_METADATA.has(key)) return undefined;
     if (this === node && (key === 'id' || key === 'key')) return undefined;
+    if (volatile.size && value && typeof value === 'object' && whollyVolatile(value.loc, volatile)) return VOLATILE_PLACEHOLDER;
     return value;
   });
   const directives = comments

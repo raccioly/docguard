@@ -61,8 +61,14 @@ def docstring_node(node):
         return body[0]
     return None
 
+VOLATILE = frozenset()
+
 def ser(value, root=None):
     if isinstance(value, ast.AST):
+        # docguard.volatile-anchor-lines: a node wholly on a marked line is the placeholder.
+        line = getattr(value, 'lineno', None)
+        if VOLATILE and line is not None and line == getattr(value, 'end_lineno', None) and line in VOLATILE:
+            return '(\x01volatile)'
         parts = [type(value).__name__]
         doc = docstring_node(value) if value is root else None
         for field in value._fields:
@@ -160,6 +166,7 @@ request = json.load(sys.stdin)
 result = {'version': '%d.%d' % sys.version_info[:2], 'files': {}}
 for item in request['files']:
     entry = {}
+    VOLATILE = frozenset(item.get('volatile') or [])
     try:
         tree = ast.parse(item['content'], filename=item['key'])
     except (SyntaxError, ValueError) as exc:

@@ -204,6 +204,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   declaration now says `{scope=file}`, `{scope=symbol}` or
   `{scope=statement}`. `docguard anchors` on this repository reports no ANC006
   or ANC007, and every link is reviewed or baselined.
+- **Release-managed values no longer make requirement links suspect**
+  (`docguard.volatile-anchor-lines`). A version string your release tool
+  rewrites used to turn every link over its file suspect on every release.
+  Mark the line with a `# docguard:volatile` comment:
+  - Whatever lies wholly on the marked line is fingerprinted as a placeholder,
+    at every tier, so the value can change and the link stays current.
+  - Adding or removing the marker is itself a change that a reviewer sees.
+  - A file with no marker fingerprints exactly as before.
+  - An anchor made only of marked lines is listed as ANC011 by
+    `docguard anchors`, never by guard.
+
+  DocGuard marks its own two release-managed lines (`action.yml`,
+  `extensions/spec-kit-docguard/extension.yml`), so a release cut leaves
+  every anchor as it was.
 
 ### Changed
 

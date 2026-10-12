@@ -7734,6 +7734,229 @@
           }
         }
       ]
+    },
+    {
+      "id": "ANCHOR-VOLATILE-LINES",
+      "statement": "A docguard:volatile comment marks its line, read from real comments only and as a whole word; at the Babel, python-ast, pattern, tree-sitter and file tiers whatever lies wholly on the line is fingerprinted as a placeholder while constructs crossing onto other lines and layout tokens are kept; the python and tree-sitter processes receive the same marked lines; an anchor made only of marked lines is ANC011, listed as info by docguard anchors and never reported by guard; and the release version sync keeps the marker on the lines it rewrites.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.volatile-anchor-lines#FR-002"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 072)"
+      },
+      "defendedBy": [
+        "tests/volatile-anchor-lines.test.mjs",
+        "tests/release-version-sync.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "No line is ever marked.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "  if (typeof content !== 'string' || !content.includes('docguard:volatile')) return NO_VOLATILE;",
+          "replace": "  return NO_VOLATILE;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Markers are read from raw text, so one inside a string counts.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  return volatileLines(content, () => realComments(content, relPath));",
+          "replace": "  return volatileLines(content, () => content.split('\\n').map((text, i) => ({ text, line: i + 1 })));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Any text starting with docguard:volatile counts, not only the whole word.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "export const VOLATILE_MARKER = /(?<![\\w-])docguard:volatile(?![\\w-])/;",
+          "replace": "export const VOLATILE_MARKER = /docguard:volatile/;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The Babel fingerprint ignores marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "    if (volatile.size && value && typeof value === 'object' && whollyVolatile(value.loc, volatile)) return VOLATILE_PLACEHOLDER;",
+          "replace": "    // volatile lines ignored",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A Babel node that only starts on a marked line is replaced too.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/fingerprint.mjs",
+          "find": "const whollyVolatile = (loc, volatile) => !!loc && loc.start?.line === loc.end?.line && volatile.has(loc.start.line);",
+          "replace": "const whollyVolatile = (loc, volatile) => !!loc && volatile.has(loc.start.line);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The floor fingerprint ignores marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "        else if (volatile.size && t.t !== 'semi' && volatile.has(t.line) && lineOf(lexed.lineStarts, Math.max(t.s, t.e - 1)) === t.line) {",
+          "replace": "        else if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A floor token that only starts on a marked line is replaced too.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "        else if (volatile.size && t.t !== 'semi' && volatile.has(t.line) && lineOf(lexed.lineStarts, Math.max(t.s, t.e - 1)) === t.line) {",
+          "replace": "        else if (volatile.size && t.t !== 'semi' && volatile.has(t.line)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Layout tokens on a marked line are absorbed into the placeholder.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "        else if (volatile.size && t.t !== 'semi' && volatile.has(t.line) && lineOf(lexed.lineStarts, Math.max(t.s, t.e - 1)) === t.line) {",
+          "replace": "        else if (volatile.size && volatile.has(t.line) && lineOf(lexed.lineStarts, Math.max(t.s, t.e - 1)) === t.line) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The file tier hashes marked lines verbatim.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchor-tags.mjs",
+          "find": "  const exact = dg1(maskVolatileLines(content, volatile));",
+          "replace": "  const exact = dg1(content);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "The python-ast tier ignores marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/py-anchors.mjs",
+          "find": "        if VOLATILE and line is not None and line == getattr(value, 'end_lineno', None) and line in VOLATILE:",
+          "replace": "        if False:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The python and tree-sitter requests carry no marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "  return volatile.size ? { ...request, volatile: [...volatile].sort((a, b) => a - b) } : request;",
+          "replace": "  return request;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "Tree-sitter tokens ignore marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/ts-decls.mjs",
+          "find": "    if (volatile.size && n.startPosition.row === n.endPosition.row && volatile.has(n.startPosition.row + 1)) { out.push(VOLATILE_PLACEHOLDER); return; }",
+          "replace": "    // volatile lines ignored",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "An anchor made only of marked lines is not reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/anchors.mjs",
+          "find": "      if (a.volatileOnly) {",
+          "replace": "      if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "Guard reports ANC011.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/requirement-anchors.mjs",
+          "find": "  ANC010: { severity: 'warn', disposition: 'escalate' },",
+          "replace": "  ANC010: { severity: 'warn', disposition: 'escalate' },\n  ANC011: { severity: 'warn', disposition: 'escalate' },",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "`docguard anchors` lists ANC011 as a warning.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/anchors.mjs",
+          "find": "  const infoCodes = new Set(['ANC004', 'ANC006', 'ANC011']);",
+          "replace": "  const infoCodes = new Set(['ANC004', 'ANC006']);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A partly marked anchor is reported as made only of marked lines.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/pattern-lexer.mjs",
+          "find": "  return tokens.length > 0 && tokens.every(t => t === VOLATILE_PLACEHOLDER);",
+          "replace": "  return tokens.some(t => t === VOLATILE_PLACEHOLDER);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "The release version sync rewrites the whole extension version line, dropping the marker.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/sync-release-version.mjs",
+          "find": "    /^  version:\\s*[\"'][^\"'\\n]+[\"']/m,",
+          "replace": "    /^  version:.*$/m,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 072)"
+          }
+        }
+      ]
     }
   ]
 }

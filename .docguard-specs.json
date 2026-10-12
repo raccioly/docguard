@@ -4948,7 +4948,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1013
+            "line": 1019
           },
           {
             "requirementId": "FR-008",
@@ -5969,12 +5969,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1249
+            "line": 1255
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1259
+            "line": 1265
           },
           {
             "requirementId": "FR-006",
@@ -10628,7 +10628,7 @@
           {
             "requirementId": "FR-003",
             "file": "tests/release-version-sync.test.mjs",
-            "line": 94
+            "line": 96
           },
           {
             "requirementId": "FR-004",
@@ -11678,7 +11678,7 @@
           {
             "requirementId": "FR-032",
             "file": "cli/scanners/anchors.mjs",
-            "line": 540
+            "line": 555
           },
           {
             "requirementId": "FR-033",
@@ -11693,12 +11693,12 @@
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchor-tags.mjs",
-            "line": 748
+            "line": 767
           },
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchors.mjs",
-            "line": 621
+            "line": 636
           },
           {
             "requirementId": "FR-035",
@@ -11708,7 +11708,7 @@
           {
             "requirementId": "FR-036",
             "file": "cli/scanners/anchors.mjs",
-            "line": 688
+            "line": 703
           },
           {
             "requirementId": "FR-037",
@@ -11718,7 +11718,7 @@
           {
             "requirementId": "FR-037",
             "file": "cli/scanners/anchors.mjs",
-            "line": 719
+            "line": 734
           },
           {
             "requirementId": "FR-037",
@@ -14740,6 +14740,118 @@
             "requirementId": "SC-002",
             "file": "tests/user-docs.test.mjs",
             "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.volatile-anchor-lines",
+      "path": "specs/072-volatile-anchor-lines/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.requirement-anchors"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/SECURITY.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.volatile-anchor-lines#FR-001",
+          "docguard.volatile-anchor-lines#FR-002",
+          "docguard.volatile-anchor-lines#FR-003",
+          "docguard.volatile-anchor-lines#FR-004",
+          "docguard.volatile-anchor-lines#FR-005",
+          "docguard.volatile-anchor-lines#FR-006",
+          "docguard.volatile-anchor-lines#FR-007",
+          "docguard.volatile-anchor-lines#SC-001",
+          "docguard.volatile-anchor-lines#SC-002",
+          "docguard.volatile-anchor-lines#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/072-volatile-anchor-lines/spec.md",
+            "digest": "sha256:14ffe6b1aa47685af27665785702180166981b3ff0fee2dc2804860688e1236e"
+          },
+          {
+            "path": "specs/072-volatile-anchor-lines/plan.md",
+            "digest": "sha256:98eb02216936413724cf015ccff65517cc1bf7f16c7258b87e0f890e8fbb3009"
+          },
+          {
+            "path": "specs/072-volatile-anchor-lines/tasks.md",
+            "digest": "sha256:404d7bbdfeec5f8345124ba07834ce36436f720ef676afdf90d40adeb7e8b7f1"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/anchor-tags.mjs",
+            "line": 809
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 72
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 101
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 1260
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/fingerprint.mjs",
+            "line": 73
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/pattern-lexer.mjs",
+            "line": 1308
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/release-version-sync.test.mjs",
+            "line": 116
           }
         ]
       }

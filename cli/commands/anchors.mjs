@@ -90,7 +90,7 @@ function list(projectDir, config, flags) {
   const computed = computeAnchorStatus(projectDir, config, { noCache: flags.noCache === true, ripple: true, tests: true });
   const links = filterLinks(computed.links, flags);
   const lost = filterLinks(computed.lost, flags);
-  const infoCodes = new Set(['ANC004', 'ANC006']);
+  const infoCodes = new Set(['ANC004', 'ANC006', 'ANC011']);
   const problems = computed.problems
     .filter(p => !flags.file || p.file === flags.file)
     .map(p => ({ ...p, severity: p.code === 'ANC005' ? 'error' : infoCodes.has(p.code) ? 'info' : 'warn' }));

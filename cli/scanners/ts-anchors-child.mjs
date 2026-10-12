@@ -3,7 +3,7 @@
  * with no environment and `--no-addons`, and writes one JSON request to
  * stdin:
  *
- *   { runtime: { js, wasm }, grammars: { <lang>: <path> }, files: [{ key, lang, content }] }
+ *   { runtime: { js, wasm }, grammars: { <lang>: <path> }, files: [{ key, lang, content, volatile? }] }
  *
  * Every path is a hash-verified copy under `.docguard/ts/<sha256>/`. The
  * runtime is imported by absolute file URL and each grammar is loaded from
@@ -35,7 +35,7 @@ async function main() {
     const tree = parser.parse(file.content);
     if (tree.rootNode.hasError) { files[file.key] = { error: 'tree-sitter found a syntax error' }; tree.delete(); continue; }
     files[file.key] = {
-      symbols: declarations(tree, file.lang).map(d => ({
+      symbols: declarations(tree, file.lang, new Set(file.volatile || [])).map(d => ({
         name: d.name, nameLine: d.nameLine, startLine: d.startLine, endLine: d.endLine, fp: dg1(d.tokens.join('\u0000')),
       })),
     };
