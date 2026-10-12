@@ -1034,7 +1034,9 @@ describe('docguard watch', () => {
         output += data.toString();
       });
 
-      await waitFor(() => output.includes('Auto-fix prompts'));
+      // The prompts arrive in a later stdout chunk than their header: wait for the
+      // last line asserted, or the assertions race the stream.
+      await waitFor(() => output.includes('docguard fix --doc'));
 
       assert.match(output, /Mode: auto-fix/);
       assert.match(output, /Auto-fix prompts:/);
