@@ -20,9 +20,10 @@ import { resolve, join, extname, relative } from 'node:path';
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { resolveDocRole } from '../shared-doc-roles.mjs';
+import { summarizeTiers } from '../shared-source.mjs';
 
 
-import { buildImportGraph, JS_EXTENSIONS, extractImports, getFilesRecursive, posixPath } from '../scanners/import-graph.mjs';
+import { buildImportGraph, JS_EXTENSIONS, readImports, getFilesRecursive, posixPath } from '../scanners/import-graph.mjs';
 // Re-exported so existing importers of the validator keep working.
 export { buildImportGraph };
 
@@ -63,12 +64,17 @@ export function validateArchitecture(projectDir, config = {}) {
 
   // ── 3. Detect circular dependencies ──
   const circles = detectCircularDeps(importGraph);
+  // A file's edges all come from one read, so the tier of its first edge is
+  // the file's tier (docguard.js-import-edges#FR-008).
+  const tierOf = new Map();
+  for (const edge of importGraph.edges) if (!tierOf.has(edge.from)) tierOf.set(edge.from, edge.tier);
   for (const circle of circles) {
     acc.total++;
     acc.findings.push(mkFinding({
       code: 'ARC002',
       validator: 'architecture',
       severity: 'warn',
+      parserTier: summarizeTiers(circle.slice(0, -1).map(file => ({ tier: tierOf.get(file) }))).tier,
       message: `Circular dependency: ${circle.join(' → ')}`,
       location: circle[0],
       suggestion: {
@@ -127,7 +133,7 @@ function validateConfigLayers(projectDir, config, layers, acc) {
 
       const content = readFileSync(file, 'utf-8');
       const relPath = relative(projectDir, file);
-      const imports = extractImports(content);
+      const { imports, tier } = readImports(content, file);
 
       for (const { spec } of imports) {
         if (!spec.startsWith('.') && !spec.startsWith('/')) continue;
@@ -139,6 +145,7 @@ function validateConfigLayers(projectDir, config, layers, acc) {
               code: 'ARC001',
               validator: 'architecture',
               severity: 'error',
+              parserTier: tier,
               message: `${relPath}: ${layer.name} layer imports from forbidden layer (${forbiddenDir})`,
               location: relPath,
               suggestion: {
@@ -162,6 +169,8 @@ function summarizeLimitations(limitations) {
     'python-relative-outside-package': 'relative import outside a resolvable package',
     'python-ambiguous-module': 'ambiguous Python module across import roots',
     'source-unreadable': 'unreadable source file',
+    'js-parser-unavailable': 'JS/TS parser unavailable, imports read by the pattern fallback',
+    'js-parse-failed': 'JS/TS file read by the pattern fallback after a parse failure',
   };
   const counts = new Map();
   for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
@@ -178,7 +187,7 @@ function validatePythonConfigLayers(graph, layers, acc) {
     if (!from || !to || from.name === to.name || from.canImport.includes(to.name)) continue;
     acc.total++;
     acc.findings.push(mkFinding({
-      code: 'ARC001', validator: 'architecture', severity: 'error',
+      code: 'ARC001', validator: 'architecture', severity: 'error', parserTier: edge.tier,
       message: `${edge.from}: ${from.name} layer imports from forbidden layer (${to.dir})`,
       location: edge.from,
       suggestion: { kind: 'fix', text: 'Remove the import or route it through an allowed layer (see the layers config in .docguard.json)' },
@@ -299,6 +308,7 @@ function validateLayerBoundaries(projectDir, graph, declaredLayers, acc) {
         code: 'ARC003',
         validator: 'architecture',
         severity: 'error',
+        parserTier: edge.tier,
         message: `${edge.from}: ${fromLayer.name} → ${toLayer.name} (forbidden by ARCHITECTURE.md)`,
         location: edge.from,
         suggestion: {

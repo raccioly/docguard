@@ -131,7 +131,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
 | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
 | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs` (OWN001–OWN007, `trace --owners`) | `tests/doc-ownership.test.mjs` | ✅ |
-| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
+| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs`, `tests/js-import-edges.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
 | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs` (Laravel, Symfony and ASP.NET Core routes) | `tests/php-dotnet-routes.test.mjs` | ✅ |
@@ -227,6 +227,13 @@ context, imported global `env`, and entrypoint-class property forms. Every form
 has a lookalike source, class, function, shadow, or computed-key control. The
 packed-package test runs without installed Babel and requires AST-only forms to
 remain disclosed as limitations.
+
+JS/TS import-edge fixtures read every import form at the syntax-tree tier
+and at the pattern fallback, both in an unparsable file and in a copy of
+`cli/` that cannot resolve `@babel/parser`. Controls put each form in a
+comment, a string and a template literal, and follow a side-effect import with
+a quoted statement the fallback must leave intact. A repository test requires
+an edge for every multi-line import and re-export in `cli/`.
 
 Python import-graph fixtures cover regular flat and `src/` packages, absolute
 and explicit-relative imports, cycles, and configured layer violations. Paired

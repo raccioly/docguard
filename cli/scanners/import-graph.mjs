@@ -8,6 +8,7 @@
  *
  * @implements docguard.code-derived-diagrams#FR-001
  * @implements docguard.code-derived-diagrams#FR-008
+ * @implements docguard.js-import-edges#FR-001
  */
 
 import { createHash } from 'node:crypto';
@@ -15,6 +16,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname } from 'node:path';
 import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { getWorkspaceDirs, languageOf } from '../shared-source.mjs';
+import { astTierAvailable, parseJsTs, walk } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 
@@ -130,6 +132,12 @@ function buildUncached(projectDir, config, allFiles) {
   // as `./lib/x` does (docguard.js-ts-extraction#FR-005).
   const resolveAlias = createAliasResolver(projectDir);
 
+  // Without the parser every JS/TS file is read by the pattern fallback: one
+  // limitation for all of them, as for a missing Python interpreter
+  // (docguard.js-import-edges#FR-008).
+  const parserAvailable = astTierAvailable();
+  let fallbackFiles = 0;
+
   for (const file of codeFiles) {
     const relPath = relative(projectDir, file);
 
@@ -140,8 +148,11 @@ function buildUncached(projectDir, config, allFiles) {
 
     try {
       const content = readFileSync(file, 'utf-8');
-      const imports = extractImports(content);
-      const namesBySpec = importNamesBySpec(content);
+      const { imports, namesBySpec, tier } = readImports(content, file);
+      if (tier === 'regex-fallback') {
+        fallbackFiles++;
+        if (parserAvailable) graph.limitations.push({ code: 'js-parse-failed', file: posixPath(relPath) });
+      }
 
       const resolvedImports = [];
       for (const imp of imports) {
@@ -153,7 +164,7 @@ function buildUncached(projectDir, config, allFiles) {
           if (aliased) resolved = relative(projectDir, aliased);
         }
         if (resolved) {
-          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript', names: namesBySpec.get(imp.spec) || null });
+          graph.edges.push({ from: relPath, to: resolved, dynamic: imp.dynamic, language: 'javascript', tier, names: namesBySpec.get(imp.spec) || null });
           // v0.28 (field report #2): a dynamic `await import()` does NOT create a
           // load-time edge — it's the canonical way to BREAK an import cycle. So
           // it's excluded from the cycle-detection adjacency (fileMap) while still
@@ -169,6 +180,8 @@ function buildUncached(projectDir, config, allFiles) {
       graph.limitations.push({ code: 'source-unreadable', file: posixPath(relPath) });
     }
   }
+
+  if (!parserAvailable && fallbackFiles > 0) graph.limitations.push({ code: 'js-parser-unavailable', files: fallbackFiles });
 
   addPythonImportGraph(projectDir, config || {}, pythonFiles, graph);
 
@@ -295,7 +308,7 @@ function addPythonImportGraph(projectDir, config, pythonFiles, graph) {
       for (const target of selected) {
         const to = posixPath(relative(projectDir, target.file));
         if (to === relPath || resolvedImports.includes(to)) continue;
-        graph.edges.push({ from: relPath, to, dynamic: false, language: 'python', names: pythonImportNames(imp) });
+        graph.edges.push({ from: relPath, to, dynamic: false, language: 'python', tier: 'py-ast', names: pythonImportNames(imp) });
         resolvedImports.push(to);
       }
     }
@@ -304,33 +317,159 @@ function addPythonImportGraph(projectDir, config, pythonFiles, graph) {
 }
 
 /**
- * Extract a file's imports as `{ spec, dynamic }`. `dynamic:true` marks a
- * runtime `import('…')` — which does NOT create a load-time dependency edge and
- * is the canonical way to break an import cycle (field report #2). ES `import …
- * from` and CommonJS `require()` are load-time (static).
+ * A JS/TS file's imports as `{ spec, dynamic }`, the names each specifier
+ * binds, and the tier that read them: the syntax tree when the file parses
+ * (docguard.js-import-edges#FR-001, FR-004), else the text patterns (FR-003).
+ * `dynamic: true` marks a runtime `import('…')` or a type reference, which
+ * creates no load-time edge (field report #2); every other form is static.
+ *
+ * @implements docguard.js-import-edges#FR-001
+ * @implements docguard.js-import-edges#FR-003
+ * @implements docguard.js-import-edges#FR-004
+ * @returns {{imports: {spec: string, dynamic: boolean}[], namesBySpec: Map<string, object>, tier: 'js-ast'|'regex-fallback'}}
  */
-export function extractImports(content) {
+export function readImports(content, filename = 'file.ts') {
+  const parsed = parseJsTs(content, filename);
+  if (parsed.ok) return { ...importsFromSyntaxTree(parsed.ast), tier: 'js-ast' };
+  return { imports: extractImportsFromText(content), namesBySpec: importNamesBySpec(content), tier: 'regex-fallback' };
+}
+
+/**
+ * A file's imports, read as `readImports` reads them. The configured-layer
+ * check uses this so it sees the graph's specifiers
+ * (docguard.js-import-edges#FR-005).
+ *
+ * @implements docguard.js-import-edges#FR-005
+ */
+export function extractImports(content, filename = 'file.ts') {
+  return readImports(content, filename).imports;
+}
+
+const staticSpecifier = node => {
+  if (node?.type === 'StringLiteral') return node.value;
+  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) return node.quasis[0].value.cooked;
+  return null;
+};
+const requireSpecifier = node => (node?.type === 'CallExpression' && node.callee.type === 'Identifier'
+  && node.callee.name === 'require' ? staticSpecifier(node.arguments[0]) : null);
+const JSDOC_IMPORT = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+
+/**
+ * Imports and bound names from a Babel tree. Names come from the same nodes
+ * as the edges; a specifier also reached by a form whose bindings cannot be
+ * listed (`import()`, a `require()` bound to no name, a destructuring with a
+ * rest element or a computed key) is dropped from the map, so its edges carry
+ * `names: null` and ripple stays conservative.
+ */
+function importsFromSyntaxTree(ast) {
   const imports = [];
+  const namesBySpec = new Map();
+  const unknown = new Set();
+  const bound = new Set();
+  const entry = spec => { if (!namesBySpec.has(spec)) namesBySpec.set(spec, emptyNames()); return namesBySpec.get(spec); };
+  const add = (spec, dynamic) => { imports.push({ spec, dynamic }); if (dynamic) unknown.add(spec); };
 
-  // ES module imports (static, load-time). `import\s+` requires whitespace after
-  // `import`, so it never matches a dynamic `import(` call.
-  const esImportRegex = /import\s+(?:.*?\s+from\s+)?['"]([^'"]+)['"]/g;
-  let match;
-  while ((match = esImportRegex.exec(content)) !== null) {
-    imports.push({ spec: match[1], dynamic: false });
+  // `walk` visits a node before its children, so a declarator marks its
+  // `require()` before the call itself is visited.
+  walk(ast.program, node => {
+    switch (node.type) {
+      case 'ImportDeclaration': {
+        const spec = node.source.value;
+        add(spec, false);
+        const into = entry(spec);
+        for (const s of node.specifiers) {
+          if (s.type === 'ImportDefaultSpecifier') into.default = true;
+          else if (s.type === 'ImportNamespaceSpecifier') into.namespace = s.local.name;
+          else {
+            const name = s.imported.type === 'StringLiteral' ? s.imported.value : s.imported.name;
+            if (name === 'default') into.default = true;
+            else into.named.push(name);
+          }
+        }
+        break;
+      }
+      case 'ExportAllDeclaration':
+      case 'ExportNamedDeclaration':
+        if (node.source) { add(node.source.value, false); entry(node.source.value).all = true; }
+        break;
+      case 'TSImportEqualsDeclaration': {
+        const spec = node.moduleReference?.type === 'TSExternalModuleReference' ? staticSpecifier(node.moduleReference.expression) : null;
+        if (spec !== null) { add(spec, false); entry(spec).namespace = node.id.name; }
+        break;
+      }
+      case 'VariableDeclarator': {
+        let call = node.init;
+        let property = null;
+        if (call?.type === 'MemberExpression' && !call.computed && call.property.type === 'Identifier') {
+          property = call.property.name;
+          call = call.object;
+        }
+        const spec = requireSpecifier(call);
+        if (spec === null) break;
+        bound.add(call);
+        const into = entry(spec);
+        const keys = node.id.type === 'ObjectPattern' ? node.id.properties.map(p => (p.type === 'ObjectProperty' && !p.computed
+          ? (p.key.type === 'Identifier' ? p.key.name : p.key.type === 'StringLiteral' ? p.key.value : null) : null)) : [];
+        if (property) into.named.push(property);
+        else if (node.id.type === 'Identifier') into.namespace = node.id.name;
+        else if (node.id.type === 'ObjectPattern' && !keys.includes(null)) into.named.push(...keys);
+        else unknown.add(spec);
+        break;
+      }
+      case 'CallExpression': {
+        const spec = requireSpecifier(node);
+        if (spec !== null) {
+          add(spec, false);
+          if (!bound.has(node)) unknown.add(spec);
+        } else if (node.callee.type === 'Import') {
+          const dyn = staticSpecifier(node.arguments[0]);
+          if (dyn !== null) add(dyn, true);
+        }
+        break;
+      }
+      case 'ImportExpression': {
+        const dyn = staticSpecifier(node.source);
+        if (dyn !== null) add(dyn, true);
+        break;
+      }
+      case 'TSImportType': {
+        const dyn = staticSpecifier(node.argument?.type === 'TSLiteralType' ? node.argument.literal : node.argument);
+        if (dyn !== null) add(dyn, true);
+        break;
+      }
+    }
+  });
+
+  // A JSDoc type reference names a real dependency, as TypeScript's
+  // `import('…')` type does; other comments are not code (FR-001).
+  for (const comment of ast.comments || []) {
+    if (comment.type !== 'CommentBlock' || !comment.value.startsWith('*')) continue;
+    for (const m of comment.value.matchAll(JSDOC_IMPORT)) add(m[1], true);
   }
 
+  for (const spec of unknown) namesBySpec.delete(spec);
+  return { imports, namesBySpec };
+}
+
+/**
+ * The pattern fallback, for a file the parser cannot read
+ * (docguard.js-import-edges#FR-003). An import clause may span lines but
+ * never a `;` or a quote, so a side-effect import cannot swallow the next
+ * statement; `\b` keeps `reimport` from matching. Text in comments and
+ * strings still matches here: only the syntax tree can tell code from text.
+ */
+export function extractImportsFromText(content) {
+  const imports = [];
+  const read = (regex, dynamic) => { for (const m of content.matchAll(regex)) imports.push({ spec: m[1], dynamic }); };
+
+  // ES imports and re-exports (static, load-time). `import\s+` requires
+  // whitespace after `import`, so it never matches a dynamic `import(` call.
+  read(/\bimport\s+(?:[^;'"]*?\s+from\s+)?['"]([^'"]+)['"]/g, false);
+  read(/\bexport\s+(?:type\s+)?(?:\*(?:\s+as\s+[A-Za-z_$][\w$]*)?|\{[^}]*\})\s+from\s+['"]([^'"]+)['"]/g, false);
   // Dynamic imports (runtime — NOT a load-time cycle edge)
-  const dynamicRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-  while ((match = dynamicRegex.exec(content)) !== null) {
-    imports.push({ spec: match[1], dynamic: true });
-  }
-
+  read(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/g, true);
   // CommonJS require (static, load-time)
-  const requireRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-  while ((match = requireRegex.exec(content)) !== null) {
-    imports.push({ spec: match[1], dynamic: false });
-  }
+  read(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/g, false);
 
   return imports;
 }
@@ -401,7 +540,7 @@ export function importNamesBySpec(content) {
   const out = new Map();
   const entry = spec => { if (!out.has(spec)) out.set(spec, emptyNames()); return out.get(spec); };
   const named = (clause, into) => {
-    for (const part of clause.split(',')) {
+    for (const part of clause.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '').split(',')) {
       const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*|'[^']*'|"[^"]*")(?:\s+as\s+[A-Za-z_$][\w$]*)?\s*$/.exec(part);
       if (m) into.named.push(m[1].replace(/^['"]|['"]$/g, ''));
     }

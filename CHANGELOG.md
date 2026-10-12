@@ -274,6 +274,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `canonicalOutcome`. The spec's outcome line and the plan's evidence list use
   that order too, and the bound of 20 counts distinct deviations. Recorded
   outcomes are unchanged: the registry already stored them in this form.
+- **A multi-line import is now an import-graph edge** (`specs/076-js-import-edges`).
+  JS/TS imports were read by one pattern whose clause stopped at the end of a
+  line, so `import {\n  a,\n  b,\n} from './x.mjs'` (Prettier's style for any
+  long import) produced no edge. They are now read from the Babel syntax tree:
+  - import declarations of any shape and length, `import type` included;
+  - re-exports with a source (`export * from`, `export { … } from`), which load
+    their module as an import does and were never read;
+  - `require()` and TypeScript `import x = require()`;
+  - `import()` and TypeScript or JSDoc `import('…')` type references, still
+    dynamic edges outside cycle detection.
+
+  Text that only spells an import, in a string, a template literal or a line
+  comment, is no longer an edge. A file the parser cannot read falls back to a
+  pattern whose clause spans lines but never a statement. The names each edge
+  binds come from the same parse, so a comment inside a multi-line clause no
+  longer drops a name from requirement-anchor ripple.
+  - **What changes for adopters.** Every consumer of the graph sees the new
+    edges: the Architecture validator's cycle (ARC002) and layer checks
+    (ARC001, ARC003), the module diagram, `diff --since` indirect docs, the
+    symbol map ranking and requirement-anchor ripple. A project whose
+    multi-line imports or re-exports close a cycle or cross a declared layer
+    gets that finding for the first time, and a committed module graph that
+    gains an edge reports GST002 until `docguard sync --write` redraws it.
+    ARC findings now carry the `parserTier` of the files they cite. A JS/TS
+    file read by the fallback makes Architecture `partial` (`js-parse-failed`,
+    or `js-parser-unavailable` without `@babel/parser`), and a missing parser
+    also makes the module graph `partial`.
+  - **What changes on DocGuard itself.** On the code at c9934dd the graph
+    gains 61 edges and loses 2: 15 in `cli/`, 29 in `tests/` and 17 re-exports
+    in an agent-context benchmark fixture. In `cli/`, 13 multi-line imports and 2 re-exports become edges, and the 2
+    edges that `cli/feedback-fixture.mjs` drew from the test-file source it
+    writes into a template literal are gone. Guard reports no Architecture
+    finding before or after, and the module-graph section of
+    `docs-canonical/ARCHITECTURE.md` is unchanged.
 
 ## [0.44.3] - 2026-10-11
 
