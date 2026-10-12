@@ -17,7 +17,7 @@
 TODO tracking reports untracked work: a comment where a developer wrote `TODO`, `FIXME`, `HACK`, `XXX`, `TEMP` or `WORKAROUND` as an annotation. It reports two kinds of text that are not annotations.
 
 - **Quoted forms in comments.** A comment that documents the annotation forms, such as a style guide or this validator's own docstring, quotes them in backticks: ``Accepted forms: `TODO: …`, `HACK - …` ``. Each quote is read as an annotation. DocGuard hid this on its own code by skipping the validator's source file, which only works when the CLI running is that same file. Run from npm, the skip points at the installed copy, and the checkout's file is reported.
-- **Keywords inside strings.** The scanner takes everything after the first `//`, `#`, `/*` or `<!--` on a line as a comment, including a marker that sits inside a string. `const url = "https://host/HACK: x"` and `const fixture = '// TODO: …'` are reported. Spec 070 built a string-aware comment reader for requirement tags (its FR-005); TODO tracking does not use it.
+- **Keywords inside strings.** The scanner takes everything after the first `//`, `#`, `/*` or HTML comment opener on a line as a comment, including a marker that sits inside a string. `const url = "https://host/HACK: x"` and `const fixture = '// TODO: …'` are reported. Spec 070 built a string-aware comment reader for requirement tags (its FR-005); TODO tracking does not use it.
 
 Each false finding costs a reader the time to open the file and decide it is not real, and teaches them to skim TDO002.
 
