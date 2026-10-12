@@ -325,6 +325,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     writes into a template literal are gone. Guard reports no Architecture
     finding before or after, and the module-graph section of
     `docs-canonical/ARCHITECTURE.md` is unchanged.
+- **A file is no longer "named" by a longer file name that ends with it**
+  (`specs/075-whole-token-doc-references`). The matcher that `trace --reverse`,
+  `diff --since` / `impact` and the `docguard_docs_for_path` MCP tool share
+  found a file's path or basename anywhere in a doc line, so a doc naming
+  `src/hub.mjs` was reported as describing `src/b.mjs`. `impact` then listed it
+  as directly affected when `src/b.mjs` changed, and as indirectly affected
+  (`via: 'src/b.mjs'`) when anything `src/b.mjs` imports changed.
+  - **Whole tokens.** A path or basename now matches only when no file-name
+    character (ASCII letter or digit, `_`, `-`, `.`, `$`, `+`, `@`) sits
+    against it on either side; a sentence period still ends it. So
+    `test.mjs` is not named by `impact.test.mjs`, `config.js` by
+    `config.json`, or `index.ts` by `index.tsx`. `/`, whitespace, Markdown
+    punctuation and Chinese, Japanese or Thai prose are edges, so
+    `src/b.mjs`, `**b.mjs**`, `[b.mjs](src/b.mjs)`, `b.mjs:12` and
+    `参见b.mjs文件` still match, with the same kind.
+  - **Doc-to-doc blast radius.** A changed `SPEC.md` no longer flags the
+    docs that mention only `TEST-SPEC.md`.
+  - **What changes on DocGuard itself.** Over its 624 tracked code files, 66
+    of 894 doc-line references disappear, each a name inside a longer one
+    (`guard.mjs` in `docguard.mjs`, `git.mjs` in `shared-git.mjs`,
+    `server.js` in `server.json`); none is added. On four other local
+    projects, one of 1,514 disappears, also a name inside a longer one.
+- **The nudge hook, Docs-Sync and Diff-Suspicion name a file only by a whole
+  name** (`specs/077-whole-token-sibling-matchers`). Three matchers that spec
+  075 left out still found a name anywhere in a document.
+  - **Nudge hook.** Editing `src/config.js` no longer nudges the agent about a
+    document that names only `tsconfig.json`. The edited file's basename must
+    appear as a whole file name, by the same rule as `trace --reverse`.
+  - **Docs-Sync (DSY001, DSY002) — adds warnings.** A route or service counts
+    as documented only when a canonical document names its module name (the
+    file name without its extension) as a whole word. `users`, `user-service`
+    and `superuser` no longer document `user.js`, and the word "routes" no
+    longer documents every Next.js `route.ts`. A period is an edge, so
+    `user.getById`, `app.routes.user` and `user.js` still do. On 12 local
+    projects (773 route and service files), 47 warnings become 61. Each new
+    one is a file no document names: 11 Next.js route handlers whose documents
+    say only "API routes", and 3 services named only inside a longer
+    identifier (`exportRetention` in `exportRetentionDays`). After a blank
+    `init --skip-prompts`, a Next.js project now gets DSY001 for each route
+    handler until a document names it; `generate --plan --write` does.
+  - **Diff-Suspicion (DSP001).** A `path` reference is the whole path, so a
+    document naming `othersrc/a.mjs` is no longer paired with a change to
+    `src/a.mjs`.
+  - **What changes on DocGuard itself.** Guard findings are unchanged. The
+    nudge stops firing for 12 tracked code files that documents name only
+    inside a longer file name (`cli/commands/sync.mjs` was matched by
+    `schema-sync.mjs`). Across 41 other local projects, guard findings go
+    from 2,500 to 2,514: the 14 DSY warnings above, and nothing removed.
 
 ## [0.44.3] - 2026-10-11
 

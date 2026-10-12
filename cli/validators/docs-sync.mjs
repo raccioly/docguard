@@ -17,6 +17,7 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
+import { namesModule } from '../scanners/doc-references.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -63,6 +64,18 @@ function isServiceCandidate(file, serviceDir) {
 
   const name = basename(file, extname(file));
   return /(?:^|[-_.])services?$/i.test(name) || /Service$/i.test(name);
+}
+
+/**
+ * A route or service file is documented when a canonical doc names its module
+ * name (the file name without its extension) as a whole word. That covers its
+ * path and file name too, since `/` and `.` are edges: `src/routes/user.js`,
+ * `user.js`, `user` and `user.getById` name `user`; `users` and `user-service`
+ * do not.
+ * @implements docguard.whole-token-sibling-matchers#FR-003
+ */
+function isDocumented(canonicalContent, file) {
+  return namesModule(canonicalContent, basename(file, extname(file)));
 }
 
 function normalizeApiPath(path) {
@@ -155,10 +168,7 @@ export function validateDocsSync(projectDir, config) {
       if (!inScope(relPath)) continue;
 
       total++;
-      const name = basename(file, ext);
-
-      // Check if the file path or name is mentioned in any canonical doc
-      if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
+      if (isDocumented(canonicalContent, file)) {
         passed++;
       } else {
         findings.push(mkFinding({
@@ -188,9 +198,7 @@ export function validateDocsSync(projectDir, config) {
       if (!inScope(relPath)) continue;
 
       total++;
-      const name = basename(file, ext);
-
-      if (canonicalContent.includes(relPath) || canonicalContent.includes(name)) {
+      if (isDocumented(canonicalContent, file)) {
         passed++;
       } else {
         findings.push(mkFinding({

@@ -315,11 +315,11 @@ The test files documented in docs-canonical/TEST-SPEC.md and the test files on d
 
 ### DSY001: Route not referenced in canonical docs
 
-A route file exists but neither its path nor its basename appears in any docs-canonical .md file. Reference the route in a canonical doc (e.g. ARCHITECTURE.md or an API doc) so the documented surface matches the code.
+A route file exists but no docs-canonical .md file names it. Its path, file name or module name (the file name without its extension) must appear as a whole name, so `users` or `user-service` does not document `user`. Reference the route in a canonical doc (e.g. ARCHITECTURE.md or an API doc) so the documented surface matches the code.
 
 ### DSY002: Service not referenced in canonical docs
 
-A service/lib file exists but neither its path nor its basename appears in any docs-canonical .md file. Reference the service in a canonical doc (e.g. ARCHITECTURE.md) so the documented surface matches the code.
+A service/lib file exists but no docs-canonical .md file names it. Its path, file name or module name (the file name without its extension) must appear as a whole name, so `users` or `user-service` does not document `user`. Reference the service in a canonical doc (e.g. ARCHITECTURE.md) so the documented surface matches the code.
 
 ### DSY003: Route file missing from OpenAPI spec
 
