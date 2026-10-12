@@ -5502,6 +5502,11 @@
             "line": 17
           },
           {
+            "requirementId": "FR-006",
+            "file": "tests/route-lexing-kotlin-template.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "FR-007",
             "file": "tests/go-spring-rails-routes.test.mjs",
             "line": 18

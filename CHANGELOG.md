@@ -234,6 +234,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Kotlin routes built from a string template are no longer reported at a
+  guessed path** (`docguard.go-spring-rails-routes` FR-006). `"\\$v"` (a
+  backslash, then the template `$v`) and a raw `"""\$v"""` string (no escapes)
+  were read as literal text; both are now templates, so the route is omitted.
+  An escaped `"\$v"` stays literal. Found by Jules (#566).
+
 - **A tag quoted inside a string is no longer requirement evidence.** The
   implementation-evidence scanner read `// @req FR-012` inside a help string
   (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
