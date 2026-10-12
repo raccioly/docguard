@@ -56,12 +56,45 @@ export function docAnnotationsIn(content) {
   return [...head.matchAll(/(?:\/\/|\/\*+|#|^[ \t]*\*)[ \t]*@doc[ \t]+(\S+\.md)/gm)].map(m => m[1]);
 }
 
-/** How a documentation line names `file`: its path, its basename, or its backticked module name. */
+// Characters that continue a file name. Anything else, including `/` and the
+// Markdown around a name (`**b.mjs**`, `| b.mjs |`, `[b.mjs](…)`), is an edge.
+// ASCII only: Chinese, Japanese and Thai prose put no space before a name.
+const NAME_CHAR = '[A-Za-z0-9_$+@.-]';
+const NAME_CHAR_NOT_DOT = '[A-Za-z0-9_$+@-]';
+
+/**
+ * Does `line` name `name` as a whole token? `b.mjs` is not named by `hub.mjs`,
+ * nor `config.js` by `config.json`. A period ends the token only when no
+ * file-name character follows it, so "see b.mjs." matches and `b.mjs.bak` does not.
+ * @implements docguard.whole-token-doc-references#FR-001
+ */
+export function namesToken(line, name) {
+  if (!line.includes(name)) return false;
+  return new RegExp(`(?<!${NAME_CHAR})${escapeRegex(name)}(?!${NAME_CHAR_NOT_DOT}|\\.${NAME_CHAR_NOT_DOT})`).test(line);
+}
+
+/**
+ * Does `text` name `stem`, a file name without its extension, as a whole word?
+ * `user` is not named by `users`, `user-service` or `superuser`. A period is an
+ * edge on both sides, because documents write a module as `user.getById`,
+ * `app.routes.user` or `user.js`.
+ * @implements docguard.whole-token-sibling-matchers#FR-002
+ */
+export function namesModule(text, stem) {
+  if (!text.includes(stem)) return false;
+  return new RegExp(`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`).test(text);
+}
+
+/**
+ * How a documentation line names `file`: its path, its basename, or its backticked module name.
+ * @implements docguard.whole-token-doc-references#FR-002
+ * @implements docguard.whole-token-doc-references#FR-003
+ */
 export function referenceKind(line, file) {
   const normalized = file.replace(/^\.\//, '');
   const base = basename(normalized);
-  if (line.includes(normalized)) return 'path';
-  if (line.includes(base)) return 'basename';
+  if (namesToken(line, normalized)) return 'path';
+  if (namesToken(line, base)) return 'basename';
   const stem = base.replace(/\.[^.]+$/, '');
   if (new RegExp(`\`${escapeRegex(stem)}\``).test(line)) return 'module';
   return null;

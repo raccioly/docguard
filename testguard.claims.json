@@ -3191,7 +3191,7 @@
           "description": "Basename references are dropped.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/doc-references.mjs",
-          "find": "  if (line.includes(base)) return 'basename';\n",
+          "find": "  if (namesToken(line, base)) return 'basename';\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -8175,6 +8175,198 @@
       ]
     },
     {
+      "id": "DOC-REFERENCES-WHOLE-TOKEN",
+      "statement": "A doc line names a file by path or basename only as a whole file name, with no file-name character (ASCII letter or digit, _, -, ., $, +, @) against it on either side and a sentence period still ending it, in trace --reverse, impact (direct, indirect and --prs), docguard_docs_for_path and impact's doc-to-doc blast radius; every real way of naming a file (a path after /, Markdown wrappers, line suffixes, unspaced CJK prose) keeps matching with its kind.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.whole-token-doc-references#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 075)"
+      },
+      "defendedBy": [
+        "tests/doc-reference-tokens.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A name at the end of a longer file name matches (hub.mjs names b.mjs).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR})${escapeRegex(name)}",
+          "replace": "`${escapeRegex(name)}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A name at the start of a longer file name matches (config.json names config.js).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "(?!${NAME_CHAR_NOT_DOT}|\\\\.${NAME_CHAR_NOT_DOT})`",
+          "replace": "`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A sentence period after a name no longer ends it.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "|\\\\.${NAME_CHAR_NOT_DOT})`",
+          "replace": "|\\\\.)`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A slash counts as part of a file name, so a path after a directory stops matching.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR = '[A-Za-z0-9_$+@.-]';",
+          "replace": "const NAME_CHAR = '[A-Za-z0-9_$+@./-]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A hyphen is an edge, so user-service.ts names service.ts.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR = '[A-Za-z0-9_$+@.-]';",
+          "replace": "const NAME_CHAR = '[A-Za-z0-9_$+@.]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The blast radius matches a changed doc name as a substring (TEST-SPEC.md names SPEC.md).",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/impact.mjs",
+          "find": "if (lines.some(l => namesToken(l, cbase) || wikiRe.test(l)))",
+          "replace": "if (lines.some(l => l.includes(cbase) || wikiRe.test(l)))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "WHOLE-TOKEN-SIBLING-MATCHERS",
+      "statement": "The agent nudge hook, Docs-Sync (DSY001, DSY002) and Diff-Suspicion's path reference count a document as naming a file only by a whole name: the nudge and Diff-Suspicion by the whole file name or path of docguard.whole-token-doc-references#FR-001, Docs-Sync by the module name (file name without extension) as a whole word, where a period is an edge; a name inside a longer name (hub.mjs for b.mjs, tsconfig.json for config.js, users or user-service for user, othersrc/a.mjs for src/a.mjs) is not a reference, and every real way of naming the file (a path, Markdown wrappers, module.member, a dotted module path) still is.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.whole-token-sibling-matchers#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 077)"
+      },
+      "defendedBy": [
+        "tests/whole-token-sibling-matchers.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The nudge hook finds the basename as a substring, so a doc naming hub.mjs nudges an edit of b.mjs.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/hooks.mjs",
+          "find": "if (namesToken(readFileSync(full, 'utf-8'), base)) docs.push(name);",
+          "replace": "if (readFileSync(full, 'utf-8').includes(base)) docs.push(name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Docs-Sync finds the module name as a substring, so users documents user.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "return namesModule(canonicalContent, basename(file, extname(file)));",
+          "replace": "return canonicalContent.includes(basename(file, extname(file)));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Diff-Suspicion finds the path as a substring, so othersrc/a.mjs is a path reference to src/a.mjs.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/diff-suspicion.mjs",
+          "find": "if (namesToken(line, normalized)) return 'path';",
+          "replace": "if (line.includes(normalized)) return 'path';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A module name at the end of a longer name matches (superuser names user).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}",
+          "replace": "`${escapeRegex(stem)}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A module name at the start of a longer name matches (users names user).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`",
+          "replace": "${escapeRegex(stem)}`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A period continues a module name, so user.getById and app.routes.user stop naming user.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`",
+          "replace": "`(?<!${NAME_CHAR})${escapeRegex(stem)}(?!${NAME_CHAR})`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A hyphen is an edge, so user-service names user.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR_NOT_DOT = '[A-Za-z0-9_$+@-]';",
+          "replace": "const NAME_CHAR_NOT_DOT = '[A-Za-z0-9_$+@]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        }
+      ]
+    },
+    {
       "id": "QUOTED-COMMENT-OPENER-HIDES-NOTHING",
       "statement": "The requirement parser and the instruction-pointer reader share one HTML-comment reader: <!-- or --> inside an inline code span (a backtick run closed by a run of the same length) is text, a real comment ends at its first -->, and real single- and multi-line comments still hide what they hold, so a quoted <!-- never drops the requirements or pointers after it.",
       "source": {
@@ -8272,6 +8464,240 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 074)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "JS-IMPORT-EDGES",
+      "statement": "JS/TS imports are read from the Babel syntax tree: import declarations of any shape and length, re-exports with a source, require() and TypeScript import = require() as static edges, import() and TypeScript or JSDoc import() type references as dynamic edges outside cycle adjacency, and nothing from other comments or strings; the names an edge binds come from the same parse, unknown when a form cannot list them; a file the parser cannot read falls back to a pattern whose clause spans lines but never a statement and which reads re-exports; the configured-layer check reads through the same function; every edge records its tier, a fallback read is a graph limitation, a missing parser makes the module diagram partial, and ARC findings carry the tier of the files they cite.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.js-import-edges#FR-001"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 076)"
+      },
+      "defendedBy": [
+        "tests/js-import-edges.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The syntax tree is never used: every file is read by the pattern fallback.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  if (parsed.ok) return { ...importsFromSyntaxTree(parsed.ast), tier: 'js-ast' };",
+          "replace": "  // syntax tree skipped",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Import declarations are not read from the syntax tree.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "        const spec = node.source.value;\n        add(spec, false);",
+          "replace": "        const spec = node.source.value;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Re-exports with a source are not edges.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "        if (node.source) { add(node.source.value, false); entry(node.source.value).all = true; }",
+          "replace": "        // re-exports ignored",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Every comment is read for import() references, not only JSDoc blocks.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "    if (comment.type !== 'CommentBlock' || !comment.value.startsWith('*')) continue;",
+          "replace": "    // every comment read",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "import() is a static edge.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "          const dyn = staticSpecifier(node.arguments[0]);\n          if (dyn !== null) add(dyn, true);",
+          "replace": "          const dyn = staticSpecifier(node.arguments[0]);\n          if (dyn !== null) add(dyn, false);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Dynamic edges enter cycle adjacency.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "          if (!imp.dynamic) resolvedImports.push(resolved);",
+          "replace": "          resolvedImports.push(resolved);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The fallback clause stops at the end of a line (the old pattern).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  read(/\\bimport\\s+(?:[^;'\"]*?\\s+from\\s+)?['\"]([^'\"]+)['\"]/g, false);",
+          "replace": "  read(/\\bimport\\s+(?:.*?\\s+from\\s+)?['\"]([^'\"]+)['\"]/g, false);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The fallback clause crosses statements.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  read(/\\bimport\\s+(?:[^;'\"]*?\\s+from\\s+)?['\"]([^'\"]+)['\"]/g, false);",
+          "replace": "  read(/\\bimport\\s+(?:[\\s\\S]*?\\s+from\\s+)?['\"]([^'\"]+)['\"]/g, false);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "The fallback does not read re-exports.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  read(/\\bexport\\s+(?:type\\s+)?(?:\\*(?:\\s+as\\s+[A-Za-z_$][\\w$]*)?|\\{[^}]*\\})\\s+from\\s+['\"]([^'\"]+)['\"]/g, false);",
+          "replace": "  // re-exports not read",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Names of a form the tree cannot list are kept instead of unknown.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  for (const spec of unknown) namesBySpec.delete(spec);",
+          "replace": "  // unknown names kept",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "At the tree tier, names come from the text reader.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  if (parsed.ok) return { ...importsFromSyntaxTree(parsed.ast), tier: 'js-ast' };",
+          "replace": "  if (parsed.ok) return { ...importsFromSyntaxTree(parsed.ast), namesBySpec: importNamesBySpec(content), tier: 'js-ast' };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "The fallback names reader keeps comments, so a comment drops the next name.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "    for (const part of clause.replace(/\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\//g, '').split(',')) {",
+          "replace": "    for (const part of clause.split(',')) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "The configured-layer check reads imports with the old single-line pattern.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/architecture.mjs",
+          "find": "      const { imports, tier } = readImports(content, file);",
+          "replace": "      const tier = 'js-ast';\n      const imports = [...content.matchAll(/import\\s+(?:.*?\\s+from\\s+)?['\"]([^'\"]+)['\"]/g)].map(m => ({ spec: m[1] }));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "A file that does not parse is not a graph limitation.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "        if (parserAvailable) graph.limitations.push({ code: 'js-parse-failed', file: posixPath(relPath) });",
+          "replace": "        // parse failure not reported",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "A missing parser is not a graph limitation.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "  if (!parserAvailable && fallbackFiles > 0) graph.limitations.push({ code: 'js-parser-unavailable', files: fallbackFiles });",
+          "replace": "  // missing parser not reported",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A missing parser leaves the module diagram complete.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/module-diagram.mjs",
+          "find": "      for (const f of files.filter(f => !f.endsWith('.py'))) partialFiles.set(f, PARTIAL_CODES[item.code]);",
+          "replace": "      // diagram stays complete",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "Edges do not record their tier.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/import-graph.mjs",
+          "find": "language: 'javascript', tier, names:",
+          "replace": "language: 'javascript', names:",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "A cycle finding carries no parser tier.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/architecture.mjs",
+          "find": "      parserTier: summarizeTiers(circle.slice(0, -1).map(file => ({ tier: tierOf.get(file) }))).tier,\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 076)"
           }
         }
       ]

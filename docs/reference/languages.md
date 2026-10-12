@@ -299,7 +299,7 @@ the symbol map.
 
 | Language | How imports are read | Limits |
 |---|---|---|
-| JavaScript, TypeScript | `import ... from`, `require()` and dynamic `import()` by pattern; non-relative specifiers resolved through the nearest `tsconfig.json` or `jsconfig.json` (`paths`, `baseUrl`, `extends` up to 8 levels) | A dynamic `import()` is not a load-time edge. An alias that names no project file adds no edge |
+| JavaScript, TypeScript | The syntax tree (`js-ast`): `import` declarations of any shape and length, `import type` included; re-exports with a source (`export * from`, `export { … } from`); `require()`; TypeScript `import x = require()`; `import()`; TypeScript and JSDoc `import('…')` type references. Without a parser, or for a file that does not parse, a pattern (`regex-fallback`) whose clause may span lines but never a `;` or a quote. Non-relative specifiers resolved through the nearest `tsconfig.json` or `jsconfig.json` (`paths`, `baseUrl`, `extends` up to 8 levels) | `import()` and type references are dynamic edges, outside cycle detection; `import type` is a static edge. An alias that names no project file adds no edge. A fallback read is a limitation (`js-parser-unavailable`, `js-parse-failed`), so Architecture reports `partial`; the module graph is `partial` only when the parser is missing. The pattern also reads imports spelled in comments and strings, and misses a clause that contains a quote |
 | Python | The interpreter's `ast`: regular flat and `src/` packages, explicit relative imports | Needs an interpreter. Dynamic imports, `sys.path` changes, ambiguous modules and parse failures are reported as limitations |
 | Every other language | Not read | The graph names the language and its file count instead of reporting "no imports" |
 

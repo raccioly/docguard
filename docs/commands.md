@@ -914,6 +914,12 @@ too. With a map, `trace --reverse` prints the owner first, labelled `declared`;
 when two entries are equally specific it prints `Owner: none` and names them
 (`ownerReason` and `tie` in JSON).
 
+The text mentions after the owner are each canonical doc line that names the
+file by its path, its basename or its backticked module name (`` `users` ``).
+A path or basename counts only as a whole file name: `src/b.mjs` is not named
+by `hub.mjs` or `b.mjs.bak`, and `config.js` is not named by `config.json`.
+`diff --since` and the `docguard_docs_for_path` MCP tool use the same matcher.
+
 Guard's **Doc-Ownership** validator reports:
 - **OWN001**: an unowned source directory;
 - **OWN002**: two equally specific owners;

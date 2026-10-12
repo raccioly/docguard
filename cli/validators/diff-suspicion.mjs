@@ -26,6 +26,7 @@ import { parseUnifiedDiff, removedTokens, tokenize, tokenOverlap } from '../shar
 import { parseJsTs } from '../scanners/js-ast.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { namesToken } from '../scanners/doc-references.mjs';
 
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
@@ -83,13 +84,16 @@ function indexDocs(projectDir) {
 // (v0.31.0) showed basename refs pair an architecture doc that lists every
 // `page.tsx` with framework-noise tokens (page/components/state/use/nav),
 // producing false positives. path/module refs are intentional and high-signal.
+// The path matches only as a whole file name: `othersrc/a.mjs` does not name
+// `src/a.mjs` (docguard.whole-token-doc-references#FR-001).
+// @implements docguard.whole-token-sibling-matchers#FR-004
 function referenceKind(docLines, file) {
   const normalized = file.replace(/^\.\//, '');
   const base = basename(normalized);
   const stem = base.replace(/\.[^.]+$/, '');
   const stemRe = new RegExp(`\`${escapeRegex(stem)}\``);
   for (const line of docLines) {
-    if (line.includes(normalized)) return 'path';
+    if (namesToken(line, normalized)) return 'path';
     if (stemRe.test(line)) return 'module';
   }
   return null;

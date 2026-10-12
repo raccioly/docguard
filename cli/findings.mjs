@@ -241,13 +241,13 @@ export const CODES = {
   DSY001: {
     validator: 'docsSync',
     title: 'Route not referenced in canonical docs',
-    help: 'A route file exists but neither its path nor its basename appears in any docs-canonical .md file. Reference the route in a canonical doc (e.g. ARCHITECTURE.md or an API doc) so the documented surface matches the code.',
+    help: 'A route file exists but no docs-canonical .md file names it. Its path, file name or module name (the file name without its extension) must appear as a whole name, so `users` or `user-service` does not document `user`. Reference the route in a canonical doc (e.g. ARCHITECTURE.md or an API doc) so the documented surface matches the code.',
     suppress: null,
   },
   DSY002: {
     validator: 'docsSync',
     title: 'Service not referenced in canonical docs',
-    help: 'A service/lib file exists but neither its path nor its basename appears in any docs-canonical .md file. Reference the service in a canonical doc (e.g. ARCHITECTURE.md) so the documented surface matches the code.',
+    help: 'A service/lib file exists but no docs-canonical .md file names it. Its path, file name or module name (the file name without its extension) must appear as a whole name, so `users` or `user-service` does not document `user`. Reference the service in a canonical doc (e.g. ARCHITECTURE.md) so the documented surface matches the code.',
     suppress: null,
   },
   DSY003: {

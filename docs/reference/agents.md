@@ -248,7 +248,10 @@ docguard hooks --claude --remove   # remove
 
 This adds a `PostToolUse` entry to the project's `.claude/settings.json` that
 runs `docguard nudge-hook`. After the agent edits a canonical document it is
-reminded to run guard on the changed files. Only DocGuard's own entry is added
+reminded to run guard on the changed files. After it edits a code file, it is
+pointed to `docguard impact` when a canonical document or a root `AGENTS.md`,
+`CLAUDE.md` or `GEMINI.md` names it as a whole file name: `config.js` is not
+named by `tsconfig.json`. Only DocGuard's own entry is added
 or removed, and a `settings.json` that is not valid JSON is left untouched.
 `init` never installs it.
 

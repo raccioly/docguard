@@ -9,6 +9,7 @@
  * @req docguard.generated-docs-consistency#SC-001
  * @req docguard.generated-docs-consistency#SC-002
  * @req docguard.generated-docs-consistency#SC-003
+ * @req docguard.whole-token-sibling-matchers#FR-006
  */
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -46,8 +47,10 @@ async function cli(dir, args) {
 // is the as-built spec's specs/ directory without a .specify/ beside it.
 const NO_SPEC_KIT = ['SPK001', 'SPK002'];
 // After a blank `init`, the templates are empty forms. Requests to fill them
-// in describe work to do, not a defect in what DocGuard wrote.
-const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', ...NO_SPEC_KIT];
+// in describe work to do, not a defect in what DocGuard wrote. DSY001/DSY002:
+// the templates name no route or service yet; `init` then `--plan --write`
+// names them (specs/077-whole-token-sibling-matchers FR-006).
+const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', 'DSY001', 'DSY002', ...NO_SPEC_KIT];
 
 const FLOWS = {
   generate: { steps: [['generate']], allow: NO_SPEC_KIT, diffClean: true },

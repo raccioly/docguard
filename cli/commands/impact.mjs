@@ -48,7 +48,7 @@ import { c } from '../shared.mjs';
 import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from '../scanners/import-graph.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
-import { findReferences } from '../scanners/doc-references.mjs';
+import { findReferences, namesToken } from '../scanners/doc-references.mjs';
 
 /**
  * File extensions we consider "code" for the purposes of impact analysis.
@@ -69,6 +69,7 @@ function escapeRegex(s) {
  * `](ARCHITECTURE.md)`) or by an extension-less Obsidian wikilink
  * (`[[ARCHITECTURE]]`, `[[ARCHITECTURE#Heading]]`, `[[ARCHITECTURE|alias]]`).
  * Skips self. This is the blast-radius edge set.
+ * @implements docguard.whole-token-doc-references#FR-004
  */
 function docsReferencing(changedDocPath, index) {
   const cbase = basename(changedDocPath);
@@ -77,7 +78,8 @@ function docsReferencing(changedDocPath, index) {
   const dependents = [];
   for (const [docName, lines] of index) {
     if (docName === cbase || docName === changedDocPath) continue; // not self
-    if (lines.some(l => l.includes(cbase) || wikiRe.test(l))) dependents.push(docName);
+    // Whole token: a changed SPEC.md is not named by TEST-SPEC.md.
+    if (lines.some(l => namesToken(l, cbase) || wikiRe.test(l))) dependents.push(docName);
   }
   return dependents;
 }
