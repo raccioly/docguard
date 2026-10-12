@@ -234,6 +234,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A quoted `<!--` no longer hides the rest of a spec**
+  (`docguard.quoted-comment-openers`). A requirement line that quoted an HTML
+  comment opener in backticks, such as ``- **FR-001**: Strip the `<!--`
+  marker``, opened a comment that never closed, so every requirement after it
+  was dropped without a word: traceability under-counted and tags citing them
+  read as citing nothing. Agent instruction files had the same gap for doc
+  pointers. A `<!--` inside an inline code span is now text, and real HTML
+  comments still hide what they hold. No requirement or pointer on this
+  repository changed. Found by the TODO-parsing session (spec 073).
+
 - **Kotlin routes built from a string template are no longer reported at a
   guessed path** (`docguard.go-spring-rails-routes` FR-006). `"\\$v"` (a
   backslash, then the template `$v`) and a raw `"""\$v"""` string (no escapes)

@@ -8968,7 +8968,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/instruction-audit.mjs",
-            "line": 341
+            "line": 342
           },
           {
             "requirementId": "FR-003",
@@ -10135,6 +10135,123 @@
             "requirementId": "SC-004",
             "file": "tests/python-extraction.test.mjs",
             "line": 32
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.quoted-comment-openers",
+      "path": "specs/074-quoted-comment-openers/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "in_progress",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.path-scoped-rules"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.quoted-comment-openers#FR-001",
+          "docguard.quoted-comment-openers#FR-002",
+          "docguard.quoted-comment-openers#FR-003",
+          "docguard.quoted-comment-openers#FR-004",
+          "docguard.quoted-comment-openers#SC-001",
+          "docguard.quoted-comment-openers#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/074-quoted-comment-openers/spec.md",
+            "digest": "sha256:fc77e132223c1519ea5d657c3e6737763c599f14ee99a141382f11a19f45cab3"
+          },
+          {
+            "path": "specs/074-quoted-comment-openers/plan.md",
+            "digest": "sha256:3bff1de730c6c9b10500cf78d2d2759b4964a4a13099a1fb8b95ff6328a185f8"
+          },
+          {
+            "path": "specs/074-quoted-comment-openers/tasks.md",
+            "digest": "sha256:dde6eb301887905c99f9ac937f8af371e388f34804eb8c8be3f08b616472357c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 4,
+          "total": 5
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-requirements.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 12
           }
         ]
       }

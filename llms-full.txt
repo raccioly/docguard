@@ -81,7 +81,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability, and the tech stack (`tech-stack.mjs`: what every ecosystem's manifests and unambiguous source text show, and which absences a manifest proves) | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; whole-document replacements use backups and `--force` cannot grant ownership. `generate --plan --write` goes through `writeOwnedSections`, which skips the backup only for a DocGuard-authored document (generated marker, or an unedited init template) whose every line outside unpinned code-section bodies survives, and never replaces a `source=human` section. Generators and checks share their facts: `collectEnvVars` (env templates plus code reads) in `cli/shared-source.mjs`, and `detectCodeTechnologies` in `cli/scanners/tech-stack.mjs`, which records the file behind each technology: a manifest of any ecosystem, or an unambiguous source-text signal in a product file for the two technologies commonly used without a dependency (specs/061-dogfood-round-2 lists the signals) |
 | **Config** | Configuration loading, schema migration, validator policy, and exact finding-code policy | `cli/` | `config.mjs`, `shared.mjs` |
-| **Shared** | Cross-cutting utilities — ignore/glob filters (with `DEFAULT_IGNORE_DIRS`, and `isIgnoredDirEntry` skipping a `bin/` only beside a .NET project file), Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-trace-patterns.mjs`, `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared-test-cases.mjs` (declared test-case counts for Metrics-Consistency `MET003`), `shared.mjs` |
+| **Shared** | Cross-cutting utilities — ignore/glob filters (with `DEFAULT_IGNORE_DIRS`, and `isIgnoredDirEntry` skipping a `bin/` only beside a .NET project file), Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-html-comments.mjs` (HTML comments in Markdown, line by line, with code spans as text), `shared-trace-patterns.mjs`, `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared-test-cases.mjs` (declared test-case counts for Metrics-Consistency `MET003`), `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **Extension** | Spec Kit extension: AI skills, slash commands, bash scripts and workflow hooks, as declared in `extension.yml` | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
 | **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
@@ -305,7 +305,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 <!-- docguard:section id=requirement-identity source=human covers="cli/shared-requirements.mjs#collectRequirementIdsFromContent, cli/commands/specs.mjs#planSpecCompletion" -->
 Requirement definitions are identified by immutable spec ID plus requirement ID when a spec declares `Spec ID` metadata. Repository-relative path qualifiers remain supported during migration. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one active or retired document. Prefer `@req acme.payments#FR-001`; `@req specs/payments/spec.md#FR-001` remains valid while the spec is active. Path qualifiers use forward slashes and are repository-relative.
 
-Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness. Each definition also carries its whole `block` (a list item with its nested lines, a heading through the next heading, a table row, or a paragraph) so a requirement fingerprint sees every line of it, while `text` stays the declaration line that the TF-IDF test hint and preflight overlap detection read.
+Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Text inside an HTML comment declares nothing; a `<!--` quoted in an inline code span is text, not a comment opener (`shared-html-comments.mjs`, shared with the instruction-pointer reader). Linkage remains evidence of a declaration, not proof of behavioral correctness. Each definition also carries its whole `block` (a list item with its nested lines, a heading through the next heading, a table row, or a paragraph) so a requirement fingerprint sees every line of it, while `text` stays the declaration line that the TF-IDF test hint and preflight overlap detection read.
 
 Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
 <!-- /docguard:section -->
@@ -1627,6 +1627,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Pattern tier against tree-sitter: per-language declaration agreement on `tools/anchor-oracle/corpus` and the anchor fixtures (SC-007) | `tools/anchor-oracle/run.mjs`, `tests/anchor-oracle.test.mjs` (CI job `anchor-oracle`) | ✅ |
 | `docguard:volatile` lines (spec 072): placeholder at the Babel, python-ast, pattern, tree-sitter and file tiers with a control per case, multi-line constructs kept, marker-in-string ignored, ANC011 listed but not in guard; the release version sync keeps the marker and the anchors | `tests/volatile-anchor-lines.test.mjs` (tree-sitter cases in the CI job `anchor-oracle`), `tests/release-version-sync.test.mjs` | ✅ |
 | Anchors documented (every config key, flag, finding) and adopted by this repository (lock, CODEOWNERS, union merge, replay, no ANC006/ANC007) | `tests/requirement-anchors-adoption.test.mjs` | ✅ |
+| `cli/shared-html-comments.mjs`: a `<!--` quoted in a code span opens nothing, for requirement IDs and instruction pointers (spec 074) | `tests/quoted-comment-openers.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
@@ -2098,6 +2099,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A quoted `<!--` no longer hides the rest of a spec**
+  (`docguard.quoted-comment-openers`). A requirement line that quoted an HTML
+  comment opener in backticks, such as ``- **FR-001**: Strip the `<!--`
+  marker``, opened a comment that never closed, so every requirement after it
+  was dropped without a word: traceability under-counted and tags citing them
+  read as citing nothing. Agent instruction files had the same gap for doc
+  pointers. A `<!--` inside an inline code span is now text, and real HTML
+  comments still hide what they hold. No requirement or pointer on this
+  repository changed. Found by the TODO-parsing session (spec 073).
+
 - **Kotlin routes built from a string template are no longer reported at a
   guessed path** (`docguard.go-spring-rails-routes` FR-006). `"\\$v"` (a
   backslash, then the template `$v`) and a raw `"""\$v"""` string (no escapes)
@@ -2252,18 +2263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`specs/067-jules-policy`). `jules-triage.yml` now runs
   `.github/scripts/jules-triage.mjs`, which closes a Jules PR that is empty,
   a duplicate of an open PR (same `[jules:<routine>] <target>` or same
-  files), work declined in the last 60 days, over a five-PR review queue, or
-  off its routine's contract, reading every page of PRs and files. It no
-  longer closes PRs by title keyword, so a new security or performance fix
-  reaches a maintainer, and its comments no longer mention the agent, which
-  in Jules' Reactive Mode is an instruction. Three weekly routines live in
-  `.jules/routines/` (`bug-hunt`, `test-gaps`, `docs-drift`), each started
-  by `.jules/preflight.mjs`, which answers STOP when the queue is full or the
-  routine already has a PR waiting; `.jules/RULES.md` tells them never to
-  ask a question. `.jules/setup.sh` replaces `.jules-setup.sh`: it fails
-  unless the suite and guard pass on the full history, and sets no dummy API
 
-<!-- truncated: 5560 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5570 more lines — read CHANGELOG.md directly -->
 
 ---
 

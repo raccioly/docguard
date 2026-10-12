@@ -10,7 +10,10 @@
  * requirement fingerprint hashes the block, so an edit to its third line is
  * seen (docguard.requirement-anchors#FR-014).
  * @implements docguard.requirement-anchors#FR-014
+ * @implements docguard.quoted-comment-openers#FR-001
  */
+
+import { stripHtmlComments } from './shared-html-comments.mjs';
 
 export const DEFAULT_REQ_PATTERNS = [
   /\b(REQ)-(\d{2,4})\b/g,
@@ -61,15 +64,8 @@ export function collectRequirementIdsFromContent(content, docName, patterns = DE
       continue;
     }
     if (marker) { fence = marker[1]; continue; }
-    line = line.replace(/<!--[\s\S]*?-->/g, '');
-    if (inComment) {
-      const close = line.indexOf('-->');
-      if (close < 0) continue;
-      line = line.slice(close + 3);
-      inComment = false;
-    }
-    const open = line.indexOf('<!--');
-    if (open >= 0) { line = line.slice(0, open); inComment = true; }
+    // `<!--` quoted in a code span opens nothing (docguard.quoted-comment-openers).
+    ({ text: line, inComment } = stripHtmlComments(line, inComment));
     const heading = line.match(/^\s{0,3}(#{1,6})\s+(.*)/);
     if (heading) {
       if (exampleLevel !== null && heading[1].length <= exampleLevel) exampleLevel = null;
