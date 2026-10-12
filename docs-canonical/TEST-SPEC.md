@@ -80,7 +80,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | Packed install adoption journey | `tests/adoption-workflow.test.mjs`, `tests/npm-pack-smoke.test.mjs` | ✅ |
 | `cli/shared-git.mjs`, reconciliation coverage | `tests/shared-git.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
-| `cli/shared-ignore.mjs`, `cli/scanners/instruction-audit.mjs` | `tests/docguardignore.test.mjs`, `tests/instruction-audit.test.mjs` | ✅ |
+| `cli/shared-ignore.mjs`, `cli/scanners/instruction-audit.mjs` | `tests/docguardignore.test.mjs`, `tests/instruction-audit.test.mjs`, `tests/quoted-comment-openers.test.mjs` (pointers after a quoted `<!--`) | ✅ |
 | `cli/shared-validator-surface.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/canonical-sync.mjs` | `tests/metrics-consistency.test.mjs`, `tests/canonical-sync.test.mjs`, `tests/mechanical.test.mjs` | ✅ |
 | `cli/validators/traceability.mjs`, lifecycle trust in `cli/scanners/spec-registry.mjs` | `tests/traceability-lifecycle.test.mjs` | ✅ |
 | Finding-code enforcement and machine writers | `tests/severity.test.mjs`, `tests/sarif.test.mjs`, `tests/junit.test.mjs` | ✅ |
