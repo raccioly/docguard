@@ -43,7 +43,7 @@ export function lexCLike(src, { backtickRaw = false, tripleQuote = false, nested
     out[end - 1] = '"';
     lits.set(start, { value, end });
   };
-  const isTemplate = raw => templates && /(^|[^\\])\$(\{|[A-Za-z_])/.test(raw);
+  const isTemplate = raw => templates && /(?:^|[^\\])(?:\\\\)*\$(\{|[A-Za-z_])/.test(raw);
   let i = 0;
   while (i < n) {
     const c = src[i];
