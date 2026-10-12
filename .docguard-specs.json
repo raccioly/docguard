@@ -11379,11 +11379,11 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:092bdc3916cd373ede3ce890e8ed660f727f1f5bffb4086e83daba756c116c33"
+            "digest": "sha256:5371da8bb3ce8ce6570e8d16a138829683f10aae10c1b2ffefb59401510549d1"
           }
         ],
         "taskCompletion": {
-          "checked": 77,
+          "checked": 79,
           "total": 79
         },
         "implementationEvidence": [

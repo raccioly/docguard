@@ -363,9 +363,9 @@ follow the policy, and completion is not deadlocked.
 ## Phase 13: Polish and completion
 
 - [x] T076 Move every tag in this repository that sits inside a function body or above an unrelated statement (the 15 statement-level tags plus the before-import blocks) to an explicit `{scope=…}`. Accept the moved links with a reason (FR-043)
-- [ ] T077 Run `docguard reconcile --since <base> --format json` and `docguard specs complete --id docguard.requirement-anchors --write --reason "…"` once all PRs have merged
+- [x] T077 Run `docguard reconcile --since <base> --format json` and `docguard specs complete --id docguard.requirement-anchors --write --reason "…"` once all PRs have merged
 - [x] T078 Run `/speckit-analyze` for cross-artifact consistency before PR 1 opens, and again before T077
-- [ ] T079 Before any release that contains spec 070, complete every item of the release gate in `checklists/remediation.md`, and record its results for the exact commit being released. These include the A/B runs against the base release on this repository and on the Guard-family repositories. Keep the finding table there current as each PR merges (C1–C2, H1–H2, M1–M5, L1–L5)
+- [x] T079 Before any release that contains spec 070, complete every item of the release gate in `checklists/remediation.md`, and record its results for the exact commit being released. These include the A/B runs against the base release on this repository and on the Guard-family repositories. Keep the finding table there current as each PR merges (C1–C2, H1–H2, M1–M5, L1–L5)
 
 ## Dependencies and order
 
