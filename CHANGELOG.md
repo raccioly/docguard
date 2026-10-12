@@ -296,6 +296,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (`guard.mjs` in `docguard.mjs`, `git.mjs` in `shared-git.mjs`,
     `server.js` in `server.json`); none is added. On four other local
     projects, one of 1,514 disappears, also a name inside a longer one.
+- **The nudge hook, Docs-Sync and Diff-Suspicion name a file only by a whole
+  name** (`specs/077-whole-token-sibling-matchers`). Three matchers that spec
+  075 left out still found a name anywhere in a document.
+  - **Nudge hook.** Editing `src/config.js` no longer nudges the agent about a
+    document that names only `tsconfig.json`. The edited file's basename must
+    appear as a whole file name, by the same rule as `trace --reverse`.
+  - **Docs-Sync (DSY001, DSY002) — adds warnings.** A route or service counts
+    as documented only when a canonical document names its module name (the
+    file name without its extension) as a whole word. `users`, `user-service`
+    and `superuser` no longer document `user.js`, and the word "routes" no
+    longer documents every Next.js `route.ts`. A period is an edge, so
+    `user.getById`, `app.routes.user` and `user.js` still do. On 12 local
+    projects (773 route and service files), 47 warnings become 61. Each new
+    one is a file no document names: 11 Next.js route handlers whose documents
+    say only "API routes", and 3 services named only inside a longer
+    identifier (`exportRetention` in `exportRetentionDays`). After a blank
+    `init --skip-prompts`, a Next.js project now gets DSY001 for each route
+    handler until a document names it; `generate --plan --write` does.
+  - **Diff-Suspicion (DSP001).** A `path` reference is the whole path, so a
+    document naming `othersrc/a.mjs` is no longer paired with a change to
+    `src/a.mjs`.
+  - **What changes on DocGuard itself.** Guard findings are unchanged. The
+    nudge stops firing for 12 tracked code files that documents name only
+    inside a longer file name (`cli/commands/sync.mjs` was matched by
+    `schema-sync.mjs`). Across 41 other local projects, guard findings go
+    from 2,500 to 2,514: the 14 DSY warnings above, and nothing removed.
 
 ## [0.44.3] - 2026-10-11
 

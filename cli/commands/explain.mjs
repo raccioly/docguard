@@ -53,7 +53,7 @@ const EXPLAINERS = {
   },
   docsSync: {
     title: 'Docs-Sync — code files are referenced in canonical docs',
-    what: 'Walks route/service files in your source tree. For each, checks that the file path or basename appears in any canonical doc.',
+    what: 'Walks route/service files in your source tree. For each, checks that a canonical doc names its path, file name or module name (the file name without its extension) as a whole name: `users` or `user-service` does not document `user`.',
     why:  'Code that exists but isn\'t mentioned in any doc is invisible to future contributors and AI agents.',
     triggers: [
       ['not referenced in any canonical doc', 'A route or service file has no mention anywhere in docs-canonical/. Add a one-line reference (path or filename) to ARCHITECTURE.md or DATA-MODEL.md.'],

@@ -74,6 +74,18 @@ export function namesToken(line, name) {
 }
 
 /**
+ * Does `text` name `stem`, a file name without its extension, as a whole word?
+ * `user` is not named by `users`, `user-service` or `superuser`. A period is an
+ * edge on both sides, because documents write a module as `user.getById`,
+ * `app.routes.user` or `user.js`.
+ * @implements docguard.whole-token-sibling-matchers#FR-002
+ */
+export function namesModule(text, stem) {
+  if (!text.includes(stem)) return false;
+  return new RegExp(`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`).test(text);
+}
+
+/**
  * How a documentation line names `file`: its path, its basename, or its backticked module name.
  * @implements docguard.whole-token-doc-references#FR-002
  * @implements docguard.whole-token-doc-references#FR-003

@@ -5638,7 +5638,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/hooks.mjs",
-            "line": 341
+            "line": 342
           },
           {
             "requirementId": "FR-001",
@@ -15115,12 +15115,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 78
+            "line": 90
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 79
+            "line": 91
           },
           {
             "requirementId": "FR-004",
@@ -15168,6 +15168,137 @@
             "requirementId": "SC-002",
             "file": "tests/doc-reference-tokens.test.mjs",
             "line": 12
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.whole-token-sibling-matchers",
+      "path": "specs/077-whole-token-sibling-matchers/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.whole-token-doc-references"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.whole-token-sibling-matchers#FR-001",
+          "docguard.whole-token-sibling-matchers#FR-002",
+          "docguard.whole-token-sibling-matchers#FR-003",
+          "docguard.whole-token-sibling-matchers#FR-004",
+          "docguard.whole-token-sibling-matchers#FR-005",
+          "docguard.whole-token-sibling-matchers#FR-006",
+          "docguard.whole-token-sibling-matchers#SC-001",
+          "docguard.whole-token-sibling-matchers#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/077-whole-token-sibling-matchers/spec.md",
+            "digest": "sha256:2d172c82b02fb5f5cd5c3053c42a770f5c004ddcedc39cb2ccd51f1017b7ac0d"
+          },
+          {
+            "path": "specs/077-whole-token-sibling-matchers/plan.md",
+            "digest": "sha256:a8fcfd47d5140fc1b1cca0bb4b8f8c74e5e60fb355e5feab82a9176271c58e21"
+          },
+          {
+            "path": "specs/077-whole-token-sibling-matchers/tasks.md",
+            "digest": "sha256:cc911467c075e52181afbedd14a25e37c7465eaf401d268991e32332729461ec"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 10,
+          "total": 10
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/hooks.mjs",
+            "line": 680
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 81
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 75
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/diff-suspicion.mjs",
+            "line": 89
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/generated-docs-e2e.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/whole-token-sibling-matchers.test.mjs",
+            "line": 13
           }
         ]
       }

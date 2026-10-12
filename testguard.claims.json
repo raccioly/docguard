@@ -8125,6 +8125,108 @@
           }
         }
       ]
+    },
+    {
+      "id": "WHOLE-TOKEN-SIBLING-MATCHERS",
+      "statement": "The agent nudge hook, Docs-Sync (DSY001, DSY002) and Diff-Suspicion's path reference count a document as naming a file only by a whole name: the nudge and Diff-Suspicion by the whole file name or path of docguard.whole-token-doc-references#FR-001, Docs-Sync by the module name (file name without extension) as a whole word, where a period is an edge; a name inside a longer name (hub.mjs for b.mjs, tsconfig.json for config.js, users or user-service for user, othersrc/a.mjs for src/a.mjs) is not a reference, and every real way of naming the file (a path, Markdown wrappers, module.member, a dotted module path) still is.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.whole-token-sibling-matchers#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 077)"
+      },
+      "defendedBy": [
+        "tests/whole-token-sibling-matchers.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The nudge hook finds the basename as a substring, so a doc naming hub.mjs nudges an edit of b.mjs.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/hooks.mjs",
+          "find": "if (namesToken(readFileSync(full, 'utf-8'), base)) docs.push(name);",
+          "replace": "if (readFileSync(full, 'utf-8').includes(base)) docs.push(name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Docs-Sync finds the module name as a substring, so users documents user.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-sync.mjs",
+          "find": "return namesModule(canonicalContent, basename(file, extname(file)));",
+          "replace": "return canonicalContent.includes(basename(file, extname(file)));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Diff-Suspicion finds the path as a substring, so othersrc/a.mjs is a path reference to src/a.mjs.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/diff-suspicion.mjs",
+          "find": "if (namesToken(line, normalized)) return 'path';",
+          "replace": "if (line.includes(normalized)) return 'path';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A module name at the end of a longer name matches (superuser names user).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}",
+          "replace": "`${escapeRegex(stem)}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A module name at the start of a longer name matches (users names user).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`",
+          "replace": "${escapeRegex(stem)}`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A period continues a module name, so user.getById and app.routes.user stop naming user.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR_NOT_DOT})${escapeRegex(stem)}(?!${NAME_CHAR_NOT_DOT})`",
+          "replace": "`(?<!${NAME_CHAR})${escapeRegex(stem)}(?!${NAME_CHAR})`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "A hyphen is an edge, so user-service names user.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR_NOT_DOT = '[A-Za-z0-9_$+@-]';",
+          "replace": "const NAME_CHAR_NOT_DOT = '[A-Za-z0-9_$+@]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 077)"
+          }
+        }
+      ]
     }
   ]
 }

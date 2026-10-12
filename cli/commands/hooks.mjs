@@ -135,6 +135,7 @@ import { safeWrite } from '../writers/generate-io.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { resolveHooksTarget } from '../shared-git.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { namesToken } from '../scanners/doc-references.mjs';
 
 // Git enforcement is offline and fail-closed; agent nudges stay best-effort.
 const ENFORCEMENT_RUNTIME = `
@@ -673,12 +674,16 @@ export function runNudgeHook(projectDir) {
   }
 }
 
-/** Which canonical/agent docs mention this basename? Cheap line scan. */
+/**
+ * Which canonical/agent docs name this basename as a whole file name? A doc
+ * naming `hub.mjs` does not name `b.mjs`.
+ * @implements docguard.whole-token-sibling-matchers#FR-001
+ */
 function docsReferencingFile(projectDir, base) {
   const docs = [];
   const check = (name, full) => {
     try {
-      if (readFileSync(full, 'utf-8').includes(base)) docs.push(name);
+      if (namesToken(readFileSync(full, 'utf-8'), base)) docs.push(name);
     } catch { /* unreadable */ }
   };
   // Recursive — a nested doc mentioning the edited file must still trigger
