@@ -26,7 +26,7 @@ import { tmpdir } from 'node:os';
 import { computeAnchorStatus, computeLinks } from '../cli/scanners/anchors.mjs';
 import { declarationTokens } from '../cli/scanners/ts-decls.mjs';
 import { floorTokens, lex } from '../cli/scanners/pattern-lexer.mjs';
-import { pythonRuns } from '../cli/scanners/py-anchors.mjs';
+import { pythonVersion } from '../cli/scanners/py-anchors.mjs';
 import { treeSitterManifest } from '../cli/scanners/ts-anchors.mjs';
 import { validateRequirementAnchors } from '../cli/validators/requirement-anchors.mjs';
 import { CODES } from '../cli/findings.mjs';
@@ -67,7 +67,7 @@ const CASES = [
     src: ({ v, mark, other }) => `// header\nexport const LIMIT = 3;\n\n// @implements acme.v#FR-001\nexport function build() {\n  const version = '${v}';${mark ? ' // docguard:volatile' : ''}\n  return { version, limit: LIMIT${other ? ' + 1' : ''} };\n}\n`,
   },
   {
-    name: 'python-ast', rel: 'src/build.py', tier: /^python-ast@/, skip: !pythonRuns() && 'python3 is not available',
+    name: 'python-ast', rel: 'src/build.py', tier: /^python-ast@/, skip: !pythonVersion() && 'python3 is not available',
     src: ({ v, mark, other }) => `LIMIT = 3\n\n\n# @implements acme.v#FR-001\ndef build():\n    version = "${v}"${mark ? '  # docguard:volatile' : ''}\n    return {"version": version, "limit": LIMIT${other ? ' + 1' : ''}}\n`,
   },
   {
@@ -184,10 +184,14 @@ describe('what marks a line (FR-001)', () => {
     assert.notEqual(link('a.yml', srcSameLine('2.0.0')).exact, link('a.yml', srcSameLine('1.0.0')).exact);
   });
 
-  it('only the whole word counts: docguard:volatility marks nothing', () => {
-    const src = v => `# @implements acme.v#FR-001\nversion: "${v}" # docguard:volatility\n`;
-    assert.notEqual(link('b.yml', src('2.0.0')).exact, link('b.yml', src('1.0.0')).exact);
-  });
+  // Each of these contains the text `docguard:volatile`, so it passes the fast
+  // path and reaches the whole-word check.
+  for (const near of ['docguard:volatiles', 'docguard:volatile-ish', 'not-docguard:volatile', 'xdocguard:volatile']) {
+    it(`only the whole word counts: ${near} marks nothing`, () => {
+      const src = v => `# @implements acme.v#FR-001\nversion: "${v}" # ${near}\n`;
+      assert.notEqual(link('b.yml', src('2.0.0')).exact, link('b.yml', src('1.0.0')).exact);
+    });
+  }
 
   it('a block comment marks the line it starts on', () => {
     const src = v => `// header\nexport const N = 1;\n\n// @implements acme.v#FR-001\nexport function build() {\n  const version = '${v}'; /* docguard:volatile\n  release-managed */\n  return version;\n}\n`;

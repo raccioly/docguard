@@ -2938,8 +2938,8 @@
           "description": "The floor follows the tree-sitter fingerprint, so it differs between machines.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/anchor-tags.mjs",
-          "find": "          floor: floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
-          "replace": "          floor: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end), confidence: ts ? 'high' : confidence,",
+          "find": "          floor: floorFingerprint(lexed, sym.start, sym.end, volatile), confidence: ts ? 'high' : confidence,",
+          "replace": "          floor: ts ? ts.fp : floorFingerprint(lexed, sym.start, sym.end, volatile), confidence: ts ? 'high' : confidence,",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 10)"
