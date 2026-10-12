@@ -5825,22 +5825,22 @@
           {
             "requirementId": "FR-002",
             "file": "tests/todo-tracking.test.mjs",
-            "line": 203
+            "line": 206
           },
           {
             "requirementId": "FR-003",
             "file": "tests/todo-tracking.test.mjs",
-            "line": 204
+            "line": 207
           },
           {
             "requirementId": "FR-004",
             "file": "tests/todo-tracking.test.mjs",
-            "line": 205
+            "line": 208
           },
           {
             "requirementId": "FR-005",
             "file": "tests/todo-tracking.test.mjs",
-            "line": 206
+            "line": 209
           },
           {
             "requirementId": "SC-001",
@@ -5855,7 +5855,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/todo-tracking.test.mjs",
-            "line": 207
+            "line": 210
           }
         ]
       }
@@ -13951,6 +13951,178 @@
             "requirementId": "SC-003",
             "file": "tests/test-git-hermeticity.test.mjs",
             "line": 23
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.todo-quoted-forms",
+      "path": "specs/073-todo-quoted-forms/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.todo-quoted-forms#FR-001",
+          "docguard.todo-quoted-forms#FR-002",
+          "docguard.todo-quoted-forms#FR-003",
+          "docguard.todo-quoted-forms#FR-004",
+          "docguard.todo-quoted-forms#FR-005",
+          "docguard.todo-quoted-forms#FR-006",
+          "docguard.todo-quoted-forms#FR-007",
+          "docguard.todo-quoted-forms#SC-001",
+          "docguard.todo-quoted-forms#SC-002",
+          "docguard.todo-quoted-forms#SC-003",
+          "docguard.todo-quoted-forms#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/073-todo-quoted-forms/spec.md",
+            "digest": "sha256:35caa8b81d7209d112c8207d5caac71a4a38ae97b95cea54173536c5722e0ffe"
+          },
+          {
+            "path": "specs/073-todo-quoted-forms/plan.md",
+            "digest": "sha256:48d39fd62ff32f1aebbb9ab29bd0b6b068ca14db25d435eac0af2050db1c1841"
+          },
+          {
+            "path": "specs/073-todo-quoted-forms/tasks.md",
+            "digest": "sha256:3e34797c967cb02002d37caa1e3b13f0089900197b62c4b1ea543b9f3c48f2f7"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 13
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/todo-tracking.mjs",
+            "line": 25
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 294
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 306
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 318
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 332
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 344
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 351
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 374
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 357
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 388
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 396
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 307
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 411
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 271
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 406
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/todo-tracking.test.mjs",
+            "line": 272
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/benchmark-runner.test.mjs",
+            "line": 75
           }
         ]
       }

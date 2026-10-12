@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
+import { CODES } from '../cli/findings.mjs';
+import { loadConfig } from '../cli/config.mjs';
 
 describe('Todo-Tracking Validator', () => {
   let tmpDir;
@@ -263,7 +265,11 @@ describe('Todo-Tracking Validator', () => {
 
 // ── docguard.todo-quoted-forms (spec 073): a keyword quoted in backticks or
 // held in a string is not an annotation, and the result does not depend on
-// where DocGuard is installed.
+// where DocGuard is installed. Each acceptance scenario has a case here; the
+// spec 019 cases above run unchanged, and the real-annotation cases below are
+// the unit-scale half of the cross-repository A/B.
+// @req docguard.todo-quoted-forms#SC-001
+// @req docguard.todo-quoted-forms#SC-003
 describe('Todo-Tracking — quoted forms are not annotations (spec 073)', () => {
   const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   const VALIDATOR = 'cli/validators/todo-tracking.mjs';
@@ -394,5 +400,16 @@ describe('Todo-Tracking — quoted forms are not annotations (spec 073)', () => 
     assert.deepEqual(locations(inPlace), locations(tdo002()));
     // The only way a module can recognise its own file is its own URL.
     assert.doesNotMatch(readFileSync(join(ROOT, VALIDATOR), 'utf8'), /import\.meta\.url|fileURLToPath|__filename/);
+  });
+
+  // The two TDO002 that 0.44.3 reported here, run from npm, were quotations.
+  // @req docguard.todo-quoted-forms#SC-002
+  it("reports no TDO002 on this repository's own tree, the validator included", () => {
+    assert.deepEqual(tdo002(ROOT, loadConfig(ROOT)).map(f => f.message), []);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-007
+  it('says in the TDO002 help that quotations are not annotations', () => {
+    assert.match(CODES.TDO002.help, /Only real comments count: a keyword inside a string, or quoted in backticks within a comment, is a quotation/);
   });
 });
