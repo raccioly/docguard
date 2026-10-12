@@ -43,7 +43,11 @@ export function lexCLike(src, { backtickRaw = false, tripleQuote = false, nested
     out[end - 1] = '"';
     lits.set(start, { value, end });
   };
-  const isTemplate = raw => templates && /(^|[^\\])\$(\{|[A-Za-z_])/.test(raw);
+  // Kotlin: in a "…" string an odd run of backslashes escapes `$`, an even run
+  // does not (Kotlin `"\\$v"` is a backslash, then the template `$v`). A raw
+  // """…""" string has no escapes, so any `$name` or `${` there is a template.
+  const isTemplate = (raw, escapes = true) => templates
+    && (escapes ? /(?:^|[^\\])(?:\\\\)*\$(?:\{|[A-Za-z_])/ : /\$(?:\{|[A-Za-z_])/).test(raw);
   let i = 0;
   while (i < n) {
     const c = src[i];
@@ -71,7 +75,7 @@ export function lexCLike(src, { backtickRaw = false, tripleQuote = false, nested
       const close = src.indexOf('"""', i + 3);
       const end = close < 0 ? n : close + 3;
       const raw = src.slice(i + 3, close < 0 ? n : close);
-      literal(i, end, isTemplate(raw) ? null : raw);
+      literal(i, end, isTemplate(raw, false) ? null : raw);
       i = end;
       continue;
     }

@@ -2098,6 +2098,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Kotlin routes built from a string template are no longer reported at a
+  guessed path** (`docguard.go-spring-rails-routes` FR-006). `"\\$v"` (a
+  backslash, then the template `$v`) and a raw `"""\$v"""` string (no escapes)
+  were read as literal text; both are now templates, so the route is omitted.
+  An escaped `"\$v"` stays literal. Found by Jules (#566).
+
 - **A tag quoted inside a string is no longer requirement evidence.** The
   implementation-evidence scanner read `// @req FR-012` inside a help string
   (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
@@ -2256,14 +2262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routine already has a PR waiting; `.jules/RULES.md` tells them never to
   ask a question. `.jules/setup.sh` replaces `.jules-setup.sh`: it fails
   unless the suite and guard pass on the full history, and sets no dummy API
-  keys. The Sentinel, Bolt and Palette notes in `.jules/` are retired.
-### Fixed
 
-- **The test suite no longer depends on the machine's git config**
-  (`specs/066-test-git-hermeticity`). Under a global config with failing
-  hooks, mandatory signing through a failing gpg and `init.defaultBranch=trunk`
-
-<!-- truncated: 5554 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5560 more lines — read CHANGELOG.md directly -->
 
 ---
 
