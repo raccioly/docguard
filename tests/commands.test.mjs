@@ -936,6 +936,8 @@ describe('getTestFilesFromPatterns', () => {
   });
 });
 
+// @req docguard.watch-deterministic#FR-004
+// @req docguard.watch-deterministic#SC-003
 describe('docguard watch', () => {
   // v0.29 flake fix: these two spawn tests polled with a FIXED 2s cap
   // (20×100ms) — a hair-trigger race against CLI startup (init + spawn +
@@ -1005,7 +1007,9 @@ describe('docguard watch', () => {
       // Test file change
       writeFileSync(join(tmpDir, 'src', 'index.js'), 'console.log("world");');
 
-      await waitFor(() => output.includes('Changed:') && output.includes('index.js'));
+      // Wait on the pattern asserted below: two separate substrings could both
+      // be present before they are on one line (docguard.watch-deterministic#FR-004).
+      await waitFor(() => /Changed: .*index\.js/.test(output));
 
       // Ensure it detected our modification
       assert.match(output, /Changed: .*index\.js/);
@@ -1034,7 +1038,9 @@ describe('docguard watch', () => {
         output += data.toString();
       });
 
-      await waitFor(() => output.includes('Auto-fix prompts'));
+      // The prompts arrive in a later stdout chunk than their header: wait for the
+      // last line asserted, or the assertions race the stream.
+      await waitFor(() => output.includes('docguard fix --doc'));
 
       assert.match(output, /Mode: auto-fix/);
       assert.match(output, /Auto-fix prompts:/);

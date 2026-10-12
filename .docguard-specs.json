@@ -8968,7 +8968,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/instruction-audit.mjs",
-            "line": 341
+            "line": 342
           },
           {
             "requirementId": "FR-003",
@@ -10135,6 +10135,123 @@
             "requirementId": "SC-004",
             "file": "tests/python-extraction.test.mjs",
             "line": 32
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.quoted-comment-openers",
+      "path": "specs/074-quoted-comment-openers/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.path-scoped-rules"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.quoted-comment-openers#FR-001",
+          "docguard.quoted-comment-openers#FR-002",
+          "docguard.quoted-comment-openers#FR-003",
+          "docguard.quoted-comment-openers#FR-004",
+          "docguard.quoted-comment-openers#SC-001",
+          "docguard.quoted-comment-openers#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/074-quoted-comment-openers/spec.md",
+            "digest": "sha256:fc77e132223c1519ea5d657c3e6737763c599f14ee99a141382f11a19f45cab3"
+          },
+          {
+            "path": "specs/074-quoted-comment-openers/plan.md",
+            "digest": "sha256:3bff1de730c6c9b10500cf78d2d2759b4964a4a13099a1fb8b95ff6328a185f8"
+          },
+          {
+            "path": "specs/074-quoted-comment-openers/tasks.md",
+            "digest": "sha256:fa3dd0bcb26e692b077cfe52792512ad6bce0916fcfbefb7f6688ea6a1efe711"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 5,
+          "total": 5
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-requirements.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-html-comments.mjs",
+            "line": 9
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/quoted-comment-openers.test.mjs",
+            "line": 12
           }
         ]
       }
@@ -14985,15 +15102,17 @@
           "docguard.watch-deterministic#FR-001",
           "docguard.watch-deterministic#FR-002",
           "docguard.watch-deterministic#FR-003",
+          "docguard.watch-deterministic#FR-004",
           "docguard.watch-deterministic#SC-001",
-          "docguard.watch-deterministic#SC-002"
+          "docguard.watch-deterministic#SC-002",
+          "docguard.watch-deterministic#SC-003"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/055-watch-deterministic/spec.md",
-            "digest": "sha256:d6f5e2cf874d3f84a498f2277f3847e4cfc9d7db4e4ea2c586f38fe1c8de97ee"
+            "digest": "sha256:0e0e012e72758b73d6186740d931d9daf40dd9f10d1b68d3004fd87627c43f2d"
           },
           {
             "path": "specs/055-watch-deterministic/plan.md",
@@ -15001,12 +15120,12 @@
           },
           {
             "path": "specs/055-watch-deterministic/tasks.md",
-            "digest": "sha256:bb9bd866d9e069115c35e87ccd5384c1cd4b1fb0082155253402ef9fd84c4190"
+            "digest": "sha256:b67e147bea0e441ed22556994ed5d84a1b23491bd3af009cf42e472507d13a5a"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
-          "total": 5
+          "checked": 6,
+          "total": 6
         },
         "implementationEvidence": [
           {
@@ -15032,6 +15151,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-004",
+            "file": "tests/commands.test.mjs",
+            "line": 939
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/watch-reliability.test.mjs",
             "line": 12
@@ -15040,6 +15164,11 @@
             "requirementId": "SC-002",
             "file": "tests/watch-reliability.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/commands.test.mjs",
+            "line": 940
           }
         ]
       }
