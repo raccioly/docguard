@@ -8790,7 +8790,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 290
+            "line": 294
           },
           {
             "requirementId": "FR-004",
@@ -11059,7 +11059,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:c18d421141f79bd20dc72b4c37cc50401a208c93d8b3117fd748bed88be38591"
+            "digest": "sha256:6e6630eea51022aaeb40d39aa35ecc1a4079a41efa9993aeca0fa183b31101d2"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
@@ -12210,7 +12210,7 @@
           {
             "requirementId": "FR-040",
             "file": ".github/workflows/ci.yml",
-            "line": 335
+            "line": 339
           },
           {
             "requirementId": "FR-040",
@@ -12235,7 +12235,7 @@
           {
             "requirementId": "SC-003",
             "file": ".github/workflows/ci.yml",
-            "line": 291
+            "line": 295
           }
         ],
         "testEvidence": [
@@ -14242,7 +14242,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
-            "line": 206
+            "line": 210
           }
         ],
         "testEvidence": [

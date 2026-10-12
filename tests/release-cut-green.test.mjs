@@ -141,10 +141,15 @@ describe('the CI runtime budget keeps headroom and still catches a runaway (FR-0
     const budgets = [...ci.matchAll(/TEST_BUDGET_MS: (\d+)/g)].map(m => Number(m[1]));
     assert.equal(budgets.length, 1, 'one runtime budget');
     const [budget] = budgets;
-    const slowestNormal = 241_500; // Node 18, #510, every test passing
+    // Measured 2026-10-12 over 25 CI runs (Node 18-24) of the 0.45.0 batch.
+    // Runner noise now spans 193-369s, so a 1.4x margin over the slowest run
+    // and the +165s trip on a typical run can no longer both hold; tripping
+    // the regression is the budget's purpose, so the margin is 1.25x.
+    const slowestNormal = 368_700; // Node 18, #574, every test passing
+    const typicalRun = 305_000; // median of the runs
     const pr328Regression = 165_000;
-    assert.ok(budget >= slowestNormal * 1.4, `budget ${budget} leaves headroom over ${slowestNormal}`);
-    assert.ok(budget < 235_000 + pr328Regression, `budget ${budget} still trips the PR #328 class`);
+    assert.ok(budget >= slowestNormal * 1.25, `budget ${budget} leaves headroom over ${slowestNormal}`);
+    assert.ok(budget < typicalRun + pr328Regression, `budget ${budget} still trips the PR #328 class`);
   });
 });
 

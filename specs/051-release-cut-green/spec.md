@@ -40,6 +40,7 @@ The cut moves `[Unreleased]` under the new version, synchronizes release surface
 - **FR-005**: `ensureSkills` MUST reject a missing `surface` argument with an error, instead of swallowing the resulting failure.
 - **FR-006**: The release commit MUST stage, and the release-candidate policy MUST admit, every path the synchronization rewrites. That includes `commands/docguard.*.md` (pinned since spec 048 but never staged) and both `.agent/` mirrors.
 - **FR-007**: The CI test runtime budget MUST stay above normal runs, with room for runner noise, and MUST still trip on a PR #328-class regression (+165s). This PR's Node 18 run failed at 241.5s against 240s with every test passing; normal runs are now 211–241s. The budget becomes 360s, and the measurements are recorded beside it.
+  *Maintenance (2026-10-12):* the 0.45.0 batch (specs 070–078) put normal runs at 193–369s (median 305s over 25 runs); #574 failed on Node 18 at 368.7s with every test passing. The budget becomes 465s: 1.26× the slowest normal run, and the PR #328 class on a typical run (470s) still trips it. With noise this wide, the margin over the slowest run drops from 1.4× to 1.25× so the regression check can hold.
 
 - **FR-008** (amendment, 2026-10-10): A test MUST fail on every pull request, not only on the release commit, when it reads the repository CHANGELOG through `[Unreleased]` alone. The first v0.44.0 cut failed on two such tests added after this spec.
 
