@@ -462,6 +462,132 @@
       ]
     },
     {
+      "id": "TODO-QUOTED-FORMS",
+      "statement": "A TODO-family keyword quoted in an inline code span of a comment line, or held in a string, template or regex, is never a TDO002 annotation; a code span closes only on a run of exactly as many backticks on the same line; a real annotation is the first keyword outside spans, reported with its original text and at its own line of a block comment; files in languages without a comment reader are scanned by line; and DocGuard's own source is scanned like any file.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.todo-quoted-forms#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 073)"
+      },
+      "defendedBy": [
+        "tests/todo-tracking.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Code spans are not masked, so quoted forms are annotations.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "const maskCodeSpans = text => text.replace(CODE_SPAN, span => QUOTED.repeat(span.length));",
+          "replace": "const maskCodeSpans = text => text;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Spans are blanked with spaces, so an annotation whose text is all code is dropped.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "const QUOTED = '\\u0001';",
+          "replace": "const QUOTED = ' ';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Keyword and text are taken from the masked line, so the reported text loses its code spans.",
+          "faultClass": "return-altered",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "  const [, keyword, text] = commentText.slice(at.index).match(TODO_EXTRACT);",
+          "replace": "  const [, keyword, text] = at;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A span closes on a backtick run of any length.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "const CODE_SPAN = /(?<!`)(`+)(?!`)[\\s\\S]*?(?<!`)\\1(?!`)/g;",
+          "replace": "const CODE_SPAN = /(?<!`)(`+)(?!`)[\\s\\S]*?`+/g;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "Every file is scanned by line, so markers inside strings start comments.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "  if (!languageOf(relPath)) {",
+          "replace": "  if (true) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "Languages without a comment reader are read through it and lose their comments.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "  if (!languageOf(relPath)) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "Every line of a block comment is reported at the line the comment starts on.",
+          "faultClass": "literal-changed",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "    .flatMap(c => c.text.split('\\n').map((text, k) => ({ text, line: c.line + k })));",
+          "replace": "    .flatMap(c => c.text.split('\\n').map((text, k) => ({ text, line: c.line })));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "The running validator skips its own source file again.",
+          "faultClass": "other",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "  if (!includeTests && isTestFilePath(relPath)) return;",
+          "replace": "  if (!includeTests && isTestFilePath(relPath)) return;\n  if (full === new URL(import.meta.url).pathname) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "A file named like the validator is skipped.",
+          "faultClass": "other",
+          "file": "cli/validators/todo-tracking.mjs",
+          "find": "  if (!includeTests && isTestFilePath(relPath)) return;",
+          "replace": "  if (!includeTests && isTestFilePath(relPath)) return;\n  if (relPath.endsWith('todo-tracking.mjs')) return;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 073)"
+          }
+        }
+      ]
+    },
+    {
       "id": "HOOK-MANAGER-NEVER-OVERWRITTEN",
       "statement": "docguard hooks never writes into a husky, lefthook or simple-git-hooks hooks directory, even with --force.",
       "source": {

@@ -291,6 +291,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `canonicalOutcome`. The spec's outcome line and the plan's evidence list use
   that order too, and the bound of 20 counts distinct deviations. Recorded
   outcomes are unchanged: the registry already stored them in this form.
+- **A quoted TODO form is no longer reported as an untracked TODO**
+  (`specs/073-todo-quoted-forms`). TODO tracking reports TDO002 only for an
+  annotation a developer wrote in a comment:
+  - a keyword inside backticks in a comment is a quotation (``Accepted:
+    `TODO: …`, `HACK - …` ``), so a comment that documents the forms is quiet.
+    A real annotation keeps its code spans in the reported text;
+  - a keyword inside a string, template or regex is not a comment. Comments
+    are read with the string-aware reader requirement tags use, for every
+    language it knows; `.vue`, `.svelte` and `.astro` are still read by line;
+  - the validator no longer skips its own source file. The skip only worked
+    when the running CLI was that same file, so 0.44.3 from npm reported two
+    TDO002 findings on this repository that the checkout's own CLI hid.
 
 ## [0.44.3] - 2026-10-11
 

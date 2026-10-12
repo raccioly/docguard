@@ -2156,6 +2156,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `canonicalOutcome`. The spec's outcome line and the plan's evidence list use
   that order too, and the bound of 20 counts distinct deviations. Recorded
   outcomes are unchanged: the registry already stored them in this form.
+- **A quoted TODO form is no longer reported as an untracked TODO**
+  (`specs/073-todo-quoted-forms`). TODO tracking reports TDO002 only for an
+  annotation a developer wrote in a comment:
+  - a keyword inside backticks in a comment is a quotation (``Accepted:
+    `TODO: …`, `HACK - …` ``), so a comment that documents the forms is quiet.
+    A real annotation keeps its code spans in the reported text;
+  - a keyword inside a string, template or regex is not a comment. Comments
+    are read with the string-aware reader requirement tags use, for every
+    language it knows; `.vue`, `.svelte` and `.astro` are still read by line;
+  - the validator no longer skips its own source file. The skip only worked
+    when the running CLI was that same file, so 0.44.3 from npm reported two
+    TDO002 findings on this repository that the checkout's own CLI hid.
 
 ## [0.44.3] - 2026-10-11
 
@@ -2251,20 +2263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - **A Jules pull request auto-merges only when it adds new test files**
-  (`specs/067-jules-policy`). `.github/workflows/auto-merge.yml` merged a
-  green Jules PR whenever every path was under `tests/` or `docs/` or ended
-  in `.md`: that admitted `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, the
-  constitution, and prompt files that ship to npm (`commands/`, `templates/`,
-  `extensions/**/commands/`), as well as edits to existing tests (#421, #451
-  and #516 each edited one), deletions, renames and fixtures. Now
-  `.github/scripts/jules-policy.mjs` decides: 1 to 10 files, each a newly
-  added `tests/<name>.test.mjs`; everything else waits for a maintainer. The
-  files come from comparing the PR base with the exact head commit CI
-  verified, not from one 100-file page of the live branch, and every merge
-  (Dependabot's too) is pinned to that commit with `sha`, so a push after CI
-  makes GitHub refuse it.
 
-<!-- truncated: 5577 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5589 more lines — read CHANGELOG.md directly -->
 
 ---
 
