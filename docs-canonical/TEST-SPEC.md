@@ -19,7 +19,7 @@ DocGuard's tests verify command behavior through subprocess execution. Command t
 
 Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards preserve known failures with dedicated assertions and neighboring valid cases.
 
-All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 360 seconds since spec 051; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
+All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 465 seconds since 2026-10-12, recalibrated under spec 051 FR-007; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 

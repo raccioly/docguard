@@ -7,11 +7,14 @@
 // @req docguard.adoption-workflow-integrity#FR-015
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
+import { CODES } from '../cli/findings.mjs';
+import { loadConfig } from '../cli/config.mjs';
 
 describe('Todo-Tracking Validator', () => {
   let tmpDir;
@@ -257,5 +260,156 @@ describe('Todo-Tracking Validator', () => {
   it('still matches HACK/XXX/TEMP/WORKAROUND with a separator or author', () => {
     const w = untracked('marked.mjs', ['// HACK: retry twice', '// XXX - revisit', '// TEMP(ana) remove after v2', '// WORKAROUND: vendor bug'].join('\n') + '\n');
     assert.equal(w.length, 4, w.join('\n'));
+  });
+});
+
+// ── docguard.todo-quoted-forms (spec 073): a keyword quoted in backticks or
+// held in a string is not an annotation, and the result does not depend on
+// where DocGuard is installed. Each acceptance scenario has a case here; the
+// spec 019 cases above run unchanged, and the real-annotation cases below are
+// the unit-scale half of the cross-repository A/B.
+// @req docguard.todo-quoted-forms#SC-001
+// @req docguard.todo-quoted-forms#SC-003
+describe('Todo-Tracking — quoted forms are not annotations (spec 073)', () => {
+  const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  const VALIDATOR = 'cli/validators/todo-tracking.mjs';
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-todo-quoted-'));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const write = (name, lines) => {
+    mkdirSync(dirname(join(tmpDir, name)), { recursive: true });
+    writeFileSync(join(tmpDir, name), Array.isArray(lines) ? lines.join('\n') + '\n' : lines);
+  };
+  const tdo002 = (dir = tmpDir, config = {}) =>
+    (validateTodoTracking(dir, config).findings || []).filter(f => f.code === 'TDO002');
+  const locations = findings => findings.map(f => f.location).sort();
+
+  // @req docguard.todo-quoted-forms#FR-001
+  it('does not report annotation forms quoted in backticks (US1.1, US1.2)', () => {
+    write('style.mjs', [
+      '// Accepted: `TODO: …`, `HACK - …`, `TEMP(ana) …`, `FIXME(bo): …`.',
+      '// `TODO(ana): …` used to be reported as "ana): …".',
+      '// ``TODO: x`` is quoted with a double-backtick span.',
+      '// `TODO`: fix the parser',
+      'export const style = 1;',
+    ]);
+    assert.deepEqual(locations(tdo002()), []);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-001
+  // @req docguard.todo-quoted-forms#FR-006
+  it('still reports real annotations beside quoted ones (US1.3, US1.4)', () => {
+    write('real.mjs', [
+      '// TODO: fix retries',
+      '// TODO fix retries later',
+      '// a stray ` then TODO: still an annotation',
+      '// ``TODO: y` is not a closed span',
+    ]);
+    assert.deepEqual(locations(tdo002()), ['real.mjs:1', 'real.mjs:2', 'real.mjs:3', 'real.mjs:4']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-002
+  it('reports the first keyword outside spans with the original text (US1.5, US1.6)', () => {
+    write('text.mjs', [
+      '// TODO: rename `foo` later',
+      '// see `HACK - x`; FIXME: real',
+      '// HACK: `setTimeout(0)`',
+    ]);
+    const messages = tdo002().map(f => f.message).sort();
+    assert.equal(messages.length, 3, messages.join('\n'));
+    assert.match(messages[0], /^Untracked FIXME at text\.mjs:2: "real"/);
+    assert.match(messages[1], /^Untracked HACK at text\.mjs:3: "`setTimeout\(0\)`"/);
+    assert.match(messages[2], /^Untracked TODO at text\.mjs:1: "rename `foo` later"/);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-003
+  it('does not report keywords inside strings, templates or regexes (US2.1, US2.2)', () => {
+    write('strings.mjs', [
+      "const a = '// TODO: not a comment';",
+      'const u = "https://example.com/HACK: x";',
+      'const t = `# FIXME: fixture text`;',
+      'const r = /\\/\\/ XXX: in a regex/;',
+      '// TODO: real one',
+    ]);
+    assert.deepEqual(locations(tdo002()), ['strings.mjs:5']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-003
+  it('reads Python and Go strings as strings (US2.3)', () => {
+    write('app.py', ['x = "# TODO: s"', '# TODO: real python', 'def f(): pass']);
+    write('main.go', ['package main', '', 'var s = "// TODO: s"', '', '// TODO: real go', 'func f() {}']);
+    assert.deepEqual(locations(tdo002()), ['app.py:2', 'main.go:5']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-003
+  it('falls back to the string-aware lexer when JavaScript does not parse', () => {
+    write('broken.js', ["const s = '// TODO: in a string';", 'function (', '// TODO: real']);
+    assert.deepEqual(locations(tdo002()), ['broken.js:3']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-004
+  it('reports each line of a block comment at its own line (US2.4)', () => {
+    write('block.mjs', [
+      '/*',
+      ' * first',
+      ' * TODO: investigate',
+      ' */',
+      '/**',
+      ' * Something.',
+      ' *',
+      ' * FIXME(bo): later',
+      ' */',
+      'export function f() {}',
+    ]);
+    assert.deepEqual(locations(tdo002()), ['block.mjs:3', 'block.mjs:8']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-003
+  it('scans languages without a comment reader by line, code spans masked (US2.5)', () => {
+    write('comp.vue', [
+      '<template>',
+      '  <!-- TODO: wire the button -->',
+      '  <!-- see `HACK - x` -->',
+      '</template>',
+      '<script>',
+      '// FIXME: real',
+      '</script>',
+    ]);
+    assert.deepEqual(locations(tdo002()), ['comp.vue:2', 'comp.vue:6']);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-005
+  it("scans a copy of the validator's own source like any file (US3.2)", () => {
+    const source = readFileSync(join(ROOT, VALIDATOR), 'utf8');
+    write(VALIDATOR, source + '// TODO: appended real annotation\n');
+    const appended = source.split('\n').length;
+    assert.deepEqual(locations(tdo002()), [`${VALIDATOR}:${appended}`]);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-005
+  it('reports the same for the validator scanned in place and as a copy (US3.1)', () => {
+    write(VALIDATOR, readFileSync(join(ROOT, VALIDATOR), 'utf8'));
+    const inPlace = tdo002(ROOT, { changedFiles: [VALIDATOR] }).filter(f => f.location?.startsWith(VALIDATOR));
+    assert.deepEqual(locations(inPlace), locations(tdo002()));
+    // The only way a module can recognise its own file is its own URL.
+    assert.doesNotMatch(readFileSync(join(ROOT, VALIDATOR), 'utf8'), /import\.meta\.url|fileURLToPath|__filename/);
+  });
+
+  // The two TDO002 that 0.44.3 reported here, run from npm, were quotations.
+  // @req docguard.todo-quoted-forms#SC-002
+  it("reports no TDO002 on this repository's own tree, the validator included", () => {
+    assert.deepEqual(tdo002(ROOT, loadConfig(ROOT)).map(f => f.message), []);
+  });
+
+  // @req docguard.todo-quoted-forms#FR-007
+  it('says in the TDO002 help that quotations are not annotations', () => {
+    assert.match(CODES.TDO002.help, /Only real comments count: a keyword inside a string, or quoted in backticks within a comment, is a quotation/);
   });
 });

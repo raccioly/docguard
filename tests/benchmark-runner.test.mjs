@@ -69,9 +69,10 @@ describe('benchmark runner', () => {
 });
 
 /**
- * docguard.ignore-and-todo-parsing changed the TODO detector; its labelled
- * corpus cases must keep their verdicts.
+ * docguard.ignore-and-todo-parsing and docguard.todo-quoted-forms changed the
+ * TODO detector; its labelled corpus cases must keep their verdicts.
  * @req docguard.ignore-and-todo-parsing#SC-002
+ * @req docguard.todo-quoted-forms#SC-004
  */
 describe('TODO detector keeps its benchmark verdicts', () => {
   it('passes both the Go TODO defect and its clean control', () => {

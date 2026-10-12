@@ -439,7 +439,7 @@ export const CODES = {
   TDO002: {
     validator: 'todoTracking',
     title: 'Untracked TODO/FIXME annotation',
-    help: 'A TODO/FIXME/HACK/XXX/TEMP/WORKAROUND comment is not tracked in any tracking doc (ROADMAP.md, CURRENT-STATE.md, TODO.md, BACKLOG.md, or docs-canonical/ equivalents). Track it there with its file location, resolve it, or exclude the path via `todoIgnore` in .docguard.json.',
+    help: 'A TODO/FIXME/HACK/XXX/TEMP/WORKAROUND comment is not tracked in any tracking doc (ROADMAP.md, CURRENT-STATE.md, TODO.md, BACKLOG.md, or docs-canonical/ equivalents). Track it there with its file location, resolve it, or exclude the path via `todoIgnore` in .docguard.json. Only real comments count: a keyword inside a string, or quoted in backticks within a comment, is a quotation and is not reported.',
     suppress: null,
   },
   TDO003: {

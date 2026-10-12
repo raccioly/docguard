@@ -11,11 +11,14 @@
  */
 
 /**
- * The line with every inline code span blanked to spaces (same length). A run
+ * The line with every inline code span blanked to `fill` (same length). A run
  * of backticks opens a span only when a run of the same length closes it on
- * this line; an unclosed run stays as literal backticks.
+ * this line; an unclosed run stays as literal backticks. TODO tracking blanks
+ * with a non-space character, so a quoted keyword disappears while an
+ * annotation whose text is all code keeps its text
+ * (docguard.todo-quoted-forms#FR-001).
  */
-function maskCodeSpans(line) {
+export function maskCodeSpans(line, fill = ' ') {
   let out = '';
   let i = 0;
   while (i < line.length) {
@@ -32,7 +35,7 @@ function maskCodeSpans(line) {
       k = m;
     }
     if (close < 0) { out += line.slice(i, j); i = j; continue; }
-    out += ' '.repeat(close + run - i);
+    out += fill.repeat(close + run - i);
     i = close + run;
   }
   return out;

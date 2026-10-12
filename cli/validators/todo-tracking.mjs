@@ -1,7 +1,7 @@
 /**
  * TODO/FIXME Tracking Validator — Ensures code annotations are documented
  *
- * Scans source files for debt tags (todo / fixme / hack / xxx, with a
+ * Scans source-file comments for debt tags (todo / fixme / hack / xxx, with a
  * trailing colon or paren) and checks if they are tracked in documentation
  * (ROADMAP.md, CURRENT-STATE.md, etc.).
  *
@@ -18,14 +18,22 @@
  * @implements docguard.ignore-and-todo-parsing#FR-002
  * @implements docguard.ignore-and-todo-parsing#FR-003
  * @implements docguard.ignore-and-todo-parsing#FR-004
+ * @implements docguard.todo-quoted-forms#FR-001
+ * @implements docguard.todo-quoted-forms#FR-002
+ * @implements docguard.todo-quoted-forms#FR-003
+ * @implements docguard.todo-quoted-forms#FR-004
+ * @implements docguard.todo-quoted-forms#FR-005
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { maskCodeSpans } from '../shared-html-comments.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findDocsByName } from '../shared-doc-roles.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
+import { realComments } from '../scanners/anchor-tags.mjs';
+import { languageOf } from '../scanners/pattern-lexer.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
@@ -67,9 +75,9 @@ const TODO_EXTRACT = new RegExp(
 );
 const isTodoAnnotation = commentText => TODO_MARKED.test(commentText) || TODO_BARE_LEADING.test(commentText);
 
-// Matches a comment-opening marker. Real TODOs live in comments — restricting
-// matches to text AFTER a comment marker prevents false positives from regex
-// literals or strings that happen to contain a TODO keyword.
+// Matches a comment-opening marker, for the line scanner that reads files in
+// languages the string-aware comment reader does not know (.vue, .svelte,
+// .astro). It cannot tell a marker inside a string from a real one.
 //   //  — JS/TS/C/C++/Rust/Go/Java line comment
 //   #   — Python/Ruby/shell/YAML
 //   /*  — JS/C/C++ block comment open
@@ -84,6 +92,49 @@ const COMMENT_MARKER = /(?:\/\/|#|\/\*|<!--|^\s*\*\s)/;
 function commentPortion(line) {
   const m = line.match(COMMENT_MARKER);
   return m ? line.slice(m.index + m[0].length) : null;
+}
+
+/**
+ * The comment lines of a source file, one entry per line of each comment.
+ * Comments come from the reader requirement tags use, so a keyword inside a
+ * string, template or regex is never read (docguard.requirement-anchors#FR-005;
+ * docguard.todo-quoted-forms#FR-003, FR-004). A language that reader does not
+ * know is scanned by line.
+ * @returns {{ text: string, line: number }[]}
+ */
+function commentLines(content, relPath) {
+  if (!languageOf(relPath)) {
+    return content.split('\n').flatMap((line, i) => {
+      const text = commentPortion(line);
+      return text === null ? [] : [{ text, line: i + 1 }];
+    });
+  }
+  return realComments(content, relPath)
+    .flatMap(c => c.text.split('\n').map((text, k) => ({ text, line: c.line + k })));
+}
+
+// A keyword inside an inline code span is a quotation of the form, not an
+// annotation: a comment documenting the accepted forms quotes them in
+// backticks (docguard.todo-quoted-forms#FR-001). Spans follow the one-line
+// CommonMark rule the Markdown readers use (maskCodeSpans), so an unmatched
+// backtick is literal and a keyword after it still counts. The placeholder is
+// neither space nor word: offsets still index the original line, word
+// boundaries hold, and an annotation whose text is all code keeps it.
+const QUOTED = '\u0001';
+
+/**
+ * The annotation on one comment line, or null. The spec 019 patterns run on
+ * the line with its code spans masked; keyword and text are cut from the
+ * original line at the first keyword outside a span, so the reported text
+ * reads as written (docguard.todo-quoted-forms#FR-002).
+ */
+function annotationOn(commentText) {
+  const masked = maskCodeSpans(commentText, QUOTED);
+  if (!isTodoAnnotation(masked)) return null;
+  const at = masked.match(TODO_EXTRACT);
+  if (!at) return null;
+  const [, keyword, text] = commentText.slice(at.index).match(TODO_EXTRACT);
+  return { keyword: keyword.toUpperCase(), text: text.trim() };
 }
 
 // Test skip patterns for common test frameworks
@@ -476,16 +527,8 @@ function findTestFiles(rootDir, dir, files, config) {
 const TEST_FILE_RE = /(^|\/)__tests?__\//;
 const TEST_NAME_RE = /(?:\.(?:test|spec)\.[cm]?[jt]sx?|(?:^|\/)test_[^/]*\.py|_test\.(?:py|go)|_spec\.rb|(?:^|\/)[^/]*_test\.rb)$/i;
 
-// The validator's own source file describes the keyword list in its docstring
-// and code. Skipping itself avoids self-referential false positives.
-const SELF_PATH = new URL(import.meta.url).pathname;
-
 function isTestFilePath(relPath) {
   return TEST_FILE_RE.test(relPath) || TEST_NAME_RE.test(relPath);
-}
-
-function isSelfPath(fullPath) {
-  return fullPath === SELF_PATH;
 }
 
 function findTodos(rootDir, dir, todos, config) {
@@ -511,8 +554,10 @@ function findTodos(rootDir, dir, todos, config) {
 
 /**
  * v0.15-P3: per-file TODO scan extracted so both the full-tree walker and
- * the --changed-only path can reuse it. Honors test-file filtering,
- * self-path skip, ignore patterns, and the TODO regex.
+ * the --changed-only path can reuse it. Honors test-file filtering, ignore
+ * patterns, and the TODO patterns. DocGuard's own source is scanned like any
+ * file, so the result does not depend on where DocGuard is installed
+ * (docguard.todo-quoted-forms#FR-005).
  */
 function _scanTodoFile(rootDir, full, todos, config) {
   const includeTests = config?.todoTracking?.includeTestFiles === true;
@@ -522,27 +567,14 @@ function _scanTodoFile(rootDir, full, todos, config) {
   const relPath = relative(rootDir, full);
 
   if (!includeTests && isTestFilePath(relPath)) return;
-  if (isSelfPath(full)) return;
   if (config && shouldIgnore(relPath, config, 'todoIgnore')) return;
 
   let content;
   try { content = readFileSync(full, 'utf-8'); } catch { return; }
   if (!TODO_PREFILTER.test(content)) return;
 
-  const lines = content.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const commentText = commentPortion(lines[i]);
-    if (commentText === null) continue;
-    if (isTodoAnnotation(commentText)) {
-      const match = commentText.match(TODO_EXTRACT);
-      if (match) {
-        todos.push({
-          keyword: match[1].toUpperCase(),
-          text: match[2].trim(),
-          file: relPath,
-          line: i + 1,
-        });
-      }
-    }
+  for (const { text, line } of commentLines(content, relPath)) {
+    const annotation = annotationOn(text);
+    if (annotation) todos.push({ ...annotation, file: relPath, line });
   }
 }

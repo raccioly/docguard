@@ -75,12 +75,16 @@ jobs:
       # 040-050 put Node 18 at 211-241s (#505-#510): guard on this repository
       # grew only ~20% (9.4s to 11.4s); the rest is CPU contention between
       # parallel test files that spawn the CLI. #510 failed at 241.5s with
-      # every test passing. 360s restores headroom over that, and the PR #328
-      # class (+165s on ~235s) still trips it (docguard.release-cut-green#FR-007).
+      # every test passing. 360s restored headroom over that. By 2026-10-12 the
+      # 0.45.0 batch (specs 070-078, 3,280 -> 3,914 tests) put normal runs at
+      # 193-369s across 25 runs (median 305s); #574 failed on Node 18 at 368.7s
+      # with every test passing. 465s is 1.26x that, and the PR #328 class
+      # (+165s on the 305s median = 470s) still trips it
+      # (docguard.release-cut-green#FR-007).
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
-          TEST_BUDGET_MS: 360000
+          TEST_BUDGET_MS: 465000
         run: |
           set -o pipefail
           node --test --test-reporter=tap tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt
