@@ -13,17 +13,19 @@
  * @req docguard.docs-sync-specific-evidence#FR-007
  * @req docguard.docs-sync-specific-evidence#FR-008
  * @req docguard.docs-sync-specific-evidence#SC-001
+ * @req docguard.docs-sync-specific-evidence#SC-002
  */
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { delimiter, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { visibleMarkdown } from '../cli/shared-html-comments.mjs';
-import { createUrlPathMatcher, namesDirectory, treePaths } from '../cli/scanners/doc-references.mjs';
+import { createUrlPathMatcher, namesDirectory, namesToken, treePaths } from '../cli/scanners/doc-references.mjs';
 import { appRouterPath } from '../cli/scanners/routes.mjs';
 import { validateDocsSync } from '../cli/validators/docs-sync.mjs';
+import { listTrackedFiles } from '../cli/shared-git.mjs';
 import { CODES } from '../cli/findings.mjs';
 import { PROJECTS, materialize } from './fixtures/generated-docs-projects.mjs';
 
@@ -355,4 +357,23 @@ describe('documented, and DocGuard\'s own init (FR-007)', () => {
   });
   // init then generate --plan --write, and the plan alone, must report no DSY
   // finding on any stack: tests/generated-docs-e2e.test.mjs allows none there.
+});
+
+describe('this repository (SC-002)', () => {
+  it('every code file a canonical doc names by its path stays documented under its identity', () => {
+    // This repository has no route or service directory, so its own guard is
+    // unchanged. As an oracle, its CLI sources become services of a scratch
+    // project that keeps its canonical docs: shared names (`sync`, `index`)
+    // must still be documented wherever a doc names the whole path.
+    const root = resolve('.');
+    const sources = listTrackedFiles(root).filter(f => /^cli\/.+\.mjs$/.test(f));
+    const docs = listTrackedFiles(root).filter(f => /^docs-canonical\/.+\.md$/.test(f));
+    const files = Object.fromEntries(docs.map(f => [f, readFileSync(join(root, f), 'utf8')]));
+    for (const f of sources) files[`services/${f}`] = '';
+    const visible = docs.map(f => visibleMarkdown(files[f])).join('\n');
+    const named = sources.filter(f => namesToken(visible, f));
+    const flagged = new Set(validateDocsSync(makeDir(files), {}).findings.map(f => f.location.replace(/^services\//, '')));
+    assert.ok(named.length >= 100, `the oracle should find this repository's path mentions; found ${named.length}`);
+    assert.deepEqual(named.filter(f => flagged.has(f)), []);
+  });
 });
