@@ -36,15 +36,17 @@
 - **FR-001**: The coalescing behaviour MUST be tested deterministically: a burst of saves inside the debounce window produces one check; changes during an active guard queue exactly one follow-up check, which runs when the guard finishes, lists every changed path, and waits for an open debounce window first.
 - **FR-002**: No test in `tests/watch-reliability.test.mjs` MAY depend on wall-clock time: debounce timers run on a clock the test advances, check completion is observed by draining queued promise callbacks, and the watcher's console output is captured so the file writes nothing to stdout.
 - **FR-003**: `docguard watch` behaviour MUST NOT change. The only product change is a test seam: `runWatch` accepts optional `setTimeout` / `clearTimeout` in its `runtime` argument (alongside the existing `watch`, `guard` and `clearCache`), defaulting to the global timer functions; the debounce stays 500 ms. No CLI flag or config key exposes the seam.
+- **FR-004** (amendment, 2026-10-12): Each spawn-based `docguard watch` test in `tests/commands.test.mjs` MUST wait until its captured output already satisfies the assertions that follow: it waits on the same pattern as the last line it asserts, never on an earlier marker or a weaker condition. The watcher writes one `console.log` per line, so the test can read a line before the next one arrives. CI run 38300989325 (PR #570, Node 24) waited for the `Auto-fix prompts:` header, then asserted `docguard fix --doc` against output that ended at the header. No sleep is added.
 
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: The rewritten tests fail before the seam exists and pass after; the file passes 20 sequential runs and 20 runs made as five rounds of four concurrent copies on a CPU-saturated machine.
 - **SC-002**: The full suite passes and guard on this repository reports no new findings.
+- **SC-003** (amendment, 2026-10-12): Every wait in the `docguard watch` block of `tests/commands.test.mjs` uses the pattern of the last line its test asserts, and the file passes repeated runs locally with no sleep added.
 
 ## Out of Scope
 
-- The spawn-based `docguard watch` tests in `tests/commands.test.mjs`, which exercise real `fs.watch` events and real timers end to end and already wait on output markers with generous deadlines.
+- The spawn-based `docguard watch` tests in `tests/commands.test.mjs`, which exercise real `fs.watch` events and real timers end to end with generous deadlines, except what they wait for (FR-004).
 - The Node test runner's own stdout framing; this change only keeps this file from writing to stdout.
 
 <!-- docguard:implementation-outcomes:start -->
