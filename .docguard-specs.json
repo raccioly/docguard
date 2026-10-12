@@ -10145,7 +10145,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -10193,11 +10193,11 @@
           },
           {
             "path": "specs/074-quoted-comment-openers/tasks.md",
-            "digest": "sha256:dde6eb301887905c99f9ac937f8af371e388f34804eb8c8be3f08b616472357c"
+            "digest": "sha256:fa3dd0bcb26e692b077cfe52792512ad6bce0916fcfbefb7f6688ea6a1efe711"
           }
         ],
         "taskCompletion": {
-          "checked": 4,
+          "checked": 5,
           "total": 5
         },
         "implementationEvidence": [
