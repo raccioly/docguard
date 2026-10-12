@@ -80,7 +80,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/specs.mjs` completion path | `tests/spec-completion.test.mjs` | ✅ |
 | Packed install adoption journey | `tests/adoption-workflow.test.mjs`, `tests/npm-pack-smoke.test.mjs` | ✅ |
 | `cli/shared-git.mjs`, reconciliation coverage | `tests/shared-git.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
-| `cli/shared-ignore.mjs`, `cli/scanners/instruction-audit.mjs` | `tests/docguardignore.test.mjs`, `tests/instruction-audit.test.mjs` | ✅ |
+| `cli/shared-ignore.mjs`, `cli/scanners/instruction-audit.mjs` | `tests/docguardignore.test.mjs`, `tests/instruction-audit.test.mjs`, `tests/quoted-comment-openers.test.mjs` (pointers after a quoted `<!--`) | ✅ |
 | `cli/shared-validator-surface.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/canonical-sync.mjs` | `tests/metrics-consistency.test.mjs`, `tests/canonical-sync.test.mjs`, `tests/mechanical.test.mjs` | ✅ |
 | `cli/validators/traceability.mjs`, lifecycle trust in `cli/scanners/spec-registry.mjs` | `tests/traceability-lifecycle.test.mjs` | ✅ |
 | Finding-code enforcement and machine writers | `tests/severity.test.mjs`, `tests/sarif.test.mjs`, `tests/junit.test.mjs` | ✅ |
@@ -122,6 +122,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | Pattern tier against tree-sitter: per-language declaration agreement on `tools/anchor-oracle/corpus` and the anchor fixtures (SC-007) | `tools/anchor-oracle/run.mjs`, `tests/anchor-oracle.test.mjs` (CI job `anchor-oracle`) | ✅ |
 | `docguard:volatile` lines (spec 072): placeholder at the Babel, python-ast, pattern, tree-sitter and file tiers with a control per case, multi-line constructs kept, marker-in-string ignored, ANC011 listed but not in guard; the release version sync keeps the marker and the anchors | `tests/volatile-anchor-lines.test.mjs` (tree-sitter cases in the CI job `anchor-oracle`), `tests/release-version-sync.test.mjs` | ✅ |
 | Anchors documented (every config key, flag, finding) and adopted by this repository (lock, CODEOWNERS, union merge, replay, no ANC006/ANC007) | `tests/requirement-anchors-adoption.test.mjs` | ✅ |
+| `cli/shared-html-comments.mjs`: a `<!--` quoted in a code span opens nothing, for requirement IDs and instruction pointers (spec 074) | `tests/quoted-comment-openers.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |

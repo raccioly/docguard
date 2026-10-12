@@ -34,6 +34,7 @@
 import { readFileSync, readdirSync, lstatSync, realpathSync } from 'node:fs';
 import { resolve, join, dirname, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripHtmlComments } from '../shared-html-comments.mjs';
 import {
   buildIgnoreFilter,
   loadDocguardIgnore,
@@ -351,15 +352,8 @@ export function extractInstructionPointers(content, { skipLines = 0 } = {}) {
     let line = lines[i];
     if (/^\s*(```|~~~)/.test(line)) { inFence = !inFence; continue; }
     if (inFence) continue;
-    if (inComment) {
-      const end = line.indexOf('-->');
-      if (end === -1) continue;
-      inComment = false;
-      line = line.slice(end + 3);
-    }
-    line = line.replace(/<!--.*?-->/g, '');
-    const open = line.indexOf('<!--');
-    if (open !== -1) { inComment = true; line = line.slice(0, open); }
+    // `<!--` quoted in a code span opens nothing (docguard.quoted-comment-openers#FR-002).
+    ({ text: line, inComment } = stripHtmlComments(line, inComment));
     // The conditional test applies per sentence, so "Run `a/x.sh`. Read
     // `b/y.md` if present." still checks the first pointer.
     const found = new Set();

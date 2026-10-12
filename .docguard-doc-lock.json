@@ -8,13 +8,13 @@
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
-          "fingerprint": "sha256:cac9af08cec8e73235af7b41ff8ed36c49691c6389cc3a2c844ba2cc446fbbd8",
+          "fingerprint": "sha256:0dc2b32e91c4e65643d02c453a64502879d55f5b052c642a5db581b7628e8920",
           "tier": "ast"
         }
       },
-      "reason": "FR-007 only changes planSpecCompletion's evidence sort to the registry's order; nothing this section states depends on that order",
+      "reason": "Read against collectRequirementIdsFromContent after rebasing on #570: comment handling is shared-html-comments.mjs (spec 074); the section says a quoted <!-- is text",
       "reviewedAt": "2026-10-12",
-      "reviewedRevision": "b2088fa93b7193460bc0b18244d4c781f9acd45a"
+      "reviewedRevision": "8236f84bedb4f33a17c7ff138475f32814b68a35"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
