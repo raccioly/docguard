@@ -14803,11 +14803,11 @@
           },
           {
             "path": "specs/072-volatile-anchor-lines/tasks.md",
-            "digest": "sha256:31f3da4f277b934bd2fd16663b788e50c5780b68312e66b03807bc88d46ece73"
+            "digest": "sha256:14f1c0d7cc3620a027825f2fc6c4cf5d94a2e73ba01ebd5ab94faac67b7a2c39"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
+          "checked": 10,
           "total": 10
         },
         "implementationEvidence": [
