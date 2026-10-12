@@ -2143,8 +2143,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **What changes on DocGuard itself.** Over its 624 tracked code files, 66
     of 894 doc-line references disappear, each a name inside a longer one
     (`guard.mjs` in `docguard.mjs`, `git.mjs` in `shared-git.mjs`,
-    `server.js` in `server.json`); none is added. On four other projects,
-    one of 1,514 disappears (`match.js` in `orgmatch.js`).
+    `server.js` in `server.json`); none is added. On four other local
+    projects, one of 1,514 disappears, also a name inside a longer one.
 
 ## [0.44.3] - 2026-10-11
 
