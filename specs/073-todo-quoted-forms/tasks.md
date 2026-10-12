@@ -27,18 +27,20 @@
 
 ## Verification
 
-- **SC-001.** `tests/todo-tracking.test.mjs`: 12 spec 073 cases beside the spec 019 cases, which run unchanged (33 in the file).
+Final run at 834002a, on main 9170060.
+
+- **SC-001.** `tests/todo-tracking.test.mjs`: 12 spec 073 cases beside the spec 019 cases, which run unchanged.
   - Before the change, the eight quotation, string and install-location cases failed for the intended reason; the real-annotation and block-comment cases passed both before and after.
-  - Full suite at 60a7697: 3,776 tests, 0 failures, 1 pre-existing skip.
-- **SC-002.** `git archive` export of 60a7697, `guard --format json`:
-  - main CLI at 4aefbee against the candidate: identical apart from the two TDO002 on the quoted forms in `cli/validators/todo-tracking.mjs` (lines 58 and 65 of the new file, 51 and 58 before);
+  - Full suite: 3,794 tests, 0 failures, 1 pre-existing skip. A run under a load average above 90 from other sessions timed out six spawn-heavy files; all 140 tests in them pass at normal load, and so does the full rerun.
+- **SC-002.** `git archive` export of 834002a, `guard --format json`, a fresh copy per run:
+  - main CLI at 9170060 against the candidate: identical apart from the two TDO002 on the quoted forms in `cli/validators/todo-tracking.mjs` (lines 59 and 66 of the new file, 51 and 58 at c9934dd);
   - the candidate from this worktree against the candidate run in place inside the export: identical (FR-005);
-  - 0.44.3 against the candidate: the same two TDO002, plus differences already present between 0.44.3 and main: SPR001 (spec 070's FR-005 projection), MET001 ×2 (the validator count, 34 with `requirementAnchors`), and 24 ANC003 that come from the export having no Git (dot directories are not walked), which main reports too;
-  - `docguard guard` in the worktree: PASS, no findings; `docguard anchors`: 137 reviewed, 563 baselined.
-- **SC-003.** Other local repositories, each exported with `git archive` at its HEAD:
-  - TODO-Tracking alone, per keyword-bearing source file through `changedFiles` (so the five-finding cap hides nothing), main against the candidate: 30 repositories, 90 files, 36 TDO messages, no difference;
+  - 0.44.3 against the candidate: the same two TDO002, plus what main already changes against 0.44.3: SPR001 (spec 070's FR-005 projection), MET001 ×2 (the validator count, 34 with `requirementAnchors`), TRC005 ×3 (spec 074's IDs, which 0.44.3's parser loses behind a quoted HTML comment opener), and ANC003 links in dot directories, which an export without Git does not walk;
+  - `docguard guard` in the worktree: one DLC002 on this spec, the review signal every implemented, not yet verified spec carries until `specs complete`; `docguard anchors`: 157 reviewed, 548 baselined.
+- **SC-003.** Other local repositories, each exported with `git archive` at its HEAD, main 9170060 against the candidate:
+  - TODO-Tracking alone, per keyword-bearing source file through `changedFiles` (so the five-finding cap hides nothing): 30 repositories, 90 files, 36 TDO messages, no difference;
   - full guard, a fresh export per CLI and nothing else running: 22 repositories with a `.docguard.json` (testguard, web-security-validator and 20 local projects), 1,160 findings, no difference.
-  - A first, non-hermetic pass reported 7 PSR002 on one repository in the base run only. Cause: `gitIgnoredPaths()` returns null on a spawn error under load, and PSR002 then reports every unresolved pointer. Pre-existing and unrelated to this spec; the hermetic rerun is identical.
+  - An earlier, non-hermetic pass reported 7 PSR002 on one repository in the base run only. Cause: `gitIgnoredPaths()` returns null when a spawn fails under load, and PSR002 then reports every unresolved pointer. Pre-existing and unrelated to this spec.
 - **SC-004.** `npm run benchmark`: 17 cases, verdicts identical to main (both Go TODO cases PASS; `eval-python-unsupported` UNSUPPORTED by design in both). `tests/benchmark-runner.test.mjs` pins the TODO cases.
-- **Budget.** `node tools/budget.mjs ab --base <main export> --head .`: PASS. A first run failed `guard-ms` on `python-layered-control` by 21 ms over budget; no file there contains a keyword, so no new code runs on it, and the rerun and seven interleaved runs show no difference.
-- **T009.** TestGuard 0.15.0 `--confirm 3 --serial` at cf5f295: `TODO-QUOTED-FORMS` 9/9 faults killed; `TODO-BARE-FORM-PRECISION` and `FIELD-WARNING-PRECISION`, which mutate the same file, 6/6.
+- **Budget.** `node tools/budget.mjs ab --base <main export> --head .`: PASS. A first run failed `guard-ms` on `python-layered-control` by 21 ms; no file there contains a keyword, so no new code runs on it, and the rerun and seven interleaved runs show no difference.
+- **T009.** TestGuard 0.15.0 `--confirm 3 --serial` at 834002a: 23 of 23 faults killed across `TODO-QUOTED-FORMS` (10, two of them in the shared masker), spec 074's `QUOTED-COMMENT-OPENER-HIDES-NOTHING`, and `TODO-BARE-FORM-PRECISION` and `FIELD-WARNING-PRECISION`, which mutate the same files.
