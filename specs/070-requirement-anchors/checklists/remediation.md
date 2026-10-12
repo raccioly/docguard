@@ -110,7 +110,25 @@ the exact commit being released. The results are recorded under
    gated.
 10. Ricardo asks for the release in the session that cuts it.
 
-### Gate results
+### Gate results for the release commit (after spec 072)
+
+The release dry run on 711c2ac found one regression the earlier items could not see. The cut rewrites the version in `action.yml` and `extensions/spec-kit-docguard/extension.yml`, whose file-scope tags would have turned four links suspect on every release. Spec 072 (`docguard.volatile-anchor-lines`, #565) fixed it, so every item was run again on the code being released, c9934dd (main after #565). The release PR adds only the version bump, the CHANGELOG cut and the version sync.
+
+| Item | Commit | Result | Evidence |
+|------|--------|--------|----------|
+| 1 | 2c382b1 (= c9934dd code) | PASS | Node 24 locally: 3,761/3,761, none skipped. CI `test` on Node 18, 20, 22 and 24 green on #565 |
+| 2 | c9934dd | PASS | `docguard guard`: PASS, no findings |
+| 3 | 16f6aa3 | PASS | Same as before: base only SPR001 (FR-005 projection) and MET001 ×2 (validator count); candidate only none |
+| 4 | 16f6aa3 | PASS | Identical guard output on testguard, web-security-validator and the seven local projects; the same reviewed ANC006 ×2 and ANC010 ×2 |
+| 5 | c9934dd | PASS | No DLK finding |
+| 6 | #565 | PASS | CI `budget` and `anchor-oracle` jobs green |
+| 7 | 16f6aa3 | PASS | Benchmark core PASS, 0 regressions |
+| 8 | c9934dd | PASS | 695 links, 127 reviewed and 568 baselined; no ANC006, ANC007 or ANC011 |
+| 9 | 85cfe48, 1e2f1a9 | PASS | TestGuard 0.15.0 `--confirm 3 --serial`, all 12 requirement-anchor claims: 112 of 115 faults killed at 85cfe48. The three unproven ones (two test gaps in spec 072, one anchor its edit moved) were fixed and probed again at 1e2f1a9: 26/26 killed. `cli/` is identical between the two commits |
+| 10 | — | PASS | Ricardo asked for the release in this session |
+| Release dry run | 16f6aa3 | PASS | Bump to 0.45.0, CHANGELOG cut, version sync and release-candidate validation in a scratch worktree: `docguard guard` PASS with no findings, `docguard anchors` PASS with every link reviewed or baselined |
+
+### Gate results at c644672 (before spec 072)
 
 Items 1 to 10 pass at c644672, main after #562 (2026-10-11). The squash of #562 has the same tree as the branch tip 1f43006. The release cut adds the version bump, the CHANGELOG cut and this verification record; it changes no code.
 
