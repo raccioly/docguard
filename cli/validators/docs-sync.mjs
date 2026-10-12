@@ -226,7 +226,8 @@ export function validateDocsSync(projectDir, config) {
     // No canonical docs to check against
     return { name: 'docs-sync', ...resultFromFindings([], { passed: 0, total: 0 }) };
   }
-  const evidence = readEvidence(contents);
+  // Read on first use: a project with no route or service file pays nothing.
+  let evidence = null;
 
   // N-1: When the guard runs in --changed-only mode, config.changedFiles is
   // populated with paths that changed since the given ref. We use it to scope
@@ -285,6 +286,7 @@ export function validateDocsSync(projectDir, config) {
 
     total++;
     const identity = named.get(relPath);
+    evidence ??= readEvidence(contents);
     if (isDocumented(evidence, relPath, identity)) {
       passed++;
     } else {
