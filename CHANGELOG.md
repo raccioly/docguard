@@ -234,6 +234,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ten TestGuard faults that could not be injected are re-pointed.** TestGuard
+  injects a fault only when its `find` text occurs exactly once in its file.
+  Ten faults in `testguard.claims.json` matched zero or two times, so their
+  claims were weaker than they read. The scanner refactors of 2026-10-10
+  (#530, #532–#535, #537, #538) moved or duplicated the lines they pointed at:
+  - FALLBACK-LANGUAGE-COVERAGE-IS-PARTIAL F8, F20;
+  - PYTHON-EXTRACTION-IS-ACCURATE F1, F19, F28;
+  - JS-TS-EXTRACTION-MATCHES-TRUTH F2, F4, F18, F30;
+  - GENERATED-DOCS-PASS-OWN-CHECKS F37.
+
+  Each now targets the code that implements the behaviour its description
+  names, and every fault in the file matches exactly once. Test-only: no
+  shipped behaviour changes.
+
 - **Two `docguard watch` tests no longer race the watcher's output**
   (`docguard.watch-deterministic` FR-004). Each waited on an earlier or weaker
   marker than the line it then asserted, so a slow runner could read the

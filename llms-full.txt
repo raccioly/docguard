@@ -2109,6 +2109,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ten TestGuard faults that could not be injected are re-pointed.** TestGuard
+  injects a fault only when its `find` text occurs exactly once in its file.
+  Ten faults in `testguard.claims.json` matched zero or two times, so their
+  claims were weaker than they read. The scanner refactors of 2026-10-10
+  (#530, #532–#535, #537, #538) moved or duplicated the lines they pointed at:
+  - FALLBACK-LANGUAGE-COVERAGE-IS-PARTIAL F8, F20;
+  - PYTHON-EXTRACTION-IS-ACCURATE F1, F19, F28;
+  - JS-TS-EXTRACTION-MATCHES-TRUTH F2, F4, F18, F30;
+  - GENERATED-DOCS-PASS-OWN-CHECKS F37.
+
+  Each now targets the code that implements the behaviour its description
+  names, and every fault in the file matches exactly once. Test-only: no
+  shipped behaviour changes.
+
 - **Two `docguard watch` tests no longer race the watcher's output**
   (`docguard.watch-deterministic` FR-004). Each waited on an earlier or weaker
   marker than the line it then asserted, so a slow runner could read the
@@ -2259,22 +2273,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     text. A `docguard:section` marker whose `covers` lists the file still
     documents it.
   - **Next.js route handlers — adds warnings.** A handler is documented by
-    the URL path it serves (`/api/users/{id}`, `GET /api/users/:id`,
-    `/api/users/[userId]`, with any host or base path before it) or by its
-    file or directory path, never by its module name. The path must end
-    there, so `/api/users/{id}` does not document `/api/users`. A trailing
-    wildcard below `/api` (`/api/deals/*`) documents the handlers under it;
-    `/api/*` documents none.
-  - **Shared names — adds warnings.** A module name that several checked
-    files share is qualified by its directory (`auth/types`), and an `index`
-    or `__init__` file is named by `auth/index` or by its directory as a
-    module path (`services/auth`). A unique module name keeps the whole-word
-    rule of spec 077.
-  - **File trees.** A tree drawn in a document (`├──`, `└──`, `|--`) names
-    the path of each entry, joined to the entries and the directory line
-    above it.
 
-<!-- truncated: 5704 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5718 more lines — read CHANGELOG.md directly -->
 
 ---
 
