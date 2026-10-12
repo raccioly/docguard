@@ -14005,11 +14005,11 @@
           },
           {
             "path": "specs/073-todo-quoted-forms/plan.md",
-            "digest": "sha256:48d39fd62ff32f1aebbb9ab29bd0b6b068ca14db25d435eac0af2050db1c1841"
+            "digest": "sha256:5153e478401ef7e1be6c390faaf03d29c3901256f71d8e8cdafd7b847e9cebee"
           },
           {
             "path": "specs/073-todo-quoted-forms/tasks.md",
-            "digest": "sha256:6fe8d5d451d66ecc5df30d27aab526b97bc38dfcded5816925b0464ca3b489fe"
+            "digest": "sha256:1618eea9b42625280c51e44b55397c3e61b8af61700d5207c4b0988283db9e76"
           }
         ],
         "taskCompletion": {
