@@ -10,6 +10,7 @@
  * @req docguard.generated-docs-consistency#SC-002
  * @req docguard.generated-docs-consistency#SC-003
  * @req docguard.whole-token-sibling-matchers#FR-006
+ * @req docguard.docs-sync-specific-evidence#FR-007
  */
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,8 +49,9 @@ async function cli(dir, args) {
 const NO_SPEC_KIT = ['SPK001', 'SPK002'];
 // After a blank `init`, the templates are empty forms. Requests to fill them
 // in describe work to do, not a defect in what DocGuard wrote. DSY001/DSY002:
-// the templates name no route or service yet; `init` then `--plan --write`
-// names them (specs/077-whole-token-sibling-matchers FR-006).
+// the templates name no route or service yet, and a name in their placeholder
+// comments is not documentation; `init` then `--plan --write` names them
+// (specs/077-whole-token-sibling-matchers FR-006, specs/078-docs-sync-specific-evidence FR-007).
 const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', 'DSY001', 'DSY002', ...NO_SPEC_KIT];
 
 const FLOWS = {
