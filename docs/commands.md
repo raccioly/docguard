@@ -490,7 +490,9 @@ regeneration before marking a spec verified; `--write` requires a reviewed
 reason and performs the registry, spec outcome, and current-context writes as
 one rollback-safe transaction. Several completions can run back to back against
 the same revision before one commit: the files completion writes do not count as
-changes.
+changes. Repeat `--deviation <text>` to record accepted deviations, in any
+order: the registry and the spec's outcome line list them deduplicated and
+sorted.
 
 Completion traces every changed source or test file to a spec: through that
 spec's recorded evidence, or through a requirement identity in the changed

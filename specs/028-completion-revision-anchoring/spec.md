@@ -10,6 +10,8 @@
 
 **Lineage**: refines `docguard.document-lifecycle` (completion transaction and
 reviewed revisions). Found while verifying specs 014–027 for 0.43.0 (#455).
+FR-007 was added 2026-10-12 after completing spec 070 rolled back on two
+deviations given out of order.
 
 **Input**: User description (dogfood finding): "`specs complete` records a
 revision that a squash merge discards, and a batch of completions cannot share
@@ -52,6 +54,9 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 2. **Given** a tracked change outside the lifecycle files (source, test, docs,
    or spec prose outside the outcomes block), **Then** completion is still
    blocked (SPC001).
+3. **Given** `--deviation "B…" --deviation "A…"`, **When** completion writes,
+   **Then** it succeeds, and the registry outcome and the spec's outcome line
+   both list `A…` before `B…`.
 
 ### User Story 2 - A dangling revision is reported (Priority: P1)
 
@@ -93,6 +98,8 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 - A repository with no remote, or no `origin/HEAD`, skips the User Story 4
   warning. It never guesses a default branch.
 - Re-anchoring never changes an outcome's reason, evidence or deviations.
+- Two deviations that differ only in whitespace are one deviation. The bound of
+  20 applies to the deduplicated list.
 
 ## Requirements *(mandatory)*
 
@@ -124,6 +131,14 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
   dangling revisions can come from different merges, and a single `--to` would
   otherwise attest all of them to one merge. Other dangling revisions MUST stay
   untouched.
+- **FR-007**: `specs complete --write` MUST record its outcome in the canonical
+  form the registry projection reads back: evidence paths and deviations
+  deduplicated (deviations after whitespace normalization) and in the
+  projection's sort order, whatever order they were given in. The spec's
+  outcome line MUST list them in that same order, and `specs complete` without
+  `--write` MUST show the evidence in that order. A completion MUST NOT roll
+  back because its registry write and the re-projection differ only in order
+  or duplicates.
 
 ## Success Criteria *(mandatory)*
 

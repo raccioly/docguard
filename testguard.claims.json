@@ -7959,6 +7959,84 @@
       ]
     },
     {
+      "id": "COMPLETION-OUTCOME-CANONICAL",
+      "statement": "specs complete --write records its outcome in the form the registry projection reads back: evidence paths and deviations deduplicated (deviations after whitespace normalization) and sorted whatever order they were given in, so the completion transaction never rolls back on order or duplicates; the spec outcome line and the plan evidence use the same order, and the bound of 20 counts distinct deviations.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.completion-revision-anchoring#FR-007"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 028 FR-007)"
+      },
+      "defendedBy": [
+        "tests/completion-revision-anchoring.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Completion records deviations in the order given, so its registry write fails re-projection.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "  const outcome = canonicalOutcome({\n    revision: plan.revision,",
+          "replace": "  const outcome = ({\n    revision: plan.revision,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-007)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The canonical outcome stops sorting deviations.",
+          "faultClass": "return-altered",
+          "file": "cli/scanners/spec-registry.mjs",
+          "find": "    deviations: sortedUnique(outcome.deviations || []),",
+          "replace": "    deviations: outcome.deviations || [],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-007)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "The completion plan lists evidence in code-unit order, not the recorded order.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "    evidence: spec ? sortedUnique([\n      ...spec.observed.implementationEvidence.map(item => item.file),\n      ...spec.observed.testEvidence.map(item => item.file),\n      ...spec.reviewed.scope.canonicalDocs,\n    ]) : [],",
+          "replace": "    evidence: spec ? [...new Set([\n      ...spec.observed.implementationEvidence.map(item => item.file),\n      ...spec.observed.testEvidence.map(item => item.file),\n      ...spec.reviewed.scope.canonicalDocs,\n    ])].sort() : [],",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-007)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The outcome line re-sorts deviations by code unit, disagreeing with the registry.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "  const deviations = (outcome.deviations || []).map(item => clean(item))",
+          "replace": "  const deviations = [...(outcome.deviations || [])].sort().map(item => clean(item))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-007)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "The bound of 20 counts duplicate deviations.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (outcome.deviations.length > 20 ||",
+          "replace": "  if ((flags.deviations || []).length > 20 ||",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-007)"
+          }
+        }
+      ]
+    },
+    {
       "id": "DOC-REFERENCES-WHOLE-TOKEN",
       "statement": "A doc line names a file by path or basename only as a whole file name, with no file-name character (ASCII letter or digit, _, -, ., $, +, @) against it on either side and a sentence period still ending it, in trace --reverse, impact (direct, indirect and --prs), docguard_docs_for_path and impact's doc-to-doc blast radius; every real way of naming a file (a path after /, Markdown wrappers, line suffixes, unspaced CJK prose) keeps matching with its kind.",
       "source": {

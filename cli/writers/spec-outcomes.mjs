@@ -10,11 +10,14 @@ function clean(value, max = 500) {
   return String(value || '').replace(/\s+/g, ' ').replace(/[<>`]/g, '').trim().slice(0, max);
 }
 
+// The outcome arrives in the registry's canonical form, so the line lists
+// evidence and deviations in the order the registry records them
+// (docguard.completion-revision-anchoring#FR-007).
 export function appendImplementationOutcome(content, outcome) {
   const reason = clean(outcome.reason);
   if (!reason) throw new Error('Implementation outcome requires a non-empty reviewed reason.');
-  const evidence = [...new Set(outcome.evidence || [])].sort().map(path => `\`${path}\``).join(', ') || 'none';
-  const deviations = [...new Set(outcome.deviations || [])].sort().map(item => clean(item)).filter(Boolean).join('; ') || 'none';
+  const evidence = (outcome.evidence || []).map(path => `\`${path}\``).join(', ') || 'none';
+  const deviations = (outcome.deviations || []).map(item => clean(item)).filter(Boolean).join('; ') || 'none';
   const successor = outcome.successor ? `\`${outcome.successor}\`` : 'none';
   const line = `- \`${outcome.revision}\` — ${reason} Evidence: ${evidence}. Accepted deviations: ${deviations}. Successor: ${successor}.`;
   const block = `${START}\n## Implementation Outcomes\n\n${line}\n${END}`;
