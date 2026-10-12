@@ -92,3 +92,9 @@ The scheduled release cuts a new version on this repository.
 - The doc lock (`.docguard-doc-lock.json`, `doclock-v0`) does not read markers. Its algorithm is released and pinned (spec 030 FR-015).
 - Treating values as volatile without a marker (guessing that `version:` lines are release-managed).
 - Re-accepting links automatically in the release workflow: the release patch never touches the anchor lock.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `c9934dd2c236b206a7824826148e45ea2e2c86e8` — Reviewed at c9934dd (main after #565): a docguard:volatile line is a placeholder at the Babel, python-ast, pattern, tree-sitter and file tiers; unmarked files fingerprint as before (golden unchanged). Suite 3,761/3,761, CI green on Node 18-24; guard PASS; 0.45.0 cut dry run: guard PASS, anchors all reviewed or baselined. TestGuard: 115/115 anchor faults killed (3 unproven at 85cfe48 fixed, 26/26 at 1e2f1a9). Deviations: none. Evidence: `cli/scanners/anchor-tags.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/pattern-lexer.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/release-version-sync.test.mjs`, `tests/volatile-anchor-lines.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -14750,7 +14750,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -14773,8 +14773,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c9934dd2c236b206a7824826148e45ea2e2c86e8",
+          "outcomes": [
+            {
+              "revision": "c9934dd2c236b206a7824826148e45ea2e2c86e8",
+              "reason": "Reviewed at c9934dd (main after #565): a docguard:volatile line is a placeholder at the Babel, python-ast, pattern, tree-sitter and file tiers; unmarked files fingerprint as before (golden unchanged). Suite 3,761/3,761, CI green on Node 18-24; guard PASS; 0.45.0 cut dry run: guard PASS, anchors all reviewed or baselined. TestGuard: 115/115 anchor faults killed (3 unproven at 85cfe48 fixed, 26/26 at 1e2f1a9). Deviations: none.",
+              "evidence": [
+                "cli/scanners/anchor-tags.mjs",
+                "cli/scanners/fingerprint.mjs",
+                "cli/scanners/pattern-lexer.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/release-version-sync.test.mjs",
+                "tests/volatile-anchor-lines.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -14795,7 +14812,7 @@
         "artifacts": [
           {
             "path": "specs/072-volatile-anchor-lines/spec.md",
-            "digest": "sha256:14ffe6b1aa47685af27665785702180166981b3ff0fee2dc2804860688e1236e"
+            "digest": "sha256:dd034db0ecc903e50001a0039b49548fb455747f6861efb5728b9adeb14171d7"
           },
           {
             "path": "specs/072-volatile-anchor-lines/plan.md",
