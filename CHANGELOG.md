@@ -259,6 +259,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
   revision, re-read with today's interpreter, is now unverifiable instead of
   DLK001.
+- **A file is no longer "named" by a longer file name that ends with it**
+  (`specs/075-whole-token-doc-references`). The matcher that `trace --reverse`,
+  `diff --since` / `impact` and the `docguard_docs_for_path` MCP tool share
+  found a file's path or basename anywhere in a doc line, so a doc naming
+  `src/hub.mjs` was reported as describing `src/b.mjs`. `impact` then listed it
+  as directly affected when `src/b.mjs` changed, and as indirectly affected
+  (`via: 'src/b.mjs'`) when anything `src/b.mjs` imports changed.
+  - **Whole tokens.** A path or basename now matches only when no file-name
+    character (ASCII letter or digit, `_`, `-`, `.`, `$`, `+`, `@`) sits
+    against it on either side; a sentence period still ends it. So
+    `test.mjs` is not named by `impact.test.mjs`, `config.js` by
+    `config.json`, or `index.ts` by `index.tsx`. `/`, whitespace, Markdown
+    punctuation and Chinese, Japanese or Thai prose are edges, so
+    `src/b.mjs`, `**b.mjs**`, `[b.mjs](src/b.mjs)`, `b.mjs:12` and
+    `参见b.mjs文件` still match, with the same kind.
+  - **Doc-to-doc blast radius.** A changed `SPEC.md` no longer flags the
+    docs that mention only `TEST-SPEC.md`.
+  - **What changes on DocGuard itself.** Over its 624 tracked code files, 66
+    of 894 doc-line references disappear, each a name inside a longer one
+    (`guard.mjs` in `docguard.mjs`, `git.mjs` in `shared-git.mjs`,
+    `server.js` in `server.json`); none is added. On four other projects,
+    one of 1,514 disappears (`match.js` in `orgmatch.js`).
 
 ## [0.44.3] - 2026-10-11
 

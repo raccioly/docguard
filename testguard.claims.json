@@ -3053,7 +3053,7 @@
           "description": "Basename references are dropped.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/doc-references.mjs",
-          "find": "  if (line.includes(base)) return 'basename';\n",
+          "find": "  if (namesToken(line, base)) return 'basename';\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -7954,6 +7954,96 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 072)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DOC-REFERENCES-WHOLE-TOKEN",
+      "statement": "A doc line names a file by path or basename only as a whole file name, with no file-name character (ASCII letter or digit, _, -, ., $, +, @) against it on either side and a sentence period still ending it, in trace --reverse, impact (direct, indirect and --prs), docguard_docs_for_path and impact's doc-to-doc blast radius; every real way of naming a file (a path after /, Markdown wrappers, line suffixes, unspaced CJK prose) keeps matching with its kind.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.whole-token-doc-references#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 075)"
+      },
+      "defendedBy": [
+        "tests/doc-reference-tokens.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A name at the end of a longer file name matches (hub.mjs names b.mjs).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "`(?<!${NAME_CHAR})${escapeRegex(name)}",
+          "replace": "`${escapeRegex(name)}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A name at the start of a longer file name matches (config.json names config.js).",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "(?!${NAME_CHAR_NOT_DOT}|\\\\.${NAME_CHAR_NOT_DOT})`",
+          "replace": "`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A sentence period after a name no longer ends it.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "|\\\\.${NAME_CHAR_NOT_DOT})`",
+          "replace": "|\\\\.)`",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A slash counts as part of a file name, so a path after a directory stops matching.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR = '[A-Za-z0-9_$+@.-]';",
+          "replace": "const NAME_CHAR = '[A-Za-z0-9_$+@./-]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A hyphen is an edge, so user-service.ts names service.ts.",
+          "faultClass": "literal-changed",
+          "file": "cli/scanners/doc-references.mjs",
+          "find": "const NAME_CHAR = '[A-Za-z0-9_$+@.-]';",
+          "replace": "const NAME_CHAR = '[A-Za-z0-9_$+@.]';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "The blast radius matches a changed doc name as a substring (TEST-SPEC.md names SPEC.md).",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/impact.mjs",
+          "find": "if (lines.some(l => namesToken(l, cbase) || wikiRe.test(l)))",
+          "replace": "if (lines.some(l => l.includes(cbase) || wikiRe.test(l)))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 075)"
           }
         }
       ]

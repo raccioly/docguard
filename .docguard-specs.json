@@ -11678,7 +11678,7 @@
           {
             "requirementId": "FR-031",
             "file": "cli/commands/impact.mjs",
-            "line": 271
+            "line": 273
           },
           {
             "requirementId": "FR-032",
@@ -15029,6 +15029,134 @@
             "requirementId": "SC-002",
             "file": "tests/watch-reliability.test.mjs",
             "line": 13
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.whole-token-doc-references",
+      "path": "specs/075-whole-token-doc-references/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [
+            "docguard.mcp-doc-tools"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.whole-token-doc-references#FR-001",
+          "docguard.whole-token-doc-references#FR-002",
+          "docguard.whole-token-doc-references#FR-003",
+          "docguard.whole-token-doc-references#FR-004",
+          "docguard.whole-token-doc-references#FR-005",
+          "docguard.whole-token-doc-references#FR-006",
+          "docguard.whole-token-doc-references#SC-001",
+          "docguard.whole-token-doc-references#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/075-whole-token-doc-references/spec.md",
+            "digest": "sha256:934620a1e46148cb22e94f5c6bdb540775ed1e488aef2331266ebef561cc290b"
+          },
+          {
+            "path": "specs/075-whole-token-doc-references/plan.md",
+            "digest": "sha256:af2c4e520c0ea439bb0e90d1bec333582c5eaafdf3524da6956a63c811c63d30"
+          },
+          {
+            "path": "specs/075-whole-token-doc-references/tasks.md",
+            "digest": "sha256:e6f87307207dd12d7f80168fffcaa6343c4a0832ef62b53a48da6d20aa3ad1b7"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 8,
+          "total": 8
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 69
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 78
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/doc-references.mjs",
+            "line": 79
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/impact.mjs",
+            "line": 72
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/doc-reference-tokens.test.mjs",
+            "line": 12
           }
         ]
       }
