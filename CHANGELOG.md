@@ -259,6 +259,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
   revision, re-read with today's interpreter, is now unverifiable instead of
   DLK001.
+- **`specs complete --write` no longer rolls back on deviations given out of
+  order** (`specs/028-completion-revision-anchoring`, FR-007). Two
+  `--deviation` values not already sorted failed with "File transaction
+  rolled back: completed registry does not match the resulting repository":
+  completion recorded them in the order given, and the projection that
+  validates the write sorts them. The same mismatch could hit:
+  - deviations that differ only in whitespace, deduplicated before
+    normalization;
+  - evidence paths whose code-unit and `localeCompare` orders differ, such as
+    `README.md` next to `cli/…`.
+
+  Completion now builds its outcome with the projection's own
+  `canonicalOutcome`. The spec's outcome line and the plan's evidence list use
+  that order too, and the bound of 20 counts distinct deviations. Recorded
+  outcomes are unchanged: the registry already stored them in this form.
 
 ## [0.44.3] - 2026-10-11
 

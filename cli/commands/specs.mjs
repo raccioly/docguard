@@ -22,7 +22,7 @@ import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/
 import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
-import { preflightSpec, projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
+import { canonicalOutcome, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
 import { checkSpecFirst } from '../scanners/spec-first.mjs';
@@ -177,11 +177,11 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     blockers,
     anchorFindings,
     reconciliation: reconcile,
-    evidence: spec ? [...new Set([
+    evidence: spec ? sortedUnique([
       ...spec.observed.implementationEvidence.map(item => item.file),
       ...spec.observed.testEvidence.map(item => item.file),
       ...spec.reviewed.scope.canonicalDocs,
-    ])].sort() : [],
+    ]) : [],
     context: CONTEXT_PATH,
     archiveReadiness: archiveReadiness(spec, true),
     guard: { status: guard.status, errors: guard.errors, warnings: guard.warnings },
@@ -203,19 +203,19 @@ export function completeSpec(projectDir, config, flags, options = {}) {
     || successor.reviewed.lifecycle.approval !== 'approved')) {
     throw new Error('Completion successor must be an approved current spec ID.');
   }
-  const deviations = [...new Set(flags.deviations || [])]
-    .map(item => String(item).replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-  if (deviations.length > 20 || deviations.some(item => item.length > 500)) {
-    throw new Error('Completion accepts at most 20 deviations of 1-500 characters.');
-  }
-  const outcome = {
+  // The outcome is built in the form the transaction's validation re-projects
+  // (docguard.completion-revision-anchoring#FR-007): deviations are compared
+  // after whitespace normalization, then deduplicated and sorted.
+  const outcome = canonicalOutcome({
     revision: plan.revision,
     reason,
     evidence: plan.evidence,
-    deviations,
+    deviations: (flags.deviations || []).map(item => String(item).replace(/\s+/g, ' ').trim()).filter(Boolean),
     successor: flags.successor || null,
-  };
+  });
+  if (outcome.deviations.length > 20 || outcome.deviations.some(item => item.length > 500)) {
+    throw new Error('Completion accepts at most 20 deviations of 1-500 characters.');
+  }
   const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), outcome);
   if (spec.reviewed.lifecycle.delivery !== 'released') spec.reviewed.lifecycle.delivery = 'verified';
   spec.reviewed.reconciliation.lastReviewedRevision = plan.revision;
@@ -278,8 +278,8 @@ export function reanchorSpec(projectDir, config, flags) {
     // Any revision git resolves to a commit; the full SHA is what is recorded.
     const toCommit = flags.to ? resolveCommit(projectDir, flags.to) : null;
     for (const { revision, reason } of dangling) {
-      const evidence = [...new Set(outcomes.filter(o => o.revision === revision).flatMap(o => o.evidence)
-        .concat(outcomes.some(o => o.revision === revision) ? [] : outcomes.flatMap(o => o.evidence)))].sort();
+      const evidence = sortedUnique(outcomes.filter(o => o.revision === revision).flatMap(o => o.evidence)
+        .concat(outcomes.some(o => o.revision === revision) ? [] : outcomes.flatMap(o => o.evidence)));
       if (flags.to) {
         if (!toCommit || !isAncestorOf(projectDir, toCommit)) {
           blockers.push({ code: 'SPC008', message: `--to ${flags.to} must name a commit on HEAD's history.` });

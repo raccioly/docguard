@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:f7bd75cbb0f099bed839a9759ca5b727c74a6d277fc540d5ea10b88fab9745d5",
+          "fingerprint": "sha256:5ac4ca6ea4a0080f3b1f89e1dfd3cbef6948d2e660111fca2274101ccad3fafc",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "planSpecCompletion now exempts the completing spec's own failing anchor findings from SPC007 (spec 070 FR-029); prose updated",
-      "reviewedAt": "2026-10-11",
-      "reviewedRevision": "86b0182858b37cae623d3ede22b63382d09b545d"
+      "reason": "FR-007 only changes planSpecCompletion's evidence sort to the registry's order; nothing this section states depends on that order",
+      "reviewedAt": "2026-10-12",
+      "reviewedRevision": "b2088fa93b7193460bc0b18244d4c781f9acd45a"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:46bb81255eed96ede2c92439ca4de3c1f0341795bba858075235e5005cc66971",
+          "fingerprint": "sha256:5c6a6db12e4258c2a13d24e62a43eb33dd38971ea6e8f476d66c2e43e53bf92a",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:47335217c668292e1be76b49f82c879981a1670cad6570b8fceb9f74dff41aed",
+          "fingerprint": "sha256:789fb75e16087a23957ff96005308de37b9de60749bb4fcebe515c616803a368",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Merged 040 and 042: reanchorSpec resolves --to to a full SHA and completeSpec/reanchorSpec treat .docguard/ state as clean; the section states both (specs approve row, clean-tree note).",
-      "reviewedAt": "2026-09-30",
-      "reviewedRevision": "21f0c85caeecc2943df578702416339fea74d752"
+      "reason": "Outcomes row now states evidence and deviations are deduplicated and sorted; completeSpec writes that canonical form and reanchorSpec keeps it",
+      "reviewedAt": "2026-10-12",
+      "reviewedRevision": "b2088fa93b7193460bc0b18244d4c781f9acd45a"
     }
   }
 }

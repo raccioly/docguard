@@ -132,7 +132,26 @@ function reconcileLegacyForms(recorded, projected, artifactDigests) {
   }
   return { value, forms: [...forms].sort() };
 }
-const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
+/** The registry's one order for unordered string lists. */
+export const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
+
+/**
+ * The canonical form of a reconciliation outcome. The projection reads every
+ * recorded outcome through it, and `specs complete` builds the outcome it
+ * writes with it, so a completion's registry write equals its re-projection
+ * whatever order its evidence and deviations arrived in.
+ * @implements docguard.completion-revision-anchoring#FR-007
+ */
+export function canonicalOutcome(outcome) {
+  return {
+    revision: outcome.revision,
+    reason: outcome.reason,
+    evidence: sortedUnique(outcome.evidence || []),
+    deviations: sortedUnique(outcome.deviations || []),
+    successor: outcome.successor ?? null,
+    ...(outcome.reanchoredFrom ? { reanchoredFrom: outcome.reanchoredFrom } : {}),
+  };
+}
 
 function registryDifferences(left, right) {
   const differences = [];
@@ -364,14 +383,7 @@ function validatedControl(entry, issues) {
       },
       reconciliation: {
         lastReviewedRevision: revision,
-        outcomes: Array.isArray(outcomes) ? outcomes.slice(-20).map(outcome => ({
-          revision: outcome.revision,
-          reason: outcome.reason,
-          evidence: sortedUnique(outcome.evidence || []),
-          deviations: sortedUnique(outcome.deviations || []),
-          successor: outcome.successor ?? null,
-          ...(outcome.reanchoredFrom ? { reanchoredFrom: outcome.reanchoredFrom } : {}),
-        })) : [],
+        outcomes: Array.isArray(outcomes) ? outcomes.slice(-20).map(canonicalOutcome) : [],
       },
     },
   };
