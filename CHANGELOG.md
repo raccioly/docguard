@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-10-12
+
 ### Added
 
 - **Requirement anchors: a tag now points at the code under it, not the whole
@@ -239,6 +241,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
   revision, re-read with today's interpreter, is now unverifiable instead of
   DLK001.
+
+### Commits
+
+- chore: verify spec 070 (requirement anchors) (#564)
+- docs: record the spec 070 release gate at c644672 (#563)
+- feat: requirement anchors and suspect links (spec 070) (#562)
 
 ## [0.44.3] - 2026-10-11
 
