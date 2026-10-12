@@ -4604,12 +4604,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 45
+            "line": 47
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 49
+            "line": 51
           },
           {
             "requirementId": "FR-010",
@@ -6342,6 +6342,169 @@
       }
     },
     {
+      "specId": "docguard.js-import-edges",
+      "path": "specs/076-js-import-edges/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "implemented",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [
+            "docguard.code-derived-diagrams",
+            "docguard.language-repository-coverage"
+          ],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.js-import-edges#FR-001",
+          "docguard.js-import-edges#FR-002",
+          "docguard.js-import-edges#FR-003",
+          "docguard.js-import-edges#FR-004",
+          "docguard.js-import-edges#FR-005",
+          "docguard.js-import-edges#FR-006",
+          "docguard.js-import-edges#FR-007",
+          "docguard.js-import-edges#FR-008",
+          "docguard.js-import-edges#SC-001",
+          "docguard.js-import-edges#SC-002",
+          "docguard.js-import-edges#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/076-js-import-edges/spec.md",
+            "digest": "sha256:64648cd007e8fc1118fe9ff1f809d27d5d62d7639f760a40039ad9f016a841a9"
+          },
+          {
+            "path": "specs/076-js-import-edges/plan.md",
+            "digest": "sha256:485da54f2947829b78cbfa236aa2dc45cc23e3aee38b905ecfac61dbb985c998"
+          },
+          {
+            "path": "specs/076-js-import-edges/tasks.md",
+            "digest": "sha256:041d435ffe2352a5b85d8323260d818ca8f56c61f39ad7b5781f45ff6418944e"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 9,
+          "total": 9
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 322
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 326
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 327
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 328
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 340
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/import-graph.mjs",
+            "line": 342
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/js-import-edges.test.mjs",
+            "line": 22
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.js-route-shapes",
       "path": "specs/064-js-route-shapes/spec.md",
       "reviewed": {
@@ -6772,7 +6935,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 50
+            "line": 52
           },
           {
             "requirementId": "FR-005",
@@ -7334,17 +7497,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 38
+            "line": 40
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 39
+            "line": 41
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 40
+            "line": 42
           },
           {
             "requirementId": "FR-004",
@@ -7354,7 +7517,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 41
+            "line": 43
           },
           {
             "requirementId": "FR-006",
@@ -10007,7 +10170,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/scanners/module-diagram.mjs",
-            "line": 172
+            "line": 177
           },
           {
             "requirementId": "FR-015",

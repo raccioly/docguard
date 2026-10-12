@@ -55,12 +55,15 @@ const posix = p => String(p).replace(/\\/g, '/');
 
 /**
  * Environment-dependent gaps make the diagram partial: the same code would
- * draw differently on a runner with Python, or where the file is readable.
- * Code-dependent gaps (a dynamic Python import) draw the same everywhere, so
- * they are captioned instead.
+ * draw differently on a runner with Python or the JS/TS parser, or where the
+ * file is readable. Code-dependent gaps (a dynamic Python import) draw the
+ * same everywhere, so they are captioned instead; a JS/TS file that does not
+ * parse is read by the same pattern everywhere, so it is neither
+ * (docguard.js-import-edges#FR-008).
  */
 const PARTIAL_CODES = {
   'python-interpreter-unavailable': 'Python interpreter unavailable',
+  'js-parser-unavailable': 'JS/TS parser unavailable',
   'python-parse-failed': 'Python file could not be parsed',
   'source-unreadable': 'source file unreadable',
 };
@@ -97,6 +100,8 @@ export function renderModuleGraph(graph, config = {}) {
   for (const item of graph.limitations || []) {
     if (item.code === 'python-interpreter-unavailable') {
       for (const f of (graph.unsupportedFiles || []).map(posix).filter(inScope)) partialFiles.set(f, PARTIAL_CODES[item.code]);
+    } else if (item.code === 'js-parser-unavailable') {
+      for (const f of files.filter(f => !f.endsWith('.py'))) partialFiles.set(f, PARTIAL_CODES[item.code]);
     } else if (PARTIAL_CODES[item.code] && item.file && inScope(posix(item.file))) {
       partialFiles.set(posix(item.file), PARTIAL_CODES[item.code]);
     } else if (UNDRAWN_CODES.has(item.code) && item.file && inScope(posix(item.file))) {

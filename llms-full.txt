@@ -61,9 +61,9 @@ It targets development teams and AI coding agents that need to maintain document
 | **Suppressions** | Parses `.docguardignore` entries with an optional `expires:` day and `# reason`, and applies only the active ones everywhere the file is read; models every native suppression (ignore file, config arrays, inline pragmas, N/A markers, baseline) with its reason and state; the Suppressions validator reports expired, unreadable and (opt-in) reason-less entries (IGN001–IGN003); `docguard ignore --format claimspec` exports the entries whose reason, expiry and scope survive exactly | `cli/shared-ignore.mjs` (`parseDocguardIgnore`), `cli/scanners/suppressions.mjs`, `cli/validators/suppressions.mjs`, `cli/commands/ignore.mjs`, `cli/writers/claimspec-ignore.mjs`, `cli/claimspec-schema.mjs`, `schemas/claimspec/v1/` | Read-only. Expired and unreadable entries exclude nothing. The claimspec schemas are vendored byte-identical and checked by a keyword-limited validator that refuses keywords it does not implement; nothing is exported without a written reason (specs/057-ignore-reasons) |
 | **Doc ownership map** | Resolves each tracked file to the one doc section responsible for it (exact path beats glob; longer literal prefix beats shorter), reports unowned code and ties, and lints a committed `.devin/wiki.json` | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs`, `cli/commands/trace.mjs` | The map is declared by people in `.docguard.json`; `trace --owners --suggest` drafts one and never writes |
 | **Path-scoped agent rules** | Derives each agent instruction file's scope per harness (Codex, Claude Code, Cursor, Copilot, OpenHands) and checks it against the tracked files; `rules --for` resolves what an agent loads for a path | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` | Tracked files only in guard; formats verified 2026-09-30 and recorded in `docs/ai-integration.md`; patterns DocGuard does not evaluate are reported as not checked |
-| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer. It also owns the reverse-import walk (two hops, modules with more than 15 imports excluded) that `impact` and requirement-anchor ripple share, and records the names each import binds so ripple keeps only importers of the changed name. JS/TS aliases resolve through the nearest `tsconfig.json`/`jsconfig.json` (`compilerOptions.paths` and `baseUrl`, following `extends`) | `cli/scanners/import-graph.mjs`, `cli/scanners/ts-paths.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs`, `cli/commands/impact.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations. An alias that names no project file adds no edge; configs are read as JSONC, never executed; `extends` stops at depth 8 or a cycle |
+| **Cross-language import graph** | Resolves repository-local JS/TS and Python static imports for cycle and layer checks, once per run for every consumer. JS/TS imports come from the Babel syntax tree: import declarations of any shape and length (`import type` included), re-exports with a source, `require()`, TS `import = require()`, and, as dynamic edges outside cycle adjacency, `import()` and TS or JSDoc `import('…')` type references; text in other comments and in strings is not an edge. A file the parser cannot read falls back to a pattern whose clause spans lines but never a statement. Every edge carries the tier that read it. It also owns the reverse-import walk (two hops, modules with more than 15 imports excluded) that `impact` and requirement-anchor ripple share, and records the names each import binds, from the same read, so ripple keeps only importers of the changed name. JS/TS aliases resolve through the nearest `tsconfig.json`/`jsconfig.json` (`compilerOptions.paths` and `baseUrl`, following `extends`) | `cli/scanners/import-graph.mjs`, `cli/scanners/ts-paths.mjs`, `cli/validators/architecture.mjs`, `cli/scanners/py-ast.mjs`, `cli/commands/impact.mjs` | Python supports regular flat/`src/` packages and explicit relatives; dynamic imports, runtime path changes, parse failures, missing interpreters, and ambiguous modules remain explicit limitations. A JS/TS file read by the pattern fallback is a limitation too (`js-parser-unavailable` once for all files, or `js-parse-failed` per file), and ARC findings carry the tier of the files they cite (specs/076-js-import-edges). An alias that names no project file adds no edge; configs are read as JSONC, never executed; `extends` stops at depth 8 or a cycle |
 | **Symbol map** | `memory --pack --symbols`: ranks source files by PageRank over the cached import graph and lists their exported names within a byte budget; symbols are read only for the files that fit | `cli/scanners/symbol-map.mjs`, `cli/scanners/js-ast.mjs` (`moduleSymbols`), `cli/scanners/py-ast.mjs` | Opt-in by benchmark decision: frozen agent-context protocol v3 (`benchmarks/agent-context/manifest-v3.json`, v2 with only the executable pin changed) computed `opt-in`, with no regression and no predeclared benefit; names only, no claim about behavior |
-| **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
+| **Code-derived diagrams** | Draws the `module-graph` (directory modules and their imports) and `entity-diagram` (schema entities) mermaid sections from code, so GST002 reports drift and `sync --write` redraws them; a graph missing evidence is `partial`, never stale: a missing Python interpreter or JS/TS parser, an unparsable Python file, an unreadable file | `cli/scanners/module-diagram.mjs`, `cli/scanners/memory-plan.mjs`, `cli/validators/generated-staleness.mjs` | Only for a doc that has the marker or is being created; node, edge and depth limits are captioned; hand-drawn diagrams are untouched |
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
@@ -1637,7 +1637,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
 | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
 | `cli/scanners/doc-ownership.mjs`, `cli/validators/doc-ownership.mjs` (OWN001–OWN007, `trace --owners`) | `tests/doc-ownership.test.mjs` | ✅ |
-| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs` | ✅ |
+| `cli/scanners/import-graph.mjs`, `cli/scanners/module-diagram.mjs` (module and entity diagrams) | `tests/code-derived-diagrams.test.mjs`, `tests/architecture.test.mjs`, `tests/python-import-graph.test.mjs`, `tests/js-import-edges.test.mjs` | ✅ |
 | `cli/scanners/symbol-map.mjs`, `benchmarks/agent-context/run.mjs` (symbol map, agent-context protocol v2) | `tests/symbol-map.test.mjs`, `tests/agent-context-benchmark.test.mjs` | ✅ |
 | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs` (Go, Spring and Rails routes) | `tests/go-spring-rails-routes.test.mjs`, `tests/routes-multilang.test.mjs` | ✅ |
 | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs` (Laravel, Symfony and ASP.NET Core routes) | `tests/php-dotnet-routes.test.mjs` | ✅ |
@@ -1733,6 +1733,13 @@ context, imported global `env`, and entrypoint-class property forms. Every form
 has a lookalike source, class, function, shadow, or computed-key control. The
 packed-package test runs without installed Babel and requires AST-only forms to
 remain disclosed as limitations.
+
+JS/TS import-edge fixtures read every import form at the syntax-tree tier
+and at the pattern fallback, both in an unparsable file and in a copy of
+`cli/` that cannot resolve `@babel/parser`. Controls put each form in a
+comment, a string and a template literal, and follow a side-effect import with
+a quoted statement the fallback must leave intact. A repository test requires
+an edge for every multi-line import and re-export in `cli/`.
 
 Python import-graph fixtures cover regular flat and `src/` packages, absolute
 and explicit-relative imports, cycles, and configured layer violations. Paired
@@ -2156,6 +2163,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `canonicalOutcome`. The spec's outcome line and the plan's evidence list use
   that order too, and the bound of 20 counts distinct deviations. Recorded
   outcomes are unchanged: the registry already stored them in this form.
+- **A multi-line import is now an import-graph edge** (`specs/076-js-import-edges`).
+  JS/TS imports were read by one pattern whose clause stopped at the end of a
+  line, so `import {\n  a,\n  b,\n} from './x.mjs'` (Prettier's style for any
+  long import) produced no edge. They are now read from the Babel syntax tree:
+  - import declarations of any shape and length, `import type` included;
+  - re-exports with a source (`export * from`, `export { … } from`), which load
+    their module as an import does and were never read;
+  - `require()` and TypeScript `import x = require()`;
+  - `import()` and TypeScript or JSDoc `import('…')` type references, still
+    dynamic edges outside cycle detection.
+
+  Text that only spells an import, in a string, a template literal or a line
+  comment, is no longer an edge. A file the parser cannot read falls back to a
+  pattern whose clause spans lines but never a statement. The names each edge
+  binds come from the same parse, so a comment inside a multi-line clause no
+  longer drops a name from requirement-anchor ripple.
+  - **What changes for adopters.** Every consumer of the graph sees the new
+    edges: the Architecture validator's cycle (ARC002) and layer checks
+    (ARC001, ARC003), the module diagram, `diff --since` indirect docs, the
+    symbol map ranking and requirement-anchor ripple. A project whose
+    multi-line imports or re-exports close a cycle or cross a declared layer
+    gets that finding for the first time, and a committed module graph that
+    gains an edge reports GST002 until `docguard sync --write` redraws it.
+    ARC findings now carry the `parserTier` of the files they cite. A JS/TS
+    file read by the fallback makes Architecture `partial` (`js-parse-failed`,
+    or `js-parser-unavailable` without `@babel/parser`), and a missing parser
+    also makes the module graph `partial`.
+  - **What changes on DocGuard itself.** On the code at c9934dd the graph
+    gains 61 edges and loses 2: 15 in `cli/`, 29 in `tests/` and 17 re-exports
+    in an agent-context benchmark fixture. In `cli/`, 13 multi-line imports and 2 re-exports become edges, and the 2
+    edges that `cli/feedback-fixture.mjs` drew from the test-file source it
+    writes into a template literal are gone. Guard reports no Architecture
+    finding before or after, and the module-graph section of
+    `docs-canonical/ARCHITECTURE.md` is unchanged.
 - **A file is no longer "named" by a longer file name that ends with it**
   (`specs/075-whole-token-doc-references`). The matcher that `trace --reverse`,
   `diff --since` / `impact` and the `docguard_docs_for_path` MCP tool share
@@ -2229,42 +2270,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `module.exports = router.routes()` mounted with `api.use(users)` lost the
     prefix above it. Such exports (and `router.middleware()`,
     `export default router.routes()`) are now followed.
-  - A JWT middleware built to let unauthenticated requests through (koa-jwt
-    `passthrough: true`, express-jwt `credentialsRequired: false`) no longer
-    marks every route below it as requiring auth; route-level auth middleware
-    still does. On the Koa app, auth now sits on exactly the 12 routes that
-    carry `auth`, not on `POST /api/users/login`.
-  - A declaration an Actix, Axum, Rocket, Symfony or Laravel reader recognises
-    but cannot turn into a route is listed in `scan.unresolved`
-    (`route-unresolved-path`, `-prefix`, `-method`, `-declaration`), so the
-    API-surface check reports `partial` instead of a silent zero; a Laravel
-    route file no application loads is one of them.
 
-### Commits
-
-- chore: verify spec 071; review docs after specs 065-071 (#559)
-- fix: route readers that undercounted real projects (spec 071) (#558)
-- chore: verify spec 051 maintenance; map sync-tests.mjs in TEST-SPEC (#557)
-- test: replace typeof-only export checks with behaviour tests (#556)
-
-## [0.44.2] - 2026-10-11
-
-### Fixed
-
-- **A spec that removes a file can be completed**
-  (`specs/069-removed-file-attribution`). Reconciliation could not attribute a
-  deleted source or test file: it is no spec's evidence once it is gone, its
-  diff holds only the removed lines, and an `assetPaths` entry for it covers
-  nothing (SPR009). `specs complete` therefore blocked (SPC006) on any spec
-  whose work removed code, even when the spec named the removal; spec 067's
-  removal of `.jules-setup.sh` hit this. A deleted file is now linked to every
-  current, approved spec whose own documents name its exact path, or name a
-  directory containing it that HEAD no longer tracks anything under. Only
-  deletions are linked this way: a file that still exists needs an annotation,
-  and a near-miss name (`scripts/old.sh` for `scripts/old.sh.mjs`) does not
-  count.
-
-<!-- truncated: 5625 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5659 more lines — read CHANGELOG.md directly -->
 
 ---
 
