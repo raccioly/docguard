@@ -142,6 +142,11 @@ describe('Reconciliation review graph', () => {
         patch: '', patchBytes: 0, limits: { maxPatchBytes: 128 },
         reason: 'Patch exceeded its byte budget; use a newer --since revision.',
       }),
+      // Batched reading (completion-revision-anchoring FR-008) fails too.
+      readPatchBatches: () => ({
+        status: 'too-large', batches: 0, patchBytes: 0,
+        reason: 'Patch for src/auth.js exceeds the 128-byte per-call budget; use a newer --since revision.',
+      }),
     });
     assert.equal(plan.status, 'BLOCKED');
     assert.equal(plan.coverage.status, 'partial');

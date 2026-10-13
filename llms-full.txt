@@ -308,7 +308,7 @@ Requirement definitions are identified by immutable spec ID plus requirement ID 
 
 Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Text inside an HTML comment declares nothing; a `<!--` quoted in an inline code span is text, not a comment opener (`shared-html-comments.mjs`, shared with the instruction-pointer reader). Linkage remains evidence of a declaration, not proof of behavioral correctness. Each definition also carries its whole `block` (a list item with its nested lines, a heading through the next heading, a table row, or a paragraph) so a requirement fingerprint sees every line of it, while `text` stays the declaration line that the TF-IDF test hint and preflight overlap detection read.
 
-Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
+Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision, reading a range past the per-call diff budget in bounded batches, and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. A newer `--since` replaces that revision only when its range exceeds the budgets even in batches, and the outcome then records the commits it did not reconcile as `narrowedFrom`. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
 <!-- /docguard:section -->
 
 
@@ -827,6 +827,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor. Evidence paths and deviations are deduplicated and sorted (`localeCompare`); `specs complete` writes them in that order whatever order they were given in |
 | `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`, and `differing` evidence paths when the target's bytes differ). Serialized only when set |
+| `specs[].reviewed.reconciliation.outcomes[].narrowedFrom` | `specs complete` | Optional: the review reconciled from a newer `--since` because the recorded revision's range exceeded the diff budgets even when read in batches — `revision` (the recorded one), `since`, `skippedCommits` (not reconciled) and `reason` (the budget). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
 | `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
 | `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |
@@ -1067,9 +1068,8 @@ first instant after the stated day. The schemas are vendored byte-identical in
 
 `.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself: the first write creates `.docguard/.gitignore` containing `*` and keeps an existing one, so the project's own `.gitignore` stays as the project wrote it. `git rm -r --cached .docguard` untracks files that an earlier version let a project commit. DocGuard's dirty checks leave `.docguard/` out either way.
 
-## Task Context Packet
 
-<!-- truncated: 263 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 264 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1914,6 +1914,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **TAP artifact.** Each leg uploads its TAP as `test-tap-node-<version>`,
     the input for refreshing the reference.
 
+### Fixed
+
+- **A living spec reviewed long ago can complete its maintenance again**
+  (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion
+  reconciles from the spec's recorded revision, and `reconcile` read that
+  range's whole patch in one Git call capped at 5 MB. Spec 028's own
+  maintenance, recorded 83 commits before 0.45.0, was BLOCKED ("Patch exceeded
+  its byte budget") with no way forward. A range whose single read overflows
+  or times out is now read again in batches of changed paths, each under the
+  same 5 MB budget (a rename's two paths together, every path literal), keeping
+  only each file's derived links between batches. Coverage is complete and the
+  classifications match one unbounded read; `range.batches` reports the reads.
+  The range from spec 028's recorded revision (763 files, 7.2 MB) now
+  reconciles in 4 batches. A range past every bound (one file's patch over
+  5 MB, 64 MB in total, two minutes, or the 5,000-file inventory) stays
+  BLOCKED and names the bound or the file.
+- **`specs complete --since` no longer skips reviewed history silently.** With
+  a recorded revision, `--since` replaced it unconditionally, so a newer ref
+  dropped the commits in between from reconciliation and the outcome recorded
+  nothing about it; `--help` described the flag as used only when no revision
+  is recorded. The same or an older ref is accepted. A newer ref on `HEAD`'s
+  history is accepted only when the recorded range is BLOCKED by a budget even
+  in batches, and the outcome then records `narrowedFrom` (`revision`,
+  `since`, `skippedCommits`, `reason`) in the registry, and the spec's outcome
+  line says `Not reconciled: <revision>..<ref>`. Any other `--since` — newer
+  over a reconcilable range, unrelated to the recorded revision, or with a
+  recorded revision that does not resolve (which names `specs reanchor`) —
+  blocks with SPC006 and writes nothing. A spec-text amendment alone still does
+  not qualify a living spec for maintenance; the source, test or canonical
+  change that implements it does.
+
 ## [0.45.0] - 2026-10-13
 
 ### Added
@@ -2250,39 +2281,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `docs-canonical/ARCHITECTURE.md` is unchanged.
 - **A file is no longer "named" by a longer file name that ends with it**
   (`specs/075-whole-token-doc-references`). The matcher that `trace --reverse`,
-  `diff --since` / `impact` and the `docguard_docs_for_path` MCP tool share
-  found a file's path or basename anywhere in a doc line, so a doc naming
-  `src/hub.mjs` was reported as describing `src/b.mjs`. `impact` then listed it
-  as directly affected when `src/b.mjs` changed, and as indirectly affected
-  (`via: 'src/b.mjs'`) when anything `src/b.mjs` imports changed.
-  - **Whole tokens.** A path or basename now matches only when no file-name
-    character (ASCII letter or digit, `_`, `-`, `.`, `$`, `+`, `@`) sits
-    against it on either side; a sentence period still ends it. So
-    `test.mjs` is not named by `impact.test.mjs`, `config.js` by
-    `config.json`, or `index.ts` by `index.tsx`. `/`, whitespace, Markdown
-    punctuation and Chinese, Japanese or Thai prose are edges, so
-    `src/b.mjs`, `**b.mjs**`, `[b.mjs](src/b.mjs)`, `b.mjs:12` and
-    `参见b.mjs文件` still match, with the same kind.
-  - **Doc-to-doc blast radius.** A changed `SPEC.md` no longer flags the
-    docs that mention only `TEST-SPEC.md`.
-  - **What changes on DocGuard itself.** Over its 624 tracked code files, 66
-    of 894 doc-line references disappear, each a name inside a longer one
-    (`guard.mjs` in `docguard.mjs`, `git.mjs` in `shared-git.mjs`,
-    `server.js` in `server.json`); none is added. On four other local
-    projects, one of 1,514 disappears, also a name inside a longer one.
-- **The nudge hook, Docs-Sync and Diff-Suspicion name a file only by a whole
-  name** (`specs/077-whole-token-sibling-matchers`). Three matchers that spec
-  075 left out still found a name anywhere in a document.
-  - **Nudge hook.** Editing `src/config.js` no longer nudges the agent about a
-    document that names only `tsconfig.json`. The edited file's basename must
-    appear as a whole file name, by the same rule as `trace --reverse`.
-  - **Docs-Sync (DSY001, DSY002) — adds warnings.** A route or service counts
-    as documented only when a canonical document names its module name (the
-    file name without its extension) as a whole word. `users`, `user-service`
-    and `superuser` no longer document `user.js`, and the word "routes" no
-    longer documents every Next.js `route.ts`. A period is an edge, so
 
-<!-- truncated: 5760 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5791 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -1053,8 +1053,8 @@
           "description": "Canonical links are never recorded.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/reconciliation.mjs",
-          "find": "      if (canonical.length) item.canonical = canonical;",
-          "replace": "      if (false) item.canonical = canonical;",
+          "find": "    if (canonical.length) item.canonical = canonical;",
+          "replace": "    if (false) item.canonical = canonical;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 release prep)"
@@ -9023,6 +9023,164 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "RECONCILE-RANGE-BATCHED",
+      "statement": "A reconciliation range whose single patch read exceeds the per-call byte budget or times out is read again in batches of changed paths, each under the same per-call budget, with a rename's two paths in one batch and every path literal; coverage is complete with the same classifications and byte total as one unbounded read, and the range stays BLOCKED, naming the budget or the file, when one file alone, the range total or the range time exceeds its budget.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.completion-revision-anchoring#FR-008"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+      },
+      "defendedBy": [
+        "tests/completion-revision-anchoring.test.mjs",
+        "tests/shared-git.test.mjs",
+        "tests/reconcile.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "Reconciliation gives up on an over-budget patch instead of reading it in batches.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "  } else if (Number.isSafeInteger(snapshot.commitCount) && ['too-large', 'timeout'].includes(snapshot.status)) {",
+          "replace": "  } else if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A rename's old and new paths can land in different batches, so Git no longer pairs them.",
+          "faultClass": "return-altered",
+          "file": "cli/shared-git.mjs",
+          "find": "  const units = files.map(file => [...new Set([file.oldPath, file.newPath].filter(Boolean))]).filter(unit => unit.length);",
+          "replace": "  const units = files.flatMap(file => [file.oldPath, file.newPath].filter(Boolean).map(path => [path]));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Batch paths are read as pathspec patterns, so a path like :(glob)*.txt matches other files.",
+          "faultClass": "literal-changed",
+          "file": "cli/shared-git.mjs",
+          "find": "        '--literal-pathspecs', 'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD', '--', ...batch.flat(),",
+          "replace": "        'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD', '--', ...batch.flat(),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The range total budget is never enforced.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-git.mjs",
+          "find": "    if (patchBytes > limits.maxRangePatchBytes) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A failed batched read reports the range as complete.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/reconciliation.mjs",
+          "find": "    if (reading.status !== 'ok') return blockedRange(",
+          "replace": "    if (false) return blockedRange(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "COMPLETION-SINCE-NARROWING-RECORDED",
+      "statement": "For a spec with a recorded review revision, specs complete --since accepts the same or an older revision, and a newer descendant on HEAD's history only when the recorded range is BLOCKED by a diff budget or timeout even read in batches; that case records narrowedFrom (revision, since, skippedCommits, reason) in the registry outcome and on the spec's outcome line. A newer --since over a reconcilable range, an unrelated --since, or an unresolvable recorded revision blocks with SPC006 and writes nothing.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.completion-revision-anchoring#FR-009"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+      },
+      "defendedBy": [
+        "tests/completion-revision-anchoring.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "A newer --since is accepted while the recorded range can be reconciled, silently skipping commits.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (full.status !== 'BLOCKED' || !['too-large', 'timeout'].includes(full.range?.status) || skippedCommits === null) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A --since unrelated to the recorded revision is not refused as unrelated.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (!isAncestorOf(projectDir, recordedCommit, sinceCommit) || !isAncestorOf(projectDir, sinceCommit, 'HEAD')) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A narrowed completion does not record narrowedFrom on its outcome.",
+          "faultClass": "return-altered",
+          "file": "cli/commands/specs.mjs",
+          "find": "    ...(plan.narrowedFrom ? { narrowedFrom: plan.narrowedFrom } : {}),\n  });",
+          "replace": "  });",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "The spec's outcome line omits the range that was not reconciled.",
+          "faultClass": "return-altered",
+          "file": "cli/writers/spec-outcomes.mjs",
+          "find": "Successor: ${successor}.${skipped}`;",
+          "replace": "Successor: ${successor}.`;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "An unresolvable recorded revision does not block --since.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/specs.mjs",
+          "find": "  if (!recordedCommit) {\n    return blocked(",
+          "replace": "  if (false) {\n    return blocked(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 028 FR-008/FR-009)"
           }
         }
       ]

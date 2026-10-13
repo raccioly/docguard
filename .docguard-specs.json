@@ -809,12 +809,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 278
+            "line": 295
           },
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 283
+            "line": 300
           },
           {
             "requirementId": "FR-002",
@@ -1987,29 +1987,34 @@
           "docguard.completion-revision-anchoring#FR-005",
           "docguard.completion-revision-anchoring#FR-006",
           "docguard.completion-revision-anchoring#FR-007",
+          "docguard.completion-revision-anchoring#FR-008",
+          "docguard.completion-revision-anchoring#FR-009",
+          "docguard.completion-revision-anchoring#FR-010",
           "docguard.completion-revision-anchoring#SC-001",
           "docguard.completion-revision-anchoring#SC-002",
-          "docguard.completion-revision-anchoring#SC-003"
+          "docguard.completion-revision-anchoring#SC-003",
+          "docguard.completion-revision-anchoring#SC-004",
+          "docguard.completion-revision-anchoring#SC-005"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:8cf50ad04078b4cfb833038fb2dce1f5db25c6f37b583dca77916519075d83eb"
+            "digest": "sha256:8c33d1b1aa76abc70bd1072d4a7889d61fdb82fd5c01a93738c6b5b1452fa9f9"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
-            "digest": "sha256:315ee7cf290aeb2018a1a9603e97b53bdd5814dfb003a6fee8008b8a5f7a097c"
+            "digest": "sha256:50c3217e9a88f4327e51c113a3a0d3c41444158fdc9c0414d5b157964475a935"
           },
           {
             "path": "specs/028-completion-revision-anchoring/tasks.md",
-            "digest": "sha256:8faa04659baa68916edec485191df16aa25b939648608aa7fea408ae01be83d7"
+            "digest": "sha256:b1ff6a6c8b7cfc38298f8a1dacd75959dd9a54ed7b114951b054896b08529930"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
-          "total": 9
+          "checked": 13,
+          "total": 13
         },
         "implementationEvidence": [
           {
@@ -2020,7 +2025,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/writers/spec-outcomes.mjs",
-            "line": 37
+            "line": 43
           },
           {
             "requirementId": "FR-002",
@@ -2035,7 +2040,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 254
+            "line": 293
           },
           {
             "requirementId": "FR-003",
@@ -2045,12 +2050,32 @@
           {
             "requirementId": "FR-003",
             "file": "cli/writers/spec-outcomes.mjs",
-            "line": 46
+            "line": 52
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/spec-registry.mjs",
             "line": 143
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-git.mjs",
+            "line": 388
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/specs.mjs",
+            "line": 105
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/spec-registry.mjs",
+            "line": 161
           }
         ],
         "testEvidence": [
@@ -2090,6 +2115,31 @@
             "line": 18
           },
           {
+            "requirementId": "FR-008",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/shared-git.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/shared-git.test.mjs",
+            "line": 343
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 21
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 13
@@ -2103,6 +2153,16 @@
             "requirementId": "SC-003",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/completion-revision-anchoring.test.mjs",
+            "line": 23
           }
         ]
       }
@@ -5140,7 +5200,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 363
+            "line": 402
           },
           {
             "requirementId": "FR-006",
@@ -5844,12 +5904,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 542
+            "line": 603
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-git.mjs",
-            "line": 543
+            "line": 604
           },
           {
             "requirementId": "FR-004",
@@ -8096,12 +8156,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 477
+            "line": 495
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 478
+            "line": 496
           },
           {
             "requirementId": "FR-003",
@@ -10784,7 +10844,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-git.mjs",
-            "line": 449
+            "line": 510
           }
         ],
         "testEvidence": [

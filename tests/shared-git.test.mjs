@@ -8,6 +8,7 @@
  * @req SC-L3-002 — getFileHistory follows renames
  * @req SC-L3-003 — getRenameHistory returns historical paths in reverse-chrono
  * @req SC-L3-004 — changedFilesSince returns ACMR diff against a ref
+ * @req docguard.completion-revision-anchoring#FR-008
  */
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -24,6 +25,7 @@ import {
   countCommitsSince,
   getDiffSnapshot,
   getDiffText,
+  readPatchBatches,
   fileContentAtRev,
   symbolExistsAtRev,
 } from '../cli/shared-git.mjs';
@@ -335,5 +337,56 @@ describe('getDiffSnapshot', () => {
     assert.equal(snapshot.status, 'too-large');
     assert.match(snapshot.reason, /newer --since revision/);
     assert.equal(snapshot.changedFiles.length, 1);
+  });
+});
+
+describe('readPatchBatches (docguard.completion-revision-anchoring#FR-008)', () => {
+  let dir;
+  afterEach(() => cleanup(dir));
+
+  function range() {
+    dir = tmp();
+    git(dir, 'init', '-q');
+    writeFileSync(join(dir, 'old.ts'), Array.from({ length: 40 }, (_, i) => `export const v${i} = ${i};`).join('\n'));
+    writeFileSync(join(dir, 'gone.ts'), 'export const removed = true;\n');
+    commit(dir, 'base');
+    const base = git(dir, 'rev-parse', 'HEAD').trim();
+    renameSync(join(dir, 'old.ts'), join(dir, 'new.ts'));
+    rmSync(join(dir, 'gone.ts'));
+    for (const name of ['a', 'b', 'c']) writeFileSync(join(dir, `${name}.txt`), `${name}\n`.repeat(200));
+    writeFileSync(join(dir, ':(glob)*.txt'), 'a path that looks like pathspec magic\n');
+    commit(dir, 'change');
+    return base;
+  }
+
+  it('reads every file once, keeps a rename paired, and treats paths literally', () => {
+    const base = range();
+    const snapshot = getDiffSnapshot(dir, base);
+    const patches = [];
+    const result = readPatchBatches(dir, base, snapshot.changedFiles, patch => patches.push(patch), { maxPatchBytes: 1024, maxBatchPaths: 2 });
+    assert.equal(result.status, 'ok', result.reason);
+    assert.ok(result.batches > 1);
+    assert.equal(result.patchBytes, snapshot.patchBytes);
+    const joined = patches.join('');
+    assert.match(joined, /rename from old\.ts\nrename to new\.ts/);
+    for (const name of ['a.txt', 'b.txt', 'c.txt', 'gone.ts', ':(glob)*.txt']) {
+      assert.equal(joined.split(`diff --git a/${name} b/${name}`).length, 2, `${name} read exactly once`);
+    }
+  });
+
+  it('names a single file whose patch alone exceeds the per-call budget', () => {
+    const base = range();
+    const snapshot = getDiffSnapshot(dir, base);
+    const result = readPatchBatches(dir, base, snapshot.changedFiles, () => {}, { maxPatchBytes: 512 });
+    assert.equal(result.status, 'too-large');
+    assert.match(result.reason, /Patch for [a-c]\.txt exceeds the 512-byte per-call budget/);
+  });
+
+  it('stops at the total range budget', () => {
+    const base = range();
+    const snapshot = getDiffSnapshot(dir, base);
+    const result = readPatchBatches(dir, base, snapshot.changedFiles, () => {}, { maxPatchBytes: 1024, maxRangePatchBytes: 1500 });
+    assert.equal(result.status, 'too-large');
+    assert.match(result.reason, /Range patch exceeds its 1500-byte total budget/);
   });
 });

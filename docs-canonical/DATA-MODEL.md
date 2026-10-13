@@ -157,6 +157,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor. Evidence paths and deviations are deduplicated and sorted (`localeCompare`); `specs complete` writes them in that order whatever order they were given in |
 | `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`, and `differing` evidence paths when the target's bytes differ). Serialized only when set |
+| `specs[].reviewed.reconciliation.outcomes[].narrowedFrom` | `specs complete` | Optional: the review reconciled from a newer `--since` because the recorded revision's range exceeded the diff budgets even when read in batches — `revision` (the recorded one), `since`, `skippedCommits` (not reconciled) and `reason` (the budget). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
 | `specs[].observed.artifacts` | Projection | Paths and SHA-256 content identities for spec, plan, and tasks |
 | `specs[].observed.taskCompletion` | Projection | Checked and total Markdown task boxes; not proof of delivery |

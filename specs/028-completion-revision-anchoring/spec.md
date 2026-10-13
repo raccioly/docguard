@@ -11,7 +11,10 @@
 **Lineage**: refines `docguard.document-lifecycle` (completion transaction and
 reviewed revisions). Found while verifying specs 014–027 for 0.43.0 (#455).
 FR-007 was added 2026-10-12 after completing spec 070 rolled back on two
-deviations given out of order.
+deviations given out of order. FR-008–FR-010 were added 2026-10-13 after this
+spec's own maintenance completion was blocked while releasing 0.45.0: its
+recorded revision was 83 commits behind `main` and the 7.2 MB patch since then
+exceeded the 5 MB per-call budget.
 
 **Input**: User description (dogfood finding): "`specs complete` records a
 revision that a squash merge discards, and a batch of completions cannot share
@@ -39,6 +42,15 @@ repository and most GitHub projects use:
 
 Nothing reports either condition. The registry says "verified at X" whether or
 not X exists.
+
+A third way a recorded revision stops anchoring the next reconciliation: the
+range since it grows past the diff budgets. `getDiffSnapshot` reads the whole
+patch in one Git call capped at 5 MB, and reconciliation gives up when it
+overflows ("use a newer --since revision"). A living spec reviewed rarely is
+the one most likely to cross it. Completion then has two outcomes, both wrong:
+it is BLOCKED with no way forward, or the maintainer passes `--since <newer>`,
+which completion already honours, and the commits between the recorded revision
+and that ref are never reconciled and nothing records that they were skipped.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -91,6 +103,28 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
    squash merge will discard this revision; complete on a branch at the default
    branch's tip, or re-anchor after merging.
 
+### User Story 5 - A long-unreviewed spec can still be maintained (Priority: P1)
+
+1. **Given** a recorded revision whose range patch exceeds the per-call budget
+   but whose files each fit, **When** completion or `reconcile` runs, **Then**
+   the patch is read in bounded batches and coverage is complete; the range
+   reports how many batches it took.
+2. **Given** a range that cannot be read even in batches (a single file's patch
+   over the per-call budget, the range total over its budget, the changed-file
+   inventory over its budget, or a timeout), **When** completion runs with
+   `--since <ref>` naming a descendant of the recorded revision that is an
+   ancestor of `HEAD`, **Then** completion reconciles from that ref and the
+   outcome records `narrowedFrom`: the recorded revision, the ref, the number
+   of commits not reconciled and the budget that forced it. The spec's outcome
+   line says the same.
+3. **Given** a recorded range that can be reconciled, **When** `--since` names a
+   newer ref, **Then** completion is BLOCKED (SPC006) and nothing is written.
+4. **Given** `--since` naming an ancestor of the recorded revision, **Then** the
+   wider range is reconciled and nothing extra is recorded.
+5. **Given** `--since` naming a ref unrelated to the recorded revision, or a
+   recorded revision that does not resolve, **Then** completion is BLOCKED
+   (SPC006); the second names `specs reanchor`.
+
 ### Edge Cases
 
 - A spec whose outcome block was hand-edited alongside a completion is not
@@ -100,6 +134,15 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 - Re-anchoring never changes an outcome's reason, evidence or deviations.
 - Two deviations that differ only in whitespace are one deviation. The bound of
   20 applies to the deduplicated list.
+- A renamed or copied file is read with its old path in the same batch, so the
+  rename is still paired.
+- A spec-text amendment alone (a new FR in `spec.md`, kind `spec_artifact`) does
+  not qualify a living spec for maintenance (docguard.document-lifecycle#FR-016
+  names source, test, canonical-document and decision changes). Completion
+  writes the spec file itself, so counting it would let the last outcome
+  qualify the next one. An amendment qualifies through the source, test or
+  canonical-document change that implements it, which SPC004 already requires
+  for the new requirement.
 
 ## Requirements *(mandatory)*
 
@@ -139,6 +182,23 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
   `--write` MUST show the evidence in that order. A completion MUST NOT roll
   back because its registry write and the re-projection differ only in order
   or duplicates.
+- **FR-008**: When a reconciliation range's patch exceeds the per-call byte
+  budget or times out, DocGuard MUST read it in batches of changed paths (a
+  rename's or copy's two paths in one batch), each Git call bounded by the same
+  per-call budget and timeout, and the range by a total budget. It MUST keep
+  only each file's derived links, not the patch text, between batches. Coverage
+  MUST be complete only when every changed file was read; otherwise the range
+  stays BLOCKED and names the budget, and the file when one file's patch alone
+  exceeds it.
+- **FR-009**: For a spec with a recorded revision, `specs complete --since <ref>`
+  MUST reconcile from `<ref>` only when `<ref>` is the recorded revision, an
+  ancestor of it, or — when the recorded range is BLOCKED by a budget or
+  timeout (FR-008) — a descendant of it that is an ancestor of `HEAD`. The last
+  case MUST record `narrowedFrom` (`revision`, `since`, `skippedCommits`,
+  `reason`) on the outcome, in the registry and on the spec's outcome line.
+  Every other `--since` MUST block with SPC006 and write nothing.
+- **FR-010**: `specs complete --help`, `docs/commands.md` and DATA-MODEL
+  (`narrowedFrom`) MUST describe FR-008 and FR-009.
 
 ## Success Criteria *(mandatory)*
 
@@ -150,6 +210,13 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
   commit.
 - **SC-003**: This repository's dangling specs, and the completions of the
   specs delivered since, end with every recorded revision on `main`.
+- **SC-004**: A fixture whose recorded range exceeds a small test budget
+  completes with complete coverage through batched reading; with one file over
+  the budget, completion is BLOCKED without `--since` and records
+  `narrowedFrom` with it.
+- **SC-005**: This spec's own maintenance completion on `main` (recorded at
+  `dfa1385`, 83 commits and 7.2 MB behind 0.45.0) succeeds from the recorded
+  revision, without `--since`.
 
 ## Assumptions
 

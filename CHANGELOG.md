@@ -31,6 +31,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **TAP artifact.** Each leg uploads its TAP as `test-tap-node-<version>`,
     the input for refreshing the reference.
 
+### Fixed
+
+- **A living spec reviewed long ago can complete its maintenance again**
+  (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion
+  reconciles from the spec's recorded revision, and `reconcile` read that
+  range's whole patch in one Git call capped at 5 MB. Spec 028's own
+  maintenance, recorded 83 commits before 0.45.0, was BLOCKED ("Patch exceeded
+  its byte budget") with no way forward. A range whose single read overflows
+  or times out is now read again in batches of changed paths, each under the
+  same 5 MB budget (a rename's two paths together, every path literal), keeping
+  only each file's derived links between batches. Coverage is complete and the
+  classifications match one unbounded read; `range.batches` reports the reads.
+  The range from spec 028's recorded revision (763 files, 7.2 MB) now
+  reconciles in 4 batches. A range past every bound (one file's patch over
+  5 MB, 64 MB in total, two minutes, or the 5,000-file inventory) stays
+  BLOCKED and names the bound or the file.
+- **`specs complete --since` no longer skips reviewed history silently.** With
+  a recorded revision, `--since` replaced it unconditionally, so a newer ref
+  dropped the commits in between from reconciliation and the outcome recorded
+  nothing about it; `--help` described the flag as used only when no revision
+  is recorded. The same or an older ref is accepted. A newer ref on `HEAD`'s
+  history is accepted only when the recorded range is BLOCKED by a budget even
+  in batches, and the outcome then records `narrowedFrom` (`revision`,
+  `since`, `skippedCommits`, `reason`) in the registry, and the spec's outcome
+  line says `Not reconciled: <revision>..<ref>`. Any other `--since` — newer
+  over a reconcilable range, unrelated to the recorded revision, or with a
+  recorded revision that does not resolve (which names `specs reanchor`) —
+  blocks with SPC006 and writes nothing. A spec-text amendment alone still does
+  not qualify a living spec for maintenance; the source, test or canonical
+  change that implements it does.
+
 ## [0.45.0] - 2026-10-13
 
 ### Added

@@ -279,6 +279,11 @@ const DEFAULT_DIFF_LIMITS = Object.freeze({
   maxInventoryBytes: 5 * 1024 * 1024,
   maxChangedFiles: 5_000,
   timeoutMs: 30_000,
+  // Batched reading (readPatchBatches): paths per Git call, and the bounds on
+  // the whole range so a long one cannot run unbounded.
+  maxBatchPaths: 200,
+  maxRangePatchBytes: 64 * 1024 * 1024,
+  rangeTimeoutMs: 120_000,
 });
 
 function diffFailure(error) {
@@ -369,6 +374,62 @@ export function getDiffSnapshot(dir, ref = 'HEAD~1', options = {}) {
     patch: patch.toString('utf8'),
     patchBytes: patch.length,
   };
+}
+
+/**
+ * Read a range's patch in batches of changed paths, for a range whose single
+ * read exceeded the per-call budget or timed out. Every Git call keeps the
+ * per-call byte budget and timeout; `visit` receives each batch's patch and
+ * the caller keeps only what it derives, so memory stays bounded by one batch.
+ * A rename's two paths share a batch so Git still pairs them, and
+ * `--literal-pathspecs` keeps every path a path. A batch that overflows is
+ * halved; a single path that overflows on its own, the range total, the range
+ * time or a Git failure ends the read with a status other than `ok`.
+ * @implements docguard.completion-revision-anchoring#FR-008
+ */
+export function readPatchBatches(dir, ref, files, visit, options = {}) {
+  const limits = { ...DEFAULT_DIFF_LIMITS, ...options };
+  const units = files.map(file => [...new Set([file.oldPath, file.newPath].filter(Boolean))]).filter(unit => unit.length);
+  const queue = [];
+  for (let i = 0; i < units.length; i += limits.maxBatchPaths) queue.push(units.slice(i, i + limits.maxBatchPaths));
+  const started = Date.now();
+  let batches = 0;
+  let patchBytes = 0;
+  const stop = (status, reason) => ({ status, batches, patchBytes, reason });
+  while (queue.length) {
+    if (Date.now() - started > limits.rangeTimeoutMs) {
+      return stop('timeout', `Range patch exceeded its ${limits.rangeTimeoutMs} ms total budget; use a newer --since revision.`);
+    }
+    const batch = queue.shift();
+    let patch;
+    try {
+      patch = execFileSync('git', [
+        '--literal-pathspecs', 'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD', '--', ...batch.flat(),
+      ], {
+        cwd: dir, encoding: 'buffer', stdio: ['pipe', 'pipe', 'pipe'],
+        maxBuffer: limits.maxPatchBytes, timeout: limits.timeoutMs,
+      });
+    } catch (error) {
+      const status = diffFailure(error);
+      if (status === 'error') return stop(status, 'Patch could not be read.');
+      if (batch.length > 1) {
+        const half = Math.ceil(batch.length / 2);
+        queue.unshift(batch.slice(0, half), batch.slice(half));
+        continue;
+      }
+      const path = batch[0].at(-1);
+      return stop(status, status === 'too-large'
+        ? `Patch for ${path} exceeds the ${limits.maxPatchBytes}-byte per-call budget; use a newer --since revision.`
+        : `Patch for ${path} timed out; use a newer --since revision.`);
+    }
+    batches += 1;
+    patchBytes += patch.length;
+    if (patchBytes > limits.maxRangePatchBytes) {
+      return stop('too-large', `Range patch exceeds its ${limits.maxRangePatchBytes}-byte total budget; use a newer --since revision.`);
+    }
+    visit(patch.toString('utf8'));
+  }
+  return stop('ok', null);
 }
 
 /**

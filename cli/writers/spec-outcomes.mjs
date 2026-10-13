@@ -19,7 +19,13 @@ export function appendImplementationOutcome(content, outcome) {
   const evidence = (outcome.evidence || []).map(path => `\`${path}\``).join(', ') || 'none';
   const deviations = (outcome.deviations || []).map(item => clean(item)).filter(Boolean).join('; ') || 'none';
   const successor = outcome.successor ? `\`${outcome.successor}\`` : 'none';
-  const line = `- \`${outcome.revision}\` — ${reason} Evidence: ${evidence}. Accepted deviations: ${deviations}. Successor: ${successor}.`;
+  // A narrowed review says which commits it did not reconcile, and why
+  // (docguard.completion-revision-anchoring#FR-009).
+  const narrowed = outcome.narrowedFrom;
+  const skipped = narrowed
+    ? ` Not reconciled: \`${narrowed.revision.slice(0, 12)}\`..\`${narrowed.since.slice(0, 12)}\` (${narrowed.skippedCommits} commit${narrowed.skippedCommits === 1 ? '' : 's'}) — ${clean(narrowed.reason)}`
+    : '';
+  const line = `- \`${outcome.revision}\` — ${reason} Evidence: ${evidence}. Accepted deviations: ${deviations}. Successor: ${successor}.${skipped}`;
   const block = `${START}\n## Implementation Outcomes\n\n${line}\n${END}`;
   const pattern = new RegExp(`${START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
   if (!pattern.test(content)) return `${content.trimEnd()}\n\n${block}\n`;

@@ -19,7 +19,7 @@ import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/spec-outcomes.mjs';
-import { danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
+import { commitsBetween, danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { canonicalOutcome, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -96,6 +96,36 @@ function ownFailingAnchors(projectDir, config, specId) {
     .map(p => ({ code: p.code, requirement: p.requirement, file: p.file, key: p.key,
       acceptCommand: p.code === 'ANC003' ? `docguard anchors accept --remove '${p.key}' --reason "…"` : `docguard anchors accept --link '${p.key}' --reason "<what you checked>"` }));
 }
+/**
+ * Whether `--since` may stand in for a spec's recorded review revision. The
+ * same revision or an older one only widens the review. A newer one skips
+ * commits, so it is accepted only when the recorded range cannot be read
+ * within the diff budgets even in batches, and the skipped range is returned
+ * as `narrowedFrom` for the outcome to record.
+ * @implements docguard.completion-revision-anchoring#FR-009
+ */
+function reviewBaseline(projectDir, config, spec, ref, runtime) {
+  const recorded = spec.reviewed.reconciliation.lastReviewedRevision;
+  const blocked = message => ({ blocker: { code: 'SPC006', message } });
+  const recordedCommit = resolveCommit(projectDir, recorded);
+  if (!recordedCommit) {
+    return blocked(`The recorded review revision ${recorded.slice(0, 12)} does not resolve, so --since cannot be checked against it; run \`docguard specs reanchor --id ${spec.specId}\` first.`);
+  }
+  const sinceCommit = resolveCommit(projectDir, ref);
+  // An unknown ref is reported by reconciliation as unsupported coverage.
+  if (!sinceCommit || sinceCommit === recordedCommit || isAncestorOf(projectDir, sinceCommit, recordedCommit)) return {};
+  const short = recordedCommit.slice(0, 12);
+  if (!isAncestorOf(projectDir, recordedCommit, sinceCommit) || !isAncestorOf(projectDir, sinceCommit, 'HEAD')) {
+    return blocked(`--since ${ref} is neither an ancestor nor a descendant of the recorded review revision ${short} on HEAD's history; omit --since, or re-anchor a revision a squash merge discarded with \`docguard specs reanchor --id ${spec.specId}\`.`);
+  }
+  const skippedCommits = commitsBetween(projectDir, recordedCommit, sinceCommit);
+  const full = buildReconciliationPlan(projectDir, config, recordedCommit, runtime);
+  if (full.status !== 'BLOCKED' || !['too-large', 'timeout'].includes(full.range?.status) || skippedCommits === null) {
+    return blocked(`--since ${ref} would skip ${skippedCommits ?? 'some'} commit(s) after the recorded review revision ${short}, whose range can be reconciled; omit --since.`);
+  }
+  return { narrowedFrom: { revision: recordedCommit, since: sinceCommit, skippedCommits, reason: full.coverage.reason } };
+}
+
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   const loaded = readSpecRegistry(projectDir);
@@ -112,6 +142,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   }
 
   let reconcile = null;
+  let narrowedFrom = null;
   if (spec) {
     const maintenance = ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
       && spec.reviewed.lifecycle.persistenceModel === 'living';
@@ -145,10 +176,16 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     for (const path of spec.reviewed.scope.canonicalDocs) {
       if (!existsSync(resolve(projectDir, path))) blockers.push({ code: 'SPC005', message: `Affected canonical document is missing: ${path}.` });
     }
-    const since = flags.since || spec.reviewed.reconciliation.lastReviewedRevision;
+    const recordedRevision = spec.reviewed.reconciliation.lastReviewedRevision;
+    const since = flags.since || recordedRevision;
+    const runtime = { diffLimits: options.diffLimits };
+    const baseline = since && recordedRevision && flags.since
+      ? reviewBaseline(projectDir, config, spec, flags.since, runtime) : {};
+    narrowedFrom = baseline.narrowedFrom || null;
     if (!since) blockers.push({ code: 'SPC006', message: 'Completion requires --since <review-baseline> for the first reconciliation.' });
+    else if (baseline.blocker) blockers.push(baseline.blocker);
     else {
-      reconcile = buildReconciliationPlan(projectDir, config, since);
+      reconcile = buildReconciliationPlan(projectDir, config, since, runtime);
       if (reconcile.status === 'UNSUPPORTED' || reconcile.status === 'BLOCKED') blockers.push({ code: 'SPC006', message: 'Reconciliation coverage is unsupported or blocked.' });
       const unresolved = reconcile.classifications.filter(item => item.disposition === 'unsupported_or_ambiguous');
       if (unresolved.length) blockers.push({ code: 'SPC006', message: `Unresolved changed files: ${unresolved.map(item => item.path).join(', ')}.` });
@@ -177,6 +214,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     blockers,
     anchorFindings,
     reconciliation: reconcile,
+    ...(narrowedFrom ? { narrowedFrom } : {}),
     evidence: spec ? sortedUnique([
       ...spec.observed.implementationEvidence.map(item => item.file),
       ...spec.observed.testEvidence.map(item => item.file),
@@ -212,6 +250,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
     evidence: plan.evidence,
     deviations: (flags.deviations || []).map(item => String(item).replace(/\s+/g, ' ').trim()).filter(Boolean),
     successor: flags.successor || null,
+    ...(plan.narrowedFrom ? { narrowedFrom: plan.narrowedFrom } : {}),
   });
   if (outcome.deviations.length > 20 || outcome.deviations.some(item => item.length > 500)) {
     throw new Error('Completion accepts at most 20 deviations of 1-500 characters.');
@@ -414,6 +453,10 @@ function printResult(result) {
     console.log(`${result.specId || '<missing>'}: ${result.transition || 'no transition (unknown spec)'}`);
     if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
     for (const warning of result.warnings || []) console.log(`  ⚠ ${warning}`);
+    if (result.narrowedFrom) {
+      const n = result.narrowedFrom;
+      console.log(`  ⚠ Not reconciled: ${n.revision.slice(0, 12)}..${n.since.slice(0, 12)} (${n.skippedCommits} commit(s)) — ${n.reason} The outcome records it as narrowedFrom.`);
+    }
     if (result.anchorFindings?.length) {
       console.log(`  ${result.anchorFindings.length} of this spec's anchor finding(s) do not block completion; review them:`);
       for (const f of result.anchorFindings) console.log(`    ${f.code} ${f.requirement} (${f.file}): ${f.acceptCommand}`);

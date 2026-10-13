@@ -16,6 +16,11 @@
  * @req docguard.completion-revision-anchoring#FR-006
  * @req docguard.completion-revision-anchoring#SC-003
  * @req docguard.completion-revision-anchoring#FR-007
+ * @req docguard.completion-revision-anchoring#FR-008
+ * @req docguard.completion-revision-anchoring#FR-009
+ * @req docguard.completion-revision-anchoring#FR-010
+ * @req docguard.completion-revision-anchoring#SC-004
+ * @req docguard.completion-revision-anchoring#SC-005
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -23,7 +28,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { completeSpec, reanchorSpec } from '../cli/commands/specs.mjs';
+import { completeSpec, planSpecCompletion, reanchorSpec } from '../cli/commands/specs.mjs';
+import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -198,7 +204,9 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
     write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(reg, null, 2)}\n`);
     write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 2;\n');
     git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'change alpha on the second PR']);
-    const again = complete(dir, 'acme.alpha', firstSquash);
+    // The recorded revision is the first PR's, which still resolves here; a
+    // --since unrelated to it is refused (FR-009), so reconcile from it.
+    const again = complete(dir, 'acme.alpha');
     assert.equal(again.status, 'VERIFIED', JSON.stringify(again.blockers));
     git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha again on the second PR']);
     const second = recorded(dir, 'acme.alpha').lastReviewedRevision;
@@ -336,5 +344,164 @@ describe('this repository keeps every recorded revision on its history (SC-003)'
   it('reports no dangling review revision', () => {
     const dangling = validateSpecRegistry(process.cwd(), {}).findings.filter(f => f.code === 'SPR008');
     assert.deepEqual(dangling.map(f => f.message), []);
+  });
+});
+
+// A recorded revision far enough behind HEAD that the range's patch exceeds
+// the per-call budget (FR-008, FR-009, SC-004). The budget is shrunk to 8 KiB
+// so a fixture of a few files crosses it; the code path is the one the 5 MB
+// default takes.
+describe('a recorded range past the diff budget (FR-008, FR-009, SC-004)', () => {
+  const limits = { maxPatchBytes: 8192 };
+  const plan = (dir, since) => planSpecCompletion(dir, {}, { id: 'acme.alpha', since }, { guardResult: passingGuard, diffLimits: limits });
+  const maintain = (dir, since) => completeSpec(dir, {}, { id: 'acme.alpha', since, write: true, reason: 'Reviewed maintenance in the fixture' }, { guardResult: passingGuard, diffLimits: limits });
+  const outcomeLine = dir => readFileSync(join(dir, 'specs/001-alpha/spec.md'), 'utf8').split('\n').filter(line => line.startsWith('- `')).at(-1);
+  const filler = n => Array.from({ length: n }, (_, i) => `line ${i} of unrelated data`).join('\n');
+
+  /** acme.alpha is a verified living spec recorded at `recordedAt`; `commits` follow it. */
+  function verifiedLiving(t) {
+    const dir = fixture(t);
+    const registry = readSpecRegistry(dir).value;
+    registry.specs.find(spec => spec.specId === 'acme.alpha').reviewed.lifecycle.persistenceModel = 'living';
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'living alpha']);
+    const root = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    assert.equal(complete(dir, 'acme.alpha', root).status, 'VERIFIED');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha']);
+    // Completion records the revision it reviewed, the parent of its own commit.
+    const recordedAt = recorded(dir, 'acme.alpha').lastReviewedRevision;
+    const verifiedAt = git(dir, ['rev-parse', 'HEAD']);
+    // Unlinked data, each file under the budget, together over it.
+    for (const name of ['a', 'b', 'c', 'd']) write(dir, `data/${name}.txt`, filler(120));
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'unrelated data']);
+    const afterData = git(dir, ['rev-parse', 'HEAD']);
+    // A linked change that qualifies the living spec for maintenance.
+    write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 2;\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'alpha changes']);
+    return { dir, root, recordedAt, verifiedAt, afterData };
+  }
+
+  it('reads an over-budget range in batches with complete coverage, the same as one read', t => {
+    const { dir, recordedAt } = verifiedLiving(t);
+    const batched = buildReconciliationPlan(dir, {}, recordedAt, { diffLimits: limits });
+    assert.equal(batched.coverage.status, 'complete', batched.coverage.reason);
+    assert.ok(batched.range.batches > 1, `expected several batches, got ${batched.range.batches}`);
+    const single = buildReconciliationPlan(dir, {}, recordedAt);
+    assert.equal(single.range.batches, 1);
+    assert.deepEqual(batched.classifications, single.classifications);
+    assert.equal(batched.range.patchBytes, single.range.patchBytes);
+  });
+
+  it('completes maintenance from the recorded revision without --since', t => {
+    const { dir, recordedAt } = verifiedLiving(t);
+    const done = maintain(dir);
+    assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+    assert.equal(done.reconciliation.baseRevision, recordedAt);
+    assert.equal(recorded(dir, 'acme.alpha').outcomes.at(-1).narrowedFrom, undefined);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'maintain alpha']);
+    assert.equal(projectSpecRegistry(dir).current, true);
+  });
+
+  it('refuses a newer --since while the recorded range can be reconciled, and writes nothing', t => {
+    const { dir, afterData } = verifiedLiving(t);
+    const before = readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8');
+    const result = maintain(dir, afterData);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.blockers.some(b => b.code === 'SPC006' && /can be reconciled; omit --since/.test(b.message)), JSON.stringify(result.blockers));
+    assert.equal(readFileSync(join(dir, SPEC_REGISTRY_PATH), 'utf8'), before);
+  });
+
+  it('an older --since widens the review and records nothing extra', t => {
+    const { dir, root } = verifiedLiving(t);
+    const done = maintain(dir, root);
+    assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+    assert.equal(done.reconciliation.baseRevision, root);
+    assert.equal(recorded(dir, 'acme.alpha').outcomes.at(-1).narrowedFrom, undefined);
+  });
+
+  it('refuses a --since unrelated to the recorded revision', t => {
+    const { dir } = verifiedLiving(t);
+    const tree = git(dir, ['rev-parse', 'HEAD^{tree}']);
+    const orphan = git(dir, ['commit-tree', tree, '-m', 'unrelated history']);
+    const result = plan(dir, orphan);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.blockers.some(b => b.code === 'SPC006' && /neither an ancestor nor a descendant/.test(b.message)), JSON.stringify(result.blockers));
+  });
+
+  it('refuses --since when the recorded revision does not resolve, and names reanchor', t => {
+    const { dir, root } = verifiedLiving(t);
+    const registry = readSpecRegistry(dir).value;
+    registry.specs.find(spec => spec.specId === 'acme.alpha').reviewed.reconciliation.lastReviewedRevision = 'f'.repeat(40);
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'lost revision']);
+    const result = plan(dir, root);
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.blockers.some(b => b.code === 'SPC006' && /docguard specs reanchor --id acme\.alpha/.test(b.message)), JSON.stringify(result.blockers));
+  });
+
+  describe('one file over the per-call budget', () => {
+    function oversized(t) {
+      const fixtureState = verifiedLiving(t);
+      const { dir, verifiedAt } = fixtureState;
+      // Rewrite history so the oversized file lands right after the completion commit.
+      git(dir, ['reset', '-q', '--hard', verifiedAt]);
+      write(dir, 'data/huge.txt', filler(600));
+      git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'huge data']);
+      const afterHuge = git(dir, ['rev-parse', 'HEAD']);
+      write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 2;\n');
+      git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'alpha changes']);
+      return { ...fixtureState, afterHuge };
+    }
+
+    it('blocks without --since and names the file', t => {
+      const { dir } = oversized(t);
+      const result = plan(dir);
+      assert.equal(result.status, 'BLOCKED');
+      assert.ok(result.blockers.some(b => b.code === 'SPC006' && /unsupported or blocked/.test(b.message)));
+      assert.equal(result.reconciliation.range.status, 'too-large');
+      assert.match(result.reconciliation.coverage.reason, /data\/huge\.txt/);
+    });
+
+    it('completes from a newer --since and records the range it did not reconcile', t => {
+      const { dir, recordedAt, afterHuge } = oversized(t);
+      const done = maintain(dir, afterHuge.slice(0, 12));
+      assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+      const narrowed = recorded(dir, 'acme.alpha').outcomes.at(-1).narrowedFrom;
+      assert.deepEqual({ ...narrowed, reason: undefined }, { revision: recordedAt, since: afterHuge, skippedCommits: 2, reason: undefined });
+      assert.match(narrowed.reason, /data\/huge\.txt/);
+      assert.match(outcomeLine(dir), new RegExp(`Not reconciled: \`${recordedAt.slice(0, 12)}\`\\.\\.\`${afterHuge.slice(0, 12)}\` \\(2 commits\\)`));
+      git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'maintain alpha']);
+      assert.equal(projectSpecRegistry(dir).current, true);
+      assert.deepEqual(projectSpecRegistry(dir).issues, []);
+    });
+  });
+});
+
+describe('a spec-text amendment alone does not qualify maintenance (edge case)', () => {
+  it('a new requirement in spec.md with no linked source, test or canonical change stays blocked', t => {
+    const dir = fixture(t);
+    const registry = readSpecRegistry(dir).value;
+    registry.specs.find(spec => spec.specId === 'acme.alpha').reviewed.lifecycle.persistenceModel = 'living';
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(registry, null, 2)}\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'living alpha']);
+    const root = git(dir, ['rev-list', '--max-parents=0', 'HEAD']);
+    assert.equal(complete(dir, 'acme.alpha', root).status, 'VERIFIED');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'verify alpha']);
+    const spec = readFileSync(join(dir, 'specs/001-alpha/spec.md'), 'utf8');
+    write(dir, 'specs/001-alpha/spec.md', spec.replace('- **FR-001**: alpha MUST work.\n', '- **FR-001**: alpha MUST work.\n- **FR-002**: alpha MUST also log.\n'));
+    write(dir, SPEC_REGISTRY_PATH, projectSpecRegistry(dir).serialized);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'amend alpha']);
+    const result = planSpecCompletion(dir, {}, { id: 'acme.alpha' }, { guardResult: passingGuard });
+    assert.equal(result.status, 'BLOCKED');
+    assert.ok(result.blockers.some(b => /new linked source, test, canonical-document, or decision change/.test(b.message)));
+  });
+});
+
+describe('the budget behaviour is documented (FR-010)', () => {
+  it('help, commands and DATA-MODEL describe batched reading and narrowedFrom', () => {
+    const read = p => readFileSync(p, 'utf8');
+    assert.match(read('cli/docguard.mjs'), /narrowedFrom/);
+    assert.match(read('docs/commands.md'), /batches[\s\S]*narrowedFrom/);
+    assert.match(read('docs-canonical/DATA-MODEL.md'), /narrowedFrom[\s\S]*skippedCommits/);
   });
 });

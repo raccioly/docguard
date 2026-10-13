@@ -514,6 +514,21 @@ branch, a tag or `HEAD`. The full SHA is recorded. When one spec
 has dangling revisions from different merges, add `--from <revision>` to attest
 them one at a time; the others are left as they are.
 
+Completion reconciles from the spec's recorded revision. A range whose patch
+exceeds the 5 MB per-call budget, or times out, is read again in batches of
+changed paths, each under the same budget, so a spec reviewed long ago still
+gets complete coverage; `reconcile --format json` reports the reads as
+`range.batches`. When even batches cannot read it (one file's patch alone over
+the budget, more than 64 MB in total, more than 5,000 changed files, or over two
+minutes), completion is blocked, and `--since <ref>` may name a newer commit
+between the recorded revision and `HEAD`. The outcome then records
+`narrowedFrom`: the recorded revision, the ref, how many commits were not
+reconciled and the budget that forced it, and the spec's outcome line says
+`Not reconciled: <revision>..<ref>`. A newer `--since` is refused while the
+recorded range can be reconciled, and so is a ref unrelated to the recorded
+revision; an older one widens the review and records nothing extra
+(`specs/028-completion-revision-anchoring`).
+
 ### `docguard review`
 
 **Know which docs to re-read when code changes.** A doc section declares the

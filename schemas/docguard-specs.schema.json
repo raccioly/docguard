@@ -129,6 +129,18 @@
               "description": "Attested only: evidence files whose content at the new revision differs from the reviewed revision."
             }
           }
+        },
+        "narrowedFrom": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revision", "since", "skippedCommits", "reason"],
+          "description": "Set by `docguard specs complete --since <newer>` when the recorded revision's range exceeded the diff budgets even read in batches: the commits from `revision` to `since` were not reconciled.",
+          "properties": {
+            "revision": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+            "since": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+            "skippedCommits": { "type": "integer", "minimum": 1 },
+            "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+          }
         }
       }
     },
