@@ -3,7 +3,7 @@
   "name": "io.github.raccioly/docguard",
   "title": "DocGuard",
   "description": "Deterministic doc-drift detection and exact doc navigation as read-only MCP tools.",
-  "version": "0.44.3",
+  "version": "0.45.0",
   "websiteUrl": "https://github.com/raccioly/docguard#readme",
   "repository": {
     "url": "https://github.com/raccioly/docguard",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "docguard-cli",
-      "version": "0.44.3",
+      "version": "0.45.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

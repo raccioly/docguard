@@ -18,7 +18,7 @@ repository. Report evidence and recommendations; do not edit files.
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.44.3`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.45.0`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
 
 ## User Input
