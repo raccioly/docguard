@@ -1958,7 +1958,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "dfa1385749b66184c93bf65f5dde127192037711",
+          "lastReviewedRevision": "014f7a2228d4364eb5a2cb07a8c3a4e45823312f",
           "outcomes": [
             {
               "revision": "dfa1385749b66184c93bf65f5dde127192037711",
@@ -1971,6 +1971,25 @@
                 "docs-canonical/CI-RECIPES.md",
                 "docs-canonical/DATA-MODEL.md",
                 "tests/completion-revision-anchoring.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "014f7a2228d4364eb5a2cb07a8c3a4e45823312f",
+              "reason": "Maintenance reviewed at 014f7a2 (main after #581), reconciled from dfa1385 with no --since: the over-budget range is read in batches (FR-008, #580). Outcomes take the projection's canonical form (FR-007, #570); a newer --since is recorded as narrowedFrom or refused (FR-009, FR-010). TestGuard RECONCILE-RANGE-BATCHED, COMPLETION-SINCE-NARROWING-RECORDED and COMPLETION-OUTCOME-CANONICAL killed. SC-005 live check passed.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/reconciliation.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/shared-git.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/completion-revision-anchoring.test.mjs",
+                "tests/shared-git.test.mjs"
               ],
               "deviations": [],
               "successor": null
@@ -2001,7 +2020,7 @@
         "artifacts": [
           {
             "path": "specs/028-completion-revision-anchoring/spec.md",
-            "digest": "sha256:8c33d1b1aa76abc70bd1072d4a7889d61fdb82fd5c01a93738c6b5b1452fa9f9"
+            "digest": "sha256:fbe99ce75dc7a95cf0f19310915dedcd976c0f0a0bfdc85a5f26636e54b2c0d4"
           },
           {
             "path": "specs/028-completion-revision-anchoring/plan.md",
@@ -11117,7 +11136,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "4f46e9f6571abbd257c8c781b87cf6aaec9e3b52",
+          "lastReviewedRevision": "014f7a2228d4364eb5a2cb07a8c3a4e45823312f",
           "outcomes": [
             {
               "revision": "f130626775eb829f12f5ed8795b0f091af29bbc5",
@@ -11157,6 +11176,22 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "014f7a2228d4364eb5a2cb07a8c3a4e45823312f",
+              "reason": "Maintenance reviewed at 014f7a2: FR-007 revised by #579. The CI runtime budget is a per-test ceiling at reference-runner speed (TEST_CEILING_MS 100000, tools/suite-runtime-budget.mjs); the suite total is reported, not gated. Backtest over 445 jobs: every normal run passes (slowest test 56.9s), every replayed +165s runaway is caught. TestGuard CI-RUNTIME-BUDGET-PER-TEST 7/7.",
+              "evidence": [
+                ".github/scripts/sync-release-version.mjs",
+                "cli/release-pr-policy.mjs",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/ci-reproducibility.test.mjs",
+                "tests/release-cut-green.test.mjs",
+                "tests/release-version-sync.test.mjs",
+                "tests/suite-runtime-budget.test.mjs",
+                "tools/suite-runtime-budget.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -11180,7 +11215,7 @@
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:4e70d0ee370cfb607a8bc933ecda31b9f99524ec913b144b760f19df518ddbcc"
+            "digest": "sha256:190d5554720c7dd621caa951fed3eea9c183a2becaff858d5187f46d8aba27ac"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
