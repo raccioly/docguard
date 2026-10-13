@@ -1053,8 +1053,8 @@
           "description": "Canonical links are never recorded.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/reconciliation.mjs",
-          "find": "      if (canonical.length) item.canonical = canonical;",
-          "replace": "      if (false) item.canonical = canonical;",
+          "find": "    if (canonical.length) item.canonical = canonical;",
+          "replace": "    if (false) item.canonical = canonical;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (#455 release prep)"
@@ -8969,7 +8969,7 @@
         {
           "id": "F3",
           "description": "Batch paths are read as pathspec patterns, so a path like :(glob)*.txt matches other files.",
-          "faultClass": "argument-altered",
+          "faultClass": "literal-changed",
           "file": "cli/shared-git.mjs",
           "find": "        '--literal-pathspecs', 'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD', '--', ...batch.flat(),",
           "replace": "        'diff', '--no-color', '--no-ext-diff', '--no-textconv', ref, 'HEAD', '--', ...batch.flat(),",
