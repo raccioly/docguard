@@ -8883,7 +8883,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 294
+            "line": 296
           },
           {
             "requirementId": "FR-004",
@@ -11172,27 +11172,28 @@
           "docguard.release-cut-green#FR-007",
           "docguard.release-cut-green#FR-008",
           "docguard.release-cut-green#SC-001",
-          "docguard.release-cut-green#SC-002"
+          "docguard.release-cut-green#SC-002",
+          "docguard.release-cut-green#SC-003"
         ]
       },
       "observed": {
         "artifacts": [
           {
             "path": "specs/051-release-cut-green/spec.md",
-            "digest": "sha256:d88a1d32ad671f68d2dc00717c3b8f2530f81959e7e1569afc5c0d4e7c5bdf37"
+            "digest": "sha256:4e70d0ee370cfb607a8bc933ecda31b9f99524ec913b144b760f19df518ddbcc"
           },
           {
             "path": "specs/051-release-cut-green/plan.md",
-            "digest": "sha256:7b6af60c85424f6c9073489a690e08f726e196e8522d0fbf79de4d95fb2cf18c"
+            "digest": "sha256:6950d727f7052250b24e1a28de0b47f37a8956d9e6317091562ef2ed9956fdba"
           },
           {
             "path": "specs/051-release-cut-green/tasks.md",
-            "digest": "sha256:668cdffe1828789adfd935bea8159ad5fd3cc37582d2557d62cd12d0fe3dac73"
+            "digest": "sha256:9cdfdedd305ec71bd04169ef73c87d4c19114d62becb129f4bba3a2be9680949"
           }
         ],
         "taskCompletion": {
-          "checked": 10,
-          "total": 10
+          "checked": 15,
+          "total": 15
         },
         "implementationEvidence": [
           {
@@ -11204,6 +11205,11 @@
             "requirementId": "FR-006",
             "file": "cli/release-pr-policy.mjs",
             "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tools/suite-runtime-budget.mjs",
+            "line": 8
           }
         ],
         "testEvidence": [
@@ -11248,6 +11254,11 @@
             "line": 7
           },
           {
+            "requirementId": "FR-007",
+            "file": "tests/suite-runtime-budget.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-008",
             "file": "tests/release-cut-green.test.mjs",
             "line": 8
@@ -11261,6 +11272,16 @@
             "requirementId": "SC-002",
             "file": "tests/release-cut-green.test.mjs",
             "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/release-cut-green.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/suite-runtime-budget.test.mjs",
+            "line": 8
           }
         ]
       }
@@ -12330,7 +12351,7 @@
           {
             "requirementId": "FR-040",
             "file": ".github/workflows/ci.yml",
-            "line": 339
+            "line": 341
           },
           {
             "requirementId": "FR-040",
@@ -12355,7 +12376,7 @@
           {
             "requirementId": "SC-003",
             "file": ".github/workflows/ci.yml",
-            "line": 295
+            "line": 297
           }
         ],
         "testEvidence": [
@@ -14362,7 +14383,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
-            "line": 210
+            "line": 212
           }
         ],
         "testEvidence": [

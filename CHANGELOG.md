@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The CI test runtime budget checks each test, not the suite total**
+  (`specs/051-release-cut-green`, FR-007 revision).
+  - **Why the total failed.** The 465-second total had been raised three
+    times. Across 445 recent CI jobs, identical code ran 188–369 seconds: the
+    spread is one speed factor per runner, not the code. The total also missed
+    the class it exists for. Test files run about 2.8 at a time, so a test that
+    gains 165 seconds (PR #328) adds about 59 to the wall clock. Replayed on
+    all 445 jobs, the 465-second total caught none of those runaways.
+  - **The new check.** `tools/suite-runtime-budget.mjs` reads the suite's TAP.
+    It divides every top-level test by the run's speed factor, measured
+    against `tools/suite-runtime-reference.json`, and fails any test over
+    `TEST_CEILING_MS` (100 seconds at reference speed).
+  - **Measured.** It passes all 445 recorded jobs: the slowest normal test is
+    56.9 seconds at reference speed, 1.76× below the ceiling. It catches a
+    165-second runaway in one test in all 445, whether the runaway scales with
+    the runner or not.
+  - **Unaffected by growth.** Adding tests does not change the check.
+  - **Reported, not gated.** The suite total goes to the log and the job
+    summary.
+  - **TAP artifact.** Each leg uploads its TAP as `test-tap-node-<version>`,
+    the input for refreshing the reference.
+
 ### Fixed
 
 - **A living spec reviewed long ago can complete its maintenance again**

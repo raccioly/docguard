@@ -8925,6 +8925,109 @@
       ]
     },
     {
+      "id": "CI-RUNTIME-BUDGET-PER-TEST",
+      "statement": "The CI test runtime budget fails a run when any top-level test, divided by the run's speed factor (the median ratio of its top-level tests to the committed reference), exceeds the ceiling; one runaway test does not move the speed factor; only top-level tests count, named without their SKIP/TODO directive; the check fails closed on a missing TAP total, on no top-level durations, on fewer than 100 tests shared with the reference, or without a usable ceiling; and a reference built from several runs normalizes each by its own speed factor and is in the units of its median input.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.release-cut-green#FR-007"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+      },
+      "defendedBy": [
+        "tests/suite-runtime-budget.test.mjs",
+        "tests/release-cut-green.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The ceiling compares raw durations, so a slow runner fails and a fast runner hides a runaway.",
+          "faultClass": "other",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "    ? run.tests.map(t => ({ ...t, normalizedMs: t.ms / factor })).sort((a, b) => b.normalizedMs - a.normalizedMs)",
+          "replace": "    ? run.tests.map(t => ({ ...t, normalizedMs: t.ms })).sort((a, b) => b.normalizedMs - a.normalizedMs)",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "The speed factor is a mean, so one runaway test inflates it and hides itself.",
+          "faultClass": "return-altered",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "  return { factor: median(ratios), common: ratios.length };",
+          "replace": "  return { factor: ratios.reduce((a, b) => a + b, 0) / ratios.length, common: ratios.length };",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "Too few tests shared with the reference no longer fails the check.",
+          "faultClass": "condition-forced",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "  if (common < minCommon) {",
+          "replace": "  if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "A missing TAP suite total passes.",
+          "faultClass": "statement-deleted",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "  if (run.durationMs === null || !Number.isFinite(run.durationMs)) errors.push('Missing TAP suite duration.');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A skipped top-level test keeps its SKIP directive in its name, so it no longer matches the reference.",
+          "faultClass": "statement-deleted",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "      pending = top[1].replace(/ # (?:SKIP|TODO)\\b.*$/, '').replace(/\\\\#/g, '#').replace(/\\\\\\\\/g, '\\\\');",
+          "replace": "      pending = top[1].replace(/\\\\#/g, '#').replace(/\\\\\\\\/g, '\\\\');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A test over the ceiling is not reported.",
+          "faultClass": "condition-forced",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "  const over = measurable ? normalized.filter(t => t.normalizedMs > ceilingMs) : [];",
+          "replace": "  const over = [];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "The reference takes raw per-test medians, so mixing fast and slow inputs blurs it.",
+          "faultClass": "other",
+          "file": "tools/suite-runtime-budget.mjs",
+          "find": "  tests = collect(factors);\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 051 FR-007 revision)"
+          }
+        }
+      ]
+    },
+    {
       "id": "RECONCILE-RANGE-BATCHED",
       "statement": "A reconciliation range whose single patch read exceeds the per-call byte budget or times out is read again in batches of changed paths, each under the same per-call budget, with a rename's two paths in one batch and every path literal; coverage is complete with the same classifications and byte total as one unbounded read, and the range stays BLOCKED, naming the budget or the file, when one file alone, the range total or the range time exceeds its budget.",
       "source": {

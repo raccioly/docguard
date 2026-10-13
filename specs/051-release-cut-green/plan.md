@@ -14,6 +14,28 @@
   - Make the heavy end-to-end tests cheaper: worth doing, but no single test is a runaway. The time is spread across new coverage.
 - `cli/ensure-skills.mjs`: `ensureSkills` throws a `TypeError` when `surface` is missing (FR-005).
 
+### FR-007 revision (2026-10-13): a per-test ceiling at reference speed
+
+- `tools/suite-runtime-budget.mjs` (new):
+  - `parseTap` reads the suite total and each top-level test's own `duration_ms` from node:test TAP on Node 18–24.
+  - `speedFactor` takes the median of observed ÷ reference over shared tests of at least 50ms; names that repeat across files are summed.
+  - `evaluate` applies the ceiling and fails closed.
+  - `buildReference` normalizes each input by its own speed factor, takes per-test medians, and rescales to the median runner.
+  - The CLI has two commands: `check` (for CI) and `reference` (for a refresh).
+- `tools/suite-runtime-reference.json` (new): built from the TAP of the 40 latest-code CI jobs (runs 38316463730 to 38332304538).
+- `tests/fixtures/suite-runtime-runs.json` (new): the fastest and the slowest of those inputs, for the backtest in the test.
+- `.github/workflows/ci.yml`:
+  - "Run Tests (with runtime budget)" runs the suite, then `check`, with `TEST_CEILING_MS: 100000`.
+  - The TAP output is uploaded as an artifact so the reference can be refreshed from a main run.
+- `tests/release-cut-green.test.mjs` (FR-007, SC-003): ceiling headroom and trip bounds against the reference's recorded speed factors, and the recorded runs pass and fail as SC-003 says.
+- `tests/suite-runtime-budget.test.mjs` (new): unit tests for the parser and the rule's failure modes.
+- `tests/ci-reproducibility.test.mjs`: the CI step's exit codes with a real TAP stub.
+
+Research decisions:
+- **The reference is self-normalizing.** Each input is divided by its own speed factor before the per-test medians are taken, so inputs from fast and slow runners do not blur one test's duration. The result is then rescaled to the median input. That keeps "100s" meaning the same thing after a refresh, provided the inputs span the runner fleet (every leg of several runs), as the tool header says.
+- **Top-level tests, not files.** node:test TAP reports no per-file duration. A top-level `describe` or `it` is the smallest unit a runaway lands in. Splitting a slow test lowers its duration, and that is the intended fix when one approaches the ceiling.
+- **Medians over at least 50ms.** Shorter tests measure timer and scheduler noise. A median is unmoved by a runaway in a few tests, which is what keeps the runaway visible.
+
 ## Technical Context
 
 **Language/Version**: JavaScript ES modules, Node.js ≥ 18

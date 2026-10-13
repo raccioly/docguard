@@ -8,6 +8,7 @@
  * @req docguard.release-cut-green#FR-008
  * @req docguard.release-cut-green#SC-001
  * @req docguard.release-cut-green#SC-002
+ * @req docguard.release-cut-green#SC-003
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,6 +23,7 @@ import { ensureSkills } from '../cli/ensure-skills.mjs';
 import { RELEASE_PATH_ALLOWLIST } from '../cli/release-pr-policy.mjs';
 import { execFileSync } from 'node:child_process';
 import { FIXTURE_GIT } from './helpers/git.mjs';
+import { evaluate } from '../tools/suite-runtime-budget.mjs';
 
 const BASE = '# Changelog\n\n## [Unreleased]\n\n### Added\n\n- **feature X** ships.\n\n### Fixed\n\n- bug Y.\n\n## [0.42.1] - 2026-09-22\n\n### Fixed\n\n- old fix Z\n';
 const cut = (text, version, commits = []) => cutChangelog(text, { version, date: '2026-10-01', lastTag: 'v0.42.1', commits });
@@ -135,21 +137,56 @@ describe("replaying the cut on this repository's release surfaces (SC-001)", () 
   });
 });
 
-describe('the CI runtime budget keeps headroom and still catches a runaway (FR-007)', () => {
-  it('sits above normal Node 18 runs and below them plus the PR #328 regression', () => {
-    const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
-    const budgets = [...ci.matchAll(/TEST_BUDGET_MS: (\d+)/g)].map(m => Number(m[1]));
-    assert.equal(budgets.length, 1, 'one runtime budget');
-    const [budget] = budgets;
-    // Measured 2026-10-12 over 25 CI runs (Node 18-24) of the 0.45.0 batch.
-    // Runner noise now spans 193-369s, so a 1.4x margin over the slowest run
-    // and the +165s trip on a typical run can no longer both hold; tripping
-    // the regression is the budget's purpose, so the margin is 1.25x.
-    const slowestNormal = 368_700; // Node 18, #574, every test passing
-    const typicalRun = 305_000; // median of the runs
-    const pr328Regression = 165_000;
-    assert.ok(budget >= slowestNormal * 1.25, `budget ${budget} leaves headroom over ${slowestNormal}`);
-    assert.ok(budget < typicalRun + pr328Regression, `budget ${budget} still trips the PR #328 class`);
+describe('the CI runtime budget keeps headroom and still catches a runaway (FR-007, SC-003)', () => {
+  // The budget is a per-test ceiling at reference-runner speed (FR-007
+  // revision, 2026-10-13). spec.md records the 445 CI jobs it was measured on.
+  const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
+  const reference = JSON.parse(readFileSync('tools/suite-runtime-reference.json', 'utf8'));
+  const { runs } = JSON.parse(readFileSync('tests/fixtures/suite-runtime-runs.json', 'utf8'));
+  const ceilings = [...ci.matchAll(/TEST_CEILING_MS: (\d+)/g)].map(m => Number(m[1]));
+  const [ceilingMs] = ceilings;
+  const RUNAWAY_MS = 165_000; // PR #328: one test went from 0.1s to 190s
+  // Slowest top-level test at reference speed over the 445 jobs in spec.md
+  // ("benchmark runner"); the reference's own inputs are a subset of them.
+  const SLOWEST_NORMAL_TEST_MS = 56_900;
+  const PARALLELISM = 2.8; // sum of top-level test durations / wall time, every recorded job
+  const replay = (run, extraMs = 0) => {
+    const tests = run.tests.map(([name, ms]) => ({ name, ms }));
+    const quickest = tests.reduce((q, t, i) => (t.ms < tests[q].ms ? i : q), 0);
+    tests[quickest].ms += extraMs;
+    return { durationMs: run.durationMs + extraMs / PARALLELISM, tests };
+  };
+
+  it('is one ceiling, checked by the budget tool on the suite TAP', () => {
+    assert.equal(ceilings.length, 1, 'one per-test ceiling');
+    assert.doesNotMatch(ci, /TEST_BUDGET_MS/, 'the suite total is reported, not gated');
+    assert.match(ci, /node tools\/suite-runtime-budget\.mjs check --tap \/tmp\/test-output\.txt/);
+  });
+
+  it('sits above the slowest normal test and below a runaway on the slowest runner', () => {
+    assert.ok(reference.maxNormalizedTestMs <= SLOWEST_NORMAL_TEST_MS, 'the reference inputs are among the measured jobs');
+    assert.ok(ceilingMs >= 1.5 * SLOWEST_NORMAL_TEST_MS, `${ceilingMs} leaves headroom over ${SLOWEST_NORMAL_TEST_MS}`);
+    // A runaway that does not scale with the runner still trips on the slowest one.
+    assert.ok(ceilingMs * reference.speedFactorRange[1] <= RUNAWAY_MS, `${ceilingMs} trips a raw ${RUNAWAY_MS}ms runaway`);
+  });
+
+  it('passes the fastest and the slowest recorded runs', () => {
+    assert.equal(runs.length, 2);
+    for (const run of runs) {
+      const result = evaluate(replay(run), reference, { ceilingMs });
+      assert.ok(result.ok, `${run.source}: ${result.errors.join('; ')}`);
+      assert.ok(Math.abs(result.speedFactor - run.speedFactor) < 0.01, `${run.source} speed factor ${result.speedFactor}`);
+    }
+  });
+
+  it('fails each of them once one test gains 165s, scaled to the runner or not', () => {
+    for (const run of runs) {
+      for (const extraMs of [RUNAWAY_MS * run.speedFactor, RUNAWAY_MS]) {
+        const result = evaluate(replay(run, extraMs), reference, { ceilingMs });
+        assert.equal(result.ok, false, `${run.source} +${Math.round(extraMs)}ms`);
+        assert.equal(result.over.length, 1);
+      }
+    }
   });
 });
 

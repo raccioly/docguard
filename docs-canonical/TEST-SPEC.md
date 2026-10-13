@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.4.5 -->
+<!-- docguard:version 1.4.6 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -19,7 +19,13 @@ DocGuard's tests verify command behavior through subprocess execution. Command t
 
 Tests are designed to be config-aware. They verify that project-type settings like needsEnvExample and testFramework correctly influence scoring and validation behavior. Regression guards preserve known failures with dedicated assertions and neighboring valid cases.
 
-All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget (`TEST_BUDGET_MS` in `.github/workflows/ci.yml`, 465 seconds since 2026-10-12, recalibrated under spec 051 FR-007; `tests/release-cut-green.test.mjs` keeps it above normal runs and below a known regression) catches large regressions; local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
+All tests use the built-in node:test framework with zero test dependencies. CI runs the suite on Node 18, 20, 22, and 24. Its runtime budget catches a test that runs away (spec 051 FR-007, revised 2026-10-13):
+- `tools/suite-runtime-budget.mjs` divides each top-level test's duration by the run's speed factor. That factor is the median ratio of the run's tests to `tools/suite-runtime-reference.json`.
+- It fails any test over `TEST_CEILING_MS` (100 seconds at reference speed, in `.github/workflows/ci.yml`).
+- The suite total is reported, not gated. Runner speed alone moved it between 188 and 369 seconds for identical code.
+- `tests/release-cut-green.test.mjs` keeps the ceiling above the slowest recorded normal test and below a 165-second runaway on the slowest recorded runner.
+
+Local timing depends on runtime and filesystem. Record measured timing with its environment rather than asserting a universal duration.
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 
@@ -152,6 +158,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/agent-surface.mjs`, `cli/spec-kit-delegation.mjs` (hooks that resolve, extension refresh) | `tests/spec-kit-integration-honesty.test.mjs` | ✅ |
 | `cli/config.mjs`, `cli/shared-doc-roles.mjs`, `cli/validators/metrics-consistency.mjs` (dogfood fixes) | `tests/dogfood-findings.test.mjs` | ✅ |
 | `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`, the CI runtime budget | `tests/release-cut-green.test.mjs`, `tests/release-version-sync.test.mjs` | ✅ |
+| `tools/suite-runtime-budget.mjs` (CI runtime budget: TAP reading, speed factor, per-test ceiling, reference build) and the CI step that runs it | `tests/suite-runtime-budget.test.mjs`, `tests/ci-reproducibility.test.mjs`, `tests/release-cut-green.test.mjs` | ✅ |
 | `tools/generate-docs-reference.mjs`, `docs/` site navigation and links | `tests/user-docs.test.mjs` | ✅ |
 | `.github/scripts/jules-policy.mjs`, `.github/scripts/jules-triage.mjs`, `.jules/preflight.mjs`, `.jules/setup.sh`, the Jules branch of `auto-merge.yml` | `tests/jules-policy.test.mjs` | ✅ |
 | `.github/workflows/*.yml` permissions, checkout credentials and the release job layout | `tests/workflow-permissions.test.mjs` | ✅ |
@@ -196,6 +203,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.6 | 2026-10-13 | DocGuard Team | The CI runtime budget is a per-test ceiling at reference-runner speed (`tools/suite-runtime-budget.mjs`, spec 051 FR-007 revision) |
 | 1.4.5 | 2026-10-11 | DocGuard Team | Map `sync-tests.mjs` to its tests; `runCI`, `runSpecs` and `runSyncTests` have behaviour tests (#556) |
 | 1.4.4 | 2026-10-11 | DocGuard Team | Map the workflow permission rules to `tests/workflow-permissions.test.mjs` (spec 068) |
 | 1.4.3 | 2026-10-11 | DocGuard Team | Fixture git goes through `tests/helpers/git.mjs`; the CI `hermeticity` job; map `demo.mjs` to its tests (spec 066) |
