@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-10-13
+
 ### Added
 
 - **Requirement anchors: a tag now points at the code under it, not the whole
@@ -432,6 +434,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - the validator no longer skips its own source file. The skip only worked
     when the running CLI was that same file, so 0.44.3 from npm reported two
     TDO002 findings on this repository that the checkout's own CLI hid.
+
+### Commits
+
+- chore: verify specs 073-078 for 0.45.0; re-point 10 stale TestGuard faults (#576)
+- fix: quoted TODO forms and strings are not annotations (spec 073) (#574)
+- fix: Docs-Sync counts only visible, specific names (spec 078) (#575)
+- fix: doc references and sibling matchers match whole file names (specs 075, 077) (#571)
+- fix: multi-line imports become import-graph edges (spec 076) (#573)
+- fix: a quoted <!-- no longer hides the rest of a spec (spec 074); watch test races (spec 055 FR-004) (#572)
+- fix: specs complete records its outcome in the projection's canonical form (#570)
+- fix: Kotlin route templates after even backslash runs and in raw strings (#569)
+- chore: verify spec 072; record the 0.45.0 release gate at c9934dd (#568)
+- feat: volatile lines in requirement anchors (spec 072) (#565)
+- chore: verify spec 070 (requirement anchors) (#564)
+- docs: record the spec 070 release gate at c644672 (#563)
+- feat: requirement anchors and suspect links (spec 070) (#562)
 
 ## [0.44.3] - 2026-10-11
 
