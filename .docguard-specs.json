@@ -11250,6 +11250,11 @@
           },
           {
             "requirementId": "FR-007",
+            "file": "tests/ci-reproducibility.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-007",
             "file": "tests/release-cut-green.test.mjs",
             "line": 7
           },

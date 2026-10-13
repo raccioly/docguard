@@ -1,3 +1,9 @@
+/**
+ * CI workflow scripts behave as documented, including the runtime budget
+ * step (tools/suite-runtime-budget.mjs).
+ *
+ * @req docguard.release-cut-green#FR-007
+ */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
