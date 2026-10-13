@@ -381,7 +381,7 @@ const COMMAND_HELP = {
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
       ['--id <spec-id>', 'Immutable spec identity to approve, complete or re-anchor'],
       ['--delivery <state>', 'With approve: planned, in_progress or implemented (verified is recorded by complete)'],
-      ['--since <ref>', 'First reconciliation baseline when none is recorded'],
+      ['--since <ref>', 'Reconciliation baseline: required when none is recorded; otherwise an older ref widens the review, and a newer one is accepted only when the recorded range exceeds the diff budgets even read in batches, and is recorded as narrowedFrom'],
       ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
       ['--deviation <text>', 'Accepted deviation to record; repeatable'],
       ['--successor <id>', 'Approved current successor spec to record'],

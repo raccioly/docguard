@@ -63,6 +63,13 @@ export function isAncestorOf(projectDir, revision, of = 'HEAD') {
   return git(projectDir, ['merge-base', '--is-ancestor', revision, of]).ok;
 }
 
+/** Commits reachable from `to` and not from `from`, or null when Git cannot count them. */
+export function commitsBetween(projectDir, from, to) {
+  const r = git(projectDir, ['rev-list', '--count', `${from}..${to}`]);
+  const count = r.ok ? Number(r.out.trim()) : NaN;
+  return Number.isSafeInteger(count) ? count : null;
+}
+
 /** The blob id of `path` at `revision`, or null when the path is absent there. */
 export function blobAt(projectDir, revision, path) {
   const r = git(projectDir, ['rev-parse', '--verify', '--quiet', `${revision}:${path}`]);

@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:5ac4ca6ea4a0080f3b1f89e1dfd3cbef6948d2e660111fca2274101ccad3fafc",
+          "fingerprint": "sha256:e2e49d6497c4c35a62f50a47ced6c8483ab2665b625877094bcbebe8247dca71",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Read against collectRequirementIdsFromContent after rebasing on #570: comment handling is shared-html-comments.mjs (spec 074); the section says a quoted <!-- is text",
-      "reviewedAt": "2026-10-12",
-      "reviewedRevision": "8236f84bedb4f33a17c7ff138475f32814b68a35"
+      "reason": "planSpecCompletion now reads over-budget ranges in batches and accepts a newer --since only past every budget, recorded as narrowedFrom; the section says so",
+      "reviewedAt": "2026-10-13",
+      "reviewedRevision": "1a7bfabbee9c95f7eb67a3e5b01799c7a3da98e3"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -34,7 +34,7 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:5c6a6db12e4258c2a13d24e62a43eb33dd38971ea6e8f476d66c2e43e53bf92a",
+          "fingerprint": "sha256:eefdad45db5f2dc695cf8f5d954cdca564018811516b1bedbc136d772f93f122",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
@@ -42,13 +42,13 @@
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
-          "fingerprint": "sha256:4e8ac1793f3c1c385a07c080e8faee98cfa9b30afe32bfa822a3e5d804596d56",
+          "fingerprint": "sha256:2a4d41f67d2262197d4610d35e91559c09d9a234c4d96b334f02d5ab3ddccb2d",
           "tier": "content"
         }
       },
-      "reason": "Outcomes row now states evidence and deviations are deduplicated and sorted; completeSpec writes that canonical form and reanchorSpec keeps it",
-      "reviewedAt": "2026-10-12",
-      "reviewedRevision": "b2088fa93b7193460bc0b18244d4c781f9acd45a"
+      "reason": "completeSpec passes narrowedFrom into the canonical outcome and the schema declares it; the outcomes table gains the narrowedFrom row",
+      "reviewedAt": "2026-10-13",
+      "reviewedRevision": "1a7bfabbee9c95f7eb67a3e5b01799c7a3da98e3"
     }
   }
 }

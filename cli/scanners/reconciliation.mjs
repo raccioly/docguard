@@ -9,12 +9,13 @@
  * @implements docguard.removed-file-attribution#FR-001
  * @implements docguard.removed-file-attribution#FR-002
  * @implements docguard.removed-file-attribution#FR-003
+ * @implements docguard.completion-revision-anchoring#FR-008
  */
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
-import { getDiffSnapshot, getHeadInfo } from '../shared-git.mjs';
+import { getDiffSnapshot, getHeadInfo, readPatchBatches } from '../shared-git.mjs';
 import { parseUnifiedDiff } from '../shared-diff.mjs';
 import { mechanicalSectionsForChanges } from '../shared-sync-scope.mjs';
 import { assetPathCovers, projectSpecRegistry } from './spec-registry.mjs';
@@ -41,7 +42,7 @@ function fileKind(path, registry) {
   return 'other';
 }
 
-function directSpecLinks(path, text, registry) {
+function directSpecLinks(path, mentions, registry) {
   const links = [];
   for (const spec of registry.specs) {
     const evidencePaths = [
@@ -50,7 +51,7 @@ function directSpecLinks(path, text, registry) {
       ...spec.observed.testEvidence.map(item => item.file),
       ...spec.reviewed.scope.canonicalDocs,
     ];
-    const explicit = (spec.intent.requirements || []).some(identity => text.includes(identity));
+    const explicit = mentions.includes(spec.specId);
     // docguard.asset-path-attribution#FR-002: a reviewed owner for files that
     // cannot name their spec (digest-pinned fixtures, recorded outputs).
     const asset = (spec.reviewed.scope.assetPaths || []).some(assetPath => assetPathCovers(assetPath, path));
@@ -148,6 +149,48 @@ function disposition(kind, linked, companionKinds, currentSpecs, canonical = [],
   return { evidenceClass: 'unrelated', disposition: 'unrelated_change', confidence: 'high' };
 }
 
+const isLocal = path => path?.split('/').includes('.local');
+
+// What reconciliation needs from a file's changed lines: the specs whose
+// requirement identities they name and, for source and tests, the canonical
+// requirements they cite. Keeping these instead of the text lets a range read
+// in batches hold one batch's patch at a time (FR-008).
+function collectChangeFacts(projectDir, patch, registry, canonicalCache, facts) {
+  for (const file of parseUnifiedDiff(patch)) {
+    const path = file.newPath || file.oldPath;
+    if (!path || [file.oldPath, file.newPath].some(isLocal)) continue;
+    const text = file.hunks.flatMap(hunk => hunk.lines.filter(line => line.op !== ' ').map(line => line.text)).join('\n');
+    const mentions = registry.specs
+      .filter(spec => (spec.intent.requirements || []).some(identity => text.includes(identity)))
+      .map(spec => spec.specId);
+    const kind = fileKind(path, registry);
+    const canonical = kind === 'source' || kind === 'test' ? canonicalRequirementLinks(projectDir, text, canonicalCache) : [];
+    facts.set(path, { mentions, canonical });
+  }
+}
+
+function blockedRange(since, baseRevision, head, snapshot, issues, reading = {}) {
+  return {
+    schemaVersion: 1,
+    status: 'BLOCKED',
+    since,
+    baseRevision,
+    revision: head.commit,
+    dirty: head.dirty,
+    range: {
+      status: reading.status || snapshot.status,
+      commitCount: snapshot.commitCount,
+      changedFileCount: snapshot.changedFiles.length,
+      patchBytes: reading.patchBytes ?? snapshot.patchBytes,
+      ...(reading.batches !== undefined ? { batches: reading.batches } : {}),
+      limits: snapshot.limits,
+    },
+    coverage: { status: 'partial', reason: reading.reason || snapshot.reason },
+    summary: { total: 0, byKind: {}, byDisposition: {}, byConfidence: {} },
+    nodes: [], edges: [], classifications: [], writes: [], issues,
+  };
+}
+
 function summarize(classifications) {
   const count = key => Object.fromEntries([...classifications.reduce((map, item) => {
     const value = item[key] || 'unknown';
@@ -178,48 +221,36 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
     };
   }
   const projection = projectSpecRegistry(projectDir, config);
-  const readDiff = runtime.getDiffSnapshot || getDiffSnapshot;
+  const limits = runtime.diffLimits || {};
+  const readDiff = runtime.getDiffSnapshot || ((dir, ref) => getDiffSnapshot(dir, ref, limits));
+  const readBatches = runtime.readPatchBatches || readPatchBatches;
   // Use the already verified full commit ID for every subsequent Git call.
   // This removes revision-option ambiguity from user-supplied `--since` text.
   const snapshot = readDiff(projectDir, baseRevision);
-  if (snapshot.status !== 'ok') {
-    return {
-      schemaVersion: 1,
-      status: 'BLOCKED',
-      since,
-      baseRevision,
-      revision: head.commit,
-      dirty: head.dirty,
-      range: {
-        status: snapshot.status,
-        commitCount: snapshot.commitCount,
-        changedFileCount: snapshot.changedFiles.length,
-        patchBytes: snapshot.patchBytes,
-        limits: snapshot.limits,
-      },
-      coverage: { status: 'partial', reason: snapshot.reason },
-      summary: { total: 0, byKind: {}, byDisposition: {}, byConfidence: {} },
-      nodes: [], edges: [], classifications: [], writes: [], issues: projection.issues,
-    };
+  const facts = new Map();
+  const canonicalCache = new Map();
+  let batches = 1;
+  let patchBytes = snapshot.patchBytes;
+  if (snapshot.status === 'ok') {
+    collectChangeFacts(projectDir, snapshot.patch, projection.registry, canonicalCache, facts);
+  } else if (Number.isSafeInteger(snapshot.commitCount) && ['too-large', 'timeout'].includes(snapshot.status)) {
+    // The inventory is whole and only the single patch read failed: read the
+    // patch again in bounded batches (FR-008).
+    const reading = readBatches(projectDir, baseRevision, snapshot.changedFiles,
+      patch => collectChangeFacts(projectDir, patch, projection.registry, canonicalCache, facts), limits);
+    if (reading.status !== 'ok') return blockedRange(since, baseRevision, head, snapshot, projection.issues, reading);
+    ({ batches, patchBytes } = reading);
+  } else {
+    return blockedRange(since, baseRevision, head, snapshot, projection.issues);
   }
-  const diff = parseUnifiedDiff(snapshot.patch)
-    .filter(file => ![file.oldPath, file.newPath].some(path => path?.split('/').includes('.local')));
   const changed = snapshot.changedFiles
     .map(file => file.newPath || file.oldPath)
-    .filter(path => path && !path.split('/').includes('.local'));
-  const textByPath = new Map(diff.map(file => [
-    file.newPath || file.oldPath,
-    file.hunks.flatMap(hunk => hunk.lines.filter(line => line.op !== ' ').map(line => line.text)).join('\n'),
-  ]));
-  const canonicalCache = new Map();
+    .filter(path => path && !isLocal(path));
   const preliminary = [...new Set(changed)].sort().map(path => {
     const kind = fileKind(path, projection.registry);
-    const text = textByPath.get(path) || '';
-    const item = { path, kind, specs: directSpecLinks(path, text, projection.registry) };
-    if (kind === 'source' || kind === 'test') {
-      const canonical = canonicalRequirementLinks(projectDir, text, canonicalCache);
-      if (canonical.length) item.canonical = canonical;
-    }
+    const { mentions = [], canonical = [] } = facts.get(path) || {};
+    const item = { path, kind, specs: directSpecLinks(path, mentions, projection.registry) };
+    if (canonical.length) item.canonical = canonical;
     return item;
   });
   const deleted = new Set(snapshot.changedFiles.filter(file => file.status.startsWith('D')).map(file => file.oldPath));
@@ -282,7 +313,8 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
       status: 'ok',
       commitCount: snapshot.commitCount,
       changedFileCount: changed.length,
-      patchBytes: snapshot.patchBytes,
+      patchBytes,
+      batches,
       limits: snapshot.limits,
       aggregated: snapshot.commitCount > 50 || changed.length > 100,
     },

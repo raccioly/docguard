@@ -150,7 +150,24 @@ export function canonicalOutcome(outcome) {
     deviations: sortedUnique(outcome.deviations || []),
     successor: outcome.successor ?? null,
     ...(outcome.reanchoredFrom ? { reanchoredFrom: outcome.reanchoredFrom } : {}),
+    ...(outcome.narrowedFrom ? { narrowedFrom: outcome.narrowedFrom } : {}),
   };
+}
+
+/**
+ * A recorded narrowed review range: the recorded revision, the newer `--since`
+ * completion reconciled from, how many commits between them were not
+ * reconciled, and the budget that forced it.
+ * @implements docguard.completion-revision-anchoring#FR-009
+ */
+function validNarrowing(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (Object.keys(value).some(key => !['revision', 'since', 'skippedCommits', 'reason'].includes(key))) return false;
+  return /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(value.revision || '')
+    && /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(value.since || '')
+    && value.revision !== value.since
+    && Number.isSafeInteger(value.skippedCommits) && value.skippedCommits > 0
+    && typeof value.reason === 'string' && value.reason.trim().length > 0 && value.reason.length <= 500;
 }
 
 function registryDifferences(left, right) {
@@ -340,9 +357,10 @@ function validatedControl(entry, issues) {
   const outcomes = reconciliation.outcomes ?? [];
   if (!Array.isArray(outcomes) || outcomes.length > 20 || outcomes.some(outcome => {
     if (!outcome || typeof outcome !== 'object' || Array.isArray(outcome)) return true;
-    const allowed = new Set(['revision', 'reason', 'evidence', 'deviations', 'successor', 'reanchoredFrom']);
+    const allowed = new Set(['revision', 'reason', 'evidence', 'deviations', 'successor', 'reanchoredFrom', 'narrowedFrom']);
     return Object.keys(outcome).some(key => !allowed.has(key))
       || (outcome.reanchoredFrom !== undefined && !validReanchor(outcome.reanchoredFrom))
+      || (outcome.narrowedFrom !== undefined && !validNarrowing(outcome.narrowedFrom))
       || !/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(outcome.revision || '')
       || typeof outcome.reason !== 'string' || !outcome.reason.trim() || outcome.reason.length > 500
       || !Array.isArray(outcome.evidence) || outcome.evidence.length > 100
