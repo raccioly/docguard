@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.16.0 -->
+<!-- docguard:version 0.17.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.16.0` |
+| **Version** | `0.17.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -57,7 +57,8 @@ The primary data structure. Controls all CLI behavior.
 | `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) and per harness and path (PSR003). For Claude Code the total includes files pulled in by `@path` imports (relative to the importing file, up to 5 hops); a missing import is PSR002 |
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
-| `validators.docDependency` / `pathScopedRules` / `docOwnership` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json` |
+| `validators.docDependency` / `pathScopedRules` / `docOwnership` / `requirementAnchors` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json`, an anchor lock or `anchors.enabled` |
+| `anchors` | `object` | No | — | Requirement anchors (specs/070-requirement-anchors): opt-in before a lock exists (`enabled`), which suspect and lost links fail guard (`failOn`: `reviewed-exact` or `none`), foreign tag formats (`import`, `importMap`), the ripple cap (`fanOutLimit`), where `--orphans` looks (`orphanPaths`), the tree-sitter artifacts (`treeSitter.artifacts`) and the TestGuard files read (`testguard.evidence`, `testguard.claims`). `docs/configuration.md` lists each key's default |
 | `detection.includeNonProduct` | `boolean` | No | `false` | Read test, fixture, example and mock directories as product code during surface detection (routes, env vars, frameworks). Package segments such as `src/main/java/com/example` or a Go `internal/example` package are always product code |
 | `diagrams.moduleGraph.depth` / `maxNodes` / `include` | `integer` / `integer` / `string[]` | No | `2` / `30` (cap 60) / every product source file | Shape of the `module-graph` section |
 | `memory.symbolMap.maxBytes` | `integer` | No | `4096` (256–16384) | Budget of the symbol map `memory --pack --symbols` adds |
@@ -392,11 +393,14 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | File | Written by | Shape |
 |---|---|---|
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
+| `.docguard/anchors.cache.json` | `docguard anchors` and the Requirement-Anchors validator, never in CI or with `--no-cache` | `{ v, identity, files }`: `v` is `1`, `identity` names the extractor (algorithm and tier versions), and `files` maps a path to `{ sha, value }`, where `sha` is the sha256 of the working-tree bytes. Another version or identity, or a different `sha`, is a miss. Ignored and reported (ANC010) while git tracks any file under `.docguard/` |
+| `.docguard/ts/<sha256>/` | the opt-in tree-sitter anchor tier | Copies of the configured runtime and grammar files whose sha256 matched the shipped manifest, named by that hash; the child process loads only these |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
+| `tools/suite-runtime-reference.json` | maintainers, with `tools/suite-runtime-budget.mjs reference` from CI test TAP | Per-test durations (ms) at reference-runner speed, with the runs they came from (`sources`, `inputs`), `speedFactorRange` and `maxNormalizedTestMs`. Used only to measure a run's speed factor for the per-test ceiling; refreshed when a run shares too few tests with it to measure that factor (`MIN_COMMON` in the tool; specs/051-release-cut-green FR-007) |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. Never run: its CLI version and model are unavailable on ChatGPT-account Codex (superseded by v3). `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
 | `benchmarks/agent-context/manifest-v3.json` | frozen once (2026-10-10), before any run | Agent-context protocol v3: v2 with only the executable pin (`model.cliVersion`, `model.id`) changed. `run.mjs` holds its digest, loads it only while every byte matches, and rejects it if anything outside the pin differs from v2. Results: `results/observed-v3.json` in the v2 result format |
 
-`.docguard/` holds only local state: the plan cache above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself: the first write creates `.docguard/.gitignore` containing `*` and keeps an existing one, so the project's own `.gitignore` stays as the project wrote it. `git rm -r --cached .docguard` untracks files that an earlier version let a project commit. DocGuard's dirty checks leave `.docguard/` out either way.
+`.docguard/` holds only local state: the plan and anchor caches and the staged tree-sitter files above, score history, fix memory, feedback records, the nudge throttle, the context pack and the active context. It ignores itself: the first write creates `.docguard/.gitignore` containing `*` and keeps an existing one, so the project's own `.gitignore` stays as the project wrote it. `git rm -r --cached .docguard` untracks files that an earlier version let a project commit. DocGuard's dirty checks leave `.docguard/` out either way.
 
 ## Task Context Packet
 
@@ -558,6 +562,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.17.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: the `anchors` configuration block and `validators.requirementAnchors`; the anchor cache and staged tree-sitter files in `.docguard/`; `tools/suite-runtime-reference.json` (spec 051 FR-007) |
 | 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag (ASP.NET Core, Express, Koa, Fastify, NestJS), `scan.caseNotes`, and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |
 | 0.15.0 | 2026-10-10 | DocGuard Team | `.docguardignore` reasons and expiries, the suppression model, the claimspec `ignore` export, `validators.suppressions` and `suppressions.requireReason` (spec 057) |
 | 0.14.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: the adoption baseline file and its fingerprint preimage, including the advisory-tail exclusion and legacy match (spec 052); the `baseline` key; `requiredFiles.agentFile` as a string (spec 050); Go `internal/example` as product code |

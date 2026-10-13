@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -54,9 +54,10 @@ code-truth sections), `score` (CDD maturity 0-100).
 `specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
+`anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map), `upgrade` (check npm for a newer
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
+remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map; `--matrix` exports requirement → anchor → test), `upgrade` (check npm for a newer
 release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard).
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
@@ -179,6 +180,9 @@ extensions/spec-kit-docguard/
   weight and runtime dependencies. A cost the change needs is declared in the PR
   body as `Budget-Exempt: <metric> — <reason>`. Reproduce locally with
   `npm run budget -- --base <base-worktree>` (specs/031-non-regression-budgets).
+  The CI test job fails any single test over 100 seconds at reference-runner
+  speed (`TEST_CEILING_MS`, `tools/suite-runtime-budget.mjs`); the suite total
+  is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test
@@ -204,6 +208,17 @@ extensions/spec-kit-docguard/
   `pull-requests` or `issues` write runs no package manager, build tool or test.
   `tests/workflow-permissions.test.mjs` enforces it
   (specs/068-release-least-privilege).
+- **A changed requirement link is reviewed, not silenced.** This repository
+  commits `.docguard-anchor-lock.jsonl`, so guard reports a link whose code or
+  requirement changed since its review (ANC001, ANC002) or whose tag is gone
+  (ANC003); ANC001 and ANC003 fail guard for a link accepted as reviewed. Read
+  the change, then run `docguard anchors accept --link '<key>'` (or
+  `--file <path> --bulk` for a file you changed) with a `--reason` that says
+  what you checked. Accept only links in files your change touched. The lock
+  merges with `merge=union`: after a rebase, ANC009 means two lines for one
+  link, so restore `origin/main`'s lock and re-accept only your own files.
+  CODEOWNERS sends every lock change to a maintainer
+  (specs/070-requirement-anchors, CI-RECIPES.md Recipe 3f).
 - Run `docguard guard` before pushing — all checks must pass
 - Standalone file writes use `safeWrite()` with backups before overwrite.
   Lifecycle operations spanning multiple files use `commitFileTransaction()` so

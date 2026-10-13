@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.2 -->
+<!-- docguard:version 0.9.3 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 ## Functional Requirements
 
@@ -23,7 +23,7 @@
 | FR-021 | P2 | A completed task naming a deliverable path that exists but that the feature never changed is reported as a review signal, distinct from a task whose deliverable is absent. | tests/untouched-claims.test.mjs |
 | FR-007 | P1 | An agent can request a deterministic bounded task-context packet that prioritizes exact current evidence, excludes retired and unsafe material, preserves retrieval-only assurance, and abstains rather than returning weak matches. Existing task-graph behavior remains compatible. | tests/task-context.test.mjs, tests/agent-context-benchmark.test.mjs |
 | FR-008 | P1 | The packed-package adoption journey distinguishes foreign hooks, composes one self-repairing managed block with user hook commands, emits complete remediation text, explains deterministic registry drift by field, follows proposed actions, and verifies the resulting state. | tests/adoption-workflow.test.mjs, tests/hooks.test.mjs, tests/hooks-contract.test.mjs, tests/spec-registry.test.mjs, tests/npm-pack-smoke.test.mjs |
-| FR-009 | P1 | Reconciliation keeps changed-path inventory independent from bounded patch text and reports partial coverage instead of a ready result after timeout, overflow, or Git failure. | tests/shared-git.test.mjs, tests/reconcile.test.mjs |
+| FR-009 | P1 | Reconciliation keeps changed-path inventory independent from bounded patch text. A patch that overflows or times out in one read is read again in bounded batches of changed paths; coverage is partial, never a ready result, when a batch still exceeds a bound or Git fails. | tests/shared-git.test.mjs, tests/reconcile.test.mjs |
 | FR-010 | P1 | Instruction pointers resolve only safe exact paths or one unique basename; Git-ignored paths and nested Git checkouts are excluded from basename evidence, while ambiguity, symlinks, unsafe paths, and incomplete indexes remain explicit. | tests/instruction-audit.test.mjs |
 | FR-011 | P1 | Planned requirements defer test traceability only when committed, clean, digest-current schema-v2 lifecycle evidence proves they remain planned. A structurally current registry that is new, removed from the Git index, or modified pending commit remains non-authoritative and explains restore-or-commit remediation without recommending artificial test markers. | tests/traceability-lifecycle.test.mjs |
 | FR-012 | P1 | Exact finding-code policy can promote or demote one finding without weakening its validator, while intrinsic and effective severity remain visible in machine formats. | tests/severity.test.mjs, tests/sarif.test.mjs, tests/junit.test.mjs |
@@ -60,6 +60,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.3 | 2026-10-13 | Freshness review after specs 070–078: FR-009 reads an over-budget range in batches before it reports partial coverage (spec 028 FR-008); those specs state their own requirements under `specs/` |
 | 0.9.2 | 2026-10-11 | FR-024: hooks are written only into a folder the repository owns (spec 065) |
 | 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |
 | 0.9.0 | 2026-09-30 | Add FR-025 (Metrics-Consistency counts what ships and reports each drifted value once); record that the symbol map stays opt-in until the v2 protocol runs |

@@ -1,9 +1,9 @@
 # Security
 
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
-<!-- docguard:version 0.17.0 -->
+<!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 ## Overview
 
@@ -79,7 +79,7 @@ Pass untrusted arguments through argv arrays and validate values for their inten
 
 Every other subprocess also takes an argv array and no shell:
 
-- Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`). `ls-files -z -- .docguard` with that fixed path tells the anchor cache whether its state directory is tracked, and if so the cache is not used (`cli/scanners/anchor-cache.mjs`). A saved TestGuard report is untrusted input: its revision reaches `cat-file -e` and `show <rev>:<path>` only after matching the commit-id pattern, and its paths and the claims file's are read through the evidence reader (`cli/scanners/testguard-evidence.mjs`). DocGuard never runs TestGuard or a test.
+- Git: `ls-files -z --cached` / `--deleted` (tracked files), `check-ignore --no-index -z --stdin` (paths go through stdin, never the command line), `cat-file -e` with a regex-validated revision, and `rev-parse` (`cli/shared-git.mjs`, `cli/scanners/doc-deps.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/commands/review.mjs`). Reconciliation's `diff` calls pass `--no-ext-diff` and `--no-textconv`, so no configured diff driver runs; when one read overflows, `readPatchBatches` repeats it with the changed paths after `--` under `--literal-pathspecs`, so a file name is never read as an option or a pattern, and each call keeps the per-call byte and time budget (`cli/shared-git.mjs`, spec 028 FR-008). `ls-files -z -- .docguard` with that fixed path tells the anchor cache whether its state directory is tracked, and if so the cache is not used (`cli/scanners/anchor-cache.mjs`). A saved TestGuard report is untrusted input: its revision reaches `cat-file -e` and `show <rev>:<path>` only after matching the commit-id pattern, and its paths and the claims file's are read through the evidence reader (`cli/scanners/testguard-evidence.mjs`). DocGuard never runs TestGuard or a test.
 - The opt-in tree-sitter tier (`cli/scanners/ts-anchors.mjs`) runs `node --no-addons` on one fixed script, `ts-anchors-child.mjs`, with no environment, file content on stdin and a timeout. It runs only when `anchors.treeSitter.artifacts` names the files, never by detection.
   - Each file is read once, and its sha256 must equal the hash `schemas/docguard-anchor-treesitter.manifest.json` pins. The manifest covers the `web-tree-sitter` and grammar versions vetted in `tools/anchor-oracle/VETTING.md`.
   - Those same bytes are written to `.docguard/ts/<sha256>/`. The child imports the runtime from that copy by absolute file URL and loads each grammar from its bytes, so module resolution never runs and a project's `node_modules` cannot supply code.
@@ -169,6 +169,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.18.0 | 2026-10-13 | Freshness review after specs 070–078: reconciliation's batched `git diff` passes changed paths as literal pathspecs under the per-call budget (spec 028 FR-008) |
 | 0.17.0 | 2026-10-11 | Workflow jobs run tests, package managers and build tools without a repository write token; release assets are built read-only (spec 068) |
 | 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
