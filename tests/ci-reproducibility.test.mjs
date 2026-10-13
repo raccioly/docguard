@@ -161,15 +161,35 @@ describe('CI reproducibility contracts', () => {
     }));
   }
 
-  for (const [duration, status, expected] of [['30.25', 0, 0], ['120001', 0, 1], ['', 0, 1], ['30', 1, 1]]) {
-    it(`enforces the runtime budget with duration=${duration || 'missing'} and test exit=${status}`, () => inTemp(dir => {
-      writeFileSync(join(dir, 'node'), '#!/bin/sh\n[ -z "$MOCK_DURATION" ] || echo "# duration_ms $MOCK_DURATION"\nexit "$MOCK_STATUS"\n', { mode: 0o755 });
-      const body = script(ci, 'Run Tests (with runtime budget)').replaceAll('/tmp/test-output.txt', join(dir, 'output.txt'));
-      const result = spawnSync('bash', ['-eo', 'pipefail', '-c', body], {
-        cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${dir}:${process.env.PATH}`,
-          TEST_BUDGET_MS: '120000', MOCK_DURATION: duration, MOCK_STATUS: String(status) },
-      });
-      assert.equal(result.status, expected, result.stderr);
+  // The step pipes the suite's TAP into tools/suite-runtime-budget.mjs; the
+  // stub stands in for the suite and hands every other call to the real node.
+  const budgetTool = fileURLToPath(new URL('../tools/suite-runtime-budget.mjs', import.meta.url));
+  const referenceTests = Object.entries(JSON.parse(read('tools/suite-runtime-reference.json')).tests);
+  const suiteTap = (runawayMs, total) => [
+    'TAP version 13',
+    ...referenceTests.flatMap(([name, ms], i) => [`ok ${i + 1} - ${name.replace(/\\/g, '\\\\').replace(/#/g, '\\#')}`, '  ---', `  duration_ms: ${ms}`, '  ...']),
+    ...(runawayMs ? [`ok ${referenceTests.length + 1} - walks /`, '  ---', `  duration_ms: ${runawayMs}`, '  ...'] : []),
+    ...(total ? [`# duration_ms ${total}`] : []),
+  ].join('\n');
+  for (const [label, runawayMs, total, status, expected] of [
+    ['a normal run', 0, '312000.5', 0, 0],
+    ['a 165s runaway in one test', 165000, '371000', 0, 1],
+    ['a missing suite total', 0, '', 0, 1],
+    ['failing tests', 0, '30', 1, 1],
+  ]) {
+    it(`enforces the runtime budget on ${label} (test exit ${status})`, () => inTemp(dir => {
+      writeFileSync(join(dir, 'suite.tap'), `${suiteTap(runawayMs, total)}\n`);
+      writeFileSync(join(dir, 'node'), `#!/bin/sh\nif [ "$1" = "--test" ]; then cat "${join(dir, 'suite.tap')}"; exit "$MOCK_STATUS"; fi\nexec "${process.execPath}" "$@"\n`, { mode: 0o755 });
+      const body = script(ci, 'Run Tests (with runtime budget)')
+        .replaceAll('/tmp/test-output.txt', join(dir, 'output.txt'))
+        .replaceAll('tools/suite-runtime-budget.mjs', budgetTool);
+      const summary = join(dir, 'summary.md');
+      const env = { ...process.env, PATH: `${dir}:${process.env.PATH}`, MOCK_STATUS: String(status), GITHUB_STEP_SUMMARY: summary };
+      const ceiling = ci.match(/TEST_CEILING_MS: (\d+)/)[1];
+      const result = spawnSync('bash', ['-eo', 'pipefail', '-c', body], { cwd: dir, encoding: 'utf8', env: { ...env, TEST_CEILING_MS: ceiling } });
+      assert.equal(result.status, expected, result.stdout + result.stderr);
+      if (expected === 0) assert.match(readFileSync(summary, 'utf8'), /Test runtime budget: PASS/);
+      if (runawayMs) assert.match(result.stdout, /::error::"walks \/" took 165000ms/);
     }));
   }
 

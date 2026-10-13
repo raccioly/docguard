@@ -29,3 +29,11 @@
 ## Phase 4: Amendment (2026-10-10)
 
 - [x] T010 FR-008: lint test in `tests/release-cut-green.test.mjs`; `tests/js-framework-routes.test.mjs` and `tests/js-route-shapes.test.mjs` read `notesSince(…, '0.43.1')`.
+
+## Phase 5: FR-007 revision (2026-10-13)
+
+- [x] T011 Measure: per-Node duration distribution of the last 120 CI runs (445 jobs); per-test speed factor and residual noise; recorded in spec.md *Runtime budget measurements*.
+- [x] T012 `tests/suite-runtime-budget.test.mjs` and the FR-007/SC-003 block of `tests/release-cut-green.test.mjs` (red first).
+- [x] T013 `tools/suite-runtime-budget.mjs`, `tools/suite-runtime-reference.json`, `tests/fixtures/suite-runtime-runs.json`.
+- [x] T014 `.github/workflows/ci.yml`: the check step, `TEST_CEILING_MS`, and the TAP artifact; `tests/ci-reproducibility.test.mjs`.
+- [x] T015 `docs-canonical/TEST-SPEC.md`, `CHANGELOG.md`, `npm run llms`; `npm test`; `docguard guard`; `docguard specs --check`; anchor review on `ci.yml`.
