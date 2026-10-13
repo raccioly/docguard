@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -14,12 +14,13 @@ structural score is useful, but it is not proof that arbitrary prose is true.
 ## Active roadmap
 
 Specs 014–051 shipped in v0.43.0 (2026-10-01); specs 036 and 052–064 in
-v0.44.0, 065–067 in v0.44.1 and 068–069 in v0.44.2 (all 2026-10-11). Native
-suppressions for claimspec (issue #420) shipped as spec 057. Spec 071 (route
-readers checked against public projects) is merged and waits for the next
-release; the `[Unreleased]` section of `CHANGELOG.md` lists it. Spec 070
-(symbol-level requirement anchors) is in progress. Each spec's `tasks.md` is
-its checklist.
+v0.44.0, 065–067 in v0.44.1, 068–069 in v0.44.2 and 071 in v0.44.3 (all
+2026-10-11); specs 070 and 072–078 in v0.45.0 (2026-10-13). Native
+suppressions for claimspec (issue #420) shipped as spec 057. Two amendments to
+verified specs are merged and wait for the next release: spec 051's CI runtime
+budget is a per-test ceiling (FR-007), and spec 028 reads an over-budget
+reconciliation range in batches (FR-008–FR-010). The `[Unreleased]` section of
+`CHANGELOG.md` lists them. Each spec's `tasks.md` is its checklist.
 
 New work starts with a reviewed specification and measurable acceptance
 criteria rather than an evergreen task list that can become stale.

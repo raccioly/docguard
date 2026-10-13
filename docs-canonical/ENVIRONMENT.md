@@ -2,16 +2,16 @@
 
 <!-- docguard:quality negation-load off — an environment doc precisely describes the ABSENCE of requirements (no install step, no database, no credential for the CLI); the prohibitive phrasing is accurate and intentional, not sloppy writing -->
 
-<!-- docguard:version 0.14.0 -->
+<!-- docguard:version 0.15.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 > The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.14.0` |
+| **Version** | `0.15.0` |
 
 ---
 
@@ -44,6 +44,10 @@ The server binds `127.0.0.1` by default and **refuses to start** on a
 non-loopback host without a key, rather than exposing project read access to
 the network. The stdio transport (`docguard mcp`, the default) never reads `DOCGUARD_API_KEY`.
 See [SECURITY.md](SECURITY.md) for the full posture.
+
+`CI` set to any non-empty value (even `false`) also turns off the requirement-anchor cache
+(`.docguard/anchors.cache.json`), so each CI run parses every tagged file; `--no-cache` does
+the same locally.
 
 ## Setup Steps
 
@@ -78,6 +82,11 @@ npm run docs:reference
 # Measure this tree against the budgets in budgets.json (the CI `budget` job
 # runs the same comparison against the base branch)
 npm run budget
+
+# Check every test against the CI per-test runtime ceiling (the CI test job sets
+# TEST_CEILING_MS=100000, 100 s at reference-runner speed; specs/051-release-cut-green)
+node --test --test-reporter=tap tests/*.test.mjs > /tmp/docguard-tests.tap
+node tools/suite-runtime-budget.mjs check --tap /tmp/docguard-tests.tap --ceiling-ms 100000
 ```
 
 ## CI/CD
@@ -102,7 +111,8 @@ with the default read-write project mount. `docguard guard` runs fine under `--l
 makes everything read-only. Commands that write into the project need the normal mount:
 `init`, `generate`, `hooks`, `fix --write`, `sync --write`, `review --accept` / `--prune`,
 `specs --write`, `specs approve --write`, `specs complete --write`, `specs reanchor --write`,
-`retire --write`, `memory --pack`, `guard --update-baseline` and `upgrade --apply`. The
+`anchors accept`, `anchors disposition`, `trace --matrix --out`, `retire --write`,
+`memory --pack`, `guard --update-baseline` and `upgrade --apply`. The
 [Command Safety Levels](SECURITY.md#command-safety-levels) table in SECURITY.md is the full
 list. Read and preview modes (`sync` and `generate --spec` without `--write`, `rules --for`)
 write at most the plan cache and other local state in `.docguard/`, which is best-effort and
@@ -127,7 +137,8 @@ What must be visible:
   reports the tier and `low` confidence; SPR007 findings on routes and entities carry
   `parserTier: regex-fallback` and `low` confidence. The pattern tier still composes router
   prefixes and Django URL configurations the same way, so on standard layouts it reports the
-  same facts.
+  same facts. Requirement anchors in Python files fall to the pattern tier, which guard reports
+  as ANC010 once the project has opted in to anchors.
 - **The Git configuration's `core.hooksPath`.** `docguard hooks` and the hook step of
   `docguard setup` write only into a hooks folder the repository owns. A sandbox or machine
   whose global, system or command-line configuration sets `core.hooksPath` gets a refusal
@@ -140,6 +151,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.15.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: `CI` turns off the anchor cache; the commands that write the anchor lock and the trace matrix; Python anchors without `python3`; the local per-test runtime check (spec 051 FR-007) |
 | 0.14.0 | 2026-10-11 | DocGuard Team | A global `core.hooksPath` makes `hooks` refuse; `/dev/null` falls back to `.git/hooks` (spec 065) |
 | 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
 | 0.12.0 | 2026-09-30 | DocGuard Team | `sync --write`, not a bare `sync`, writes into the project; read and preview modes write only the self-ignoring `.docguard/` (spec 042) |

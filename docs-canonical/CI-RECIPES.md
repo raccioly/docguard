@@ -1,6 +1,6 @@
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -152,6 +152,15 @@ evidence, and affected canonical docs are reviewed, run `docguard specs complete
 verification. A taskless living verification contract is eligible only when every
 requirement has qualified evidence. Keep living specs current; archive only when the registry reports
 that the selected persistence model is ready.
+
+`--since` sets the starting revision only for a spec's first completion. A
+spec with a recorded revision reconciles from it, so its maintenance gate is
+`specs complete --id <spec-id> --check` with no `--since`. There `--since` may
+name the recorded revision or an ancestor of it. A commit between the recorded
+revision and `HEAD` is accepted only when the recorded range exceeds the diff
+budgets even when read in batches; the outcome then records the skipped
+commits as `narrowedFrom`. Any other `--since` blocks with SPC006 and writes
+nothing (`specs/028-completion-revision-anchoring`).
 
 Under squash merges, run completions on a branch whose HEAD is the default
 branch's tip, run as many `specs complete --write` as needed (the registry,

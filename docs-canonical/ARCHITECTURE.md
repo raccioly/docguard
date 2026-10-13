@@ -1,15 +1,15 @@
 # Architecture
 
-<!-- docguard:version 1.14.0 -->
+<!-- docguard:version 1.15.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.11.0` |
-| **Last Updated** | 2026-10-10 |
-| **Project Size** | ~54K lines in 161 files across `cli/` — measured 2026-10-10 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
+| **Version** | `1.15.0` |
+| **Last Updated** | 2026-10-13 |
+| **Project Size** | ~71K lines in 193 files across `cli/` — measured 2026-10-13 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
 
@@ -27,7 +27,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Commands** | User-facing commands (the Daily 5 — init/guard/diff/sync/score — plus situational tools including reconcile, retire, specs, and `init --with` scaffolders) | `cli/commands/` | `*.mjs` |
 | **Document lifecycle** | Finds exact terminal-status docs and completed-task review candidates; explicit retirement removes documentation from active context only after its source revision is reachable from a retained Git ref | `cli/scanners/document-lifecycle.mjs`, `cli/validators/document-lifecycle.mjs`, `cli/commands/retire.mjs` | Scanner is read-only; retirement uses the shared multi-file transaction and remains explicit |
 | **Spec lifecycle registry** | Projects immutable spec identities, reviewed lifecycle/lineage/scope, artifact digests, task state, qualified implementation/test evidence, bounded outcomes, and recovery tombstones into one byte-stable control file | `cli/scanners/spec-registry.mjs`, `cli/scanners/requirement-evidence.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/validators/spec-registry.mjs`, `cli/commands/specs.mjs` | `specs --write` preserves reviewed fields; stale checks identify bounded field paths and distinguish canonical ordering from changed content; only committed, clean, digest-current lifecycle entries can defer traceability, while a current planned entry that is new, removed from the index, or modified pending commit remains advisory; `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery and refuses `verified`/`released`; `specs complete` is the only verified-delivery writer |
-| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, to a spec whose reviewed `assetPaths` cover them (files that cannot carry an annotation, such as digest-pinned fixtures; spec 039), a deleted file to a current, approved spec that names it (the exact path, or a directory that no longer has tracked files; spec 069), or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | Timeout, overflow, parse failure, or incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
+| **Reconciliation graph** | Inventories changed paths independently from bounded patch text, maps them to direct spec evidence, to a spec whose reviewed `assetPaths` cover them (files that cannot carry an annotation, such as digest-pinned fixtures; spec 039), a deleted file to a current, approved spec that names it (the exact path, or a directory that no longer has tracked files; spec 069), or to a requirement declared in a canonical document (`docs-canonical/<doc>.md#<ID>`), and keeps mechanical facts, approved intent, decisions, unrelated changes, and unsupported evidence separate | `cli/shared-git.mjs`, `cli/scanners/reconciliation.mjs`, `cli/commands/reconcile.mjs` | A patch that overflows or times out in one read is read again in batches of changed paths under the same per-call budget, keeping only per-file facts between batches (`readPatchBatches`, spec 028 FR-008). A batch read that still exceeds a bound, a parse failure, or an incomplete inventory blocks a ready result; planning is read-only and `--write` never rewrites requirements |
 | **Analyzer tier** | Decides which analyzer produced each piece of evidence at the two entry points (`parseJsTs`, `extractPythonFiles`), carries `tier`/`tierReason` on scanned items, reports `parserTier` on every finding, and downgrades a validator to `partial` when an AST-capable language was read by the pattern fallback (`regex-fallback`) or when a language with no AST tier was read by pattern (`fallback-language`: Go, Java, Kotlin, Ruby, Rust, PHP, C#). The Environment validator is `partial` when a source language has no env patterns. The symbol map and module graph name the languages the import graph does not read | `cli/shared-source.mjs` (`tierFor`, `summarizeTiers`, `tierApplicability`, `grepEnvUsage`, `LANGUAGE_NAMES`), `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/environment.mjs` | Findings are retained; only coverage is downgraded. The two tiers give different reasons: a parser was unavailable, or none exists. A package segment (`src/main/java/com/example`, Go `internal/example`) is product code, not an examples directory (specs/043-fallback-language-coverage) |
 | **Python web extraction** | One module outline per Python file, from the `python3` AST tier or the pattern tier when no interpreter is available; the resolvers compose FastAPI/Flask router prefixes across modules, follow Django URL configurations from `ROOT_URLCONF` (including DRF router registrations), classify ORM models (SQLAlchemy, Django, SQLModel) with relationship cardinality, and read `BaseSettings` environment variables | `cli/scanners/py-outline.mjs`, `cli/scanners/py-sources.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/python-models.mjs`, `cli/scanners/py-env.mjs`, `cli/scanners/py-ast.mjs` | Both tiers share the resolvers, so they differ only in what they can read; pattern-tier facts keep `parserTier: regex-fallback`, lower `generate` confidence and mark their sections partial. Unresolved paths, prefixes and includes are flagged, never guessed, and join the route scan's `unresolved` list so API-surface coverage is `partial` with their count and first location (specs/063-coverage-followups). Schema-Sync reads the same model scanner as `generate` |
 | **Spec Kit artifact coverage** | Treats Spec Kit's own documents as governed. Coverage counts top-level `specs/<feature>/**/*.md` and the constitution under a `specKit` tier. Metrics-Consistency (including `MET004` dependency claims) and Reference-Existence read the constitution | `cli/scanners/speckit.mjs` (`findConstitution`), `cli/commands/guard.mjs`, `cli/validators/metrics-consistency.mjs`, `cli/validators/reference-existence.mjs` | The constitution usually lives in a dot directory the walkers skip, so it is located explicitly. Nested fixture `specs/` trees are not the project's artifacts |
@@ -249,9 +249,9 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 |--------|-------|
 | `node:fs` | File system operations (read docs, check existence) |
 | `node:path` | Path resolution and manipulation |
-| `node:child_process` | Git operations, the optional `python3` AST tier, the optional `specify` CLI (`init` and `upgrade --apply`), `npm install -g` for `upgrade --apply`, `git`/`gh` for `upgrade --pr`, `gh` for `impact`, and re-running the CLI itself (`fix`, `diagnose`). All take argv arrays; see SECURITY.md |
+| `node:child_process` | Git operations, the optional `python3` AST tier, the opt-in tree-sitter anchor tier's `node --no-addons` child, the optional `specify` CLI (`init` and `upgrade --apply`), `npm install -g` for `upgrade --apply`, `git`/`gh` for `upgrade --pr`, `gh` for `impact`, and re-running the CLI itself (`fix`, `diagnose`). All take argv arrays; see SECURITY.md |
 | `node:url` | ES Module URL resolution |
-| `node:crypto` | Content hashes: doc-lock fingerprints, registry and evidence digests, plan-cache identity |
+| `node:crypto` | Content hashes: doc-lock and requirement-anchor fingerprints, registry and evidence digests, plan- and anchor-cache identity, tree-sitter artifact checks |
 | `node:http` | The opt-in MCP HTTP transport (`mcp --transport http`) |
 | `node:readline` | Interactive prompts (init command) |
 | `node:test` | Built-in test framework |
@@ -266,6 +266,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.15.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: reconciliation reads an over-budget range in batches (spec 028 FR-008); the tree-sitter child and anchor hashes in the built-in module table; metadata table and project size re-measured |
 | 1.14.0 | 2026-10-11 | DocGuard Team | Pass-through JWT middleware marks no route auth (spec 071); review after specs 065–071 |
 | 1.13.0 | 2026-10-11 | DocGuard Team | Reconciliation links a deleted file to the current, approved spec that names its removal (spec 069) |
 | 1.12.0 | 2026-10-11 | DocGuard Team | Managed Git hooks write only into a hooks folder the repository owns (spec 065) |

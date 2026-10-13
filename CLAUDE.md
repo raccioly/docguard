@@ -1,4 +1,4 @@
-<!-- docguard:last-reviewed 2026-10-11 -->
+<!-- docguard:last-reviewed 2026-10-13 -->
 
 # Agent Instructions
 
