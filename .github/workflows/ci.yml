@@ -82,8 +82,9 @@ jobs:
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
-          # 1.86x the slowest normal test (53.8s at reference speed), and a raw
-          # 165s runaway still trips it on the slowest runner seen (x1.17).
+          # 1.76x the slowest normal test over 445 CI jobs (56.9s at reference
+          # speed), and a raw 165s runaway still trips it on the slowest runner
+          # seen (x1.17).
           TEST_CEILING_MS: 100000
         run: |
           set -o pipefail

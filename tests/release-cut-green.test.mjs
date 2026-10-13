@@ -146,6 +146,9 @@ describe('the CI runtime budget keeps headroom and still catches a runaway (FR-0
   const ceilings = [...ci.matchAll(/TEST_CEILING_MS: (\d+)/g)].map(m => Number(m[1]));
   const [ceilingMs] = ceilings;
   const RUNAWAY_MS = 165_000; // PR #328: one test went from 0.1s to 190s
+  // Slowest top-level test at reference speed over the 445 jobs in spec.md
+  // ("benchmark runner"); the reference's own inputs are a subset of them.
+  const SLOWEST_NORMAL_TEST_MS = 56_900;
   const PARALLELISM = 2.8; // sum of top-level test durations / wall time, every recorded job
   const replay = (run, extraMs = 0) => {
     const tests = run.tests.map(([name, ms]) => ({ name, ms }));
@@ -161,7 +164,8 @@ describe('the CI runtime budget keeps headroom and still catches a runaway (FR-0
   });
 
   it('sits above the slowest normal test and below a runaway on the slowest runner', () => {
-    assert.ok(ceilingMs >= 1.5 * reference.maxNormalizedTestMs, `${ceilingMs} leaves headroom over ${reference.maxNormalizedTestMs}`);
+    assert.ok(reference.maxNormalizedTestMs <= SLOWEST_NORMAL_TEST_MS, 'the reference inputs are among the measured jobs');
+    assert.ok(ceilingMs >= 1.5 * SLOWEST_NORMAL_TEST_MS, `${ceilingMs} leaves headroom over ${SLOWEST_NORMAL_TEST_MS}`);
     // A runaway that does not scale with the runner still trips on the slowest one.
     assert.ok(ceilingMs * reference.speedFactorRange[1] <= RUNAWAY_MS, `${ceilingMs} trips a raw ${RUNAWAY_MS}ms runaway`);
   });
