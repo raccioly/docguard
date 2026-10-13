@@ -109,3 +109,9 @@ Docs-Sync reads every canonical document raw and asks whether the module name ap
 - Next.js Pages Router handlers (`pages/api/`) and parallel-route or private folders; Docs-Sync does not select them today.
 - Other validators that read HTML comments (ENV004, DDF001, traceability) and their own comment handling.
 - Changing which files Docs-Sync selects, for example whether a `types.ts` under `services/` is a service.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (shipped in #575): Docs-Sync ignores names in comments, names Next.js handlers by URL path, shared files by unique path tail, and reads drawn trees. A/B on 38 projects: +173 DSY001, +11 DSY002 on 9, none removed, severities unchanged; 24 hand-reviewed, no false positive; budget PASS; TestGuard 52/52. Canonical docs updated in the verify PR. Deviations: none. Evidence: `cli/scanners/doc-references.mjs`, `cli/scanners/routes.mjs`, `cli/shared-html-comments.mjs`, `cli/validators/docs-sync.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/docs-sync-specific-evidence.test.mjs`, `tests/generated-docs-e2e.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

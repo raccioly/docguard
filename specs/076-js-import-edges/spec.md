@@ -133,3 +133,9 @@ The parser is unavailable (a files-only vendoring of DocGuard), or a file does n
 - Bundler-specific forms: `require.context`, `import.meta.glob`, webpack magic comments.
 - Python imports, which already come from Python's syntax tree.
 - Sharing parsed syntax trees between scanners.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (shipped in #573): JS/TS imports read from the Babel tree with the text-pattern fallback; multi-line clauses become edges, names stay null where they cannot be listed. Graph on this repo 1,382 to 1,441 edges, no Architecture finding change; budget and benchmark PASS; TestGuard JS-IMPORT-EDGES + ANCHOR-RIPPLE-NAME-FILTERED 23/23. Deviations: none. Evidence: `cli/scanners/import-graph.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/js-import-edges.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

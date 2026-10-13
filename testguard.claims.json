@@ -4941,7 +4941,7 @@
           "description": "A detected framework whose patterns matched nothing is not reported.",
           "faultClass": "condition-forced",
           "file": "cli/validators/api-surface.mjs",
-          "find": "    if (pf.routes === 0) {",
+          "find": "    if (pf.routes === 0 && !pf.omitted) {",
           "replace": "    if (false) {",
           "producedBy": {
             "producer": "agent",
@@ -5085,8 +5085,8 @@
           "description": "diff drops the env limitation.",
           "faultClass": "statement-deleted",
           "file": "cli/commands/diff.mjs",
-          "find": "    ...(limitation ? { limitation } : {}),",
-          "replace": "",
+          "find": "    matched: [...docVars].filter(v => codeVars.has(v)),\n    ...(limitation ? { limitation } : {}),\n",
+          "replace": "    matched: [...docVars].filter(v => codeVars.has(v)),\n",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 043)"
@@ -6024,7 +6024,7 @@
           "description": "An include_router/mount prefix is dropped.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/python-routes.mjs",
-          "find": "        next = evalPrefix(obj, e.prefix, base);",
+          "find": "        next = evalPrefix(e.prefixFile ? { file: e.prefixFile } : obj, e.prefix, base);",
           "replace": "        next = base;",
           "producedBy": {
             "producer": "agent",
@@ -6240,8 +6240,8 @@
           "description": "Pattern-tier sections are not marked partial.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/memory-plan.mjs",
-          "find": "  const partial = which => (parserTiers[which].degraded",
-          "replace": "  const partial = which => (false",
+          "find": "    if (t.degraded) return { completeness: 'partial'",
+          "replace": "    if (false) return { completeness: 'partial'",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 046)"
@@ -6348,7 +6348,7 @@
           "description": "Unresolved includes are dropped from the scan result silently.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/routes.mjs",
-          "find": "  if (limitations?.length) Object.defineProperty(kept, 'limitations', { value: limitations, enumerable: false });\n",
+          "find": "  if (allLimitations.length) Object.defineProperty(kept, 'limitations', { value: allLimitations, enumerable: false });\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -6390,7 +6390,7 @@
           "description": "router.route() chains are not read when the file does not parse.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/routes.mjs",
-          "find": "      for (const r of routeChainsByPattern(content)) emit(r);",
+          "find": "      found.push(...routeChainsByPattern(content));",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -6414,8 +6414,8 @@
           "description": "The pattern tier judges auth from req.user anywhere in the file.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });",
-          "replace": "emit({ method: match[1], path: match[2], start: match.index, receiver: null, auth: /req\\.user/.test(content) });",
+          "find": "found.push({ method: match[1], path: match[2], start: match.index, receiver: null, auth: statementAuth(content, match.index) });",
+          "replace": "found.push({ method: match[1], path: match[2], start: match.index, receiver: null, auth: /req\\.user/.test(content) });",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 045)"
@@ -6582,8 +6582,8 @@
           "description": "Drizzle tables are not read when the file does not parse.",
           "faultClass": "other",
           "file": "cli/scanners/schemas.mjs",
-          "find": "const found = extractJsSchemaBodies(content, abs) ?? drizzleTablesByPattern(content);",
-          "replace": "const found = extractJsSchemaBodies(content, abs) ?? [];",
+          "find": "    for (const t of parsed ?? drizzleTablesByPattern(content)) if (t.kind === 'drizzle')",
+          "replace": "    for (const t of parsed ?? []) if (t.kind === 'drizzle')",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 045)"
@@ -6726,8 +6726,8 @@
           "description": "Express routes carry no line.",
           "faultClass": "other",
           "file": "cli/scanners/routes.mjs",
-          "find": "line: r.line ?? lineAt(content, r.start),",
-          "replace": "line: null,",
+          "find": "          line: r.line ?? lineAt(content, r.start),\n          source: 'express',",
+          "replace": "          line: null,\n          source: 'express',",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 045)"
@@ -7852,7 +7852,7 @@
           "description": "The tech-stack check reads no technology from code.",
           "faultClass": "other",
           "file": "cli/validators/docs-diff.mjs",
-          "find": "  const codeTech = new Set(detectCodeTechnologies(dir, config));",
+          "find": "  const codeTech = new Set(evidence.map(e => e.tech));",
           "replace": "  const codeTech = new Set();",
           "producedBy": {
             "producer": "agent",

@@ -26,6 +26,7 @@ import { tmpdir } from 'node:os';
 import { parseApiReferenceDoc, compareEndpoints } from '../cli/scanners/api-doc.mjs';
 import { diffEntities, diffEnvVars, diffTechStack } from '../cli/commands/diff.mjs';
 import { upsertSection } from '../cli/writers/sections.mjs';
+import { renderModuleGraph } from '../cli/scanners/module-diagram.mjs';
 import { buildMemoryPlan } from '../cli/scanners/memory-plan.mjs';
 import { scanComponents, scanTestInventory } from '../cli/scanners/inventory.mjs';
 import { scanSchemasDeep } from '../cli/scanners/schemas.mjs';
@@ -404,3 +405,15 @@ describe('FR-012: the docs describe the change', () => {
     assert.match(unreleased, /### Fixed[\s\S]*generate/);
   });
 });
+
+describe('an empty module graph is captioned without a negation (FR-011)', () => {
+  // The e2e fixtures all have imports, so nothing else renders this caption;
+  // DQ007 counts these words (cli/validators/doc-quality.mjs negationPattern).
+  const NEGATION = /\b(not|no|never|none|neither|nor|cannot|can't|don't|doesn't|didn't|won't|wouldn't|shouldn't|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't)\b/i;
+  it('the caption states what was read, positively', () => {
+    const { body } = renderModuleGraph({ nodes: [], edges: [], limitations: [] });
+    assert.match(body, /^_Module graph: empty\./);
+    assert.doesNotMatch(body, NEGATION);
+  });
+});
+

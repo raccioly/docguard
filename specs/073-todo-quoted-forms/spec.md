@@ -105,3 +105,9 @@ A maintainer runs guard on this repository from the checkout, and the release ga
 - Scanning the further languages the comment reader knows (Kotlin, PHP, Swift, C, C++): that adds findings to projects that have none today and needs its own spec.
 - Code spans across comment lines, and Markdown parsing beyond inline code.
 - A suppression syntax for TODO findings: `todoIgnore` and quoting already cover it.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (shipped in #574): TODO keywords in code spans or strings are not annotations; comments come from the string-aware reader; the self-path skip is gone, so results no longer depend on install location. TestGuard 40/40 across five claims; suite 3,914 pass. Deviations: none. Evidence: `cli/validators/todo-tracking.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/benchmark-runner.test.mjs`, `tests/todo-tracking.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

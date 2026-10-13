@@ -110,6 +110,24 @@ the exact commit being released. The results are recorded under
    gated.
 10. Ricardo asks for the release in the session that cuts it.
 
+### Gate results for the 0.45.0 release commit (specs 070 and 072–078)
+
+Ricardo held the release until every fix running in parallel sessions had landed. #569, #570 and #572–#575 merged, and #576 completed specs 073–078. The gate was then run again on #576's head, 6a45a24. Its code is what ships; the release PR adds only the version bump, the CHANGELOG cut and the version sync.
+
+| Item | Commit | Result | Evidence |
+|------|--------|--------|----------|
+| 1 | 6a45a24 | PASS | `npm test` alone on the machine: 3,921/3,921, none skipped. The CI runtime budget became 465 s (spec 051 FR-007 maintenance, #574) after normal runs reached 193–369 s |
+| 2 | 6a45a24 | PASS | `docguard guard`: PASS, no findings |
+| 3 | 6a45a24 | PASS | Hermetic A/B (a fresh `git archive` copy per CLI, one run at a time). Candidate only: none. Base only: SPR001 and MET001 ×2, the known projection and validator-count differences. TDO002 ×2: spec 073 removed the validator's self-scan false positives. TRC005 ×10 and SPR006: 0.44.3 drops spec 078's requirements because its text quotes `<!--` in backticks, the defect spec 074 fixed |
+| 4 | 6a45a24 | PASS | Same A/B on testguard, web-security-validator and seven local projects. No status changes, nothing removed. The only additions are DSY001 on three Next.js projects (+21, +5, +3): App Router handlers whose URL path no doc names, as specs 077 and 078 intend. Both specs record the hand review of a sample |
+| 5 | 6a45a24 | PASS | No DLK finding |
+| 6 | #576 | PASS | CI `budget` and `anchor-oracle` jobs green |
+| 7 | 6a45a24 | PASS | Benchmark core PASS, 0 regressions |
+| 8 | 6a45a24 | PASS | 730 links (file 502, statement 12, symbol 216), 208 reviewed and 522 baselined; no ANC006, ANC007 or ANC011 |
+| 9 | fd5ba70, 6a45a24 | PASS | TestGuard 0.15.0 `--confirm 3 --serial` on the 26 claims added or changed since 0.44.3: 327 of 328 faults killed at fd5ba70. The survivor, GENERATED-DOCS-PASS-OWN-CHECKS/F35, was closed with an empty-module-graph test and re-probed at 6a45a24: 34/34. Ten stale faults left by the 2026-10-10 batch were re-pointed; every one of the 645 faults now finds its line exactly once |
+| 10 | — | PASS | Ricardo asked for the release once every session's fix was in |
+| Release dry run | fd5ba70 | PASS | Bump to 0.45.0 (minor, inferred), CHANGELOG cut, version sync and candidate validation: guard PASS with no findings, every anchor reviewed or baselined |
+
 ### Gate results for the release commit (after spec 072)
 
 The release dry run on 711c2ac found one regression the earlier items could not see. The cut rewrites the version in `action.yml` and `extensions/spec-kit-docguard/extension.yml`, whose file-scope tags would have turned four links suspect on every release. Spec 072 (`docguard.volatile-anchor-lines`, #565) fixed it, so every item was run again on the code being released, c9934dd (main after #565). The release PR adds only the version bump, the CHANGELOG cut and the version sync.

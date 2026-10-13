@@ -101,3 +101,9 @@ The extension-less name in Docs-Sync is not a file name. Documents write a modul
 - Which documents each matcher reads, and whether Docs-Sync should skip template placeholder comments.
 - Changing `init` to name the routes it finds; `generate --plan --write` does.
 - `namesWholePath` in reconciliation (spec 069): an evidence gate, where a missed match is the safe failure.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `4f46e9f6571abbd257c8c781b87cf6aaec9e3b52` — Reviewed at 4f46e9f (shipped in #571 with 075): the nudge hook, Docs-Sync and Diff-Suspicion match whole tokens. A/B on 42 projects: 2,500 to 2,514 findings, +14 real DSY001/DSY002, none lost, no status change; this repo unchanged. TestGuard WHOLE-TOKEN-SIBLING-MATCHERS 15/15. Canonical docs updated in the 0.45.0 verify PR. Deviations: none. Evidence: `cli/commands/hooks.mjs`, `cli/scanners/doc-references.mjs`, `cli/validators/diff-suspicion.mjs`, `cli/validators/docs-sync.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/generated-docs-e2e.test.mjs`, `tests/whole-token-sibling-matchers.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
