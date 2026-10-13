@@ -64,41 +64,42 @@ jobs:
       # ── Automated Test Suite ──
       # Also enforces a RUNTIME BUDGET. A test that walks an unintended tree
       # (e.g. passing '/' as a project dir) still PASSES — it just takes
-      # forever. PR #328 did exactly that: tests/schemas.test.mjs went from
-      # 118ms to >10s and the whole suite from ~25s to 190s, green the entire
-      # time. Only a duration check catches that class, so auto-merge depends
-      # on this gate existing. Budget is deliberately loose — it catches
-      # catastrophes, not jitter. Set at 120s when normal runs were 33-51s; by
-      # 2026-09-29 the suite had doubled and normal runs ranged 64-122s across
-      # identical code, so 120s tripped on runner noise (#467). 240s restored
-      # the ~2x margin then. By 2026-10-01 the end-to-end tests of specs
-      # 040-050 put Node 18 at 211-241s (#505-#510): guard on this repository
-      # grew only ~20% (9.4s to 11.4s); the rest is CPU contention between
-      # parallel test files that spawn the CLI. #510 failed at 241.5s with
-      # every test passing. 360s restored headroom over that. By 2026-10-12 the
-      # 0.45.0 batch (specs 070-078, 3,280 -> 3,914 tests) put normal runs at
-      # 193-369s across 25 runs (median 305s); #574 failed on Node 18 at 368.7s
-      # with every test passing. 465s is 1.26x that, and the PR #328 class
-      # (+165s on the 305s median = 470s) still trips it
-      # (docguard.release-cut-green#FR-007).
+      # forever. PR #328 did exactly that: one test in tests/schemas.test.mjs
+      # went from 0.1s to 190s, green the entire time. Only a duration check
+      # catches that class, so auto-merge depends on this gate existing.
+      #
+      # The budget is per top-level test, at reference-runner speed
+      # (docguard.release-cut-green#FR-007, revised 2026-10-13). A fixed suite
+      # total was raised three times (120s → 240s → 360s → 465s): identical
+      # code ran 188-369s across one day's runners. Over 445 jobs that spread
+      # is one speed factor per runner (0.55-1.20); divided out, 0.5% of
+      # variation is left. The total also hid the class it is for: files run
+      # ~2.8 at a time, so a +165s test adds ~59s of wall time, and 465s
+      # caught 0 of 445 replayed runaways. The tool divides each test by this
+      # run's speed factor (median ratio to tools/suite-runtime-reference.json)
+      # and fails any test over the ceiling; the suite total is logged and
+      # summarized, not gated.
       - name: Run Tests (with runtime budget)
         shell: bash
         env:
-          TEST_BUDGET_MS: 465000
+          # 1.86x the slowest normal test (53.8s at reference speed), and a raw
+          # 165s runaway still trips it on the slowest runner seen (x1.17).
+          TEST_CEILING_MS: 100000
         run: |
           set -o pipefail
           node --test --test-reporter=tap tests/*.test.mjs 2>&1 | tee /tmp/test-output.txt
-          DURATION=$(awk '/^# duration_ms [0-9]+/ { duration = int($3) } END { print duration }' /tmp/test-output.txt)
-          if [ -z "$DURATION" ]; then
-            echo "::error::Missing TAP suite duration — runtime budget could not be verified"
-            exit 1
-          fi
-          echo "Test suite duration: ${DURATION}ms (budget: ${TEST_BUDGET_MS}ms)"
-          if [ "$DURATION" -gt "$TEST_BUDGET_MS" ]; then
-            echo "::error::Test suite took ${DURATION}ms, over the ${TEST_BUDGET_MS}ms budget."
-            echo "::error::Something is scanning far more than it should (see PR #328 / bug-254)."
-            exit 1
-          fi
+          node tools/suite-runtime-budget.mjs check --tap /tmp/test-output.txt --summary "${GITHUB_STEP_SUMMARY:-}"
+
+      # The TAP is the input for refreshing tools/suite-runtime-reference.json
+      # (see the header of tools/suite-runtime-budget.mjs).
+      - name: Upload test TAP
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-tap-node-${{ matrix.node-version }}
+          path: /tmp/test-output.txt
+          if-no-files-found: warn
+          retention-days: 30
 
       # ── Self-validation (dogfooding) ──
       - name: CLI Version
