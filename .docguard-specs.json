@@ -2921,7 +2921,7 @@
         "artifacts": [
           {
             "path": "specs/079-doc-validator-fidelity/spec.md",
-            "digest": "sha256:5b5f8f6d4d96ea40e1eaaa365371ad8888d1167c7431415ae08d40438568d596"
+            "digest": "sha256:622438ab4cda998d1f25d12f40aa40c820b2472062fa1e91c20d9afed4c2536d"
           },
           {
             "path": "specs/079-doc-validator-fidelity/plan.md",
@@ -2945,12 +2945,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 322
+            "line": 328
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 337
+            "line": 343
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/docs-diff.mjs",
+            "line": 356
           },
           {
             "requirementId": "FR-003",

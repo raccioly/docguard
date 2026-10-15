@@ -20,6 +20,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'nod
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateDocSections } from '../cli/validators/structure.mjs';
@@ -126,6 +127,34 @@ describe('doc validator fidelity', () => {
       assert.deepEqual([...extractDocumentedTests('`src/{a,{b,c}}.test.ts`')], ['src/{a,{b,c}}.test.ts']);
       const wide = '`' + Array.from({ length: 3 }, () => '{' + Array.from({ length: 5 }, (_, i) => i).join(',') + '}').join('/') + '.test.ts`';
       assert.equal(extractDocumentedTests(wide).size, 1, '125 expansions exceed the cap of 64');
+    });
+
+    it('a brace glob is one pattern: it documents what any alternative matches', () => {
+      files('src/lib/app.test.js', 'src/lib/util.test.js');
+      testSpec('`src/**/*.test.{js,jsx}`');
+      assert.deepEqual(ddf002(), [], 'no .jsx file exists, and the pattern still matches');
+      assert.deepEqual([...extractDocumentedTests('`src/**/*.test.{js,jsx}`')], ['src/**/*.test.{js,jsx}']);
+    });
+
+    it('a brace glob that matches nothing is reported once, by the pattern as written', () => {
+      files('src/app.ts');
+      testSpec('`src/**/*.test.{js,jsx}`');
+      const [finding, ...rest] = ddf002();
+      assert.equal(rest.length, 0);
+      assert.match(finding.message, /1 documented but not found in code: `src\/\*\*\/\*\.test\.\{js,jsx\}`/);
+    });
+
+    it('a brace glob with a non-test alternative is not extracted', () => {
+      assert.equal(extractDocumentedTests('`src/*.{ts,md}`').size, 0);
+    });
+
+    it('docguard diff reads brace patterns as DDF002 does', () => {
+      files('src/tests/alpha.test.ts', 'src/tests/beta.test.ts', 'src/lib/app.test.js');
+      write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
+      testSpec('`src/tests/{alpha,beta}.test.ts` `src/**/*.test.{js,jsx}`');
+      const run = spawnSync(process.execPath, [join(ROOT, 'cli', 'docguard.mjs'), 'diff', '--dir', dir, '--format', 'json'], { encoding: 'utf8' });
+      const tests = JSON.parse(run.stdout).find(r => r.title === 'Test Files');
+      assert.deepEqual([tests?.onlyInDocs ?? [], tests?.onlyInCode ?? []], [[], []]);
     });
 
     it('a brace pattern in a fenced block documents nothing', () => {

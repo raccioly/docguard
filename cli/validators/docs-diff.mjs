@@ -316,18 +316,37 @@ export function extractDocumentedTests(markdown, config = {}) {
   const last = patterns.map(p => compileGlob(p.split('/').pop()));
   const tokenRegex = /`([^`\s]+)`/g;
   let match;
+  const accepted = (token) => {
+    if (testFileName.test(token)) return true;
+    if (patterns.length === 0) return false;
+    return (token.includes('/') ? whole : last).some(rx => rx.test(token));
+  };
   while ((match = tokenRegex.exec(content)) !== null) {
-    // A brace pattern documents every path it expands to; the test-file rules
-    // apply to each expansion.
+    // A brace list documents every path it expands to; a brace glob
+    // (`src/**/*.test.{js,jsx}`) is one pattern that documents what any of its
+    // alternatives matches, and `documentedTestRegex` reads it that way.
     // @implements docguard.doc-validator-fidelity#FR-002
-    for (const token of expandBraces(match[1])) {
-      if (testFileName.test(token)) { docTests.add(token); continue; }
-      if (patterns.length === 0) continue;
-      const matcher = token.includes('/') ? whole : last;
-      if (matcher.some(rx => rx.test(token))) docTests.add(token);
+    const expansions = expandBraces(match[1]);
+    if (expansions.length > 1 && /[*?]/.test(match[1])) {
+      if (expansions.every(accepted)) docTests.add(match[1]);
+      continue;
     }
+    for (const token of expansions) if (accepted(token)) docTests.add(token);
   }
   return docTests;
+}
+
+/**
+ * The regular expression a documented test entry (a path, a basename or a
+ * glob, brace alternation included) stands for. One definition for DDF002 and
+ * `docguard diff`.
+ * @implements docguard.doc-validator-fidelity#FR-002
+ * @param {string} target
+ * @returns {RegExp}
+ */
+export function documentedTestRegex(target) {
+  const one = (part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*');
+  return new RegExp('^(?:' + expandBraces(target).map(one).join('|') + ')$');
 }
 
 /**
@@ -398,9 +417,7 @@ function diffTests(dir, config) {
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
     // Glob -> regex: escape regex specials, then any run of '*' becomes '.*'.
-    const rx = new RegExp('^' + target
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*+/g, '.*') + '$');
+    const rx = documentedTestRegex(target);
 
     return {
       original: docEntry,

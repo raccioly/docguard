@@ -18,7 +18,7 @@ import { detectCodeTechnologyEvidence } from '../scanners/tech-stack.mjs';
 import { resolveDocRole } from '../shared-doc-roles.mjs';
 import { parseApiReferenceDoc, compareEndpoints } from '../scanners/api-doc.mjs';
 import { resolveApiSurface } from '../validators/api-surface.mjs';
-import { collectCodeTests, extractDocumentedTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
+import { collectCodeTests, documentedTestRegex, extractDocumentedTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 
@@ -357,7 +357,7 @@ function diffTests(dir, config = {}) {
     const entry = String(docEntry).trim();
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
-    const rx = new RegExp('^' + target.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*') + '$');
+    const rx = documentedTestRegex(target);
 
     return {
       original: docEntry,
