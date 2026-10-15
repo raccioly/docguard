@@ -365,7 +365,7 @@ describe('doc validator fidelity', () => {
     it('a document with a docguard:generated section is not a scaffold', () => {
       scaffold();
       write(dir, 'docs-canonical/ARCHITECTURE.md',
-        `${template('ARCHITECTURE')}\n<!-- docguard:generated true -->\n\n| Component | Location |\n|---|---|\n| Api | src/api/ |\n`);
+        `${template('ARCHITECTURE')}\n<!-- docguard:generated true -->\n`);
       const str006 = validateDocSections(dir, {}).findings.filter(f => f.code === 'STR006');
       assert.ok(!str006.some(f => f.location.endsWith('ARCHITECTURE.md')));
     });

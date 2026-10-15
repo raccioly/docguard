@@ -9184,6 +9184,156 @@
           }
         }
       ]
+    },
+    {
+      "id": "DOC-VALIDATOR-FIDELITY",
+      "statement": "The document validators agree with each other and do not score a blank template: ENV001 and ENV002 match headings as STR003 does; a brace list in a documented test expands to its paths (at most 64) and a brace glob matches as one union pattern; DDF001 does not count a technology a negator governs over a list, a removal or migration verb precedes or follows, or a change-record section names; a canonical document whose authored lines are all lines of its shipped template is reported as STR006 and counts as unfinished in docQuality and Machine markers, unless it carries a generated section or one line outside the template; the syllable counter never returns a non-number.",
+      "source": {
+        "kind": "spec",
+        "ref": "req:docguard.doc-validator-fidelity#FR-001"
+      },
+      "severity": "medium",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-sonnet-5.5 (spec 079)"
+      },
+      "defendedBy": [
+        "tests/doc-validator-fidelity.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "ENV002 goes back to its own case-sensitive regex, so a sentence-case heading is reported missing.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/environment.mjs",
+          "find": "  if (docHasSection(content, '## Environment Variables')) {",
+          "replace": "  if (/^#{2,3}\\s+Environment Variables\\b/m.test(content)) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "Brace expansion loses its cap, so a pattern with 125 expansions is expanded.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "    if (results.length * options.length > cap) return [token];\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A negator no longer governs the list it opens, so 'no CDK, Terraform or Pulumi stacks' documents Terraform.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "            !negatedByList(prefix) && !REMOVAL_BEFORE.test(prefix) &&\n",
+          "replace": "            !REMOVAL_BEFORE.test(prefix) &&\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "Change-record sections are read as Tech Stack claims again.",
+          "faultClass": "statement-deleted",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "  const archContent = withoutChangeRecords(readFileSync(archPath, 'utf-8'));",
+          "replace": "  const archContent = readFileSync(archPath, 'utf-8');",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F5",
+          "description": "A brace glob is matched as its first alternative only, so an absent alternative is reported.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "expandBraces(target).map(one).join('|')",
+          "replace": "[target].map(one).join('|')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F6",
+          "description": "A document with a generated section is classed as a scaffold.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-scaffold.mjs",
+          "find": "  if (GENERATED_MARKER.test(content)) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F7",
+          "description": "One authored line outside the template no longer makes a document edited.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-scaffold.mjs",
+          "find": "  return [...doc.lines].every(line => template.lines.has(line));",
+          "replace": "  return [...doc.lines].some(line => template.lines.has(line));",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F8",
+          "description": "Machine markers counts a scaffold as marked.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/agent-readability.mjs",
+          "find": "\n      && !isUneditedScaffold(d.content, basename(d.name, '.md'))).length;",
+          "replace": "\n      ).length;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F9",
+          "description": "docQuality scores a scaffold's headings as present sections.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/score.mjs",
+          "find": "    if (isUneditedScaffold(content, basename(defaultFile, '.md'))) {",
+          "replace": "    if (false) {",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F10",
+          "description": "Guard never reports STR006.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/structure.mjs",
+          "find": "    if (isUneditedScaffold(content, basename(defaultFile, '.md')) &&",
+          "replace": "    if (false &&",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F11",
+          "description": "The syllable counter reads inherited properties again, so 'constructor' yields NaN.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/doc-quality.mjs",
+          "find": "  if (Object.hasOwn(exceptions, word)) return exceptions[word];",
+          "replace": "  if (exceptions[word] !== undefined) return exceptions[word];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        }
+      ]
     }
   ]
 }
