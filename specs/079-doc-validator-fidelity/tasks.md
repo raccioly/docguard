@@ -22,7 +22,7 @@
 - [x] T008 [US3] `cli/validators/docs-diff.mjs`: prefix-based negation, list scope, removal verbs, `withoutChangeRecords`.
 - [x] T009 [US4] `cli/shared-scaffold.mjs`; STR006 in `cli/findings.mjs` and `cli/validators/structure.mjs`; `cli/commands/score.mjs` (`calcDocQualityScore`); `cli/scanners/agent-readability.mjs` (marker-presence).
 - [x] T010 `tests/generated-docs-e2e.test.mjs`: STR006 in `FILL_THE_TEMPLATE` only; assert the `generate` and `init-plan` flows report none (SC-003).
-- [x] T011 Check the other copies: `cli/commands/diff.mjs`, `cli/commands/sync-tests.mjs`, `cli/commands/fix.mjs`, `cli/commands/diagnose.mjs`, `cli/commands/generate.mjs` for their own heading, brace or negation logic; route them through the new helpers or record why not.
+- [x] T011 Check the other doc-side copies of this logic (the `diff`, `sync-tests`, `fix`, `diagnose` and `generate` commands) for their own heading, brace or negation logic. Only `diff` had one (its documented-test matcher), now routed through `documentedTestRegex`; the others read code, not documents.
 
 ## Phase 3 — Docs and generated files (FR-011)
 
@@ -32,7 +32,7 @@
 
 ## Phase 4 — Proof (SC-002, SC-003)
 
-- [x] T015 `npm test`, `node cli/docguard.mjs guard`, `npm run budget -- --base <base-worktree>`, TestGuard gate and claim `find` strings for the edited files.
+- [x] T015 `npm test`, guard on this repository, `npm run budget -- --base <base-worktree>`, TestGuard gate and claim `find` strings for the edited files.
 - [x] T016 Hermetic A/B (base CLI vs new CLI, one fresh `git archive` per CLI, no concurrent load) on this repository and the local projects; record every changed finding and score here.
 - [x] T017 Hand-review at least 20 changed findings across every changed project; record false positives and their exclusion.
 - [x] T018 Fill the Implementation Outcomes block; PR body names `specs/079-doc-validator-fidelity`; `docguard specs require --since origin/main` passes.
