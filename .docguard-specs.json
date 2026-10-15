@@ -2929,11 +2929,11 @@
           },
           {
             "path": "specs/079-doc-validator-fidelity/tasks.md",
-            "digest": "sha256:4be91d70596dfd9b519c54f0ae634e6e9e546102b135cc25cd8a1bc4cc23ad91"
+            "digest": "sha256:9c8addbc460347c698c9bd63374e69e35ec4547c5481793dc04f5b691500ba48"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 20,
           "total": 20
         },
         "implementationEvidence": [
