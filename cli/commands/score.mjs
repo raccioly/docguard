@@ -6,9 +6,10 @@ import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname } from 'node:path';
+import { basename, resolve, join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c, docHasSection } from '../shared.mjs';
+import { isUneditedScaffold } from '../shared-scaffold.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
@@ -707,6 +708,16 @@ function calcDocQualityScore(dir, config) {
 
     const content = readFileSync(fullPath, 'utf-8');
     const docName = file.replace('docs-canonical/', '').replace('.md', '').toLowerCase();
+
+    // An unedited scaffold has no sections or content to count: every one of
+    // its checks fails, so a blank template is not scored as readable
+    // (the missing-document case above stays out of the denominator).
+    // @implements docguard.doc-validator-fidelity#FR-008
+    if (isUneditedScaffold(content, basename(defaultFile, '.md'))) {
+      total += sections.length + 1;
+      failures.push({ file, issue: 'unedited scaffold — nothing beyond the template', fixCmd: `docguard fix --doc ${docName}` });
+      continue;
+    }
 
     for (const section of sections) {
       total++;

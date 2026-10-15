@@ -14,8 +14,9 @@ import { remapDocPath } from '../shared-doc-roles.mjs';
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { docHasSection } from '../shared.mjs';
+import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { measureInstructionChains, DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 
@@ -210,6 +211,30 @@ export function validateDocSections(projectDir, config) {
           },
         }));
       }
+    }
+
+    // An unedited scaffold: nothing a reader wrote beyond the template. The
+    // owner and status placeholders alone never trigger it (generate leaves
+    // them) but are named as evidence when it does. The per-document N/A
+    // marker owns an intentionally blank document.
+    // @implements docguard.doc-validator-fidelity#FR-007
+    if (isUneditedScaffold(content, basename(defaultFile, '.md')) &&
+        !/<!--\s*docguard:section\s+scaffold\s+n\/a\s*[—-]+\s*[A-Za-z0-9]/i.test(content)) {
+      const evidence = scaffoldEvidence(content);
+      findings.push(mkFinding({
+        code: 'STR006',
+        validator: 'docSections',
+        severity: 'warn',
+        message: `${file}: unedited scaffold — nothing beyond the template` +
+          (evidence.length ? ` (${evidence.join('; ')})` : '') +
+          `. Write the document, or if it is intentionally blank add: <!-- docguard:section scaffold n/a — your reason -->`,
+        location: file,
+        suggestion: {
+          kind: 'suppress',
+          text: 'Write the document, run `docguard generate --plan --write`, or own the absence with the inline N/A marker',
+          pragma: '<!-- docguard:section scaffold n/a — your reason -->',
+        },
+      }));
     }
   }
 

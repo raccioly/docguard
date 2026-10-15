@@ -52,7 +52,13 @@ const NO_SPEC_KIT = ['SPK001', 'SPK002'];
 // the templates name no route or service yet, and a name in their placeholder
 // comments is not documentation; `init` then `--plan --write` names them
 // (specs/077-whole-token-sibling-matchers FR-006, specs/078-docs-sync-specific-evidence FR-007).
-const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', 'DSY001', 'DSY002', ...NO_SPEC_KIT];
+// STR006: a document that is still the template says nothing about the project
+// (specs/079-doc-validator-fidelity FR-007).
+const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TRC002', 'DSY001', 'DSY002', 'STR006', ...NO_SPEC_KIT];
+// `generate --plan --write` derives sections from code. SECURITY.md has no
+// code-derived section, so the plan leaves it as the template; STR006 may name
+// that document and no other after the plan (specs/079 FR-007, SC-003).
+const PLAN_DERIVES_NOTHING = ['docs-canonical/SECURITY.md'];
 
 const FLOWS = {
   generate: { steps: [['generate']], allow: NO_SPEC_KIT, diffClean: true },
@@ -65,7 +71,7 @@ const FLOWS = {
     diffClean: true,
   },
   init: { steps: [['init', '--skip-prompts']], allow: FILL_THE_TEMPLATE, diffClean: false },
-  'init-plan': { steps: [['init', '--skip-prompts'], ['generate', '--plan', '--write']], allow: NO_SPEC_KIT, diffClean: true },
+  'init-plan': { steps: [['init', '--skip-prompts'], ['generate', '--plan', '--write']], allow: [...NO_SPEC_KIT, 'STR006'], scaffoldOnly: PLAN_DERIVES_NOTHING, diffClean: true },
   'init-spec': {
     steps: [['init', '--skip-prompts'], ['generate', '--spec', '<area>', '--write']],
     // TRC004: the as-built candidates have no test annotations yet — true.
@@ -109,6 +115,12 @@ describe('generated docs pass DocGuard\'s own checks (SC-001)', { concurrency: 2
         const report = JSON.parse(guard.stdout);
         const foreign = report.findings.filter(f => !flow.allow.includes(f.code));
         assert.deepEqual(foreign.map(f => `${f.code} ${f.message}`), [], 'findings caused by DocGuard output');
+
+        // After the plan, an unedited scaffold is only a document the plan cannot derive.
+        if (flow.scaffoldOnly) {
+          const scaffolds = report.findings.filter(f => f.code === 'STR006').map(f => f.location);
+          assert.deepEqual(scaffolds.filter(l => !flow.scaffoldOnly.includes(l)), [], 'STR006 on a document the plan fills');
+        }
 
         // An allow-listed directory or config finding must not be about DocGuard's own files.
         const aboutOwn = report.findings.filter(f => ['DCV001', 'DCV003'].includes(f.code) && OWNED.test(f.message || ''));

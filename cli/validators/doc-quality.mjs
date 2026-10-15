@@ -221,7 +221,7 @@ function splitSentences(text) {
  * 2 syllables. The target audience knows these terms — they don't make
  * the text harder to read.
  */
-function countSyllables(word) {
+export function countSyllables(word) {
   word = word.toLowerCase().replace(/[^a-z]/g, '');
   if (word.length <= 2) return 1;
 
@@ -233,7 +233,9 @@ function countSyllables(word) {
     'where': 1, 'here': 1, 'every': 3, 'everything': 4,
     'create': 2, 'file': 1, 'style': 1, 'quite': 1,
   };
-  if (exceptions[word] !== undefined) return exceptions[word];
+  // Own keys only: `constructor` names an inherited Object function, not a count.
+  // @implements docguard.doc-validator-fidelity#FR-012
+  if (Object.hasOwn(exceptions, word)) return exceptions[word];
 
   // Count vowel groups
   const vowelGroups = word.match(/[aeiouy]+/g);

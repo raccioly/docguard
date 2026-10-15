@@ -127,6 +127,65 @@ export function validateDocsDiff(projectDir, config = {}) {
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
 
+// A negator governs every item of the coordinated list it opens: "no CDK,
+// Terraform or Pulumi stacks". The list is a run of short items joined by
+// commas, "or" or "nor" (and "and" after "without") that holds no finite verb
+// of this closed set, so a negator never reaches into a new clause.
+// @implements docguard.doc-validator-fidelity#FR-003
+const LIST_NEGATOR = /\b(?:no|without|neither|nor|not\s+using|none\s+of)\b/gi;
+const LIST_VERBS = /\b(?:is|are|was|were|uses?|used|requires?|required|has|have|but)\b/i;
+const LIST_ITEM = "[\\w.+#/'’-]+(?:\\s+[\\w.+#/'’-]+){0,2}";
+const LIST_SEPARATOR = "(?:\\s*,\\s*(?:(?:or|nor)\\s+)?|\\s+(?:or|nor)\\s+)";
+const LIST_SEPARATOR_AND = "(?:\\s*,\\s*(?:(?:or|nor|and)\\s+)?|\\s+(?:or|nor|and)\\s+)";
+const LIST_SHAPE = new RegExp(`^\\s*(?:${LIST_ITEM}${LIST_SEPARATOR})*$`, 'i');
+const LIST_SHAPE_AND = new RegExp(`^\\s*(?:${LIST_ITEM}${LIST_SEPARATOR_AND})*$`, 'i');
+
+/** True when the nearest negator before the mention opens a list that reaches it. */
+function negatedByList(prefix) {
+  let negator = null;
+  for (const match of prefix.matchAll(LIST_NEGATOR)) negator = match;
+  if (!negator) return false;
+  const tail = prefix.slice(negator.index + negator[0].length);
+  if (LIST_VERBS.test(tail)) return false;
+  return (/^without$/i.test(negator[0]) ? LIST_SHAPE_AND : LIST_SHAPE).test(tail);
+}
+
+// A removal or migration verb before a technology negates it ("We removed
+// Terraform", "migrated off Terraform", "Removed the template's Terraform
+// blocks"); at most three filler words stand between them. After a technology
+// the participle needs an auxiliary, because a bare "Terraform replaced X"
+// keeps Terraform in use. "replaced X with Y" negates X only: Y follows "with".
+// @implements docguard.doc-validator-fidelity#FR-004
+const REMOVAL_FILLER = "(?:(?:the|a|an|our|its|their|this|that|all|any|old|legacy|former|existing|[\\w]+['’]s)\\s+){0,3}";
+const REMOVAL_BEFORE = new RegExp(
+  '\\b(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\\s+out|stopped\\s+using|' +
+  '(?:migrated|moved|switched|rolled)\\s+(?:off|away\\s+from|back\\s+from))\\s+' + REMOVAL_FILLER + '$', 'i');
+const REMOVAL_AFTER = /^(?:(?:is|was|were|are|has\s+been|have\s+been)\s+(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\s+out)\b)/i;
+
+// Sections that record change over time describe past state by definition.
+// @implements docguard.doc-validator-fidelity#FR-005
+const CHANGE_RECORD_HEADINGS = new Set([
+  'revision history', 'change history', 'document history', 'version history',
+  'history', 'revisions', 'changelog', 'change log', 'release notes',
+]);
+
+/** The document without its change-record sections (heading through the next heading of the same or a higher level). */
+export function withoutChangeRecords(markdown) {
+  const out = [];
+  let skipLevel = 0;
+  for (const line of String(markdown).split('\n')) {
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (heading) {
+      const level = heading[1].length;
+      if (skipLevel && level <= skipLevel) skipLevel = 0;
+      const text = heading[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (!skipLevel && CHANGE_RECORD_HEADINGS.has(text)) { skipLevel = level; continue; }
+    }
+    if (!skipLevel) out.push(line);
+  }
+  return out.join('\n');
+}
+
 /** Evaluate mentions locally; optionality is not evidence of absence or use. */
 function mentionsCurrentTechnology(content, tech, technologies) {
   const escape = value => value.replace(/[.*+?^\x24{}()|[\]\\]/g, character => '\\' + character);
@@ -162,8 +221,11 @@ function mentionsCurrentTechnology(content, tech, technologies) {
         const negativeAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:used|using|supported|adopted)|no\s+longer\s+(?:used|supported)|unused|removed|retired)\b/i;
         const optionalAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:needed|required)|optional)\b/i;
         const historicalAfter = /^(?:(?:is|was|were)\s+)?(?:previously|formerly|historically|once)\b|^(?:was|were)\s+used\b/i;
+        const prefix = clause.slice(0, mention.index);
         if (!negativeBefore.test(before) && !historicalBefore.test(before) &&
-            !negativeAfter.test(after) && !optionalAfter.test(after) && !historicalAfter.test(after)) return true;
+            !negatedByList(prefix) && !REMOVAL_BEFORE.test(prefix) &&
+            !negativeAfter.test(after) && !optionalAfter.test(after) && !historicalAfter.test(after) &&
+            !REMOVAL_AFTER.test(after)) return true;
       }
     }
   }
@@ -189,7 +251,7 @@ function techStackDiff(dir, config = {}) {
   const scan = scanCodeTechnologies(dir, config);
   if (!scan.hasManifest) return null;
 
-  const archContent = readFileSync(archPath, 'utf-8');
+  const archContent = withoutChangeRecords(readFileSync(archPath, 'utf-8'));
 
   const docTech = new Set();
   const techPatterns = TECH_PATTERNS;
@@ -247,21 +309,60 @@ export function extractDocumentedTests(markdown, config = {}) {
   // as documented test files.
   const content = String(markdown).replace(/```[\s\S]*?```/g, '');
   const docTests = new Set();
-  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
-  let match;
-  while ((match = testFileRegex.exec(content)) !== null) docTests.add(match[1]);
+  const testFileName = /^[^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+$/;
 
   const patterns = configuredTestPatterns(config);
-  if (patterns.length === 0) return docTests;
   const whole = patterns.map(p => compileGlob(p));
   const last = patterns.map(p => compileGlob(p.split('/').pop()));
   const tokenRegex = /`([^`\s]+)`/g;
+  let match;
   while ((match = tokenRegex.exec(content)) !== null) {
-    const token = match[1];
-    const matcher = token.includes('/') ? whole : last;
-    if (matcher.some(rx => rx.test(token))) docTests.add(token);
+    // A brace pattern documents every path it expands to; the test-file rules
+    // apply to each expansion.
+    // @implements docguard.doc-validator-fidelity#FR-002
+    for (const token of expandBraces(match[1])) {
+      if (testFileName.test(token)) { docTests.add(token); continue; }
+      if (patterns.length === 0) continue;
+      const matcher = token.includes('/') ? whole : last;
+      if (matcher.some(rx => rx.test(token))) docTests.add(token);
+    }
   }
   return docTests;
+}
+
+/**
+ * Expand single-level brace alternation (`a.{test,spec}.ts`, `{src,lib}/x`) the
+ * way a shell does. A token with unbalanced braces, a group without a comma, a
+ * nested group, or more than `cap` expansions stays literal.
+ * @implements docguard.doc-validator-fidelity#FR-002
+ * @param {string} token
+ * @param {number} [cap]
+ * @returns {string[]}
+ */
+export function expandBraces(token, cap = 64) {
+  const parts = [];
+  let literal = '';
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i];
+    if (c === '}') return [token];
+    if (c !== '{') { literal += c; continue; }
+    const close = token.indexOf('}', i + 1);
+    if (close < 0) return [token];
+    const body = token.slice(i + 1, close);
+    if (body.includes('{') || !body.includes(',')) return [token];
+    parts.push(literal, body.split(','));
+    literal = '';
+    i = close;
+  }
+  if (parts.length === 0) return [token];
+  parts.push(literal);
+  let results = [''];
+  for (const part of parts) {
+    const options = typeof part === 'string' ? [part] : part;
+    if (results.length * options.length > cap) return [token];
+    results = results.flatMap(prefix => options.map(option => prefix + option));
+  }
+  return [...new Set(results)];
 }
 
 /**

@@ -20,6 +20,7 @@ import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { describeLanguageCounts, grepEnvUsage, resolveSourceRoots, summarizeTiers, tierFor } from '../shared-source.mjs';
 import { shouldIgnore } from '../shared-ignore.mjs';
+import { docHasSection } from '../shared.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 
 const ENV_TEMPLATE_NAMES = ['.env.example', '.env.template'];
@@ -98,11 +99,12 @@ export function validateEnvironment(projectDir, config) {
 
   const content = readFileSync(envDocPath, 'utf-8');
 
-  // Check for required sections (anchored headings — not substring matches that
-  // could hit a TOC entry or code block).
-  const hasHeading = (re) => re.test(content);
+  // Required sections use the matcher STR003 uses (docHasSection: case-,
+  // whitespace-, section-number- and synonym-tolerant), so the two validators
+  // cannot disagree about the same heading.
+  // @implements docguard.doc-validator-fidelity#FR-001
   total++;
-  if (hasHeading(/^#{2,3}\s+(Prerequisites|Setup Steps)\b/m)) {
+  if (docHasSection(content, '## Setup Steps') || docHasSection(content, '## Prerequisites')) {
     passed++;
   } else {
     findings.push(mkFinding({
@@ -116,7 +118,7 @@ export function validateEnvironment(projectDir, config) {
   }
 
   total++;
-  if (hasHeading(/^#{2,3}\s+Environment Variables\b/m)) {
+  if (docHasSection(content, '## Environment Variables')) {
     passed++;
   } else {
     findings.push(mkFinding({
