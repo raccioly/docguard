@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.1] - 2026-10-16
+
 ### Changed
 
 - **The CI test runtime budget checks each test, not the suite total**
@@ -107,6 +109,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocks with SPC006 and writes nothing. A spec-text amendment alone still does
   not qualify a living spec for maintenance; the source, test or canonical
   change that implements it does.
+
+### Commits
+
+- chore: re-anchor spec 079 to main after the squash merge of #590 (#591)
+- chore: spec 079 implementation outcomes (verified) (#590)
+- fix: validators agree on headings, braces, negation; blank templates not scored as finished (spec 079) (#589)
+- [jules:test-gaps] cli/precision-evidence.mjs — two exports covered (#583)
+- chore: maintenance outcomes for specs 028 and 051 (#580, #579) (#582)
+- chore: review docs after specs 070-078; tag ci-reproducibility with its spec (#581)
+- fix: reconcile over-budget ranges in batches; --since never skips silently (spec 028) (#580)
+- fix: CI runtime budget is a per-test ceiling at reference speed (spec 051 FR-007) (#579)
 
 ## [0.45.0] - 2026-10-13
 
