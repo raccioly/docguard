@@ -149,8 +149,19 @@ const LIST_ITEM = `${LIST_WORD}(?:\\s+${LIST_WORD}){0,2}`;
 const LIST_COMMA = '\\s*,\\s*(?!(?:or|nor)\\b)';
 const LIST_COORD = '(?:\\s*,\\s*|\\s+)(?:or|nor)\\s+';
 const LIST_BEFORE = new RegExp(`^\\s*(?:${LIST_ITEM}(?:${LIST_COORD}|${LIST_COMMA}))+$`, 'i');
-const LIST_CONTINUES = new RegExp(`^(?:${LIST_COMMA}${LIST_ITEM})*${LIST_COORD}${LIST_ITEM}`, 'i');
-const LIST_ENDS = new RegExp(`^\\s*(?:${LIST_ITEM})?\\s*[,:)]?\\s*$`, 'i');
+// After the list's last item only nouns for a technology's own artifacts may
+// follow ("… or Terraform stacks"), then the clause ends or a prepositional
+// phrase starts ("stacks in this repo"). Anything else is a predicate: in "No
+// Docker or Redis caches sessions" and "No ORM, PostgreSQL or SQLite
+// directly" the technologies are in use.
+const LIST_ARTIFACT = '(?:blocks?|modules?|stacks?|files?|configs?|configurations?|templates?|scripts?|resources?|providers?|definitions?|manifests?|containers?|images?|clusters?|instances?|servers?|deployments?|layers?|integrations?|dependenc(?:y|ies)|artifacts?|infrastructure)';
+const LIST_END = `(?:\\s+${LIST_ARTIFACT}){0,2}\\s*(?:$|[,:;)]|(?:in|from|at|on|for|since|during|within|across|anywhere|here|yet|today|currently|whatsoever)\\b)`;
+const LIST_ENDS = new RegExp(`^${LIST_END}`, 'i');
+// The list's last item is one word, or two when the second is a name ("AWS
+// CDK"), so a predicate is not read as part of it ("… or PostgreSQL store
+// nothing"). Case-sensitive for that reason; coordinators are lowercase.
+const LIST_LAST = `${LIST_WORD}(?:\\s+(?=[A-Z0-9])${LIST_WORD})?`;
+const LIST_CONTINUES = new RegExp(`^(?:${LIST_COMMA}${LIST_ITEM})*${LIST_COORD}${LIST_LAST}${LIST_END}`);
 
 /**
  * True when the nearest negator before a mention opens a coordinated list
@@ -163,9 +174,8 @@ function negatedByList(prefix, rest) {
   if (!negator) return false;
   const tail = prefix.slice(negator.index + negator[0].length);
   if (LIST_STOP.test(tail) || !LIST_BEFORE.test(tail)) return false;
-  if (/\b(?:or|nor)\s*$/i.test(tail)) return LIST_ENDS.test(rest) && !LIST_STOP.test(rest);
-  const continued = LIST_CONTINUES.exec(rest);
-  return Boolean(continued) && !LIST_STOP.test(continued[0]);
+  if (/\b(?:or|nor)\s*$/i.test(tail)) return LIST_ENDS.test(rest);
+  return LIST_CONTINUES.test(rest);
 }
 
 // A removal or migration verb before a technology negates it ("We removed
@@ -183,7 +193,7 @@ const REMOVAL_BEFORE = new RegExp(
   '\\b(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\\s+out|stopped\\s+using|' +
   'no\\s+longer\\s+(?:uses?|using|runs?|running|needs?)|' +
   '(?:migrated|moved|switched|rolled)\\s+(?:off|away\\s+from|back\\s+from))\\s+' + REMOVAL_FILLER + '$', 'i');
-const REMOVAL_OBJECT_END = /^(?:$|[,:;)]|(?:in|from|at|on|for|since|during|with|by|as|after|before|to|because|due|entirely|completely|altogether|and|or)\b|(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|code|support|dependenc(?:y|ies)|integrations?|setup|usage|resources?|templates?|scripts?|infrastructure|layers?|providers?|definitions?|manifests?)\b)/i;
+const REMOVAL_OBJECT_END = /^(?:$|[,:;)]|(?:in|from|at|on|for|since|during|with|by|as|after|before|to|because|due|entirely|completely|altogether|and|or)\b|(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|dependenc(?:y|ies)|integrations?|resources?|templates?|scripts?|infrastructure|layers?|providers?|definitions?|manifests?)\b)/i;
 const REMOVAL_AFTER = /^(?:(?:is|was|were|are|has\s+been|have\s+been)\s+(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\s+out)\b)/i;
 
 /** True when a removal verb before the mention takes the technology itself as its object. */
@@ -215,12 +225,16 @@ export function withoutChangeRecords(markdown) {
     } else if (marker) {
       fence = marker[1];
     } else {
-      const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+      const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
       if (heading) {
         const level = heading[1].length;
-        if (skipLevel && level <= skipLevel) skipLevel = 0;
+        // A change record under an H1 ends at the next H1 or H2, so a document
+        // titled "# Revision History" does not hide every section after it.
+        if (skipLevel && level <= Math.max(skipLevel, 2)) skipLevel = 0;
         const text = heading[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-        if (!skipLevel && CHANGE_RECORD_HEADINGS.has(text)) { skipLevel = level; continue; }
+        // Only a top-level (H1/H2) heading opens a change record: "### History"
+        // is as likely a component named History.
+        if (!skipLevel && level <= 2 && CHANGE_RECORD_HEADINGS.has(text)) { skipLevel = level; continue; }
       }
     }
     if (!skipLevel) out.push(line);
@@ -357,17 +371,22 @@ export function extractDocumentedTests(markdown, config = {}) {
   const patterns = configuredTestPatterns(config);
   const whole = patterns.map(p => compileGlob(p));
   const last = patterns.map(p => compileGlob(p.split('/').pop()));
+  // Each pass anchors on its own token shape, so the closing backtick of a
+  // code span that contains spaces never pairs with the next span's opener:
+  // a test-file name; a token with brace groups (spaces after their commas,
+  // `{alpha, beta}`, are not part of the paths); and, with test patterns
+  // configured, any backticked token.
+  const testNameToken = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
+  const braceToken = /`([^`\s{}]*(?:\{[^`{}\n]*\}[^`\s{}]*)+)`/g;
   const tokenRegex = /`([^`\s]+)`/g;
-  // A brace group may be written with spaces after its commas
-  // (`src/{alpha, beta}.test.ts`); the spaces are not part of the paths.
-  const spacedBraces = /`([^`\s{}]*\{[^`{}]*\s[^`{}]*\}[^`]*?)`/g;
   const tokens = [];
   let match;
-  while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);
-  while ((match = spacedBraces.exec(content)) !== null) {
+  while ((match = testNameToken.exec(content)) !== null) tokens.push(match[1]);
+  while ((match = braceToken.exec(content)) !== null) {
     const token = match[1].replace(/\{[^{}]*\}/g, group => group.replace(/\s+/g, ''));
     if (!/\s/.test(token)) tokens.push(token);
   }
+  if (patterns.length > 0) while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);
   const accepted = (token) => {
     if (testFileName.test(token)) return true;
     if (patterns.length === 0) return false;

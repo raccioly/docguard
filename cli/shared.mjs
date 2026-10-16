@@ -112,7 +112,7 @@ export const SECTION_SYNONYMS = {
   'secrets management':    ['secrets', 'secret management', 'secrets handling', 'credentials', 'credential management'],
   'test categories':       ['test types', 'categories of tests', 'test strategy', 'testing strategy', 'test approach'],
   'coverage rules':        ['coverage', 'coverage targets', 'coverage goals', 'coverage requirements', 'coverage policy'],
-  'environment variables': ['env vars', 'environment', 'configuration', 'config variables'],
+  'environment variables': ['env vars', 'environment variable', 'environment', 'configuration', 'config variables'],
   'setup steps':           ['setup', 'getting started', 'installation', 'setup instructions', 'local setup', 'quick start'],
   'layer boundaries':      ['layers', 'layering', 'module boundaries', 'layer boundary', 'boundaries'],
   'external dependencies': ['dependencies', 'external systems', 'third party dependencies', 'integrations', 'external interfaces'],
@@ -131,18 +131,24 @@ function normalizeHeadingText(line) {
 
 /**
  * Synonyms too generic to name a section inside a longer heading: they count
- * only as the whole heading. "## Configuration" names the Environment
- * Variables section; "## Configuration Files", "## Production environment"
- * and "## Test environment" do not. Other synonyms ("Architecture Layers" for
- * Layer Boundaries) still match as whole words inside a heading.
+ * only as the whole heading, or followed by "reference". "## Configuration"
+ * and "## Configuration Reference" name the Environment Variables section;
+ * "## Configuration Files", "## Production environment" and "## Test
+ * environment" do not. Every other phrase matches as before, inside a longer
+ * heading too ("## Data Models", "## 2. Architecture Layers").
  * @implements docguard.doc-validator-fidelity#FR-001
  */
 const WHOLE_HEADING_SYNONYMS = new Set(['environment', 'configuration']);
 
-/** Whether a normalized heading names `phrase` (whole words). */
+/** Whether a normalized heading names `phrase`. */
 function headingNames(norm, phrase) {
-  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase;
-  return ` ${norm} `.includes(` ${phrase} `);
+  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || norm === `${phrase} reference`;
+  return norm.includes(phrase);
+}
+
+/** The synonyms of a canonical heading key (own keys only). */
+function synonymsOf(key) {
+  return Object.hasOwn(SECTION_SYNONYMS, key) ? SECTION_SYNONYMS[key] : [];
 }
 
 /**
@@ -156,7 +162,7 @@ function headingNames(norm, phrase) {
 export function docHasSection(content, canonicalHeading) {
   const key = normalizeHeadingText(canonicalHeading);
   if (!key) return false;
-  const synonyms = Object.hasOwn(SECTION_SYNONYMS, key) ? SECTION_SYNONYMS[key] : [];
+  const synonyms = synonymsOf(key);
   const headings = content.match(/^#{2,6}\s+.+$/gm) || [];
   for (const line of headings) {
     const norm = normalizeHeadingText(line);
@@ -188,7 +194,7 @@ export function findSectionHeading(content, canonicalHeading) {
   const tiers = [
     h => h.norm === key,
     h => h.norm.includes(key),
-    h => (SECTION_SYNONYMS[key] || []).some(phrase => h.norm.includes(phrase)),
+    h => synonymsOf(key).some(phrase => headingNames(h.norm, phrase)),
   ];
   for (const test of tiers) {
     const hit = headings.find(test);

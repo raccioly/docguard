@@ -9374,7 +9374,7 @@
           "description": "A middle list item counts as negated without the list continuing ('No Docker, Express serves the API').",
           "faultClass": "condition-forced",
           "file": "cli/validators/docs-diff.mjs",
-          "find": "  return Boolean(continued) && !LIST_STOP.test(continued[0]);",
+          "find": "  return LIST_CONTINUES.test(rest);",
           "replace": "  return true;",
           "producedBy": {
             "producer": "agent",
@@ -9398,7 +9398,7 @@
           "description": "'Environment' and 'Configuration' match inside a longer heading again ('Configuration Files').",
           "faultClass": "statement-deleted",
           "file": "cli/shared.mjs",
-          "find": "  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase;\n",
+          "find": "  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || norm === `${phrase} reference`;\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -9463,6 +9463,78 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F23",
+          "description": "A list's last item absorbs the predicate ('… or PostgreSQL store nothing').",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "${LIST_COORD}${LIST_LAST}${LIST_END}",
+          "replace": "${LIST_COORD}${LIST_ITEM}${LIST_END}",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
+          }
+        },
+        {
+          "id": "F24",
+          "description": "A '### History' component section opens a change record again.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "if (!skipLevel && level <= 2 && CHANGE_RECORD_HEADINGS.has(text))",
+          "replace": "if (!skipLevel && CHANGE_RECORD_HEADINGS.has(text))",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
+          }
+        },
+        {
+          "id": "F25",
+          "description": "The section writer matches 'environment' inside a longer heading again, so generate fills an unrelated section.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared.mjs",
+          "find": "    h => synonymsOf(key).some(phrase => headingNames(h.norm, phrase)),",
+          "replace": "    h => synonymsOf(key).some(phrase => h.norm.includes(phrase)),",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
+          }
+        },
+        {
+          "id": "F26",
+          "description": "The DRF viewset table inherits Object.prototype again, so a base named 'constructor' crashes generate.",
+          "faultClass": "statement-deleted",
+          "file": "cli/scanners/python-routes.mjs",
+          "find": "const VIEWSET_ACTIONS = {\n  __proto__: null,\n",
+          "replace": "const VIEWSET_ACTIONS = {\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
+          }
+        },
+        {
+          "id": "F27",
+          "description": "Every backticked token is scanned without patterns, so a code span with spaces swallows the next documented test.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "  if (patterns.length > 0) while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);",
+          "replace": "  while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
+          }
+        },
+        {
+          "id": "F28",
+          "description": "Removal of a technology's 'support' negates it again.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|dependenc(?:y|ies)|",
+          "replace": "(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|support|dependenc(?:y|ies)|",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 second review round)"
           }
         }
       ]

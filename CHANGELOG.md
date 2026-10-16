@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     STR003. Both validators now use `docHasSection`: any case, section
     numbers, synonyms (`Getting Started`, `Env Vars`). The generic synonyms
     `Environment` and `Configuration` now name a section only as the whole
-    heading, for STR003 too: `## Configuration Files` and `## Production environment`
+    heading (or followed by `Reference`), for STR003 and `generate` too: `## Configuration Files` and `## Production environment`
     no longer satisfy Environment Variables.
   - **A brace pattern documents the files it expands to** (FR-002).
     `` `src/tests/{alpha,beta}.test.ts` `` and `` `foo.{test,spec}.ts` `` expand
@@ -56,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Tech Stack claim (a `#` line in a code fence is not a heading).
     `replaced MySQL with PostgreSQL` keeps PostgreSQL live, and so do sentences
     that only look negated: `No Docker, Express serves the API`, `Removed all
-    Redis keys`, `No changes to PostgreSQL, Redis or Express`.
+    Redis keys`, `No changes to PostgreSQL, Redis or Express`, `No Docker or
+    Redis caches sessions`, `We dropped Redis support`.
   - **An unedited scaffold is reported and not scored as readable**
     (FR-006–FR-009). New warning STR006: a canonical document that holds
     nothing beyond the template `init` wrote it. Its docQuality checks all
@@ -73,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `docguard explain constructor`, `docguard hooks --type constructor` and
     `docguard agents --agent constructor` no longer fail inside, `init --with
     toString` is an unknown scaffolder, and an MCP `tools/call` named
-    `constructor` is an unknown tool.
+    `constructor` is an unknown tool. A Django REST Framework viewset whose base
+    is named `constructor` no longer crashes `generate --plan`.
 
 - **A living spec reviewed long ago can complete its maintenance again**
   (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion

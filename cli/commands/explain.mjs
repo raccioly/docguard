@@ -102,7 +102,7 @@ const EXPLAINERS = {
     why:  'Undocumented env vars are runtime surprises waiting to happen.',
     triggers: [
       ['used but not documented', 'Code reads an env var that ENVIRONMENT.md doesn\'t list. Add it to the table.'],
-      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Getting Started") accepted; "Environment" and "Configuration" only as the whole heading.'],
+      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Getting Started") accepted; "Environment" and "Configuration" only as the whole heading or followed by "Reference".'],
       ['VITE_API_URL or similar prefix', 'Naked prefixes like `VITE_` (no suffix) get filtered out — they\'re convention markers, not real var names.'],
     ],
     example: '`DATABASE_URL` listed in ENVIRONMENT.md\'s Environment Variables table AND read via `process.env.DATABASE_URL` in code',
@@ -411,7 +411,7 @@ const EXPLAINERS = {
     triggers: [
       ['drift:', 'ARCHITECTURE.md or TEST-SPEC.md disagrees with the code. The warning spells out which items are "in code but not documented" vs. "documented but not found in code".'],
       ['in code but not documented', 'Add the technology or test file to the relevant doc.'],
-      ['brace pattern', 'A documented test such as `src/tests/{alpha,beta}.test.ts` or `foo.{test,spec}.ts` counts as every path it expands to (single level, at most 64 expansions); a missing expansion is reported by its expanded path.'],
+      ['brace pattern', 'A documented test such as `src/tests/{alpha,beta}.test.ts` or `foo.{test,spec}.ts` counts as every path it expands to (single level, at most 64 expansions); a missing expansion is reported by its expanded path. A brace glob (`src/**/*.test.{js,jsx}`) is one pattern that documents what any alternative matches.'],
       ['negated technology', 'A technology is not documented when a negator governs the list it is in (`no CDK, Terraform or Pulumi stacks`), a removal verb takes it as its object (`removed Terraform`, `migrated off`, `was removed`; not `removed all Redis keys`), or it sits under a Revision History, Changelog or Release Notes heading (fenced code and comments are not headings).'],
       ['documented but not found in code', 'Remove the stale reference, or restore the file if it was deleted by mistake.'],
     ],

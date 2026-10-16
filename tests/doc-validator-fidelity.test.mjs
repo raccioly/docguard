@@ -28,7 +28,7 @@ import { validateDocSections } from '../cli/validators/structure.mjs';
 import { validateDocsDiff, diffTechStack, extractDocumentedTests } from '../cli/validators/docs-diff.mjs';
 import { validateDocQuality, countSyllables } from '../cli/validators/doc-quality.mjs';
 import { loadConfig } from '../cli/config.mjs';
-import { docHasSection } from '../cli/shared.mjs';
+import { docHasSection, findSectionHeading } from '../cli/shared.mjs';
 import { runScoreInternal, computeAlcoaCompliance } from '../cli/commands/score.mjs';
 import { isUneditedScaffold, scaffoldLines } from '../cli/shared-scaffold.mjs';
 import { assessAgentReadability } from '../cli/scanners/agent-readability.mjs';
@@ -598,5 +598,79 @@ describe('doc validator fidelity — review findings', () => {
         assert.ok(m.error || m.result?.isError, JSON.stringify(m));
       }
     });
+  });
+});
+
+// ── Second review round (2026-10-16) ───────────────────────────────────────
+describe('doc validator fidelity — second review findings', () => {
+  let dir;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review2-')); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+  const arch = (body, deps = { react: '18.0.0' }) => {
+    write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: deps }));
+    write(dir, 'docs-canonical/ARCHITECTURE.md', `# Architecture\n\n## Tech Stack\n\nReact.\n\n## Notes\n\n${body}\n`);
+    return diffTechStack(dir, {});
+  };
+
+  it('plural and longer headings keep matching as on main (FR-001)', () => {
+    for (const [heading, key] of [['## Data Models', '## Entities'], ['## Domain Models', '## Entities'], ['## Tech Stacks', '## Tech Stack'],
+      ['## Environment Variable Reference', '## Environment Variables'], ['## Configuration Reference', '## Environment Variables'], ['## OAuth', '## Authentication']]) {
+      assert.equal(docHasSection(`${heading}\n`, key), true, heading);
+    }
+  });
+
+  it('the section writer uses the same rule, so generate adds the heading instead of filling an unrelated one (FR-001)', () => {
+    assert.equal(findSectionHeading('## Production environment\n\ntext\n', '## Environment Variables'), -1);
+    assert.equal(findSectionHeading('## Configuration Files\n\ntext\n', '## Environment Variables'), -1);
+    assert.equal(findSectionHeading('# E\n\n## Configuration\n\ntext\n', '## Environment Variables'), 2);
+  });
+
+  it('a code span with spaces does not swallow the next documented test (FR-002)', () => {
+    assert.deepEqual([...extractDocumentedTests('`run tests now`,`a.test.ts`')], ['a.test.ts']);
+    assert.deepEqual([...extractDocumentedTests('`src/{x, y}.test.ts`,`a.test.ts`')].sort(), ['a.test.ts', 'src/x.test.ts', 'src/y.test.ts']);
+  });
+
+  it('an unclosed brace run stays linear (FR-002)', () => {
+    const start = process.hrtime.bigint();
+    extractDocumentedTests('`{' + 'word '.repeat(20000));
+    assert.ok(Number(process.hrtime.bigint() - start) / 1e6 < 200);
+  });
+
+  for (const [sentence, techs] of [
+    ['No mocks, Redis or PostgreSQL containers back the tests.', ['Redis', 'PostgreSQL']],
+    ['No Docker or Redis caches sessions.', ['Redis']],
+    ['Stateless: no sessions, Redis or PostgreSQL store nothing.', ['Redis', 'PostgreSQL']],
+    ['No ORM, PostgreSQL or SQLite directly.', ['PostgreSQL']],
+    ['We dropped Redis support for Windows.', ['Redis']],
+    ['Replaced the Express setup with a factory.', ['Express']],
+  ]) {
+    it(`a list or removal verb that leaves a predicate keeps ${techs.join(', ')} documented: ${sentence}`, () => {
+      const stale = arch(sentence).onlyInDocs;
+      for (const tech of techs) assert.ok(stale.includes(tech), `${tech}: ${JSON.stringify(stale)}`);
+    });
+  }
+
+  it('a real negated list still negates every item, with a trailing artifact noun or place', () => {
+    for (const sentence of ['There are no CDK, Terraform or Pulumi stacks in this repo.', 'There are no Pulumi, CDK or Terraform modules.', 'We use neither Pulumi nor Terraform.']) {
+      assert.ok(!arch(sentence).onlyInDocs.includes('Terraform'), sentence);
+    }
+  });
+
+  it('an H1 change record ends at the next H2, an indented heading ends a record, and "### History" is not one (FR-005)', () => {
+    write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: { react: '18.0.0' } }));
+    const run = (doc) => { write(dir, 'docs-canonical/ARCHITECTURE.md', doc); return diffTechStack(dir, {}).onlyInDocs; };
+    assert.ok(run('# Revision History\n\n| 1 | Added Docker |\n\n## Tech Stack\n\n| DB | PostgreSQL |\n').includes('PostgreSQL'));
+    assert.ok(run('## Changelog\n\n| 1 | x |\n\n   ## Tech Stack\n\n| DB | PostgreSQL |\n').includes('PostgreSQL'));
+    assert.ok(run('## Components\n\n### History\n\nThe history service stores events in PostgreSQL.\n').includes('PostgreSQL'));
+  });
+
+  it('a DRF viewset whose base is named like an Object.prototype property does not crash generate (FR-012)', () => {
+    fixtureGit(dir, ['init', '-q']);
+    write(dir, 'requirements.txt', 'django==5.0\ndjangorestframework==3.15\n');
+    write(dir, 'manage.py', '');
+    write(dir, 'shop/urls.py', 'from rest_framework import viewsets, routers\nclass ProductViewSet(constructor, viewsets.ReadOnlyModelViewSet):\n    pass\nrouter = routers.DefaultRouter()\nrouter.register(r"products", ProductViewSet)\nurlpatterns = router.urls\n');
+    const r = spawnSync(process.execPath, [join(ROOT, 'cli', 'docguard.mjs'), 'generate', '--plan'], { cwd: dir, encoding: 'utf8', timeout: 120000 });
+    assert.equal(r.status, 0, `${r.stdout.slice(-500)}${r.stderr}`);
+    assert.doesNotMatch(`${r.stdout}${r.stderr}`, /TypeError/);
   });
 });

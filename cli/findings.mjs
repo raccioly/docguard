@@ -332,7 +332,7 @@ export const CODES = {
   ENV002: {
     validator: 'environment',
     title: 'Missing Environment Variables section',
-    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading, so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
+    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by "Reference", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
     suppress: null,
   },
   ENV003: {
