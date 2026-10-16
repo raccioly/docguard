@@ -140,7 +140,8 @@ export function validateDocsDiff(projectDir, config = {}) {
 // List words exclude the coordinators and the separators are disjoint, so the
 // patterns parse one way only and stay linear on long lines.
 // @implements docguard.doc-validator-fidelity#FR-003
-const LIST_NEGATOR = /\b(?:no|without|neither|nor|not\s+using|none\s+of)\b/gi;
+// `no-build`, `no-op` and "no matter which" are not negators.
+const LIST_NEGATOR = /\b(?:no(?![-\w])(?!\s+matter\b)|without|neither|nor|not\s+using|none\s+of)\b/gi;
 const LIST_STOP = /\b(?:is|are|was|were|be|been|being|uses?|used|using|requires?|required|has|have|had|but|to|of|for|in|on|with|from|by|at|about|into|than)\b/i;
 const LIST_WORD = "(?!(?:or|nor|and)\\b)[\\w.+#/'’-]+";
 const LIST_ITEM = `${LIST_WORD}(?:\\s+${LIST_WORD}){0,2}`;
@@ -196,7 +197,7 @@ const REMOVAL_BEFORE = new RegExp(
   '\\b(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\\s+out|stopped\\s+using|' +
   'no\\s+longer\\s+(?:uses?|using|runs?|running|needs?)|' +
   '(?:migrated|moved|switched|rolled)\\s+(?:off|away\\s+from|back\\s+from))\\s+' + REMOVAL_FILLER + '$', 'i');
-const REMOVAL_OBJECT_END = /^(?:$|[,:;)]|(?:in|from|at|on|for|since|during|with|by|as|after|before|to|because|due|entirely|completely|altogether|and|or)\b|(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|dependenc(?:y|ies)|integrations?|resources?|templates?|scripts?|infrastructure|layers?|providers?|definitions?|manifests?)\b)/i;
+const REMOVAL_OBJECT_END = /^(?:$|[,:;)]|(?:in|from|at|on|for|since|during|with|by|as|after|before|to|because|due|entirely|completely|altogether|and|or)\b|(?:blocks?|modules?|stacks?|resources?|providers?|manifests?)\b)/i;
 const REMOVAL_AFTER = /^(?:(?:is|was|were|are|has\s+been|have\s+been)\s+(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\s+out)\b)/i;
 
 /** True when a removal verb before the mention takes the technology itself as its object. */
@@ -420,7 +421,10 @@ export function extractDocumentedTests(markdown, config = {}) {
  */
 export function documentedTestRegex(target) {
   // `*` is any run of characters (as DDF002 always read it) and `?` one character.
-  const one = (part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*+/g, '.*').replace(/\?/g, '.');
+  // `**/` is any number of directories, none included (`src/**/*.test.js`
+  // documents `src/a.test.js`), as `compileGlob` reads it.
+  const one = (part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*\//g, '\u0000').replace(/\*+/g, '.*').replace(/\?/g, '.').replace(/\u0000/g, '(?:.*/)?');
   return new RegExp('^(?:' + expandBraces(target).map(one).join('|') + ')$');
 }
 

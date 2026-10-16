@@ -107,6 +107,9 @@ export function isUneditedScaffold(content, templateName) {
   if (GENERATED_MARKER.test(content) || OWNED_MARKER.test(content)) return false;
   const doc = scaffoldLines(content);
   if (doc.lines.size === 0) return false;
+  // A heading the template does not have was written by someone (an entity
+  // name in DATA-MODEL, a component in ARCHITECTURE).
+  if ([...doc.headings].some(heading => !template.headings.has(heading))) return false;
   if (![...doc.headings].some(heading => template.headings.has(heading))) return false;
   return [...doc.lines].every(line => template.lines.has(line));
 }
@@ -135,3 +138,10 @@ export function scaffoldTemplateName(config, relPath) {
   }
   return basename(String(relPath), '.md');
 }
+
+/**
+ * The documents the scaffold check reports (STR006) and scores (docQuality):
+ * the canonical documents STR003 checks. Machine markers excludes a scaffold
+ * only among these, so every score it moves has a finding that explains it.
+ */
+export const SCAFFOLD_CHECKED = Object.freeze(['ARCHITECTURE', 'DATA-MODEL', 'SECURITY', 'TEST-SPEC', 'ENVIRONMENT']);

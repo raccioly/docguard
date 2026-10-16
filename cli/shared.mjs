@@ -112,7 +112,7 @@ export const SECTION_SYNONYMS = {
   'secrets management':    ['secrets', 'secret management', 'secrets handling', 'credentials', 'credential management'],
   'test categories':       ['test types', 'categories of tests', 'test strategy', 'testing strategy', 'test approach'],
   'coverage rules':        ['coverage', 'coverage targets', 'coverage goals', 'coverage requirements', 'coverage policy'],
-  'environment variables': ['env vars', 'environment variable', 'environment', 'configuration', 'config variables'],
+  'environment variables': ['env vars', 'environment variable', 'environment', 'configuration', 'config variables', 'environment configuration', 'runtime configuration'],
   'setup steps':           ['setup', 'getting started', 'installation', 'setup instructions', 'local setup', 'quick start'],
   'layer boundaries':      ['layers', 'layering', 'module boundaries', 'layer boundary', 'boundaries'],
   'external dependencies': ['dependencies', 'external systems', 'third party dependencies', 'integrations', 'external interfaces'],
@@ -131,18 +131,22 @@ function normalizeHeadingText(line) {
 
 /**
  * Synonyms too generic to name a section inside a longer heading: they count
- * only as the whole heading, or followed by "reference". "## Configuration"
- * and "## Configuration Reference" name the Environment Variables section;
+ * only as the whole heading, or followed by a word that names the variables
+ * ("reference", "variables", "env", …). "## Configuration" and
+ * "## Configuration Reference" name the Environment Variables section;
  * "## Configuration Files", "## Production environment" and "## Test
  * environment" do not. Every other phrase matches as before, inside a longer
  * heading too ("## Data Models", "## 2. Architecture Layers").
  * @implements docguard.doc-validator-fidelity#FR-001
  */
 const WHOLE_HEADING_SYNONYMS = new Set(['environment', 'configuration']);
+// What may follow them and still name the variables: "Configuration Variables",
+// "Configuration (.env)", "Configuration Reference".
+const GENERIC_SUFFIXES = ['reference', 'variables', 'vars', 'env', 'settings', 'options', 'keys'];
 
 /** Whether a normalized heading names `phrase`. */
 function headingNames(norm, phrase) {
-  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || norm === `${phrase} reference`;
+  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || GENERIC_SUFFIXES.some(suffix => norm === `${phrase} ${suffix}`);
   return norm.includes(phrase);
 }
 

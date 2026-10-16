@@ -25,7 +25,7 @@ import { fixtureGit } from './helpers/git.mjs';
 
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateDocSections } from '../cli/validators/structure.mjs';
-import { validateDocsDiff, diffTechStack, extractDocumentedTests } from '../cli/validators/docs-diff.mjs';
+import { validateDocsDiff, diffTechStack, extractDocumentedTests, documentedTestRegex } from '../cli/validators/docs-diff.mjs';
 import { validateDocQuality, countSyllables } from '../cli/validators/doc-quality.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { docHasSection, findSectionHeading } from '../cli/shared.mjs';
@@ -451,8 +451,10 @@ describe('doc validator fidelity — review findings', () => {
       write(dir, 'docs-canonical/ARCHITECTURE.md', `# Architecture\n\n${body}\n\n## Tech Stack\n\n| UI | React |\n| DB | PostgreSQL |\n`);
       return diffTechStack(dir, {}).onlyInDocs;
     };
-    it('a `# history` line inside a fence is code, not a heading', () => {
+    it('a heading-shaped line inside a fence is code, not a heading', () => {
       assert.ok(tech('## Operations\n\n```bash\n# history\nls\n```').includes('PostgreSQL'));
+      write(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n\n## Operations\n\n```md\n## Changelog\n```\n\n| DB | PostgreSQL |\n');
+      assert.ok(diffTechStack(dir, {}).onlyInDocs.includes('PostgreSQL'), 'a fenced "## Changelog" does not hide the rows after the fence');
     });
     it('a change-record heading inside an HTML comment hides nothing', () => {
       assert.ok(tech('<!--\n## Changelog\n-->').includes('PostgreSQL'));
@@ -514,7 +516,7 @@ describe('doc validator fidelity — review findings', () => {
       assert.equal(r.status, 0, r.stderr);
     };
 
-    it('every canonical document init writes is a scaffold, Legible is a gap and Machine markers counts none', () => {
+    it('every canonical document init writes is a scaffold, Legible is a gap and Machine markers counts none of them', () => {
       init();
       const config = loadConfig(dir);
       for (const name of ['ARCHITECTURE', 'DATA-MODEL', 'SECURITY', 'TEST-SPEC', 'ENVIRONMENT']) {
@@ -523,8 +525,9 @@ describe('doc validator fidelity — review findings', () => {
       const score = runScoreInternal(dir, config);
       assert.ok(score.categories.docQuality < 60);
       assert.equal(computeAlcoaCompliance(dir, config, score.categories).attributes.find(a => a.name === 'Legible').met, false);
+      // REQUIREMENTS.md is not among the documents STR006 checks, so it alone still counts.
       const marker = assessAgentReadability(dir, config).metrics.find(m => m.key === 'marker-presence');
-      assert.equal(marker.score, 0, marker.detail);
+      assert.match(marker.detail, /^1\/6 /);
     });
 
     it('a remapped document (docs.roles) is matched to its role template everywhere', () => {
@@ -675,5 +678,64 @@ describe('doc validator fidelity — second review findings', () => {
     const r = spawnSync(process.execPath, [join(ROOT, 'cli', 'docguard.mjs'), 'generate', '--plan'], { cwd: dir, encoding: 'utf8', timeout: 120000 });
     assert.equal(r.status, 0, `${r.stdout.slice(-500)}${r.stderr}`);
     assert.doesNotMatch(`${r.stdout}${r.stderr}`, /TypeError/);
+  });
+});
+
+// ── Third review round (2026-10-16) ────────────────────────────────────────
+describe('doc validator fidelity — third review findings', () => {
+  let dir;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review3-')); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+  const arch = (body, deps) => {
+    write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: deps }));
+    write(dir, 'docs-canonical/ARCHITECTURE.md', `# Architecture\n\n## Tech Stack\n\n${body}\n`);
+    return diffTechStack(dir, {});
+  };
+
+  it('a brace glob matches files directly under its `**/` directory (FR-002)', () => {
+    write(dir, 'src/a.test.js', ''); write(dir, 'src/b.test.js', '');
+    write(dir, 'docs-canonical/TEST-SPEC.md', '# T\n\n## Test Categories\n\nVitest runs `src/**/*.test.{js,jsx}`.\n');
+    assert.deepEqual(validateDocsDiff(dir, {}).findings.filter(f => f.code === 'DDF002'), []);
+    assert.ok(documentedTestRegex('src/**/*.test.js').test('src/a.test.js'));
+    assert.ok(documentedTestRegex('src/**/*.test.js').test('src/deep/er/a.test.js'));
+  });
+
+  it('`no-` compounds and "no matter" are not negators (FR-003)', () => {
+    assert.ok(!arch('Frontend: a no-build setup, React or Preact from a CDN.', { react: '18.0.0' }).onlyInCode.includes('React'));
+    assert.ok(!arch('No matter which database, PostgreSQL or SQLite, the repository layer hides it.', { pg: '8.0.0' }).onlyInCode.includes('PostgreSQL'));
+  });
+
+  for (const [sentence, tech, dep] of [
+    ['We replaced the Express config with our own middleware stack.', 'Express', 'express'],
+    ['We removed the Tailwind config file in the v4 upgrade.', 'Tailwind', 'tailwindcss'],
+    ['Removed the React dependency from the server package.', 'React', 'react'],
+  ]) {
+    it(`a removal verb on the technology's config or dependency keeps it documented: ${sentence}`, () => {
+      assert.ok(!arch(sentence, { [dep]: '1.0.0' }).onlyInCode.includes(tech));
+    });
+  }
+
+  it('Machine markers moves only for documents STR006 reports (FR-009, SC-002)', () => {
+    write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
+    for (const name of ['ARCHITECTURE', 'DATA-MODEL', 'SECURITY', 'TEST-SPEC', 'ENVIRONMENT']) {
+      write(dir, `docs-canonical/${name}.md`, `${template(name)}\nThis section was written for the project.\n`);
+    }
+    write(dir, 'docs-canonical/DEPLOYMENT.md', template('DEPLOYMENT'));
+    const config = loadConfig(dir);
+    assert.ok(!validateDocSections(dir, config).findings.some(f => f.code === 'STR006'));
+    const marker = assessAgentReadability(dir, config).metrics.find(m => m.key === 'marker-presence');
+    assert.equal(marker.score, 100, marker.detail);
+  });
+
+  for (const heading of ['## Configuration Variables', '## Configuration (.env)', '## Environment Configuration', '## Runtime Configuration']) {
+    it(`"${heading}" still names the Environment Variables section (FR-001)`, () => {
+      write(dir, 'docs-canonical/ENVIRONMENT.md', `# Environment\n\n## Setup Steps\n\nnpm i\n\n${heading}\n\n| PORT | 3000 |\n`);
+      assert.ok(!codes(validateEnvironment(dir, {})).includes('ENV002'));
+    });
+  }
+
+  it('headings the author added make a document edited (FR-006)', () => {
+    const withEntities = template('DATA-MODEL').replace('## Entities', '## Entities\n\n### User\n\n### Order');
+    assert.equal(isUneditedScaffold(withEntities, 'DATA-MODEL'), false);
   });
 });

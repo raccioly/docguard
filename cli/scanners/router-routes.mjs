@@ -46,7 +46,7 @@ import { parseWithTier, lineAt, joinSegments, nodeText, lexJs } from './js-route
 
 const VERBS = new Set(['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'all', 'del']);
 /** koa-router's `del()` is `delete()`. */
-const METHOD_OF = { __proto__: null, del: 'DELETE' };
+const METHOD_OF = { del: 'DELETE' };
 const HONO_MODULES = new Set(['hono', 'hono/tiny', 'hono/quick', '@hono/zod-openapi']);
 const HONO_CLASSES = new Set(['Hono', 'OpenAPIHono']);
 const ITTY_FACTORIES = new Set(['Router', 'AutoRouter', 'IttyRouter']);

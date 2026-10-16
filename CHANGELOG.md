@@ -41,14 +41,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     STR003. Both validators now use `docHasSection`: any case, section
     numbers, synonyms (`Getting Started`, `Env Vars`). The generic synonyms
     `Environment` and `Configuration` now name a section only as the whole
-    heading (or followed by `Reference`), for STR003 and `generate` too: `## Configuration Files` and `## Production environment`
+    heading (or followed by `Reference`, `Variables`, `(.env)` …), for STR003 and
+    `generate` too: `## Configuration Files` and `## Production environment`
     no longer satisfy Environment Variables.
   - **A brace pattern documents the files it expands to** (FR-002).
     `` `src/tests/{alpha,beta}.test.ts` `` and `` `foo.{test,spec}.ts` `` expand
     one level (at most 64 paths) in DDF002 and `docguard diff`; a missing
     expansion is reported by its expanded path; spaces after the commas are
     ignored. A brace glob (`src/**/*.test.{js,jsx}`) is one pattern matched as
-    a union, and `?` in a documented glob is one character.
+    a union; in a documented glob `?` is one character and `**/` also matches
+    no directory (`src/**/*.test.js` documents `src/a.test.js`).
   - **DDF001 reads negation over a list and removal verbs** (FR-003–FR-005).
     `no CDK, Terraform or Pulumi stacks`, `We removed Terraform`, `migrated off`,
     `was replaced by` no longer count as documenting the technology, and a

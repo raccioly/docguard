@@ -371,7 +371,7 @@ ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings ma
 
 ### ENV002: Missing Environment Variables section
 
-ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by "Reference", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.
+ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by a word such as "Reference", "Variables" or "(.env)", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.
 
 ### ENV003: Env vars used in code but undocumented
 

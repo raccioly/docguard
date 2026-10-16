@@ -9290,7 +9290,7 @@
           "description": "Machine markers counts a scaffold as marked.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/agent-readability.mjs",
-          "find": "\n      && !isUneditedScaffold(d.content, scaffoldTemplateName(config, d.name))).length;",
+          "find": "\n      && !isScaffoldAmongChecked(d)).length;",
           "replace": "\n      ).length;",
           "producedBy": {
             "producer": "agent",
@@ -9398,7 +9398,7 @@
           "description": "'Environment' and 'Configuration' match inside a longer heading again ('Configuration Files').",
           "faultClass": "statement-deleted",
           "file": "cli/shared.mjs",
-          "find": "  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || norm === `${phrase} reference`;\n",
+          "find": "  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || GENERIC_SUFFIXES.some(suffix => norm === `${phrase} ${suffix}`);\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",
@@ -9514,27 +9514,75 @@
           }
         },
         {
-          "id": "F27",
-          "description": "Every backticked token is scanned without patterns, so a code span with spaces swallows the next documented test.",
+          "id": "F28",
+          "description": "A removal verb negates a technology whose config, files, dependency or support was removed while it stays in use.",
           "faultClass": "condition-forced",
           "file": "cli/validators/docs-diff.mjs",
-          "find": "  if (patterns.length > 0) while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);",
-          "replace": "  while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);",
+          "find": "|(?:blocks?|modules?|stacks?|resources?|providers?|manifests?)\\b)/i;",
+          "replace": "|(?:blocks?|modules?|stacks?|resources?|providers?|manifests?|config|files?|dependenc(?:y|ies)|support)\\b)/i;",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 079 second review round)"
           }
         },
         {
-          "id": "F28",
-          "description": "Removal of a technology's 'support' negates it again.",
+          "id": "F29",
+          "description": "`no-` compounds and 'no matter' are read as negators again.",
           "faultClass": "condition-forced",
           "file": "cli/validators/docs-diff.mjs",
-          "find": "(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|dependenc(?:y|ies)|",
-          "replace": "(?:blocks?|modules?|stacks?|files?|config(?:uration)?s?|support|dependenc(?:y|ies)|",
+          "find": "no(?![-\\w])(?!\\s+matter\\b)",
+          "replace": "no",
           "producedBy": {
             "producer": "agent",
-            "by": "claude-opus-5.5 (spec 079 second review round)"
+            "by": "claude-opus-5.5 (spec 079 third review round)"
+          }
+        },
+        {
+          "id": "F30",
+          "description": "`**/` again requires at least one directory in a documented glob.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": ".replace(/\\*\\*\\//g, '\\u0000')",
+          "replace": ".replace(/\\*\\*\\//g, '*/')",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 third review round)"
+          }
+        },
+        {
+          "id": "F31",
+          "description": "Machine markers excludes scaffolds outside the documents STR006 checks again.",
+          "faultClass": "condition-forced",
+          "file": "cli/scanners/agent-readability.mjs",
+          "find": "    return SCAFFOLD_CHECKED.includes(name) && isUneditedScaffold(d.content, name);",
+          "replace": "    return isUneditedScaffold(d.content, name);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 third review round)"
+          }
+        },
+        {
+          "id": "F32",
+          "description": "A heading the author added no longer makes a document edited.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-scaffold.mjs",
+          "find": "  if ([...doc.headings].some(heading => !template.headings.has(heading))) return false;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 third review round)"
+          }
+        },
+        {
+          "id": "F33",
+          "description": "'Configuration Variables' no longer names the Environment Variables section.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared.mjs",
+          "find": "return norm === phrase || GENERIC_SUFFIXES.some(suffix => norm === `${phrase} ${suffix}`);",
+          "replace": "return norm === phrase;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 third review round)"
           }
         }
       ]

@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
-import { isUneditedScaffold, scaffoldTemplateName } from '../shared-scaffold.mjs';
+import { SCAFFOLD_CHECKED, isUneditedScaffold, scaffoldTemplateName } from '../shared-scaffold.mjs';
 
 /** chars/4 — the standard rough token estimate; consistency matters more than precision. */
 const estTokens = (s) => Math.ceil(s.length / 4);
@@ -156,13 +156,18 @@ export function assessAgentReadability(projectDir, config = {}) {
     });
   }
 
+  const isScaffoldAmongChecked = (d) => {
+    const name = scaffoldTemplateName(config, d.name);
+    return SCAFFOLD_CHECKED.includes(name) && isUneditedScaffold(d.content, name);
+  };
+
   // 5. marker-presence — machine-readable metadata density.
   if (docs.length > 0) {
     // An unedited scaffold carries markers `init` stamped, not ones a reader
     // reviewed; it stays in the denominator.
     // @implements docguard.doc-validator-fidelity#FR-009
     const marked = docs.filter(d => /docguard:(last-reviewed|section|generated)/.test(d.content)
-      && !isUneditedScaffold(d.content, scaffoldTemplateName(config, d.name))).length;
+      && !isScaffoldAmongChecked(d)).length;
     metrics.push({
       key: 'marker-presence',
       label: 'Machine markers',
