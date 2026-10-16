@@ -56,6 +56,7 @@ export function applyApiSurfaceWrites(projectDir, config) {
 // What each doc SHOULD contain, and what to look for in the codebase
 
 const DOC_EXPECTATIONS = {
+  __proto__: null,
   'docs-canonical/ARCHITECTURE.md': {
     label: 'Architecture',
     purpose: 'Define the system design: layers, components, boundaries, and data flow',

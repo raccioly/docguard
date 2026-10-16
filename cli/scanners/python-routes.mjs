@@ -410,6 +410,7 @@ const VIEWSET_ACTIONS = {
   DestroyModelMixin: ['destroy'],
 };
 const ACTION_ROUTE = {
+  __proto__: null,
   list: ['GET', 'list'], create: ['POST', 'list'], retrieve: ['GET', 'detail'],
   update: ['PUT', 'detail'], partial_update: ['PATCH', 'detail'], destroy: ['DELETE', 'detail'],
 };

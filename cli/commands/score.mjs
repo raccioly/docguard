@@ -1075,6 +1075,7 @@ function getGrade(score) {
 
 // Default fix command per category, used when a failure doesn't carry its own.
 const CATEGORY_FIX = {
+  __proto__: null,
   structure:    'docguard init',
   docQuality:   'docguard fix',
   testing:      'docguard fix --doc test-spec',
@@ -1086,6 +1087,7 @@ const CATEGORY_FIX = {
 // Static fallback — only reached if a category scores < 100 but recorded no
 // specific failure (shouldn't happen now that every deduction tracks one).
 const STATIC_SUGGESTIONS = {
+  __proto__: null,
   structure: 'Run `docguard init` to create missing documentation',
   docQuality: 'Run `docguard fix` to get AI prompts for each doc that needs content',
   testing: 'Add test files and create TEST-SPEC.md → Run `docguard fix --doc test-spec`',

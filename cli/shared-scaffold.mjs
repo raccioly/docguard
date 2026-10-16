@@ -19,10 +19,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { visibleMarkdown } from './shared-html-comments.mjs';
+import { DOC_ROLES, docRolePath } from './shared-doc-roles.mjs';
 
 const TEMPLATES = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const PLACEHOLDER_OWNER = '@your-github-username';
 const GENERATED_MARKER = /<!--\s*docguard:generated\b/;
+// A reasoned section N/A marker is an authored decision about the document
+// (`<!-- docguard:section authentication n/a — CLI, no auth -->`), so a
+// document that carries one is owned, not unedited.
+const OWNED_MARKER = /<!--\s*docguard:section\s+[A-Za-z0-9_-]+\s+n\/a\s*[—-]+\s*[A-Za-z0-9]/i;
 
 const analysisCache = new Map();
 
@@ -91,7 +96,7 @@ function templateAnalysis(templateName) {
  * A document with no shipped template is never a scaffold; neither is an empty
  * file or a bare skeleton of headings (no template line at all: STR003 judges
  * its sections), one that shares no heading with its template, or one carrying
- * a DocGuard-generated section.
+ * a DocGuard-generated section or a reasoned section N/A marker.
  * @param {string} content - the document
  * @param {string} templateName - the template to compare with, e.g. `ARCHITECTURE`
  * @returns {boolean}
@@ -99,7 +104,7 @@ function templateAnalysis(templateName) {
 export function isUneditedScaffold(content, templateName) {
   const template = templateAnalysis(templateName);
   if (!template || typeof content !== 'string' || !content.trim()) return false;
-  if (GENERATED_MARKER.test(content)) return false;
+  if (GENERATED_MARKER.test(content) || OWNED_MARKER.test(content)) return false;
   const doc = scaffoldLines(content);
   if (doc.lines.size === 0) return false;
   if (![...doc.headings].some(heading => template.headings.has(heading))) return false;
@@ -112,4 +117,21 @@ export function scaffoldEvidence(content) {
   if (String(content).includes(PLACEHOLDER_OWNER)) evidence.push(`owner ${PLACEHOLDER_OWNER}`);
   if (/docguard:status\s+draft\s*\|\s*review\s*\|\s*approved/.test(content)) evidence.push('status not chosen (draft | review | approved)');
   return evidence;
+}
+
+/**
+ * The template name for a canonical document at `relPath`: the default name of
+ * the role it fills when `docs.roles` remaps it (`docs/architecture.md` →
+ * `ARCHITECTURE`), otherwise its own base name.
+ * @param {object} config
+ * @param {string} relPath - project-relative, `/`-separated
+ * @returns {string}
+ */
+export function scaffoldTemplateName(config, relPath) {
+  for (const role of Object.keys(DOC_ROLES)) {
+    let mapped;
+    try { mapped = docRolePath(config, role); } catch { continue; }
+    if (mapped === relPath) return basename(DOC_ROLES[role], '.md');
+  }
+  return basename(String(relPath), '.md');
 }

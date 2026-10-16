@@ -393,3 +393,190 @@ describe('doc validator fidelity', () => {
     });
   });
 });
+
+// ── Review round (2026-10-15): cases an independent review found ──────────
+describe('doc validator fidelity — review findings', () => {
+  let dir;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review-')); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+  const CLI = join(ROOT, 'cli', 'docguard.mjs');
+  const cli = (args, cwd = dir) => spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' }, timeout: 120000 });
+
+  describe('negation does not hide real drift (FR-003, FR-004)', () => {
+    const arch = (body, deps = { react: '18.0.0' }) => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: deps }));
+      write(dir, 'docs-canonical/ARCHITECTURE.md', `# Architecture\n\n## Tech Stack\n\nReact.\n\n## Notes\n\n${body}\n`);
+      return diffTechStack(dir, {});
+    };
+
+    for (const [sentence, tech] of [
+      ['No Docker, Express serves the API directly.', 'Express'],
+      ['Removed all Redis keys on logout.', 'Redis'],
+      ['We replaced the Redis client library with ioredis.', 'Redis'],
+      ['There are no Docker, Terraform and Redis stacks.', 'Redis'],
+    ]) {
+      it(`still documents ${tech}: ${sentence}`, () => {
+        assert.ok(arch(sentence).onlyInDocs.includes(tech));
+      });
+    }
+
+    for (const sentence of [
+      'There is no Redis, PostgreSQL stores sessions.',
+      'No changes to PostgreSQL, Redis or Express are needed.',
+      'Works without Docker and PostgreSQL runs locally.',
+    ]) {
+      it(`does not lose PostgreSQL: ${sentence}`, () => {
+        const result = arch(sentence, { react: '18.0.0', pg: '8.0.0', express: '4.0.0', redis: '4.0.0' });
+        assert.ok(!result.onlyInCode.includes('PostgreSQL'), JSON.stringify(result));
+      });
+    }
+
+    it('reads "no longer use the Terraform modules" as negation', () => {
+      assert.ok(!arch('We no longer use the Terraform modules.').onlyInDocs.includes('Terraform'));
+    });
+
+    it('stays linear on a long line of coordinators', () => {
+      const line = 'There are no ' + Array.from({ length: 27 }, () => 'a or').join(' ') + ' x : Terraform';
+      const start = process.hrtime.bigint();
+      arch(line);
+      assert.ok(Number(process.hrtime.bigint() - start) / 1e6 < 1000, 'under one second');
+    });
+  });
+
+  describe('change records respect code fences and comments (FR-005)', () => {
+    const tech = (body) => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: { react: '18.0.0' } }));
+      write(dir, 'docs-canonical/ARCHITECTURE.md', `# Architecture\n\n${body}\n\n## Tech Stack\n\n| UI | React |\n| DB | PostgreSQL |\n`);
+      return diffTechStack(dir, {}).onlyInDocs;
+    };
+    it('a `# history` line inside a fence is code, not a heading', () => {
+      assert.ok(tech('## Operations\n\n```bash\n# history\nls\n```').includes('PostgreSQL'));
+    });
+    it('a change-record heading inside an HTML comment hides nothing', () => {
+      assert.ok(tech('<!--\n## Changelog\n-->').includes('PostgreSQL'));
+    });
+    it('the spec\'s own sentences and rows (US3.5, US3.6)', () => {
+      assert.ok(tech('## Infra\n\nTerraform manages DNS. Pulumi is not used.').includes('Terraform'));
+      assert.ok(tech('## Stack notes\n\n| 0.3.0 | | Added Terraform for DNS |').includes('Terraform'));
+      assert.ok(!tech('## Changelog\n\n| 0.3.0 | | Added Terraform for DNS |').includes('Terraform'));
+    });
+  });
+
+  describe('brace forms (FR-002)', () => {
+    it('spaces after the commas are not part of the paths', () => {
+      assert.deepEqual([...extractDocumentedTests('`src/tests/{alpha, beta}.test.ts`')].sort(),
+        ['src/tests/alpha.test.ts', 'src/tests/beta.test.ts']);
+    });
+    it('`?` in a documented glob is one character', () => {
+      write(dir, 'src/lib/a1.test.js', '');
+      write(dir, 'docs-canonical/TEST-SPEC.md', '# T\n\n## Test Categories\n\n`src/lib/a?.test.{js,jsx}`\n');
+      assert.deepEqual(validateDocsDiff(dir, {}).findings.filter(f => f.code === 'DDF002'), []);
+    });
+  });
+
+  describe('heading synonyms (FR-001)', () => {
+    const headings = ['## Setup steps', '## Getting Started', '## 2. Setup Steps', '## Environment variables', '## Env Vars',
+      '## Configuration', '## Configuration Files', '## Production environment', '## Test environment', '## Environment'];
+    for (const heading of ['## Configuration Files', '## Production environment', '## Test environment']) {
+      it(`ENV002 is not satisfied by "${heading}"`, () => {
+        write(dir, 'docs-canonical/ENVIRONMENT.md', `# Environment\n\n## Setup Steps\n\nnpm i\n\n${heading}\n\ntext\n`);
+        assert.ok(codes(validateEnvironment(dir, {})).includes('ENV002'));
+      });
+    }
+    it('ENV001/ENV002 and STR003 give the same answer for every heading', () => {
+      for (const heading of headings) {
+        write(dir, 'docs-canonical/ENVIRONMENT.md', `# Environment\n\n${heading}\n\ntext\n`);
+        const env = codes(validateEnvironment(dir, {}));
+        const str = validateDocSections(dir, {}).findings.filter(f => f.code === 'STR003').map(f => f.message);
+        const envHasVars = !env.includes('ENV002');
+        const strHasVars = !str.some(m => m.includes('Environment Variables'));
+        const envHasSetup = !env.includes('ENV001');
+        const strHasSetup = !str.some(m => m.includes('Setup Steps'));
+        assert.equal(envHasVars, strHasVars, `${heading}: Environment Variables`);
+        assert.equal(envHasSetup, strHasSetup, `${heading}: Setup Steps`);
+      }
+    });
+  });
+
+  describe('scaffolds as init writes them (FR-006..FR-009, SC-003)', () => {
+    const init = () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
+      spawnSync('git', ['init', '-q'], { cwd: dir });
+      const r = cli(['init', '--skip-prompts']);
+      assert.equal(r.status, 0, r.stderr);
+    };
+
+    it('every canonical document init writes is a scaffold, Legible is a gap and Machine markers counts none', () => {
+      init();
+      const config = loadConfig(dir);
+      for (const name of ['ARCHITECTURE', 'DATA-MODEL', 'SECURITY', 'TEST-SPEC', 'ENVIRONMENT']) {
+        assert.equal(isUneditedScaffold(readFileSync(join(dir, 'docs-canonical', `${name}.md`), 'utf8'), name), true, name);
+      }
+      const score = runScoreInternal(dir, config);
+      assert.ok(score.categories.docQuality < 60);
+      assert.equal(computeAlcoaCompliance(dir, config, score.categories).attributes.find(a => a.name === 'Legible').met, false);
+      const marker = assessAgentReadability(dir, config).metrics.find(m => m.key === 'marker-presence');
+      assert.equal(marker.score, 0, marker.detail);
+    });
+
+    it('a remapped document (docs.roles) is matched to its role template everywhere', () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
+      write(dir, 'docs/architecture.md', template('ARCHITECTURE'));
+      write(dir, '.docguard.json', JSON.stringify({ docs: { roles: { architecture: 'docs/architecture.md' } } }));
+      const config = loadConfig(dir);
+      assert.ok(validateDocSections(dir, config).findings.some(f => f.code === 'STR006' && f.location === 'docs/architecture.md'));
+      const marker = assessAgentReadability(dir, config).metrics.find(m => m.key === 'marker-presence');
+      assert.match(marker.detail, /^0\/1 /);
+    });
+
+    it('stays a scaffold with every heading deleted', () => {
+      const headless = template('ARCHITECTURE').split('\n').filter(l => !/^#{1,6}\s/.test(l)).join('\n');
+      // No heading is shared with the template, so it is not recognised: the safe direction.
+      assert.equal(isUneditedScaffold(headless, 'ARCHITECTURE'), false);
+      const withTitle = `## System Overview\n${headless}`;
+      assert.equal(isUneditedScaffold(withTitle, 'ARCHITECTURE'), true);
+    });
+
+    it('names the unchosen status as evidence', () => {
+      write(dir, 'docs-canonical/ARCHITECTURE.md', template('ARCHITECTURE'));
+      const finding = validateDocSections(dir, {}).findings.find(f => f.code === 'STR006');
+      assert.match(finding.message, /status not chosen/);
+    });
+
+    it('a reasoned section N/A marker owns the document: no STR006, and it is scored as written', () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
+      const owned = `${template('SECURITY')}\n<!-- docguard:section authentication n/a — CLI tool, no auth layer -->\n`;
+      write(dir, 'docs-canonical/SECURITY.md', owned);
+      assert.equal(isUneditedScaffold(owned, 'SECURITY'), false);
+      assert.ok(!validateDocSections(dir, {}).findings.some(f => f.code === 'STR006'));
+      const bare = `${template('SECURITY')}\n<!-- docguard:section authentication n/a -->\n`;
+      assert.equal(isUneditedScaffold(bare, 'SECURITY'), true, 'a marker without a reason owns nothing');
+    });
+  });
+
+  describe('dictionaries keyed by outside input (FR-012)', () => {
+    it('explain and hooks report an unknown name instead of crashing', () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x' }));
+      for (const args of [['explain', 'constructor'], ['explain', 'CONSTRUCTOR'], ['explain', '__proto__'], ['hooks', '--type', 'constructor']]) {
+        const r = cli(args);
+        assert.doesNotMatch(`${r.stdout}${r.stderr}`, /TypeError|Cannot read properties/, args.join(' '));
+      }
+    });
+
+    it('an MCP tool named after an Object.prototype property is an unknown tool', () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x' }));
+      const messages = [
+        { jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } },
+        { jsonrpc: '2.0', method: 'notifications/initialized' },
+        { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'constructor', arguments: {} } },
+        { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'toString', arguments: {} } },
+      ];
+      const r = spawnSync(process.execPath, [CLI, 'mcp'], { cwd: dir, input: `${messages.map(m => JSON.stringify(m)).join('\n')}\n`, encoding: 'utf8' });
+      const byId = new Map(r.stdout.trim().split('\n').map(l => JSON.parse(l)).map(m => [m.id, m]));
+      for (const id of [1, 2]) {
+        const m = byId.get(id);
+        assert.ok(m.error || m.result?.isError, JSON.stringify(m));
+      }
+    });
+  });
+});

@@ -28,6 +28,7 @@ const MAX_DEPTH = 6;
  * actual IaC source. Used to construct the consolidated warning text.
  */
 const TOOL_PROFILES = {
+  __proto__: null,
   cdk: {
     label: 'AWS CDK',
     markerFile: 'cdk.json',

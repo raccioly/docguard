@@ -105,7 +105,7 @@ export const IMPORTERS = Object.freeze(['strictdoc', 'openfasttrace']);
 const STRICTDOC_RE = /@relation[ \t]*[({][ \t]*([^\s,(){}]+)((?:[ \t]*,[ \t]*\w+[ \t]*=[ \t]*[\w-]+)*)[ \t]*[)}]/g;
 // OpenFastTrace: [impl->dsn~name~3], [impl~x~1->req~y~2>>impl,test].
 const OFT_RE = /\[[ \t]*(\w+(?:~[\w.-]+~\d+)?)[ \t]*->[ \t]*(\w+)~([\w.-]+)~(\d+)[ \t]*(?:>>[ \t]*[\w, \t]+)?\]/g;
-const STRICTDOC_SCOPE = { file: 'file', class: 'symbol', function: 'symbol', line: 'statement', range_start: 'statement' };
+const STRICTDOC_SCOPE = { __proto__: null, file: 'file', class: 'symbol', function: 'symbol', line: 'statement', range_start: 'statement' };
 
 /**
  * `anchors.import` and `anchors.importMap`, normalized, or null when no

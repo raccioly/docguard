@@ -13,10 +13,10 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { basename, resolve, dirname } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
-import { isUneditedScaffold } from '../shared-scaffold.mjs';
+import { isUneditedScaffold, scaffoldTemplateName } from '../shared-scaffold.mjs';
 
 /** chars/4 — the standard rough token estimate; consistency matters more than precision. */
 const estTokens = (s) => Math.ceil(s.length / 4);
@@ -162,7 +162,7 @@ export function assessAgentReadability(projectDir, config = {}) {
     // reviewed; it stays in the denominator.
     // @implements docguard.doc-validator-fidelity#FR-009
     const marked = docs.filter(d => /docguard:(last-reviewed|section|generated)/.test(d.content)
-      && !isUneditedScaffold(d.content, basename(d.name, '.md'))).length;
+      && !isUneditedScaffold(d.content, scaffoldTemplateName(config, d.name))).length;
     metrics.push({
       key: 'marker-presence',
       label: 'Machine markers',

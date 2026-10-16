@@ -2984,8 +2984,8 @@
           "description": "StrictDoc scope=file anchors the symbol below instead of the file.",
           "faultClass": "condition-forced",
           "file": "cli/scanners/anchor-tags.mjs",
-          "find": "const STRICTDOC_SCOPE = { file: 'file',",
-          "replace": "const STRICTDOC_SCOPE = { file: null,",
+          "find": "STRICTDOC_SCOPE = { __proto__: null, file: 'file',",
+          "replace": "STRICTDOC_SCOPE = { __proto__: null, file: null,",
           "producedBy": {
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 070, user story 9)"
@@ -9187,7 +9187,7 @@
     },
     {
       "id": "DOC-VALIDATOR-FIDELITY",
-      "statement": "The document validators agree with each other and do not score a blank template: ENV001 and ENV002 match headings as STR003 does; a brace list in a documented test expands to its paths (at most 64) and a brace glob matches as one union pattern; DDF001 does not count a technology a negator governs over a list, a removal or migration verb precedes or follows, or a change-record section names; a canonical document whose authored lines are all lines of its shipped template is reported as STR006 and counts as unfinished in docQuality and Machine markers, unless it carries a generated section or one line outside the template; the syllable counter never returns a non-number.",
+      "statement": "The document validators agree with each other and do not score a blank template: ENV001 and ENV002 match headings as STR003 does; a brace list in a documented test expands to its paths (at most 64) and a brace glob matches as one union pattern; DDF001 does not count a technology a negator governs over a list, a removal or migration verb precedes or follows, or a change-record section names; a canonical document whose authored lines are all lines of its shipped template is reported as STR006 and counts as unfinished in docQuality and Machine markers, unless it carries a generated section or one line outside the template; the syllable counter never returns a non-number. A negated list must be a list on both sides of the technology and is matched in linear time; a removal verb negates only the technology it takes as object; change-record sections ignore headings in fences and comments; a reasoned section N/A marker owns a document and a docs.roles path is compared with its role's template; one-word heading synonyms match only a whole heading; dictionaries indexed by outside input are null-prototype.",
       "source": {
         "kind": "spec",
         "ref": "req:docguard.doc-validator-fidelity#FR-001"
@@ -9230,11 +9230,11 @@
           "description": "A negator no longer governs the list it opens, so 'no CDK, Terraform or Pulumi stacks' documents Terraform.",
           "faultClass": "statement-deleted",
           "file": "cli/validators/docs-diff.mjs",
-          "find": "            !negatedByList(prefix) && !REMOVAL_BEFORE.test(prefix) &&\n",
-          "replace": "            !REMOVAL_BEFORE.test(prefix) &&\n",
+          "find": "            !negatedByList(prefix, rest) && !removedBefore(prefix, after) &&\n",
+          "replace": "            !removedBefore(prefix, after) &&\n",
           "producedBy": {
             "producer": "agent",
-            "by": "claude-sonnet-5.5 (spec 079)"
+            "by": "claude-opus-5.5 (spec 079 review round)"
           }
         },
         {
@@ -9264,13 +9264,13 @@
         {
           "id": "F6",
           "description": "A document with a generated section is classed as a scaffold.",
-          "faultClass": "statement-deleted",
+          "faultClass": "condition-forced",
           "file": "cli/shared-scaffold.mjs",
-          "find": "  if (GENERATED_MARKER.test(content)) return false;\n",
-          "replace": "",
+          "find": "  if (GENERATED_MARKER.test(content) || OWNED_MARKER.test(content)) return false;",
+          "replace": "  if (OWNED_MARKER.test(content)) return false;",
           "producedBy": {
             "producer": "agent",
-            "by": "claude-sonnet-5.5 (spec 079)"
+            "by": "claude-opus-5.5 (spec 079 review round)"
           }
         },
         {
@@ -9290,11 +9290,11 @@
           "description": "Machine markers counts a scaffold as marked.",
           "faultClass": "statement-deleted",
           "file": "cli/scanners/agent-readability.mjs",
-          "find": "\n      && !isUneditedScaffold(d.content, basename(d.name, '.md'))).length;",
+          "find": "\n      && !isUneditedScaffold(d.content, scaffoldTemplateName(config, d.name))).length;",
           "replace": "\n      ).length;",
           "producedBy": {
             "producer": "agent",
-            "by": "claude-sonnet-5.5 (spec 079)"
+            "by": "claude-opus-5.5 (spec 079 review round)"
           }
         },
         {
@@ -9314,11 +9314,11 @@
           "description": "Guard never reports STR006.",
           "faultClass": "condition-forced",
           "file": "cli/validators/structure.mjs",
-          "find": "    if (isUneditedScaffold(content, basename(defaultFile, '.md')) &&",
-          "replace": "    if (false &&",
+          "find": "    if (isUneditedScaffold(content, basename(defaultFile, '.md'))) {",
+          "replace": "    if (false) {",
           "producedBy": {
             "producer": "agent",
-            "by": "claude-sonnet-5.5 (spec 079)"
+            "by": "claude-opus-5.5 (spec 079 review round)"
           }
         },
         {
@@ -9331,6 +9331,114 @@
           "producedBy": {
             "producer": "agent",
             "by": "claude-sonnet-5.5 (spec 079)"
+          }
+        },
+        {
+          "id": "F12",
+          "description": "A reasoned section N/A marker no longer owns the document.",
+          "faultClass": "condition-forced",
+          "file": "cli/shared-scaffold.mjs",
+          "find": "  if (GENERATED_MARKER.test(content) || OWNED_MARKER.test(content)) return false;",
+          "replace": "  if (GENERATED_MARKER.test(content)) return false;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F13",
+          "description": "A document remapped by docs.roles is no longer matched to its role's template.",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared-scaffold.mjs",
+          "find": "    if (mapped === relPath) return basename(DOC_ROLES[role], '.md');\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F14",
+          "description": "A removal verb negates a technology used as a modifier ('Removed all Redis keys').",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "  return REMOVAL_BEFORE.test(prefix) && REMOVAL_OBJECT_END.test(after.trim());",
+          "replace": "  return REMOVAL_BEFORE.test(prefix);",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F15",
+          "description": "A middle list item counts as negated without the list continuing ('No Docker, Express serves the API').",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "  return Boolean(continued) && !LIST_STOP.test(continued[0]);",
+          "replace": "  return true;",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F16",
+          "description": "A '#' line inside a code fence is read as a change-record heading again.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "    } else if (marker) {\n      fence = marker[1];",
+          "replace": "    } else if (false) {\n      fence = marker[1];",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F17",
+          "description": "A one-word synonym matches inside a longer heading again ('Configuration Files').",
+          "faultClass": "statement-deleted",
+          "file": "cli/shared.mjs",
+          "find": "  if (synonym && !phrase.includes(' ')) return norm === phrase;\n",
+          "replace": "",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F18",
+          "description": "The explain alias index inherits Object.prototype again, so 'explain constructor' crashes.",
+          "faultClass": "condition-forced",
+          "file": "cli/commands/explain.mjs",
+          "find": "  const idx = Object.create(null);",
+          "replace": "  const idx = {};",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F19",
+          "description": "The MCP tool table inherits Object.prototype again, so a tool named 'constructor' reaches Object.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/mcp.mjs",
+          "find": "const TOOL_HANDLERS = {\n  __proto__: null,\n",
+          "replace": "const TOOL_HANDLERS = {\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F20",
+          "description": "The list separators overlap again, so a long line of coordinators backtracks exponentially.",
+          "faultClass": "condition-forced",
+          "file": "cli/validators/docs-diff.mjs",
+          "find": "const LIST_COORD = '(?:\\\\s*,\\\\s*|\\\\s+)(?:or|nor)\\\\s+';",
+          "replace": "const LIST_COORD = '\\\\s*,?\\\\s*(?:or|nor)\\\\s+';",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
           }
         }
       ]

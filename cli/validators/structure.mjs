@@ -215,11 +215,10 @@ export function validateDocSections(projectDir, config) {
 
     // An unedited scaffold: nothing a reader wrote beyond the template. The
     // owner and status placeholders alone never trigger it (generate leaves
-    // them) but are named as evidence when it does. The per-document N/A
-    // marker owns an intentionally blank document.
+    // them) but are named as evidence when it does. A reasoned section N/A
+    // marker (including `scaffold n/a`) makes the document owned, not a scaffold.
     // @implements docguard.doc-validator-fidelity#FR-007
-    if (isUneditedScaffold(content, basename(defaultFile, '.md')) &&
-        !/<!--\s*docguard:section\s+scaffold\s+n\/a\s*[—-]+\s*[A-Za-z0-9]/i.test(content)) {
+    if (isUneditedScaffold(content, basename(defaultFile, '.md'))) {
       const evidence = scaffoldEvidence(content);
       findings.push(mkFinding({
         code: 'STR006',

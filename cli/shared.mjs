@@ -130,6 +130,18 @@ function normalizeHeadingText(line) {
 }
 
 /**
+ * Whether a normalized heading names `phrase`: as whole words anywhere in it,
+ * except that a one-word synonym must be the whole heading. "Environment" and
+ * "Configuration" name the Environment Variables section on their own, not
+ * inside "Production environment" or "Configuration Files".
+ * @implements docguard.doc-validator-fidelity#FR-001
+ */
+function headingNames(norm, phrase, synonym = false) {
+  if (synonym && !phrase.includes(' ')) return norm === phrase;
+  return ` ${norm} `.includes(` ${phrase} `);
+}
+
+/**
  * True if `content` has an H2–H6 heading equivalent to `canonicalHeading` —
  * the exact text, a known synonym, or the same text behind an arc42-style
  * section number (e.g. "## 5.4 Layer boundaries" satisfies "## Layer Boundaries").
@@ -140,13 +152,12 @@ function normalizeHeadingText(line) {
 export function docHasSection(content, canonicalHeading) {
   const key = normalizeHeadingText(canonicalHeading);
   if (!key) return false;
-  const accepted = [key, ...(SECTION_SYNONYMS[key] || [])];
+  const synonyms = Object.hasOwn(SECTION_SYNONYMS, key) ? SECTION_SYNONYMS[key] : [];
   const headings = content.match(/^#{2,6}\s+.+$/gm) || [];
   for (const line of headings) {
     const norm = normalizeHeadingText(line);
-    for (const phrase of accepted) {
-      if (norm.includes(phrase)) return true;
-    }
+    if (headingNames(norm, key)) return true;
+    for (const phrase of synonyms) if (headingNames(norm, phrase, true)) return true;
   }
   return false;
 }
@@ -246,6 +257,7 @@ export const c = colorEnabled()
 
 // ── Compliance Profiles ───────────────────────────────────────────────────
 export const PROFILES = {
+  __proto__: null,
   starter: {
     description: 'Minimal CDD — architecture + changelog, no Spec Kit framework scaffold (pass --spec-kit to add it). For side projects and prototypes.',
     requiredFiles: {

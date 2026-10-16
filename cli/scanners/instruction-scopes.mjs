@@ -37,7 +37,7 @@ const GENERATED_MARKER = 'docguard:agents-sync';
 const AGENTS_NAMES = new Set(['AGENTS.md', 'AGENTS.override.md']);
 const HARNESS_DIRS = new Set(['.claude', '.cursor', '.github', '.agents', '.openhands']);
 const MAX_WALK_ENTRIES = 100_000;
-const HARNESS_LABEL = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
+const HARNESS_LABEL = { __proto__: null, codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 
 const dirOf = file => (file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '');
 const within = (path, dir) => dir === '' || path === dir || path.startsWith(`${dir}/`);

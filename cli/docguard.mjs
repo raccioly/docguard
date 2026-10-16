@@ -196,6 +196,7 @@ ${c.bold}Learn more:${c.reset}
 // vetted global help above). Commands without a focused entry fall back to the
 // global help, which still lists them.
 const COMMAND_HELP = {
+  __proto__: null,
   init: {
     summary: 'Bootstrap CDD docs — smart-scans existing code, or writes blank templates.',
     usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--with <name>] [--fix] [--no-spec-kit|--spec-kit]',
@@ -921,7 +922,7 @@ async function main() {
   // v0.20: deprecation aliases. The legacy command keeps working until v1.0
   // and emits a yellow stderr warning suggesting the new shape. Quiet mode
   // (e.g. inside hooks) suppresses the warning so CI output stays clean.
-  const DEPRECATED_COMMANDS = {
+  const DEPRECATED_COMMANDS = { __proto__: null,
     setup:   { since: '0.20', replacement: 'docguard init --wizard' },
     agents:  { since: '0.20', replacement: 'docguard init --with agents' },
     hooks:   { since: '0.20', replacement: 'docguard init --with hooks' },
@@ -936,7 +937,7 @@ async function main() {
   // v0.20: dropped aliases — the 10 cute variants the audit identified.
   // `audit` is intentionally NOT here; it remains a permanent silent alias
   // for `guard` (per SURFACE-AUDIT §8.1 — older CI scripts depend on it).
-  const DROPPED_ALIASES = {
+  const DROPPED_ALIASES = { __proto__: null,
     onboard:        'setup (deprecated) — try `docguard init --wizard`',
     gen:            'generate',
     badges:         'badge (deprecated) — try `docguard init --with badge`',

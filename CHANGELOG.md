@@ -39,28 +39,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **ENV001 and ENV002 match headings as STR003 does** (FR-001). `## Setup steps`
     and `## Environment variables` were "missing" although sentence case passed
     STR003. Both validators now use `docHasSection`: any case, section
-    numbers, synonyms (`Getting Started`, `Env Vars`, `Configuration`).
-    Findings only disappear.
+    numbers, synonyms (`Getting Started`, `Env Vars`). A one-word synonym
+    (`Configuration`, `Setup`) now names a section only as the whole heading,
+    for STR003 too: `## Configuration Files` and `## Production environment`
+    no longer satisfy Environment Variables.
   - **A brace pattern documents the files it expands to** (FR-002).
     `` `src/tests/{alpha,beta}.test.ts` `` and `` `foo.{test,spec}.ts` `` expand
     one level (at most 64 paths) in DDF002 and `docguard diff`; a missing
-    expansion is reported by its expanded path.
+    expansion is reported by its expanded path; spaces after the commas are
+    ignored. A brace glob (`src/**/*.test.{js,jsx}`) is one pattern matched as
+    a union, and `?` in a documented glob is one character.
   - **DDF001 reads negation over a list and removal verbs** (FR-003–FR-005).
     `no CDK, Terraform or Pulumi stacks`, `We removed Terraform`, `migrated off`,
     `was replaced by` no longer count as documenting the technology, and a
     Revision History, Changelog or Release Notes section is not read as a
-    Tech Stack claim. `replaced MySQL with PostgreSQL` keeps PostgreSQL live.
+    Tech Stack claim (a `#` line in a code fence is not a heading).
+    `replaced MySQL with PostgreSQL` keeps PostgreSQL live, and so do sentences
+    that only look negated: `No Docker, Express serves the API`, `Removed all
+    Redis keys`, `No changes to PostgreSQL, Redis or Express`.
   - **An unedited scaffold is reported and not scored as readable**
     (FR-006–FR-009). New warning STR006: a canonical document that holds
     nothing beyond the template `init` wrote it. Its docQuality checks all
     fail, ALCOA+ Legible is a gap, and Machine markers does not count it. A
     one-document project with a blank template scored docQuality 100%; it now
     scores 0%. A placeholder owner or status alone is not reported
-    (`generate --plan --write` leaves both); `<!-- docguard:section scaffold n/a — reason -->`
-    owns an intentionally blank document.
+    (`generate --plan --write` leaves both); a reasoned
+    `<!-- docguard:section … n/a — reason -->` marker owns the document. A
+    document `docs.roles` remaps is compared with its role's template.
   - **The word `constructor` no longer makes readability `NaN`** (FR-012). The
     syllable counter read `Object.prototype.constructor` from its exception
     dictionary, so DQ004 and DQ005 fired on any document containing the word.
+    Every dictionary indexed by outside input is now null-prototype:
+    `docguard explain constructor` and `docguard hooks --type constructor` no
+    longer crash, and an MCP `tools/call` named `constructor` is an unknown tool.
 
 - **A living spec reviewed long ago can complete its maintenance again**
   (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion

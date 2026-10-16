@@ -40,6 +40,7 @@ const CLI_VERSION = JSON.parse(readFileSync(resolvePath(dn(fp(import.meta.url)),
  *   - standard: the spec/practice the validator references
  */
 const EXPLAINERS = {
+  __proto__: null,
   structure: {
     title: 'Structure — required CDD files exist',
     what: 'Verifies the canonical files declared in .docguard.json `requiredFiles.canonical` are present, plus AGENTS.md/CLAUDE.md, CHANGELOG.md, DRIFT-LOG.md.',
@@ -101,7 +102,7 @@ const EXPLAINERS = {
     why:  'Undocumented env vars are runtime surprises waiting to happen.',
     triggers: [
       ['used but not documented', 'Code reads an env var that ENVIRONMENT.md doesn\'t list. Add it to the table.'],
-      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Configuration", "Getting Started") accepted.'],
+      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Getting Started") accepted; a one-word synonym ("Configuration", "Setup") only as the whole heading.'],
       ['VITE_API_URL or similar prefix', 'Naked prefixes like `VITE_` (no suffix) get filtered out — they\'re convention markers, not real var names.'],
     ],
     example: '`DATABASE_URL` listed in ENVIRONMENT.md\'s Environment Variables table AND read via `process.env.DATABASE_URL` in code',
@@ -385,7 +386,7 @@ const EXPLAINERS = {
     what: 'For each canonical doc, verifies the required `##` sections exist as real headings: ARCHITECTURE.md (System Overview, Component Map, Tech Stack), DATA-MODEL.md (Entities), SECURITY.md (Authentication, Secrets Management), TEST-SPEC.md (Test Categories, Coverage Rules), ENVIRONMENT.md (Environment Variables, Setup Steps). The DATA-MODEL and ENVIRONMENT requirements relax automatically for CLI/library projects.',
     why:  'A canonical doc that exists but lacks its sections is an empty shell — the section structure is what makes it a reliable memory anchor for humans and agents.',
     triggers: [
-      ['unedited scaffold', 'STR006: the document holds nothing beyond the template `docguard init` wrote it from (comments, empty cells, the Metadata table, dates). Write it, run `docguard generate --plan --write` for code-derived sections, or own an intentionally blank document with `<!-- docguard:section scaffold n/a — reason -->`. A placeholder owner or unchosen status alone is not reported. Scores treat the document as unfinished: docQuality counts none of its checks, ALCOA+ Legible is a gap, and Machine markers does not count it as marked.'],
+      ['unedited scaffold', 'STR006: the document holds nothing beyond the template `docguard init` wrote it from (comments, empty cells, the Metadata table, dates). Write it, run `docguard generate --plan --write` for code-derived sections, or own an intentionally blank document with `<!-- docguard:section scaffold n/a — reason -->` (any reasoned section N/A marker owns it). A placeholder owner or unchosen status alone is not reported. Until then scores treat the document as unfinished: docQuality counts none of its checks, ALCOA+ Legible is a gap, and Machine markers does not count it as marked.'],
       ['missing section', 'Add the named `## Section` heading. If the section is genuinely not applicable (e.g. a CLI with no auth), add the N/A marker — a reason is required: `<!-- docguard:section authentication n/a — CLI tool, no auth layer -->`.'],
     ],
     example: 'SECURITY.md contains both `## Authentication` and `## Secrets Management` as real headings — or carries `<!-- docguard:section authentication n/a — CLI, no auth -->`',
@@ -411,7 +412,7 @@ const EXPLAINERS = {
       ['drift:', 'ARCHITECTURE.md or TEST-SPEC.md disagrees with the code. The warning spells out which items are "in code but not documented" vs. "documented but not found in code".'],
       ['in code but not documented', 'Add the technology or test file to the relevant doc.'],
       ['brace pattern', 'A documented test such as `src/tests/{alpha,beta}.test.ts` or `foo.{test,spec}.ts` counts as every path it expands to (single level, at most 64 expansions); a missing expansion is reported by its expanded path.'],
-      ['negated technology', 'A technology is not documented when a negator governs it (`no CDK, Terraform or Pulumi stacks`), a removal verb precedes it (`removed`, `dropped`, `replaced`, `migrated off`) or follows it (`was removed`), or it sits under a Revision History, Changelog or Release Notes heading.'],
+      ['negated technology', 'A technology is not documented when a negator governs the list it is in (`no CDK, Terraform or Pulumi stacks`), a removal verb takes it as its object (`removed Terraform`, `migrated off`, `was removed`; not `removed all Redis keys`), or it sits under a Revision History, Changelog or Release Notes heading (fenced code and comments are not headings).'],
       ['documented but not found in code', 'Remove the stale reference, or restore the file if it was deleted by mistake.'],
     ],
     example: 'ARCHITECTURE.md names exactly the stack the dependencies imply, and every glob in TEST-SPEC.md matches a real test file',
@@ -479,6 +480,7 @@ const EXPLAINERS = {
  * registry, so a new validator can't ship without an explain entry + name.
  */
 export const DISPLAY_NAMES = {
+  __proto__: null,
   structure: 'Structure',
   docSections: 'Doc Sections',
   docsSync: 'Docs-Sync',
@@ -525,7 +527,7 @@ const normalizeKey = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
  * and `"doc quality"` all resolve to the same entry.
  */
 const ALIAS_INDEX = (() => {
-  const idx = {};
+  const idx = Object.create(null);
   for (const key of Object.keys(EXPLAINERS)) idx[normalizeKey(key)] = key;
   for (const [key, name] of Object.entries(DISPLAY_NAMES)) {
     if (EXPLAINERS[key]) idx[normalizeKey(name)] = key; // name → key (only if explainable)

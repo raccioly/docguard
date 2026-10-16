@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto';
 import { c } from '../shared.mjs';
 
 const AGENT_TARGETS = {
+  __proto__: null,
   cursor: {
     path: '.cursor/rules/cdd.mdc',
     name: 'Cursor',
