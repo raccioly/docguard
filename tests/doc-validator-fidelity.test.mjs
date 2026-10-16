@@ -571,6 +571,18 @@ describe('doc validator fidelity — review findings', () => {
       }
     });
 
+    it('agents --agent and init --with report an unknown name instead of failing inside', () => {
+      write(dir, 'package.json', JSON.stringify({ name: 'x' }));
+      write(dir, 'AGENTS.md', '# Agents\n');
+      fixtureGit(dir, ['init', '-q']);
+      const agents = cli(['agents', '--agent', 'constructor']);
+      assert.match(`${agents.stdout}${agents.stderr}`, /Unknown agent: constructor/);
+      assert.doesNotMatch(`${agents.stdout}${agents.stderr}`, /agents failed|must be of type string/);
+      const init = cli(['init', '--skip-prompts', '--with', 'toString']);
+      assert.match(`${init.stdout}${init.stderr}`, /Unknown --with target\(s\): toString/);
+      assert.notEqual(init.status, 0);
+    });
+
     it('an MCP tool named after an Object.prototype property is an unknown tool', () => {
       write(dir, 'package.json', JSON.stringify({ name: 'x' }));
       const messages = [

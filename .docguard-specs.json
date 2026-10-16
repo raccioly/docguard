@@ -2921,7 +2921,7 @@
         "artifacts": [
           {
             "path": "specs/079-doc-validator-fidelity/spec.md",
-            "digest": "sha256:8eb5f308a2be375870d3064bf583bd40c49e37e9dd5a96aa5f2f023f71d16b1f"
+            "digest": "sha256:30f003c7bda7fc9f5e723d42b312f574919b43bed12c70855401d74504caff54"
           },
           {
             "path": "specs/079-doc-validator-fidelity/plan.md",
@@ -2929,12 +2929,12 @@
           },
           {
             "path": "specs/079-doc-validator-fidelity/tasks.md",
-            "digest": "sha256:d64e63c8fb7b9fdda98c7ddacc368361a17168450df31e2ee7fcab483a0cf521"
+            "digest": "sha256:3cd131881c9df2c37b834e5020aa1343bc32ed8ab01c94ff75da74da48824735"
           }
         ],
         "taskCompletion": {
-          "checked": 20,
-          "total": 20
+          "checked": 23,
+          "total": 23
         },
         "implementationEvidence": [
           {

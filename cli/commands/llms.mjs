@@ -23,7 +23,6 @@ import { safeWrite } from '../writers/generate-io.mjs';
 
 // ──── Doc descriptions for llms.txt ────
 const DOC_DESCRIPTIONS = {
-  __proto__: null,
   'ARCHITECTURE.md': 'System architecture, component boundaries, and tech stack',
   'DATA-MODEL.md': 'Database schemas, entity relationships, and data flow',
   'SECURITY.md': 'Authentication, authorization, secrets management, and security policies',

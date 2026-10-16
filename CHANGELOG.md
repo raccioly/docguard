@@ -70,8 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     syllable counter read `Object.prototype.constructor` from its exception
     dictionary, so DQ004 and DQ005 fired on any document containing the word.
     Every dictionary indexed by outside input is now null-prototype:
-    `docguard explain constructor` and `docguard hooks --type constructor` no
-    longer crash, and an MCP `tools/call` named `constructor` is an unknown tool.
+    `docguard explain constructor`, `docguard hooks --type constructor` and
+    `docguard agents --agent constructor` no longer fail inside, `init --with
+    toString` is an unknown scaffolder, and an MCP `tools/call` named
+    `constructor` is an unknown tool.
 
 - **A living spec reviewed long ago can complete its maintenance again**
   (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion

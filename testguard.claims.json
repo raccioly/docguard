@@ -9440,6 +9440,30 @@
             "producer": "agent",
             "by": "claude-opus-5.5 (spec 079 review round)"
           }
+        },
+        {
+          "id": "F21",
+          "description": "The agent table inherits Object.prototype again, so 'agents --agent constructor' fails inside instead of reporting an unknown agent.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/agents.mjs",
+          "find": "const AGENT_TARGETS = {\n  __proto__: null,\n",
+          "replace": "const AGENT_TARGETS = {\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
+        },
+        {
+          "id": "F22",
+          "description": "The scaffolder table inherits Object.prototype again, so 'init --with toString' passes as a scaffolder.",
+          "faultClass": "statement-deleted",
+          "file": "cli/commands/init.mjs",
+          "find": "const SCAFFOLDER_DISPATCH = {\n  __proto__: null,\n",
+          "replace": "const SCAFFOLDER_DISPATCH = {\n",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-opus-5.5 (spec 079 review round)"
+          }
         }
       ]
     }

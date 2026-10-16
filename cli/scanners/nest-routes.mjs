@@ -26,7 +26,7 @@ import { matchPairs, splitTopLevel, literalIn, trimRange } from './route-lexing.
 import { parseWithTier, lineAt, joinSegments, isTestFile, nodeText, lexJs } from './js-route-support.mjs';
 
 const FRAMEWORK = 'NestJS';
-const METHOD_DECORATORS = { __proto__: null, Get: 'GET', Post: 'POST', Put: 'PUT', Patch: 'PATCH', Delete: 'DELETE', All: 'ALL', Head: 'HEAD', Options: 'OPTIONS', Search: 'SEARCH' };
+const METHOD_DECORATORS = { Get: 'GET', Post: 'POST', Put: 'PUT', Patch: 'PATCH', Delete: 'DELETE', All: 'ALL', Head: 'HEAD', Options: 'OPTIONS', Search: 'SEARCH' };
 /** Nest's own decorators: never a custom auth decorator. */
 const NEST_DECORATORS = new Set([
   ...Object.keys(METHOD_DECORATORS), 'Controller', 'Module', 'Injectable', 'UseGuards', 'Version', 'Param', 'Body',
