@@ -2875,8 +2875,8 @@
       "path": "specs/079-doc-validator-fidelity/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2890,7 +2890,11 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -2996,6 +3000,11 @@
             "requirementId": "FR-009",
             "file": "cli/scanners/agent-readability.mjs",
             "line": 168
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/agents.mjs",
+            "line": 21
           },
           {
             "requirementId": "FR-012",
