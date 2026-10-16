@@ -26,7 +26,7 @@ before any mapped document is written, even with `--force`.
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.45.0`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.45.1`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
 
 ## As-built specs for code that has none

@@ -100,7 +100,7 @@ runs:
     - name: Install DocGuard
       shell: bash
       env:
-        DOCGUARD_RELEASED_VERSION: '0.45.0' # docguard:volatile (rewritten by each release)
+        DOCGUARD_RELEASED_VERSION: '0.45.1' # docguard:volatile (rewritten by each release)
         DOCGUARD_VERSION_INPUT: ${{ inputs.docguard-version }}
       run: |
         VERSION="${DOCGUARD_VERSION_INPUT:-$DOCGUARD_RELEASED_VERSION}"
