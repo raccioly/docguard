@@ -16,7 +16,7 @@ import {
 } from '../scanners/instruction-scopes.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
 
-const NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
+const NAMES = { __proto__: null, codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 
 /** The rules report as data; throws on an unsafe path or unknown harness. */
 export function rulesFor(projectDir, path, { harness = null } = {}) {

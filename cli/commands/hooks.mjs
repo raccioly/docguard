@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node
 // that manager runs (#454), so DocGuard never overwrites one — it says where
 // the line belongs instead. (docguard.field-report-followups#FR-004)
 const MANAGER_COMMANDS = {
+  __proto__: null,
   'pre-commit': 'npx docguard-cli guard --changed-only',
   'pre-push': 'npx docguard-cli ci',
 };
@@ -167,6 +168,7 @@ fi
 `;
 
 const HOOKS = {
+  __proto__: null,
   'pre-commit': {
     description: 'Run docguard guard before every commit',
     content: `#!/bin/sh

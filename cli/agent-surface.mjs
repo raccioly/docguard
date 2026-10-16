@@ -37,6 +37,7 @@ const SKILL_COLON_AGENTS = new Set(['kimi']);
 // Spec Kit has written a manifest (Spec Kit 1.0.13 integration folders). An
 // agent missing here falls back to DocGuard's `.agent/` convention.
 const SIGNAL_SKILL_DIRS = {
+  __proto__: null,
   claude: '.claude/skills',
   'cursor-agent': '.cursor/skills',
   codex: '.agents/skills',

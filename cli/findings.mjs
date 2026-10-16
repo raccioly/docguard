@@ -86,6 +86,7 @@ import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
  * only), so the code's default lives here, beside its title and help.
  */
 export const CODES = {
+  __proto__: null,
   SEC001: {
     validator: 'security',
     title: 'Hardcoded password',
@@ -165,6 +166,12 @@ export const CODES = {
     title: 'Instruction allowance has slack',
     help: 'An allowance in `agentInstructions.allowances` is at least 1024 bytes above the chain it covers. The chain shrank; lower the allowance to the current size (or remove it when the chain is within the default budget) so it cannot grow back unnoticed. Informational: it never changes the exit code unless `findingSeverity.STR005` says so.',
     suppress: null,
+  },
+  STR006: {
+    validator: 'docSections',
+    title: 'Canonical doc is an unedited scaffold',
+    help: 'A canonical doc holds nothing a reader wrote beyond the template `docguard init` created it from: every line is template text, an HTML-comment placeholder, an empty table cell, the Metadata table or a date. It scores as unfinished in docQuality, ALCOA+ Legible and Machine markers. Write the document (or run `docguard generate --plan --write`, which fills code-derived sections), or — if it is intentionally blank — own it with `<!-- docguard:section scaffold n/a — reason -->` (any reasoned section N/A marker owns the document, and it is then scored as written). A placeholder owner or unchosen status alone is not reported: `generate --plan --write` leaves both. A document that `docs.roles` remaps is compared with the template of its role.',
+    suppress: '<!-- docguard:section scaffold n/a — reason -->',
   },
   CHG001: {
     validator: 'changelog',
@@ -259,13 +266,13 @@ export const CODES = {
   DDF001: {
     validator: 'docsDiff',
     title: 'Tech Stack drift',
-    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the technologies the code shows disagree. The code side reads the dependency manifests of every ecosystem (package.json across the monorepo, pyproject/requirements, go.mod, Gemfile, Cargo.toml, composer.json, *.csproj, Maven/Gradle), a Dockerfile or compose file, and .tf files; DynamoDB and Docker are also found from unambiguous source text in product files (a DynamoDB API target or endpoint, `docker run`/`build`/`compose` in a script, Makefile or CI workflow, a compose file), and the message names that file. A documented technology is reported missing only where a manifest could have shown it (see docs/reference/languages.md); a project with no manifest is not checked. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong.',
+    help: 'The tech named in docs-canonical/ARCHITECTURE.md and the technologies the code shows disagree. The code side reads the dependency manifests of every ecosystem (package.json across the monorepo, pyproject/requirements, go.mod, Gemfile, Cargo.toml, composer.json, *.csproj, Maven/Gradle), a Dockerfile or compose file, and .tf files; DynamoDB and Docker are also found from unambiguous source text in product files (a DynamoDB API target or endpoint, `docker run`/`build`/`compose` in a script, Makefile or CI workflow, a compose file), and the message names that file. A documented technology is reported missing only where a manifest could have shown it (see docs/reference/languages.md); a project with no manifest is not checked. Drift is two-sided — document the new tech or remove the stale entries after checking which side is wrong. A technology is not read as documented when a negator governs it (`no CDK, Terraform or Pulumi stacks` negates every item of the list; `No Docker, Express serves the API` negates Docker only), when a removal or migration verb takes it as its object (`removed Terraform`, `migrated off Terraform`, `was replaced by` — but not `removed all Redis keys`), or when it appears under a Revision History, Changelog or Release Notes heading, which describe past state.',
     suppress: null,
   },
   DDF002: {
     validator: 'docsDiff',
     title: 'Test Files drift',
-    help: 'The test files documented in docs-canonical/TEST-SPEC.md and the test files on disk disagree. A documented test is a backticked `*.test.*`/`*.spec.*` name or one matching `testPatterns`/`testPattern` in .docguard.json, the same patterns the code side uses. Add entries for new tests or remove documented tests that no longer exist — TEST-SPEC.md entries may be glob patterns.',
+    help: 'The test files documented in docs-canonical/TEST-SPEC.md and the test files on disk disagree. A documented test is a backticked `*.test.*`/`*.spec.*` name or one matching `testPatterns`/`testPattern` in .docguard.json, the same patterns the code side uses. Add entries for new tests or remove documented tests that no longer exist — TEST-SPEC.md entries may be glob patterns, and a brace pattern (`src/tests/{alpha,beta}.test.ts`, `foo.{test,spec}.ts`) documents every path it expands to (single level, at most 64 expansions); a brace glob (`src/**/*.test.{js,jsx}`) is one pattern that documents what any alternative matches.',
     suppress: null,
   },
   DCV001: {
@@ -319,13 +326,13 @@ export const CODES = {
   ENV001: {
     validator: 'environment',
     title: 'Missing setup section in ENVIRONMENT.md',
-    help: 'ENVIRONMENT.md lacks both a "## Prerequisites" and a "## Setup Steps" heading (H2/H3 anchored, not a TOC mention). Add a Setup Steps section describing how to get the project running from a fresh clone.',
+    help: 'ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted. Add a Setup Steps section describing how to get the project running from a fresh clone.',
     suppress: null,
   },
   ENV002: {
     validator: 'environment',
     title: 'Missing Environment Variables section',
-    help: 'ENVIRONMENT.md has no "## Environment Variables" heading. Add the section and document each variable the app reads — backticked names or a pipe table both count.',
+    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by a word such as "Reference", "Variables" or "(.env)", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
     suppress: null,
   },
   ENV003: {
@@ -1018,7 +1025,7 @@ export const CODES = {
  * tool do, so every blocker a command prints can be looked up.
  * @implements docguard.first-spec-preflight#FR-007
  */
-export const BLOCKER_CODES = {
+export const BLOCKER_CODES = { __proto__: null,
   SPC001: {
     command: 'docguard specs complete | approve | reanchor',
     title: 'Spec, registry or working tree not ready',

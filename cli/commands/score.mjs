@@ -6,9 +6,10 @@ import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname } from 'node:path';
+import { basename, resolve, join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c, docHasSection } from '../shared.mjs';
+import { isUneditedScaffold } from '../shared-scaffold.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
@@ -708,6 +709,16 @@ function calcDocQualityScore(dir, config) {
     const content = readFileSync(fullPath, 'utf-8');
     const docName = file.replace('docs-canonical/', '').replace('.md', '').toLowerCase();
 
+    // An unedited scaffold has no sections or content to count: every one of
+    // its checks fails, so a blank template is not scored as readable
+    // (the missing-document case above stays out of the denominator).
+    // @implements docguard.doc-validator-fidelity#FR-008
+    if (isUneditedScaffold(content, basename(defaultFile, '.md'))) {
+      total += sections.length + 1;
+      failures.push({ file, issue: 'unedited scaffold — nothing beyond the template', fixCmd: `docguard fix --doc ${docName}` });
+      continue;
+    }
+
     for (const section of sections) {
       total++;
       // v0.24: synonym/number-tolerant (docHasSection) so arc42/C4 headings
@@ -1064,6 +1075,7 @@ function getGrade(score) {
 
 // Default fix command per category, used when a failure doesn't carry its own.
 const CATEGORY_FIX = {
+  __proto__: null,
   structure:    'docguard init',
   docQuality:   'docguard fix',
   testing:      'docguard fix --doc test-spec',
@@ -1075,6 +1087,7 @@ const CATEGORY_FIX = {
 // Static fallback — only reached if a category scores < 100 but recorded no
 // specific failure (shouldn't happen now that every deduction tracks one).
 const STATIC_SUGGESTIONS = {
+  __proto__: null,
   structure: 'Run `docguard init` to create missing documentation',
   docQuality: 'Run `docguard fix` to get AI prompts for each doc that needs content',
   testing: 'Add test files and create TEST-SPEC.md → Run `docguard fix --doc test-spec`',

@@ -28,6 +28,7 @@ import { buildReadinessAssessment } from '../assessment.mjs';
 
 // Map validator failures to the right fix --doc target
 const VALIDATOR_TO_DOC = {
+  __proto__: null,
   'Structure':       null,       // structural — needs init, not doc fix
   'Doc Sections':    null,       // section-level — maps to specific doc
   'Docs-Sync':       null,       // cross-reference — needs manual review
@@ -43,6 +44,7 @@ const VALIDATOR_TO_DOC = {
 
 // Actionable fix instructions per validator (LLM-first: includes both skill and CLI commands)
 const FIX_INSTRUCTIONS = {
+  __proto__: null,
   'Structure': {
     action: 'Create missing files',
     command: 'docguard init',

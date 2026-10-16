@@ -28,6 +28,7 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { scanCodeTechnologies, TECH_PATTERNS } from '../scanners/tech-stack.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { visibleMarkdown } from '../shared-html-comments.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -127,6 +128,124 @@ export function validateDocsDiff(projectDir, config = {}) {
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────
 
+// A negator governs every item of the coordinated list it opens: "no CDK,
+// Terraform or Pulumi stacks". The list is a run of items of at most three
+// words joined by commas, "or" or "nor", holding no verb or preposition of the
+// closed set below, and it must be a list on both sides of the mention: a
+// middle item is followed by more items and a coordinator ("CDK, Terraform or
+// Pulumi"), a last item by at most three words to the clause end ("… or
+// Terraform stacks"). "No Docker, Express serves the API" negates Docker only.
+// "and" is not a list coordinator here: "without Docker and PostgreSQL runs
+// locally" starts a new clause as often as it extends a list.
+// List words exclude the coordinators and the separators are disjoint, so the
+// patterns parse one way only and stay linear on long lines.
+// @implements docguard.doc-validator-fidelity#FR-003
+// `no-build`, `no-op` and "no matter which" are not negators.
+const LIST_NEGATOR = /\b(?:no(?![-\w])(?!\s+matter\b)|without|neither|nor|not\s+using|none\s+of)\b/gi;
+const LIST_STOP = /\b(?:is|are|was|were|be|been|being|uses?|used|using|requires?|required|has|have|had|but|to|of|for|in|on|with|from|by|at|about|into|than)\b/i;
+const LIST_WORD = "(?!(?:or|nor|and)\\b)[\\w.+#/'’-]+";
+const LIST_ITEM = `${LIST_WORD}(?:\\s+${LIST_WORD}){0,2}`;
+// The separators are disjoint (a comma not followed by a coordinator, or a
+// coordinator with or without a comma), so a run of separators has one parse.
+const LIST_COMMA = '\\s*,\\s*(?!(?:or|nor)\\b)';
+const LIST_COORD = '(?:\\s*,\\s*|\\s+)(?:or|nor)\\s+';
+const LIST_BEFORE = new RegExp(`^\\s*(?:${LIST_ITEM}(?:${LIST_COORD}|${LIST_COMMA}))+$`, 'i');
+// After the list's last item only nouns for a technology's own artifacts may
+// follow ("… or Terraform stacks"), then the clause ends or a prepositional
+// phrase starts ("stacks in this repo"). Anything else is a predicate: in "No
+// Docker or Redis caches sessions" and "No ORM, PostgreSQL or SQLite
+// directly" the technologies are in use.
+const LIST_ARTIFACT = '(?:blocks?|modules?|stacks?|files?|configs?|configurations?|templates?|scripts?|resources?|providers?|definitions?|manifests?|containers?|images?|clusters?|instances?|servers?|deployments?|layers?|integrations?|dependenc(?:y|ies)|artifacts?|infrastructure)';
+// An existence predicate may close the negated list ("No CDK, Terraform or
+// Pulumi artifacts are expected"): it states the absence, it is not a use.
+const LIST_EXISTENCE = '(?:\\s+(?:are|is|were|was|will\\s+be|have\\s+been|has\\s+been)(?:\\s+(?:currently|yet|ever))?\\s+(?:expected|used|needed|required|present|allowed|planned|involved|included|configured|deployed|supported|committed|checked\\s+in))?';
+const LIST_END = `(?:\\s+${LIST_ARTIFACT}){0,2}${LIST_EXISTENCE}\\s*(?:$|[,:;)]|(?:in|from|at|on|for|since|during|within|across|anywhere|here|yet|today|currently|whatsoever)\\b)`;
+const LIST_ENDS = new RegExp(`^${LIST_END}`, 'i');
+// The list's last item is one word, or two when the second is a name ("AWS
+// CDK"), so a predicate is not read as part of it ("… or PostgreSQL store
+// nothing"). Case-sensitive for that reason; coordinators are lowercase.
+const LIST_LAST = `${LIST_WORD}(?:\\s+(?=[A-Z0-9])${LIST_WORD})?`;
+const LIST_CONTINUES = new RegExp(`^(?:${LIST_COMMA}${LIST_ITEM})*${LIST_COORD}${LIST_LAST}${LIST_END}`);
+
+/**
+ * True when the nearest negator before a mention opens a coordinated list
+ * that the mention belongs to. `prefix` is the clause before the mention,
+ * `rest` the clause after it.
+ */
+function negatedByList(prefix, rest) {
+  let negator = null;
+  for (const match of prefix.matchAll(LIST_NEGATOR)) negator = match;
+  if (!negator) return false;
+  const tail = prefix.slice(negator.index + negator[0].length);
+  if (LIST_STOP.test(tail) || !LIST_BEFORE.test(tail)) return false;
+  if (/\b(?:or|nor)\s*$/i.test(tail)) return LIST_ENDS.test(rest);
+  return LIST_CONTINUES.test(rest);
+}
+
+// A removal or migration verb before a technology negates it ("We removed
+// Terraform", "migrated off Terraform", "Removed the template's Terraform
+// blocks"); at most three filler words stand between them. It negates the
+// technology only when the technology is the object removed: what follows is
+// nothing, a preposition ("in 1.0", "with PostgreSQL") or a noun for the
+// technology's own artifacts ("blocks", "modules"). "Removed all Redis keys"
+// and "replaced the Redis client library" keep Redis in use. After a
+// technology the participle needs an auxiliary, because a bare "Terraform
+// replaced X" keeps Terraform in use. "replaced X with Y" negates X only.
+// @implements docguard.doc-validator-fidelity#FR-004
+const REMOVAL_FILLER = "(?:(?:the|a|an|our|its|their|this|that|all|any|old|legacy|former|existing|[\\w]+['’]s)\\s+){0,3}";
+const REMOVAL_BEFORE = new RegExp(
+  '\\b(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\\s+out|stopped\\s+using|' +
+  'no\\s+longer\\s+(?:uses?|using|runs?|running|needs?)|' +
+  '(?:migrated|moved|switched|rolled)\\s+(?:off|away\\s+from|back\\s+from))\\s+' + REMOVAL_FILLER + '$', 'i');
+const REMOVAL_OBJECT_END = /^(?:$|[,:;)]|(?:in|from|at|on|for|since|during|with|by|as|after|before|to|because|due|entirely|completely|altogether|and|or)\b|(?:blocks?|modules?|stacks?|resources?|providers?|manifests?)\b)/i;
+const REMOVAL_AFTER = /^(?:(?:is|was|were|are|has\s+been|have\s+been)\s+(?:removed|dropped|deleted|retired|decommissioned|replaced|phased\s+out)\b)/i;
+
+/** True when a removal verb before the mention takes the technology itself as its object. */
+function removedBefore(prefix, after) {
+  return REMOVAL_BEFORE.test(prefix) && REMOVAL_OBJECT_END.test(after.trim());
+}
+
+// Sections that record change over time describe past state by definition.
+// @implements docguard.doc-validator-fidelity#FR-005
+const CHANGE_RECORD_HEADINGS = new Set([
+  'revision history', 'change history', 'document history', 'version history',
+  'history', 'revisions', 'changelog', 'change log', 'release notes',
+]);
+const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
+
+/**
+ * The document without its change-record sections (heading through the next
+ * heading of the same or a higher level). Comments are removed first and a
+ * `#` line inside a fenced block is code, not a heading.
+ */
+export function withoutChangeRecords(markdown) {
+  const out = [];
+  let skipLevel = 0;
+  let fence = null;
+  for (const line of visibleMarkdown(markdown).split('\n')) {
+    const marker = line.match(FENCE);
+    if (fence) {
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length && line.slice(marker[0].length).trim() === '') fence = null;
+    } else if (marker) {
+      fence = marker[1];
+    } else {
+      const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+      if (heading) {
+        const level = heading[1].length;
+        // A change record under an H1 ends at the next H1 or H2, so a document
+        // titled "# Revision History" does not hide every section after it.
+        if (skipLevel && level <= Math.max(skipLevel, 2)) skipLevel = 0;
+        const text = heading[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        // Only a top-level (H1/H2) heading opens a change record: "### History"
+        // is as likely a component named History.
+        if (!skipLevel && level <= 2 && CHANGE_RECORD_HEADINGS.has(text)) { skipLevel = level; continue; }
+      }
+    }
+    if (!skipLevel) out.push(line);
+  }
+  return out.join('\n');
+}
+
 /** Evaluate mentions locally; optionality is not evidence of absence or use. */
 function mentionsCurrentTechnology(content, tech, technologies) {
   const escape = value => value.replace(/[.*+?^\x24{}()|[\]\\]/g, character => '\\' + character);
@@ -162,8 +281,12 @@ function mentionsCurrentTechnology(content, tech, technologies) {
         const negativeAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:used|using|supported|adopted)|no\s+longer\s+(?:used|supported)|unused|removed|retired)\b/i;
         const optionalAfter = /^(?:(?:is|was|are|were)\s+)?(?:not\s+(?:needed|required)|optional)\b/i;
         const historicalAfter = /^(?:(?:is|was|were)\s+)?(?:previously|formerly|historically|once)\b|^(?:was|were)\s+used\b/i;
+        const prefix = clause.slice(0, mention.index);
+        const rest = clause.slice(mention.index + mention[0].length);
         if (!negativeBefore.test(before) && !historicalBefore.test(before) &&
-            !negativeAfter.test(after) && !optionalAfter.test(after) && !historicalAfter.test(after)) return true;
+            !negatedByList(prefix, rest) && !removedBefore(prefix, after) &&
+            !negativeAfter.test(after) && !optionalAfter.test(after) && !historicalAfter.test(after) &&
+            !REMOVAL_AFTER.test(after)) return true;
       }
     }
   }
@@ -189,7 +312,7 @@ function techStackDiff(dir, config = {}) {
   const scan = scanCodeTechnologies(dir, config);
   if (!scan.hasManifest) return null;
 
-  const archContent = readFileSync(archPath, 'utf-8');
+  const archContent = withoutChangeRecords(readFileSync(archPath, 'utf-8'));
 
   const docTech = new Set();
   const techPatterns = TECH_PATTERNS;
@@ -247,21 +370,97 @@ export function extractDocumentedTests(markdown, config = {}) {
   // as documented test files.
   const content = String(markdown).replace(/```[\s\S]*?```/g, '');
   const docTests = new Set();
-  const testFileRegex = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
-  let match;
-  while ((match = testFileRegex.exec(content)) !== null) docTests.add(match[1]);
+  const testFileName = /^[^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+$/;
 
   const patterns = configuredTestPatterns(config);
-  if (patterns.length === 0) return docTests;
   const whole = patterns.map(p => compileGlob(p));
   const last = patterns.map(p => compileGlob(p.split('/').pop()));
+  // Each pass anchors on its own token shape, so the closing backtick of a
+  // code span that contains spaces never pairs with the next span's opener:
+  // a test-file name; a token with brace groups (spaces after their commas,
+  // `{alpha, beta}`, are not part of the paths); and, with test patterns
+  // configured, any backticked token.
+  const testNameToken = /`([^`\s]*\.(?:test|spec)\.[a-zA-Z0-9]+)`/g;
+  const braceToken = /`([^`\s{}]*(?:\{[^`{}\n]*\}[^`\s{}]*)+)`/g;
   const tokenRegex = /`([^`\s]+)`/g;
-  while ((match = tokenRegex.exec(content)) !== null) {
-    const token = match[1];
-    const matcher = token.includes('/') ? whole : last;
-    if (matcher.some(rx => rx.test(token))) docTests.add(token);
+  const tokens = [];
+  let match;
+  while ((match = testNameToken.exec(content)) !== null) tokens.push(match[1]);
+  while ((match = braceToken.exec(content)) !== null) {
+    const token = match[1].replace(/\{[^{}]*\}/g, group => group.replace(/\s+/g, ''));
+    if (!/\s/.test(token)) tokens.push(token);
+  }
+  if (patterns.length > 0) while ((match = tokenRegex.exec(content)) !== null) tokens.push(match[1]);
+  const accepted = (token) => {
+    if (testFileName.test(token)) return true;
+    if (patterns.length === 0) return false;
+    return (token.includes('/') ? whole : last).some(rx => rx.test(token));
+  };
+  for (const raw of tokens) {
+    // A brace list documents every path it expands to; a brace glob
+    // (`src/**/*.test.{js,jsx}`) is one pattern that documents what any of its
+    // alternatives matches, and `documentedTestRegex` reads it that way.
+    // @implements docguard.doc-validator-fidelity#FR-002
+    const expansions = expandBraces(raw);
+    if (expansions.length > 1 && /[*?]/.test(raw)) {
+      if (expansions.every(accepted)) docTests.add(raw);
+      continue;
+    }
+    for (const token of expansions) if (accepted(token)) docTests.add(token);
   }
   return docTests;
+}
+
+/**
+ * The regular expression a documented test entry (a path, a basename or a
+ * glob, brace alternation included) stands for. One definition for DDF002 and
+ * `docguard diff`.
+ * @implements docguard.doc-validator-fidelity#FR-002
+ * @param {string} target
+ * @returns {RegExp}
+ */
+export function documentedTestRegex(target) {
+  // `*` is any run of characters (as DDF002 always read it) and `?` one character.
+  // `**/` is any number of directories, none included (`src/**/*.test.js`
+  // documents `src/a.test.js`), as `compileGlob` reads it.
+  const one = (part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*\//g, '\u0000').replace(/\*+/g, '.*').replace(/\?/g, '.').replace(/\u0000/g, '(?:.*/)?');
+  return new RegExp('^(?:' + expandBraces(target).map(one).join('|') + ')$');
+}
+
+/**
+ * Expand single-level brace alternation (`a.{test,spec}.ts`, `{src,lib}/x`) the
+ * way a shell does. A token with unbalanced braces, a group without a comma, a
+ * nested group, or more than `cap` expansions stays literal.
+ * @implements docguard.doc-validator-fidelity#FR-002
+ * @param {string} token
+ * @param {number} [cap]
+ * @returns {string[]}
+ */
+export function expandBraces(token, cap = 64) {
+  const parts = [];
+  let literal = '';
+  for (let i = 0; i < token.length; i++) {
+    const c = token[i];
+    if (c === '}') return [token];
+    if (c !== '{') { literal += c; continue; }
+    const close = token.indexOf('}', i + 1);
+    if (close < 0) return [token];
+    const body = token.slice(i + 1, close);
+    if (body.includes('{') || !body.includes(',')) return [token];
+    parts.push(literal, body.split(','));
+    literal = '';
+    i = close;
+  }
+  if (parts.length === 0) return [token];
+  parts.push(literal);
+  let results = [''];
+  for (const part of parts) {
+    const options = typeof part === 'string' ? [part] : part;
+    if (results.length * options.length > cap) return [token];
+    results = results.flatMap(prefix => options.map(option => prefix + option));
+  }
+  return [...new Set(results)];
 }
 
 /**
@@ -297,9 +496,7 @@ function diffTests(dir, config) {
     const hasSlash = entry.includes('/');
     const target = hasSlash ? entry : basename(entry);
     // Glob -> regex: escape regex specials, then any run of '*' becomes '.*'.
-    const rx = new RegExp('^' + target
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*+/g, '.*') + '$');
+    const rx = documentedTestRegex(target);
 
     return {
       original: docEntry,

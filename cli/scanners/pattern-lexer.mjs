@@ -1960,7 +1960,7 @@ function paramSig(E, open, style) {
 // ── Languages: Rust ──────────────────────────────────────────────────────────
 
 const RUST_MODS = new Set(['pub', 'async', 'const', 'unsafe', 'default', 'extern', 'safe']);
-const RUST_KINDS = { struct: 'struct', enum: 'enum', union: 'struct', trait: 'trait', mod: 'module', type: 'type' };
+const RUST_KINDS = { __proto__: null, struct: 'struct', enum: 'enum', union: 'struct', trait: 'trait', mod: 'module', type: 'type' };
 
 /** The base name of a type in `[a, b)`: `&mut dyn a::B<T>` → B. */
 function typeBaseName(T, a, b) {

@@ -31,6 +31,7 @@ import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 // dispatched to their writers. CI scaffolding is distinct from the standalone
 // `ci` validation gate; it copies the maintained workflow starter.
 const SCAFFOLDER_DISPATCH = {
+  __proto__: null,
   agents:  async (dir, cfg, flags) => (await import('./agents.mjs')).runAgents(dir, cfg, flags),
   hooks:   async (dir, cfg, flags) => (await import('./hooks.mjs')).runHooks(dir, cfg, flags),
   ci:      (dir, cfg, flags) => scaffoldCI(dir, flags),

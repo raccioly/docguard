@@ -401,6 +401,7 @@ function resolveAppRoutes(dir, index, byFile, limitations) {
 // ── Django ─────────────────────────────────────────────────────────────────
 
 const VIEWSET_ACTIONS = {
+  __proto__: null,
   ModelViewSet: ['list', 'create', 'retrieve', 'update', 'partial_update', 'destroy'],
   ReadOnlyModelViewSet: ['list', 'retrieve'],
   ListModelMixin: ['list'],
@@ -410,11 +411,13 @@ const VIEWSET_ACTIONS = {
   DestroyModelMixin: ['destroy'],
 };
 const ACTION_ROUTE = {
+  __proto__: null,
   list: ['GET', 'list'], create: ['POST', 'list'], retrieve: ['GET', 'detail'],
   update: ['PUT', 'detail'], partial_update: ['PATCH', 'detail'], destroy: ['DELETE', 'detail'],
 };
 const VIEWSET_BASES = new Set(['ViewSet', 'GenericViewSet', 'ViewSetMixin', 'ModelViewSet', 'ReadOnlyModelViewSet']);
 const GENERIC_VIEW_METHODS = {
+  __proto__: null,
   ListAPIView: ['GET'], CreateAPIView: ['POST'], ListCreateAPIView: ['GET', 'POST'],
   RetrieveAPIView: ['GET'], UpdateAPIView: ['PUT', 'PATCH'], DestroyAPIView: ['DELETE'],
   RetrieveUpdateAPIView: ['GET', 'PUT', 'PATCH'], RetrieveDestroyAPIView: ['GET', 'DELETE'],

@@ -331,6 +331,7 @@ function resolveTarget(args, serving) {
 }
 
 const TOOL_HANDLERS = {
+  __proto__: null,
   docguard_guard(args, serving) {
     const { dir, config } = resolveTarget(args, serving);
     const detail = args?.detail ?? 'compact';

@@ -112,7 +112,7 @@ export const SECTION_SYNONYMS = {
   'secrets management':    ['secrets', 'secret management', 'secrets handling', 'credentials', 'credential management'],
   'test categories':       ['test types', 'categories of tests', 'test strategy', 'testing strategy', 'test approach'],
   'coverage rules':        ['coverage', 'coverage targets', 'coverage goals', 'coverage requirements', 'coverage policy'],
-  'environment variables': ['env vars', 'environment', 'configuration', 'config variables'],
+  'environment variables': ['env vars', 'environment variable', 'environment', 'configuration', 'config variables', 'environment configuration', 'runtime configuration'],
   'setup steps':           ['setup', 'getting started', 'installation', 'setup instructions', 'local setup', 'quick start'],
   'layer boundaries':      ['layers', 'layering', 'module boundaries', 'layer boundary', 'boundaries'],
   'external dependencies': ['dependencies', 'external systems', 'third party dependencies', 'integrations', 'external interfaces'],
@@ -130,6 +130,32 @@ function normalizeHeadingText(line) {
 }
 
 /**
+ * Synonyms too generic to name a section inside a longer heading: they count
+ * only as the whole heading, or followed by a word that names the variables
+ * ("reference", "variables", "env", …). "## Configuration" and
+ * "## Configuration Reference" name the Environment Variables section;
+ * "## Configuration Files", "## Production environment" and "## Test
+ * environment" do not. Every other phrase matches as before, inside a longer
+ * heading too ("## Data Models", "## 2. Architecture Layers").
+ * @implements docguard.doc-validator-fidelity#FR-001
+ */
+const WHOLE_HEADING_SYNONYMS = new Set(['environment', 'configuration']);
+// What may follow them and still name the variables: "Configuration Variables",
+// "Configuration (.env)", "Configuration Reference".
+const GENERIC_SUFFIXES = ['reference', 'variables', 'vars', 'env', 'settings', 'options', 'keys'];
+
+/** Whether a normalized heading names `phrase`. */
+function headingNames(norm, phrase) {
+  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase || GENERIC_SUFFIXES.some(suffix => norm === `${phrase} ${suffix}`);
+  return norm.includes(phrase);
+}
+
+/** The synonyms of a canonical heading key (own keys only). */
+function synonymsOf(key) {
+  return Object.hasOwn(SECTION_SYNONYMS, key) ? SECTION_SYNONYMS[key] : [];
+}
+
+/**
  * True if `content` has an H2–H6 heading equivalent to `canonicalHeading` —
  * the exact text, a known synonym, or the same text behind an arc42-style
  * section number (e.g. "## 5.4 Layer boundaries" satisfies "## Layer Boundaries").
@@ -140,13 +166,12 @@ function normalizeHeadingText(line) {
 export function docHasSection(content, canonicalHeading) {
   const key = normalizeHeadingText(canonicalHeading);
   if (!key) return false;
-  const accepted = [key, ...(SECTION_SYNONYMS[key] || [])];
+  const synonyms = synonymsOf(key);
   const headings = content.match(/^#{2,6}\s+.+$/gm) || [];
   for (const line of headings) {
     const norm = normalizeHeadingText(line);
-    for (const phrase of accepted) {
-      if (norm.includes(phrase)) return true;
-    }
+    if (headingNames(norm, key)) return true;
+    for (const phrase of synonyms) if (headingNames(norm, phrase)) return true;
   }
   return false;
 }
@@ -173,7 +198,7 @@ export function findSectionHeading(content, canonicalHeading) {
   const tiers = [
     h => h.norm === key,
     h => h.norm.includes(key),
-    h => (SECTION_SYNONYMS[key] || []).some(phrase => h.norm.includes(phrase)),
+    h => synonymsOf(key).some(phrase => headingNames(h.norm, phrase)),
   ];
   for (const test of tiers) {
     const hit = headings.find(test);
@@ -246,6 +271,7 @@ export const c = colorEnabled()
 
 // ── Compliance Profiles ───────────────────────────────────────────────────
 export const PROFILES = {
+  __proto__: null,
   starter: {
     description: 'Minimal CDD — architecture + changelog, no Spec Kit framework scaffold (pass --spec-kit to add it). For side projects and prototypes.',
     requiredFiles: {

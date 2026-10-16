@@ -193,7 +193,7 @@ export function loadConfig(projectDir) {
  * @implements docguard.python-extraction#FR-010
  * @implements docguard.output-ux#FR-015
  */
-const KIND_TO_PROJECT_TYPE = { cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
+const KIND_TO_PROJECT_TYPE = { __proto__: null, cli: 'cli', library: 'library', webapp: 'webapp', api: 'api', service: 'api' };
 
 export function autoDetectProjectType(dir) {
   if (hasWorkerConfig(dir)) return 'api';
