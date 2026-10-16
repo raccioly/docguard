@@ -155,7 +155,10 @@ const LIST_BEFORE = new RegExp(`^\\s*(?:${LIST_ITEM}(?:${LIST_COORD}|${LIST_COMM
 // Docker or Redis caches sessions" and "No ORM, PostgreSQL or SQLite
 // directly" the technologies are in use.
 const LIST_ARTIFACT = '(?:blocks?|modules?|stacks?|files?|configs?|configurations?|templates?|scripts?|resources?|providers?|definitions?|manifests?|containers?|images?|clusters?|instances?|servers?|deployments?|layers?|integrations?|dependenc(?:y|ies)|artifacts?|infrastructure)';
-const LIST_END = `(?:\\s+${LIST_ARTIFACT}){0,2}\\s*(?:$|[,:;)]|(?:in|from|at|on|for|since|during|within|across|anywhere|here|yet|today|currently|whatsoever)\\b)`;
+// An existence predicate may close the negated list ("No CDK, Terraform or
+// Pulumi artifacts are expected"): it states the absence, it is not a use.
+const LIST_EXISTENCE = '(?:\\s+(?:are|is|were|was|will\\s+be|have\\s+been|has\\s+been)(?:\\s+(?:currently|yet|ever))?\\s+(?:expected|used|needed|required|present|allowed|planned|involved|included|configured|deployed|supported|committed|checked\\s+in))?';
+const LIST_END = `(?:\\s+${LIST_ARTIFACT}){0,2}${LIST_EXISTENCE}\\s*(?:$|[,:;)]|(?:in|from|at|on|for|since|during|within|across|anywhere|here|yet|today|currently|whatsoever)\\b)`;
 const LIST_ENDS = new RegExp(`^${LIST_END}`, 'i');
 // The list's last item is one word, or two when the second is a name ("AWS
 // CDK"), so a predicate is not read as part of it ("… or PostgreSQL store

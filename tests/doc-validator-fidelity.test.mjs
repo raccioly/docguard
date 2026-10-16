@@ -651,7 +651,10 @@ describe('doc validator fidelity — second review findings', () => {
   }
 
   it('a real negated list still negates every item, with a trailing artifact noun or place', () => {
-    for (const sentence of ['There are no CDK, Terraform or Pulumi stacks in this repo.', 'There are no Pulumi, CDK or Terraform modules.', 'We use neither Pulumi nor Terraform.']) {
+    for (const sentence of ['There are no CDK, Terraform or Pulumi stacks in this repo.', 'There are no Pulumi, CDK or Terraform modules.', 'We use neither Pulumi nor Terraform.',
+      // A real project's sentence (A/B, 2026-10-16): an existence predicate closes the list.
+      'This project does not use Infrastructure-as-Code. No CDK, Terraform, Pulumi, SAM, or Serverless Framework artifacts are expected.',
+      'No Terraform, Pulumi or CDK stacks are used.']) {
       assert.ok(!arch(sentence).onlyInDocs.includes('Terraform'), sentence);
     }
   });
