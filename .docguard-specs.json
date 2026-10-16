@@ -2897,10 +2897,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "09532733cd7b22c828689699e3fd62ff5580cc20",
+          "lastReviewedRevision": "9be5a44da477cf41a04c0494f0bd12b787253b10",
           "outcomes": [
             {
-              "revision": "09532733cd7b22c828689699e3fd62ff5580cc20",
+              "revision": "9be5a44da477cf41a04c0494f0bd12b787253b10",
               "reason": "Reviewed at 9cfd6c0 (#589): ENV/STR003 one heading matcher; brace lists+globs in DDF002/diff; DDF001 list negation, removal verbs, change records; STR006 and scaffold-aware scores; own-property and null-prototype lookups. 3 review rounds, 18 findings fixed. A/B 44 projects: -4 false findings, +8 STR006, all hand-reviewed, no false positive. Budget PASS, TestGuard 40/40. Deviation: owner/status are STR006 evidence only.",
               "evidence": [
                 "cli/commands/agents.mjs",
@@ -2918,7 +2918,11 @@
                 "tests/doc-validator-fidelity.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "09532733cd7b22c828689699e3fd62ff5580cc20",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -2947,7 +2951,7 @@
         "artifacts": [
           {
             "path": "specs/079-doc-validator-fidelity/spec.md",
-            "digest": "sha256:e80803bffdefb3ed283ec549ae6e5e1c90c71d0b7b38a77760f2ab2af6aa0096"
+            "digest": "sha256:9c140dcdbb370cb41ab4de4d271a918b544b4180af112542c15519be316aa043"
           },
           {
             "path": "specs/079-doc-validator-fidelity/plan.md",
