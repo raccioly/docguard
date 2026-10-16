@@ -31,7 +31,7 @@ touches different files from the other open tasks in its phase.
 ## Phase 1: Setup
 
 - [x] T001 Create `tests/fixtures/anchors/` with a README describing every fixture project and its expected output files (quickstart.md)
-- [x] T002 [P] Add the `anchors` defaults to `cli/config.mjs` (story 1 adds `anchors.enabled`, the validator key and the schema entry; each later key arrives with the story that reads it, so the documented configuration never names an unimplemented option): `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguard={evidence:".testguard/evidence.json", claims:"testguard.claims.json"}`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009)
+- [x] T002 [P] Add the `anchors` defaults to `cli/config.mjs` (story 1 adds `anchors.enabled`, the validator key and the schema entry; each later key arrives with the story that reads it, so the documented configuration never names an unimplemented option): `anchors.enabled=false`, `failOn` from `ANCHOR_FAIL_DEFAULT`, `orphanPaths=[]`, `import=[]`, `importMap={}`, `treeSitter=null`, `fanOutLimit=10`, `testguard={evidence:".testguard/evidence.json", claims:"testguard.claims.json"}`. Document each one in `docs/configuration.md` (FR-026, FR-028, FR-031, FR-034, FR-038, FR-009) <!-- docguard:ignore SPK010 — `.testguard/evidence.json` is the default value of `anchors.testguard.evidence`, not a file this task changes -->
 - [x] T003 [P] Reserve ANC001–ANC010 in `cli/findings.mjs`, with titles, help text, validator `requirementAnchors`, and the severity and disposition table from spec FR-020
 
 ## Phase 2: Foundational (blocks all stories; ships in PR 1)
