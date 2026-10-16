@@ -21,6 +21,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { fixtureGit } from './helpers/git.mjs';
 
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateDocSections } from '../cli/validators/structure.mjs';
@@ -501,7 +502,7 @@ describe('doc validator fidelity — review findings', () => {
   describe('scaffolds as init writes them (FR-006..FR-009, SC-003)', () => {
     const init = () => {
       write(dir, 'package.json', JSON.stringify({ name: 'x', version: '1.0.0' }));
-      spawnSync('git', ['init', '-q'], { cwd: dir });
+      fixtureGit(dir, ['init', '-q']);
       const r = cli(['init', '--skip-prompts']);
       assert.equal(r.status, 0, r.stderr);
     };
