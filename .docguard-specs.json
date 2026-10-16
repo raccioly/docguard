@@ -2875,12 +2875,12 @@
       "path": "specs/079-doc-validator-fidelity/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2890,11 +2890,37 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "09532733cd7b22c828689699e3fd62ff5580cc20",
+          "outcomes": [
+            {
+              "revision": "09532733cd7b22c828689699e3fd62ff5580cc20",
+              "reason": "Reviewed at 9cfd6c0 (#589): ENV/STR003 one heading matcher; brace lists+globs in DDF002/diff; DDF001 list negation, removal verbs, change records; STR006 and scaffold-aware scores; own-property and null-prototype lookups. 3 review rounds, 18 findings fixed. A/B 44 projects: -4 false findings, +8 STR006, all hand-reviewed, no false positive. Budget PASS, TestGuard 40/40. Deviation: owner/status are STR006 evidence only.",
+              "evidence": [
+                "cli/commands/agents.mjs",
+                "cli/commands/score.mjs",
+                "cli/scanners/agent-readability.mjs",
+                "cli/shared-scaffold.mjs",
+                "cli/shared.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/docs-diff.mjs",
+                "cli/validators/environment.mjs",
+                "cli/validators/structure.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/doc-validator-fidelity.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2921,7 +2947,7 @@
         "artifacts": [
           {
             "path": "specs/079-doc-validator-fidelity/spec.md",
-            "digest": "sha256:26fa02bfadfaee424a7b1ff4beabe4be8ad64311be02ae264eda589e1f901492"
+            "digest": "sha256:e80803bffdefb3ed283ec549ae6e5e1c90c71d0b7b38a77760f2ab2af6aa0096"
           },
           {
             "path": "specs/079-doc-validator-fidelity/plan.md",
@@ -2996,6 +3022,11 @@
             "requirementId": "FR-009",
             "file": "cli/scanners/agent-readability.mjs",
             "line": 168
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/agents.mjs",
+            "line": 21
           },
           {
             "requirementId": "FR-012",
@@ -12312,7 +12343,7 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:5371da8bb3ce8ce6570e8d16a138829683f10aae10c1b2ffefb59401510549d1"
+            "digest": "sha256:6951875299e9b8e706dbad68ba9929cbc25d878e0443deeff65695a3ae5e5097"
           }
         ],
         "taskCompletion": {

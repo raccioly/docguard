@@ -16,6 +16,9 @@ import { resolve, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { c } from '../shared.mjs';
 
+// Indexed by `--agent`, so it has no prototype: `--agent constructor` is an
+// unknown agent, not Object.prototype.constructor.
+// @implements docguard.doc-validator-fidelity#FR-012
 const AGENT_TARGETS = {
   __proto__: null,
   cursor: {
