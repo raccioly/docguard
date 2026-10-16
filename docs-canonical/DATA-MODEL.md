@@ -49,7 +49,7 @@ The primary data structure. Controls all CLI behavior.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `validators.*` | `boolean` | No | `true` | Enable/disable individual validators |
-| `validators.docSections` / `severity.docSections` | `boolean` / `string` | No | follows `structure` | Doc Sections (STR003). Unset, the `structure` switch, severity and N/A marker apply to it |
+| `validators.docSections` / `severity.docSections` | `boolean` / `string` | No | follows `structure` | Doc Sections (STR003, and STR006 for an unedited scaffold). Unset, the `structure` switch, severity and N/A marker apply to it |
 | `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
 | `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
