@@ -1948,9 +1948,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **ENV001 and ENV002 match headings as STR003 does** (FR-001). `## Setup steps`
     and `## Environment variables` were "missing" although sentence case passed
     STR003. Both validators now use `docHasSection`: any case, section
-    numbers, synonyms (`Getting Started`, `Env Vars`). A one-word synonym
-    (`Configuration`, `Setup`) now names a section only as the whole heading,
-    for STR003 too: `## Configuration Files` and `## Production environment`
+    numbers, synonyms (`Getting Started`, `Env Vars`). The generic synonyms
+    `Environment` and `Configuration` now name a section only as the whole
+    heading, for STR003 too: `## Configuration Files` and `## Production environment`
     no longer satisfy Environment Variables.
   - **A brace pattern documents the files it expands to** (FR-002).
     `` `src/tests/{alpha,beta}.test.ts` `` and `` `foo.{test,spec}.ts` `` expand

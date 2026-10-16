@@ -9187,7 +9187,7 @@
     },
     {
       "id": "DOC-VALIDATOR-FIDELITY",
-      "statement": "The document validators agree with each other and do not score a blank template: ENV001 and ENV002 match headings as STR003 does; a brace list in a documented test expands to its paths (at most 64) and a brace glob matches as one union pattern; DDF001 does not count a technology a negator governs over a list, a removal or migration verb precedes or follows, or a change-record section names; a canonical document whose authored lines are all lines of its shipped template is reported as STR006 and counts as unfinished in docQuality and Machine markers, unless it carries a generated section or one line outside the template; the syllable counter never returns a non-number. A negated list must be a list on both sides of the technology and is matched in linear time; a removal verb negates only the technology it takes as object; change-record sections ignore headings in fences and comments; a reasoned section N/A marker owns a document and a docs.roles path is compared with its role's template; one-word heading synonyms match only a whole heading; dictionaries indexed by outside input are null-prototype.",
+      "statement": "The document validators agree with each other and do not score a blank template: ENV001 and ENV002 match headings as STR003 does; a brace list in a documented test expands to its paths (at most 64) and a brace glob matches as one union pattern; DDF001 does not count a technology a negator governs over a list, a removal or migration verb precedes or follows, or a change-record section names; a canonical document whose authored lines are all lines of its shipped template is reported as STR006 and counts as unfinished in docQuality and Machine markers, unless it carries a generated section or one line outside the template; the syllable counter never returns a non-number. A negated list must be a list on both sides of the technology and is matched in linear time; a removal verb negates only the technology it takes as object; change-record sections ignore headings in fences and comments; a reasoned section N/A marker owns a document and a docs.roles path is compared with its role's template; the generic synonyms 'environment' and 'configuration' match only a whole heading; dictionaries indexed by outside input are null-prototype.",
       "source": {
         "kind": "spec",
         "ref": "req:docguard.doc-validator-fidelity#FR-001"
@@ -9395,10 +9395,10 @@
         },
         {
           "id": "F17",
-          "description": "A one-word synonym matches inside a longer heading again ('Configuration Files').",
+          "description": "'Environment' and 'Configuration' match inside a longer heading again ('Configuration Files').",
           "faultClass": "statement-deleted",
           "file": "cli/shared.mjs",
-          "find": "  if (synonym && !phrase.includes(' ')) return norm === phrase;\n",
+          "find": "  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase;\n",
           "replace": "",
           "producedBy": {
             "producer": "agent",

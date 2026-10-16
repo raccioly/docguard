@@ -2921,7 +2921,7 @@
         "artifacts": [
           {
             "path": "specs/079-doc-validator-fidelity/spec.md",
-            "digest": "sha256:b5078d56daa7f9a8064eaf7a9fd6a6ccce01540fec7044f4c126fccfc88b156b"
+            "digest": "sha256:8eb5f308a2be375870d3064bf583bd40c49e37e9dd5a96aa5f2f023f71d16b1f"
           },
           {
             "path": "specs/079-doc-validator-fidelity/plan.md",
@@ -2940,7 +2940,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared.mjs",
-            "line": 137
+            "line": 138
           },
           {
             "requirementId": "FR-001",
@@ -5666,7 +5666,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared.mjs",
-            "line": 170
+            "line": 174
           },
           {
             "requirementId": "FR-003",
@@ -9304,12 +9304,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 225
+            "line": 229
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 230
+            "line": 234
           },
           {
             "requirementId": "FR-003",

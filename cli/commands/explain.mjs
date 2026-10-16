@@ -102,7 +102,7 @@ const EXPLAINERS = {
     why:  'Undocumented env vars are runtime surprises waiting to happen.',
     triggers: [
       ['used but not documented', 'Code reads an env var that ENVIRONMENT.md doesn\'t list. Add it to the table.'],
-      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Getting Started") accepted; a one-word synonym ("Configuration", "Setup") only as the whole heading.'],
+      ['missing "## Environment Variables" section', 'ENV001/ENV002 match headings as STR003 does: any case, section numbers allowed, synonyms ("Env Vars", "Getting Started") accepted; "Environment" and "Configuration" only as the whole heading.'],
       ['VITE_API_URL or similar prefix', 'Naked prefixes like `VITE_` (no suffix) get filtered out — they\'re convention markers, not real var names.'],
     ],
     example: '`DATABASE_URL` listed in ENVIRONMENT.md\'s Environment Variables table AND read via `process.env.DATABASE_URL` in code',

@@ -367,11 +367,11 @@ A // DRIFT: comment's file has no matching entry in DRIFT-LOG.md. Add an entry n
 
 ### ENV001: Missing setup section in ENVIRONMENT.md
 
-ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted (a one-word synonym such as "Setup" only as the whole heading). Add a Setup Steps section describing how to get the project running from a fresh clone.
+ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted. Add a Setup Steps section describing how to get the project running from a fresh clone.
 
 ### ENV002: Missing Environment Variables section
 
-ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; a one-word synonym such as "Configuration" only as the whole heading, so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.
+ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading, so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.
 
 ### ENV003: Env vars used in code but undocumented
 

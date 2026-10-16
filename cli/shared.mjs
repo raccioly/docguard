@@ -130,14 +130,18 @@ function normalizeHeadingText(line) {
 }
 
 /**
- * Whether a normalized heading names `phrase`: as whole words anywhere in it,
- * except that a one-word synonym must be the whole heading. "Environment" and
- * "Configuration" name the Environment Variables section on their own, not
- * inside "Production environment" or "Configuration Files".
+ * Synonyms too generic to name a section inside a longer heading: they count
+ * only as the whole heading. "## Configuration" names the Environment
+ * Variables section; "## Configuration Files", "## Production environment"
+ * and "## Test environment" do not. Other synonyms ("Architecture Layers" for
+ * Layer Boundaries) still match as whole words inside a heading.
  * @implements docguard.doc-validator-fidelity#FR-001
  */
-function headingNames(norm, phrase, synonym = false) {
-  if (synonym && !phrase.includes(' ')) return norm === phrase;
+const WHOLE_HEADING_SYNONYMS = new Set(['environment', 'configuration']);
+
+/** Whether a normalized heading names `phrase` (whole words). */
+function headingNames(norm, phrase) {
+  if (WHOLE_HEADING_SYNONYMS.has(phrase)) return norm === phrase;
   return ` ${norm} `.includes(` ${phrase} `);
 }
 
@@ -157,7 +161,7 @@ export function docHasSection(content, canonicalHeading) {
   for (const line of headings) {
     const norm = normalizeHeadingText(line);
     if (headingNames(norm, key)) return true;
-    for (const phrase of synonyms) if (headingNames(norm, phrase, true)) return true;
+    for (const phrase of synonyms) if (headingNames(norm, phrase)) return true;
   }
   return false;
 }

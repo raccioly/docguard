@@ -326,13 +326,13 @@ export const CODES = {
   ENV001: {
     validator: 'environment',
     title: 'Missing setup section in ENVIRONMENT.md',
-    help: 'ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted (a one-word synonym such as "Setup" only as the whole heading). Add a Setup Steps section describing how to get the project running from a fresh clone.',
+    help: 'ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted. Add a Setup Steps section describing how to get the project running from a fresh clone.',
     suppress: null,
   },
   ENV002: {
     validator: 'environment',
     title: 'Missing Environment Variables section',
-    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; a one-word synonym such as "Configuration" only as the whole heading, so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
+    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading, so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
     suppress: null,
   },
   ENV003: {

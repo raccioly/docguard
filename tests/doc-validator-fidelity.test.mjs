@@ -28,6 +28,7 @@ import { validateDocSections } from '../cli/validators/structure.mjs';
 import { validateDocsDiff, diffTechStack, extractDocumentedTests } from '../cli/validators/docs-diff.mjs';
 import { validateDocQuality, countSyllables } from '../cli/validators/doc-quality.mjs';
 import { loadConfig } from '../cli/config.mjs';
+import { docHasSection } from '../cli/shared.mjs';
 import { runScoreInternal, computeAlcoaCompliance } from '../cli/commands/score.mjs';
 import { isUneditedScaffold, scaffoldLines } from '../cli/shared-scaffold.mjs';
 import { assessAgentReadability } from '../cli/scanners/agent-readability.mjs';
@@ -484,6 +485,12 @@ describe('doc validator fidelity — review findings', () => {
         assert.ok(codes(validateEnvironment(dir, {})).includes('ENV002'));
       });
     }
+    it('other one-word synonyms still match inside a heading ("Architecture Layers")', () => {
+      assert.equal(docHasSection('## 2. Architecture Layers\n', '## Layer Boundaries'), true);
+      assert.equal(docHasSection('## Local Setup\n', '## Setup Steps'), true);
+      assert.equal(docHasSection('## Configuration\n', '## Environment Variables'), true);
+    });
+
     it('ENV001/ENV002 and STR003 give the same answer for every heading', () => {
       for (const heading of headings) {
         write(dir, 'docs-canonical/ENVIRONMENT.md', `# Environment\n\n${heading}\n\ntext\n`);
