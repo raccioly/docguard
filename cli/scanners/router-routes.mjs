@@ -587,6 +587,7 @@ function readAst(ast, ctx) {
       }
       const p = literal(args[0]);
       const hasPath = pathLike(p);
+      if (!hasPath && unreadablePath(args[0])) limit('router-unresolved-path', file, lineOf(node), nodeText(content, args[0]));
       if (middlewareAuth(hasPath ? args.slice(1) : args)) uses.push({ node: recv.id, pattern: hasPath ? p : '*', start, file: abs });
       return;
     }
