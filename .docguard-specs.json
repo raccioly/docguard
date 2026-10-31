@@ -2233,7 +2233,7 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:b958269cf6e82fb685c7ff42160fb7fb69a0013e1e0e4c623757b9424ab8897a"
+            "digest": "sha256:2943bbd79b44b2c3dab7052731c35f5fbb61454d1c07810ec7f38c933b018b0e"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",
@@ -2241,12 +2241,12 @@
           },
           {
             "path": "specs/080-consumer-report-precision/tasks.md",
-            "digest": "sha256:5c4ad5153b9ba978bcdb4e0ec316f611359565c68a225683696a623e5bb3c539"
+            "digest": "sha256:f0b6691db3baeeb600e36379e3c70111ca2a8422a3b7e4d919b5e32d7d9fed96"
           }
         ],
         "taskCompletion": {
-          "checked": 16,
-          "total": 20
+          "checked": 21,
+          "total": 21
         },
         "implementationEvidence": [
           {
@@ -2302,9 +2302,24 @@
             "line": 12
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-008",
             "file": "tests/consumer-report-precision.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 19
           },
           {
             "requirementId": "SC-004",
@@ -15647,7 +15662,7 @@
           {
             "requirementId": "FR-006",
             "file": "tests/unreadable-git-metadata.test.mjs",
-            "line": 106
+            "line": 109
           },
           {
             "requirementId": "SC-001",

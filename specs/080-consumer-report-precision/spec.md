@@ -126,4 +126,17 @@ Each defect is DocGuard stating something it cannot prove.
 
 ## Implementation Outcomes
 
-Filled in after the proof runs.
+Verified 2026-10-31 on the branch head.
+
+- **SC-001**: `tests/consumer-report-precision.test.mjs` failed 17 of 27 cases on 0.45.1. Every control passed there, and every case passes here. In `tests/router-routes-unresolved.test.mjs`, the unreadable-path case and the non-auth case fail on the Jules version of #595.
+- **Suite**: `npm test` reports 4,115 tests, 4,114 pass, 0 fail, 1 skipped. `guard` passes on this repository; its only warning is the README count this batch raised, which is now updated to 3,316. `npm run budget` passes all 21 metrics against main.
+- **SC-002 and SC-003**: the A/B ran 0.45.1 against the branch, with one fresh `git clone --local` per project per CLI, serially. It covered the 44 git repositories under `~/Repo_claude` and the reporting project at `619ac675`.
+  - 45 runs, 0 errors, 0 findings added. Findings went from 9,440 to 9,419, and every removal is a DSP001.
+  - Reporting project at `619ac675`: the #598 finding (`walk-env-safety.test.js`; `only, child, exit`) is gone, and nothing else changed.
+  - Project A: an end-to-end test file, with overlap `has, own, team, application, into` from the buglog and unit-tier sections.
+  - Project B: a service test, with overlap `uses, match` from the framework section and an unrelated test entry.
+  - Project C: two Component Map inventory rows, with overlap from other sections.
+  - Project D: one component in two documents. The removed tokens were `console.error` strings, and the matches sat in neighboring rows and other sections.
+  - Each removed finding was reviewed by hand, and each is the false-positive shape of #598.
+- **What the A/B changed in the design.** The first pass dropped every table row in a section that did not name the file. That removed a DATA-MODEL finding in a fifth project whose words came from the field table under the file's own section. Only rows that name another file are dropped now, and that project is unchanged. The first pass also left the reporting project's finding in place: its TEST-SPEC is one long section, so section scope could not isolate the row. A table-row reference now reads only its row.
+- **Not reproducible on the reporting project's history**: the #594 and #596 sentences were never committed to its TEST-SPEC; they appear only in an archived spec, which MET003 skips. The project also freezes findings in `.docguard.baseline.json`. The issue reproductions are the proof for FR-001 to FR-004.

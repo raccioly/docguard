@@ -72,7 +72,10 @@ describe('git metadata states', () => {
     const wt = sandboxedWorktree();
     const state = gitMetadataStatus(wt);
     assert.equal(state.status, 'unreadable');
-    assert.match(state.reason, /not a git repository/);
+    // git's own first line, whose wording varies by git version: "not a git
+    // repository" locally, "gitfile does not point to a valid repository" on
+    // the CI runners since 2026-10.
+    assert.match(state.reason, /not a git repository|does not point to a valid repository/);
   });
 });
 

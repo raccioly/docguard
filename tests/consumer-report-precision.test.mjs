@@ -10,8 +10,13 @@
  * @req docguard.consumer-report-precision#FR-004
  * @req docguard.consumer-report-precision#FR-005
  * @req docguard.consumer-report-precision#FR-007
+ * @req docguard.consumer-report-precision#FR-008
  * @req docguard.consumer-report-precision#SC-001
  */
+// The A/B proofs (SC-002, SC-003) are recorded in the spec's Implementation
+// Outcomes; these cases are the reproductions that A/B was checked against.
+// @req docguard.consumer-report-precision#SC-002
+// @req docguard.consumer-report-precision#SC-003
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -350,5 +355,23 @@ describe('FR-005: DSP001 counts overlap only in the reference context (#598)', (
       'It isolates only the child git context before exit.', '',
     ].join('\n'));
     assert.equal(dsp(dir).length, 1);
+  });
+});
+
+// ── FR-008: the docs say what changed ────────────────────────────────────────
+
+describe('FR-008: the finding reference and the language table describe the new behavior', () => {
+  const read = rel => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
+
+  it('docs/reference/findings.md, generated from cli/findings.mjs, carries each change', () => {
+    const findings = read('docs/reference/findings.md');
+    assert.match(findings, /"1,183 checks" reads as 1183/);
+    assert.match(findings, /"FR365 tests"\) and a count of something else \("20 test files"/);
+    assert.match(findings, /A path git cannot observe \(ignored and untracked/);
+    assert.match(findings, /in the section that names the file/);
+  });
+
+  it('docs/reference/languages.md says auth behind an unreadable use() path marks nothing', () => {
+    assert.match(read('docs/reference/languages.md'), /auth behind a path the reader cannot read is recorded in `scan\.unresolved` and marks nothing/);
   });
 });

@@ -38,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   auth records nothing.
 - **The anchor-cache tests pass on CI** (#599). They asserted an enabled
   cache, but the cache turns itself off whenever `CI` is set.
+- **The unreadable-git test accepts the CI runners' newer git wording**
+  (`docguard.unreadable-git-metadata`). The runners' git now reports
+  `gitfile does not point to a valid repository` where it used to say `not a
+  git repository`. DocGuard already reported git's own first line; only the
+  test pinned the old text. Test-only.
 
 ## [0.45.1] - 2026-10-16
 
