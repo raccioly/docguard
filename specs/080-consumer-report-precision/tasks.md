@@ -27,7 +27,7 @@ Tests come first. Every reproduction must fail on 0.45.1 before its fix lands (S
 
 - [x] T014 `cli/findings.mjs` help for MET001, MET003, SPK010 and DSP001; `npm run docs:reference` regenerates `docs/reference/findings.md`.
 - [x] T015 `docs/reference/languages.md` Koa row; `CHANGELOG.md` `[Unreleased]` Fixed entries.
-- [ ] T016 `docguard specs --write`; `docguard anchors accept --file … --bulk` for each touched anchored file, after rebuilding the lock from main.
+- [x] T016 `docguard specs --write`; `docguard anchors accept --file … --bulk` for each touched anchored file, after rebuilding the lock from main.
 
 ## Phase 4 — Proof (SC-002, SC-003)
 
