@@ -65,8 +65,9 @@ Each defect is DocGuard stating something it cannot prove.
 
 1. **Given** the file named only in an inventory table, and `only`, `child` and `exit` in another section, **Then** there is no DSP001.
 2. **Given** the file's inventory row, and those words in another row of the same table, **Then** there is no DSP001.
-3. **Given** the file named in a sentence that still describes the removed behavior, **Then** DSP001 is reported.
-4. **Given** a heading that names the file and the stale claim in its subsection, **Then** DSP001 is reported.
+3. **Given** a field table in the file's own section whose rows hold those words, **Then** DSP001 is reported.
+4. **Given** the file named in a sentence that still describes the removed behavior, **Then** DSP001 is reported.
+5. **Given** a heading that names the file and the stale claim in its subsection, **Then** DSP001 is reported.
 
 ### User Story 4 - Auth behind an unreadable path is recorded, not assumed (Priority: P1)
 
@@ -95,7 +96,7 @@ Each defect is DocGuard stating something it cannot prove.
 - **FR-002**: An identifier or version fragment (`FR365`, `FR-365`, `#365`, `v3.65`) MUST NOT be read as a test, check or validator count. A plain or separated count (`365 tests`, `1,733 tests`) MUST be read as before.
 - **FR-003**: `N test files`, `test suites`, `test modules`, `test runs`, `test directories`, `test folders`, `test scripts`, `test fixtures`, `test helpers`, `test jobs` and `test packages` MUST NOT be compared with declared test cases. `N test cases` and `N tests` MUST still be.
 - **FR-004**: SPK010 MUST NOT report a named path that git cannot observe: one that is ignored and untracked, or whose ignore status git cannot determine. A tracked path MUST still be reported when the feature never changed it, even if an ignore rule matches it. When git cannot answer the question, SPK010 MUST stay silent for that feature.
-- **FR-005**: DSP001 MUST count the overlap only in the reference context: the smallest heading-bounded section that holds each line referencing the file. A heading that references the file owns its subsections. The context excludes table rows that do not reference the file. Headings inside code fences do not bound sections. Both signals are still required, and the message, confidence and cap are unchanged.
+- **FR-005**: DSP001 MUST count the overlap only in the reference context: the smallest heading-bounded section that holds each line referencing the file. A heading that references the file owns its subsections. The context excludes table rows that name another file, so an inventory row borrows nothing from its neighbors. A field table that names no file stays in the context. Headings inside code fences do not bound sections. Both signals are still required, and the message, confidence and cap are unchanged.
 - **FR-006**: In the router reader (Koa, Hono, itty-router), `use(path, ...middleware)` whose path the reader cannot read, with auth middleware among the rest, MUST be recorded in `scan.unresolved` as `router-unresolved-path` and MUST NOT mark any route as auth. A `use()` with one argument, or whose middleware is not auth, MUST record nothing. Literal-path and path-less `use()` calls MUST behave as before.
 - **FR-007**: Every finding the reports name as correct MUST still be reported: genuinely stale counts, the untouched tracked deliverable, and a claim beside the reference that names the removed behavior.
 - **FR-008**: The finding help (`cli/findings.mjs`, `docs/reference/findings.md`), `docs/reference/languages.md` and `CHANGELOG.md` MUST describe the new behavior.

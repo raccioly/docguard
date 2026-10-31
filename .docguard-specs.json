@@ -2233,7 +2233,7 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:00b77b385f197df7d7fdfbed1b8deaaf580211cf392c0e38f198e4d8de8a529a"
+            "digest": "sha256:87f26ea677f6dc53bbd429db05185b7c8f1e0dd3bd3410c0686946abe8cadc0d"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",
@@ -2262,7 +2262,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 136
+            "line": 140
           }
         ],
         "testEvidence": [

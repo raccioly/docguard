@@ -275,6 +275,18 @@ describe('FR-005: DSP001 counts overlap only in the reference context (#598)', (
     assert.deepEqual(dsp(dir), []);
   });
 
+  it('a field table in the file\'s own section still counts (positive control)', () => {
+    const dir = repo([
+      '# Test Spec', '',
+      '## Hook environment', '',
+      'Source: `tests/unit/walk-env-safety.test.js`', '',
+      '| Field | Meaning |', '| --- | --- |', '| `scope` | only the child git context |', '| `stop` | before exit |', '',
+      '## Elsewhere', '',
+      'Unrelated.', '',
+    ].join('\n'));
+    assert.equal(dsp(dir).length, 1);
+  });
+
   it('a claim beside the reference about the removed behavior is still flagged (positive control)', () => {
     const dir = repo([
       '# Test Spec', '',

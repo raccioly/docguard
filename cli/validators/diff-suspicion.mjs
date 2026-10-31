@@ -110,6 +110,9 @@ function referenceKind(docLines, file) {
 const HEADING = /^ {0,3}(#{1,6})\s/;
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 const TABLE_ROW = /^\s*\|/;
+const FILE_EXT = '(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart|vue|svelte|md)';
+// A file path, or a backticked file name: what an inventory row is about.
+const NAMES_A_FILE = new RegExp(`\`[^\`\\s]+\\.${FILE_EXT}\`|[\\w.@-]+\\/[\\w./@-]*\\.${FILE_EXT}\\b`);
 
 /** Heading level of each line, 0 for a line that is not a heading or sits in a code fence. */
 function headingLevels(lines) {
@@ -129,10 +132,11 @@ function headingLevels(lines) {
 
 // The words a reference vouches for: the smallest section that holds the
 // referencing line (a heading that names the file owns its subsections),
-// without the table rows of that section that name something else. A
+// without the table rows of that section that are about another file. A
 // generated inventory row names one file; the rest of the document, and the
-// other rows, describe other things, so their words are no evidence that the
-// referenced file's documentation went stale (#598).
+// rows naming other files, describe other things, so their words are no
+// evidence that the referenced file's documentation went stale (#598). A
+// field table under the file's own section names no file and stays in.
 // @implements docguard.consumer-report-precision#FR-005
 function referenceContext(doc, refLines) {
   const { lines, levels } = doc;
@@ -148,7 +152,7 @@ function referenceContext(doc, refLines) {
       for (let j = i + 1; j < lines.length; j++) if (levels[j] > 0) { end = j; break; }
     }
     for (let j = start; j < end; j++) {
-      if (TABLE_ROW.test(lines[j]) && !refs.has(j)) continue;
+      if (TABLE_ROW.test(lines[j]) && !refs.has(j) && NAMES_A_FILE.test(lines[j])) continue;
       keep.add(j);
     }
   }
