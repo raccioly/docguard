@@ -130,19 +130,21 @@ function headingLevels(lines) {
   });
 }
 
-// The words a reference vouches for: the smallest section that holds the
-// referencing line (a heading that names the file owns its subsections),
-// without the table rows of that section that are about another file. A
-// generated inventory row names one file; the rest of the document, and the
-// rows naming other files, describe other things, so their words are no
-// evidence that the referenced file's documentation went stale (#598). A
-// field table under the file's own section names no file and stays in.
+// The words a reference vouches for (#598):
+//   - a table row that names the file is a record, so only that row counts:
+//     a generated inventory row's neighbors, and the rest of the document,
+//     describe other files;
+//   - a heading that names the file owns its section and subsections;
+//   - any other line reads the smallest section holding it, without the
+//     table rows there that are about another file. A field table under the
+//     file's own section names no file and stays in.
 // @implements docguard.consumer-report-precision#FR-005
 function referenceContext(doc, refLines) {
   const { lines, levels } = doc;
   const refs = new Set(refLines);
   const keep = new Set();
   for (const i of refLines) {
+    if (levels[i] === 0 && TABLE_ROW.test(lines[i])) { keep.add(i); continue; }
     let start = i;
     let end = lines.length;
     if (levels[i] > 0) {

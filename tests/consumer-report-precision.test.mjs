@@ -300,6 +300,35 @@ describe('FR-005: DSP001 counts overlap only in the reference context (#598)', (
     assert.match(found[0].message, /walk-env-safety/);
   });
 
+  it('the #598 document shape: one long section of bold-label paragraphs around the inventory row', () => {
+    const dir = repo([
+      '# TEST SPEC', '',
+      '**Frame attribution:** frame-meter tests require the new report to contain only its window.', '',
+      '| File | Cases |', '| --- | --- |', '| `tests/unit/walk-env-safety.test.js` | 10 |', '| `tests/unit/walk-errors.test.js` | 10 |', '',
+      '**Child clarity:** grading fixtures use one child slot each.', '',
+      '**Room exits:** the door exit test checks the approach.', '',
+    ].join('\n'));
+    assert.deepEqual(dsp(dir), []);
+  });
+
+  it('an inventory row that itself carries the removed words is still flagged (positive control)', () => {
+    const dir = repo([
+      '# TEST SPEC', '',
+      '| File | Covers |', '| --- | --- |', '| `tests/unit/walk-env-safety.test.js` | isolates only the child git context before exit |', '',
+    ].join('\n'));
+    assert.equal(dsp(dir).length, 1);
+  });
+
+  it('a prose reference still reads the next paragraph of its section (positive control)', () => {
+    const dir = repo([
+      '# Test Spec', '',
+      '## Hook environment', '',
+      'The suite in `tests/unit/walk-env-safety.test.js` guards the hook.', '',
+      'It isolates only the child git context before exit.', '',
+    ].join('\n'));
+    assert.equal(dsp(dir).length, 1);
+  });
+
   it('a heading that names the file owns its subsections', () => {
     const dir = repo([
       '# Test Spec', '',

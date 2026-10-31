@@ -2233,11 +2233,11 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:87f26ea677f6dc53bbd429db05185b7c8f1e0dd3bd3410c0686946abe8cadc0d"
+            "digest": "sha256:b958269cf6e82fb685c7ff42160fb7fb69a0013e1e0e4c623757b9424ab8897a"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",
-            "digest": "sha256:b33995e0e80c726a7d8b5afd4190fd8d8a1235c0b46011768d52ae30caee816c"
+            "digest": "sha256:76d52a115ede7a1a316231941f7833631cb25b5ab79607b7acfec89701d28c21"
           },
           {
             "path": "specs/080-consumer-report-precision/tasks.md",
@@ -2262,7 +2262,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 140
+            "line": 141
           }
         ],
         "testEvidence": [

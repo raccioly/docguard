@@ -68,6 +68,7 @@ Each defect is DocGuard stating something it cannot prove.
 3. **Given** a field table in the file's own section whose rows hold those words, **Then** DSP001 is reported.
 4. **Given** the file named in a sentence that still describes the removed behavior, **Then** DSP001 is reported.
 5. **Given** a heading that names the file and the stale claim in its subsection, **Then** DSP001 is reported.
+6. **Given** the reporting project's shape, a single long section of bold-label paragraphs around the inventory row, **Then** there is no DSP001. An inventory row that itself carries the removed words is still reported, and so is a prose reference whose next paragraph does.
 
 ### User Story 4 - Auth behind an unreadable path is recorded, not assumed (Priority: P1)
 
@@ -86,7 +87,8 @@ Each defect is DocGuard stating something it cannot prove.
 - When the doc writes the same number twice, once grouped and once not, the fix rewrites both and keeps each spelling.
 - If git cannot answer the ignore question (spawn failure, unknown status), SPK010 stays silent for that feature, as it does when git is absent.
 - A heading inside a fenced code block (`# run it` in a shell sample) does not end a section.
-- A doc with no headings is one section, so a reference in it reads the whole document, as before.
+- A doc with no headings is one section, so a reference in it reads the whole document, as before. A table-row reference in it reads only its row.
+- A bulleted inventory is read as prose: its other items stay in the context. The report's inventory is a table.
 
 ## Requirements *(mandatory)*
 
@@ -96,7 +98,7 @@ Each defect is DocGuard stating something it cannot prove.
 - **FR-002**: An identifier or version fragment (`FR365`, `FR-365`, `#365`, `v3.65`) MUST NOT be read as a test, check or validator count. A plain or separated count (`365 tests`, `1,733 tests`) MUST be read as before.
 - **FR-003**: `N test files`, `test suites`, `test modules`, `test runs`, `test directories`, `test folders`, `test scripts`, `test fixtures`, `test helpers`, `test jobs` and `test packages` MUST NOT be compared with declared test cases. `N test cases` and `N tests` MUST still be.
 - **FR-004**: SPK010 MUST NOT report a named path that git cannot observe: one that is ignored and untracked, or whose ignore status git cannot determine. A tracked path MUST still be reported when the feature never changed it, even if an ignore rule matches it. When git cannot answer the question, SPK010 MUST stay silent for that feature.
-- **FR-005**: DSP001 MUST count the overlap only in the reference context: the smallest heading-bounded section that holds each line referencing the file. A heading that references the file owns its subsections. The context excludes table rows that name another file, so an inventory row borrows nothing from its neighbors. A field table that names no file stays in the context. Headings inside code fences do not bound sections. Both signals are still required, and the message, confidence and cap are unchanged.
+- **FR-005**: DSP001 MUST count the overlap only in the reference context of each line that references the file. A table row that references the file is a record, and its context is that row alone. A heading that references the file owns its section and subsections. Any other line reads the smallest heading-bounded section that holds it. The context excludes table rows that name another file, so an inventory row borrows nothing from its neighbors. A field table that names no file stays in the context. Headings inside code fences do not bound sections. Both signals are still required, and the message, confidence and cap are unchanged.
 - **FR-006**: In the router reader (Koa, Hono, itty-router), `use(path, ...middleware)` whose path the reader cannot read, with auth middleware among the rest, MUST be recorded in `scan.unresolved` as `router-unresolved-path` and MUST NOT mark any route as auth. A `use()` with one argument, or whose middleware is not auth, MUST record nothing. Literal-path and path-less `use()` calls MUST behave as before.
 - **FR-007**: Every finding the reports name as correct MUST still be reported: genuinely stale counts, the untouched tracked deliverable, and a claim beside the reference that names the removed behavior.
 - **FR-008**: The finding help (`cli/findings.mjs`, `docs/reference/findings.md`), `docs/reference/languages.md` and `CHANGELOG.md` MUST describe the new behavior.
