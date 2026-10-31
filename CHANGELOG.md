@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Counts are read whole, and only when they are counts**
+  (`docguard.consumer-report-precision`, #593, #594, #596).
+  - `1,183 checks` was read as `183 checks`, and `docguard fix --write` would
+    have rewritten a correct number. Every count pattern now reads thousands
+    separators. The fix rewrites either spelling of the stale number and keeps
+    the document's digit grouping.
+  - A count no longer starts inside an identifier, a version or a ratio.
+    `FR365 tests`, `FR-365`, `#365` and `v3.65` are not test counts.
+  - `400 cases across 20 test files` is no longer a claim of 20 test cases.
+    Counts of test files, suites, modules and runs are not compared with
+    declared cases, while `20 test cases` still is.
+- **SPK010 no longer says a git-ignored file was "never changed"** (#597).
+  Git cannot observe an ignored, untracked file such as a local diagnostic
+  receipt, so its absence from the feature's history proves nothing. A
+  tracked file is still reported, even under an ignore rule.
+- **DSP001 reads the overlap where the document names the file** (#598).
+  The removed-token overlap was computed over the whole document. A test file
+  named once in an inventory table was therefore paired with common words
+  from unrelated sections, and from other rows of the same table, which
+  blocked `guard --fail-on-warning`. It is now counted in the smallest
+  section holding the reference, without the table rows that name other
+  files.
+- **Auth middleware behind a path the router reader cannot read no longer
+  marks every route as protected** (#595, found by the Jules bug-hunt
+  routine). `router.use(API_PREFIX, requireAuth)` covers an unknown scope, so
+  it is now recorded in `scan.unresolved`. A `use()` whose middleware is not
+  auth records nothing.
+- **The anchor-cache tests pass on CI** (#599). They asserted an enabled
+  cache, but the cache turns itself off whenever `CI` is set.
+- **The unreadable-git test accepts the CI runners' newer git wording**
+  (`docguard.unreadable-git-metadata`). The runners' git now reports
+  `gitfile does not point to a valid repository` where it used to say `not a
+  git repository`. DocGuard already reported git's own first line; only the
+  test pinned the old text. Test-only.
+
 ## [0.45.1] - 2026-10-16
 
 ### Changed

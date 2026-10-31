@@ -94,15 +94,17 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
   // `subject`: human phrasing for the warning. `actualSource`: records WHAT the
   // actual count describes so the fix applier can confirm both sides are the same
   // subject before overwriting.
+  // Every count may carry thousands separators ("1,183 checks"). COUNT_START
+  // keeps "1,183" from matching as "183", and an identifier or ratio
+  // ("FR365", "#365", "v3.65", "8/8") from matching at all.
   const patterns = [
-    { key: 'checks', regex: /(?<!\d\/)\b(\d{2,})\s+(?:automated\s+)?checks?\b/gi, label: 'checks', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.checks' },
-    { key: 'validators', regex: /(?<!\d\/)\b(\d{2,})\s+validators?\b/gi, label: 'validators', requireBind: true, subject: "DocGuard's shipped", actualSource: 'docguard.package.validators' },
+    { key: 'checks', regex: new RegExp(`${COUNT_START}(\\d{1,3}(?:,\\d{3})+|\\d{2,})\\s+(?:automated\\s+)?checks?\\b`, 'gi'), label: 'checks', requireBind: true, subject: "DocGuard's own", actualSource: 'docguard.guard.checks' },
+    { key: 'validators', regex: new RegExp(`${COUNT_START}(\\d{1,3}(?:,\\d{3})+|\\d{2,})\\s+validators?\\b`, 'gi'), label: 'validators', requireBind: true, subject: "DocGuard's shipped", actualSource: 'docguard.package.validators' },
     // "N tests" is the project's OWN suite, so the binding is test-suite
-    // vocabulary on the line (isTestSuiteBound), not the word "docguard". The
-    // number may carry thousands separators ("1,733 tests"); the digit
-    // alternation and the lookbehind keep "1,733" from matching as "733".
+    // vocabulary on the line (isTestSuiteBound), not the word "docguard".
+    // "20 test files" counts files, not cases, so it is not this metric.
     // lowerBound: drift only when the doc's number is BELOW the declared count.
-    { key: 'tests', regex: /(?<![\d,])(\d{1,3}(?:,\d{3})+|\d{2,})\s+tests?\b/gi, label: 'tests', bind: isWholeSuiteClaim, fileScope: isSuiteClaimFile, lowerBound: true, actualSource: 'docguard.project.testCases' },
+    { key: 'tests', regex: new RegExp(`${COUNT_START}(\\d{1,3}(?:,\\d{3})+|\\d{2,})\\s+tests?\\b${NOT_A_CASE_COUNT}`, 'gi'), label: 'tests', bind: isWholeSuiteClaim, fileScope: isSuiteClaimFile, lowerBound: true, actualSource: 'docguard.project.testCases' },
   ];
 
   // v0.29 (field report #6): project-declared collections. `config.collections`
@@ -129,7 +131,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     const stem = escapeRegExp(String(noun).replace(/s$/i, ''));
     patterns.push({
       key,
-      regex: new RegExp(`(?<!\\d\\/)\\b(\\d+)\\s+${stem}s?\\b`, 'gi'),
+      regex: new RegExp(`${COUNT_START}(\\d{1,3}(?:,\\d{3})+|\\d+)\\s+${stem}s?\\b`, 'gi'),
       label: String(noun),
       requireBind: false,
       isCollection: true,
@@ -230,7 +232,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
             severity: 'warn',
             confidence: safeToRewrite ? 'high' : 'low',
             reportable: !safeToRewrite,
-            message: `${relPath} says "${found} ${label}" but ${phrase}. ${safeToRewrite
+            message: `${relPath} says "${occurrences.text} ${label}" but ${phrase}. ${safeToRewrite
               ? 'Fix with `docguard fix --write`'
               : 'Review manually because the same count also appears in historical context'}`,
             location: relPath,
@@ -269,6 +271,21 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 
   return { ...resultFromFindings(findings, { passed, total }), fixes };
 }
+
+/**
+ * Where a documented count may start: not after a word character, a digit
+ * group separator, a decimal point, `#`, `-` or `/`. "FR365 tests", "FR-365",
+ * "#365", "v3.65" and the "183" of "1,183" are not counts, and "8/8 checks" is
+ * a ratio (docguard.consumer-report-precision#FR-001, FR-002).
+ */
+const COUNT_START = '(?<![\\w,.#/-])';
+
+/**
+ * "N tests" followed by one of these nouns counts something other than test
+ * cases ("20 test files", "3 test suites"); "20 test cases" still counts
+ * (docguard.consumer-report-precision#FR-003).
+ */
+const NOT_A_CASE_COUNT = '(?!\\s+(?:files?|suites?|modules?|runs?|directories|dirs?|folders?|scripts?|fixtures?|helpers?|jobs?|packages?)\\b)';
 
 const NUMBER_WORDS = { zero: 0, no: 0, none: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
 // Qualified wording only: "no dependencies between validators" is about

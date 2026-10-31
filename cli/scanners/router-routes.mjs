@@ -587,7 +587,12 @@ function readAst(ast, ctx) {
       }
       const p = literal(args[0]);
       const hasPath = pathLike(p);
-      if (middlewareAuth(hasPath ? args.slice(1) : args)) uses.push({ node: recv.id, pattern: hasPath ? p : '*', start, file: abs });
+      // `use(API_PREFIX, requireAuth)`: auth under a path the reader cannot
+      // read covers an unknown scope. It is recorded, never widened to '*'.
+      const unreadScope = !hasPath && args.length >= 2 && unreadablePath(args[0]);
+      if (!middlewareAuth(hasPath || unreadScope ? args.slice(1) : args)) return;
+      if (unreadScope) limit('router-unresolved-path', file, lineOf(node), nodeText(content, args[0]));
+      else uses.push({ node: recv.id, pattern: hasPath ? p : '*', start, file: abs });
       return;
     }
     if (prop === 'route') {

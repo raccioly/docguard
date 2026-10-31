@@ -65,7 +65,8 @@ function indexDocs(projectDir) {
   const add = (name, full) => {
     try {
       const content = readFileSync(full, 'utf-8');
-      docs.set(name, { lines: content.split('\n'), tokens: tokenize(content) });
+      const lines = content.split('\n');
+      docs.set(name, { lines, levels: headingLevels(lines) });
     } catch { /* skip unreadable */ }
   };
   // Preserve paths: nested documents with identical basenames are distinct.
@@ -87,16 +88,77 @@ function indexDocs(projectDir) {
 // The path matches only as a whole file name: `othersrc/a.mjs` does not name
 // `src/a.mjs` (docguard.whole-token-doc-references#FR-001).
 // @implements docguard.whole-token-sibling-matchers#FR-004
+//
+// Returns the kind of the first reference and the index of every line that
+// makes one, or null when the doc does not reference the file.
 function referenceKind(docLines, file) {
   const normalized = file.replace(/^\.\//, '');
   const base = basename(normalized);
   const stem = base.replace(/\.[^.]+$/, '');
   const stemRe = new RegExp(`\`${escapeRegex(stem)}\``);
-  for (const line of docLines) {
-    if (namesToken(line, normalized)) return 'path';
-    if (stemRe.test(line)) return 'module';
+  let kind = null;
+  const lines = [];
+  docLines.forEach((line, i) => {
+    const k = namesToken(line, normalized) ? 'path' : (stemRe.test(line) ? 'module' : null);
+    if (!k) return;
+    kind ??= k;
+    lines.push(i);
+  });
+  return kind ? { kind, lines } : null;
+}
+
+const HEADING = /^ {0,3}(#{1,6})\s/;
+const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+const TABLE_ROW = /^\s*\|/;
+const FILE_EXT = '(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart|vue|svelte|md)';
+// A file path, or a backticked file name: what an inventory row is about.
+const NAMES_A_FILE = new RegExp(`\`[^\`\\s]+\\.${FILE_EXT}\`|[\\w.@-]+\\/[\\w./@-]*\\.${FILE_EXT}\\b`);
+
+/** Heading level of each line, 0 for a line that is not a heading or sits in a code fence. */
+function headingLevels(lines) {
+  let fence = null;
+  return lines.map((line) => {
+    const f = line.match(FENCE);
+    if (f) {
+      if (!fence) fence = f[1][0];
+      else if (f[1][0] === fence) fence = null;
+      return 0;
+    }
+    if (fence) return 0;
+    const h = line.match(HEADING);
+    return h ? h[1].length : 0;
+  });
+}
+
+// The words a reference vouches for (#598):
+//   - a table row that names the file is a record, so only that row counts:
+//     a generated inventory row's neighbors, and the rest of the document,
+//     describe other files;
+//   - a heading that names the file owns its section and subsections;
+//   - any other line reads the smallest section holding it, without the
+//     table rows there that are about another file. A field table under the
+//     file's own section names no file and stays in.
+// @implements docguard.consumer-report-precision#FR-005
+function referenceContext(doc, refLines) {
+  const { lines, levels } = doc;
+  const refs = new Set(refLines);
+  const keep = new Set();
+  for (const i of refLines) {
+    if (levels[i] === 0 && TABLE_ROW.test(lines[i])) { keep.add(i); continue; }
+    let start = i;
+    let end = lines.length;
+    if (levels[i] > 0) {
+      for (let j = i + 1; j < lines.length; j++) if (levels[j] > 0 && levels[j] <= levels[i]) { end = j; break; }
+    } else {
+      while (start > 0 && levels[start] === 0) start--;
+      for (let j = i + 1; j < lines.length; j++) if (levels[j] > 0) { end = j; break; }
+    }
+    for (let j = start; j < end; j++) {
+      if (TABLE_ROW.test(lines[j]) && !refs.has(j) && NAMES_A_FILE.test(lines[j])) continue;
+      keep.add(j);
+    }
   }
-  return null;
+  return tokenize([...keep].sort((a, b) => a - b).map(j => lines[j]).join('\n'));
 }
 
 // Compare full snapshots: indentation cannot be inferred from isolated hunks.
@@ -176,10 +238,12 @@ export function validateDiffSuspicion(projectDir, config = {}) {
     // with an elision note rather than flooding — the same discipline SPK008 uses.
     const hits = [];
     for (const cf of changed) {
-      const kind = referenceKind(doc.lines, cf.path);
-      if (!kind) continue; // signal 1: doc must reference the changed file (path|module)
+      const ref = referenceKind(doc.lines, cf.path);
+      if (!ref) continue; // signal 1: doc must reference the changed file (path|module)
+      const { kind } = ref;
       pairsChecked++;
-      const { shared: rawShared } = tokenOverlap(doc.tokens, cf.removed);
+      // signal 2 is read where the doc names the file, not anywhere in it
+      const { shared: rawShared } = tokenOverlap(referenceContext(doc, ref.lines), cf.removed);
       // signal 2: doc must share DOMAIN (non-generic) removed tokens
       const shared = rawShared.filter(t => !GENERIC_TOKENS.has(t));
       if (shared.length < minOverlap) continue;

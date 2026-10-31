@@ -1300,7 +1300,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1109
+            "line": 1138
           }
         ],
         "testEvidence": [
@@ -2182,6 +2182,149 @@
             "requirementId": "SC-005",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 23
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.consumer-report-precision",
+      "path": "specs/080-consumer-report-precision/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.consumer-report-precision#FR-001",
+          "docguard.consumer-report-precision#FR-002",
+          "docguard.consumer-report-precision#FR-003",
+          "docguard.consumer-report-precision#FR-004",
+          "docguard.consumer-report-precision#FR-005",
+          "docguard.consumer-report-precision#FR-006",
+          "docguard.consumer-report-precision#FR-007",
+          "docguard.consumer-report-precision#FR-008",
+          "docguard.consumer-report-precision#SC-001",
+          "docguard.consumer-report-precision#SC-002",
+          "docguard.consumer-report-precision#SC-003",
+          "docguard.consumer-report-precision#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/080-consumer-report-precision/spec.md",
+            "digest": "sha256:2943bbd79b44b2c3dab7052731c35f5fbb61454d1c07810ec7f38c933b018b0e"
+          },
+          {
+            "path": "specs/080-consumer-report-precision/plan.md",
+            "digest": "sha256:76d52a115ede7a1a316231941f7833631cb25b5ab79607b7acfec89701d28c21"
+          },
+          {
+            "path": "specs/080-consumer-report-precision/tasks.md",
+            "digest": "sha256:f0b6691db3baeeb600e36379e3c70111ca2a8422a3b7e4d919b5e32d7d9fed96"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 21,
+          "total": 21
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1112
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/speckit.mjs",
+            "line": 1141
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/diff-suspicion.mjs",
+            "line": 141
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/router-routes-unresolved.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/consumer-report-precision.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/anchor-cache.test.mjs",
+            "line": 4
           }
         ]
       }
@@ -4115,22 +4258,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 374
+            "line": 391
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 353
+            "line": 370
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 430
+            "line": 447
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 444
+            "line": 461
           }
         ],
         "testEvidence": [
@@ -13964,12 +14107,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1110
+            "line": 1139
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1111
+            "line": 1140
           }
         ],
         "testEvidence": [
@@ -15519,7 +15662,7 @@
           {
             "requirementId": "FR-006",
             "file": "tests/unreadable-git-metadata.test.mjs",
-            "line": 106
+            "line": 109
           },
           {
             "requirementId": "SC-001",
@@ -16389,7 +16532,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 89
+            "line": 90
           }
         ],
         "testEvidence": [

@@ -26,7 +26,7 @@ import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFil
 import { resolve, join, relative, dirname, basename, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
-import { isGitRepo, gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
+import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths } from '../shared-git.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 
@@ -1103,12 +1103,42 @@ export function touchedWithin(touched, dirRel) {
 }
 
 /**
+ * Claim paths git cannot observe: ignored and untracked, or of unknown ignore
+ * status. Such a file can be created or rewritten without leaving a trace in
+ * history or in `git status`, so its absence from the feature's changes proves
+ * nothing (#597). A tracked file stays observable even under an ignore rule.
+ * Returns null when git cannot answer, so the caller stays silent.
+ *
+ * @implements docguard.consumer-report-precision#FR-004
+ */
+export function unobservablePaths(projectDir, paths) {
+  const out = new Set();
+  if (paths.length === 0) return out;
+  const ignore = gitIgnoredPaths(projectDir, paths);
+  if (ignore === null) return null;
+  const candidates = paths.filter(p => ignore.ignored.has(p) || ignore.unknown.has(p));
+  if (candidates.length === 0) return out;
+  let listed;
+  try {
+    listed = execFileSync('git', ['ls-files', '-z', '--', ...candidates.map(p => `:(literal)${p}`)], {
+      cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024,
+    }).split('\0').filter(Boolean);
+  } catch { return null; }
+  for (const p of candidates) {
+    const dir = `${p.replace(/\/+$/, '')}/`;
+    if (!listed.some(t => t === p || t.startsWith(dir))) out.add(p);
+  }
+  return out;
+}
+
+/**
  * Checked tasks whose named, existing deliverables this feature never changed.
  *
  * @returns {Array<{spec, relPath, checkedCount, untouched: Array<{id, text, line, paths: string[]}>}>}
  * @implements docguard.calibrated-finding-channels#FR-021
  * @implements docguard.spk010-directory-claims#FR-001
  * @implements docguard.spk010-directory-claims#FR-002
+ * @implements docguard.consumer-report-precision#FR-004
  */
 export function detectUntouchedClaims(projectDir, specs) {
   const results = [];
@@ -1146,6 +1176,12 @@ export function detectUntouchedClaims(projectDir, specs) {
         missed.push(claim);
       }
       if (missed.length > 0) untouched.push({ id: task.id, text: task.text, line: task.line, paths: missed.sort() });
+    }
+    const unobservable = unobservablePaths(projectDir, [...new Set(untouched.flatMap(u => u.paths))]);
+    if (unobservable === null) continue; // unknowable — stay silent
+    if (unobservable.size > 0) {
+      for (const u of untouched) u.paths = u.paths.filter(p => !unobservable.has(p));
+      untouched.splice(0, untouched.length, ...untouched.filter(u => u.paths.length > 0));
     }
     results.push({ spec, relPath: relPosix(projectDir, spec.tasksPath), checkedCount: tasks.length, untouched });
   }
