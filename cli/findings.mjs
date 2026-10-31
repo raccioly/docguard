@@ -194,7 +194,7 @@ export const CODES = {
   MET001: {
     validator: 'metricsConsistency',
     title: 'Documented count drifted from DocGuard meta-count',
-    help: 'A docguard-bound "N checks/validators" number in a doc no longer matches the tool\'s actual count. `docguard fix --write` rewrites it (fail-closed: only docguard-bound lines, with provenance).',
+    help: 'A docguard-bound "N checks/validators" number in a doc no longer matches the tool\'s actual count. "1,183 checks" reads as 1183; a ratio ("8/8 checks") or an identifier ("FR-365 checks") is not a count. `docguard fix --write` rewrites it, keeping the doc\'s digit grouping (fail-closed: only docguard-bound lines, with provenance).',
     suppress: null,
   },
   MET002: {
@@ -206,7 +206,7 @@ export const CODES = {
   MET003: {
     validator: 'metricsConsistency',
     title: 'Documented test count is below the declared test cases',
-    help: 'A line about the project\'s own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.',
+    help: 'A line about the project\'s own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. An identifier ("FR365 tests") and a count of something else ("20 test files", "3 test suites") are not test-case counts. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.',
     suppress: null,
   },
   MET004: {
@@ -561,7 +561,7 @@ export const CODES = {
     validator: 'specKit',
     title: 'Completed task names a file the feature never changed',
     suppress: '<!-- docguard:ignore SPK010 — task invokes this file rather than changing it -->',
-    help: 'A tasks.md task marked [x] names a deliverable path that EXISTS but that no commit since this feature began — and no uncommitted change — ever touched. SPK008 asks whether the artifact exists; a task naming files that already existed passes that check whether or not the work happened, which is how a skill file listed in a completed documentation task shipped unmodified in this repository. The git fact is exact, so this is high-confidence, but it is an ESCALATION, not a verdict: a task may legitimately name a file as context, invoke it rather than change it, or the work may have landed under a different path. Read the task, then either do the work, correct the task text, or uncheck it. Suppress one task with `<!-- docguard:ignore SPK010 — reason -->` on its line; opt out entirely with `"specKit": { "untouchedClaimCheck": false }` in .docguard.json.',
+    help: 'A tasks.md task marked [x] names a deliverable path that EXISTS but that no commit since this feature began — and no uncommitted change — ever touched. A path git cannot observe (ignored and untracked, such as a local diagnostic receipt) is never reported: its absence from history proves nothing. SPK008 asks whether the artifact exists; a task naming files that already existed passes that check whether or not the work happened, which is how a skill file listed in a completed documentation task shipped unmodified in this repository. The git fact is exact, so this is high-confidence, but it is an ESCALATION, not a verdict: a task may legitimately name a file as context, invoke it rather than change it, or the work may have landed under a different path. Read the task, then either do the work, correct the task text, or uncheck it. Suppress one task with `<!-- docguard:ignore SPK010 — reason -->` on its line; opt out entirely with `"specKit": { "untouchedClaimCheck": false }` in .docguard.json.',
   },
   SPK011: {
     validator: 'specKit',
@@ -940,7 +940,7 @@ export const CODES = {
   DSP001: {
     validator: 'diff-suspicion',
     title: 'Doc describes code that just changed',
-    help: 'A canonical doc (or agent-instruction file) references a code file AND shares wording with symbols removed/changed in that file since the compared revision. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7). Low-confidence by design — re-read the doc against the current code; suppress the pairing if it is a false positive.',
+    help: 'A canonical doc (or agent-instruction file) references a code file AND, in the section that names the file, shares wording with symbols removed/changed in that file since the compared revision. Other sections and other rows of an inventory table do not count. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7). Low-confidence by design — re-read the doc against the current code; suppress the pairing if it is a false positive.',
     suppress: null,
   },
   REF001: {

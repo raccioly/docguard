@@ -163,7 +163,7 @@ A `#anchor` link does not match any heading in the target doc (GFM slug rules). 
 
 ### DSP001: Doc describes code that just changed
 
-A canonical doc (or agent-instruction file) references a code file AND shares wording with symbols removed/changed in that file since the compared revision. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7). Low-confidence by design — re-read the doc against the current code; suppress the pairing if it is a false positive.
+A canonical doc (or agent-instruction file) references a code file AND, in the section that names the file, shares wording with symbols removed/changed in that file since the compared revision. Other sections and other rows of an inventory table do not count. Deterministic diff-overlap rule (arXiv 2010.01625, F1 74.7). Low-confidence by design — re-read the doc against the current code; suppress the pairing if it is a false positive.
 
 ## Doc Sections (docSections)
 
@@ -459,7 +459,7 @@ A markdown file references an older version of this package in an actionable con
 
 ### MET001: Documented count drifted from DocGuard meta-count
 
-A docguard-bound "N checks/validators" number in a doc no longer matches the tool's actual count. `docguard fix --write` rewrites it (fail-closed: only docguard-bound lines, with provenance).
+A docguard-bound "N checks/validators" number in a doc no longer matches the tool's actual count. "1,183 checks" reads as 1183; a ratio ("8/8 checks") or an identifier ("FR-365 checks") is not a count. `docguard fix --write` rewrites it, keeping the doc's digit grouping (fail-closed: only docguard-bound lines, with provenance).
 
 ### MET002: Documented count drifted from a declared collection
 
@@ -467,7 +467,7 @@ A doc states "N <noun>" for a noun declared in `config.collections`, but the col
 
 ### MET003: Documented test count is below the declared test cases
 
-A line about the project's own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.
+A line about the project's own test suite ("npm test # N tests", "N tests passing") states fewer tests than the test files declare. An identifier ("FR365 tests") and a count of something else ("20 test files", "3 test suites") are not test-case counts. The declared count is a static lower bound of what the runner reports (cases generated in loops are not expanded), so a smaller documented number is stale for certain, but the true number is only known by running the suite. Run it and update the count by hand; there is no mechanical fix.
 
 ### MET004: Documented runtime-dependency count disagrees with package.json
 
@@ -681,7 +681,7 @@ A tasks.md task marked [x] names a deliverable path that does not exist, and no 
 
 ### SPK010: Completed task names a file the feature never changed
 
-A tasks.md task marked [x] names a deliverable path that EXISTS but that no commit since this feature began — and no uncommitted change — ever touched. SPK008 asks whether the artifact exists; a task naming files that already existed passes that check whether or not the work happened, which is how a skill file listed in a completed documentation task shipped unmodified in this repository. The git fact is exact, so this is high-confidence, but it is an ESCALATION, not a verdict: a task may legitimately name a file as context, invoke it rather than change it, or the work may have landed under a different path. Read the task, then either do the work, correct the task text, or uncheck it. Suppress one task with `<!-- docguard:ignore SPK010 — reason -->` on its line; opt out entirely with `"specKit": { "untouchedClaimCheck": false }` in .docguard.json.
+A tasks.md task marked [x] names a deliverable path that EXISTS but that no commit since this feature began — and no uncommitted change — ever touched. A path git cannot observe (ignored and untracked, such as a local diagnostic receipt) is never reported: its absence from history proves nothing. SPK008 asks whether the artifact exists; a task naming files that already existed passes that check whether or not the work happened, which is how a skill file listed in a completed documentation task shipped unmodified in this repository. The git fact is exact, so this is high-confidence, but it is an ESCALATION, not a verdict: a task may legitimately name a file as context, invoke it rather than change it, or the work may have landed under a different path. Read the task, then either do the work, correct the task text, or uncheck it. Suppress one task with `<!-- docguard:ignore SPK010 — reason -->` on its line; opt out entirely with `"specKit": { "untouchedClaimCheck": false }` in .docguard.json.
 
 Marker:
 

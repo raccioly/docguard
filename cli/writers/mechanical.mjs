@@ -78,18 +78,23 @@ function applyReplaceCount(projectDir, fix, opts = {}) {
   // detection regex (which is `gi`). Without `i` here, the applier would
   // skip "21 Validators" (capitalized) even though Metrics-Consistency
   // detected it — leaving the user with a warning they couldn't auto-fix.
-  const re = new RegExp(`\\b${esc(fix.found)}(\\s+(?:automated\\s+)?${esc(fix.label)}\\b)`, 'gi');
+  // The validator reads "1,183" as one number and never reads a ratio or an
+  // identifier ("8/1,100", "FR1100") as a count; the applier matches the same
+  // way, takes either spelling of the number and keeps the one the doc used
+  // (docguard.consumer-report-precision#FR-001).
+  const forms = [...new Set([String(fix.found), Number(fix.found).toLocaleString('en-US')])];
+  const re = new RegExp(`(?<![\\w,.#/-])(${forms.map(esc).join('|')})(\\s+(?:automated\\s+)?${esc(fix.label)}\\b)`, 'gi');
   // Only rewrite occurrences on a DocGuard-bound line (same predicate as the
   // validator's subject-binding) so a stray "<found> <label>" elsewhere in the
   // file is never collateral-damaged by the global replace.
   let changed = false;
-  const next = content.replace(re, (m, tail, offset, str) => {
+  const next = content.replace(re, (m, number, tail, offset, str) => {
     const lineStart = str.lastIndexOf('\n', offset) + 1;
     let lineEnd = str.indexOf('\n', offset);
     if (lineEnd === -1) lineEnd = str.length;
     if (!/docguard/i.test(str.slice(lineStart, lineEnd))) return m; // not bound → leave untouched
     changed = true;
-    return `${fix.actual}${tail}`;
+    return `${number.includes(',') ? Number(fix.actual).toLocaleString('en-US') : fix.actual}${tail}`;
   });
   if (!changed || next === content) return { applied: false };
   safeWrite(full, next);
