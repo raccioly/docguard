@@ -26,11 +26,11 @@ const pins = {
     '11d5960a326750d5838078e36cf38b85af677262': 'https://api.github.com/repos/actions/checkout/git/ref/tags/v4.4.0',
   },
   'actions/setup-node': {
-    '820762786026740c76f36085b0efc47a31fe5020': 'https://api.github.com/repos/actions/setup-node/git/ref/tags/v7.0.0',
+    '949feb2413d6458794dcd2491c4babbbce0c15c1': 'https://api.github.com/repos/actions/setup-node/git/ref/tags/v7.1.0',
     '49933ea5288caeca8642d1e84afbd3f7d6820020': 'https://api.github.com/repos/actions/setup-node/git/ref/tags/v4.4.0',
   },
   'actions/upload-artifact': {
-    '043fb46d1a93c77aae656e7c1c64a875d1fc6a0a': 'https://api.github.com/repos/actions/upload-artifact/git/ref/tags/v7.0.1',
+    'cf430e030ddbb5b0abf93d22962f4752f3646cd9': 'https://api.github.com/repos/actions/upload-artifact/git/ref/tags/v7.0.2',
     'ea165f8d65b6e75b540449e92b4886f43607fa02': 'https://api.github.com/repos/actions/upload-artifact/git/ref/tags/v4.6.2',
   },
 };

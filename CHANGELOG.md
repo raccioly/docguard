@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **GitHub Actions pins move to their latest patch/minor releases** (#604).
+  CI, release and the published `action.yml` now run `actions/setup-node`
+  v7.1.0, `actions/upload-artifact` v7.0.2, `actions/download-artifact`
+  v8.0.2, `actions/setup-python` v7.1.0, `pypa/gh-action-pypi-publish`
+  v1.14.3, `google/osv-scanner-action` v2.7.0 and `websec-validator` v0.22.3.
+  The CI workflows that `docguard init` and the Spec Kit extension generate
+  pin the same setup-node and upload-artifact releases. Every commit SHA was
+  checked against its official release tag before it was recorded as reviewed.
+
 ### Fixed
 
 - **Counts are read whole, and only when they are counts**
