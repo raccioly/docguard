@@ -1,8 +1,8 @@
 # Data Model
 
-<!-- docguard:version 0.17.0 -->
+<!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 | Metadata | Value |
 |----------|-------|

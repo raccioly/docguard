@@ -1,8 +1,8 @@
 # Architecture
 
-<!-- docguard:version 1.15.0 -->
+<!-- docguard:version 1.16.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 | Metadata | Value |
 |----------|-------|
