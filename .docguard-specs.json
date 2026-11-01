@@ -2213,10 +2213,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542",
+          "lastReviewedRevision": "9bbe5d15493685a8bfa8a9b562d29716976bf0e3",
           "outcomes": [
             {
-              "revision": "11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542",
+              "revision": "9bbe5d15493685a8bfa8a9b562d29716976bf0e3",
               "reason": "Reviewed at 0d92d59 (#600): MET001-003 thousands separators, identifier fragments and test-file nouns; SPK010 silent on paths git cannot observe; DSP001 overlap scoped to the referencing row or section; router auth use() under an unreadable path recorded, never widened. Suite 4,114/4,115 pass, 1 skip. A/B 45 runs: 0 added, 21 DSP001 removed, all hand-reviewed. Budget 21/21. Deviation: none.",
               "evidence": [
                 "cli/scanners/speckit.mjs",
@@ -2229,7 +2229,11 @@
                 "tests/router-routes-unresolved.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -2254,7 +2258,7 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:1f1620b0ec66217ffaefb41df4c0e08c72d9851ef94b33c30270ebba9b7a463a"
+            "digest": "sha256:e6b0c3c5199ff3d418c836efeac606c52d188345bde5e996b51d0aecd071ff12"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",
