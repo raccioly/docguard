@@ -2192,7 +2192,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2213,8 +2213,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542",
+          "outcomes": [
+            {
+              "revision": "11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542",
+              "reason": "Reviewed at 0d92d59 (#600): MET001-003 thousands separators, identifier fragments and test-file nouns; SPK010 silent on paths git cannot observe; DSP001 overlap scoped to the referencing row or section; router auth use() under an unreadable path recorded, never widened. Suite 4,114/4,115 pass, 1 skip. A/B 45 runs: 0 added, 21 DSP001 removed, all hand-reviewed. Budget 21/21. Deviation: none.",
+              "evidence": [
+                "cli/scanners/speckit.mjs",
+                "cli/validators/diff-suspicion.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/anchor-cache.test.mjs",
+                "tests/consumer-report-precision.test.mjs",
+                "tests/router-routes-unresolved.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2237,7 +2254,7 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:8dc84f50dce5983b3eeede392190de4d4260bf36d955ac52a3d4b2f84cf5d4e0"
+            "digest": "sha256:1f1620b0ec66217ffaefb41df4c0e08c72d9851ef94b33c30270ebba9b7a463a"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",

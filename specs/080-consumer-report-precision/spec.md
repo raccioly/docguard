@@ -140,3 +140,9 @@ Verified 2026-10-31 on the branch head.
   - Each removed finding was reviewed by hand, and each is the false-positive shape of #598.
 - **What the A/B changed in the design.** The first pass dropped every table row in a section that did not name the file. That removed a DATA-MODEL finding in a fifth project whose words came from the field table under the file's own section. Only rows that name another file are dropped now, and that project is unchanged. The first pass also left the reporting project's finding in place: its TEST-SPEC is one long section, so section scope could not isolate the row. A table-row reference now reads only its row.
 - **Not reproducible on the reporting project's history**: the #594 and #596 sentences were never committed to its TEST-SPEC; they appear only in an archived spec, which MET003 skips. The project also freezes findings in `.docguard.baseline.json`. The issue reproductions are the proof for FR-001 to FR-004.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542` — Reviewed at 0d92d59 (#600): MET001-003 thousands separators, identifier fragments and test-file nouns; SPK010 silent on paths git cannot observe; DSP001 overlap scoped to the referencing row or section; router auth use() under an unreadable path recorded, never widened. Suite 4,114/4,115 pass, 1 skip. A/B 45 runs: 0 added, 21 DSP001 removed, all hand-reviewed. Budget 21/21. Deviation: none. Evidence: `cli/scanners/speckit.mjs`, `cli/validators/diff-suspicion.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/anchor-cache.test.mjs`, `tests/consumer-report-precision.test.mjs`, `tests/router-routes-unresolved.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
