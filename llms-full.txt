@@ -11,15 +11,15 @@
 
 # Architecture
 
-<!-- docguard:version 1.15.0 -->
+<!-- docguard:version 1.16.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `1.15.0` |
-| **Last Updated** | 2026-10-13 |
+| **Version** | `1.16.0` |
+| **Last Updated** | 2026-11-01 |
 | **Project Size** | ~71K lines in 193 files across `cli/` — measured 2026-10-13 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
@@ -55,6 +55,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
 | **Docs-Sync evidence** | Decides whether a canonical document names a route (DSY001) or service (DSY002) file, reading the documents as a reader sees them: text in HTML comments does not count (comments read through `shared-html-comments.mjs`), a `docguard:section` `covers` entry does. An App Router `route` handler (`app/api/…/route.*`) is named only by the URL path it serves; any other file by the shortest path tail no other checked file shares, matched as a whole word; an `index` or `__init__` file by its directory; a drawn file tree names each entry's path. Messages and warning severities are unchanged. The nudge hook and Diff-Suspicion's `path` kind match whole names the same way (specs 077, 078) | `cli/validators/docs-sync.mjs`, `cli/validators/diff-suspicion.mjs`, `cli/commands/hooks.mjs`, `cli/shared-html-comments.mjs`, `cli/scanners/routes.mjs` | Shared-name decisions are made over every selected file, even under `--changed-only` |
 | **Document fidelity** | Keeps the document validators consistent with each other and honest about a blank template (spec 079). ENV001/ENV002 match headings through `docHasSection`, as STR003 does. DDF002 and `diff` expand single-level brace lists in documented tests (`expandBraces`, at most 64 paths); a brace glob such as `src/**/*.test.{js,jsx}` stays one pattern matched as a union (`documentedTestRegex`, where `**/` also matches no directory). DDF001 reads a negator over a whole coordinated list (the technology must be a list item on both sides, and after the list only artifact nouns may follow before the clause ends, so a predicate is never part of it; the patterns parse one way, so matching stays linear), removal and migration verbs only when the technology (or its blocks, modules, stacks, resources, providers or manifests) is their object, never `no-` compounds or "no matter", and skips change-record sections opened by an H1 or H2 (fence- and comment-aware). Documented tests are read by self-anchored passes, so a code span with spaces never swallows the next one. A canonical document is an unedited scaffold when its authored lines are all lines of its shipped template (a `docs.roles` path is compared with its role's template; a reasoned section N/A marker owns the document): STR006 reports it, docQuality counts none of its checks, and Machine markers does not count it. `countSyllables` reads its exceptions by own property only, and every dictionary indexed by outside input (CLI arguments, MCP tool names, configuration, document text) is null-prototype. The generic heading synonyms `environment` and `configuration` name a section only as the whole heading (or followed by `reference`), in `docHasSection` and the section writer alike. | `cli/validators/environment.mjs`, `cli/validators/docs-diff.mjs`, `cli/shared-scaffold.mjs`, `cli/validators/structure.mjs`, `cli/commands/score.mjs`, `cli/scanners/agent-readability.mjs`, `cli/validators/doc-quality.mjs` | `tests/doc-validator-fidelity.test.mjs` |
+| **Report precision** | Keeps four findings to what their evidence proves (spec 080). The MET001–MET003 count patterns read a thousands-separated number whole (`1,183` is 1183) and start no count after a word character, separator, decimal point, `#`, `-` or `/`, so an identifier or version fragment (`FR-365`, `#365`, `v3.65`) is not a count; the `replace-count` fix matches the same way, rewrites either spelling of the stale number and keeps the document's digit grouping. `N test files`, `test suites` and the other test nouns that do not name cases are not compared with declared test cases. SPK010 does not report a named path git cannot observe (ignored and untracked, or of unknown ignore status) and stays silent for the feature when git cannot answer; a tracked path the feature never changed is still reported. DSP001 counts word overlap only in each referencing line's context: the row alone for a table row, its section and subsections for a heading, otherwise the smallest heading-bounded section, without the table rows that name another file; headings inside code fences bound nothing. | `cli/validators/metrics-consistency.mjs`, `cli/writers/mechanical.mjs`, `cli/scanners/speckit.mjs`, `cli/validators/diff-suspicion.mjs` | `tests/consumer-report-precision.test.mjs` |
 | **Feedback fixtures** | Validates synthetic reproductions and opposite controls, reduces them under an explicit predicate, derives duplicate identities, and emits test-only contributions | `cli/feedback-fixture.mjs`, `cli/commands/feedback.mjs`, `schemas/docguard-feedback-fixture.schema.json` | Publication remains user-controlled; contribution generation requires reviewed redaction, scope, and benchmark-delta evidence |
 | **Evidence-scoped verification** | Binds one exact Markdown statement to a typed JSON Pointer value, bounded file collection, static Python container literal, or saved upstream compatibility report and returns one of five explicit states | `cli/evidence/`, `cli/validators/evidence.mjs`, `cli/commands/verify.mjs`, `schemas/docguard-evidence.schema.json` | Reads stay local, bounded, non-executable, and symlink/private-path safe; direct verification exits 1 for contradiction/invalid input, 2 for unresolved evidence, and 0 only for verified or unconfigured evidence |
 | **Managed Git hooks** | Installs bounded DocGuard blocks while preserving user-owned hook commands before and after them | `cli/commands/hooks.mjs` | Reinstall and removal use one outer marker pair, repair nested markers from affected releases, fail closed on enforcement errors, and fall through after success so user postludes execute. A hook owned by husky, lefthook or simple-git-hooks is never written, even under `--force`; the command prints the line to add to that manager. Hooks are written, replaced or removed only in a folder the repository owns (`resolveHooksTarget` in `cli/shared-git.mjs`): a `core.hooksPath` from global, system or command-line config, or one outside the repository, is refused (spec 065) |
@@ -75,7 +76,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Sinatra, Starlette, Rust builder, Warp and Tide routes** | Reads the frameworks spec 060 added (#519), and the Actix, Axum and Rocket builders spec 071 composes. Sinatra: classic and modular apps (classes inheriting from `Sinatra::Base` across files), `namespace` prefixes, `register`ed extensions, and the prefixes `config.ru` maps or a host app `use`s. Starlette: `Starlette`/`Router` objects join the FastAPI/Flask graph, with their `routes=` lists, `Mount` children and `add_route`. Warp: filter expressions evaluated to path/method alternatives through `and`/`or`, `let` bindings and functions across files, from what `warp::serve` runs. Tide: `at()` trees and `nest()` mounts resolved after every file is read. Actix, Axum and Rocket: `web::scope`/`web::resource`, `Router::new()` and `rocket::build()` nodes mounted by `.service()`, `.configure()`, `.nest()`, `.merge()` and `.mount()` across functions and files, every method of an Axum method router, and handler macros under the scope or mount that registers them. A Go module with only `net/http` is classified so `go-routes.mjs` runs | `cli/scanners/sinatra-routes.mjs`, `cli/scanners/rust-routes.mjs`, `cli/scanners/python-routes.mjs`, `cli/scanners/project-type.mjs`, `cli/scanners/routes.mjs` | No parser for Ruby or Rust: a tokenizer (Ruby) or the shared lexer (Rust) masks comments and strings first. Ruby and Rust routes carry `parserTier: fallback-language`, Starlette routes the Python tier. A path that is not literal is omitted, and the API-surface coverage reason counts the omissions (specs/060-more-route-frameworks); the builder reader records what it recognised but could not place in `scan.unresolved` (specs/071-real-project-route-gaps) |
 | **Laravel, Symfony and ASP.NET Core routes** | Reports each route at the path it is served under. Laravel: the route files the app loads (`bootstrap/app.php` `withRouting`, else `RouteServiceProvider` mappings, else `routes/web.php` and `routes/api.php` under `/api`), with `prefix`/`middleware`/`group` chains and resource expansion. Symfony: `#[Route]` attributes and `@Route` annotations under the class-level route (the route itself on an invokable controller), and `config/routes.yaml` routes and prefixed imports; a declaration no controller reads, and a Laravel route file no application loads, are recorded in `scan.unresolved` (specs/071-real-project-route-gaps). ASP.NET Core: attribute-routed controllers (inherited class routes, verb attributes, `[controller]`/`[action]`/`[area]` tokens) and minimal APIs (`Map*` under `MapGroup` prefixes, followed into the methods a group is passed to). The classifier labels a `Microsoft.NET.Sdk.Web` project ASP.NET Core | `cli/scanners/php-routes.mjs`, `cli/scanners/dotnet-routes.mjs`, `cli/scanners/routes.mjs`, `cli/scanners/project-type.mjs`, `cli/validators/api-surface.mjs` | No parser: per-language lexers mask comments and strings (PHP `#` comments, heredocs, interpolation; C# verbatim, interpolated and raw strings) and reuse the shared bracket pairing. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal is omitted, counted, and reported in the API-surface coverage reason with its first locations (specs/059-php-dotnet-routes). ASP.NET Core routes carry `caseInsensitive: true`, and `compareEndpoints` (`cli/scanners/api-doc.mjs`) ignores case for them only, as ASP.NET Core does; every other framework compares exactly (specs/063-coverage-followups) |
 | **JS/TS extraction** | Route case sensitivity per router (`cli/scanners/route-case.mjs`: each JavaScript framework's router options and app setting, carried down the mount chain, and the NestJS adapter; an unreadable setting compares exactly and is noted, specs/063-coverage-followups); router `.route('/x').get().post()` chains with mount prefixes; per-route auth from the route's own middleware and handler, an earlier `use(auth)`, an auth mount above it, or an App Router `middleware` matcher (a JWT middleware built to let unauthenticated requests through, `passthrough: true` or `credentialsRequired: false`, marks nothing; spec 071); env reads including destructuring, each read site recorded with file, line and default; the App Router `pages/` and `components/` roots; ORM entities (schema files, table builders, document schemas, decorated entity classes with inherited columns, `define`/`init` models) through one discovery (`scanOrmEntities`) that guard's schema check, `generate` and `diff` share | `cli/scanners/js-ast.mjs`, `cli/scanners/routes.mjs`, `cli/shared-source.mjs` (`grepEnvUsage`), `cli/scanners/schemas.mjs`, `cli/validators/schema-sync.mjs`, `cli/scanners/project-type.mjs` | Auth is recognised by name (`requireAuth`, `verifyToken`, `passport.authenticate(...)`, `getServerSession`); text elsewhere in a file never marks a route. A route path that is not literal or a resolvable constant (a runtime template value, a regular expression) is not reported at a placeholder; it goes to `scan.unresolved` and makes the API-surface check `partial`; a path or mount prefix built from same-file or imported `const` strings (through `import` or `require()`) is resolved, and a prefix that cannot be read leaves the routers below it out instead of at the root (specs/064-js-route-shapes). Table schemas come from their ORM config first, else a bounded search; every schema file is read once. The regex fallback reads route chains, per-statement auth, and table and document-schema fields from the same object text; decorated entity classes and model-definition calls are read as decorator and argument text by both tiers and interpreted once; every table, document schema and entity class read records the tier that read it. Framework and ORM names are listed in `docs/commands.md` (`generate`) |
-| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), of the small edge and Node routers (`basePath`, `base`, `prefix`, `route()` and `use(sub.routes())` mounts and application mounts across files, through `import` and `require`, including a module that exports `sub.routes()`, and OpenAPI route definitions whose `{param}` segments become `:param`), and of file-routed edge functions (each `onRequest*` export of a file under `functions/` at the path its location names, with `_middleware` files as auth evidence for the routes below them, kept only where the output directory's include/exclude routing file lets requests reach them; an output-directory worker file replaces that tree and is read as a `fetch` entry). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a constant the reader resolves (same-file; for the router readers also `const` strings imported from project files) is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. A router below a prefix that is not literal reports no route. Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes, specs/064-js-route-shapes) |
+| **NestJS, Workers and router-library routes** | Reports the routes of NestJS controllers (`@Controller` + method decorators under `setGlobalPrefix`, URI versioning and `RouterModule` paths, auth from guards), of a Cloudflare Worker's `fetch` entry (pathname comparisons, `switch`, keyed tables and `URLPattern` in the entry and the modules it imports, methods from the `request.method` checks around them), of the small edge and Node routers (`basePath`, `base`, `prefix`, `route()` and `use(sub.routes())` mounts and application mounts across files, through `import` and `require`, including a module that exports `sub.routes()`, and OpenAPI route definitions whose `{param}` segments become `:param`), and of file-routed edge functions (each `onRequest*` export of a file under `functions/` at the path its location names, with `_middleware` files as auth evidence for the routes below them, kept only where the output directory's include/exclude routing file lets requests reach them; an output-directory worker file replaces that tree and is read as a `fetch` entry). Each reader is a pure function of file contents; `routes.mjs` gives them their files and records each file's tier and every path a reader could not resolve (`scan.unresolved`) | `cli/scanners/nest-routes.mjs`, `cli/scanners/worker-routes.mjs`, `cli/scanners/router-routes.mjs`, `cli/scanners/pages-routes.mjs`, `cli/scanners/js-route-support.mjs`, `cli/scanners/routes.mjs`, `cli/validators/api-surface.mjs` (`routeScanGaps`) | Syntax tree first, pattern fallback per file; routes carry `tier`. A path that is not literal or a constant the reader resolves (same-file; for the router readers also `const` strings imported from project files) is omitted and makes the API-surface check `partial`, naming the framework, count and first location. Durable Object classes, browser `location.pathname` and modules the Worker entry never imports are not read. A router below a prefix that is not literal reports no route, and an auth `use()` under a path the reader cannot read marks no route as auth: it is recorded as `router-unresolved-path` (specs/080-consumer-report-precision). Framework names are listed in `docs/reference/languages.md` (specs/058-js-framework-routes, specs/064-js-route-shapes) |
 | **Spec-first gate** | Classifies a change between the merge base and HEAD as covered, exempt, not governed, uncovered or inconclusive. It reads governed paths from `specFirst` and resolves spec references against `specs/*/spec.md` and the registry | `cli/scanners/spec-first.mjs`, `cli/commands/specs.mjs` | Read-only. An unresolved reference never passes. Git or inventory failure is inconclusive (exit 2), never a pass. The PR body arrives as a file |
 | **Spec Kit delegation** | The only code that invokes the `specify` CLI: reads its documented `init` options and `--version`, resolves the integration key from `.specify/integration.json` / `init-options.json` / unambiguous agent signals, initializes Spec Kit, registers the packaged DocGuard extension and re-registers it when the registered version differs; writes the extension commands for the `generic` integration, which Spec Kit registers none for | `cli/spec-kit-delegation.mjs`, `cli/ensure-skills.mjs` | Called only by `docguard init` and `upgrade --apply`, and `ensureSkills` runs only from `init` too (the dispatcher installs nothing, so every other command writes only its own outputs, spec 042); argument arrays only; every failure returns a structured result with the CLI's error and a manual command; requires Spec Kit ≥ 0.11.2, the extension's `requires.speckit_version`, read from the manifest as `MIN_SPEC_KIT_VERSION` and checked before initializing or registering (spec 048) |
 | **Agent surface** | What the project's agent can run: the active integration's command layout, derived from Spec Kit's install manifest (`.specify/integrations/<key>.manifest.json`); where DocGuard's own skills go; whether each mandatory hook in `.specify/extensions.yml` resolves; and command hints that name a slash command only when its file exists | `cli/agent-surface.mjs` | Read-only. No per-agent table: the file Spec Kit wrote for `constitution` gives the directory, shape and separator. Paths from `.specify/*.json` are checked to stay inside the project before any write (spec 048) |
@@ -278,6 +279,7 @@ DocGuard declares one exact-pinned runtime dependency, `@babel/parser`. It loads
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.16.0 | 2026-11-01 | DocGuard Team | Report precision (MET count patterns, SPK010 unobservable paths, DSP001 reference context) and the router-library unreadable-path auth rule (spec 080) |
 | 1.15.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: reconciliation reads an over-budget range in batches (spec 028 FR-008); the tree-sitter child and anchor hashes in the built-in module table; metadata table and project size re-measured |
 | 1.14.0 | 2026-10-11 | DocGuard Team | Pass-through JWT middleware marks no route auth (spec 071); review after specs 065–071 |
 | 1.13.0 | 2026-10-11 | DocGuard Team | Reconciliation links a deleted file to the current, approved spec that names its removal (spec 069) |
@@ -681,14 +683,14 @@ Read the outputs declared in `action.yml` and the command's JSON schema before w
 
 # Data Model
 
-<!-- docguard:version 0.17.0 -->
+<!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.17.0` |
+| **Version** | `0.18.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -1080,7 +1082,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | `tools/suite-runtime-reference.json` | maintainers, with `tools/suite-runtime-budget.mjs reference` from CI test TAP | Per-test durations (ms) at reference-runner speed, with the runs they came from (`sources`, `inputs`), `speedFactorRange` and `maxNormalizedTestMs`. Used only to measure a run's speed factor for the per-test ceiling; refreshed when a run shares too few tests with it to measure that factor (`MIN_COMMON` in the tool; specs/051-release-cut-green FR-007) |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. Never run: its CLI version and model are unavailable on ChatGPT-account Codex (superseded by v3). `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
 
-<!-- truncated: 269 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 271 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1531,9 +1533,9 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.4.6 -->
+<!-- docguard:version 1.4.7 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1645,7 +1647,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
-| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
 | `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
@@ -1662,6 +1664,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-html-comments.mjs`: a `<!--` quoted in a code span opens nothing, for requirement IDs and instruction pointers (spec 074) | `tests/quoted-comment-openers.test.mjs` | ✅ |
 | Docs-Sync evidence: whole-word module names, `covers` entries, App Router handlers by URL path, unique path tails, `index` directories, drawn trees, names in comments ignored; nudge hook and Diff-Suspicion `path` whole-name matching (specs 077, 078) | `tests/whole-token-sibling-matchers.test.mjs`, `tests/docs-sync-specific-evidence.test.mjs`, `tests/docs-sync.test.mjs` | ✅ |
 | Document fidelity (spec 079): ENV001/ENV002 share STR003's heading matcher; brace lists in documented tests expand and a brace glob matches as a union (DDF002 and `diff`); DDF001 negation over lists, removal verbs and change-record sections; STR006 and unedited-scaffold scoring (docQuality, Legible, Machine markers) incl. the `generate --plan --write` allow-list; `constructor` no longer yields NaN readability; two review rounds' cases (list negation that stops at a predicate, removal verbs scoped to their object, fenced/commented/H1/indented change-record headings, role-mapped and N/A-owned scaffolds, main's plural heading matching with two whole-heading synonyms in validator and writer alike, self-anchored test extraction, `**/` matching no directory, `no-` compounds, infrastructure-only removal nouns, linear-time lists and braces, prototype-named CLI, MCP and DRF inputs) | `tests/doc-validator-fidelity.test.mjs`, `tests/generated-docs-e2e.test.mjs` | ✅ |
+| Report precision (spec 080): thousands-separated counts read whole and rewritten with the document's grouping; identifier and version fragments are not counts; test nouns that do not name cases are not compared with test cases; SPK010 silent on paths git cannot observe, a tracked untouched path still reported; DSP001 overlap scoped to the referencing row or section; a positive control for each | `tests/consumer-report-precision.test.mjs` | ✅ |
+| `cli/scanners/router-routes.mjs`: an auth `use()` under an unreadable path is recorded as `router-unresolved-path` and marks no route; one-argument and non-auth `use()` record nothing (spec 080) | `tests/router-routes-unresolved.test.mjs` | ✅ |
 | TODO tracking: keywords quoted in code spans or strings are not annotations; comments from the string-aware reader; no self-path skip (spec 073) | `tests/todo-tracking.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
@@ -1735,6 +1739,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4.7 | 2026-11-01 | DocGuard Team | Map spec 080's report-precision and router unresolved-path tests, and `tests/anchor-cache.test.mjs` |
 | 1.4.6 | 2026-10-13 | DocGuard Team | The CI runtime budget is a per-test ceiling at reference-runner speed (`tools/suite-runtime-budget.mjs`, spec 051 FR-007 revision) |
 | 1.4.5 | 2026-10-11 | DocGuard Team | Map `sync-tests.mjs` to its tests; `runCI`, `runSpecs` and `runSyncTests` have behaviour tests (#556) |
 | 1.4.4 | 2026-10-11 | DocGuard Team | Map the workflow permission rules to `tests/workflow-permissions.test.mjs` (spec 068) |
@@ -1916,6 +1921,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Counts are read whole, and only when they are counts**
+  (`docguard.consumer-report-precision`, #593, #594, #596).
+  - `1,183 checks` was read as `183 checks`, and `docguard fix --write` would
+    have rewritten a correct number. Every count pattern now reads thousands
+    separators. The fix rewrites either spelling of the stale number and keeps
+    the document's digit grouping.
+  - A count no longer starts inside an identifier, a version or a ratio.
+    `FR365 tests`, `FR-365`, `#365` and `v3.65` are not test counts.
+  - `400 cases across 20 test files` is no longer a claim of 20 test cases.
+    Counts of test files, suites, modules and runs are not compared with
+    declared cases, while `20 test cases` still is.
+- **SPK010 no longer says a git-ignored file was "never changed"** (#597).
+  Git cannot observe an ignored, untracked file such as a local diagnostic
+  receipt, so its absence from the feature's history proves nothing. A
+  tracked file is still reported, even under an ignore rule.
+- **DSP001 reads the overlap where the document names the file** (#598).
+  The removed-token overlap was computed over the whole document. A test file
+  named once in an inventory table was therefore paired with common words
+  from unrelated sections, and from other rows of the same table, which
+  blocked `guard --fail-on-warning`. It is now counted in the smallest
+  section holding the reference, without the table rows that name other
+  files.
+- **Auth middleware behind a path the router reader cannot read no longer
+  marks every route as protected** (#595, found by the Jules bug-hunt
+  routine). `router.use(API_PREFIX, requireAuth)` covers an unknown scope, so
+  it is now recorded in `scan.unresolved`. A `use()` whose middleware is not
+  auth records nothing.
+- **The anchor-cache tests pass on CI** (#599). They asserted an enabled
+  cache, but the cache turns itself off whenever `CI` is set.
+- **The unreadable-git test accepts the CI runners' newer git wording**
+  (`docguard.unreadable-git-metadata`). The runners' git now reports
+  `gitfile does not point to a valid repository` where it used to say `not a
+  git repository`. DocGuard already reported git's own first line; only the
+  test pinned the old text. Test-only.
+
+## [0.45.1] - 2026-10-16
+
 ### Changed
 
 - **The CI test runtime budget checks each test, not the suite total**
@@ -2016,6 +2060,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocks with SPC006 and writes nothing. A spec-text amendment alone still does
   not qualify a living spec for maintenance; the source, test or canonical
   change that implements it does.
+
+### Commits
+
+- chore: re-anchor spec 079 to main after the squash merge of #590 (#591)
+- chore: spec 079 implementation outcomes (verified) (#590)
+- fix: validators agree on headings, braces, negation; blank templates not scored as finished (spec 079) (#589)
+- [jules:test-gaps] cli/precision-evidence.mjs — two exports covered (#583)
+- chore: maintenance outcomes for specs 028 and 051 (#580, #579) (#582)
+- chore: review docs after specs 070-078; tag ci-reproducibility with its spec (#581)
+- fix: reconcile over-budget ranges in batches; --since never skips silently (spec 028) (#580)
+- fix: CI runtime budget is a per-test ceiling at reference speed (spec 051 FR-007) (#579)
 
 ## [0.45.0] - 2026-10-13
 
@@ -2257,58 +2312,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GENERATED-DOCS-PASS-OWN-CHECKS F37.
 
   Each now targets the code that implements the behaviour its description
-  names, and every fault in the file matches exactly once. Test-only: no
-  shipped behaviour changes.
 
-- **Two `docguard watch` tests no longer race the watcher's output**
-  (`docguard.watch-deterministic` FR-004). Each waited on an earlier or weaker
-  marker than the line it then asserted, so a slow runner could read the
-  header before the next line arrived (CI run 38300989325). Both now wait on
-  the pattern they assert; the block passed 10 sequential and 3×4 concurrent
-  runs. No sleep added.
-
-- **A quoted `<!--` no longer hides the rest of a spec**
-  (`docguard.quoted-comment-openers`). A requirement line that quoted an HTML
-  comment opener in backticks, such as ``- **FR-001**: Strip the `<!--`
-  marker``, opened a comment that never closed, so every requirement after it
-  was dropped without a word: traceability under-counted and tags citing them
-  read as citing nothing. Agent instruction files had the same gap for doc
-  pointers. A `<!--` inside an inline code span is now text, and real HTML
-  comments still hide what they hold. No requirement or pointer on this
-  repository changed. Found by the TODO-parsing session (spec 073).
-
-- **Kotlin routes built from a string template are no longer reported at a
-  guessed path** (`docguard.go-spring-rails-routes` FR-006). `"\\$v"` (a
-  backslash, then the template `$v`) and a raw `"""\$v"""` string (no escapes)
-  were read as literal text; both are now templates, so the route is omitted.
-  An escaped `"\$v"` stays literal. Found by Jules (#566).
-
-- **A tag quoted inside a string is no longer requirement evidence.** The
-  implementation-evidence scanner read `// @req FR-012` inside a help string
-  (`cli/commands/explain.mjs`) as a tag. It now reads real comments only, in
-  every language it can lex, and quote-aware `#` comments in YAML and shell.
-  - **What changes on DocGuard itself.** Four implementation-evidence
-    entries that 0.44.3 recorded disappear. Each came from a `/*` inside a
-    string (a glob) that the old regex took for the start of a comment,
-    swallowing the code after it:
-    - `cli/commands/trace.mjs` for `docguard.doc-ownership-map#FR-004`,
-      `docguard.mcp-doc-tools#FR-003` and `docguard.output-ux#FR-009`;
-    - `cli/findings.mjs` for `docguard.ignore-reasons#FR-005`.
-
-    The spec registry's projection changes accordingly. Guard output is
-    otherwise unchanged against 0.44.3 on this repository and on the
-    projects in the release gate.
-- **A Python interpreter upgrade no longer reads as a code change in the doc
-  lock.** A `python-ast` mismatch whose code is unchanged since the reviewed
-  revision, re-read with today's interpreter, is now unverifiable instead of
-  DLK001.
-- **`specs complete --write` no longer rolls back on deviations given out of
-  order** (`specs/028-completion-revision-anchoring`, FR-007). Two
-  `--deviation` values not already sorted failed with "File transaction
-  rolled back: completed registry does not match the resulting repository":
-  completion recorded them in the order given, and the projection that
-
-<!-- truncated: 5837 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5887 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2929,4 +2934,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.45.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.45.1 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)

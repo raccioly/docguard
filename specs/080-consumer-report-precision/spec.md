@@ -108,7 +108,7 @@ Each defect is DocGuard stating something it cannot prove.
 ### Measurable Outcomes
 
 - **SC-001**: Each of FR-001 to FR-006 has a test that fails on 0.45.1 and passes after, with a positive control for FR-007.
-- **SC-002**: A guard A/B (0.45.1 against this change), on this repository and on every other project under `~/Repo_claude`, run from one fresh `git archive` copy per CLI, changes only findings that FR-001 to FR-006 explain. Every changed finding is reviewed by hand.
+- **SC-002**: A guard A/B (0.45.1 against this change), on this repository and on every other local project, run from one fresh `git archive` copy per CLI, changes only findings that FR-001 to FR-006 explain. Every changed finding is reviewed by hand.
 - **SC-003**: Because an archive copy has no history, SPK010 and DSP001 are also compared on `git clone --local` copies. On the reporting project at the reported commit, the #594, #596, #597 and #598 findings disappear and no other finding changes.
 - **SC-004**: The anchor-cache tests pass with `CI=true` set, and every fixture git call goes through `tests/helpers/git.mjs` (`docguard.test-git-hermeticity` FR-001).
 
@@ -124,13 +124,13 @@ Each defect is DocGuard stating something it cannot prove.
 - A file-count metric (`N test files` against the inventory).
 - The single-fingerprint baseline exception the #598 report proposes for the consumer project. Nothing in that project is changed.
 
-## Implementation Outcomes
+## Verification Notes
 
 Verified 2026-10-31 on the branch head.
 
 - **SC-001**: `tests/consumer-report-precision.test.mjs` failed 17 of 27 cases on 0.45.1. Every control passed there, and every case passes here. In `tests/router-routes-unresolved.test.mjs`, the unreadable-path case and the non-auth case fail on the Jules version of #595.
 - **Suite**: `npm test` reports 4,115 tests, 4,114 pass, 0 fail, 1 skipped. `guard` passes on this repository; its only warning is the README count this batch raised, which is now updated to 3,316. `npm run budget` passes all 21 metrics against main.
-- **SC-002 and SC-003**: the A/B ran 0.45.1 against the branch, with one fresh `git clone --local` per project per CLI, serially. It covered the 44 git repositories under `~/Repo_claude` and the reporting project at `619ac675`.
+- **SC-002 and SC-003**: the A/B ran 0.45.1 against the branch, with one fresh `git clone --local` per project per CLI, serially. It covered the 44 local git repositories and the reporting project at `619ac675`.
   - 45 runs, 0 errors, 0 findings added. Findings went from 9,440 to 9,419, and every removal is a DSP001.
   - Reporting project at `619ac675`: the #598 finding (`walk-env-safety.test.js`; `only, child, exit`) is gone, and nothing else changed.
   - Project A: an end-to-end test file, with overlap `has, own, team, application, into` from the buglog and unit-tier sections.
@@ -140,3 +140,9 @@ Verified 2026-10-31 on the branch head.
   - Each removed finding was reviewed by hand, and each is the false-positive shape of #598.
 - **What the A/B changed in the design.** The first pass dropped every table row in a section that did not name the file. That removed a DATA-MODEL finding in a fifth project whose words came from the field table under the file's own section. Only rows that name another file are dropped now, and that project is unchanged. The first pass also left the reporting project's finding in place: its TEST-SPEC is one long section, so section scope could not isolate the row. A table-row reference now reads only its row.
 - **Not reproducible on the reporting project's history**: the #594 and #596 sentences were never committed to its TEST-SPEC; they appear only in an archived spec, which MET003 skips. The project also freezes findings in `.docguard.baseline.json`. The issue reproductions are the proof for FR-001 to FR-004.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `11b3e7aec70f6fc0f189b0b6fdcf9be6a6643542` — Reviewed at 0d92d59 (#600): MET001-003 thousands separators, identifier fragments and test-file nouns; SPK010 silent on paths git cannot observe; DSP001 overlap scoped to the referencing row or section; router auth use() under an unreadable path recorded, never widened. Suite 4,114/4,115 pass, 1 skip. A/B 45 runs: 0 added, 21 DSP001 removed, all hand-reviewed. Budget 21/21. Deviation: none. Evidence: `cli/scanners/speckit.mjs`, `cli/validators/diff-suspicion.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/anchor-cache.test.mjs`, `tests/consumer-report-precision.test.mjs`, `tests/router-routes-unresolved.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

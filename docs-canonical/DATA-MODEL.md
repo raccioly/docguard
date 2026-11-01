@@ -1,13 +1,13 @@
 # Data Model
 
-<!-- docguard:version 0.17.0 -->
+<!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-01 -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
-| **Version** | `0.17.0` |
+| **Version** | `0.18.0` |
 | **Database** | None — DocGuard is a stateless CLI tool |
 | **Storage** | File-system only (reads project files, writes generated docs) |
 
@@ -501,7 +501,8 @@ comparison (`compareEndpoints` in `cli/scanners/api-doc.mjs`) folds case only
 for such a route. The non-enumerable `scan.unresolved` lists every route a
 reader saw and left out of the surface, as `{ framework, code, file, line, target }`:
 the NestJS, Worker, Cloudflare Pages and router-library (Hono, itty-router,
-Koa) readers' limitations, Express and Fastify route paths and Express mount
+Koa) readers' limitations (among them `router-unresolved-path` for an auth `use()`
+whose path the reader cannot read, which marks no route as auth), Express and Fastify route paths and Express mount
 prefixes that are not literal (`route-unresolved-path`,
 `route-unresolved-prefix`), the Actix, Axum, Rocket, Symfony and Laravel
 readers' (`route-unresolved-path`, `route-unresolved-prefix`,
@@ -509,7 +510,7 @@ readers' (`route-unresolved-path`, `route-unresolved-prefix`,
 reader recognised but could not turn into a route), and the Python reader's
 (`python-unresolved-route-path`, `python-unresolved-include`,
 `django-unresolved-route`, `django-unresolved-include`), minus those in test,
-fixture, example or ignored files (specs 058, 063, 064, 071). `scan.caseNotes` lists
+fixture, example or ignored files (specs 058, 063, 064, 071, 080). `scan.caseNotes` lists
 each case setting whose value is an expression rather than a literal, as
 `{ framework, file, line, reason }`; the routes it may govern compare exactly.
 
@@ -562,6 +563,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.18.0 | 2026-11-01 | DocGuard Team | `scan.unresolved` records `router-unresolved-path` for an auth `use()` under a path the router-library reader cannot read (spec 080) |
 | 0.17.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: the `anchors` configuration block and `validators.requirementAnchors`; the anchor cache and staged tree-sitter files in `.docguard/`; `tools/suite-runtime-reference.json` (spec 051 FR-007) |
 | 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag (ASP.NET Core, Express, Koa, Fastify, NestJS), `scan.caseNotes`, and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |
 | 0.15.0 | 2026-10-10 | DocGuard Team | `.docguardignore` reasons and expiries, the suppression model, the claimspec `ignore` export, `validators.suppressions` and `suppressions.requireReason` (spec 057) |
