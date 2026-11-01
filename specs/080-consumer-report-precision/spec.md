@@ -108,7 +108,7 @@ Each defect is DocGuard stating something it cannot prove.
 ### Measurable Outcomes
 
 - **SC-001**: Each of FR-001 to FR-006 has a test that fails on 0.45.1 and passes after, with a positive control for FR-007.
-- **SC-002**: A guard A/B (0.45.1 against this change), on this repository and on every other project under `~/Repo_claude`, run from one fresh `git archive` copy per CLI, changes only findings that FR-001 to FR-006 explain. Every changed finding is reviewed by hand.
+- **SC-002**: A guard A/B (0.45.1 against this change), on this repository and on every other local project, run from one fresh `git archive` copy per CLI, changes only findings that FR-001 to FR-006 explain. Every changed finding is reviewed by hand.
 - **SC-003**: Because an archive copy has no history, SPK010 and DSP001 are also compared on `git clone --local` copies. On the reporting project at the reported commit, the #594, #596, #597 and #598 findings disappear and no other finding changes.
 - **SC-004**: The anchor-cache tests pass with `CI=true` set, and every fixture git call goes through `tests/helpers/git.mjs` (`docguard.test-git-hermeticity` FR-001).
 
@@ -124,13 +124,13 @@ Each defect is DocGuard stating something it cannot prove.
 - A file-count metric (`N test files` against the inventory).
 - The single-fingerprint baseline exception the #598 report proposes for the consumer project. Nothing in that project is changed.
 
-## Implementation Outcomes
+## Verification Notes
 
 Verified 2026-10-31 on the branch head.
 
 - **SC-001**: `tests/consumer-report-precision.test.mjs` failed 17 of 27 cases on 0.45.1. Every control passed there, and every case passes here. In `tests/router-routes-unresolved.test.mjs`, the unreadable-path case and the non-auth case fail on the Jules version of #595.
 - **Suite**: `npm test` reports 4,115 tests, 4,114 pass, 0 fail, 1 skipped. `guard` passes on this repository; its only warning is the README count this batch raised, which is now updated to 3,316. `npm run budget` passes all 21 metrics against main.
-- **SC-002 and SC-003**: the A/B ran 0.45.1 against the branch, with one fresh `git clone --local` per project per CLI, serially. It covered the 44 git repositories under `~/Repo_claude` and the reporting project at `619ac675`.
+- **SC-002 and SC-003**: the A/B ran 0.45.1 against the branch, with one fresh `git clone --local` per project per CLI, serially. It covered the 44 local git repositories and the reporting project at `619ac675`.
   - 45 runs, 0 errors, 0 findings added. Findings went from 9,440 to 9,419, and every removal is a DSP001.
   - Reporting project at `619ac675`: the #598 finding (`walk-env-safety.test.js`; `only, child, exit`) is gone, and nothing else changed.
   - Project A: an end-to-end test file, with overlap `has, own, team, application, into` from the buglog and unit-tier sections.

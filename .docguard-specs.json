@@ -2191,12 +2191,12 @@
       "path": "specs/080-consumer-report-precision/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -2206,7 +2206,11 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -2233,7 +2237,7 @@
         "artifacts": [
           {
             "path": "specs/080-consumer-report-precision/spec.md",
-            "digest": "sha256:2943bbd79b44b2c3dab7052731c35f5fbb61454d1c07810ec7f38c933b018b0e"
+            "digest": "sha256:8dc84f50dce5983b3eeede392190de4d4260bf36d955ac52a3d4b2f84cf5d4e0"
           },
           {
             "path": "specs/080-consumer-report-precision/plan.md",
@@ -2241,7 +2245,7 @@
           },
           {
             "path": "specs/080-consumer-report-precision/tasks.md",
-            "digest": "sha256:f0b6691db3baeeb600e36379e3c70111ca2a8422a3b7e4d919b5e32d7d9fed96"
+            "digest": "sha256:e4efd3f075476d1497e09fe1a6dfeded83d2487ff3e09803d50092630a27c937"
           }
         ],
         "taskCompletion": {

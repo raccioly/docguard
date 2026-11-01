@@ -32,7 +32,7 @@ Tests come first. Every reproduction must fail on 0.45.1 before its fix lands (S
 ## Phase 4 — Proof (SC-002, SC-003)
 
 - [x] T017 `npm test`, guard on this repository, and `npm run budget`.
-- [x] T018 Archive A/B on this repository and every project under `~/Repo_claude`: 0.45.1 against the branch, one fresh copy per CLI, run serially.
+- [x] T018 Archive A/B on this repository and every other local project: 0.45.1 against the branch, one fresh copy per CLI, run serially.
 - [x] T019 Clone A/B for SPK010 and DSP001, including the reporting project at the reported commit.
 - [x] T020 Review every changed finding by hand, then fill in Implementation Outcomes.
 - [x] T021 `tests/unreadable-git-metadata.test.mjs`: accept the CI runners' newer git wording for a broken gitfile, which failed every PR (the product reports git's own line). Add an FR-008 docs test to `tests/consumer-report-precision.test.mjs`.
