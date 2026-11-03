@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.2] - 2026-11-02
+
 ### Changed
 
 - **GitHub Actions pins move to their latest patch/minor releases** (#604).
@@ -54,6 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `gitfile does not point to a valid repository` where it used to say `not a
   git repository`. DocGuard already reported git's own first line; only the
   test pinned the old text. Test-only.
+
+### Commits
+
+- chore(deps): bump the all-actions group with 8 updates (#604)
+- chore(deps): bump @babel/parser (#603)
+- chore: re-anchor spec 080 to main after the squash merge of #601 (#602)
+- maint: 2026-11-01 — spec 080 implementation outcomes (verified) (#601)
+- fix: counts, SPK010, DSP001 and router auth say only what they can prove (spec 080) (#600)
 
 ## [0.45.1] - 2026-10-16
 
