@@ -58,7 +58,7 @@ function domainEvidence(domains, keys) {
   });
 }
 
-function incidentDocs(tracked, projectDir) {
+export function incidentDocs(tracked, projectDir) {
   const found = [];
   for (const f of tracked.filter(p => /\.md$/i.test(p))) {
     const content = read(projectDir, f);

@@ -1278,6 +1278,116 @@
       }
     },
     {
+      "specId": "docguard.authoring-contract",
+      "path": "specs/082-authoring-contract/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.authoring-contract#FR-001",
+          "docguard.authoring-contract#FR-002",
+          "docguard.authoring-contract#FR-003",
+          "docguard.authoring-contract#FR-004",
+          "docguard.authoring-contract#FR-005",
+          "docguard.authoring-contract#FR-006",
+          "docguard.authoring-contract#FR-007",
+          "docguard.authoring-contract#SC-001",
+          "docguard.authoring-contract#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/082-authoring-contract/spec.md",
+            "digest": "sha256:44655a91463d2fd2ce2525099d03a8f098d8037f25890ee53c1b0840d454b555"
+          },
+          {
+            "path": "specs/082-authoring-contract/plan.md",
+            "digest": "sha256:54454a50a79e3b96a4f5ce3799c2e96abe568c8dca2766df0cf3542a92e5ded5"
+          },
+          {
+            "path": "specs/082-authoring-contract/tasks.md",
+            "digest": "sha256:f96cebdf9d0c04e3465d1e6cc35a4f7d7f08abe3e25f3c72bee594cb6cd9820d"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 5,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/authoring-contract.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/authoring-contract.mjs",
+            "line": 66
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/authoring-contract.test.mjs",
+            "line": 12
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.baseline-stable-fingerprint",
       "path": "specs/052-baseline-stable-fingerprint/spec.md",
       "reviewed": {
@@ -3737,12 +3847,12 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/structure.mjs",
-            "line": 225
+            "line": 219
           },
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 743
+            "line": 740
           },
           {
             "requirementId": "FR-009",
@@ -6508,7 +6618,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1097
+            "line": 1104
           },
           {
             "requirementId": "FR-008",
@@ -7534,12 +7644,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1350
+            "line": 1357
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1360
+            "line": 1367
           },
           {
             "requirementId": "FR-006",

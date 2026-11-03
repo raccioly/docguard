@@ -19,6 +19,7 @@ import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { anchorGranularity } from '../scanners/anchors.mjs';
 import { computeDoraEvidence } from './score-dora.mjs';
+import { requiredSectionMap } from '../authoring-contract.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -714,13 +715,9 @@ function calcStructureScore(dir, config) {
 }
 
 function calcDocQualityScore(dir, config) {
-  const checks = {
-    'docs-canonical/ARCHITECTURE.md': ['## System Overview', '## Component Map', '## Tech Stack'],
-    'docs-canonical/DATA-MODEL.md': ['## Entities'],
-    'docs-canonical/SECURITY.md': ['## Authentication', '## Secrets Management'],
-    'docs-canonical/TEST-SPEC.md': ['## Test Categories', '## Coverage Rules'],
-    'docs-canonical/ENVIRONMENT.md': ['## Environment Variables', '## Setup Steps'],
-  };
+  // docguard.authoring-contract#FR-002: the sections STR003 requires, with
+  // its project-type exemptions; a separate list here had drifted from it.
+  const checks = requiredSectionMap(config.projectTypeConfig || {});
 
   let found = 0;
   let total = 0;

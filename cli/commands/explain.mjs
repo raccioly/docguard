@@ -23,6 +23,7 @@ import { resolve as resolvePath, dirname as dn } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
 import { c } from '../shared.mjs';
 import { BLOCKER_CODES, CODES } from '../findings.mjs';
+import { requiredSectionsSentence } from '../authoring-contract.mjs';
 import { describeEvidenceForCode, evidenceForCode } from '../precision-evidence.mjs';
 
 const CLI_VERSION = JSON.parse(readFileSync(resolvePath(dn(fp(import.meta.url)), '..', '..', 'package.json'), 'utf-8')).version;
@@ -406,7 +407,8 @@ const EXPLAINERS = {
     // distinct check (required headings, not file existence) with its own
     // warning + N/A marker — so it gets its own explainer.
     title: 'Doc Sections — each canonical doc has its required headings',
-    what: 'For each canonical doc, verifies the required `##` sections exist as real headings: ARCHITECTURE.md (System Overview, Component Map, Tech Stack), DATA-MODEL.md (Entities), SECURITY.md (Authentication, Secrets Management), TEST-SPEC.md (Test Categories, Coverage Rules), ENVIRONMENT.md (Environment Variables, Setup Steps). The DATA-MODEL and ENVIRONMENT requirements relax automatically for CLI/library projects.',
+    // docguard.authoring-contract#FR-002: the list comes from the registry STR003 reads.
+    what: `For each canonical doc, verifies the required \`##\` sections exist as real headings (synonyms and numbered arc42 headings count): ${requiredSectionsSentence()}. A profile can require more (STR007, advisory).`,
     why:  'A canonical doc that exists but lacks its sections is an empty shell — the section structure is what makes it a reliable memory anchor for humans and agents.',
     triggers: [
       ['unedited scaffold', 'STR006: the document holds nothing beyond the template `docguard init` wrote it from (comments, empty cells, the Metadata table, dates). Write it, run `docguard generate --plan --write` for code-derived sections, or own an intentionally blank document with `<!-- docguard:section scaffold n/a — reason -->` (any reasoned section N/A marker owns it). A placeholder owner or unchosen status alone is not reported. Until then scores treat the document as unfinished: docQuality counts none of its checks, ALCOA+ Legible is a gap, and Machine markers does not count it as marked.'],

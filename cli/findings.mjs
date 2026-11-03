@@ -174,6 +174,13 @@ export const CODES = {
     help: 'A canonical doc holds nothing a reader wrote beyond the template `docguard init` created it from: every line is template text, an HTML-comment placeholder, an empty table cell, the Metadata table or a date. It scores as unfinished in docQuality, ALCOA+ Legible and Machine markers. Write the document (or run `docguard generate --plan --write`, which fills code-derived sections), or — if it is intentionally blank — own it with `<!-- docguard:section scaffold n/a — reason -->` (any reasoned section N/A marker owns the document, and it is then scored as written). A placeholder owner or unchosen status alone is not reported: `generate --plan --write` leaves both. A document that `docs.roles` remaps is compared with the template of its role.',
     suppress: '<!-- docguard:section scaffold n/a — reason -->',
   },
+  STR007: {
+    validator: 'docSections',
+    defaultLevel: 'info',
+    title: 'Section the active profile requires is missing',
+    help: 'A profile can require sections beyond the canonical ones (the `enterprise-ai` profile requires Risk Assessment and Threat Model in SECURITY.md; `requiredSections` in `.docguard.json` adds more). Add the heading, or own its absence with `<!-- docguard:section <slug> n/a — reason -->`. Informational by default (spec 082): it never changes the exit code unless `findingSeverity.STR007` says so.',
+    suppress: '<!-- docguard:section <slug> n/a — reason -->',
+  },
   CHG001: {
     validator: 'changelog',
     title: 'Missing [Unreleased] section',

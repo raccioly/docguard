@@ -61,6 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **What DocGuard tells authors to write is what its validators accept**
+  (`docguard.authoring-contract`, spec 082). One registry
+  (`cli/authoring-contract.mjs`) now holds each canonical document's sections.
+  STR003, the Doc Quality score, `explain`, the `fix` prompts and the Spec Kit
+  `docguard-fix` skill all read it. Before this, the skill and `fix` asked
+  agents for sections STR003 does not accept, so an agent following
+  DocGuard's guidance wrote documents that failed DocGuard: "Technology
+  Choices" instead of Tech Stack, "Test Framework" instead of Test
+  Categories, "Data Structures" instead of Entities. A round-trip test feeds
+  every piece of guidance and every template back through the validators.
+  New STR007 reports a section the active profile requires (the
+  `enterprise-ai` profile's Risk Assessment and Threat Model, which nothing
+  read before). It is informational by default.
 - **Every document parser is fuzzed on every test run**
   (`docguard.validator-fuzz`, spec 088). `tools/fuzz.mjs` is a seeded,
   dependency-free fuzzer, and `npm test` runs it with a fixed seed. Each of 19
@@ -117,6 +130,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `suppressions.requireOwner` (IGN004) and `suppressions.maxDays` (IGN005)
   make waivers accountable; `docguard ignore --owner` filters by owner. Forms
   without the new tokens read exactly as before.
+
+### Changed
+
+- **The Doc Quality score now asks for the same sections as STR003**
+  (spec 082). For a project without a database (`needsDatabase: false`) or
+  environment variables (`needsEnvVars: false`), it stops counting a missing
+  Entities or Environment Variables section. Those scores can only rise.
 
 ### Fixed
 
