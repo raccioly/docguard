@@ -13,13 +13,14 @@
 
 <!-- docguard:version 1.16.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-01 -->
+<!-- docguard:last-reviewed 2026-11-02 -->
+<!-- docguard:validator apiSurface n/a — DocGuard is a CLI and MCP server with no HTTP API; its command and tool surface is checked by Surface-Sync -->
 
 | Metadata | Value |
 |----------|-------|
 | **Status** | ![Status](https://img.shields.io/badge/status-active-brightgreen) |
 | **Version** | `1.16.0` |
-| **Last Updated** | 2026-11-01 |
+| **Last Updated** | 2026-11-02 |
 | **Project Size** | ~71K lines in 193 files across `cli/` — measured 2026-10-13 with `wc -l` over `cli/**/*.mjs`; re-measure rather than trust this figure |
 
 ---
@@ -50,6 +51,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
 | **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written. The opt-in tree-sitter tier (`ts-anchors.mjs`, `ts-decls.mjs`, `ts-anchors-child.mjs`) refines pattern-tier symbols from hash-pinned artifacts; `tools/anchor-oracle` measures the pattern tier against it in CI. A `docguard:volatile` comment marks its line, and every tier fingerprints what lies wholly on that line as a placeholder, from one set of marked lines per file (`volatileLinesFor`) | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/scanners/ts-anchors.mjs`, `cli/scanners/ts-decls.mjs`, `cli/scanners/ts-anchors-child.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
+| **Verdict contract** | Ends every validator result in one closed verdict and keeps a per-run observation ledger: a git call that fails while git is readable (spawn error, signal, timeout, or an exit outside the subcommand's documented answers) is retried once if transient, then recorded as a gap on the validator during whose run it happened, and findings that depend on it are withheld (PSR002, REF001). `--fail-on-inconclusive` exits 4 (spec 081) | `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`, `APPLICABILITY_CLASS`), `cli/commands/guard.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs` | A gap is never a finding and never a pass; whole-run unreadable git stays `missing-prerequisite` (spec 022) |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -1082,7 +1084,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | `tools/suite-runtime-reference.json` | maintainers, with `tools/suite-runtime-budget.mjs reference` from CI test TAP | Per-test durations (ms) at reference-runner speed, with the runs they came from (`sources`, `inputs`), `speedFactorRange` and `maxNormalizedTestMs`. Used only to measure a run's speed factor for the per-test ceiling; refreshed when a run shares too few tests with it to measure that factor (`MIN_COMMON` in the tool; specs/051-release-cut-green FR-007) |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. Never run: its CLI version and model are unavailable on ChatGPT-account Codex (superseded by v3). `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
 
-<!-- truncated: 271 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 273 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1672,6 +1674,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
+| `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`): six verdicts, applicability class, observation gaps under a stub git, PSR002/REF001 withholding, retry, `--fail-on-inconclusive`, verdicts in JSON, compact, SARIF, JUnit and text, baseline safety, and the reviewed git call-site inventory (spec 081) | `tests/verdict-contract.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
 | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
@@ -1921,6 +1924,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Every check ends in a verdict** (`docguard.verdict-contract`, spec 081,
+  program issue #607).
+  - Each validator result carries a closed `verdict`: `pass`, `fail`,
+    `empty` (nothing to judge), `inconclusive` (could not decide), `blocked`
+    (threw) or `skipped` (disabled or declared N/A). Its applicability gains
+    `class` (`applicable`, `not-applicable`, `unknown`), and only a
+    `not-applicable` check can be skipped.
+  - Guard JSON adds a `verdicts` summary (counts and gaps). SARIF records
+    blocked and inconclusive checks as tool execution notifications, with
+    `executionSuccessful: false` when one is blocked. JUnit renders blocked as
+    `<error>` and inconclusive or empty as `<skipped message>`. Text output
+    prints a verdict line and the reason for every inconclusive check.
+  - `guard --fail-on-inconclusive` exits 4 when a check could not decide;
+    `ci --fail-on-inconclusive` blocks readiness (`CI_INCONCLUSIVE_BLOCKED`);
+    the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
+    codes are unchanged.
+
+### Fixed
+
+- **A git call that fails is a gap, not a finding.** On a loaded machine
+  `git check-ignore` could fail to spawn, and PSR002 then reported every
+  unresolved pointer at high confidence; a failed `git grep` at HEAD could
+  make REF001 report a documented symbol as removed. Shared git helpers now
+  retry a transient spawn error once, then record the failure on the
+  validator that was running. PSR002 and REF001 withhold what git could not
+  answer and say how much. `--update-baseline` refuses to freeze a run with a
+  gap, so withheld findings cannot drop out of the baseline.
+
+## [0.45.2] - 2026-11-02
+
+### Changed
+
+- **GitHub Actions pins move to their latest patch/minor releases** (#604).
+  CI, release and the published `action.yml` now run `actions/setup-node`
+  v7.1.0, `actions/upload-artifact` v7.0.2, `actions/download-artifact`
+  v8.0.2, `actions/setup-python` v7.1.0, `pypa/gh-action-pypi-publish`
+  v1.14.3, `google/osv-scanner-action` v2.7.0 and `websec-validator` v0.22.3.
+  The CI workflows that `docguard init` and the Spec Kit extension generate
+  pin the same setup-node and upload-artifact releases. Every commit SHA was
+  checked against its official release tag before it was recorded as reviewed.
+
 ### Fixed
 
 - **Counts are read whole, and only when they are counts**
@@ -1957,6 +2003,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `gitfile does not point to a valid repository` where it used to say `not a
   git repository`. DocGuard already reported git's own first line; only the
   test pinned the old text. Test-only.
+
+### Commits
+
+- chore(deps): bump the all-actions group with 8 updates (#604)
+- chore(deps): bump @babel/parser (#603)
+- chore: re-anchor spec 080 to main after the squash merge of #601 (#602)
+- maint: 2026-11-01 — spec 080 implementation outcomes (verified) (#601)
+- fix: counts, SPK010, DSP001 and router auth say only what they can prove (spec 080) (#600)
 
 ## [0.45.1] - 2026-10-16
 
@@ -2261,59 +2315,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
     On the corpus, every measured language agrees 100% with tree-sitter.
   - **Explicit scope wins.** `{scope=symbol}` in a file's leading comment
-    block now anchors the declaration below, as ANC006's advice says. A tag
-    inside a `switch` case anchors its statement.
-  - **Cache identity.** The anchor cache is keyed by the resolver code and the
-    requirement patterns too, so an upgrade or a custom
-    `traceability.requirementPattern` is never answered with stale anchors.
-- **DocGuard's own requirement tags name their scope.** Every tag that sat
-  below an import, inside a function, or in a header directly above a
-  declaration now says `{scope=file}`, `{scope=symbol}` or
-  `{scope=statement}`. `docguard anchors` on this repository reports no ANC006
-  or ANC007, and every link is reviewed or baselined.
-- **Release-managed values no longer make requirement links suspect**
-  (`docguard.volatile-anchor-lines`). A version string your release tool
-  rewrites used to turn every link over its file suspect on every release.
-  Mark the line with a `# docguard:volatile` comment:
-  - Whatever lies wholly on the marked line is fingerprinted as a placeholder,
-    at every tier, so the value can change and the link stays current.
-  - Adding or removing the marker is itself a change that a reviewer sees.
-  - A file with no marker fingerprints exactly as before.
-  - An anchor made only of marked lines is listed as ANC011 by
-    `docguard anchors`, never by guard.
 
-  DocGuard marks its own two release-managed lines (`action.yml`,
-  `extensions/spec-kit-docguard/extension.yml`), so a release cut leaves
-  every anchor as it was.
-
-### Changed
-
-- **The doc lock's fingerprinting moved into a shared module.** It now lives
-  in `cli/scanners/fingerprint.mjs`, byte for byte, as `doclock-v0`; every
-  accepted section stays current.
-  - Covered Python symbols are read in one `python3` run per check instead of
-    one per symbol.
-  - Member paths resolve at any depth (`Outer.Inner.method`,
-    `outer.helper`).
-- **Requirement definitions carry their whole `block`.** Every line of a list
-  item, heading or paragraph is included, so a requirement fingerprint sees
-  every line. `text` stays the first line.
-
-### Fixed
-
-- **Ten TestGuard faults that could not be injected are re-pointed.** TestGuard
-  injects a fault only when its `find` text occurs exactly once in its file.
-  Ten faults in `testguard.claims.json` matched zero or two times, so their
-  claims were weaker than they read. The scanner refactors of 2026-10-10
-  (#530, #532–#535, #537, #538) moved or duplicated the lines they pointed at:
-  - FALLBACK-LANGUAGE-COVERAGE-IS-PARTIAL F8, F20;
-  - PYTHON-EXTRACTION-IS-ACCURATE F1, F19, F28;
-  - JS-TS-EXTRACTION-MATCHES-TRUTH F2, F4, F18, F30;
-  - GENERATED-DOCS-PASS-OWN-CHECKS F37.
-
-  Each now targets the code that implements the behaviour its description
-
-<!-- truncated: 5887 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5938 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2934,4 +2937,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.45.1 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.45.2 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)

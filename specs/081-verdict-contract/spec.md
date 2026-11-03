@@ -18,7 +18,8 @@
 **Input**: Two observations, one from the field and one from a study of another tool.
 
 1. On 2026-10-12, a guard A/B run on a loaded machine reported 7 PSR002 findings that did not exist. `git check-ignore` failed to spawn, `gitIgnoredPaths()` returned null, and PSR002 then reported every pointer it had not resolved, at high confidence. A quiet rerun reported none of them.
-2. AWS's AI-DLC sensor contract gives every check one of four results (PASS, FAIL, INCONCLUSIVE, BLOCKED) plus a separate applicability axis. Only a proven NOT_APPLICABLE may bypass a gate, and a check that could not run holds the gate. DocGuard has the applicability axis but no verdict, so a consumer cannot tell "checked and clean" from "nothing to check" from "could not decide".
+2. A code read while writing this spec found the same shape in `symbolExistsAtRev()`. It returns `false` for any failure, including a `git grep` that could not spawn, so REF001 could report a documented symbol as removed from the code because one grep failed.
+3. AWS's AI-DLC sensor contract gives every check one of four results (PASS, FAIL, INCONCLUSIVE, BLOCKED) plus a separate applicability axis. Only a proven NOT_APPLICABLE may bypass a gate, and a check that could not run holds the gate. DocGuard has the applicability axis but no verdict, so a consumer cannot tell "checked and clean" from "nothing to check" from "could not decide".
 
 ## Problem
 
@@ -26,7 +27,8 @@ DocGuard reports a validator's `status` (`pass`, `warn`, `fail`, `na`, `skipped`
 
 - **A helper's failure is read as an answer.** Shared git helpers return `null` when a call fails. Each caller decides what `null` means, and the callers disagree.
   - PSR002 treats a null ignore set as "nothing is ignored" and reports every unresolved pointer.
-  - The agent-instruction scan in `doc-references` treats a null tracked-file list as an empty repository and checks fewer files without saying so.
+  - `docsForPath` in `doc-references` (used by `trace`, `impact`, hooks and MCP) treats a null tracked-file list as an empty repository and checks fewer files without saying so.
+  - REF001 reads a failed `git grep` as "symbol absent at HEAD".
   - Neither case leaves a trace in the result, so the run looks complete.
 - **"Nothing to check" and "could not check" share one status.** A validator that matched no inputs and a validator whose inputs could not be read both render `na`. A consumer gating on DocGuard cannot require "this check actually ran" without parsing reason strings.
 - **A crash is labeled a failure.** A validator that throws gets `status: 'fail'` with an `error` applicability. That holds the gate, which is correct, but an agent cannot tell "the docs are wrong" from "DocGuard broke" without parsing the reason.
@@ -45,7 +47,8 @@ As a maintainer running guard on a loaded CI runner, I never see a finding that 
 
 1. **Given** a `git` whose `check-ignore` fails, **When** guard runs, **Then** there is no PSR002 for any pointer whose ignore status was unknown. The Path-Scoped-Rules result has verdict `inconclusive`, applicability `partial`, and an observation gap that names `git check-ignore` and the number of pointers it could not classify.
 2. **Given** the same project with a working `git`, **Then** PSR002 reports the missing pointer and not the ignored one, exactly as today.
-3. **Given** a `git` whose `ls-files` fails, **When** the agent-instruction scan runs, **Then** it reads instruction files from the working tree, its result is `partial` with the gap recorded, and no file it would have checked is silently dropped.
+3. **Given** a `git` whose `ls-files` fails, **When** guard runs, **Then** Path-Scoped-Rules reads the working tree, its result is `partial` with the gap recorded, and no instruction file drops out. `docsForPath` falls back to the working tree the same way.
+4. **Given** a `git` whose `grep` fails, **When** Reference-Existence runs on a doc that names a symbol, **Then** there is no REF001 for that symbol, and the result is `inconclusive` with the gap recorded.
 
 ### User Story 2 - Every validator result ends in one closed verdict (Priority: P1)
 
@@ -75,7 +78,7 @@ As a team lead, I can make CI fail when any check could not decide, so an unread
 
 **Acceptance Scenarios**:
 
-1. **Given** any validator with verdict `inconclusive` (or `blocked`) and no error, **When** guard runs with `--fail-on-inconclusive`, **Then** it exits 2 and names each such validator and its reason.
+1. **Given** any validator with verdict `inconclusive` (or `blocked`) and no error, **When** guard runs with `--fail-on-inconclusive`, **Then** it exits 4 and names each such validator and its reason.
 2. **Given** the same project, **When** guard runs without the flag, **Then** the exit code is what 0.45.2 produces.
 3. **Given** a clean project whose only non-pass verdicts are `empty` and `skipped`, **When** guard runs with `--fail-on-inconclusive`, **Then** it exits 0.
 
@@ -101,7 +104,7 @@ As an engineer reading SARIF in GitHub code scanning, JUnit in Jenkins, or the M
 - **Post-loop validators** (Canonical-Sync, Metrics-Consistency) get verdicts by the same rules. A crash in them is `blocked`.
 - **Parent and child validator keys** (`structure` / `docSections`). Each keeps its own verdict, and the parent's skip or N/A marker applies to the child as it does today.
 - **`--compact`** keeps the projection rule: a verdict is a fact stated once per validator, never recomputed.
-- **Baseline and suppressions.** A withheld finding never existed, so it is neither baselined nor suppressed. A baselined finding that a later run withholds is not reported as fixed while the gap stands.
+- **Baseline and suppressions.** A withheld finding never existed, so it is neither baselined nor suppressed. Baseline fingerprints are content hashes and cannot be traced to a validator, so while any gap stands, a baselined fingerprint that went unseen is not reported as safe to drop (`baselineStaleUncertain`), and `--update-baseline` refuses to write a baseline that would lose withheld findings.
 
 ## Requirements *(mandatory)*
 
@@ -120,12 +123,12 @@ As an engineer reading SARIF in GitHub code scanning, JUnit in Jenkins, or the M
 - **FR-003**: Only a result whose class is `not-applicable` MAY have verdict `skipped`. A check MUST NOT reach `skipped` by finding no inputs.
 - **FR-004**: The guard run MUST keep a per-run observation ledger. A shared helper that fails to observe something while git is readable MUST record a gap in it, naming the operation, the cause (git's first error line or the spawn error code) and the scope affected (a count, or the paths when there are few). This covers a git subprocess that cannot spawn, exits outside its documented codes, or times out. A helper's documented "no answer" for a legitimate state (not a repository, a ref that does not exist) is not a gap.
 - **FR-005**: Each validator's result MUST include the gaps recorded during its run. A validator with at least one gap MUST report applicability `partial` (unless a more specific state applies) with a reason that names the gap.
-- **FR-006**: A validator MUST NOT report a finding whose truth depends on an observation that failed. In particular, PSR002 MUST NOT report a pointer whose ignore status git could not determine. It MUST count those pointers in the gap, and it MUST still report pointers whose status is known.
+- **FR-006**: A validator MUST NOT report a finding whose truth depends on an observation that failed. In particular, PSR002 MUST NOT report a pointer whose ignore status git could not determine, and REF001 MUST NOT report a symbol whose presence at HEAD or at the doc's revision git could not determine. Each MUST count what it withheld in the gap, and MUST still report what it could determine. `symbolExistsAtRev` MUST distinguish "no match" (exit 1) from "no answer".
 - **FR-007**: A consumer of a tracked-file list that falls back to the working tree when git fails MUST record the gap and check the working-tree files. It MUST NOT continue with an empty list. This applies to `doc-references`, `doc-deps`, `doc-ownership` and `anchors`.
 - **FR-008**: Every call site, in `cli/validators/` and `cli/scanners/`, of a shared git helper that can return no answer MUST be listed in a reviewed inventory with its handling: records a gap, falls back with a gap, or legitimately silent with a reason. A test MUST fail when a call site is added that the inventory does not list.
 - **FR-009**: A git spawn that fails with `EAGAIN`, `EMFILE`, `ENFILE` or `ETIMEDOUT` MUST be retried once before a gap is recorded. No other failure is retried.
 - **FR-010**: A validator that throws MUST keep `status: 'fail'`, its `error` applicability and its current exit code effect, and MUST carry verdict `blocked`.
-- **FR-011**: `guard --fail-on-inconclusive` MUST exit with the warning code (2) when no error is present and any validator's verdict is `inconclusive` or `blocked`. `empty` and `skipped` MUST NOT trigger it. The run MUST name each triggering validator with its reason. An error still exits 1 (3 when uninitialized). Without the flag, exit codes MUST be unchanged. `ci --fail-on-inconclusive` and the GitHub Action input `fail-on-inconclusive` MUST behave the same way.
+- **FR-011**: `guard --fail-on-inconclusive` MUST exit 4 when no error is present and any validator's verdict is `inconclusive` or `blocked`. `empty` and `skipped` MUST NOT trigger it. Exit 4 is a new code, distinct from 2 (warnings), so a pipeline that tolerates warnings can still fail on an undecided check. It outranks warnings, and an error still exits 1 (3 when uninitialized). The run MUST name each triggering validator with its reason. Without the flag, exit codes MUST be unchanged. `ci --fail-on-inconclusive` MUST block readiness with the reason `CI_INCONCLUSIVE_BLOCKED` and exit 1, as `--fail-on-warning` does there. The GitHub Action input `fail-on-inconclusive` MUST pass the flag and fail the step on exit 4.
 - **FR-012**: Guard JSON MUST carry a run-level `verdicts` summary with a count per verdict, and the full list of gaps with the validator each belongs to. The compact form MUST state each validator's verdict and each distinct gap reason once.
 - **FR-013**: SARIF output MUST record each `blocked` validator as a tool execution notification at level `error`, and each `inconclusive` validator at level `warning` with its reason. `executionSuccessful` MUST be `false` when any validator is `blocked`. `pass`, `fail`, `empty` and `skipped` produce no notification; a `fail` is already reported through its results.
 - **FR-014**: JUnit output MUST render `blocked` as an `<error>` test case, `inconclusive` and `empty` as `<skipped message="…">` with the reason, and `skipped` as `<skipped/>`. `pass` and `fail` MUST render as today.

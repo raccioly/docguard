@@ -234,13 +234,16 @@ export function validateReferenceExistence(projectDir, config = {}) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
 
-  const revPresence = new Map(); // `${sym}\0${rev}` → bool
-  // Authoritative HEAD absence (covers dot-dirs the walk skipped). Cached.
-  const headAbsent = new Map();
-  const confirmedAbsentAtHead = (sym) => {
-    if (!headAbsent.has(sym)) headAbsent.set(sym, !symbolExistsAtRev(projectDir, sym, 'HEAD'));
-    return headAbsent.get(sym);
+  const revPresence = new Map(); // `${sym}\0${rev}` → true | false | null (no answer)
+  // Authoritative HEAD presence (covers dot-dirs the walk skipped). Cached.
+  // null means git gave no answer: the symbol is neither present nor absent,
+  // so it is withheld and counted (docguard.verdict-contract#FR-006).
+  const headPresence = new Map();
+  const presentAtHead = (sym) => {
+    if (!headPresence.has(sym)) headPresence.set(sym, symbolExistsAtRev(projectDir, sym, 'HEAD'));
+    return headPresence.get(sym);
   };
+  let unknownPresence = 0;
 
   const findings = [];
   let totalChecked = 0;
@@ -250,12 +253,15 @@ export function validateReferenceExistence(projectDir, config = {}) {
     for (const sym of doc.refs.slice(0, maxRefsPerDoc)) {
       totalChecked++;
       if (headIds.has(sym)) continue;            // in the walked tree → present (cheap)
-      if (!confirmedAbsentAtHead(sym)) continue; // walk missed it but git finds it (dot-dir) → present
+      const atHead = presentAtHead(sym);
+      if (atHead === null) { unknownPresence++; continue; } // git could not answer → withheld
+      if (atHead) continue;                      // walk missed it but git finds it (dot-dir) → present
       absentAtHead++;
       if (rev === null) rev = lastCommitHash(projectDir, doc.path) || '';
       if (!rev) continue;                        // untracked doc → no "then" snapshot
       const key = `${sym}\0${rev}`;
       if (!revPresence.has(key)) revPresence.set(key, symbolExistsAtRev(projectDir, sym, rev));
+      if (revPresence.get(key) === null) { unknownPresence++; continue; }
       if (!revPresence.get(key)) continue;       // never existed at doc-time → not our signal
       findings.push(mkFinding({
         code: 'REF001',
@@ -321,5 +327,8 @@ export function validateReferenceExistence(projectDir, config = {}) {
     applicable: true,
   });
   res.absentAtHead = absentAtHead; // instrumentation: proves the pipeline reaches the rev check
+  if (unknownPresence > 0) {
+    res.applicability = { status: 'partial', reason: `git could not tell whether ${unknownPresence} referenced symbol${unknownPresence === 1 ? '' : 's'} exist${unknownPresence === 1 ? 's' : ''}; ${unknownPresence === 1 ? 'it was' : 'they were'} not checked` };
+  }
   return res;
 }

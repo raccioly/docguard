@@ -88,7 +88,8 @@ npx docguard-cli guard --format json
 | `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
 | `coverage` | Markdown tier map: canonical / tracked / ignored / `unclassified[]` |
 | `semanticClaims.count` | Documented counts/limits/enums **not yet verified against code** |
-| `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass |
+| `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass. Each carries `verdict`: `pass`, `fail`, `empty` (nothing to judge), `inconclusive` (could not decide), `blocked` (threw) or `skipped` (disabled or declared N/A), and `applicability.class` |
+| `verdicts` | `counts` per verdict and `gaps[]`: git calls that failed this run (`validator`, `operation`, `cause`, `scope.count`). Findings that depended on a gap were withheld, not reported |
 | `precisionEvidence` | Benchmark evidence for the finding codes in this run: `coverage` counts how many have ever been measured, `codes[CODE]` is `measured` or `not-measured`, and `caveat` must accompany any quoted rate |
 
 `--compact` (and the MCP tool's default) prints each fact once. Findings are

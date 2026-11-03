@@ -39,8 +39,10 @@ export function compactGuardResult(full) {
     };
   });
   const applicabilityReasons = {};
-  const validators = (full.validators || []).map(({ findings: structured, errors, warnings, ...validator }) => ({
+  // docguard.verdict-contract#FR-012: each gap is stated once, in `verdicts.gaps`.
+  const validators = (full.validators || []).map(({ findings: structured, errors, warnings, observations, ...validator }) => ({
     ...validator,
+    ...(Array.isArray(observations) ? { observationCount: observations.length } : {}),
     ...(validator.applicability ? { applicability: compactApplicability(validator.applicability, applicabilityReasons) } : {}),
     errorCount: Array.isArray(errors) ? errors.length : 0,
     warningCount: Array.isArray(warnings) ? warnings.length : 0,

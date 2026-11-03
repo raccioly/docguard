@@ -134,6 +134,13 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
   unresolved.push(...missingImports.values());
   const ignoredByGit = gitIgnoredPaths(projectDir, [...new Set(unresolved.map(u => u.candidate))]);
+  // docguard.verdict-contract#FR-006: when git cannot say which pointers name
+  // machine-local (ignored) files, none of them is known to be broken. The
+  // helper recorded the gap; withhold them all and say how many.
+  if (ignoredByGit === null && unresolved.length > 0) {
+    limitations.push(`${unresolved.length} unresolved pointer${unresolved.length === 1 ? '' : 's'} not checked: git could not report which paths are ignored`);
+    unresolved.length = 0;
+  }
   let reported = 0;
   for (const u of unresolved) {
     // A pointer to a gitignored path names a machine-local file on purpose.

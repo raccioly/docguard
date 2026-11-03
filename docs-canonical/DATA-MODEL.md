@@ -460,6 +460,8 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
 | `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
 | `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
+| `verdict` | `string` | Closed outcome of the check (spec 081): `pass`, `fail`, `empty` (nothing to judge), `inconclusive` (could not decide), `blocked` (threw), or `skipped` (disabled or declared N/A). Derived from findings after baseline, applicability and observation gaps; it describes the check, while enforcement still decides the exit code |
+| `observations` | `object[]` | Observation gaps recorded during this validator's run: `operation` (for example `git check-ignore`), `cause` (spawn error code, signal, or exit status with git's first error line) and `scope.count`. Empty when every observation succeeded |
 
 ## Precision evidence contract
 
@@ -635,7 +637,7 @@ These rows are counted and kept outside every ratio. Scoring one as a false posi
 
 Guard's `coverage` object inventories Markdown documents by tier: `canonical`, `specKit` (Spec Kit feature artifacts under top-level `specs/` plus the constitution), `tracked`, `ignored`, and `unclassified[]` (paths under no tier). `specKit` is additive. Before it existed, Spec Kit artifacts were reported under `unclassified`.
 
-Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+Each guard validator adds applicability with status, reason and `class` (spec 081): `applicable` (`checked`, `partial`), `not-applicable` (`disabled`, `not-applicable`) or `unknown` (`no-matches`, `missing-prerequisite`, `unsupported`, `error`). Only a `not-applicable` result can have verdict `skipped`. An observation gap turns a `checked` or `no-matches` result `partial`, naming each failed operation. The run carries `verdicts: { counts, gaps }`, with one count per verdict and every gap tagged with its validator; the compact form keeps `verdicts.gaps` once and replaces each validator's `observations` with `observationCount`. While any gap stands, a run with a baseline carries `baselineStaleUncertain: true`, and `--update-baseline` refuses to write. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
 
 Document discovery does not depend on the default filenames alone. A filename is
 normalised to letters and digits — separators, case and Markdown extension are

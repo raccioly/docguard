@@ -14,6 +14,67 @@
 import { execFileSync, execSync, spawnSync } from 'node:child_process';
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { recordGap } from './observations.mjs';
+
+// Resource exhaustion on a loaded machine; one retry absorbs it
+// (docguard.verdict-contract#FR-009). Every other failure is not retried.
+const TRANSIENT_SPAWN = new Set(['EAGAIN', 'EMFILE', 'ENFILE', 'ETIMEDOUT']);
+
+function failureCause(r) {
+  if (r.error) return r.error.code || r.error.message || 'spawn failed';
+  if (r.signal) return `killed by ${r.signal}`;
+  const first = String(r.stderr || '').split('\n').find(l => l.trim());
+  return `exit ${r.status}${first ? `: ${first.trim()}` : ''}`;
+}
+
+/**
+ * Record that a git call failed while git is otherwise readable. A missing or
+ * unreadable git is reported once per validator as missing-prerequisite
+ * (docguard.unreadable-git-metadata#FR-001), so it is not a gap per call.
+ * @implements docguard.verdict-contract#FR-004
+ */
+function noteGitFailure(dir, operation, r, scope) {
+  if (gitMetadataStatus(dir).status !== 'ok') return;
+  recordGap({ operation, cause: failureCause(r), scope: scope || { count: 1 } });
+}
+
+/**
+ * spawnSync for git with the verdict contract's failure handling: one retry
+ * on a transient spawn error, then a recorded gap on a spawn error, a signal,
+ * or an exit status outside `answers` (the codes git documents as answers for
+ * this subcommand; `null` means only spawn-level failures count).
+ * @implements docguard.verdict-contract#FR-004
+ * @implements docguard.verdict-contract#FR-009
+ */
+export function runGit(dir, args, options = {}) {
+  const { spawn = spawnSync, operation = `git ${args[0]}`, answers = null, scope, ...spawnOptions } = options;
+  const opts = { cwd: dir, encoding: 'utf-8', ...spawnOptions };
+  let r = spawn('git', args, opts);
+  if (r.error && TRANSIENT_SPAWN.has(r.error.code)) r = spawn('git', args, opts);
+  if (r.error || r.signal || (answers && !answers.includes(r.status))) noteGitFailure(dir, operation, r, scope);
+  return r;
+}
+
+/** execFileSync for git with one retry on a transient spawn error. */
+function execGit(dir, args, options) {
+  try {
+    return execFileSync('git', args, { cwd: dir, ...options });
+  } catch (err) {
+    if (!TRANSIENT_SPAWN.has(err?.code)) throw err;
+    return execFileSync('git', args, { cwd: dir, ...options });
+  }
+}
+
+/**
+ * In a helper's catch: a spawn error or signal is a gap; an exit status is a
+ * gap only when the helper's subcommand documents its answers (`answers`).
+ */
+function noteExecFailure(dir, operation, err, { answers = null, scope } = {}) {
+  const spawnLevel = typeof err?.code === 'string' || Boolean(err?.signal);
+  if (spawnLevel || (answers && !answers.includes(err?.status))) {
+    noteGitFailure(dir, operation, { error: typeof err?.code === 'string' ? err : null, signal: err?.signal, status: err?.status, stderr: err?.stderr }, scope);
+  }
+}
 
 /**
  * Three git states (docguard.unreadable-git-metadata#FR-001):
@@ -83,13 +144,13 @@ export function isGitRepo(dir) {
  */
 export function getLastCommitDate(dir, filePath) {
   try {
-    const result = execFileSync(
-      'git',
+    const result = execGit(dir,
       ['log', '--follow', '-1', '--format=%aI', '--', filePath],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     return result ? new Date(result) : null;
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git log (last commit date)', err);
     return null;
   }
 }
@@ -103,10 +164,9 @@ export function getLastCommitDate(dir, filePath) {
  */
 export function getFileHistory(dir, filePath, limit = 100) {
   try {
-    const raw = execFileSync(
-      'git',
+    const raw = execGit(dir,
       ['log', '--follow', `-${limit}`, '--format=%H%x00%aI%x00%s', '--', filePath],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     if (!raw) return [];
     // Fields are NUL-delimited (the %x00 in the format above) precisely so
@@ -117,7 +177,8 @@ export function getFileHistory(dir, filePath, limit = 100) {
       const [hash, isoDate, subject] = line.split('\x00');
       return { hash, isoDate, subject: subject || '' };
     });
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git log (file history)', err);
     return [];
   }
 }
@@ -131,10 +192,9 @@ export function getFileHistory(dir, filePath, limit = 100) {
  */
 export function getRenameHistory(dir, filePath) {
   try {
-    const raw = execFileSync(
-      'git',
+    const raw = execGit(dir,
       ['log', '--follow', '--name-only', '--format=', '--', filePath],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     if (!raw) return [filePath];
     const seen = new Set();
@@ -147,7 +207,8 @@ export function getRenameHistory(dir, filePath) {
       }
     }
     return paths.length > 0 ? paths : [filePath];
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git log (rename history)', err);
     return [filePath];
   }
 }
@@ -163,11 +224,12 @@ export function getRenameHistory(dir, filePath) {
 export function countCommitsSince(dir, date, pathPatterns = ['*.js', '*.mjs', '*.ts', '*.tsx', '*.py', '*.java', '*.go', '*.rs', '*.kt', '*.rb']) {
   try {
     const args = ['log', `--since=${date.toISOString()}`, '--oneline', '--diff-filter=M', '--'].concat(pathPatterns);
-    const result = execFileSync('git', args, {
-      cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+    const result = execGit(dir, args, {
+      encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
     });
     return (result.match(/\n/g) || []).length;
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git log (commit count)', err);
     return 0;
   }
 }
@@ -181,14 +243,14 @@ export function countCommitsSince(dir, date, pathPatterns = ['*.js', '*.mjs', '*
  */
 export function changedFilesSince(dir, ref = 'HEAD~1') {
   try {
-    const raw = execFileSync(
-      'git',
+    const raw = execGit(dir,
       ['diff', '--name-only', '--diff-filter=ACMR', ref, 'HEAD'],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     if (!raw) return [];
     return raw.split('\n').filter(Boolean);
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git diff --name-only', err);
     return [];
   }
 }
@@ -203,14 +265,16 @@ export function changedFilesSince(dir, ref = 'HEAD~1') {
  * @returns {string[]|null}
  */
 export function listTrackedFiles(dir) {
-  const run = args => execFileSync('git', args, {
-    cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
+  const run = args => execGit(dir, args, {
+    encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
   }).split('\0').filter(Boolean);
   try {
     const deleted = new Set(run(['ls-files', '-z', '--deleted']));
     const files = run(['ls-files', '-z', '--cached']);
     return [...new Set(files)].filter(f => !deleted.has(f)).sort();
-  } catch {
+  } catch (err) {
+    // ls-files answers only with 0; anything else is a failure to observe.
+    noteExecFailure(dir, 'git ls-files', err, { answers: [0] });
     return null;
   }
 }
@@ -226,8 +290,11 @@ export function listTrackedFiles(dir) {
  * @returns {{ ignored: Set<string>, unknown: Set<string> }|null}
  */
 export function gitIgnoredPaths(dir, paths) {
-  const check = list => spawnSync('git', ['check-ignore', '--no-index', '-z', '--stdin'], {
-    cwd: dir, input: `${list.join('\0')}\0`, encoding: 'utf-8', maxBuffer: 16 * 1024 * 1024,
+  // Exit statuses other than 0 and 1 fall back to one path at a time below,
+  // so only a spawn-level failure (the null answer) is a gap here.
+  const check = list => runGit(dir, ['check-ignore', '--no-index', '-z', '--stdin'], {
+    operation: 'git check-ignore', scope: { count: list.length },
+    input: `${list.join('\0')}\0`, maxBuffer: 16 * 1024 * 1024,
   });
   const out = { ignored: new Set(), unknown: new Set() };
   if (paths.length === 0) return out;
@@ -263,13 +330,14 @@ export function getDiffText(dir, ref = 'HEAD~1', pathspec = null) {
   try {
     const args = ['diff', '--no-color', '--no-ext-diff', ref, 'HEAD'];
     if (pathspec && pathspec.length) args.push('--', ...pathspec);
-    const raw = execFileSync('git', args, {
-      cwd: dir, encoding: 'utf-8',
+    const raw = execGit(dir, args, {
+      encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'ignore'],
       maxBuffer: 1024 * 1024 * 5,
     });
     return raw || '';
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git diff', err);
     return '';
   }
 }
@@ -443,13 +511,14 @@ export function readPatchBatches(dir, ref, files, visit, options = {}) {
  */
 export function fileContentAtRev(dir, rev, filePath) {
   try {
-    const raw = execFileSync(
-      'git',
+    const raw = execGit(dir,
       ['show', `${rev}:${filePath}`],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 1024 * 1024 * 10 }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 1024 * 1024 * 10 }
     );
     return raw;
-  } catch {
+  } catch (err) {
+    // A path absent at that revision exits 128: an answer, not a gap.
+    noteExecFailure(dir, 'git show', err);
     return null;
   }
 }
@@ -467,20 +536,22 @@ export const CODE_GLOBS = [
  * outdated-reference method specifies (arXiv 2212.01479). Restricted to code
  * globs so a symbol still named in prose/docs doesn't count as "present".
  *
- * Returns false when absent, the rev is unknown, or git is unavailable — the
- * caller pairs two calls (doc's last-update rev vs HEAD) to detect present→gone.
+ * Tri-state (docguard.verdict-contract#FR-006): true on exit 0 (a match),
+ * false on exit 1 (no match) or 128 (a revision this clone does not have, as
+ * in a shallow checkout: nothing to compare, as before), and null when git
+ * failed to answer, which is recorded as a gap. The caller pairs two calls
+ * (doc's last-update rev vs HEAD) to detect present→gone, and must not read
+ * null as absent.
+ * @returns {boolean|null}
  */
 export function symbolExistsAtRev(dir, symbol, rev, pathspecs = CODE_GLOBS) {
-  try {
-    execFileSync(
-      'git',
-      ['grep', '-q', '-w', '-F', '-e', symbol, rev, '--', ...pathspecs],
-      { cwd: dir, stdio: ['pipe', 'ignore', 'ignore'] }
-    );
-    return true; // exit 0 → at least one match
-  } catch {
-    return false; // exit 1 → no match (or bad rev / no git)
-  }
+  const r = runGit(dir, ['grep', '-q', '-w', '-F', '-e', symbol, rev, '--', ...pathspecs], {
+    operation: 'git grep', answers: [0, 1, 128], stdio: ['pipe', 'ignore', 'pipe'],
+  });
+  if (r.error || r.signal) return null;
+  if (r.status === 0) return true;
+  if (r.status === 1 || r.status === 128) return false;
+  return null;
 }
 
 /**
@@ -490,13 +561,13 @@ export function symbolExistsAtRev(dir, symbol, rev, pathspecs = CODE_GLOBS) {
  */
 export function lastCommitHash(dir, filePath) {
   try {
-    const raw = execFileSync(
-      'git',
+    const raw = execGit(dir,
       ['log', '--follow', '-1', '--format=%H', '--', filePath],
-      { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
     ).trim();
     return raw || null;
-  } catch {
+  } catch (err) {
+    noteExecFailure(dir, 'git log (last commit)', err);
     return null;
   }
 }

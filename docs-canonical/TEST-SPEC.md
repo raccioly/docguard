@@ -139,6 +139,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
+| `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`): six verdicts, applicability class, observation gaps under a stub git, PSR002/REF001 withholding, retry, `--fail-on-inconclusive`, verdicts in JSON, compact, SARIF, JUnit and text, baseline safety, and the reviewed git call-site inventory (spec 081) | `tests/verdict-contract.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
 | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |

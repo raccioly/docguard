@@ -37,6 +37,10 @@ templates/demo-fixture/
 templates/demo-fixture/**
 benchmarks/fixtures/
 benchmarks/fixtures/**
+# Agent-context benchmark evaluators: each one imports the agent's answer from
+# a temp project via sys.path, so they are fixtures, not this project's code.
+benchmarks/agent-context/hidden/
+benchmarks/agent-context/hidden/**
 # Requirement-anchor fixture projects (specs/070): their tags cite the fixture's
 # own example specs (acme.billing), not this repository's requirements.
 tests/fixtures/anchors/

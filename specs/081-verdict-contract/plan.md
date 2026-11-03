@@ -7,10 +7,10 @@
 | FR | Change |
 |---|---|
 | FR-001 to FR-003 | `cli/validator-coverage.mjs`: `APPLICABILITY_CLASS` (state → class), `deriveVerdict(result)` (the six-step precedence of FR-001), and `summarizeVerdicts(results)` (counts plus gaps). `describeCheckCoverage` adds `class` to the applicability it returns and keeps every existing state and reason. |
-| FR-004, FR-009 | New `cli/observations.mjs`. It holds a stack of per-validator gap lists, exported as `openObservations()`, `recordGap(gap)` (a no-op when no list is open) and `closeObservations()`. `cli/shared-git.mjs` gets one `runGit(dir, args, opts)` wrapper for `execFileSync` and `spawnSync`. It retries once on `EAGAIN`, `EMFILE`, `ENFILE` and `ETIMEDOUT`. On a spawn error, timeout or signal, or on an exit status the helper documents as a failure, it records a gap, but only when `gitMetadataStatus(dir).status === 'ok'`, which it caches per directory per run. That keeps the whole-run cases owned by spec 022. |
+| FR-004, FR-009 | New `cli/observations.mjs`. It holds a stack of per-validator gap lists, exported as `openObservations()`, `recordGap(gap)` (a no-op when no list is open) and `closeObservations()`. `cli/shared-git.mjs` gets one `runGit(dir, args, opts)` wrapper for `execFileSync` and `spawnSync`. It retries once on `EAGAIN`, `EMFILE`, `ENFILE` and `ETIMEDOUT`. On a spawn error, timeout or signal, or on an exit status the helper documents as a failure (`check-ignore`: anything but 0 or 1; `grep`: anything but 0, 1 or 128; `ls-files`: anything but 0), it records a gap, but only when `gitMetadataStatus(dir).status === 'ok'`, which it caches per directory per run. That keeps the whole-run cases owned by spec 022. |
 | FR-005 | `cli/commands/guard.mjs` `runGuardInternal`: open and close a list around every validator, including Canonical-Sync and Metrics-Consistency, and attach it as `result.observations`. In `describeCheckCoverage`, gaps on a `checked` or `no-matches` result turn it `partial`, with a reason that names each operation and count. A more specific state is kept. |
-| FR-006 | `cli/validators/path-scoped-rules.mjs`: a `null` from `gitIgnoredPaths` withholds every unresolved pointer. The count is added to the limitation, and the helper has already recorded the gap. Pointers resolved without git are unaffected. |
-| FR-007 | `listTrackedFiles` consumers: `doc-references` (agent-instruction scan) falls back to the working-tree walk the way `path-scoped-rules` does. I'll audit `doc-deps`, `doc-ownership` and `anchors` (both calls); each already falls back or records its limitation, and the audit is recorded in the inventory. |
+| FR-006 | `cli/validators/path-scoped-rules.mjs`: a `null` from `gitIgnoredPaths` withholds every unresolved pointer. The count is added to the limitation, and the helper has already recorded the gap. Pointers resolved without git are unaffected. `symbolExistsAtRev` becomes tri-state: `true` on exit 0; `false` on exit 1, or on 128 for a revision the clone lacks (a shallow checkout, unchanged behavior); `null` on a spawn failure, signal or any other exit, which is recorded as a gap. `reference-existence` treats `null` at HEAD or at the doc revision as unknown: it skips the symbol and counts it in a limitation. |
+| FR-007 | `listTrackedFiles` consumers: `doc-references` `docsForPath` falls back to the working-tree walk the way `path-scoped-rules` does. I'll audit `doc-deps`, `doc-ownership` and `anchors` (both calls); each already falls back or records its limitation, and the audit is recorded in the inventory. |
 | FR-008 | `tests/verdict-contract.test.mjs` holds `GIT_CALL_SITES`, a reviewed table of file → helper → handling. A scan of `cli/validators/` and `cli/scanners/` for calls to every `shared-git.mjs` export that can return no answer must match the table exactly. |
 | FR-010 | The three `catch` branches in `runGuardInternal` keep their result shape and add nothing. `deriveVerdict` reads a result whose applicability status is `error` and that has no structured findings as `blocked`. |
 | FR-011 | `cli/docguard.mjs`: parse `--fail-on-inconclusive`. In guard, `exitFor` returns 2 when there is no error and `flags.failOnInconclusive` is set and any verdict is `inconclusive` or `blocked`. `cli/commands/ci.mjs` gets the same gate, and `action.yml` adds an input `fail-on-inconclusive` that passes the flag. Help text in both places. |
@@ -48,7 +48,7 @@ The existing guard, SARIF, JUnit, compact JSON, path-scoped-rules and coverage s
 - **Why gaps are recorded only when git is readable.** Spec 022 already reports a missing or unreadable git directory once, as `missing-prerequisite`. Recording a gap per call on top would report one cause dozens of times.
 - **Which exits are failures.**
   - Spawn errors, timeouts and signals are failures for every helper.
-  - An exit status is a failure only where the helper's git command documents its codes: `check-ignore` (0 and 1 are answers) and `ls-files` (0 is the only answer).
+  - An exit status is a failure only where the helper's git command documents its codes: `check-ignore` and `grep` (0 and 1 are answers) and `ls-files` (0 is the only answer). A `git grep` against a revision the clone lacks exits 128. That stays `false` with no gap, as before, so a shallow CI checkout does not change applicability.
   - `fileContentAtRev` returning nothing for a path absent at that revision is an answer, not a gap.
 - **Why PSR002 withholds rather than downgrades.** A low-confidence PSR002 would still be a claim that a file is missing, which nobody observed. Withholding with a counted limitation is what spec 013 FR-021 prescribes for an unknowable answer.
 - **Rejected:**
@@ -67,6 +67,7 @@ cli/commands/guard.mjs                   FR-005, FR-010, FR-011, FR-012, FR-015
 cli/commands/ci.mjs, cli/docguard.mjs    FR-011
 action.yml                               FR-011
 cli/validators/path-scoped-rules.mjs     FR-006
+cli/validators/reference-existence.mjs   FR-006
 cli/scanners/doc-references.mjs          FR-007
 cli/shared-guard-json.mjs                FR-012
 cli/writers/sarif.mjs                    FR-013

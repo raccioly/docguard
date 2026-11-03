@@ -1,5 +1,6 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
-import { describeCheckCoverage, summarizeCheckCoverage } from '../validator-coverage.mjs';
+import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
+import { openObservations, closeObservations } from '../observations.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -416,6 +417,7 @@ export function runGuardInternal(projectDir, config) {
     }
 
     const start = performance.now();
+    openObservations();
     try {
       const result = fn();
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
@@ -423,6 +425,9 @@ export function runGuardInternal(projectDir, config) {
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
       results.push({ name, key, ...(parent ? { parent } : {}), status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+    } finally {
+      // docguard.verdict-contract#FR-005: every gap belongs to the validator during whose run it happened.
+      results[results.length - 1].observations = closeObservations();
     }
   }
 
@@ -434,6 +439,7 @@ export function runGuardInternal(projectDir, config) {
     results.push(naResult('Canonical-Sync', 'canonicalSync'));
   } else if (validators.canonicalSync !== false) {
     const start = performance.now();
+    openObservations();
     try {
       const result = validateCanonicalSync(projectDir, config, results);
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
@@ -441,6 +447,8 @@ export function runGuardInternal(projectDir, config) {
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
       results.push({ name: 'Canonical-Sync', key: 'canonicalSync', status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+    } finally {
+      results[results.length - 1].observations = closeObservations();
     }
   }
 
@@ -449,6 +457,7 @@ export function runGuardInternal(projectDir, config) {
     results.push(naResult('Metrics-Consistency', 'metricsConsistency'));
   } else if (validators.metricsConsistency !== false) {
     const start = performance.now();
+    openObservations();
     try {
       const result = validateMetricsConsistency(projectDir, config, results);
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
@@ -456,6 +465,8 @@ export function runGuardInternal(projectDir, config) {
     } catch (err) {
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
       results.push({ name: 'Metrics-Consistency', key: 'metricsConsistency', status: 'fail', quality: 'LOW', applicability: { status: 'error', reason: 'Validator could not complete: ' + err.message }, errors: [err.message], warnings: [], passed: 0, total: 1, durationMs });
+    } finally {
+      results[results.length - 1].observations = closeObservations();
     }
   }
 
@@ -523,8 +534,13 @@ export function runGuardInternal(projectDir, config) {
   for (const key of ['canonicalSync', 'metricsConsistency']) {
     if (validators[key] === false && !results.some(r => r.key === key)) results.push({ key, name: key === 'canonicalSync' ? 'Canonical-Sync' : 'Metrics-Consistency', status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
   }
-  for (const result of results) result.applicability = describeCheckCoverage(projectDir, config, result);
+  for (const result of results) {
+    result.observations ||= [];
+    result.applicability = describeCheckCoverage(projectDir, config, result);
+    result.verdict = deriveVerdict(result);
+  }
   const checkCoverage = summarizeCheckCoverage(results);
+  const verdicts = summarizeVerdicts(results);
   const activeResults = results.filter(r => r.status !== 'skipped');
   const totalErrors = activeResults.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = activeResults.reduce((sum, r) => sum + r.warnings.length, 0);
@@ -621,9 +637,12 @@ export function runGuardInternal(projectDir, config) {
     baselineBySeverity,
     baselineStillFiring,
     baselineStale,
+    // A gap withholds findings, so an unseen fingerprint may still be live.
+    ...(baselineMap && verdicts.gaps.length > 0 ? { baselineStaleUncertain: true } : {}),
     baselineAgeDays: baselineAge,
     coverage,
     checkCoverage,
+    verdicts,
     semanticClaims,
     evidence,
     // Benchmark evidence for the codes this run actually emitted. Codes the
@@ -787,6 +806,15 @@ export function runGuard(projectDir, config, flags) {
       return;
     }
     const fullData = runGuardInternal(projectDir, { ...config, baseline: false });
+    // docguard.verdict-contract (Edge Cases, baseline): findings withheld by a
+    // failed observation would silently drop out of the frozen set and come
+    // back as "new" on the next healthy run. Refuse until git answers.
+    const gaps = fullData.verdicts?.gaps || [];
+    if (gaps.length > 0) {
+      console.error(`${c.red}✗ --update-baseline refused: ${gaps.length} observation(s) failed this run (${[...new Set(gaps.map(g => g.operation))].join(', ')}), so some findings were withheld. Rerun when git answers.${c.reset}`);
+      process.exitCode = 1;
+      return;
+    }
     const n = saveBaseline(projectDir, fullData.findings || []);
     if (flags.format === 'json') {
       process.stdout.write(JSON.stringify({ written: true, file: BASELINE_FILE, fingerprints: n, findings: (fullData.findings || []).length }, null, 2) + '\n');
@@ -807,8 +835,13 @@ export function runGuard(projectDir, config, flags) {
   // status is unchanged, but the generated Git hook can let the commit through
   // instead of blocking a project that never adopted the tool.
   const uninitialised = !existsSync(resolvePath(projectDir, '.docguard.json'));
+  // docguard.verdict-contract#FR-011: exit 4 when the project asked that every
+  // check decide and one could not. Distinct from 2 so a pipeline that
+  // tolerates warnings still stops; an error still outranks it.
+  const undecided = d => (d.validators || []).filter(v => v.verdict === 'inconclusive' || v.verdict === 'blocked');
   const exitFor = d => (d.effectiveErrors > 0
     ? (uninitialised ? 3 : 1)
+    : flags.failOnInconclusive && undecided(d).length > 0 ? 4
     : d.effectiveWarnings > 0 ? 2 : 0);
 
   // ── SARIF output (2.1.0) ──
@@ -864,7 +897,7 @@ export function runGuard(projectDir, config, flags) {
     // Not applicable — nothing to validate. Render neutrally (NOT a green pass)
     // so the reader can tell "checked and clean" apart from "nothing checked".
     if (v.status === 'na') {
-      const showReason = flags.verbose || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
+      const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
       const reason = showReason ? ` ${c.dim}(${v.applicability.reason})${c.reset}` : '';
       console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[${v.applicability.status}]${c.reset}${reason}`);
       continue;
@@ -883,6 +916,10 @@ export function runGuard(projectDir, config, flags) {
     }
     if (v.requirementCoverage?.deferred > 0) {
       console.log(`     ${c.dim}${v.requirementCoverage.deferred} planned requirement(s) deferred by reviewed lifecycle${c.reset}`);
+    }
+    // docguard.verdict-contract#FR-015: a check that could not decide says why, without --verbose.
+    if (v.verdict === 'inconclusive' && v.applicability?.reason) {
+      console.log(`     ${c.yellow}? inconclusive:${c.reset} ${c.dim}${v.applicability.reason}${c.reset}`);
     }
 
     // --show-failing forces enumeration of every error/warning regardless of
@@ -928,6 +965,15 @@ export function runGuard(projectDir, config, flags) {
 
   // Summary
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
+  if (data.verdicts) {
+    const n = data.verdicts.counts;
+    console.log(`  ${c.dim}Verdicts: ${n.pass} pass · ${n.fail} fail · ${n.empty} empty · ${n.inconclusive} inconclusive · ${n.blocked} blocked · ${n.skipped} skipped${c.reset}`);
+    if (flags.failOnInconclusive) {
+      for (const v of undecided(data)) {
+        console.log(`  ${c.red}✗ ${v.name} is ${v.verdict} (--fail-on-inconclusive): ${v.applicability?.reason || 'no reason recorded'}${c.reset}`);
+      }
+    }
+  }
 
   if (data.status === 'PASS') {
     // PASS can still carry raw warnings if a validator was demoted to
@@ -966,11 +1012,14 @@ export function runGuard(projectDir, config, flags) {
       parts.push(`baseline is ${data.baselineAgeDays} day(s) old`);
     }
     if (data.baselineStillFiring > 0) parts.push(`${data.baselineStillFiring} still suppressed`);
-    if (data.baselineStale > 0) parts.push(`${data.baselineStale} no longer occur — safe to drop`);
+    const staleUncertain = (data.verdicts?.gaps?.length || 0) > 0;
+    if (data.baselineStale > 0) parts.push(staleUncertain
+      ? `${data.baselineStale} not seen this run, which withheld findings after a failed git call — not safe to drop yet`
+      : `${data.baselineStale} no longer occur — safe to drop`);
     if (parts.length) {
       // Bare flags, not skill(): that helper is declared further down this
       // function, and the suppression line above already uses the same style.
-      const action = data.baselineStale > 0 ? ' Re-freeze to drop them: --update-baseline' : '';
+      const action = data.baselineStale > 0 && !staleUncertain ? ' Re-freeze to drop them: --update-baseline' : '';
       console.log(`  ${c.dim}   ${parts.join('; ')}.${action}${c.reset}`);
     }
   }

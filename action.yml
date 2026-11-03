@@ -19,6 +19,10 @@ inputs:
     description: 'Fail the action on warnings (not just errors)'
     required: false
     default: 'false'
+  fail-on-inconclusive:
+    description: 'Fail the action when any check could not decide (verdict inconclusive or blocked). Checks with nothing to judge (empty) or disabled/declared N/A (skipped) never fail it.'
+    required: false
+    default: 'false'
   score-threshold:
     description: 'Minimum CDD score to pass (0-100). Only used with score command.'
     required: false
@@ -123,6 +127,7 @@ runs:
         INPUT_COMMAND: ${{ inputs.command }}
         INPUT_FORMAT: ${{ inputs.format }}
         INPUT_FAIL_ON_WARNING: ${{ inputs.fail-on-warning }}
+        INPUT_FAIL_ON_INCONCLUSIVE: ${{ inputs.fail-on-inconclusive }}
         INPUT_SCORE_THRESHOLD: ${{ inputs.score-threshold }}
         # spec-first reads the PR description and base branch as data only.
         PR_BODY: ${{ github.event.pull_request.body }}
@@ -138,6 +143,10 @@ runs:
 
         if [ "$FORMAT" = "json" ]; then
           FLAGS="$FLAGS --format json"
+        fi
+        GUARD_FLAGS=""
+        if [ "$INPUT_FAIL_ON_INCONCLUSIVE" = "true" ]; then
+          GUARD_FLAGS="--fail-on-inconclusive"
         fi
 
         # Run the command
@@ -167,8 +176,15 @@ runs:
             exit 1
           fi
         elif [ "$CMD" = "guard" ]; then
-          npx docguard-cli guard $FLAGS
+          npx docguard-cli guard $FLAGS $GUARD_FLAGS
           EXIT_CODE=$?
+
+          # Exit 4 = a check could not decide and fail-on-inconclusive is on.
+          if [ "$EXIT_CODE" = "4" ]; then
+            echo ""
+            echo "::error::DocGuard guard: a check could not decide (fail-on-inconclusive is enabled)"
+            exit 1
+          fi
 
           # Handle fail-on-warning
           if [ "$INPUT_FAIL_ON_WARNING" = "true" ] && [ "$EXIT_CODE" = "2" ]; then

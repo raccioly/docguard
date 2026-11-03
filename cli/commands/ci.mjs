@@ -23,6 +23,7 @@ import { buildReadinessAssessment } from '../assessment.mjs';
 export function runCI(projectDir, config, flags) {
   const threshold = parseInt(flags.threshold || '0', 10);
   const failOnWarning = flags.failOnWarning || false;
+  const failOnInconclusive = flags.failOnInconclusive || false;
   const isJson = flags.format === 'json';
 
   if (!isJson) {
@@ -63,6 +64,7 @@ export function runCI(projectDir, config, flags) {
     threshold,
     thresholdMet,
     failOnWarning,
+    failOnInconclusive,
   });
   const status = assessment.status === 'BLOCKED'
     ? 'FAIL'

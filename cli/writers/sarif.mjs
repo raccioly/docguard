@@ -57,6 +57,26 @@ function parseLocation(location) {
 }
 
 /**
+ * A validator that could not run is an unsuccessful execution, and one that
+ * could not decide is a warning about the run, not a result: SARIF keeps both
+ * apart from findings so a consumer never reads them as clean or as defects.
+ * A result without a verdict (older JSON piped in) adds nothing.
+ * @implements docguard.verdict-contract#FR-013
+ */
+function invocationFor(validators) {
+  const toolExecutionNotifications = [];
+  for (const v of validators) {
+    if (v.verdict !== 'blocked' && v.verdict !== 'inconclusive') continue;
+    toolExecutionNotifications.push({
+      level: v.verdict === 'blocked' ? 'error' : 'warning',
+      descriptor: { id: String(v.key || v.name || 'unknown') },
+      message: { text: `${v.name || v.key} is ${v.verdict}: ${v.applicability?.reason || 'no reason recorded'}` },
+    });
+  }
+  return { executionSuccessful: !validators.some(v => v.verdict === 'blocked'), toolExecutionNotifications };
+}
+
+/**
  * Convert a runGuardInternal() result into a SARIF 2.1.0 log object.
  *
  * @param {object} guardData - the guard JSON contract ({findings, validators, ...})
@@ -147,6 +167,7 @@ export function toSarif(guardData, opts = {}) {
       },
     },
     results,
+    invocations: [invocationFor(guardData.validators || [])],
   };
 
   if (opts.projectDir) {

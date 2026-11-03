@@ -144,6 +144,7 @@ ${c.bold}Options:${c.reset}
   --remove        Remove installed DocGuard hooks
   --threshold <n> Minimum score for CI pass (used with ci command)
   --fail-on-warning  Fail CI on warnings (used with ci command)
+  --fail-on-inconclusive  Fail when a check could not decide (guard exits 4; ci blocks)
   --auto          Auto-fix what's possible (used with fix command)
   --write         Apply a command's explicit deterministic write path. For fix,
                   mapped human docs require unique source=code ownership and
@@ -245,8 +246,9 @@ const COMMAND_HELP = {
       ['--changed-only', 'Only validate docs/code touched in the working tree'],
       ['--update-baseline', 'Freeze current findings to .docguard.baseline.json — adopt on a legacy repo without a red day one'],
       ['--no-baseline', 'Ignore the committed baseline for this run (show everything)'],
+      ['--fail-on-inconclusive', 'Exit 4 when any check could not decide (verdict inconclusive or blocked); empty and skipped checks never trip it'],
     ],
-    examples: ['docguard guard', 'docguard guard --format json', 'docguard guard --update-baseline'],
+    examples: ['docguard guard', 'docguard guard --format json', 'docguard guard --update-baseline', 'docguard guard --fail-on-inconclusive'],
   },
   score: {
     summary: 'CDD maturity score (0–100).',
@@ -314,10 +316,11 @@ const COMMAND_HELP = {
   },
   ci: {
     summary: 'Pipeline gate: guard + score in one command (exit 1 on errors, threshold or --fail-on-warning).',
-    usage: 'docguard ci [--threshold <n>] [--fail-on-warning]',
+    usage: 'docguard ci [--threshold <n>] [--fail-on-warning] [--fail-on-inconclusive]',
     flags: [
       ['--threshold <n>', 'Minimum score for CI pass'],
       ['--fail-on-warning', 'Fail CI on warnings'],
+      ['--fail-on-inconclusive', 'Fail CI when any check could not decide (verdict inconclusive or blocked)'],
     ],
     examples: ['docguard ci'],
   },
@@ -524,6 +527,8 @@ async function main() {
       i++;
     } else if (args[i] === '--fail-on-warning') {
       flags.failOnWarning = true;
+    } else if (args[i] === '--fail-on-inconclusive') {
+      flags.failOnInconclusive = true;
     } else if (args[i] === '--auto') {
       flags.auto = true;
     } else if (args[i] === '--write') {

@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Every check ends in a verdict** (`docguard.verdict-contract`, spec 081,
+  program issue #607).
+  - Each validator result carries a closed `verdict`: `pass`, `fail`,
+    `empty` (nothing to judge), `inconclusive` (could not decide), `blocked`
+    (threw) or `skipped` (disabled or declared N/A). Its applicability gains
+    `class` (`applicable`, `not-applicable`, `unknown`), and only a
+    `not-applicable` check can be skipped.
+  - Guard JSON adds a `verdicts` summary (counts and gaps). SARIF records
+    blocked and inconclusive checks as tool execution notifications, with
+    `executionSuccessful: false` when one is blocked. JUnit renders blocked as
+    `<error>` and inconclusive or empty as `<skipped message>`. Text output
+    prints a verdict line and the reason for every inconclusive check.
+  - `guard --fail-on-inconclusive` exits 4 when a check could not decide;
+    `ci --fail-on-inconclusive` blocks readiness (`CI_INCONCLUSIVE_BLOCKED`);
+    the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
+    codes are unchanged.
+
+### Fixed
+
+- **A git call that fails is a gap, not a finding.** On a loaded machine
+  `git check-ignore` could fail to spawn, and PSR002 then reported every
+  unresolved pointer at high confidence; a failed `git grep` at HEAD could
+  make REF001 report a documented symbol as removed. Shared git helpers now
+  retry a transient spawn error once, then record the failure on the
+  validator that was running. PSR002 and REF001 withhold what git could not
+  answer and say how much. `--update-baseline` refuses to freeze a run with a
+  gap, so withheld findings cannot drop out of the baseline.
+
 ## [0.45.2] - 2026-11-02
 
 ### Changed

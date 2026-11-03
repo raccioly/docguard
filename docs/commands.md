@@ -48,6 +48,7 @@ npx docguard-cli guard --format sarif    # SARIF 2.1.0 for GitHub Code Scanning
 npx docguard-cli guard --format junit    # JUnit XML for GitLab/Jenkins/Azure DevOps
 npx docguard-cli guard --update-baseline # Freeze current findings (brownfield adoption)
 npx docguard-cli guard --no-baseline     # Ignore the committed baseline this run
+npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not decide
 ```
 
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes
@@ -63,7 +64,9 @@ npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 **Exit codes:** `0` (pass), `1` (errors, or an invalid flag combination such
 as `--update-baseline --changed-only`), `2` (warnings only), `3` (errors in a
 project with no `.docguard.json`: DocGuard has not been adopted there, so a Git
-hook can tell "not initialised" from "failed"). Run `docguard init` to adopt;
+hook can tell "not initialised" from "failed"), `4` (with `--fail-on-inconclusive`:
+no error, but a check could not decide; it outranks warnings, so a pipeline
+that tolerates `2` still stops). Run `docguard init` to adopt;
 smart-mode `init` on an existing codebase writes the `.docguard.json` it
 inferred.
 
@@ -1239,6 +1242,7 @@ and line, and those routes compare exactly.
 | `--doc <name>` | Target specific document (with `fix` command) |
 | `--threshold <n>` | Minimum score for CI pass (with `ci` command) |
 | `--fail-on-warning` | Fail CI on warnings (with `ci` command) |
+| `--fail-on-inconclusive` | Fail when a check could not decide: `guard` exits 4, `ci` blocks (`CI_INCONCLUSIVE_BLOCKED`) |
 | `--force` | Overwrite existing files |
 | `--help` | Show help |
 | `--version` | Show version |

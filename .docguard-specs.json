@@ -3,6 +3,64 @@
   "schemaVersion": 2,
   "specs": [
     {
+      "specId": "docguard.accountable-suppressions",
+      "path": "specs/084-accountable-suppressions/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.accountable-suppressions#FR-001",
+          "docguard.accountable-suppressions#FR-002",
+          "docguard.accountable-suppressions#FR-003",
+          "docguard.accountable-suppressions#FR-004",
+          "docguard.accountable-suppressions#FR-005",
+          "docguard.accountable-suppressions#FR-006",
+          "docguard.accountable-suppressions#FR-007",
+          "docguard.accountable-suppressions#FR-008",
+          "docguard.accountable-suppressions#FR-009",
+          "docguard.accountable-suppressions#SC-001",
+          "docguard.accountable-suppressions#SC-002",
+          "docguard.accountable-suppressions#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/084-accountable-suppressions/spec.md",
+            "digest": "sha256:8be0e398983c456b1671429a4f9b8d0c994f11a8b92d213165e5197ca3c1baf7"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 0
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.adoption-workflow-integrity",
       "path": "specs/012-adoption-workflow-integrity/spec.md",
       "reviewed": {
@@ -1290,12 +1348,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 648
+            "line": 667
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 675
+            "line": 694
           },
           {
             "requirementId": "FR-021",
@@ -2084,7 +2142,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-git.mjs",
-            "line": 388
+            "line": 456
           },
           {
             "requirementId": "FR-009",
@@ -4563,6 +4621,66 @@
       }
     },
     {
+      "specId": "docguard.enforcement-ladder",
+      "path": "specs/083-enforcement-ladder/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.enforcement-ladder#FR-001",
+          "docguard.enforcement-ladder#FR-002",
+          "docguard.enforcement-ladder#FR-003",
+          "docguard.enforcement-ladder#FR-004",
+          "docguard.enforcement-ladder#FR-005",
+          "docguard.enforcement-ladder#FR-006",
+          "docguard.enforcement-ladder#FR-007",
+          "docguard.enforcement-ladder#FR-008",
+          "docguard.enforcement-ladder#FR-009",
+          "docguard.enforcement-ladder#FR-010",
+          "docguard.enforcement-ladder#FR-011",
+          "docguard.enforcement-ladder#SC-001",
+          "docguard.enforcement-ladder#SC-002",
+          "docguard.enforcement-ladder#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/083-enforcement-ladder/spec.md",
+            "digest": "sha256:bedaf53a0b0ac03ef28c17d686cd840a37a4af3b836ea8aeb3c1553f0c15de3c"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 0
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.evidence-scoped-verification",
       "path": "specs/008-evidence-scoped-verification/spec.md",
       "reviewed": {
@@ -4782,7 +4900,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 5
+            "line": 6
           },
           {
             "requirementId": "FR-010",
@@ -6343,12 +6461,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 603
+            "line": 674
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-git.mjs",
-            "line": 604
+            "line": 675
           },
           {
             "requirementId": "FR-004",
@@ -8968,7 +9086,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 710
+            "line": 715
           },
           {
             "requirementId": "FR-006",
@@ -9502,7 +9620,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 6
+            "line": 7
           },
           {
             "requirementId": "FR-002",
@@ -9547,7 +9665,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 7
+            "line": 8
           },
           {
             "requirementId": "FR-009",
@@ -11238,7 +11356,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 917
+            "line": 922
           },
           {
             "requirementId": "FR-001",
@@ -11248,17 +11366,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 918
+            "line": 923
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 919
+            "line": 924
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 920
+            "line": 925
           },
           {
             "requirementId": "FR-005",
@@ -11283,7 +11401,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-git.mjs",
-            "line": 510
+            "line": 581
           }
         ],
         "testEvidence": [
@@ -13269,7 +13387,7 @@
           {
             "requirementId": "FR-010",
             "file": "action.yml",
-            "line": 188
+            "line": 204
           }
         ],
         "testEvidence": [
@@ -14614,7 +14732,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1008
+            "line": 1013
           },
           {
             "requirementId": "FR-011",
@@ -15645,17 +15763,22 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 19
+            "line": 33
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 28
+            "line": 80
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-git.mjs",
+            "line": 89
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-git.mjs",
-            "line": 29
+            "line": 90
           }
         ],
         "testEvidence": [
@@ -16005,6 +16128,240 @@
             "requirementId": "SC-002",
             "file": "tests/user-docs.test.mjs",
             "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.verdict-contract",
+      "path": "specs/081-verdict-contract/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.verdict-contract#FR-001",
+          "docguard.verdict-contract#FR-002",
+          "docguard.verdict-contract#FR-003",
+          "docguard.verdict-contract#FR-004",
+          "docguard.verdict-contract#FR-005",
+          "docguard.verdict-contract#FR-006",
+          "docguard.verdict-contract#FR-007",
+          "docguard.verdict-contract#FR-008",
+          "docguard.verdict-contract#FR-009",
+          "docguard.verdict-contract#FR-010",
+          "docguard.verdict-contract#FR-011",
+          "docguard.verdict-contract#FR-012",
+          "docguard.verdict-contract#FR-013",
+          "docguard.verdict-contract#FR-014",
+          "docguard.verdict-contract#FR-015",
+          "docguard.verdict-contract#FR-016",
+          "docguard.verdict-contract#FR-017",
+          "docguard.verdict-contract#SC-001",
+          "docguard.verdict-contract#SC-002",
+          "docguard.verdict-contract#SC-003",
+          "docguard.verdict-contract#SC-004",
+          "docguard.verdict-contract#SC-005",
+          "docguard.verdict-contract#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/081-verdict-contract/spec.md",
+            "digest": "sha256:646df396f19c66016b78d6c2f7076751a73054f17f15c1153ddb5d1ccd89fa1e"
+          },
+          {
+            "path": "specs/081-verdict-contract/plan.md",
+            "digest": "sha256:23e55f9daa4e10cef87cbce57aa70b97aa1cf9e880763eedb7f0e689bb36d1f9"
+          },
+          {
+            "path": "specs/081-verdict-contract/tasks.md",
+            "digest": "sha256:300adacd73db830974f90b0361aeb2ecf2f193820543f909a00996637b8d8f78"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 28
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validator-coverage.mjs",
+            "line": 65
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validator-coverage.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validator-coverage.mjs",
+            "line": 47
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validator-coverage.mjs",
+            "line": 66
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/observations.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-git.mjs",
+            "line": 34
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-git.mjs",
+            "line": 46
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/observations.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validator-coverage.mjs",
+            "line": 48
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/shared-git.mjs",
+            "line": 47
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validator-coverage.mjs",
+            "line": 67
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/validator-coverage.mjs",
+            "line": 82
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/writers/sarif.mjs",
+            "line": 64
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 28
           }
         ]
       }
