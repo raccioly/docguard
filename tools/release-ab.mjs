@@ -25,7 +25,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -71,7 +71,9 @@ export function expandCorpus(headTree, entries) {
 }
 
 function git(cwd, args) {
-  const env = { ...process.env, GIT_AUTHOR_DATE: FIXED_DATE, GIT_COMMITTER_DATE: FIXED_DATE, GIT_CONFIG_NOSYSTEM: '1' };
+  // Scratch copies, like the benchmark runner's: no global or system config,
+  // so a maintainer's hooks, signing or default branch never touch them.
+  const env = { ...process.env, GIT_AUTHOR_DATE: FIXED_DATE, GIT_COMMITTER_DATE: FIXED_DATE, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: devNull };
   const r = spawnSync('git', ['-c', 'user.name=release-ab', '-c', 'user.email=release-ab@invalid', '-c', 'commit.gpgsign=false', ...args], { cwd, env, encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed in ${cwd}: ${r.stderr}`);
   return r.stdout;

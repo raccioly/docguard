@@ -19,7 +19,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runGuardInternal } from './guard.mjs';
 import { loadConfig } from '../config.mjs';
@@ -52,9 +52,12 @@ export function headFingerprints(projectDir) {
   const parent = mkdtempSync(join(tmpdir(), 'docguard-sensor-head-'));
   const dir = join(parent, 'head');
   try {
-    const clone = runGit(projectDir, ['clone', '-q', '--local', '--no-checkout', projectDir, dir], { stdio: ['ignore', 'ignore', 'pipe'] });
+    // A private scratch clone: the user's hooks (a global core.hooksPath) must
+    // not run in it, or a post-checkout hook decides the gate.
+    const noHooks = ['-c', `core.hooksPath=${devNull}`];
+    const clone = runGit(projectDir, [...noHooks, 'clone', '-q', '--local', '--no-checkout', projectDir, dir], { stdio: ['ignore', 'ignore', 'pipe'] });
     if (clone.status !== 0 || clone.error) return null;
-    const checkout = spawnSync('git', ['-C', dir, '-c', 'advice.detachedHead=false', 'checkout', '-q', sha], { stdio: 'ignore' });
+    const checkout = spawnSync('git', ['-C', dir, ...noHooks, '-c', 'advice.detachedHead=false', 'checkout', '-q', sha], { stdio: 'ignore' });
     if (checkout.status !== 0) return null;
     const counts = new Map();
     for (const f of runGuardInternal(dir, loadConfig(dir)).findings || []) {

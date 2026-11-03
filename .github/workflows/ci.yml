@@ -398,8 +398,9 @@ jobs:
           project="$RUNNER_TEMP/aidlc-project"
           mkdir -p "$project" && git -C "$project" init -q
           (cd "$project" && aidlc config --harness claude)
+          # validate resolves its project from the working directory; build takes AIDLC_PROJECT_DIR.
+          (cd "$project" && aidlc engine plugin validate "$GITHUB_WORKSPACE/extensions/aidlc/docguard")
           cd extensions/aidlc/docguard
-          aidlc engine plugin validate .
           AIDLC_PROJECT_DIR="$project" aidlc engine plugin build claude "$RUNNER_TEMP/docguard-aidlc"
           test -f "$RUNNER_TEMP/docguard-aidlc/.claude-plugin/marketplace.json"
 
