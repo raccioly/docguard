@@ -17,4 +17,4 @@
 
 ## Phase 3 — Docs and proof
 
-- [ ] T008 Docs, reference, CHANGELOG; full suite; hermetic A/B.
+- [x] T008 Docs, reference, CHANGELOG; full suite; hermetic A/B.

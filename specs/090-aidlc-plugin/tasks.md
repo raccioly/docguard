@@ -17,4 +17,4 @@
 
 - [x] T006 End to end with AI-DLC 2.11.2: validate, build, compose, graph binding, and five fire cases (SC-001, SC-003; Verification Notes).
 - [x] T007 CI job `aidlc-plugin`; release version sync and allowlist (FR-005, FR-006).
-- [ ] T008 Docs, guide, CHANGELOG; full suite; hermetic A/B.
+- [x] T008 Docs, guide, CHANGELOG; full suite; hermetic A/B.

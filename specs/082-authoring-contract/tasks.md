@@ -15,4 +15,4 @@
 
 ## Phase 3 — Docs and proof
 
-- [ ] T006 Findings reference, ARCHITECTURE, TEST-SPEC, CHANGELOG (FR-007); full suite; hermetic A/B with `score` (SC-002)
+- [x] T006 Findings reference, ARCHITECTURE, TEST-SPEC, CHANGELOG (FR-007); full suite; hermetic A/B with `score` (SC-002)

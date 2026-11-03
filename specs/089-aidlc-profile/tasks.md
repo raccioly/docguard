@@ -16,4 +16,4 @@
 ## Phase 3 — Docs and proof
 
 - [x] T006 COMPARISONS, README, docs, CHANGELOG (FR-008).
-- [ ] T007 Full suite, guard, hermetic A/B (SC-003); SC-002 with spec 090's fixture.
+- [x] T007 Full suite, guard, hermetic A/B (SC-003); SC-002 with spec 090's fixture.

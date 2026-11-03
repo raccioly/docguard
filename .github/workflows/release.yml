@@ -152,7 +152,14 @@ jobs:
           fi
           mkdir -p "$RUNNER_TEMP/prev"
           git archive "$PREV" | tar -x -C "$RUNNER_TEMP/prev"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/prev/node_modules"
+          # The previous release runs on its own runtime dependencies: share the
+          # candidate's install only when the pins are identical.
+          deps() { node -e "process.stdout.write(JSON.stringify(require(process.argv[1]).dependencies || {}))" "$1/package.json"; }
+          if [ "$(deps "$GITHUB_WORKSPACE")" = "$(deps "$RUNNER_TEMP/prev")" ]; then
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/prev/node_modules"
+          else
+            (cd "$RUNNER_TEMP/prev" && npm ci --omit=dev --ignore-scripts)
+          fi
           git show "$PREV:benchmarks/baseline.json" > "$RUNNER_TEMP/prev-baseline.json"
           echo "tag=$PREV" >> "$GITHUB_OUTPUT"
           echo "Comparing with $PREV"

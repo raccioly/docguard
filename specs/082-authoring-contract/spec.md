@@ -88,6 +88,12 @@ The skill and the `fix` prompts tell agents to write sections the validator does
 - **SC-001**: Every acceptance scenario has a test. The US1 test fails on the guidance text before this change.
 - **SC-002**: The hermetic A/B against v0.45.2 changes no guard exit code. Every `score` change is recorded in Verification Notes and comes only from US3.
 
+## Verification Notes
+
+Hermetic A/B on 2026-11-03: v0.45.2 against this branch, 45 local projects, with `guard` and `score --format json`, one fresh clone per project per CLI, run serially.
+- **Score.** 42 projects identical. 3 Doc Quality scores moved by 2 points: two rose and one fell. The fall came from a project with `needsDatabase` and `needsEnvVars` false that has both sections; they no longer count either way. No total score, grade or `score` exit code changed (SC-002).
+- **Guard.** 33 projects identical, and no finding was removed anywhere. The 159 additions are advisory codes from specs 085 and 086, which change no exit code, and MET001 ×2. The one exit change, 0 to 2, is this repository's own main branch: its docs say "34 validators" while this branch ships 36, and this branch updates those docs. STR007 was added on no project, since none uses the `enterprise-ai` profile.
+
 ## Assumptions
 
 - A canonical template's prose is written for people and stays hand-written. Templates are tested against the registry, not generated from it.

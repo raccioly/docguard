@@ -14,4 +14,4 @@
 
 ## Phase 3 — Docs and proof
 
-- [ ] T005 Docs, CHANGELOG; full suite; hermetic A/B (SC-003).
+- [x] T005 Docs, CHANGELOG; full suite; hermetic A/B (SC-003).

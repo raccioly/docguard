@@ -135,8 +135,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The Doc Quality score now asks for the same sections as STR003**
   (spec 082). For a project without a database (`needsDatabase: false`) or
-  environment variables (`needsEnvVars: false`), it stops counting a missing
-  Entities or Environment Variables section. Those scores can only rise.
+  environment variables (`needsEnvVars: false`), it no longer counts the
+  Entities or Environment Variables section, whether the document has it or
+  not. Across 45 local projects, 3 Doc Quality scores moved by 2 points:
+  two rose and one fell, where the exempt sections were present. No total
+  score, grade or exit code changed.
 
 ### Fixed
 

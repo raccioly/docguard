@@ -34,4 +34,4 @@
 
 ## Risks
 
-- **Scores move for projects without a database or environment variables.** Doc Quality stops asking them for Entities or Environment Variables, so those scores can only rise. The hermetic A/B records `score` per project (SC-002).
+- **Scores move for projects without a database or environment variables.** Doc Quality stops counting Entities and Environment Variables for them, present or missing, so a score can move either way. The hermetic A/B records `score` per project (SC-002).

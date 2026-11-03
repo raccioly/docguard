@@ -41,7 +41,7 @@ A maintainer tool, `tools/release-ab.mjs`, runs the previous release's CLI and t
 
 A `release-gate` job in `release.yml`, needed by `create-release`. Before publishing it does four things:
 1. Finds the previous tag: `git describe --tags --abbrev=0 --match 'v*'` on the candidate.
-2. Extracts that tag with `git archive` into a sibling directory and runs `npm ci --omit=dev` there.
+2. Extracts that tag with `git archive` into a sibling directory. It shares the candidate's `node_modules` when the runtime dependency pins are identical, and otherwise runs `npm ci --omit=dev --ignore-scripts` there, so the previous release never runs on the candidate's dependencies.
 3. Runs `release-ab`, then `budget.mjs ab --base <prev> --head .`.
 4. Runs the precision benchmark against `git show <prev>:benchmarks/baseline.json`.
 

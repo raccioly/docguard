@@ -57,11 +57,11 @@
           },
           {
             "path": "specs/084-accountable-suppressions/tasks.md",
-            "digest": "sha256:5e6ed12c4108f258694e4628a5de5052dfc87524e4f794ee944f30b1a6cfda78"
+            "digest": "sha256:f69375256c38a1b912606190b14c9d5967e6ef4844ce8af550178f52b9a01e32"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 15,
           "total": 15
         },
         "implementationEvidence": [
@@ -750,11 +750,11 @@
           },
           {
             "path": "specs/090-aidlc-plugin/tasks.md",
-            "digest": "sha256:d13ee9eb955ddf5a2d6faa71e32b30126181f37b8dfb2b2bf4c8742774849b19"
+            "digest": "sha256:a813083c51928d86d5b73be6afe485ba92517fb905c49f8a1795f93b4afea3f9"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
@@ -862,11 +862,11 @@
           },
           {
             "path": "specs/089-aidlc-profile/tasks.md",
-            "digest": "sha256:e0b1a87020a90b315cf5afa441519fad3eba408e4f5a9a4b0ca9d7422cfeaec7"
+            "digest": "sha256:41be1ab3682e6a2b984836d3aad4e80f7ea397d3d76e89ef943a5f5d27c42763"
           }
         ],
         "taskCompletion": {
-          "checked": 6,
+          "checked": 7,
           "total": 7
         },
         "implementationEvidence": [
@@ -1321,19 +1321,19 @@
         "artifacts": [
           {
             "path": "specs/082-authoring-contract/spec.md",
-            "digest": "sha256:44655a91463d2fd2ce2525099d03a8f098d8037f25890ee53c1b0840d454b555"
+            "digest": "sha256:61d6121575688492e78c263e95265859d3e592b6432f60f8107dd0a118f7935f"
           },
           {
             "path": "specs/082-authoring-contract/plan.md",
-            "digest": "sha256:54454a50a79e3b96a4f5ce3799c2e96abe568c8dca2766df0cf3542a92e5ded5"
+            "digest": "sha256:75e932ae05baa07bd3490489006a4bdab279fded9faa9611635d0f61447adefb"
           },
           {
             "path": "specs/082-authoring-contract/tasks.md",
-            "digest": "sha256:f96cebdf9d0c04e3465d1e6cc35a4f7d7f08abe3e25f3c72bee594cb6cd9820d"
+            "digest": "sha256:57697a387ddd81a3f391037ad7d543e27f201f1159a478a13ec5891437c0f509"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
+          "checked": 6,
           "total": 6
         },
         "implementationEvidence": [
@@ -3224,11 +3224,11 @@
           },
           {
             "path": "specs/086-decision-records/tasks.md",
-            "digest": "sha256:20c74f8d96f10f1b8d4329aa9acd8c657cbd5582e7940820d85e421440567c38"
+            "digest": "sha256:546be1b68910c49bff8619daafb4ab029b5ba76a776913b8d90d7a9b43d6cd41"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
@@ -5408,11 +5408,11 @@
           },
           {
             "path": "specs/083-enforcement-ladder/tasks.md",
-            "digest": "sha256:548a1e34e73b5f29bb5c7db433319519baaad18fcf956344fd8a1f453d0bd4eb"
+            "digest": "sha256:696ed9ea956a1024531e46cfe77260019afd2df1bc28c51aec0d9717cce9913e"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 16,
           "total": 16
         },
         "implementationEvidence": [
@@ -10041,11 +10041,11 @@
           },
           {
             "path": "specs/091-memory-governance/tasks.md",
-            "digest": "sha256:f4924ddd09fc1102aa163d1432e110d7ad2cb3557f43074c8d1b2e06136905bc"
+            "digest": "sha256:f915cd3e502637a9901972ae18aa8977de8436d6575561e61e954bf2f27e78ac"
           }
         ],
         "taskCompletion": {
-          "checked": 4,
+          "checked": 5,
           "total": 5
         },
         "implementationEvidence": [
@@ -13023,22 +13023,22 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 247
+            "line": 254
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 343
+            "line": 350
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 378
+            "line": 385
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 557
+            "line": 564
           },
           {
             "requirementId": "FR-005",
@@ -13048,7 +13048,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/release.yml",
-            "line": 306
+            "line": 313
           }
         ],
         "testEvidence": [
@@ -13239,7 +13239,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 410
+            "line": 417
           },
           {
             "requirementId": "FR-005",
@@ -13343,7 +13343,7 @@
           },
           {
             "path": "specs/087-release-trend-gate/plan.md",
-            "digest": "sha256:1a89519139d4378f1a154e40f805fff63e474c2268178e335c82b82fe42d0f78"
+            "digest": "sha256:9359a66f9ef1180a54adb989357c5ed08132ae46d2192697663cf415b5f164c6"
           },
           {
             "path": "specs/087-release-trend-gate/tasks.md",
@@ -17100,11 +17100,11 @@
           },
           {
             "path": "specs/085-upstream-coverage/tasks.md",
-            "digest": "sha256:8001d0e20ec170ec034657a0d991e7b8aa7f90025ea863f90b726acf103a0715"
+            "digest": "sha256:89da2e88a21ed7a3a47660f5226bcc17a8fc2d04aa3e9547992a3eda54f1f2fc"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 12,
           "total": 12
         },
         "implementationEvidence": [
@@ -17489,11 +17489,11 @@
           },
           {
             "path": "specs/081-verdict-contract/tasks.md",
-            "digest": "sha256:300adacd73db830974f90b0361aeb2ecf2f193820543f909a00996637b8d8f78"
+            "digest": "sha256:c34490c359cafb4d29f2b6a762f1ae88b73493da2ad9878513395d3da93e8f37"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 28,
           "total": 28
         },
         "implementationEvidence": [
