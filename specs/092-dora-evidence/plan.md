@@ -2,6 +2,10 @@
 
 **Spec**: [spec.md](spec.md) · **Spec ID**: `docguard.dora-evidence`
 
+## Summary
+
+`score --dora` maps facts DocGuard already computes onto DORA's eight documentation-quality items and its AI Capabilities Model. It labels each item deterministic, proxy or survey-only, and never feeds the CDD score. The MCP `docguard_docs_for_path` tool gains a per-document `docs` map with lifecycle, plus open findings from a cache for the current tree state.
+
 ## Technical Context
 
 - Node ESM, zero new dependencies.
@@ -76,7 +80,7 @@
 
 `schemas/docguard-dora.schema.json`, draft 2020-12, describing `dora`. A test validates real output against it, using the repository's existing minimal schema checker (from the config-schema tests).
 
-## Files
+## Project Structure
 
 - New:
   - `cli/commands/score-dora.mjs`

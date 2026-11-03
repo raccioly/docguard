@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "$comment": "Release trend gate (specs/087-release-trend-gate). tools/release-ab.mjs runs the previous release's CLI and the candidate over every corpus directory and fails unless the CHANGELOG section being released names each finding code whose findings changed. A corpus entry is a path (`/*` expands to subdirectories) or { path, ignoreCodes }; a volatile code's message carries a date or timing, so it is compared by count only. Every ignored or volatile code needs a reason.",
+  "corpus": [
+    {
+      "path": ".",
+      "ignoreCodes": {
+        "MET001": "DocGuard's own docs state the candidate's validator and command counts, so the previous release's CLI disagrees with them by design",
+        "CSY002": "DocGuard's own README states the candidate's command count, so the previous release's CLI disagrees with it by design",
+        "CSY004": "DocGuard's own README diagram states the candidate's command count, so the previous release's CLI disagrees with it by design",
+        "SSY002": "DocGuard's own README lists the candidate's commands and validators, which the previous release's CLI does not have"
+      }
+    },
+    "benchmarks/fixtures/*",
+    "benchmarks/agent-context/fixtures/*"
+  ],
+  "volatileCodes": {}
+}

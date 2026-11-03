@@ -746,11 +746,11 @@
           },
           {
             "path": "specs/090-aidlc-plugin/plan.md",
-            "digest": "sha256:8189d570e5dc07cea89d3fd4745ba5ea5294472fc830d9795db6ff2eb339038b"
+            "digest": "sha256:948ec2494f422233ebce177a5dce86d548e69e3b951224ed9ddc5600e9bbd709"
           },
           {
             "path": "specs/090-aidlc-plugin/tasks.md",
-            "digest": "sha256:81c4f620b2438be513e1cd29d862199de7337ecdd36aa402df57e690208186e5"
+            "digest": "sha256:d13ee9eb955ddf5a2d6faa71e32b30126181f37b8dfb2b2bf4c8742774849b19"
           }
         ],
         "taskCompletion": {
@@ -858,11 +858,11 @@
           },
           {
             "path": "specs/089-aidlc-profile/plan.md",
-            "digest": "sha256:2cf4e21fad83c4d907d9d87c7b02a7628e33b551d3342d5be9cb73c9e830f840"
+            "digest": "sha256:9b409ac7d1baa98174ee2cf6cccfd1ad7b71db937d32409e841b2817733aea88"
           },
           {
             "path": "specs/089-aidlc-profile/tasks.md",
-            "digest": "sha256:b794f504952fa3a3edab870d3245665cf76529f286e3f7a91c12ce4cfbb79d4f"
+            "digest": "sha256:e0b1a87020a90b315cf5afa441519fad3eba408e4f5a9a4b0ca9d7422cfeaec7"
           }
         ],
         "taskCompletion": {
@@ -3110,11 +3110,11 @@
           },
           {
             "path": "specs/086-decision-records/plan.md",
-            "digest": "sha256:da0ce55109236df151cd056ec5f3ec1c65bf78620fcdbc30dee00d159103b397"
+            "digest": "sha256:18580ebfe92ebb789afc555e2dc999605d5b5829690a10047291db59902f0fc2"
           },
           {
             "path": "specs/086-decision-records/tasks.md",
-            "digest": "sha256:91b7154a19d8a0ccce9fb0e1845fb2de1305546ca880a50f2a8d41c36f6bf791"
+            "digest": "sha256:20c74f8d96f10f1b8d4329aa9acd8c657cbd5582e7940820d85e421440567c38"
           }
         ],
         "taskCompletion": {
@@ -5164,11 +5164,11 @@
           },
           {
             "path": "specs/092-dora-evidence/plan.md",
-            "digest": "sha256:b6b967d81fd79f14ed324465471ce07da821eba51c29de1f0d9bfd23fc4197f4"
+            "digest": "sha256:8e3c9e4deb4e0a9f06a72e438ef5f80d957b004f7b9d61d9414c26399b6712a9"
           },
           {
             "path": "specs/092-dora-evidence/tasks.md",
-            "digest": "sha256:e47c0829f2b28715509959cea5726ad37c0aaff2c07938d6a187a4ef2e98970f"
+            "digest": "sha256:088b33f1085eed0d4af18110d6bf7ec273aec5fccc85eb05acd07d3a809883fe"
           }
         ],
         "taskCompletion": {
@@ -9927,11 +9927,11 @@
           },
           {
             "path": "specs/091-memory-governance/plan.md",
-            "digest": "sha256:165094f2f2b36a51a16b0dd9b1ec4897534e8f24f92e4f236c4478ee6cf23811"
+            "digest": "sha256:6828cfb141462b461c016fedabfd201391c6666259ac86e54ef37956b2705239"
           },
           {
             "path": "specs/091-memory-governance/tasks.md",
-            "digest": "sha256:d849eeb740588fe77e9319f1147ec39519e99ffe6aeb08a4e01dbe1c8b561740"
+            "digest": "sha256:f4924ddd09fc1102aa163d1432e110d7ad2cb3557f43074c8d1b2e06136905bc"
           }
         ],
         "taskCompletion": {
@@ -12913,22 +12913,22 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 181
+            "line": 247
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 277
+            "line": 343
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 312
+            "line": 378
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 491
+            "line": 557
           },
           {
             "requirementId": "FR-005",
@@ -12938,7 +12938,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/release.yml",
-            "line": 240
+            "line": 306
           }
         ],
         "testEvidence": [
@@ -13129,7 +13129,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 344
+            "line": 410
           },
           {
             "requirementId": "FR-005",
@@ -13182,6 +13182,110 @@
             "requirementId": "SC-002",
             "file": "tests/release-readiness.test.mjs",
             "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.release-trend-gate",
+      "path": "specs/087-release-trend-gate/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.release-trend-gate#FR-001",
+          "docguard.release-trend-gate#FR-002",
+          "docguard.release-trend-gate#FR-003",
+          "docguard.release-trend-gate#FR-004",
+          "docguard.release-trend-gate#FR-005",
+          "docguard.release-trend-gate#SC-001",
+          "docguard.release-trend-gate#SC-002",
+          "docguard.release-trend-gate#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/087-release-trend-gate/spec.md",
+            "digest": "sha256:e83d8f3c32c9ecde915b81343dbbce57b160e1b77857bcf1e27fa2b14999ad1b"
+          },
+          {
+            "path": "specs/087-release-trend-gate/plan.md",
+            "digest": "sha256:1a89519139d4378f1a154e40f805fff63e474c2268178e335c82b82fe42d0f78"
+          },
+          {
+            "path": "specs/087-release-trend-gate/tasks.md",
+            "digest": "sha256:9ce4d1b34fe7edd1fa519f37585e25185f15e501579314265492fc19bb95c271"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 7
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tools/release-ab.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tools/release-ab.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-003",
+            "file": ".github/workflows/release.yml",
+            "line": 122
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tools/release-ab.mjs",
+            "line": 24
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 8
           }
         ]
       }

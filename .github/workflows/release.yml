@@ -113,9 +113,75 @@ jobs:
       - name: Guard (self-check)
         run: node cli/docguard.mjs guard || [ $? -eq 2 ]
 
+  # ── Step 2b: Compare the candidate with the previous release ───────────
+  # A PR is compared with its base; a weekly release batches many PRs, so the
+  # candidate is also compared with what users run today: every finding change
+  # on the corpus must be named in the CHANGELOG section being released, and
+  # the budgets and the precision benchmark are re-run against the previous
+  # tag (specs/087-release-trend-gate). No previous tag: a notice, not a pass.
+  # @implements docguard.release-trend-gate#FR-003
+  release-gate:
+    needs: detect-version
+    if: needs.detect-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the previous release tag must be available
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Extract the previous release beside the candidate
+        id: prev
+        shell: bash
+        run: |
+          PREV=$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)
+          if [ -z "$PREV" ]; then
+            echo "::notice::No previous release tag: the release trend gate has nothing to compare with and is skipped."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/prev"
+          git archive "$PREV" | tar -x -C "$RUNNER_TEMP/prev"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/prev/node_modules"
+          git show "$PREV:benchmarks/baseline.json" > "$RUNNER_TEMP/prev-baseline.json"
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Comparing with $PREV"
+
+      - name: Every finding change is named in the CHANGELOG
+        if: steps.prev.outputs.tag != ''
+        run: |
+          node tools/release-ab.mjs --base "$RUNNER_TEMP/prev" --head . \
+            --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/release-ab.json"
+
+      # A week of changes can grow a budget on purpose; the release says so in
+      # its own CHANGELOG section with a Budget-Exempt line, as a PR does in its body.
+      - name: Budgets against the previous release
+        if: steps.prev.outputs.tag != ''
+        run: |
+          node --input-type=module -e "import { readFileSync, writeFileSync } from 'node:fs'; import { changelogSection } from './tools/release-ab.mjs'; const v = JSON.parse(readFileSync('package.json', 'utf8')).version; writeFileSync(process.argv[1], changelogSection(readFileSync('CHANGELOG.md', 'utf8'), v) ?? '')" "$RUNNER_TEMP/release-notes.md"
+          node tools/budget.mjs ab --base "$RUNNER_TEMP/prev" --head . \
+            --message-file "$RUNNER_TEMP/release-notes.md" \
+            --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/budget.json"
+
+      - name: Precision benchmark against the released baseline
+        if: steps.prev.outputs.tag != ''
+        run: |
+          node benchmarks/run.mjs --baseline "$RUNNER_TEMP/prev-baseline.json" > "$RUNNER_TEMP/benchmark.json"
+          node -e "const r=require(process.argv[1]); console.log('benchmark vs released baseline:', r.comparison.core.status); if (r.comparison.core.status !== 'PASS') process.exit(1)" "$RUNNER_TEMP/benchmark.json"
+
   # ── Step 3: Create git tag + GitHub Release ────────────────────────────
   create-release:
-    needs: [detect-version, test]
+    needs: [detect-version, test, release-gate]
     if: needs.detect-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     # Tags and creates the release with git, awk and gh only: no build, no tests.

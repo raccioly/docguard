@@ -86,7 +86,7 @@ Every other subprocess also takes an argv array and no shell:
   - A mismatch, a missing file or a failed child is ANC010, and the pattern tier answers.
 - `python3 -c` with one fixed script (`cli/scanners/py-anchors.mjs`) that receives file CONTENT as JSON on stdin, never a path, and only calls `ast.parse` and `tokenize` on it, never importing or executing it. One run per batch, with a timeout of 15 seconds plus 1 second per 64 KiB of input. The doc lock and requirement anchors share it; doc-lock paths are checked by the doc lock's path guard before they are read. `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
 - `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
-- Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`.
+- Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`. `tools/release-ab.mjs` runs `git` (`init`, `add`, `commit`, `archive`) and `tar` on temporary copies, and each tree's own `cli/docguard.mjs guard`.
 
 Only two shell strings remain, and both are static: `git rev-parse --is-inside-work-tree` (`cli/shared-git.mjs`) and `which specify` / `where specify` (`cli/ensure-skills.mjs`).
 

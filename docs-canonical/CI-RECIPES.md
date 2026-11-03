@@ -230,6 +230,35 @@ An unmeasurable base is inconclusive, never a pass. To reproduce the table
 locally, run `git worktree add ../base origin/main` and then
 `npm run budget -- --base ../base` (`specs/031-non-regression-budgets`).
 
+## Recipe 3f — Release trend gate
+
+A pull request is compared with its base. A scheduled release batches many pull
+requests, so the `release-gate` job in `release.yml` also compares the
+candidate with the previous release tag before anything is tagged or published
+(`specs/087-release-trend-gate`):
+
+1. **Finding changes.** `node tools/release-ab.mjs` runs the previous
+   release's CLI and the candidate over the corpus in `release-gate.json`: the
+   repository itself, `benchmarks/fixtures/*` and
+   `benchmarks/agent-context/fixtures/*`. Each directory gets one fresh
+   one-commit copy per CLI, and the runs are serial. Findings are compared as
+   multisets of stable fingerprints, along with exit codes and validator
+   statuses.
+2. **Explanations.** The gate fails unless the CHANGELOG section being
+   released names every code whose findings changed. An exit-code change needs
+   an `Exit codes:` line. A code whose message carries a date or timing goes in
+   `volatileCodes`, with a reason, and is compared by count. A code a corpus
+   directory cannot judge goes in that entry's `ignoreCodes`, with a reason.
+   Both are listed in the summary, never hidden.
+3. **Budgets and precision.** `tools/budget.mjs ab` and the precision
+   benchmark are re-run with the previous release as the base. The release's
+   CHANGELOG section is the message file, so a plain
+   `Budget-Exempt: <metric> — <reason>` line there waives one metric, as it
+   does in a PR body.
+
+With no previous tag the job prints a notice and skips. To run it locally:
+`git archive v0.45.2 | tar -x -C ../prev && ln -s "$PWD/node_modules" ../prev/ && node tools/release-ab.mjs --base ../prev --head .`.
+
 Guard time is each tree's median of `samples` rounds (5 in `budgets.json`),
 and the tree that runs first alternates between rounds. A median of N samples
 ignores up to (N − 1) / 2 slowed samples of either tree: with five rounds, two

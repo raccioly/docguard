@@ -11,10 +11,22 @@
 | FR-005 | `consolidateAidlcMemory`: list entries of every intent's `memory.md`, normalized (marker, whitespace, case), grouped with every source location. Backticked path references are flagged stale when missing. Text and JSON output; it writes nothing. |
 | FR-006 | `cli/docguard.mjs` flags (`--export`, `--consolidate`, `--space`) and help; codes; docs; CHANGELOG. |
 
+## Technical Context
+
+**Language/Version**: JavaScript ES modules, Node.js ≥ 18. **Dependencies**: none new. **Testing**: `tests/memory-governance.test.mjs`.
+
 ## Research decisions
 
 - **Feeding through knowledge, not memory.** AI-DLC forbids plugins from contributing memory, and its learning loop content-hashes persisted rules. Knowledge is team-owned input that AI-DLC indexes on request, so DocGuard writes one file there at the user's `--write` and leaves indexing to AI-DLC.
 - **No semantic merge.** Grouping by normalized text is exact and explainable. Rewording rules belongs to a person or to AI-DLC's loop (Constitution V).
+
+## Project Structure
+
+- `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs`
+- `cli/commands/memory-aidlc.mjs` (new), `cli/commands/memory.mjs`, `cli/docguard.mjs`
+- `cli/findings.mjs`
+- `tests/memory-governance.test.mjs` (new)
+- `docs/`, `docs-canonical/`, `CHANGELOG.md`
 
 ## Verification
 

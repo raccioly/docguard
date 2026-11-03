@@ -11,11 +11,22 @@
 | FR-006 | AID001 to AID004 at `defaultLevel: 'info'`; AID001 and AID003 in `ABSENCE_CLAIM_CODES`. |
 | FR-008 | Registration (guard, config defaults, schema, explain); COMPARISONS AI-DLC section and corrected Kiro row; README validator table; ARCHITECTURE, TEST-SPEC, configuration, CHANGELOG. |
 
+## Technical Context
+
+**Language/Version**: JavaScript ES modules, Node.js ≥ 18. **Dependencies**: none new. **Testing**: `tests/aidlc-profile.test.mjs`.
+
 ## Research decisions
 
 - **Formats** come from AI-DLC 2.11.2's own stage definitions (`code-generation.md` examples for `traceability.json` and `source-manifest.json`) and the state template (`- [x] stage-slug — …`).
 - **Why git decides AID003.** A manifest lists created, modified and deleted paths with no marker. Without history every legitimate deletion would be reported. With history, only a later removal is.
 - **Read-only.** Writing AI-DLC files belongs to AI-DLC. The plugin (spec 090) contributes through AI-DLC's own seams.
+
+## Project Structure
+
+- `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs` (new)
+- `cli/findings.mjs`, `cli/commands/guard.mjs`, `cli/config.mjs`, `cli/commands/explain.mjs`, `schemas/docguard-config.schema.json`
+- `tests/aidlc-profile.test.mjs` (new)
+- `COMPARISONS.md`, `README.md`, `docs/`, `docs-canonical/`, `CHANGELOG.md`
 
 ## Verification
 

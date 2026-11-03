@@ -29,6 +29,13 @@
   All 5 are genuine.
 - **Advisory by default**, per spec 083, so `docguard policy` decides when a project promotes them.
 
+## Project Structure
+
+- `cli/validators/decision-records.mjs` (new)
+- `cli/findings.mjs`, `cli/commands/guard.mjs`, `cli/config.mjs`, `cli/commands/explain.mjs`, `schemas/docguard-config.schema.json`
+- `tests/decision-records.test.mjs` (new)
+- `README.md`, `docs/`, `docs-canonical/`, `CHANGELOG.md`
+
 ## Verification
 
 `npm test`, `guard`, `npm run budget`, hermetic A/B (SC-002).

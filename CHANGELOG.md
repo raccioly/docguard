@@ -61,6 +61,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **A release is compared with the previous release before it ships**
+  (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
+  `release.yml` runs the previous release's CLI and the candidate over the
+  repository and the benchmark fixtures. It fails unless this section names
+  every finding code whose findings changed, and any exit-code change. It also
+  re-runs the budgets and the precision benchmark against the previous tag.
+  Maintainer tooling only (`tools/release-ab.mjs`, `release-gate.json`); the
+  package is unchanged.
 - **DORA's documentation and AI capabilities, from the repository**
   (`docguard.dora-evidence`, spec 092). `docguard score --dora` maps facts
   DocGuard already computes onto DORA's eight documentation-quality survey
