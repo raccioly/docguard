@@ -367,6 +367,42 @@ jobs:
       - name: Tree-sitter tier with the vetted artifacts
         run: node --test tests/requirement-anchors-treesitter.test.mjs tests/anchor-oracle.test.mjs tests/volatile-anchor-lines.test.mjs
 
+  # ── AWS AI-DLC plugin (specs/090-aidlc-plugin) ──
+  # Validates extensions/aidlc/docguard with AI-DLC's own validator and builds
+  # its Claude Code projection. The installer is pinned to one release and to
+  # its SHA-256; it verifies its own downloads by checksum (and attestation
+  # when gh is present). Read-only: nothing is published.
+  # @implements docguard.aidlc-plugin#FR-005
+  aidlc-plugin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      AIDLC_VERSION: 2.11.2
+      AIDLC_INSTALLER_SHA256: e98646ea4ae35bb4262d2ec6427b375295c21e71a3097edb75f27ead144ea3f6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install AI-DLC (pinned, checksum-verified)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/aidlc-install.sh" "https://github.com/awslabs/aidlc-workflows/releases/download/v${AIDLC_VERSION}/install.sh"
+          echo "${AIDLC_INSTALLER_SHA256}  $RUNNER_TEMP/aidlc-install.sh" | sha256sum -c -
+          sh "$RUNNER_TEMP/aidlc-install.sh" --version "$AIDLC_VERSION"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Validate and build the plugin
+        run: |
+          project="$RUNNER_TEMP/aidlc-project"
+          mkdir -p "$project" && git -C "$project" init -q
+          (cd "$project" && aidlc config --harness claude)
+          cd extensions/aidlc/docguard
+          aidlc engine plugin validate .
+          AIDLC_PROJECT_DIR="$project" aidlc engine plugin build claude "$RUNNER_TEMP/docguard-aidlc"
+          test -f "$RUNNER_TEMP/docguard-aidlc/.claude-plugin/marketplace.json"
+
   # ── npm publish dry-run on tags ──
   publish-check:
     runs-on: ubuntu-latest

@@ -58,6 +58,7 @@ import { runAnchors } from './commands/anchors.mjs';
 import { runRules } from './commands/rules.mjs';
 import { runIgnore } from './commands/ignore.mjs';
 import { runPolicy } from './commands/policy.mjs';
+import { runSensor } from './commands/sensor.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -444,6 +445,16 @@ const COMMAND_HELP = {
     ],
     examples: ['docguard rules --for src/api/users.ts', 'docguard rules --for src/api/users.ts --harness cursor --format json'],
   },
+  sensor: {
+    summary: 'Run guard as an AWS AI-DLC sensor: one JSON line { pass, findings_count, findings, verdicts }, cached per tree state. Used by the docguard AI-DLC plugin.',
+    usage: 'docguard sensor --aidlc [--stage <slug>] [--output-path <path>]',
+    flags: [
+      ['--aidlc', 'Speak the AI-DLC sensor contract (required)'],
+      ['--stage <slug>', 'The AI-DLC stage firing the sensor (recorded in the cache)'],
+      ['--output-path <path>', 'The output file the gate fired for (the whole project is checked either way)'],
+    ],
+    examples: ['docguard sensor --aidlc --stage code-generation'],
+  },
   policy: {
     summary: 'Enforcement ladder: each finding code\'s configured level, and which advisory codes this project\'s CI history shows are ready to promote. Writes nothing.',
     usage: 'docguard policy [--window <n>] [--format json]',
@@ -537,6 +548,11 @@ async function main() {
       flags.list = true;
     } else if (args[i] === '--remove' && command !== 'anchors') {
       flags.remove = true;
+    } else if (args[i] === '--aidlc' && command === 'sensor') {
+      flags.aidlc = true;
+    } else if ((args[i] === '--stage' || args[i] === '--output-path') && args[i + 1] && command === 'sensor') {
+      flags[args[i] === '--stage' ? 'stage' : 'outputPath'] = args[i + 1];
+      i++;
     } else if (args[i] === '--window' && args[i + 1]) {
       flags.window = args[i + 1];
       i++;
@@ -909,11 +925,11 @@ async function main() {
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
   // `nudge-hook`: stdout is the Claude Code hook feedback channel — any banner
   // byte corrupts the JSON the hook runner parses.
-  // `report`: stdout IS the evidence artifact (markdown or JSON) — banner
+  // `report` and `sensor` (an AI-DLC sensor line): stdout IS the artifact — banner
   // bytes would corrupt it for redirection/piping in both formats.
   // `--stdout` (memory --pack, llms): stdout IS the artifact, so no banner
   // (docguard.output-ux#FR-001).
-  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
+  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report' || command === 'sensor';
 
   if (!headless) printBanner();
 
@@ -1149,6 +1165,10 @@ async function main() {
     case 'ignore':
       // docguard.ignore-reasons#FR-007, FR-008: read-only.
       runIgnore(projectDir, config, flags);
+      break;
+    case 'sensor':
+      // docguard.aidlc-plugin#FR-001: AWS AI-DLC sensor contract (one JSON line).
+      runSensor(projectDir, config, flags);
       break;
     case 'policy':
       // docguard.enforcement-ladder#FR-006–FR-010: read-only.

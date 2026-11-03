@@ -832,6 +832,18 @@ only:
   written (for example `globs:` in a Claude Code rule, which reads only
   `paths:`).
 
+### `docguard sensor --aidlc`
+
+**DocGuard as an AWS AI-DLC sensor** (spec 090). Prints one JSON line in
+AI-DLC's sensor contract. `pass` is false when guard has a blocking finding, a
+validator that could not run, an undecided required check, or a finding the
+HEAD commit did not have (drift the work in progress introduced). Cached per
+tree state. The `docguard` AI-DLC plugin runs it; see the AI-DLC guide.
+
+```bash
+npx docguard-cli sensor --aidlc --stage code-generation
+```
+
 ### `docguard memory --export aidlc` / `--consolidate aidlc`
 
 **Govern AWS AI-DLC's agent memory** (spec 091). `--export aidlc` builds a

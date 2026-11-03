@@ -19,12 +19,16 @@ import { chainCoverage, citedIds, definedIds } from '../cli/scanners/chain-cover
 import { validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
 import { codeDefaultLevel } from '../cli/findings.mjs';
 
-const SPEC = `# Feature\n\n### User Story 1 - A\n\n### User Story 2 - B\n\n## Requirements\n\n- **FR-001**: one\n- **FR-002**: two\n- **FR-003** (amendment, 2026-11-01): three\n\n## Success Criteria\n\n- **SC-001**: measured\n`;
+const SPEC = `# Feature\n\n### User Story 1 - A\n\n### User Story 2 - B\n\n## Requirements\n\n- **FR-001**: one\n- **FR-002**: two\n- **FR-003** (amendment, 2026-11-01): three\n\n## Success Criteria\n\n- **SC-001**: measured\n- **SC-002**: proved\n`;
 
 describe('chainCoverage', () => {
   it('finds uncovered and dangling IDs; plan citations count as coverage', () => {
-    const r = chainCoverage({ spec: SPEC, plan: 'Built from spec.md. FR-002 reuses the existing reader.', tasks: '- [ ] T001 [US1] do (FR-001)\n- [ ] T002 [US1] more (FR-003, FR-009)\n' });
+    const r = chainCoverage({ spec: SPEC, plan: 'Built from spec.md. FR-002 reuses the existing reader.', tasks: '- [ ] T001 [US1] do (FR-001)\n- [ ] T002 [US1] more (FR-003, FR-009)\n- [ ] T003 verify (SC-002)\n' });
     assert.deepEqual(r.uncovered.map(x => x.id), ['SC-001']);
+    // A team whose tasks never cite SC IDs has not left every criterion uncovered.
+    assert.deepEqual(chainCoverage({ spec: SPEC, plan: null, tasks: '- [ ] T001 (FR-001, FR-002, FR-003)\n' }).uncovered, []);
+    // Dotted sub-requirements and their parent cover each other.
+    assert.deepEqual(chainCoverage({ spec: '- **FR-007**: a\n- **FR-007.1**: b\n', plan: null, tasks: '- [ ] T1 (FR-007.1)\n' }).uncovered, []);
     assert.deepEqual(r.dangling.map(x => `${x.file}:${x.id}`), ['tasks.md:FR-009']);
     assert.equal(r.checked, true);
     assert.deepEqual(r.storiesUncovered, [2]);

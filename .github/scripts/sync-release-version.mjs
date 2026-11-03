@@ -97,6 +97,12 @@ export function syncReleaseVersion(root = process.cwd()) {
     npmPackages[0].version = version;
   });
 
+  // docguard.aidlc-plugin#FR-006: the AI-DLC plugin ships at DocGuard's version.
+  // Optional, so a tree without the plugin (older checkouts, test fixtures) still syncs.
+  if (existsSync(resolve(root, 'extensions/aidlc/docguard/.aidlc-plugin/plugin.json'))) {
+    stageJson(staged, root, 'extensions/aidlc/docguard/.aidlc-plugin/plugin.json', plugin => { plugin.version = version; });
+  }
+
   stageText(staged, root, 'extensions/spec-kit-docguard/extension.yml', content => replaceRequired(
     content,
     /^  version:\s*["'][^"'\n]+["']/m,

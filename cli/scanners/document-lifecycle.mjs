@@ -9,8 +9,10 @@ import { dirname, resolve } from 'node:path';
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { readSpecRegistry } from './spec-registry.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
+import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
 
-const RETIRED_STATUSES = new Set(['archived', 'deprecated', 'obsolete', 'superseded']);
+export { parseLifecycleStatus };
+
 const COMPLETION_STATUSES = new Set(['complete', 'completed']);
 const EXCLUDED_PREFIXES = ['.git', '.local', '.docguard'];
 const SUPPRESSIBLE_DELIVERY = new Set(['verified', 'released']);
@@ -49,12 +51,6 @@ function trackedFiles(projectDir) {
     };
   }
   return { ok: true, files: result.stdout.split('\0').filter(Boolean), reason: null, error: null };
-}
-
-export function parseLifecycleStatus(content) {
-  const header = content.split('\n').slice(0, 40).join('\n');
-  const match = header.match(/(?:^|\n)\s*(?:#{1,6}\s*)?(?:\*\*)?Status(?::)?(?:\*\*)?\s*:?\s*(?:\*\*)?([^*\n]+)/i);
-  return match?.[1]?.trim() || null;
 }
 
 function completedTaskSignal(projectDir, path, content, tracked) {

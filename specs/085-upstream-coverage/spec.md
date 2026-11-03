@@ -36,7 +36,8 @@ As a spec author, I see which requirements no task covers and which task referen
 2. **Given** that feature, **Then** SPK014 names FR-009 at the `tasks.md` line that cites it, as defined nowhere in `spec.md`.
 3. **Given** a requirement cited only by `plan.md`, **Then** it is not uncovered. The plan is a deliberate decision about it.
 4. **Given** a `tasks.md` that cites no requirement ID at all, **Then** no SPK013 is reported for that feature. The Spec-Kit result notes that requirement coverage could not be checked, because a task list that never uses IDs is a convention choice, not a set of gaps.
-5. **Given** success criteria (SC-###), **Then** they are checked like functional requirements, except that one covered by a "Phase … Proof" or verification task that names it is covered.
+5. **Given** success criteria (SC-###) and tasks that cite at least one SC, **Then** an SC no task or plan cites is reported. If the tasks never cite SC IDs, no SC is reported.
+6. **Given** `FR-007` defined with sub-requirements `FR-007.1` and `FR-007.2`, and a task citing `FR-007.1`, **Then** neither `FR-007` nor its sub-requirements are reported as uncovered.
 
 ### User Story 2 - Downstream artifacts cite their upstream (Priority: P2)
 
@@ -72,7 +73,7 @@ As a reviewer, I know that a feature's plan was made from its spec and its tasks
 
 ### Functional Requirements
 
-- **FR-001**: For each feature directory with `spec.md` and `tasks.md`, the Spec-Kit validator MUST report SPK013 for every FR or SC ID defined in `spec.md` that neither `tasks.md` nor `plan.md` cites, provided `tasks.md` cites at least one requirement ID of that spec.
+- **FR-001**: For each feature directory with `spec.md` and `tasks.md`, the Spec-Kit validator MUST report SPK013 for every FR or SC ID defined in `spec.md` that neither `tasks.md` nor `plan.md` cites. Each prefix is checked only when `tasks.md` cites at least one ID of that prefix from this spec: FR IDs when tasks cite FRs, SC IDs when tasks cite SCs. A definition is a list item, table row or heading that starts with the ID, whatever follows it. A dotted sub-requirement (`FR-007.1`) and its parent cover each other.
 - **FR-002**: It MUST report SPK014 for every unqualified FR or SC ID cited in `tasks.md` or `plan.md` that `spec.md` does not define, at the citing line.
 - **FR-003**: It MUST report SPK015 for a `plan.md` that names neither `spec.md` nor any requirement ID the spec defines, and for a `tasks.md` that names neither `plan.md`, `spec.md` nor any such ID.
 - **FR-004**: When `tasks.md` uses `[USn]` labels, it MUST report SPK016 for every user story `n` in `spec.md` (from `### User Story n` headings) with no labeled task.
@@ -88,6 +89,16 @@ As a reviewer, I know that a feature's plan was made from its spec and its tasks
 - **SC-001**: Every acceptance scenario has a test, and each new code fails its fixture on the release before this change.
 - **SC-002**: On this repository's 80 specs, every SPK013 and SPK014 reported is reviewed by hand. The precision of each code is recorded in Verification Notes, and a code below 0.9 precision on this repository is fixed before release.
 - **SC-003**: The hermetic A/B on every local project changes no exit code, and adds only SPK013 to SPK016 findings. Each project's additions are counted in Verification Notes.
+
+## Verification Notes
+
+Precision was measured on 23 local projects that use Spec Kit (2026-11-02), and the parser changed four times before the codes shipped:
+- Definitions written `- **FR-007** The …`, `- **FR-024 Title.**`, `- **FR-095 — …:**` and `### FR-770 — …` were missed at first. Recognizing every list, table or heading line that starts with an ID cut SPK014 across those projects from 105 to 1.
+- A file name inside inline code (`` Spec: `spec.md` ``) was hidden by the inline-code rule meant for example IDs. Keeping inline code for file names cut SPK015 from 144 to 83.
+- `Spec023 FR-020`, a spec number written with no space, is now read as qualified.
+- Per-prefix checking stopped SC reports on teams that never cite SCs in tasks.
+
+Sampled SPK013 IDs had 0 citations in tasks and plans: the finding is literal. Output is capped at 10 per code per project.
 
 ## Assumptions
 

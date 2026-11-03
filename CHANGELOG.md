@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lists advisory codes this project's history shows are ready to promote and
   blocking codes that are noisy.
 
+- **DocGuard runs inside AWS AI-DLC as a plugin** (`docguard.aidlc-plugin`,
+  spec 090). `extensions/aidlc/docguard/` is a third-party AI-DLC plugin, valid
+  under AI-DLC 2.11.2's own validator, whose `docguard-guard` sensor runs at the
+  code-generation and build-and-test gates. The new `docguard sensor --aidlc`
+  speaks AI-DLC's sensor contract and passes when the work in progress
+  introduced no drift compared with HEAD. Pre-existing warnings don't fail
+  gates. A missing DocGuard is recorded as "could not run", never as a pass.
+  Proven end to end through AI-DLC (clean, doc drift, code drift, missing
+  tool); CI validates and builds the plugin with a pinned, checksum-verified
+  AI-DLC release, and the release sync keeps its version equal to DocGuard's.
+  Guide: `docs/guides/aidlc.md`.
 - **AWS AI-DLC workspaces are read natively** (`docguard.aidlc-profile`, spec
   089). A new advisory AI-DLC validator re-checks, on every change, what
   AI-DLC verified once at its gates: traceability targets that no longer exist

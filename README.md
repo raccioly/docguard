@@ -223,6 +223,10 @@ guard ──▶ fix --write (mechanical, auto) ──▶ guard ──▶ diagnos
 
 ---
 
+## ☁️ AWS AI-DLC Integration
+
+DocGuard reads [AWS AI-DLC](https://github.com/awslabs/aidlc-workflows) workspaces on its own: traceability targets that no longer exist, gaps left in completed stages, deliverables removed after a unit, and agent memory that names what is gone (AID001–AID004, MEM001–MEM002). It also ships as an AI-DLC plugin, whose `docguard-guard` sensor fails a construction gate when the stage introduced drift. See the [AI-DLC guide](docs/guides/aidlc.md).
+
 ## 🌱 Spec Kit Integration
 
 DocGuard is a [community extension](https://github.com/github/spec-kit/blob/main/extensions/README.md) for GitHub's **Spec Kit** framework. While Spec Kit focuses on **creating** specifications (via AI slash commands like `/speckit.specify` and `/speckit.plan`), DocGuard focuses on **validating** their quality.

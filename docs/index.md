@@ -26,6 +26,7 @@ The demo runs against a sample project and needs no install or setup.
 | Install it as a CLI, Python package, Homebrew formula, container, Action or Spec Kit extension | [Installation](installation.md) |
 | Adopt it on a repository that already has code | [Existing Projects](guides/existing-projects.md) |
 | Use it with GitHub Spec Kit | [Spec Kit](guides/spec-kit.md) |
+| Use it with AWS AI-DLC | [AWS AI-DLC](guides/aidlc.md) |
 | Gate pull requests | [Continuous Integration](guides/ci.md) |
 | Know which languages and frameworks it reads | [Languages and Frameworks](reference/languages.md) |
 | Connect your coding agent | [Coding Agents](reference/agents.md) and [AI Integration](ai-integration.md) |
@@ -35,6 +36,7 @@ The demo runs against a sample project and needs no install or setup.
 
 - [Existing Projects](guides/existing-projects.md): from a clean branch to a gated first pull request.
 - [Spec Kit](guides/spec-kit.md): the extension, its hooks and the spec lifecycle registry.
+- [AWS AI-DLC](guides/aidlc.md): reading AI-DLC workspaces and the `docguard` AI-DLC plugin.
 - [Continuous Integration](guides/ci.md): GitHub Actions and other CI systems.
 - [Monorepos](guides/monorepo.md): several packages in one repository.
 - [Upgrading](guides/upgrading.md): moving between versions safely.

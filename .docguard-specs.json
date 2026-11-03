@@ -698,6 +698,117 @@
       }
     },
     {
+      "specId": "docguard.aidlc-plugin",
+      "path": "specs/090-aidlc-plugin/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.aidlc-plugin#FR-001",
+          "docguard.aidlc-plugin#FR-002",
+          "docguard.aidlc-plugin#FR-003",
+          "docguard.aidlc-plugin#FR-004",
+          "docguard.aidlc-plugin#FR-005",
+          "docguard.aidlc-plugin#FR-006",
+          "docguard.aidlc-plugin#FR-007",
+          "docguard.aidlc-plugin#SC-001",
+          "docguard.aidlc-plugin#SC-002",
+          "docguard.aidlc-plugin#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/090-aidlc-plugin/spec.md",
+            "digest": "sha256:95d06fe31eed8fde0c295fc652caea9f16a0f5598b567ed9276695cc397a8eff"
+          },
+          {
+            "path": "specs/090-aidlc-plugin/plan.md",
+            "digest": "sha256:8189d570e5dc07cea89d3fd4745ba5ea5294472fc830d9795db6ff2eb339038b"
+          },
+          {
+            "path": "specs/090-aidlc-plugin/tasks.md",
+            "digest": "sha256:81c4f620b2438be513e1cd29d862199de7337ecdd36aa402df57e690208186e5"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 7,
+          "total": 8
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/sensor.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/sensor.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": ".github/workflows/ci.yml",
+            "line": 375
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 11
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.aidlc-profile",
       "path": "specs/089-aidlc-profile/spec.md",
       "reviewed": {
@@ -4357,7 +4468,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/document-lifecycle.mjs",
-            "line": 22
+            "line": 24
           },
           {
             "requirementId": "FR-007",
@@ -5003,6 +5114,69 @@
             "line": 13
           }
         ]
+      }
+    },
+    {
+      "specId": "docguard.dora-evidence",
+      "path": "specs/092-dora-evidence/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.dora-evidence#FR-001",
+          "docguard.dora-evidence#FR-002",
+          "docguard.dora-evidence#FR-003",
+          "docguard.dora-evidence#FR-004",
+          "docguard.dora-evidence#FR-005",
+          "docguard.dora-evidence#FR-006",
+          "docguard.dora-evidence#SC-001",
+          "docguard.dora-evidence#SC-002",
+          "docguard.dora-evidence#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/092-dora-evidence/spec.md",
+            "digest": "sha256:1ce5686789bbb74305f1fc8e57d37eeb328bd16ea12ddfe65c2e85ba4328d77a"
+          },
+          {
+            "path": "specs/092-dora-evidence/plan.md",
+            "digest": "sha256:37250095e30c248b1610a048821e393152e727418f803116c7c245dc8294a42c"
+          },
+          {
+            "path": "specs/092-dora-evidence/tasks.md",
+            "digest": "sha256:9c1c146520e6b5120ed4566e97b40814de54e319f3fdd8fdf2ee0673e030c6bb"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 9
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
       }
     },
     {
@@ -9581,7 +9755,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 742
+            "line": 758
           },
           {
             "requirementId": "FR-006",
@@ -11961,7 +12135,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 949
+            "line": 965
           },
           {
             "requirementId": "FR-001",
@@ -11971,17 +12145,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 950
+            "line": 966
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 951
+            "line": 967
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 952
+            "line": 968
           },
           {
             "requirementId": "FR-005",
@@ -12898,7 +13072,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 81
+            "line": 82
           }
         ],
         "testEvidence": [
@@ -15337,7 +15511,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1040
+            "line": 1056
           },
           {
             "requirementId": "FR-011",
@@ -16642,7 +16816,7 @@
         "artifacts": [
           {
             "path": "specs/085-upstream-coverage/spec.md",
-            "digest": "sha256:396ab55330de4f140bdb11d2ac5d2d3b999b1cd324d43e12fc8bdc78abad3887"
+            "digest": "sha256:4eca7db18760867c914d6de2f38708fff4cdadfeb1a1390007eb89b3c98e3188"
           },
           {
             "path": "specs/085-upstream-coverage/plan.md",

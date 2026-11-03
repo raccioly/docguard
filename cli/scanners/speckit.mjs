@@ -28,7 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths, runGit } from '../shared-git.mjs';
 import { chainCoverage } from './chain-coverage.mjs';
-import { parseLifecycleStatus } from './document-lifecycle.mjs';
+import { parseLifecycleStatus } from './lifecycle-status.mjs';
 
 const TERMINAL_STATUS_RE = /\b(?:superseded|retired|archived|withdrawn|obsolete|abandoned)\b/i;
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
