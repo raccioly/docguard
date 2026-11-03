@@ -42,6 +42,34 @@ export function maskCodeSpans(line, fill = ' ') {
 }
 
 /**
+ * Index of the first `<!--` in `s` outside an inline code span, or -1. Pairs
+ * backtick runs exactly as `maskCodeSpans` does, but stops at the opener, so
+ * a long line with many comments is read once rather than once per comment
+ * (docguard.validator-fuzz: 3,333 comments on one 265 KB line took 4.9 s).
+ */
+function openerOutsideCode(s) {
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '<' && s.startsWith('<!--', i)) return i;
+    if (c !== '`') { i++; continue; }
+    let j = i;
+    while (s[j] === '`') j++;
+    const run = j - i;
+    let close = -1;
+    for (let k = j; k < s.length;) {
+      if (s[k] !== '`') { k++; continue; }
+      let m = k;
+      while (s[m] === '`') m++;
+      if (m - k === run) { close = k; break; }
+      k = m;
+    }
+    i = close < 0 ? j : close + run;
+  }
+  return -1;
+}
+
+/**
  * The text of one line outside HTML comments, and whether a comment is still
  * open at its end. A comment ends at its first `-->`; outside a comment,
  * `<!--` opens one only when it is not inside an inline code span.
@@ -60,7 +88,7 @@ export function stripHtmlComments(line, inComment) {
       inComment = false;
       continue;
     }
-    const open = maskCodeSpans(rest).indexOf('<!--');
+    const open = openerOutsideCode(rest);
     if (open < 0) return { text: text + rest, inComment: false };
     text += rest.slice(0, open);
     rest = rest.slice(open + 4);

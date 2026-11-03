@@ -1,6 +1,6 @@
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -21,6 +21,17 @@ verified specs are merged and wait for the next release: spec 051's CI runtime
 budget is a per-test ceiling (FR-007), and spec 028 reads an over-budget
 reconciliation range in batches (FR-008–FR-010). The `[Unreleased]` section of
 `CHANGELOG.md` lists them. Each spec's `tasks.md` is its checklist.
+
+Specs 081 to 092 (issue #607) wait for the next release in `[Unreleased]`.
+- **Ideas taken from AWS AI-DLC and DORA, re-implemented:**
+  - closed verdicts with observation gaps (081);
+  - an enforcement ladder (083);
+  - accountable waivers (084);
+  - Spec Kit chain coverage (085);
+  - decision records (086).
+- **AWS AI-DLC as a target:** its workspaces are read natively (089), its agent memory is governed (091), and DocGuard runs as an AI-DLC plugin (090).
+- **DORA evidence** (092).
+- **Maintainer tooling:** the release trend gate (087) and the parser fuzz harness (088).
 
 New work starts with a reviewed specification and measurable acceptance
 criteria rather than an evergreen task list that can become stale.

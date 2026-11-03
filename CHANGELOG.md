@@ -61,6 +61,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **Every document parser is fuzzed on every test run**
+  (`docguard.validator-fuzz`, spec 088). `tools/fuzz.mjs` is a seeded,
+  dependency-free fuzzer, and `npm test` runs it with a fixed seed. Each of 19
+  text parsers must not throw, must answer the same twice, and must finish
+  within time linear in its input. That covers requirement IDs, ADRs, AI-DLC
+  stage progress, waiver metadata, headings, doc sections, covers lists,
+  lifecycle status, API tables, HTML comments and `.docguardignore`.
+  `npm run fuzz -- --cases 20000 --save` runs deep and keeps what it finds.
 - **A release is compared with the previous release before it ships**
   (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
   `release.yml` runs the previous release's CLI and the candidate over the
@@ -111,6 +119,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without the new tokens read exactly as before.
 
 ### Fixed
+
+- **A long line full of HTML comments no longer stalls guard** (spec 088).
+  The comment reader re-masked the rest of the line's code spans for every
+  comment, so its time grew with the square of the comment count. One 265 KB
+  line with 3,333 `docguard:section` comments took 9.7 s, and now takes under
+  1 ms. Output is unchanged: a differential run over 590,732 lines found no
+  difference. Docs-Sync, requirement parsing and instruction pointers all read
+  through it.
 
 - **A git call that fails is a gap, not a finding.** On a loaded machine
   `git check-ignore` could fail to spawn, and PSR002 then reported every

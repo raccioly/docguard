@@ -15,6 +15,7 @@
     "benchmark": "node benchmarks/run.mjs",
     "benchmark:agent-context": "node benchmarks/agent-context/run.mjs",
     "budget": "node tools/budget.mjs ab --head .",
+    "fuzz": "node tools/fuzz.mjs",
     "generate:precision-evidence": "node benchmarks/generate-precision-evidence.mjs",
     "diff": "node cli/docguard.mjs diff",
     "generate": "node cli/docguard.mjs generate",

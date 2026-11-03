@@ -332,7 +332,7 @@ Completion also supports reviewed maintenance of a verified or released living s
 
 # CI Recipes
 
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 <!-- docguard:status active -->
 
 ## Recipe 1 — Guard (mandatory CI gate)
@@ -1134,7 +1134,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 
 <!-- docguard:version 0.15.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
@@ -1167,6 +1167,7 @@ Three **optional** variables exist:
 | Variable | When it applies | Purpose |
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
+| `DOCGUARD_BIN` | The DocGuard AI-DLC plugin's sensor wrapper (`extensions/aidlc/docguard/tools/aidlc-sensor-docguard-guard.ts`) | The DocGuard executable the wrapper runs. Defaults to `docguard` on `PATH`. A path that cannot start makes the sensor report `could-not-run`, never a pass (spec 090). |
 | `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
 | `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` and `docguard upgrade --apply` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify --version` and `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
@@ -1281,6 +1282,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.16.0 | 2026-11-03 | DocGuard Team | Freshness review after specs 081–092: `DOCGUARD_BIN` for the AI-DLC plugin's sensor wrapper; no other variable was added |
 | 0.15.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: `CI` turns off the anchor cache; the commands that write the anchor lock and the trace matrix; Python anchors without `python3`; the local per-test runtime check (spec 051 FR-007) |
 | 0.14.0 | 2026-10-11 | DocGuard Team | A global `core.hooksPath` makes `hooks` refuse; `/dev/null` falls back to `.git/hooks` (spec 065) |
 | 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
@@ -1303,9 +1305,9 @@ What must be visible:
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.3 -->
+<!-- docguard:version 0.9.4 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 ## Functional Requirements
 
@@ -1362,6 +1364,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.4 | 2026-11-03 | Freshness review after specs 081–092: every requirement and verification path still holds. Those specs state their own requirements under `specs/`, and none changes a requirement here |
 | 0.9.3 | 2026-10-13 | Freshness review after specs 070–078: FR-009 reads an over-budget range in batches before it reports partial coverage (spec 028 FR-008); those specs state their own requirements under `specs/` |
 | 0.9.2 | 2026-10-11 | FR-024: hooks are written only into a folder the repository owns (spec 065) |
 | 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |
@@ -1385,7 +1388,7 @@ The verification column above links each requirement to executable tests. The te
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
 <!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 ## Overview
 
@@ -1468,6 +1471,8 @@ Every other subprocess also takes an argv array and no shell:
   - A mismatch, a missing file or a failed child is ANC010, and the pattern tier answers.
 - `python3 -c` with one fixed script (`cli/scanners/py-anchors.mjs`) that receives file CONTENT as JSON on stdin, never a path, and only calls `ast.parse` and `tokenize` on it, never importing or executing it. One run per batch, with a timeout of 15 seconds plus 1 second per 64 KiB of input. The doc lock and requirement anchors share it; doc-lock paths are checked by the doc lock's path guard before they are read. `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
 - `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
+- `sensor --aidlc` (spec 090) compares with HEAD in a temporary directory: `git clone -q --local --no-checkout` of the project, `git -C <tmp> checkout -q <sha>` with a SHA read from `rev-parse`, then the same CLI's guard there. The directory is removed afterwards. The tree key reads `rev-parse HEAD` and `status --porcelain -z` (`cli/sensor-cache.mjs`). The AI-DLC plugin's wrapper starts `docguard sensor --aidlc` from an argv array, or `DOCGUARD_BIN` when set, with the dispatcher's arguments, no shell, and nothing else.
+- `score --dora` (spec 092) reads `git log --since=90.days --no-merges --name-only` through `runGit`.
 - Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`. `tools/release-ab.mjs` runs `git` (`init`, `add`, `commit`, `archive`) and `tar` on temporary copies, and each tree's own `cli/docguard.mjs guard`.
 
 Only two shell strings remain, and both are static: `git rev-parse --is-inside-work-tree` (`cli/shared-git.mjs`) and `which specify` / `where specify` (`cli/ensure-skills.mjs`).
@@ -1555,6 +1560,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 | 0.17.0 | 2026-10-11 | Workflow jobs run tests, package managers and build tools without a repository write token; release assets are built read-only (spec 068) |
 | 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
+| 0.15.0 | 2026-11-03 | Freshness review after specs 081–092: the sensor's HEAD clone and tree key, the AI-DLC wrapper's spawn, `score --dora`'s git log, and `tools/release-ab.mjs` |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
 | 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
 | 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |
@@ -1708,6 +1714,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | TODO tracking: keywords quoted in code spans or strings are not annotations; comments from the string-aware reader; no self-path skip (spec 073) | `tests/todo-tracking.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
+| `tools/fuzz.mjs` (parser fuzz harness: 19 text parsers, seeded generation with structured blocks and mutations, pathological inputs up to about 200 KB; no throw, determinism, linear time) and the `stripHtmlComments` linear-time fix (spec 088) | `tests/validator-fuzz.test.mjs` | ✅ |
 | `tools/release-ab.mjs` and `release-gate.json` (release trend gate): added, removed and volatile findings, exit-code changes, status-only validator comparison, ignored codes, changelog judging and config validation, with two synthetic CLI trees (spec 087) | `tests/release-trend-gate.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
@@ -1937,7 +1944,7 @@ schema keys.
 
 # Drift Log
 
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > Documents conscious deviations from canonical specifications.
 > Every `// DRIFT: reason` in code must have a corresponding entry here.
@@ -1954,6 +1961,7 @@ schema keys.
 | 2026-05-26 | `CHANGELOG.md` / `extensions/spec-kit-docguard/skills/*` | None | v0.12-v0.15 changelogs and release notes reference `// DRIFT:` in feature descriptions (e.g. K-3 .docguardignore, v0.13 sync, v0.14 P3 scoping). Documentation prose only, not actionable drift. | Info | By design — release notes |
 | 2026-07-03 | `templates/commands/*`, `CHANGELOG.md`, `docs/ai-integration.md` | None | v0.29 batch audit: the DRIFT mentions in recently-committed files are the known by-design classes above (template instruction text, validator docstrings, changelog prose, and the new AI-integration guide's workflow step 6 teaching the drift protocol). No new code deviations from canonical docs were introduced by the findings migration, generate split, or integration-surface work. | Info | Audited — no actionable drift |
 | 2026-07-03 | post-v0.29 batch (`cli/scanners/speckit.mjs`, `tests/speckit-phantom.test.mjs`, `packaging/*`) | None | Post-release batch audit (phantom detection, instruction audit, trace --features, distribution files): DRIFT mentions are validator/test/doc prose of the by-design classes above. No new code deviations. | Info | Audited — no actionable drift |
+| 2026-11-03 | specs 081–092 (`tests/verdict-contract.test.mjs`, `specs/081-verdict-contract/*`, `specs/083-enforcement-ladder/spec.md`) | None | Batch audit of the DocGuard × AI-DLC program: every added `// DRIFT:` mention is test data (the Drift validator's `no-matches` reason) or spec prose explaining the `empty` verdict. No code deviation from canonical docs was introduced. | Info | Audited — no actionable drift |
 
 
 ---
@@ -2024,6 +2032,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **Every document parser is fuzzed on every test run**
+  (`docguard.validator-fuzz`, spec 088). `tools/fuzz.mjs` is a seeded,
+  dependency-free fuzzer, and `npm test` runs it with a fixed seed. Each of 19
+  text parsers must not throw, must answer the same twice, and must finish
+  within time linear in its input. That covers requirement IDs, ADRs, AI-DLC
+  stage progress, waiver metadata, headings, doc sections, covers lists,
+  lifecycle status, API tables, HTML comments and `.docguardignore`.
+  `npm run fuzz -- --cases 20000 --save` runs deep and keeps what it finds.
 - **A release is compared with the previous release before it ships**
   (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
   `release.yml` runs the previous release's CLI and the candidate over the
@@ -2074,6 +2090,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without the new tokens read exactly as before.
 
 ### Fixed
+
+- **A long line full of HTML comments no longer stalls guard** (spec 088).
+  The comment reader re-masked the rest of the line's code spans for every
+  comment, so its time grew with the square of the comment count. One 265 KB
+  line with 3,333 `docguard:section` comments took 9.7 s, and now takes under
+  1 ms. Output is unchanged: a differential run over 590,732 lines found no
+  difference. Docs-Sync, requirement parsing and instruction pointers all read
+  through it.
 
 - **A git call that fails is a gap, not a finding.** On a loaded machine
   `git check-ignore` could fail to spawn, and PSR002 then reported every
@@ -2345,24 +2369,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Moved.** The anchor fingerprint leaves out the symbol's own name, so a
     function renamed or moved with an unchanged body is reported as moved,
     not lost and unreviewed. The next accept rewrites its lock key.
-  - **Lost.** Two identical candidate bodies, or a changed body, leave the
-    old link lost (ANC003). DocGuard does no similarity matching.
-- **See what else an anchored change may affect**
-  (`specs/070-requirement-anchors`, user story 5).
-  - **What is listed.** When an anchored function's code changes,
-    `docguard anchors` lists the anchored links in files that:
-    - import that file and use the changed name (named, default or
-      `ns.name`);
-    - sit one import further, at low confidence.
 
-    Hub modules are excluded, and more than `anchors.fanOutLimit` files
-    collapse into a count. It is advisory only.
-  - **Shared walk.** The reverse-import walk and hub rule moved from the
-    `impact` command into `cli/scanners/import-graph.mjs`, so `diff --since`
-    and ripple share one implementation; `impact`'s output is unchanged.
-  - **Edge names.** Import-graph edges now record the names each import
-
-<!-- truncated: 6029 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6045 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2371,7 +2379,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # DocGuard Roadmap
 
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 This file contains current product intent only. Released work belongs in
 `CHANGELOG.md`; implementation history remains recoverable from Git. Completed or
@@ -2392,6 +2400,17 @@ verified specs are merged and wait for the next release: spec 051's CI runtime
 budget is a per-test ceiling (FR-007), and spec 028 reads an over-budget
 reconciliation range in batches (FR-008–FR-010). The `[Unreleased]` section of
 `CHANGELOG.md` lists them. Each spec's `tasks.md` is its checklist.
+
+Specs 081 to 092 (issue #607) wait for the next release in `[Unreleased]`.
+- **Ideas taken from AWS AI-DLC and DORA, re-implemented:**
+  - closed verdicts with observation gaps (081);
+  - an enforcement ladder (083);
+  - accountable waivers (084);
+  - Spec Kit chain coverage (085);
+  - decision records (086).
+- **AWS AI-DLC as a target:** its workspaces are read natively (089), its agent memory is governed (091), and DocGuard runs as an AI-DLC plugin (090).
+- **DORA evidence** (092).
+- **Maintainer tooling:** the release trend gate (087) and the parser fuzz harness (088).
 
 New work starts with a reviewed specification and measurable acceptance
 criteria rather than an evergreen task list that can become stale.
@@ -2692,7 +2711,7 @@ systems cannot meet a concrete team need. They are not active commitments.
 
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -2748,9 +2767,9 @@ code-truth sections), `score` (CDD maturity 0-100).
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map; `--matrix` exports requirement → anchor → test), `upgrade` (check npm for a newer
-release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard).
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `policy` (which advisory codes CI history shows are ready to promote), `memory` (what DocGuard
+remembers; `--pack [--symbols]` for the context pack; `--export`/`--consolidate aidlc` for AWS AI-DLC memory), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map; `--matrix` exports requirement → anchor → test), `upgrade` (check npm for a newer
+release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard). `sensor --aidlc` speaks AWS AI-DLC's sensor contract for the DocGuard AI-DLC plugin, and stays out of `--help` because it is meant for machines. `score --dora` maps DocGuard's evidence onto DORA's documentation and AI capabilities.
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).

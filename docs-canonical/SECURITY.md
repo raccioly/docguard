@@ -3,7 +3,7 @@
 <!-- docguard:quality negation-load off — prohibitions define security boundaries -->
 <!-- docguard:version 0.18.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 ## Overview
 
@@ -86,6 +86,8 @@ Every other subprocess also takes an argv array and no shell:
   - A mismatch, a missing file or a failed child is ANC010, and the pattern tier answers.
 - `python3 -c` with one fixed script (`cli/scanners/py-anchors.mjs`) that receives file CONTENT as JSON on stdin, never a path, and only calls `ast.parse` and `tokenize` on it, never importing or executing it. One run per batch, with a timeout of 15 seconds plus 1 second per 64 KiB of input. The doc lock and requirement anchors share it; doc-lock paths are checked by the doc lock's path guard before they are read. `cli/scanners/py-ast.mjs` runs one fixed extractor script that reads file paths on stdin, parses each with `ast.parse` and never imports or executes them, with a 30-second timeout; the import graph, the symbol map and the Python route, model and environment scanners share it.
 - `upgrade --apply` runs `npm install -g docguard-cli@latest` when npm has a newer release (on Windows through the shell, with the same fixed arguments, because `npm` is a `.cmd` shim), and `upgrade --apply --pr` runs `git` and `gh` to open the schema-migration pull request (`cli/commands/upgrade.mjs`).
+- `sensor --aidlc` (spec 090) compares with HEAD in a temporary directory: `git clone -q --local --no-checkout` of the project, `git -C <tmp> checkout -q <sha>` with a SHA read from `rev-parse`, then the same CLI's guard there. The directory is removed afterwards. The tree key reads `rev-parse HEAD` and `status --porcelain -z` (`cli/sensor-cache.mjs`). The AI-DLC plugin's wrapper starts `docguard sensor --aidlc` from an argv array, or `DOCGUARD_BIN` when set, with the dispatcher's arguments, no shell, and nothing else.
+- `score --dora` (spec 092) reads `git log --since=90.days --no-merges --name-only` through `runGit`.
 - Development only: `tools/budget.mjs` runs `node` and `npm pack --dry-run --ignore-scripts`. `tools/release-ab.mjs` runs `git` (`init`, `add`, `commit`, `archive`) and `tar` on temporary copies, and each tree's own `cli/docguard.mjs guard`.
 
 Only two shell strings remain, and both are static: `git rev-parse --is-inside-work-tree` (`cli/shared-git.mjs`) and `which specify` / `where specify` (`cli/ensure-skills.mjs`).
@@ -173,6 +175,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 | 0.17.0 | 2026-10-11 | Workflow jobs run tests, package managers and build tools without a repository write token; release assets are built read-only (spec 068) |
 | 0.16.0 | 2026-10-11 | Git hooks are written only in a hooks folder the repository owns (spec 065) |
 | 0.15.0 | 2026-10-10 | `.docguardignore` expiries fail closed (an expired or unreadable entry excludes nothing); `docguard ignore` is read-only (spec 057) |
+| 0.15.0 | 2026-11-03 | Freshness review after specs 081–092: the sensor's HEAD clone and tree key, the AI-DLC wrapper's spawn, `score --dora`'s git log, and `tools/release-ab.mjs` |
 | 0.14.0 | 2026-10-10 | Freshness review for specs 038–053: `upgrade --apply` also installs agent files and calls `specify` (spec 048), the `upgrade` and `guard --update-baseline` write levels, the `npm`/`git`/`gh` subprocesses of `upgrade`, the shared Python extractor's stdin and timeout, and where agent files are written |
 | 0.13.0 | 2026-09-30 | Only `init` installs agent skills and slash commands; read and preview modes write nothing; `.docguard/` ignores itself and dirty checks leave it out (spec 042) |
 | 0.12.0 | 2026-09-30 | Freshness review for specs 028–037: full subprocess inventory (git, `python3 -c`, dev tooling), the remaining static shell strings, path checks for `covers=`, ownership patterns and `rules --for`, the MCP documentation tools' boundary, and the `review`, `rules` and `trace --owners` write levels |

@@ -1,9 +1,9 @@
 # Requirements
 
 <!-- docguard:quality negation-load off — requirements define explicit failure and non-disclosure boundaries -->
-<!-- docguard:version 0.9.3 -->
+<!-- docguard:version 0.9.4 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 ## Functional Requirements
 
@@ -60,6 +60,7 @@ The verification column above links each requirement to executable tests. The te
 
 | Version | Date | Changes |
 |---|---|---|
+| 0.9.4 | 2026-11-03 | Freshness review after specs 081–092: every requirement and verification path still holds. Those specs state their own requirements under `specs/`, and none changes a requirement here |
 | 0.9.3 | 2026-10-13 | Freshness review after specs 070–078: FR-009 reads an over-budget range in batches before it reports partial coverage (spec 028 FR-008); those specs state their own requirements under `specs/` |
 | 0.9.2 | 2026-10-11 | FR-024: hooks are written only into a folder the repository owns (spec 065) |
 | 0.9.1 | 2026-10-10 | Freshness review for specs 038–053: every requirement and verification path still holds; those specs state their own requirements under `specs/`, so none is copied here |

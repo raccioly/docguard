@@ -3928,7 +3928,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-html-comments.mjs",
-            "line": 77
+            "line": 105
           },
           {
             "requirementId": "FR-001",
@@ -17205,6 +17205,110 @@
             "requirementId": "SC-002",
             "file": "tests/user-docs.test.mjs",
             "line": 14
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.validator-fuzz",
+      "path": "specs/088-validator-fuzz/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.validator-fuzz#FR-001",
+          "docguard.validator-fuzz#FR-002",
+          "docguard.validator-fuzz#FR-003",
+          "docguard.validator-fuzz#FR-004",
+          "docguard.validator-fuzz#FR-005",
+          "docguard.validator-fuzz#SC-001",
+          "docguard.validator-fuzz#SC-002",
+          "docguard.validator-fuzz#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/088-validator-fuzz/spec.md",
+            "digest": "sha256:81c549c836e508b9c97eb23414062d58b47822864a64a2d89c46a6f58ee11272"
+          },
+          {
+            "path": "specs/088-validator-fuzz/plan.md",
+            "digest": "sha256:c203d09951353b29a3b51709afc3f59c748d4ba4628c6370dc66729048e042ec"
+          },
+          {
+            "path": "specs/088-validator-fuzz/tasks.md",
+            "digest": "sha256:7c008695770714b9fd8f0263256e78e2f2d015c67217c1facf9d08e0ad1be0e8"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tools/fuzz.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tools/fuzz.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tools/fuzz.mjs",
+            "line": 20
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 10
           }
         ]
       }

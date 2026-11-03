@@ -136,6 +136,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | TODO tracking: keywords quoted in code spans or strings are not annotations; comments from the string-aware reader; no self-path skip (spec 073) | `tests/todo-tracking.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
+| `tools/fuzz.mjs` (parser fuzz harness: 19 text parsers, seeded generation with structured blocks and mutations, pathological inputs up to about 200 KB; no throw, determinism, linear time) and the `stripHtmlComments` linear-time fix (spec 088) | `tests/validator-fuzz.test.mjs` | ✅ |
 | `tools/release-ab.mjs` and `release-gate.json` (release trend gate): added, removed and volatile findings, exit-code changes, status-only validator comparison, ignored codes, changelog judging and config validation, with two synthetic CLI trees (spec 087) | `tests/release-trend-gate.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |

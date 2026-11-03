@@ -4,7 +4,7 @@
 
 <!-- docguard:version 0.15.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > The DocGuard CLI needs no environment variables. Three optional ones exist: `DOCGUARD_API_KEY` for the HTTP MCP server, `DOCGUARD_SPECIFY_TIMEOUT_MS` for the calls `docguard init` and `docguard upgrade --apply` make to the `specify` CLI, and `DOCGUARD_NO_UPDATE_HINT` to silence the version-age note. DocGuard has a single optional-load npm dependency (`@babel/parser`) and optionally uses the developer's own `python3`; everything else is Node.js built-ins.
 
@@ -37,6 +37,7 @@ Three **optional** variables exist:
 | Variable | When it applies | Purpose |
 |----------|-----------------|---------|
 | `DOCGUARD_API_KEY` | `docguard mcp --transport http`: optional on loopback; **required to bind a non-loopback host** | Shared secret for the HTTP MCP server. Equivalent to `--api-key <key>`, which takes precedence. When set, every request must carry `Authorization: Bearer <key>` or `X-API-Key: <key>`, else `401`. |
+| `DOCGUARD_BIN` | The DocGuard AI-DLC plugin's sensor wrapper (`extensions/aidlc/docguard/tools/aidlc-sensor-docguard-guard.ts`) | The DocGuard executable the wrapper runs. Defaults to `docguard` on `PATH`. A path that cannot start makes the sensor report `could-not-run`, never a pass (spec 090). |
 | `DOCGUARD_NO_UPDATE_HINT` | guard text output, the MCP server's instructions, `memory --pack` | `1` turns off the note that the installed release is more than 14 days old (spec 038). The note makes no network call; `CI` set to a non-empty value other than `false` or `0` also silences it in guard's text output. |
 | `DOCGUARD_SPECIFY_TIMEOUT_MS` | `docguard init` and `docguard upgrade --apply` with the `specify` CLI installed | Timeout in milliseconds for each `specify` call. Defaults: 15000 for `specify --version` and `specify init --help`, 60000 for `specify init` and `specify extension add`. A missing, zero or non-numeric value uses the default. |
 
@@ -151,6 +152,7 @@ What must be visible:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.16.0 | 2026-11-03 | DocGuard Team | Freshness review after specs 081–092: `DOCGUARD_BIN` for the AI-DLC plugin's sensor wrapper; no other variable was added |
 | 0.15.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: `CI` turns off the anchor cache; the commands that write the anchor lock and the trace matrix; Python anchors without `python3`; the local per-test runtime check (spec 051 FR-007) |
 | 0.14.0 | 2026-10-11 | DocGuard Team | A global `core.hooksPath` makes `hooks` refuse; `/dev/null` falls back to `.git/hooks` (spec 065) |
 | 0.13.0 | 2026-10-10 | DocGuard Team | Freshness review for specs 038–053: `upgrade --apply` also calls `specify` (spec 048) and `specify --version` uses the 15-second default; `npm run docs:reference`; the commands that write, with SECURITY.md as the full list |
