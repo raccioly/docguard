@@ -91,6 +91,10 @@ As a CI owner, I keep the history artifact between runs (CI-RECIPES), and each e
 - **FR-010**: `policy --format json` MUST expose the same data, and MUST write nothing.
 - **FR-011**: `requiredChecks` MUST be declared in `schemas/docguard-config.schema.json`. `REQ001` and `REQ002` MUST be registered in `cli/findings.mjs` and `docs/reference/findings.md`. `policy` MUST appear in `docguard --help`, `docs/commands.md`, the MCP tool list when a guard-equivalent tool exists for it, and `CHANGELOG.md`.
 
+- **FR-012** *(amendment, 2026-11-03)*: In guard's text output, a validator whose findings are all informational after `findingSeverity` and default levels (status `warn`, effective status `pass`) MUST be shown as an informational row, not as a warning. Its findings stay listed. JSON keeps both `status` and `effectiveStatus` unchanged.
+
+  The final A/B of specs 081–092 showed why: twelve local projects would otherwise have gained a ⚠️ Spec-Kit row made only of advisory SPK013 findings.
+
 ### Key Entities
 
 - **Required check**: A validator key the project depends on. It must reach a decision, or be declared N/A, in every gating run.

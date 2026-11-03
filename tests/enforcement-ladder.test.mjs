@@ -11,6 +11,7 @@
  * @req docguard.enforcement-ladder#FR-008
  * @req docguard.enforcement-ladder#FR-009
  * @req docguard.enforcement-ladder#FR-010
+ * @req docguard.enforcement-ladder#FR-012
  * @req docguard.enforcement-ladder#SC-001
  */
 import { describe, it } from 'node:test';
@@ -150,5 +151,20 @@ describe('US2 — policy', () => {
     assert.equal(data.codes.length, Object.keys(CODES).length);
     assert.equal(existsSync(join(dir, '.docguard')), before);
     assert.match(data.note, /no history/i);
+  });
+});
+
+describe('FR-012 — advisory-only validators are not shown as warnings', () => {
+  it('a row whose findings are all informational is informational; the same finding at warn is a warning', t => {
+    const files = { ...SRC, 'AGENTS.md': '# Agents\n\n- Billing: `docs/missing.md`\n' };
+    const advisory = project(t, files, { validators: validators('pathScopedRules'), findingSeverity: { PSR002: 'low' } });
+    const out = run(advisory, 'guard').stdout;
+    assert.match(out, /ℹ️ {2}Path-Scoped-Rules .*advisory findings only/);
+    assert.doesNotMatch(out, /⚠️ {2}Path-Scoped-Rules/);
+    assert.match(out, /• \[PSR002\]/, 'the finding is still listed');
+    const warned = project(t, files, { validators: validators('pathScopedRules') });
+    assert.match(run(warned, 'guard').stdout, /⚠️ {2}Path-Scoped-Rules/);
+    const v = json(advisory, 'guard').data.validators.find(x => x.key === 'pathScopedRules');
+    assert.deepEqual([v.status, v.effectiveStatus], ['warn', 'pass'], 'JSON keeps both statuses');
   });
 });

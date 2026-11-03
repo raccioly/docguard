@@ -958,8 +958,14 @@ export function runGuard(projectDir, config, flags) {
     const qColor = v.quality === 'HIGH' ? c.green : v.quality === 'MEDIUM' ? c.yellow : c.red;
     const qBadge = `${qColor}[${v.quality}]${c.reset}`;
 
+    // docguard.enforcement-ladder#FR-012: a validator whose every finding is
+    // informational (an advisory code, or one findingSeverity demoted) gates
+    // nothing, so its row is informational, not a warning.
+    const advisoryOnly = v.status === 'warn' && v.effectiveStatus === 'pass';
     if (v.status === 'pass') {
       console.log(`  ${c.green}✅ ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
+    } else if (advisoryOnly) {
+      console.log(`  ${c.cyan}ℹ️  ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed · advisory findings only${c.reset}`);
     } else if (v.status === 'fail') {
       console.log(`  ${c.red}❌ ${v.name}${c.reset} ${qBadge}${c.dim}  ${v.passed}/${v.total} checks passed${c.reset}`);
     } else {

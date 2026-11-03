@@ -5391,6 +5391,7 @@
           "docguard.enforcement-ladder#FR-009",
           "docguard.enforcement-ladder#FR-010",
           "docguard.enforcement-ladder#FR-011",
+          "docguard.enforcement-ladder#FR-012",
           "docguard.enforcement-ladder#SC-001",
           "docguard.enforcement-ladder#SC-002",
           "docguard.enforcement-ladder#SC-003"
@@ -5400,7 +5401,7 @@
         "artifacts": [
           {
             "path": "specs/083-enforcement-ladder/spec.md",
-            "digest": "sha256:2478fce76df312b13aa88658a22af410619ee08f835ffb9d9e7b52d8d9abcb2f"
+            "digest": "sha256:dcf7db2064f7106afb5e17647d3096efea6e4fbf0a4cfa4498505ad0a54179cf"
           },
           {
             "path": "specs/083-enforcement-ladder/plan.md",
@@ -5514,9 +5515,14 @@
             "line": 13
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-012",
             "file": "tests/enforcement-ladder.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/enforcement-ladder.test.mjs",
+            "line": 15
           }
         ]
       }

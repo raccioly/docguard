@@ -2006,7 +2006,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disables a required check, REQ002 for an unknown key). `ci` history now
   records per-code counts and levels, and the new read-only `docguard policy`
   lists advisory codes this project's history shows are ready to promote and
-  blocking codes that are noisy.
+  blocking codes that are noisy. In text output, a validator whose findings are all
+  informational now shows an informational row (ℹ️), not a warning (⚠️),
+  and still lists its findings.
 
 - **DocGuard runs inside AWS AI-DLC as a plugin** (`docguard.aidlc-plugin`,
   spec 090). `extensions/aidlc/docguard/` is a third-party AI-DLC plugin, valid
@@ -2369,10 +2371,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - ANC008: a tag citing a retired requirement;
     - ANC009: two different lock lines for one link after a merge.
   - **What DocGuard does not do.** It edits `.gitattributes` only with
-    `--gitattributes`, and it authenticates nobody. CI recipe 3f shows how
-    to require human review of the lock through CODEOWNERS.
 
-<!-- truncated: 6068 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6070 more lines — read CHANGELOG.md directly -->
 
 ---
 

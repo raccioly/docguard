@@ -33,7 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disables a required check, REQ002 for an unknown key). `ci` history now
   records per-code counts and levels, and the new read-only `docguard policy`
   lists advisory codes this project's history shows are ready to promote and
-  blocking codes that are noisy.
+  blocking codes that are noisy. In text output, a validator whose findings are all
+  informational now shows an informational row (ℹ️), not a warning (⚠️),
+  and still lists its findings.
 
 - **DocGuard runs inside AWS AI-DLC as a plugin** (`docguard.aidlc-plugin`,
   spec 090). `extensions/aidlc/docguard/` is a third-party AI-DLC plugin, valid
