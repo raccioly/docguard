@@ -335,26 +335,30 @@ export function docsForPath(projectDir, config, path) {
 }
 
 /**
- * docguard.dora-evidence#FR-005: how far to trust each referencing document,
- * once per document rather than per reference (spec 031 budgets these bytes).
- * `lifecycle` is the header status, so an agent can skip a superseded doc;
- * `openFindings` comes only from a sensor cache for this exact tree state,
- * because running guard inside an MCP call is too slow to be worth it.
+ * docguard.dora-evidence#FR-005: how far to trust the referencing documents,
+ * in as few bytes as an agent can read it (spec 031 budgets them): only a
+ * document that is not active is listed under `lifecycle`, so an agent can
+ * skip a superseded one; `openFindings` lists a document's finding codes only
+ * from a sensor cache for this exact tree state, since running guard inside an
+ * MCP call is too slow to be worth it; `findingsBasis` says which.
  */
 function referencingDocs(projectDir, files) {
   const unique = [...new Set(files)].sort();
   if (!unique.length) return {};
   const codes = currentFileCodes(projectDir);
-  const out = {};
+  const lifecycle = {};
+  const openFindings = {};
   for (const file of unique) {
     let status = null;
     try { status = parseLifecycleStatus(readFileSync(resolve(projectDir, file), 'utf8'))?.toLowerCase() || null; } catch { /* unreadable: no status */ }
-    const lifecycle = !status ? 'active' : status === 'retired' || RETIRED_STATUSES.has(status) ? (status === 'superseded' ? 'superseded' : 'retired') : status;
-    out[file] = codes
-      ? { lifecycle, openFindings: codes[file] || [], findingsBasis: 'sensor-cache' }
-      : { lifecycle, openFindings: null, findingsBasis: 'no-current-guard-run' };
+    if (status && status !== 'active') lifecycle[file] = status === 'superseded' ? 'superseded' : RETIRED_STATUSES.has(status) || status === 'retired' ? 'retired' : status;
+    if (codes?.[file]?.length) openFindings[file] = codes[file];
   }
-  return out;
+  return {
+    findingsBasis: codes ? 'sensor-cache' : 'no-current-guard-run',
+    ...(Object.keys(lifecycle).length ? { lifecycle } : {}),
+    ...(codes ? { openFindings } : {}),
+  };
 }
 
 function requireMarkdown(projectDir, doc) {

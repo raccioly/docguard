@@ -150,32 +150,28 @@ describe('FR-001 — display-only and absent without the flag', () => {
 });
 
 describe('US3 — docs_for_path says how far to trust each referencing doc', () => {
-  it('one entry per referencing doc; open findings come only from a cache for this tree state', t => {
+  it('states only what differs from the default; open findings come only from a cache for this tree state', t => {
     const dir = project(t, {
       'docs-canonical/ARCHITECTURE.md': '# Architecture\n\nThe server lives in `src/app.js`.\n',
       'AGENTS.md': '# Agents\n\nStart at `src/app.js`. Routes live in `src/app.js` too.\n',
     });
     const config = {};
     const first = docsForPath(dir, config, 'src/app.js');
-    assert.equal(first.docs['AGENTS.md'].lifecycle, 'active');
-    assert.equal(first.docs['AGENTS.md'].openFindings, null);
-    assert.equal(first.docs['AGENTS.md'].findingsBasis, 'no-current-guard-run');
-    assert.equal(Object.keys(first.docs).length, new Set([...first.references.items, ...first.agentInstructions.items].map(r => r.doc)).size, 'one entry per document');
+    assert.deepEqual(first.docs, { findingsBasis: 'no-current-guard-run' }, 'active docs and no cache: one field');
 
     mkdirSync(join(dir, '.docguard'), { recursive: true });
     writeFileSync(join(dir, SENSOR_CACHE), JSON.stringify({ key: treeKey(dir), result: {}, fileCodes: { 'AGENTS.md': ['PSR002'] } }));
     const cached = docsForPath(dir, config, 'src/app.js');
-    assert.deepEqual(cached.docs['AGENTS.md'].openFindings, ['PSR002']);
-    assert.equal(cached.docs['AGENTS.md'].findingsBasis, 'sensor-cache');
+    assert.deepEqual(cached.docs, { findingsBasis: 'sensor-cache', openFindings: { 'AGENTS.md': ['PSR002'] } });
 
     writeFileSync(join(dir, 'AGENTS.md'), '# Agents\n\nStart at `src/app.js`.\n');
     const stale = docsForPath(dir, config, 'src/app.js');
-    assert.equal(stale.docs['AGENTS.md'].openFindings, null, 'a cache for another tree state is never used');
+    assert.deepEqual(stale.docs, { findingsBasis: 'no-current-guard-run' }, 'a cache for another tree state is never used');
   });
 
   it('a superseded canonical doc reports lifecycle superseded', t => {
     const dir = project(t, { 'docs-canonical/ARCHITECTURE.md': '# Architecture\n\n**Status**: Superseded\n\nThe server lives in `src/app.js`.\n' });
     const r = docsForPath(dir, {}, 'src/app.js');
-    assert.equal(r.docs['docs-canonical/ARCHITECTURE.md']?.lifecycle, 'superseded', JSON.stringify(r.docs));
+    assert.deepEqual(r.docs.lifecycle, { 'docs-canonical/ARCHITECTURE.md': 'superseded' }, JSON.stringify(r.docs));
   });
 });

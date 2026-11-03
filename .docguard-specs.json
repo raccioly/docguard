@@ -5270,11 +5270,11 @@
         "artifacts": [
           {
             "path": "specs/092-dora-evidence/spec.md",
-            "digest": "sha256:ae28d0eb2551d265c76bc090fc63414ff632f1294d8385be2875f1a044e4f918"
+            "digest": "sha256:1d7e6672b7edc288fb61f18873e5faf0add85e267487e43d3aac552e433371d4"
           },
           {
             "path": "specs/092-dora-evidence/plan.md",
-            "digest": "sha256:8e3c9e4deb4e0a9f06a72e438ef5f80d957b004f7b9d61d9414c26399b6712a9"
+            "digest": "sha256:1655bdae795c037d1b8d6d7e11420a25f7da2fc0f9fe4a511d88911200565375"
           },
           {
             "path": "specs/092-dora-evidence/tasks.md",
@@ -17489,7 +17489,7 @@
           },
           {
             "path": "specs/081-verdict-contract/tasks.md",
-            "digest": "sha256:c34490c359cafb4d29f2b6a762f1ae88b73493da2ad9878513395d3da93e8f37"
+            "digest": "sha256:f596efe7d7f0369621642ef628e7e3f4ab3697651e5ee3c15d89b68a7f61fb10"
           }
         ],
         "taskCompletion": {

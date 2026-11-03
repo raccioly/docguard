@@ -80,8 +80,8 @@ DORA measures these by survey. A team cannot see, from its own repository, which
 
 **Acceptance Scenarios**:
 
-1. **Given** a reference in a document whose header says `Status: Superseded` or `Retired`, **Then** `docguard_docs_for_path` returns a `docs` map with `lifecycle` set for that document. The map has one entry per referencing document, not one per reference.
-2. **Given** the sensor cache (spec 090) holds a guard run for the current tree state, **Then** each document's entry carries `openFindings`, the codes guard reported in that document. **Given** no matching cache, **Then** `openFindings` is `null` with `findingsBasis: "no-current-guard-run"`. It is never computed by running guard inside the MCP call.
+1. **Given** a reference in a document whose header says `Status: Superseded` or `Retired`, **Then** `docguard_docs_for_path` returns `docs.lifecycle` naming that document and its status. Active documents are not listed, so the default costs no bytes.
+2. **Given** the sensor cache (spec 090) holds a guard run for the current tree state, **Then** `docs.openFindings` maps each referencing document with findings to its codes, and `docs.findingsBasis` is `sensor-cache`. **Given** no matching cache, **Then** `findingsBasis` is `no-current-guard-run` and `openFindings` is absent. Open findings are never computed by running guard inside the MCP call.
 
 ### Edge Cases
 
@@ -108,7 +108,11 @@ DORA measures these by survey. A team cannot see, from its own repository, which
   | `used-in-incidents` | proxy | a runbook or troubleshooting document exists |
 - **FR-003**: `dora.ai` MUST hold the seven AI capabilities, with the evidence of US2. `user-centric-focus`, `healthy-data-ecosystem` and `quality-internal-platform` MUST be `survey-only`.
 - **FR-004**: `dora` MUST carry `schemaVersion: 1`, `source` (DORA's URLs) and `caveat`. The caveat states that DORA measures these by survey, and that this is repository evidence which complements a survey and never replaces it. `schemas/docguard-dora.schema.json` MUST validate the `dora` object.
-- **FR-005**: `docguard_docs_for_path` MUST add a `docs` map: each referencing document, with its `lifecycle` (header status, or `active`), plus `openFindings` and `findingsBasis` from the sensor cache when that cache is for the current tree state. Existing fields MUST NOT change.
+- **FR-005**: `docguard_docs_for_path` MUST add `docs: { findingsBasis, lifecycle?, openFindings? }`:
+  - `lifecycle` lists only referencing documents whose header status is not active;
+  - `openFindings` appears only when the sensor cache is for the current tree state.
+
+  Existing fields MUST NOT change, and the response MUST stay within spec 031's byte budget.
 - **FR-006**: `docs/commands.md`, `docs/ai-integration.md`, `docs-canonical/ARCHITECTURE.md`, `DATA-MODEL.md`, `TEST-SPEC.md` and `CHANGELOG.md` MUST describe the view and the `docs` map.
 
 ## Success Criteria *(mandatory)*
@@ -127,6 +131,11 @@ Run on this repository on 2026-11-03:
 - Easy to find was 60%: 19 of 98 H2/H3 sections can be quoted alone.
 - Working in small batches was 41%: 32% of the 238 commits in 90 days touched more than 20 files. This is the program's own batching, visible in its history.
 - The view takes about 1.4 s, all spent in the memory diffs, and only under `--dora`.
+
+Budget (`tools/budget.mjs ab` against v0.45.2), SC-003:
+- The first `docs` map listed every referencing document with all three fields. That put `docguard_docs_for_path` 22% over its budget.
+- It now lists only documents that aren't active, plus open findings from a current cache, and states `findingsBasis` once: 36 bytes on this repository.
+- The metric is still 612 bytes over its base, against 489 allowed. The rest is content: this branch's TEST-SPEC names `cli/findings.mjs` in one more row, which the tool returns as a reference. The PR exempts that with a `Budget-Exempt` line.
 
 A first draft treated a `Dockerfile` as a deploy signal. It would have scored this CLI's own image build as missing infrastructure as code, so infrastructure configuration became evidence only.
 

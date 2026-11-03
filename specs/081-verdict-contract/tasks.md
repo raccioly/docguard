@@ -49,4 +49,4 @@ Tests come first. Every reproduction must fail on 0.45.2 before its fix lands (S
 - **T010**: on v0.45.2, 21 of the 24 tests fail. The working-git PSR002 control also fails there, because it asserts the new `verdict` and applicability fields. The control's finding count matches on both releases.
 - **T021**: `guard --fail-on-inconclusive` on this repository exits 2, guard's warning code, not 4, so no validator is inconclusive.
 - **T024, T025**: the hermetic A/B and the fault-injection run were recorded in the session that built the spec. The final branch A/B against v0.45.2 is in spec 082's Verification Notes.
-
+- **Budget**: the compact MCP guard response grew 14% with a verdict, class and observation count per validator, against a 10% budget. The compact form now states `applicabilityClasses` (status → class) once, and `observationCount` only when it is not zero. That brings it to +7%, within budget. `tests/compact-guard-response.test.mjs` still reconstructs the full result losslessly.

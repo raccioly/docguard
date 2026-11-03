@@ -68,7 +68,7 @@
 
 ### MCP `docs` map (FR-005)
 
-`docsForPath` builds `docs` from the distinct `references[].file`. For each document it reads `lifecycle` from `parseLifecycleStatus`, normalized to `active`, `superseded` or `retired`, or else the raw status.
+`docsForPath` builds `docs` from the distinct referencing documents. It lists under `lifecycle` only the documents whose `parseLifecycleStatus` is not active, normalized to `superseded` or `retired`, or else the raw status. It states `findingsBasis` once. The first version listed every document with all three fields, which put `docguard_docs_for_path` 22% over its byte budget.
 
 `openFindings` is filled only when `.docguard/sensor-cache.json` has a `key` equal to `treeKey(projectDir)`. That requires the sensor cache to keep the location of every finding, not only the first 20:
 - `runSensor` stores `fileCodes: { [file]: [code, …] }` beside the cached result;

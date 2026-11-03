@@ -31,7 +31,10 @@ for (const target of TARGETS) full[target] = runGuardInternal(resolve(target), l
 /** Read a validator's applicability back out of the compact form. */
 function applicabilityOf(compact, validator) {
   const a = validator.applicability;
-  return a && a.reason === undefined ? { ...a, reason: compact.applicabilityReasons[a.status] } : a;
+  if (!a) return a;
+  // The class is stated once per status (docguard.verdict-contract#FR-012).
+  const cls = a.class ?? compact.applicabilityClasses?.[a.status];
+  return { ...a, ...(cls !== undefined ? { class: cls } : {}), ...(a.reason === undefined && compact.applicabilityReasons[a.status] !== undefined ? { reason: compact.applicabilityReasons[a.status] } : {}) };
 }
 
 /** Read the full form's coverage limitations back out of the compact validators. */
