@@ -53,6 +53,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
 | **Verdict contract** | Ends every validator result in one closed verdict and keeps a per-run observation ledger: a git call that fails while git is readable (spawn error, signal, timeout, or an exit outside the subcommand's documented answers) is retried once if transient, then recorded as a gap on the validator during whose run it happened, and findings that depend on it are withheld: while any gap stands, absence claims (`ABSENCE_CLAIM_CODES`: PSR001/2, REF001, TRC002–005, SPK008, SPK010, SPR008, XRF001/2) are withheld run-wide, because shared inputs may be incomplete for every reader. A run-level list collects gaps recorded between validator brackets. `--fail-on-inconclusive` exits 4 (spec 081) | `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`, `APPLICABILITY_CLASS`), `cli/commands/guard.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs` | A gap is never a finding and never a pass; whole-run unreadable git stays `missing-prerequisite` (spec 022) |
 | **AI-DLC plugin and sensor** | `docguard sensor --aidlc` speaks AI-DLC's sensor contract (one JSON line). It passes when the work in progress introduced no drift (no blocking finding, nothing new since a guard run on a local clone of HEAD, ignored files excluded), and caches per tree state and per commit. `extensions/aidlc/docguard/` is the third-party AI-DLC plugin whose thin TS wrapper runs it at code-generation and build-and-test (spec 090) | `cli/commands/sensor.mjs`, `extensions/aidlc/docguard/` | The wrapper holds no logic and never exits 127; CI validates and builds it with a pinned AI-DLC release |
+| **DORA evidence** | `score --dora` maps facts DocGuard already computes onto DORA's eight documentation-quality items and AI Capabilities Model: memory accuracy, Doc Quality, structure, the doc lock, Agent Readability, runbooks, git history and tracked files. Each item is labeled `deterministic`, `proxy` or `survey-only`. `docguard_docs_for_path` reports each referencing doc's lifecycle, and its open findings from a sensor cache for the current tree state (spec 092) | `cli/commands/score-dora.mjs`, `cli/sensor-cache.mjs`, `cli/scanners/lifecycle-status.mjs` | Display-only, like ALCOA+: never feeds the CDD score or an exit code. A missing score is `null` with a reason, never 0 |
 | **AI-DLC records** | Reads AWS AI-DLC workspaces read-only and re-checks after the workflow what AI-DLC verified at its gates: traceability targets that no longer exist, gaps left in completed stages, unit deliverables removed later (git decides removal versus the unit's own deletion), unreadable records (AID001–AID004, advisory; spec 089) | `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs` | Never writes AI-DLC files |
 | **Agent memory governance** | Re-checks AWS AI-DLC memory against the code (learned rules and CodeKB naming paths or env vars that are gone: MEM001, MEM002), feeds AI-DLC verified facts through its knowledge folder (`memory --export aidlc`), and consolidates stage diaries by exact normalized grouping (`memory --consolidate aidlc`) (spec 091) | `cli/validators/aidlc.mjs`, `cli/scanners/aidlc.mjs`, `cli/commands/memory-aidlc.mjs` | Never writes AI-DLC memory layers; never runs `aidlc` |
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
@@ -1681,6 +1682,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
 | `cli/commands/sensor.mjs` and `extensions/aidlc/docguard/`: sensor contract, HEAD-relative pass, caching, plugin manifest, sensor and wrapper contract (spec 090); end to end through AI-DLC in spec 090's Verification Notes and the `aidlc-plugin` CI job | `tests/aidlc-plugin.test.mjs` | ✅ |
+| `cli/commands/score-dora.mjs`, `score --dora` and the `docguard_docs_for_path` `docs` map: DORA's item order and schema, route drift lowering reflects-capabilities, runbook proxy, small-batch scoring, null without git, version control without scoring infrastructure, AI stance, superseded-doc pointers, absence without the flag, and cache-gated open findings (spec 092) | `tests/dora-evidence.test.mjs` | ✅ |
 | `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs`: removed targets, gaps in completed stages, later removals versus own deletions, uncommitted manifests, legacy layout, malformed and escaping records (spec 089) | `tests/aidlc-profile.test.mjs` | ✅ |
 | `cli/commands/memory-aidlc.mjs` and MEM001/MEM002 in `cli/validators/aidlc.mjs`: stale rules and CodeKB, verified-only export, dry run, untouched memory layers, diary consolidation (spec 091) | `tests/memory-governance.test.mjs` | ✅ |
 | `cli/validators/decision-records.mjs`: statuses, MADR front matter, one-way/dangling/successor-less supersession, index mismatches, unanswered clarifications and `[Answer]:` tags, scaffold quiet (spec 086) | `tests/decision-records.test.mjs` | ✅ |
@@ -1991,6 +1993,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **DORA's documentation and AI capabilities, from the repository**
+  (`docguard.dora-evidence`, spec 092). `docguard score --dora` maps facts
+  DocGuard already computes onto DORA's eight documentation-quality survey
+  items and its AI Capabilities Model:
+  - doc and code agreement;
+  - the doc lock;
+  - Agent Readability;
+  - runbooks;
+  - commit size over the last 90 days;
+  - what git tracks.
+
+  Each item is labeled `deterministic`, `proxy` or `survey-only`. It is
+  `null`, with a reason, when there is no evidence. The view is display-only,
+  like ALCOA+. `docguard_docs_for_path` now gives each referencing doc's
+  `lifecycle`, so agents can skip superseded docs. It also gives that doc's
+  open findings when the AI-DLC sensor has cached a guard run for the current
+  tree state.
 - **Decision records are checked** (`docguard.decision-records`, spec 086). A
   new advisory Decision-Records validator reads ADRs (one file with
   `## ADR-NNN` sections, or one file per decision) and reports a missing or
@@ -2311,25 +2330,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     JSON.
   - **Re-verified from saved TestGuard evidence.** A test is re-verified only
     when all of these hold:
-    - the evidence revision carried the anchored code at today's fingerprint;
-    - a claim names the requirement as `req:<spec-id>#<requirement-id>` (the
-      structured `source.ref` TestGuard validates);
-    - the test defended that claim;
-    - every fault was killed, with the claim, targets and defenders unchanged
-      since the probe.
-  - **Inconclusive.** An unreadable, provisional, foreign-revision or stale
-    report is inconclusive, never re-verified. A claim that names the
-    requirement by file path gets the `req:` form to write.
-  - **Reads files only.** DocGuard reads `anchors.testguard.evidence` and
-    `anchors.testguard.claims` and never runs a test or TestGuard.
-  - **ANC002 data.** Requirement-side findings now carry `scope` and
-    `reviewedState`, like ANC001.
-- **Requirement anchors: code that implements no requirement**
-  (`specs/070-requirement-anchors`, user story 7).
-  - **`docguard anchors --orphans`** lists each exported or top-level function,
-    class, struct, enum or top-level method that no tag anchors, once, in file
 
-<!-- truncated: 6004 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6021 more lines — read CHANGELOG.md directly -->
 
 ---
 

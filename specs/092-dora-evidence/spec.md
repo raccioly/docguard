@@ -119,6 +119,17 @@ DORA measures these by survey. A team cannot see, from its own repository, which
 - **SC-002**: On this repository, at least 6 of the 8 documentation items have a non-null score, and every score cites at least one evidence entry.
 - **SC-003**: The hermetic A/B changes no `guard` finding or exit code, and no `score` output without `--dora`. The only change to agent-facing output is the additive `docs` map, which stays within spec 031's byte budget.
 
+## Verification Notes
+
+Run on this repository on 2026-11-03:
+- All 8 documentation items had a score, and the documentation evidence came to 90% (SC-002).
+- Reliable was 60%: 3 of 5 checked facts agree, and two documented environment variables are not read in code.
+- Easy to find was 60%: 19 of 98 H2/H3 sections can be quoted alone.
+- Working in small batches was 41%: 32% of the 238 commits in 90 days touched more than 20 files. This is the program's own batching, visible in its history.
+- The view takes about 1.4 s, all spent in the memory diffs, and only under `--dora`.
+
+A first draft treated a `Dockerfile` as a deploy signal. It would have scored this CLI's own image build as missing infrastructure as code, so infrastructure configuration became evidence only.
+
 ## Assumptions
 
 - Labels are DocGuard's own short names for DORA's items. DORA's statements are linked, not copied.

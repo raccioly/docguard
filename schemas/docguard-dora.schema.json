@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/raccioly/docguard/schemas/docguard-dora.schema.json",
+  "title": "DocGuard DORA evidence",
+  "description": "The `dora` object of `docguard score --dora --format json` (specs/092-dora-evidence): repository evidence for DORA's documentation-quality survey items and AI Capabilities Model. Scores are DocGuard's own, 0-100 or null when there is no evidence; DORA measures these by survey.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "caveat", "documentation", "documentationScore", "ai"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentationQuality", "questionnaire", "aiCapabilities"],
+      "properties": {
+        "documentationQuality": { "type": "string", "pattern": "^https://" },
+        "questionnaire": { "type": "string", "pattern": "^https://" },
+        "aiCapabilities": { "type": "string", "pattern": "^https://" }
+      }
+    },
+    "caveat": { "type": "string", "minLength": 1 },
+    "documentation": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item",
+        "properties": {
+          "id": { "enum": ["reliable", "easy-to-understand", "easy-to-find", "code-documented", "well-organized", "updated-with-changes", "reflects-capabilities", "used-in-incidents"] }
+        }
+      }
+    },
+    "documentationScore": { "type": ["integer", "null"], "description": "Mean of the non-null documentation item scores." },
+    "ai": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item",
+        "properties": {
+          "id": { "enum": ["ai-stance", "healthy-data-ecosystem", "ai-accessible-data", "version-control", "small-batches", "user-centric-focus", "quality-internal-platform"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "measure", "score", "evidence", "improve"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z-]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "measure": { "enum": ["deterministic", "proxy", "survey-only"] },
+        "score": { "type": ["integer", "null"] },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "improve": { "type": ["string", "null"] },
+        "reason": { "type": "string", "description": "Why the score is null." }
+      }
+    }
+  }
+}

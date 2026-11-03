@@ -160,6 +160,7 @@ ${c.bold}Options:${c.reset}
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Profile: starter, standard, cli, library, enterprise (init command)
   --tax           Show estimated documentation maintenance cost (with score)
+  --dora          Show DORA documentation-quality and AI-capability evidence (with score)
   --help          Show this help message
   --version       Show version
 
@@ -255,13 +256,14 @@ const COMMAND_HELP = {
   },
   score: {
     summary: 'CDD maturity score (0–100).',
-    usage: 'docguard score [--diff] [--tax] [--format json]',
+    usage: 'docguard score [--diff] [--tax] [--dora] [--format json]',
     flags: [
       ['--diff', 'Delta between two refs'],
       ['--tax', 'Estimated documentation maintenance cost'],
+      ['--dora', 'Repository evidence for DORA documentation quality and AI capabilities'],
       ['--format json', 'Machine-readable score'],
     ],
-    examples: ['docguard score', 'docguard score --tax'],
+    examples: ['docguard score', 'docguard score --tax', 'docguard score --dora'],
   },
   diff: {
     summary: 'Show gaps between docs and code.',
@@ -868,6 +870,8 @@ async function main() {
       i++;
     } else if (args[i] === '--signals') {
       flags.signals = true;
+    } else if (args[i] === '--dora') {
+      flags.dora = true;
     } else if (args[i] === '--debate') {
       flags.debate = true;
     } else if (args[i] === '--stdout') {

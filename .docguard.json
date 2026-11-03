@@ -69,7 +69,8 @@
         "extract": "basename-no-ext",
         "ignore": [
           "agents", "hooks", "ci", "badge", "llms", "publish",
-          "setup", "impact", "sync-tests", "generate-as-built"
+          "setup", "impact", "sync-tests", "generate-as-built",
+          "memory-aidlc", "score-dora"
         ],
         "docs": ["README.md"],
         "section": "Usage"

@@ -61,6 +61,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **DORA's documentation and AI capabilities, from the repository**
+  (`docguard.dora-evidence`, spec 092). `docguard score --dora` maps facts
+  DocGuard already computes onto DORA's eight documentation-quality survey
+  items and its AI Capabilities Model:
+  - doc and code agreement;
+  - the doc lock;
+  - Agent Readability;
+  - runbooks;
+  - commit size over the last 90 days;
+  - what git tracks.
+
+  Each item is labeled `deterministic`, `proxy` or `survey-only`. It is
+  `null`, with a reason, when there is no evidence. The view is display-only,
+  like ALCOA+. `docguard_docs_for_path` now gives each referencing doc's
+  `lifecycle`, so agents can skip superseded docs. It also gives that doc's
+  open findings when the AI-DLC sensor has cached a guard run for the current
+  tree state.
 - **Decision records are checked** (`docguard.decision-records`, spec 086). A
   new advisory Decision-Records validator reads ADRs (one file with
   `## ADR-NNN` sections, or one file per decision) and reports a missing or

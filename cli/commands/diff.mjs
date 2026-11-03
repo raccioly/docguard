@@ -115,6 +115,30 @@ export function runDiff(projectDir, config, flags) {
 
 // ── Diff Functions ─────────────────────────────────────────────────────────
 
+/**
+ * Compute an accuracy score for a single domain. Returns:
+ *   { matched, total, accuracy: 0..100, onlyInDocs, onlyInCode }
+ * `null` when the domain isn't applicable (e.g. no API-REFERENCE.md).
+ * Shared by `memory` and `score --dora`, so both read one definition of a match.
+ */
+export function domainAccuracy(d) {
+  if (!d) return null;
+  const matched = (d.matched || []).length;
+  const onlyDocs = (d.onlyInDocs || []).length;
+  const onlyCode = (d.onlyInCode || []).length;
+  const total = matched + onlyDocs + onlyCode;
+  if (total === 0) return null;
+  return {
+    title: d.title,
+    icon: d.icon,
+    matched,
+    onlyInDocs: d.onlyInDocs || [],
+    onlyInCode: d.onlyInCode || [],
+    total,
+    accuracy: Math.round((matched / total) * 100),
+  };
+}
+
 export function diffRoutes(dir, config = {}) {
   // Documented surface: prefer the API reference, fall back to the
   // architecture document — each resolved as guard resolves it (docs.roles,

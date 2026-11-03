@@ -63,7 +63,7 @@ const num = s => Number.parseInt(String(s).replace(/^0+(?=\d)/, ''), 10);
 // so it is not a supersession link.
 // Only a structured link counts: one that opens its line (after a bullet,
 // quote or bold marker) or a status line. Prose such as "this supersedes the
-// ADR-015 posture" is discussion, not a record of supersession.
+// ADR-NNN posture" is discussion, not a record of supersession.
 const LINK_LEAD = String.raw`(?:^|\n)\s*(?:[-*>]\s*)?(?:\*\*)?(?:status(?:\*\*)?\s*:?\s*(?:\*\*)?\s*(?:\w+\s*[,;—–-]\s*)?)?`;
 const linksIn = text => ({
   supersedes: [...text.matchAll(new RegExp(`${LINK_LEAD}supersedes(?:\\*\\*)?[:\\s[]*(?:ADR[-\\s]?)?(\\d{1,5})`, 'gi'))].map(m => num(m[1])),
@@ -95,7 +95,7 @@ export function parseAdrFile(text, rel) {
       let end = k + 1 < heads.length ? heads[k + 1].i : lines.length;
       for (let j = h.i + 1; j < end; j++) if (/^##\s/.test(lines[j]) && !/^##\s+ADR/i.test(lines[j])) { end = j; break; }
       const body = lines.slice(h.i, end).join('\n');
-      // A scaffold placeholder (`## ADR-002: <!-- Title -->` and nothing but
+      // A scaffold placeholder (`## ADR-NNN: <!-- Title -->` and nothing but
       // comments) is not a decision yet.
       if (!h.title && !lines.slice(h.i + 1, end).some(l => l.trim() && !/^[-|:\s]+$/.test(l))) return;
       records.push({ n: h.n, title: h.title, ...statusIn(lines, h.i + 1, end), ...linksIn(body), file: rel, at: h.i + 1 });

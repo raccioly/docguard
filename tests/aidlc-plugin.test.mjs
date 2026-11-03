@@ -98,9 +98,16 @@ describe('US3 — the plugin\'s static contract', () => {
     const md = readFileSync(join(PLUGIN, 'sensors/aidlc-docguard-guard.md'), 'utf8');
     for (const line of ['id: docguard-guard', 'kind: deterministic', 'default_severity: advisory', 'fire_on: gate', 'command: bun {{HARNESS_DIR}}/tools/aidlc-sensor-docguard-guard.ts']) assert.ok(md.includes(line), line);
   });
-  it('the wrapper holds no DocGuard logic and never exits 127', () => {
+  it('the wrapper holds no DocGuard logic, never exits 127, and follows the main(argv) contract', () => {
     const ts = readFileSync(join(PLUGIN, 'tools/aidlc-sensor-docguard-guard.ts'), 'utf8');
-    assert.match(ts, /\["sensor", "--aidlc", \.\.\.process\.argv\.slice\(2\)\]/);
+    // A native AI-DLC install imports the tool in-process and calls main(argv);
+    // reading process.argv at load would see the engine's own arguments
+    // (awslabs/aidlc-workflows#3326).
+    assert.match(ts, /export function main\(argv: string\[\]\)/);
+    assert.match(ts, /\["sensor", "--aidlc", \.\.\.argv\]/);
+    assert.match(ts, /if \(import\.meta\.main\) main\(process\.argv\.slice\(2\)\);\s*$/);
+    const code = ts.replace(/^\s*\/\/.*$/gm, '');
+    assert.equal(code.match(/process\.argv/g).length, 1, 'process.argv is read only when run directly');
     assert.match(ts, /status === 127 \? 1 : status/);
     assert.match(ts, /if \(result\.error\)[\s\S]*process\.exit\(1\)/);
     assert.ok(ts.split('\n').length < 40, 'thin by design');

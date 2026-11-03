@@ -742,7 +742,7 @@
         "artifacts": [
           {
             "path": "specs/090-aidlc-plugin/spec.md",
-            "digest": "sha256:95d06fe31eed8fde0c295fc652caea9f16a0f5598b567ed9276695cc397a8eff"
+            "digest": "sha256:1c642af2910e585b5db98444d07b7841bbf1c3c3c7b82e3e61d5d15d014f6171"
           },
           {
             "path": "specs/090-aidlc-plugin/plan.md",
@@ -3742,7 +3742,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 715
+            "line": 743
           },
           {
             "requirementId": "FR-009",
@@ -3948,7 +3948,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 162
+            "line": 164
           },
           {
             "requirementId": "FR-003",
@@ -3968,7 +3968,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 94
+            "line": 96
           },
           {
             "requirementId": "FR-005",
@@ -3978,7 +3978,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 114
+            "line": 116
           },
           {
             "requirementId": "FR-008",
@@ -5160,23 +5160,85 @@
         "artifacts": [
           {
             "path": "specs/092-dora-evidence/spec.md",
-            "digest": "sha256:1ce5686789bbb74305f1fc8e57d37eeb328bd16ea12ddfe65c2e85ba4328d77a"
+            "digest": "sha256:ae28d0eb2551d265c76bc090fc63414ff632f1294d8385be2875f1a044e4f918"
           },
           {
             "path": "specs/092-dora-evidence/plan.md",
-            "digest": "sha256:37250095e30c248b1610a048821e393152e727418f803116c7c245dc8294a42c"
+            "digest": "sha256:b6b967d81fd79f14ed324465471ce07da821eba51c29de1f0d9bfd23fc4197f4"
           },
           {
             "path": "specs/092-dora-evidence/tasks.md",
-            "digest": "sha256:9c1c146520e6b5120ed4566e97b40814de54e319f3fdd8fdf2ee0673e030c6bb"
+            "digest": "sha256:e47c0829f2b28715509959cea5726ad37c0aaff2c07938d6a187a4ef2e98970f"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 9,
           "total": 9
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/score-dora.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/score-dora.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/score-dora.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/sensor-cache.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/sensor-cache.mjs",
+            "line": 8
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/dora-evidence.test.mjs",
+            "line": 10
+          }
+        ]
       }
     },
     {
@@ -6651,7 +6713,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/diff.mjs",
-            "line": 164
+            "line": 188
           },
           {
             "requirementId": "FR-003",
@@ -6696,7 +6758,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diff.mjs",
-            "line": 325
+            "line": 349
           },
           {
             "requirementId": "FR-007",
@@ -9755,7 +9817,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 758
+            "line": 760
           },
           {
             "requirementId": "FR-006",
@@ -12135,7 +12197,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 965
+            "line": 969
           },
           {
             "requirementId": "FR-001",
@@ -12145,17 +12207,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 966
+            "line": 970
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 967
+            "line": 971
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 968
+            "line": 972
           },
           {
             "requirementId": "FR-005",
@@ -15511,7 +15573,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1056
+            "line": 1060
           },
           {
             "requirementId": "FR-011",
@@ -17664,17 +17726,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 70
+            "line": 72
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 186
+            "line": 188
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 187
+            "line": 189
           },
           {
             "requirementId": "FR-004",
@@ -17815,7 +17877,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 82
+            "line": 84
           },
           {
             "requirementId": "FR-003",

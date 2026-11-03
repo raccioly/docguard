@@ -17,9 +17,8 @@
  * @implements docguard.aidlc-plugin#FR-001
  * @implements docguard.aidlc-plugin#FR-002
  */
-import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { runGuardInternal } from './guard.mjs';
@@ -27,49 +26,13 @@ import { loadConfig } from '../config.mjs';
 import { gitIgnoredPaths, runGit } from '../shared-git.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { fingerprintFinding } from '../writers/baseline.mjs';
+import { SENSOR_CACHE, fileCodes, treeKey } from '../sensor-cache.mjs';
 
-const CACHE = '.docguard/sensor-cache.json';
+export { treeKey };
+
 const HEAD_CACHE = '.docguard/sensor-head.json';
 const MAX_LISTED = 20;
 const VERSION = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')).version;
-
-/** HEAD, the working-tree changes with their content, and the config: what guard's answer depends on. */
-export function treeKey(projectDir) {
-  const h = createHash('sha256');
-  const head = runGit(projectDir, ['rev-parse', 'HEAD'], { stdio: ['ignore', 'pipe', 'ignore'] });
-  const status = runGit(projectDir, ['status', '--porcelain', '-z', '--untracked-files=all'], { stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024 });
-  if (head.status === 0 && status.status === 0) {
-    h.update(`head:${head.stdout.trim()}\n`);
-    for (const entry of status.stdout.split('\0').filter(Boolean)) {
-      const path = entry.slice(3);
-      if (path.startsWith('.docguard/')) continue; // DocGuard's own state, including this cache
-      h.update(`${entry}\n`);
-      try { if (statSync(resolve(projectDir, path)).isFile()) h.update(readFileSync(resolve(projectDir, path))); } catch { /* deleted */ }
-    }
-  } else {
-    // No git: the newest mtime under the project stands in for the tree state.
-    h.update(`nogit:${newestMtime(projectDir)}\n`);
-  }
-  const cfg = resolve(projectDir, '.docguard.json');
-  if (existsSync(cfg)) h.update(readFileSync(cfg));
-  h.update(`v:${VERSION}`);
-  return h.digest('hex');
-}
-
-function newestMtime(dir, depth = 0) {
-  if (depth > 6) return 0;
-  let newest = 0;
-  try {
-    for (const name of readdirSyncSafe(dir)) {
-      if (name === '.git' || name === 'node_modules' || name === '.docguard') continue;
-      const p = resolve(dir, name);
-      const s = statSync(p);
-      newest = Math.max(newest, s.isDirectory() ? newestMtime(p, depth + 1) : s.mtimeMs);
-    }
-  } catch { /* unreadable */ }
-  return newest;
-}
-function readdirSyncSafe(dir) { try { return readdirSync(dir); } catch { return []; } }
 
 /**
  * The finding fingerprints at the HEAD commit, from a guard run on a clean
@@ -154,7 +117,7 @@ export function runSensor(projectDir, config, flags = {}) {
     return null;
   }
   const key = treeKey(projectDir);
-  const cachePath = resolve(projectDir, CACHE);
+  const cachePath = resolve(projectDir, SENSOR_CACHE);
   try {
     const cached = JSON.parse(readFileSync(cachePath, 'utf-8'));
     if (cached.key === key && cached.result) {
@@ -163,8 +126,10 @@ export function runSensor(projectDir, config, flags = {}) {
     }
   } catch { /* no cache yet */ }
   let result;
+  let codesByFile;
   try {
     const data = runGuardInternal(projectDir, config);
+    codesByFile = fileCodes(data.findings || []);
     const files = [...new Set((data.findings || []).map(f => (typeof f.location === 'string' ? f.location : f.location?.file)).filter(Boolean).map(p => String(p).split(':')[0]))];
     const ignored = files.length ? gitIgnoredPaths(projectDir, files) : null;
     result = sensorResult(data, headFingerprints(projectDir), p => Boolean(ignored && (ignored.ignored.has(p) || ignored.unknown.has(p))));
@@ -173,7 +138,7 @@ export function runSensor(projectDir, config, flags = {}) {
     process.exitCode = 1;
     return null;
   }
-  try { ensureStateDir(projectDir); writeFileSync(cachePath, JSON.stringify({ key, stage: flags.stage || null, result }) + '\n'); } catch { /* read-only checkout: no cache */ }
+  try { ensureStateDir(projectDir); writeFileSync(cachePath, JSON.stringify({ key, stage: flags.stage || null, result, fileCodes: codesByFile }) + '\n'); } catch { /* read-only checkout: no cache */ }
   process.stdout.write(`${JSON.stringify(result)}\n`);
   return result;
 }

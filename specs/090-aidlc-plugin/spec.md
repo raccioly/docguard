@@ -115,6 +115,11 @@ Run 2026-11-03 with AI-DLC 2.11.2 installed from its checksum-verified release. 
   The audit recorded SENSOR_FIRED with SENSOR_PASSED, SENSOR_FAILED or SENSOR_COULD_NOT_RUN for each fire.
 - **What changed the design.** A first version passed whenever guard had no error. Drift is usually a warning, so the doc-drift fire passed. Failing on any warning would have failed every gate of a stock AI-DLC project, which already carries PSR002 and PSR003 warnings on AI-DLC's own `.claude/CLAUDE.md`, a 50 KB instruction load. Comparing with HEAD fails exactly on introduced drift. The first HEAD baseline came from `git archive` and counted 11 history and ignored-file artifacts as new. A local clone plus the ignored-file rule removed all 11.
 
+- **The `main(argv)` contract.** awslabs/aidlc-workflows#3326 reports that a native install can import a plugin sensor in-process and call its exported `main(argv)`. There, `process.argv` holds the engine's own arguments, so a wrapper that reads it at load time breaks. The wrapper now exports `main(argv)` and reads `process.argv` only under `import.meta.main`.
+  - Rebuilt and resynced on the same native 2.11.2 install, validation reported 0 errors.
+  - The fires gave clean `passed`, doc drift `failed`, restored `passed`, and DocGuard missing `could-not-run`.
+  - The earlier wrapper had also passed here, with no `script-error` note, so this 2.11.2 install ran it as a subprocess. The fix is for installs that load it in-process.
+
 ## Assumptions
 
 - AI-DLC 2.11.2 is the pinned target. The CI job installs it through its checksum- and attestation-verified installer.

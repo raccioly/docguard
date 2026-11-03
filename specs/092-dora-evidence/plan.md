@@ -17,7 +17,7 @@
 
 ## Design
 
-### `cli/scanners/dora.mjs` (new)
+### `cli/commands/score-dora.mjs` (new)
 
 `computeDoraEvidence(projectDir, config, { scores, agentRead })` returns the `dora` object. The two inputs are computed once by `runScore` and reused, not recomputed.
 
@@ -25,13 +25,13 @@
 
 | id | Source |
 |---|---|
-| `reliable` | the memory domains (`diffRoutes`, `diffEntities`, `diffEnvVars`, `diffTechStack`), matched ÷ (matched + only-in-docs) |
+| `reliable` | `docguard memory`'s overall accuracy over its four domains (`diffRoutes`, `diffEntities`, `diffEnvVars`, `diffTechStack`): matched ÷ (matched + only in docs + only in code), the same number `memory` shows |
 | `easy-to-understand` | `scores.docQuality`, a proxy |
 | `easy-to-find` | the mean of Agent Readability's `addressability` and `llms-txt` metrics, plus whether an ownership map exists |
 | `code-documented` | the memory domains, matched ÷ (matched + only-in-code), for routes, entities and environment variables |
 | `well-organized` | `scores.structure` |
 | `updated-with-changes` | `docLockStatus`: `current` ÷ covered sections. With no covered sections, `scores.drift` stands in as a proxy |
-| `reflects-capabilities` | 100 − the share of documented facts with no code behind them (only-in-docs ÷ documented) |
+| `reflects-capabilities` | documented routes and stack facts backed by code: matched ÷ (matched + only in docs), over endpoints and the tech stack |
 | `used-in-incidents` | a tracked Markdown file whose name or H1 says runbook, troubleshooting, incident or playbook. 100 when present with a heading per scenario, 50 when present, 0 when absent; a proxy |
 
 `_domainAccuracy` in `memory.mjs` is exported as `domainAccuracy`, so `memory` and `dora` share one definition of a match.
@@ -48,9 +48,9 @@
   - code: a source file;
   - configuration: a config-shaped file such as `*.json`, `*.yaml`, `*.toml` or `.env.example`;
   - build: a package manifest, Makefile, Dockerfile or `.github/workflows`;
-  - IaC: `*.tf`, `cdk.json`, `serverless.yml`, Kubernetes manifests, `Pulumi.yaml` or `template.yaml`.
+  - infrastructure configuration: `*.tf`, `cdk.json`, `serverless.yml`, Kubernetes manifests, `Pulumi.yaml`, `template.yaml`, compose files and platform deploy configs.
 
-  The score is the share present. IaC is counted only when the project ships deployable infrastructure, so a library is not penalized: the check is `not-applicable` when no deploy signal exists.
+  The score is the share of the first three present. Infrastructure configuration is evidence only. A repository without it may be a library, or an application whose infrastructure lives elsewhere, and nothing in the repository tells the two apart. (Treating a Dockerfile as a deploy signal would have scored this CLI's own image build as missing IaC.)
 - `ai-stance`: a proxy. The agent entry file exists (50), and it holds a "must"/"never"/"do not" rule or a section on permissions or boundaries (50).
 - `user-centric-focus`, `healthy-data-ecosystem` and `quality-internal-platform`: `survey-only`, with a `null` score and a note.
 
@@ -79,7 +79,7 @@
 ## Files
 
 - New:
-  - `cli/scanners/dora.mjs`
+  - `cli/commands/score-dora.mjs`
   - `schemas/docguard-dora.schema.json`
   - `tests/dora-evidence.test.mjs`
 - Changed:

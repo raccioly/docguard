@@ -123,7 +123,38 @@ contract, `// docguard:ignore <CODE>` to suppress a false positive at the site.
 npx docguard-cli score                   # Visual bar chart
 npx docguard-cli score --format json     # Structured JSON
 npx docguard-cli score --tax             # Documentation tax estimate
+npx docguard-cli score --dora            # DORA documentation-quality and AI-capability evidence
 ```
+
+**`--dora`** maps facts DocGuard already computes onto [DORA's documentation
+quality capability](https://dora.dev/capabilities/documentation-quality/) and
+its AI Capabilities Model (spec 092). The view is display-only, like ALCOA+,
+and never changes the CDD score, the grade or the exit code. DORA measures
+these with a survey; this is the repository evidence beside that survey, not a
+replacement for it.
+
+Each of DORA's eight documentation items gets a 0–100 score, or `n/a` with a
+reason. Each is labeled by how it is measured:
+
+- `deterministic`: read from code and docs.
+- `proxy`: a stand-in. Understandability uses Doc Quality; incident use is
+  whether a runbook exists.
+- `survey-only`: not observable in a repository.
+
+The AI capabilities cover four things a repository can show:
+
+- **A clear AI stance**: agent rules in `AGENTS.md`.
+- **AI-accessible data**: Agent Readability and fact accuracy, an MCP server,
+  and agent instructions that point at superseded docs.
+- **Strong version control**: code, configuration and build scripts tracked
+  in git.
+- **Small batches**: in the last 90 days, the median files per commit and the
+  share of commits over 20 files.
+
+Three capabilities are `survey-only`: user-centric focus, a healthy data
+ecosystem and a quality internal platform. With `--format json` the view is the
+`dora` key, described by `schemas/docguard-dora.schema.json`. Without `--dora`
+the key is absent.
 
 **`--tax` output:**
 ```

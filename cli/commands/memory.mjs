@@ -32,7 +32,7 @@ import { createEvidenceReader, evidenceDocs, extractSemanticClaims, contentHash,
 import { safeWrite } from '../writers/generate-io.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { buildScoreAssurance } from './score.mjs';
-import { diffRoutes, diffEntities, diffEnvVars, diffTechStack } from './diff.mjs';
+import { diffRoutes, diffEntities, diffEnvVars, diffTechStack, domainAccuracy } from './diff.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { consolidateAidlcMemory, exportAidlcMemory } from './memory-aidlc.mjs';
 import { readFileSync } from 'node:fs';
@@ -41,28 +41,6 @@ const CLI_VERSION = JSON.parse(readFileSync(new URL('../../package.json', import
 import { runGuardInternal } from './guard.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
-/**
- * Compute an accuracy score for a single domain. Returns:
- *   { matched, total, accuracy: 0..100, onlyInDocs, onlyInCode }
- * `null` when the domain isn't applicable (e.g. no API-REFERENCE.md).
- */
-function _domainAccuracy(d) {
-  if (!d) return null;
-  const matched = (d.matched || []).length;
-  const onlyDocs = (d.onlyInDocs || []).length;
-  const onlyCode = (d.onlyInCode || []).length;
-  const total = matched + onlyDocs + onlyCode;
-  if (total === 0) return null;
-  return {
-    title: d.title,
-    icon: d.icon,
-    matched,
-    onlyInDocs: d.onlyInDocs || [],
-    onlyInCode: d.onlyInCode || [],
-    total,
-    accuracy: Math.round((matched / total) * 100),
-  };
-}
 
 // ── Context pack (v0.29) ─────────────────────────────────────────────────────
 
@@ -216,10 +194,10 @@ export function runMemory(projectDir, config, flags) {
     return exportAidlcMemory(projectDir, verified, flags, CLI_VERSION);
   }
   const domains = {
-    endpoints: _domainAccuracy(raw.endpoints),
-    entities:  _domainAccuracy(raw.entities),
-    envVars:   _domainAccuracy(raw.envVars),
-    techStack: _domainAccuracy(raw.techStack),
+    endpoints: domainAccuracy(raw.endpoints),
+    entities:  domainAccuracy(raw.entities),
+    envVars:   domainAccuracy(raw.envVars),
+    techStack: domainAccuracy(raw.techStack),
   };
 
   // Roll up across applicable domains.

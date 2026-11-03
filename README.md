@@ -72,7 +72,7 @@ DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) co
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (27)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (28)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -311,7 +311,7 @@ workflow hooks that run them.
 
 ## Usage
 
-DocGuard ships **27 commands** (the "Daily 5" + 22 situational tools, including lifecycle reconciliation, doc dependency review, requirement anchors, agent-rule resolution, the suppression listing, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
+DocGuard ships **28 commands** (the "Daily 5" + 23 situational tools, including lifecycle reconciliation, doc dependency review, requirement anchors, agent-rule resolution, the suppression listing, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
@@ -355,6 +355,8 @@ DocGuard ships **27 commands** (the "Daily 5" + 22 situational tools, including 
 | `score --trend` | Score trajectory from recorded `ci` runs — sparkline, delta, and the last 10 runs with commit stamps |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
+| `policy` | The enforcement ladder: which advisory finding codes CI history shows are ready to promote to warnings or errors |
+| `sensor --aidlc` | AWS AI-DLC's sensor contract, one JSON line: passes when the work in progress introduced no drift since HEAD. The DocGuard AI-DLC plugin runs it at construction gates; not listed in `--help`, because it is meant for machines |
 | `memory --pack` | Write `.docguard/context-pack.md` — compact, code-truth-stamped session-start context for AI agents |
 | `score --diff` | Drill into which checks pulled each category down |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
@@ -510,7 +512,7 @@ DocGuard runs **36 automated validators** on every `guard` check. Source-facing 
 | 34 | **Suppressions** | Suppressions of any kind whose `expires:` date has passed (they no longer suppress anything), whose expiry is not a calendar date, or, with `suppressions.requireReason`, that have no `# reason` | ✅ On |
 | 35 | **Requirement-Anchors** | With `.docguard-anchor-lock.jsonl` or `anchors.enabled`: reviewed code→requirement links whose code or requirement changed since review (ANC001/ANC002), reviewed links whose tag is gone (ANC003), tags citing an undeclared or retired requirement (ANC007/ANC008), lock problems (ANC005/ANC009) and files read below their exact tier (ANC010). `docguard anchors` lists every link; `anchors accept` records a review | ✅ On |
 | 36 | **Decision-Records** | ADR status, one-way or dangling supersession, index/record mismatches, and unanswered clarifications or `[Answer]:` tags (DEC001–DEC006). Informational by default | ✅ On |
-| 37 | **AI-DLC** | AWS AI-DLC workspaces (`aidlc/spaces/…`, legacy `aidlc-docs/`): traceability targets that no longer exist (AID001), gaps left in completed stages (AID002), unit deliverables removed after the unit (AID003), unreadable records (AID004). Informational by default | ✅ On |
+| 37 | **AIDLC** | AWS AI-DLC workspaces (`aidlc/spaces/…`, legacy `aidlc-docs/`): traceability targets that no longer exist (AID001), gaps left in completed stages (AID002), unit deliverables removed after the unit (AID003), unreadable records (AID004). Informational by default | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -728,10 +730,10 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 3,344 tests (node:test, zero test dependencies)
+npm test    # 3,414 tests (node:test, zero test dependencies)
 ```
 
-Covers all 27 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
+Covers all 28 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
 
 ### CI Matrix
 

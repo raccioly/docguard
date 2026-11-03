@@ -33,6 +33,8 @@ import { coveredSections, docLockStatus } from './doc-deps.mjs';
 import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './instruction-scopes.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
 import { normalizePath } from './api-doc.mjs';
+import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
+import { currentFileCodes } from '../sensor-cache.mjs';
 
 export const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 export const READ_DEFAULT_BYTES = 8 * 1024;
@@ -315,6 +317,7 @@ export function docsForPath(projectDir, config, path) {
   }
   const uniq = arr => [...new Map(arr.map(x => [JSON.stringify(x), x])).values()];
   const owned = ownerOf(projectDir, config, normalized);
+  const docs = referencingDocs(projectDir, [...references, ...agentInstructions].map(r => r.doc));
   return {
     path: normalized,
     exists: target.exists,
@@ -327,7 +330,31 @@ export function docsForPath(projectDir, config, path) {
     // docguard.doc-ownership-map#FR-004: the declared owner, when a map exists.
     owner: owned.owner,
     ...(owned.reason ? { ownerReason: owned.reason } : {}),
+    docs,
   };
+}
+
+/**
+ * docguard.dora-evidence#FR-005: how far to trust each referencing document,
+ * once per document rather than per reference (spec 031 budgets these bytes).
+ * `lifecycle` is the header status, so an agent can skip a superseded doc;
+ * `openFindings` comes only from a sensor cache for this exact tree state,
+ * because running guard inside an MCP call is too slow to be worth it.
+ */
+function referencingDocs(projectDir, files) {
+  const unique = [...new Set(files)].sort();
+  if (!unique.length) return {};
+  const codes = currentFileCodes(projectDir);
+  const out = {};
+  for (const file of unique) {
+    let status = null;
+    try { status = parseLifecycleStatus(readFileSync(resolve(projectDir, file), 'utf8'))?.toLowerCase() || null; } catch { /* unreadable: no status */ }
+    const lifecycle = !status ? 'active' : status === 'retired' || RETIRED_STATUSES.has(status) ? (status === 'superseded' ? 'superseded' : 'retired') : status;
+    out[file] = codes
+      ? { lifecycle, openFindings: codes[file] || [], findingsBasis: 'sensor-cache' }
+      : { lifecycle, openFindings: null, findingsBasis: 'no-current-guard-run' };
+  }
+  return out;
 }
 
 function requireMarkdown(projectDir, doc) {
