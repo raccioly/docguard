@@ -31,6 +31,8 @@ import {
   buildIgnoreFilter, listCanonicalDocs, loadDocguardIgnoreEntries, relPosix, utcToday, walkFiles,
 } from '../shared-ignore.mjs';
 import { listValidatorMarkers } from '../validator-markers.mjs';
+import { configIgnoreEntry } from '../shared-ignore.mjs';
+import { isExpired, splitWaiverMetadata } from '../waiver-metadata.mjs';
 
 /** `.docguard.json` arrays that suppress paths, and the scope each one has. */
 export const CONFIG_IGNORE_KEYS = Object.freeze({
@@ -57,6 +59,7 @@ function docguardIgnoreEntries(projectDir, today) {
     pattern: e.pattern,
     scope: 'all-validators',
     reason: e.reason,
+    owner: e.owner || null,
     expires: e.expires,
     state: e.state,
     ...(e.problem ? { problem: e.problem } : {}),
@@ -64,21 +67,23 @@ function docguardIgnoreEntries(projectDir, today) {
   }));
 }
 
-function configEntries(projectDir) {
+function configEntries(projectDir, today) {
   const raw = readJson(resolve(projectDir, '.docguard.json'));
   if (!raw || typeof raw !== 'object') return [];
   const out = [];
   for (const [key, scope] of Object.entries(CONFIG_IGNORE_KEYS)) {
     if (!Array.isArray(raw[key])) continue;
-    for (const pattern of raw[key]) {
-      if (typeof pattern !== 'string' || !pattern) continue;
-      out.push({ kind: 'path', pattern, scope, reason: null, expires: null, state: 'active', source: { file: '.docguard.json', key } });
+    for (const item of raw[key]) {
+      // docguard.accountable-suppressions#FR-003: object entries carry metadata.
+      const entry = configIgnoreEntry(item, today);
+      if (!entry) continue;
+      out.push({ kind: 'path', scope, ...entry, source: { file: '.docguard.json', key } });
     }
   }
   return out;
 }
 
-function inlinePragmas(projectDir, config) {
+function inlinePragmas(projectDir, config, today) {
   const isIgnored = buildIgnoreFilter(Array.isArray(config?.ignore) ? config.ignore : []);
   const found = [];
   let unreadable = 0;
@@ -96,8 +101,11 @@ function inlinePragmas(projectDir, config) {
     text.split(/\r?\n/).forEach((line, i) => {
       const pragma = parseInlinePragma(line);
       if (!pragma) return;
+      const state = pragma.problem ? 'invalid' : isExpired(pragma.expires, today) ? 'expired' : 'active';
+      const metadata = pragma.problem ? { problem: 'unreadable-metadata', metadataProblem: pragma.problem } : {};
       found.push({
-        kind: 'code', codes: pragma.codes, scope: 'line', reason: pragma.reason, expires: null, state: 'active',
+        kind: 'code', codes: pragma.codes, scope: 'line', reason: pragma.reason, owner: pragma.owner || null,
+        expires: pragma.expires || null, state, ...metadata,
         source: { file: rel, line: i + 1 },
       });
     });
@@ -106,15 +114,19 @@ function inlinePragmas(projectDir, config) {
   return { found, complete: complete && unreadable === 0, unreadable };
 }
 
-function validatorMarkers(projectDir, validatorKeys) {
-  return listValidatorMarkers(projectDir, validatorKeys).map(m => ({
-    kind: 'validator', key: m.key, scope: `validator:${m.key}`, reason: m.reason, expires: null,
-    state: m.known ? 'active' : 'invalid', ...(m.known ? {} : { problem: 'unknown-validator' }),
-    source: { file: m.file, line: m.line },
-  }));
+function validatorMarkers(projectDir, validatorKeys, today) {
+  return listValidatorMarkers(projectDir, validatorKeys).map(m => {
+    const problem = !m.known ? 'unknown-validator' : m.metadataProblem ? 'unreadable-metadata' : null;
+    const state = problem ? 'invalid' : isExpired(m.expires, today) ? 'expired' : 'active';
+    return {
+      kind: 'validator', key: m.key, scope: `validator:${m.key}`, reason: m.reason, owner: m.owner || null, expires: m.expires || null,
+      state, ...(problem ? { problem } : {}), ...(m.metadataProblem ? { metadataProblem: m.metadataProblem } : {}),
+      source: { file: m.file, line: m.line },
+    };
+  });
 }
 
-function sectionMarkers(projectDir, config) {
+function sectionMarkers(projectDir, config, today) {
   const isIgnored = buildIgnoreFilter(Array.isArray(config?.ignore) ? config.ignore : []);
   const out = [];
   for (const doc of listCanonicalDocs(projectDir, { isIgnored, config })) {
@@ -125,10 +137,12 @@ function sectionMarkers(projectDir, config) {
     let m;
     while ((m = re.exec(text)) !== null) {
       const honoured = SECTION_HONOURED_RE.test(m[2]);
-      const reason = m[2].replace(/^\s*[—:-]+\s*/, '').trim() || null;
+      const meta = splitWaiverMetadata(m[2].replace(/^\s*[—:-]+\s*/, '').trim() || null);
+      const problem = !honoured ? 'no-reason' : meta.problem ? 'unreadable-metadata' : null;
       out.push({
-        kind: 'section', key: m[1], scope: `section:${m[1]}`, reason, expires: null,
-        state: honoured ? 'active' : 'invalid', ...(honoured ? {} : { problem: 'no-reason' }),
+        kind: 'section', key: m[1], scope: `section:${m[1]}`, reason: meta.reason || null, owner: meta.owner, expires: meta.expires,
+        state: problem ? 'invalid' : isExpired(meta.expires, today) ? 'expired' : 'active', ...(problem ? { problem } : {}),
+        ...(meta.problem ? { metadataProblem: meta.problem } : {}),
         source: { file: doc.rel, line: lineOf(text, m.index) },
       });
     }
@@ -141,7 +155,7 @@ function baselineEntries(projectDir, config) {
   if (!raw || typeof raw.fingerprints !== 'object' || raw.fingerprints === null) return [];
   const state = config?.baseline === false ? 'disabled' : 'active';
   return Object.keys(raw.fingerprints).sort().map(fp => ({
-    kind: 'fingerprint', pattern: fp, scope: 'finding', reason: null, expires: null, state,
+    kind: 'fingerprint', pattern: fp, scope: 'finding', reason: null, owner: null, expires: null, state,
     source: { file: '.docguard.baseline.json', key: 'fingerprints' },
   }));
 }
@@ -154,14 +168,16 @@ function baselineEntries(projectDir, config) {
  * @param {{ today?: string, validatorKeys?: Iterable<string> }} [opts]
  * @returns {{ asOf: string, entries: object[], coverage: { inlineScan: 'complete'|'partial', unreadable: number } }}
  */
-export function collectSuppressions(projectDir, config = {}, { today = utcToday(), validatorKeys = [] } = {}) {
-  const inline = inlinePragmas(projectDir, config);
+export function collectSuppressions(projectDir, config = {}, { today = utcToday(), validatorKeys = [], inline: scanInline = true } = {}) {
+  // `inline: false` skips the project walk for pragmas (the costly part), for
+  // callers that judge only the cheap kinds (docguard.accountable-suppressions).
+  const inline = scanInline ? inlinePragmas(projectDir, config, today) : { found: [], complete: true, unreadable: 0 };
   const entries = [
     ...docguardIgnoreEntries(projectDir, today),
-    ...configEntries(projectDir),
+    ...configEntries(projectDir, today),
     ...inline.found,
-    ...validatorMarkers(projectDir, validatorKeys),
-    ...sectionMarkers(projectDir, config),
+    ...validatorMarkers(projectDir, validatorKeys, today),
+    ...sectionMarkers(projectDir, config, today),
     ...baselineEntries(projectDir, config),
   ];
   return {

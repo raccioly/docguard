@@ -26,6 +26,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
     codes are unchanged.
 
+- **Required checks and evidence-based promotion** (`docguard.enforcement-ladder`,
+  spec 083). `requiredChecks` in `.docguard.json` names the validators a
+  project depends on: one that does not decide makes `guard` exit 4 and `ci`
+  block, and only a reasoned N/A marker bypasses it (REQ001 when config
+  disables a required check, REQ002 for an unknown key). `ci` history now
+  records per-code counts and levels, and the new read-only `docguard policy`
+  lists advisory codes this project's history shows are ready to promote and
+  blocking codes that are noisy.
+
+- **AWS AI-DLC workspaces are read natively** (`docguard.aidlc-profile`, spec
+  089). A new advisory AI-DLC validator re-checks, on every change, what
+  AI-DLC verified once at its gates: traceability targets that no longer exist
+  (AID001), GAP/ORPHAN rows left in completed stages (AID002), unit
+  deliverables removed after the unit (AID003; git tells a later removal from
+  the unit's own deletion), and unreadable records (AID004). DocGuard never
+  writes AI-DLC files. COMPARISONS.md gains an AI-DLC section and corrects the
+  Kiro row.
+- **AI-DLC agent memory is governed** (`docguard.memory-governance`, spec 091).
+  Guard reports AI-DLC learned rules and CodeKB files that name deleted paths
+  or unused environment variables (MEM001, MEM002, advisory).
+  `docguard memory --export aidlc` feeds AI-DLC the facts DocGuard verified
+  (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
+  repeated stage-diary entries and flags stale ones without writing anything.
+  DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **Decision records are checked** (`docguard.decision-records`, spec 086). A
+  new advisory Decision-Records validator reads ADRs (one file with
+  `## ADR-NNN` sections, or one file per decision) and reports a missing or
+  unknown status (DEC001), a link or index row naming no record (DEC002),
+  one-way supersession (DEC003), a superseded status without a successor or
+  the reverse (DEC004), an index that disagrees with its record (DEC005), and
+  Spec Kit clarifications or AI-DLC `[Answer]:` tags left unanswered (DEC006).
+  Disable with `"validators": { "decisionRecords": false }`.
+- **The Spec Kit chain is checked end to end** (`docguard.upstream-coverage`,
+  spec 085). For each feature, the Spec-Kit validator reports requirements no
+  task or plan cites (SPK013), cited IDs the spec does not define (SPK014), a
+  plan or task list that names no upstream (SPK015), and user stories with no
+  `[USn]` task (SPK016). The codes are advisory by default and never change the
+  exit code until a project promotes them with `findingSeverity`; ranges,
+  sub-IDs, IDs qualified by another spec, and IDs in code spans are handled.
+- **Every suppression can name an owner and an end date** (`docguard.accountable-suppressions`,
+  spec 084). Inline pragmas, validator and section N/A markers and
+  `.docguardignore` reasons accept trailing `owner:` and `expires:` tokens, and
+  `.docguard.json` ignore arrays accept `{ pattern, reason, owner, expires }`
+  objects. An expired suppression of any kind stops suppressing.
+  `suppressions.requireOwner` (IGN004) and `suppressions.maxDays` (IGN005)
+  make waivers accountable; `docguard ignore --owner` filters by owner. Forms
+  without the new tokens read exactly as before.
+
 ### Fixed
 
 - **A git call that fails is a gap, not a finding.** On a loaded machine
@@ -34,8 +82,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   make REF001 report a documented symbol as removed. Shared git helpers now
   retry a transient spawn error once, then record the failure on the
   validator that was running. PSR002 and REF001 withhold what git could not
-  answer and say how much. `--update-baseline` refuses to freeze a run with a
-  gap, so withheld findings cannot drop out of the baseline.
+  answer and say how much. Because one failed call can leave shared inputs
+  incomplete for every check (a fault-injection run turned 288 TRC004 into
+  476 on one project), every absence claim (a missing pointer, symbol, test,
+  link, source, revision or implementation evidence) is withheld while any
+  gap stands, and the checks it affected report `inconclusive`. Private git
+  calls in Document-Lifecycle, Spec-Registry, revision anchors, doc locks and
+  task evidence now record gaps too; Document-Lifecycle reports a gap as
+  `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
+  with a gap, so withheld findings cannot drop out of the baseline.
 
 ## [0.45.2] - 2026-11-02
 

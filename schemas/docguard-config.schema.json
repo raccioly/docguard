@@ -4,6 +4,25 @@
   "title": "DocGuard project config (.docguard.json)",
   "description": "Schema for the .docguard.json file that DocGuard reads at the root of every project. Add `\"$schema\": \"https://raccioly.github.io/docguard/schemas/docguard-config.schema.json\"` to your file to get autocomplete + validation in VS Code and other JSON-Schema-aware editors.",
   "type": "object",
+  "definitions": {
+    "ignoreItem": {
+      "description": "A glob pattern, or an object carrying waiver metadata (spec 084). An expired object entry applies to nothing.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "pattern": { "type": "string", "minLength": 1 },
+            "reason": { "type": "string" },
+            "owner": { "type": "string", "description": "@handle, team/name or an email address" },
+            "expires": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+          },
+          "required": ["pattern"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
   "properties": {
     "$schema": {
       "type": "string",
@@ -54,17 +73,17 @@
     },
     "ignore": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": { "$ref": "#/definitions/ignoreItem" },
       "description": "Glob patterns for paths every validator should skip. Merged with `.docguardignore` at runtime."
     },
     "securityIgnore": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": { "$ref": "#/definitions/ignoreItem" },
       "description": "Glob patterns the Security validator additionally skips (e.g. test fixtures with intentional secrets)."
     },
     "todoIgnore": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": { "$ref": "#/definitions/ignoreItem" },
       "description": "Glob patterns the TODO-Tracking validator additionally skips."
     },
     "documentLifecycle": {
@@ -76,7 +95,9 @@
       "type": "object",
       "description": "Policy for .docguardignore entries (`pattern  expires:YYYY-MM-DD  # reason`).",
       "properties": {
-        "requireReason": { "type": "boolean", "default": false, "description": "Report IGN002 for every .docguardignore entry without a trailing `# reason`. The entry still applies." }
+        "requireReason": { "type": "boolean", "default": false, "description": "Report IGN002 for every .docguardignore entry without a trailing `# reason`. The entry still applies." },
+        "requireOwner": { "type": "boolean", "default": false, "description": "Report IGN004 for every suppression that can carry metadata (pragma, N/A marker, .docguardignore line, .docguard.json object entry) and names no `owner:`. The suppression still applies. Spec 084." },
+        "maxDays": { "type": "integer", "minimum": 1, "description": "Report IGN005 for every such suppression whose `expires:` is more than this many days from today (UTC), or that has none. Spec 084." }
       },
       "additionalProperties": false
     },
@@ -137,9 +158,17 @@
         "diffSuspicion":     { "type": "boolean" },
         "referenceExistence":{ "type": "boolean" },
         "apiDocSmells":      { "type": "boolean" },
+        "decisionRecords":   { "type": "boolean" },
+        "aidlc":             { "type": "boolean" },
         "metricsConsistency":{ "type": "boolean" }
       },
       "additionalProperties": false
+    },
+    "requiredChecks": {
+      "type": "array",
+      "description": "Validator keys this project depends on. A required check must reach a decision (verdict pass or fail) in every run, or guard exits 4 and ci blocks; a reasoned in-repo `docguard:validator <key> n/a` marker is the only bypass. Spec 083.",
+      "items": { "type": "string" },
+      "uniqueItems": true
     },
     "severity": {
       "type": "object",

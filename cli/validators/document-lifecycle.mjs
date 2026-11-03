@@ -27,6 +27,10 @@ export function validateDocumentLifecycle(projectDir, config = {}) {
       command: `docguard retire --write --path ${candidate.path} --reason "<why this is no longer current>"`,
     },
   }));
+  if (coverage.gap) {
+    // docguard.verdict-contract#FR-004: a recorded gap, not a finding.
+    return { ...resultFromFindings(findings, { passed: Math.max(0, scanned - candidates.length), total: scanned }), applicability: { status: 'partial', reason: `Document lifecycle could not list tracked files: ${coverage.error}` } };
+  }
   if (coverage.status !== 'complete') {
     findings.push(mkFinding({
       code: 'DLC003',

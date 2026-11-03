@@ -26,7 +26,11 @@ import { existsSync, readFileSync, readdirSync, statSync, copyFileSync, writeFil
 import { resolve, join, relative, dirname, basename, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
-import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths } from '../shared-git.mjs';
+import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths, runGit } from '../shared-git.mjs';
+import { chainCoverage } from './chain-coverage.mjs';
+import { parseLifecycleStatus } from './document-lifecycle.mjs';
+
+const TERMINAL_STATUS_RE = /\b(?:superseded|retired|archived|withdrawn|obsolete|abandoned)\b/i;
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 
@@ -511,16 +515,13 @@ function scanRepoForEvidence(projectDir, needles) {
  * means this tier contributes no evidence.
  */
 function taskIdInGitLog(projectDir, id) {
-  try {
-    const out = execFileSync(
-      'git',
-      ['log', `--grep=${id}`, '--format=%B'],
-      { cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 8 * 1024 * 1024 }
-    );
-    return new RegExp(`\\b${id}(?!\\d)`).test(out);
-  } catch {
-    return false;
-  }
+  // docguard.verdict-contract#FR-004: a failed log is a recorded gap, and
+  // guard withholds SPK008 (an absence claim) while any gap stands.
+  const r = runGit(projectDir, ['log', `--grep=${id}`, '--format=%B'], {
+    operation: 'git log --grep (task evidence)', answers: [0], maxBuffer: 8 * 1024 * 1024,
+  });
+  if (r.status !== 0 || r.error) return false;
+  return new RegExp(`\\b${id}(?!\\d)`).test(r.stdout);
 }
 
 /**
@@ -955,6 +956,70 @@ export function validateSpecKitIntegration(projectDir, config) {
         suggestion: { kind: 'fix', text: 'Create an AGENTS.md that references the constitution', command: 'docguard init' },
       }));
     }
+  }
+
+  // ── Check: the spec → plan → tasks chain is connected (docguard.upstream-coverage) ──
+  // Advisory by default (defaultLevel 'info', spec 083): no exit code changes
+  // until a project promotes these codes.
+  const CHAIN_CAP = 10;
+  const caps = { SPK013: 0, SPK014: 0 };
+  const elided = { SPK013: 0, SPK014: 0 };
+  for (const spec of speckit.specs) {
+    if (!spec.hasSpec || !spec.hasTasks || !spec.specPath || !spec.tasksPath) continue;
+    let specText, tasksText, planText = null;
+    try {
+      specText = readFileSync(spec.specPath, 'utf-8');
+      tasksText = readFileSync(spec.tasksPath, 'utf-8');
+      if (spec.hasPlan && spec.planPath) planText = readFileSync(spec.planPath, 'utf-8');
+    } catch { continue; }
+    if (TERMINAL_STATUS_RE.test(parseLifecycleStatus(specText) || '')) continue;
+    const chain = chainCoverage({ spec: specText, plan: planText, tasks: tasksText });
+    const specRel = relative(projectDir, spec.specPath).replace(/\\/g, '/');
+    const dirRel = specRel.replace(/\/spec\.md$/, '');
+    total++;
+    const before = findings.length;
+    const capped = (code, make) => { if (caps[code] >= CHAIN_CAP) { elided[code]++; return; } caps[code]++; findings.push(mkFinding(make())); };
+    for (const { id, line } of chain.uncovered) {
+      capped('SPK013', () => ({
+        code: 'SPK013', validator: 'specKit', severity: 'warn', confidence: 'high', disposition: 'escalate',
+        message: `${specRel}:${line} — ${id} is defined but neither tasks.md nor plan.md cites it`,
+        location: `${specRel}:${line}`,
+        suggestion: { kind: 'review', text: `Add a task (or a plan decision) that names ${id}, or remove the requirement if it is no longer intended` },
+      }));
+    }
+    for (const { id, line, file } of chain.dangling) {
+      capped('SPK014', () => ({
+        code: 'SPK014', validator: 'specKit', severity: 'warn', confidence: 'high', disposition: 'act',
+        message: `${dirRel}/${file}:${line} — cites ${id}, which spec.md does not define`,
+        location: `${dirRel}/${file}:${line}`,
+        suggestion: { kind: 'fix', text: `Point the reference at the requirement it means (renumbered?), or qualify it with the other spec's ID if it belongs there` },
+      }));
+    }
+    for (const file of chain.floating) {
+      findings.push(mkFinding({
+        code: 'SPK015', validator: 'specKit', severity: 'warn', confidence: 'high', disposition: 'escalate',
+        message: `${dirRel}/${file} names neither its upstream (${file === 'plan.md' ? 'spec.md' : 'plan.md or spec.md'}) nor any requirement ID the spec defines`,
+        location: `${dirRel}/${file}`,
+        suggestion: { kind: 'review', text: `Link the artifact it was made from, or cite the requirement IDs it addresses` },
+      }));
+    }
+    for (const n of chain.storiesUncovered) {
+      findings.push(mkFinding({
+        code: 'SPK016', validator: 'specKit', severity: 'warn', confidence: 'high', disposition: 'escalate',
+        message: `${specRel} — User Story ${n} has no task labeled [US${n}] in tasks.md`,
+        location: specRel,
+        suggestion: { kind: 'review', text: `Plan tasks for User Story ${n} and label them [US${n}], or drop the story from the spec` },
+      }));
+    }
+    if (findings.length === before) passed++;
+  }
+  for (const code of ['SPK013', 'SPK014']) {
+    if (elided[code] > 0) findings.push(mkFinding({
+      code, validator: 'specKit', severity: 'warn', confidence: 'high', disposition: 'escalate',
+      message: `${elided[code]} more ${code} finding(s) elided after the first ${CHAIN_CAP}`,
+      location: 'specs',
+      suggestion: { kind: 'review', text: 'Run `docguard guard --format json` and filter by code to list them all' },
+    }));
   }
 
   // ── Check: spec numbers are unique (docguard.agent-instruction-budget#FR-005) ──

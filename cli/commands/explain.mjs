@@ -208,6 +208,29 @@ const EXPLAINERS = {
     example: 'API-REFERENCE.md backticks `getUserById` which was deleted three commits ago',
     standard: 'Outdated code-element reference detection (EMSE 2022)',
   },
+  aidlc: {
+    title: 'AI-DLC — AWS AI-DLC records stay true after the workflow (AID001–AID004)',
+    what: 'Reads AWS AI-DLC workspaces (`aidlc/spaces/<space>/intents/<id>/`, legacy `aidlc-docs/`): a traceability `OK`/`Deferred` target path that no longer exists (AID001), a `GAP`/`ORPHAN` row left in a stage `aidlc-state.md` marks completed (AID002), a path a unit\'s source-manifest claims that was removed after the unit (AID003), and unreadable tables, manifests or escaping paths (AID004). Read-only; advisory by default.',
+    why: 'AI-DLC verifies traceability once, at each gate, with sensors that are advisory by default; nothing re-reads its records after the workflow ends. DocGuard runs on every change.',
+    triggers: [
+      ['was traced at the … gate, and … no longer exists', 'Point the requirement at the code that implements it now, or reopen it.'],
+      ['is GAP in …, a stage AI-DLC marks completed', 'Build the requirement, or record it Deferred/N/A with the reason.'],
+    ],
+    example: 'AC1.1.2 → src/auth/session.ts was OK at code-generation; session.ts was later deleted',
+    standard: 'AWS AI-DLC 2.11.2 record formats',
+  },
+  decisionRecords: {
+    title: 'Decision-Records — ADR status, supersession and unanswered questions (DEC001–DEC006)',
+    what: 'Reads ADRs (`## ADR-NNN` sections in one file, or one file per decision under adr/, adrs/ or decisions/): a missing or unknown status (DEC001), a link or index row naming an ADR no record defines (DEC002), one-way supersession (DEC003), superseded without a successor or the reverse (DEC004), an index status that disagrees with the record (DEC005). Also reports Spec Kit clarifications and `[Answer]:` tags left unanswered (DEC006). Advisory by default.',
+    why: 'A decision record is only useful if a reader can tell whether it is in force and what replaced it; a question asked and never answered means later artifacts were written on a guess.',
+    triggers: [
+      ['has no status / is not proposed, accepted, …', 'Add `**Status**: accepted` (or the right one of the five).'],
+      ['supersedes ADR-N, but ADR-N still reads accepted', 'Set the older ADR to superseded and add "Superseded by ADR-M".'],
+      ['question has no answer', 'Answer it in the clarification or `[Answer]:` line, then revisit what was written on a guess.'],
+    ],
+    example: 'ADR-007 says "Supersedes ADR-003" while ADR-003 is still Accepted',
+    standard: 'Nygard ADRs / MADR status lifecycle',
+  },
   apiDocSmells: {
     title: 'API-Doc-Smells — Bloated / Lazy API documentation (APS001/APS002)',
     what: 'Length signals on doc units whose heading is a code signature (HTTP endpoint / function / backticked symbol). Lazy = ≤6 prose words (documented in name only); Bloated = ≥300 words for one unit. Deterministic (F1 0.90/0.95); confidence:low. OFF by default — enable with `validators.apiDocSmells: true`.',
@@ -516,6 +539,8 @@ export const DISPLAY_NAMES = {
   diffSuspicion: 'Diff-Suspicion',
   referenceExistence: 'Reference-Existence',
   apiDocSmells: 'API-Doc-Smells',
+  decisionRecords: 'Decision-Records',
+  aidlc: 'AI-DLC',
 };
 
 /** Collapse a key / display name to a comparable form: lowercase, alnum only. */

@@ -34,6 +34,10 @@ import { ensureStateDir } from '../writers/state-dir.mjs';
 import { buildScoreAssurance } from './score.mjs';
 import { diffRoutes, diffEntities, diffEnvVars, diffTechStack } from './diff.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
+import { consolidateAidlcMemory, exportAidlcMemory } from './memory-aidlc.mjs';
+import { readFileSync } from 'node:fs';
+
+const CLI_VERSION = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')).version;
 import { runGuardInternal } from './guard.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
 
@@ -194,15 +198,28 @@ export function runMemory(projectDir, config, flags) {
   // v0.29: --pack writes the agent context pack and exits — a separate output
   // artifact, not a display mode of the accuracy drill-down below.
   if (flags.pack) return runMemoryPack(projectDir, config, flags);
+  // docguard.memory-governance#FR-005: read-only consolidation of AI-DLC diaries.
+  if (flags.consolidate === 'aidlc') return consolidateAidlcMemory(projectDir, flags);
 
   const isJson = flags.format === 'json';
   const wantsDiff = flags.diff || (flags.args || []).includes('--diff');
 
+  const raw = {
+    endpoints: diffRoutes(projectDir, config),
+    entities: diffEntities(projectDir, config),
+    envVars: diffEnvVars(projectDir, config),
+    techStack: diffTechStack(projectDir, config),
+  };
+  // docguard.memory-governance#FR-004: feed AI-DLC only the facts that matched code.
+  if (flags.export === 'aidlc') {
+    const verified = Object.fromEntries(Object.entries(raw).map(([k, d]) => [k, d && { title: d.title, matchedItems: d.matched || [] }]));
+    return exportAidlcMemory(projectDir, verified, flags, CLI_VERSION);
+  }
   const domains = {
-    endpoints: _domainAccuracy(diffRoutes(projectDir, config)),
-    entities:  _domainAccuracy(diffEntities(projectDir, config)),
-    envVars:   _domainAccuracy(diffEnvVars(projectDir, config)),
-    techStack: _domainAccuracy(diffTechStack(projectDir, config)),
+    endpoints: _domainAccuracy(raw.endpoints),
+    entities:  _domainAccuracy(raw.entities),
+    envVars:   _domainAccuracy(raw.envVars),
+    techStack: _domainAccuracy(raw.techStack),
   };
 
   // Roll up across applicable domains.

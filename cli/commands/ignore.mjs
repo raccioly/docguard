@@ -83,6 +83,8 @@ function printModel(model, report, projectName) {
 
 export function runIgnore(projectDir, config, flags = {}) {
   const model = collectSuppressions(projectDir, config, { validatorKeys: Object.keys(DISPLAY_NAMES) });
+  // docguard.accountable-suppressions#FR-007: filter the listing by owner.
+  if (typeof flags.owner === 'string') model.entries = model.entries.filter(e => e.owner === flags.owner);
   const { document, report } = toClaimspecIgnore(model);
 
   if (flags.format === 'claimspec') {

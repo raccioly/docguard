@@ -21,6 +21,8 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
   // only when the pipeline asked for every check to decide.
   const undecided = (guardData?.validators || []).filter(v => v.verdict === 'inconclusive' || v.verdict === 'blocked');
   const inconclusiveBlocksCI = Boolean(options.failOnInconclusive) && undecided.length > 0;
+  // docguard.enforcement-ladder#FR-004: a required check that did not decide always blocks.
+  const requiredUndecided = guardData?.requiredChecks?.undecided || [];
 
   const reasons = [];
   if (guardStatus === 'FAIL') reasons.push('GUARD_FAILED');
@@ -29,9 +31,10 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
   if (warningsBlockCI) reasons.push('CI_WARNINGS_BLOCKED');
   else if (guardStatus === 'WARN') reasons.push('GUARD_WARNINGS');
   if (inconclusiveBlocksCI) reasons.push('CI_INCONCLUSIVE_BLOCKED');
+  if (requiredUndecided.length > 0) reasons.push('CI_REQUIRED_CHECK_UNDECIDED');
 
   let status;
-  if (guardStatus === 'FAIL' || guardStatus === 'UNKNOWN' || !thresholdMet || warningsBlockCI || inconclusiveBlocksCI) status = 'BLOCKED';
+  if (guardStatus === 'FAIL' || guardStatus === 'UNKNOWN' || !thresholdMet || warningsBlockCI || inconclusiveBlocksCI || requiredUndecided.length > 0) status = 'BLOCKED';
   else if (guardStatus === 'WARN') status = 'ATTENTION';
   else status = 'READY';
 
@@ -41,6 +44,7 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
     guardStatus,
     blockingFindings,
     advisoryFindings,
+    ...(requiredUndecided.length > 0 ? { requiredUndecided: requiredUndecided.map(u => ({ key: u.key, verdict: u.verdict, reason: u.reason })) } : {}),
     ...(inconclusiveBlocksCI ? { undecidedChecks: undecided.map(v => ({ key: v.key, verdict: v.verdict, reason: v.applicability?.reason || null })) } : {}),
     structuralMaturity: {
       score: scoreData.score,
@@ -83,6 +87,10 @@ function summarizeAssessment(assessment) {
     clauses.push(`guard reported ${formatCount(assessment.advisoryFindings, 'advisory warning')}`);
   } else {
     clauses.push('guard passed');
+  }
+
+  if (assessment.reasons.includes('CI_REQUIRED_CHECK_UNDECIDED')) {
+    clauses.push(`required ${formatCount(assessment.requiredUndecided.length, 'check')} did not decide (${assessment.requiredUndecided.map(c => c.key).join(', ')})`);
   }
 
   if (assessment.reasons.includes('CI_INCONCLUSIVE_BLOCKED')) {

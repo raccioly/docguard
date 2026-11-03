@@ -1,6 +1,7 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
+import { requiredCheckStatus } from '../required-checks.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -15,8 +16,8 @@ import { applyDocRoles } from '../shared-doc-roles.mjs';
  */
 
 import { c, resolveSeverity, resolveFindingEnforcement, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
-import { walkFiles, buildIgnoreFilter } from '../shared-ignore.mjs';
-import { CODES, mkFinding, resultFromFindings } from '../findings.mjs';
+import { walkFiles, buildIgnoreFilter, normalizeIgnoreConfig } from '../shared-ignore.mjs';
+import { ABSENCE_CLAIM_CODES, CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
@@ -165,6 +166,8 @@ import { validateReferenceExistence } from '../validators/reference-existence.mj
 import { validateApiDocSmells } from '../validators/api-doc-smells.mjs';
 import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs';
 import { validateSuppressions } from '../validators/suppressions.mjs';
+import { validateDecisionRecords } from '../validators/decision-records.mjs';
+import { validateAidlc } from '../validators/aidlc.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
 import { validateRequirementAnchors } from '../validators/requirement-anchors.mjs';
@@ -318,7 +321,7 @@ function computeDocCoverage(projectDir, config) {
 }
 
 export function runGuardInternal(projectDir, config) {
-  config = applyDocRoles(projectDir, config);
+  config = applyDocRoles(projectDir, normalizeIgnoreConfig(config));
   const validators = config.validators || {};
   const results = [];
 
@@ -387,6 +390,10 @@ export function runGuardInternal(projectDir, config) {
     { key: 'diffSuspicion', name: 'Diff-Suspicion', fn: () => validateDiffSuspicion(projectDir, config) },
     { key: 'referenceExistence', name: 'Reference-Existence', fn: () => validateReferenceExistence(projectDir, config) },
     { key: 'apiDocSmells', name: 'API-Doc-Smells', fn: () => validateApiDocSmells(projectDir, config) },
+    // docguard.decision-records: ADR status, supersession and unanswered questions (advisory).
+    { key: 'decisionRecords', name: 'Decision-Records', fn: () => validateDecisionRecords(projectDir, config) },
+    // docguard.aidlc-profile: AWS AI-DLC records stay true after the workflow (advisory).
+    { key: 'aidlc', name: 'AI-DLC', fn: () => validateAidlc(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
@@ -401,6 +408,11 @@ export function runGuardInternal(projectDir, config) {
     name, key, status: 'na', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0,
     note: naMarkers.get(key) ? `declared N/A: ${naMarkers.get(key)}` : 'declared N/A',
   });
+
+  // docguard.verdict-contract#FR-005: the run-level list collects gaps a shared
+  // cache or helper records between validator brackets; each validator's own
+  // list sits on top of it while that validator runs.
+  openObservations();
 
   // v0.14-Q2: per-validator timing. Cheap (one `performance.now()` pair per
   // validator) and the data is what we'd need to optimize anything later.
@@ -470,6 +482,8 @@ export function runGuardInternal(projectDir, config) {
     }
   }
 
+  const runGaps = closeObservations();
+
   // ── Adoption baseline (v0.33) ──
   // If the repo committed `.docguard.baseline.json`, findings frozen at
   // adoption time are suppressed BEFORE any tally — so exit codes, severity
@@ -534,13 +548,46 @@ export function runGuardInternal(projectDir, config) {
   for (const key of ['canonicalSync', 'metricsConsistency']) {
     if (validators[key] === false && !results.some(r => r.key === key)) results.push({ key, name: key === 'canonicalSync' ? 'Canonical-Sync' : 'Metrics-Consistency', status: 'skipped', quality: null, errors: [], warnings: [], passed: 0, total: 0, durationMs: 0 });
   }
+  // A gap anywhere means shared inputs (tracked-file lists, registry
+  // projections, caches) may be incomplete for every validator that read them,
+  // so absence claims are withheld run-wide, not only where the gap was seen.
+  const runHasGaps = runGaps.length > 0 || results.some(r => (r.observations || []).length > 0);
   for (const result of results) {
     result.observations ||= [];
+    // docguard.verdict-contract#FR-006: an absence claim is unprovable on an
+    // incomplete view. Withhold it while any gap stands.
+    if (runHasGaps && Array.isArray(result.findings) && result.findings.some(f => ABSENCE_CLAIM_CODES.has(f.code))) {
+      if (result.observations.length === 0) {
+        result.observations = [{ operation: 'run-level observation gap', cause: 'another check could not observe shared inputs (see verdicts.gaps)', scope: { count: 0 }, propagated: true }];
+      }
+      const kept = result.findings.filter(f => !ABSENCE_CLAIM_CODES.has(f.code));
+      const withheld = result.findings.length - kept.length;
+      result.findings = kept;
+      result.errors = kept.filter(f => f.severity === 'error').map(f => f.message);
+      result.warnings = kept.filter(f => f.severity !== 'error').map(f => f.message);
+      result.withheld = withheld;
+      Object.assign(result, classifyResult(result));
+      result.observations = result.observations.map((g, i) => (i === 0 ? { ...g, withheld } : g));
+    }
     result.applicability = describeCheckCoverage(projectDir, config, result);
     result.verdict = deriveVerdict(result);
   }
+  // docguard.enforcement-ladder#FR-001–FR-003: composed from the verdicts above,
+  // present only when the project names required checks.
+  const required = requiredCheckStatus(config, results);
+  if (required) {
+    const reqResult = {
+      ...resultFromFindings(required.findings, { passed: required.required.length - required.findings.length, total: required.required.length }),
+      name: 'Required-Checks', key: 'requiredChecks', durationMs: 0, observations: [],
+    };
+    Object.assign(reqResult, classifyResult(reqResult));
+    reqResult.applicability = describeCheckCoverage(projectDir, config, reqResult);
+    reqResult.verdict = deriveVerdict(reqResult);
+    results.push(reqResult);
+  }
   const checkCoverage = summarizeCheckCoverage(results);
   const verdicts = summarizeVerdicts(results);
+  for (const g of runGaps) verdicts.gaps.push({ validator: null, ...g });
   const activeResults = results.filter(r => r.status !== 'skipped');
   const totalErrors = activeResults.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = activeResults.reduce((sum, r) => sum + r.warnings.length, 0);
@@ -643,6 +690,7 @@ export function runGuardInternal(projectDir, config) {
     coverage,
     checkCoverage,
     verdicts,
+    ...(required ? { requiredChecks: { required: required.required, undecided: required.undecided } } : {}),
     semanticClaims,
     evidence,
     // Benchmark evidence for the codes this run actually emitted. Codes the
@@ -733,6 +781,7 @@ export function liteValidatorsConfig(config = {}) {
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
     'evidence', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'suppressions',
+    'decisionRecords', 'aidlc',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(
@@ -839,9 +888,11 @@ export function runGuard(projectDir, config, flags) {
   // check decide and one could not. Distinct from 2 so a pipeline that
   // tolerates warnings still stops; an error still outranks it.
   const undecided = d => (d.validators || []).filter(v => v.verdict === 'inconclusive' || v.verdict === 'blocked');
+  // docguard.enforcement-ladder#FR-001: a required check that did not decide also exits 4.
+  const requiredUndecided = d => d.requiredChecks?.undecided || [];
   const exitFor = d => (d.effectiveErrors > 0
     ? (uninitialised ? 3 : 1)
-    : flags.failOnInconclusive && undecided(d).length > 0 ? 4
+    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 ? 4
     : d.effectiveWarnings > 0 ? 2 : 0);
 
   // ── SARIF output (2.1.0) ──
@@ -968,8 +1019,14 @@ export function runGuard(projectDir, config, flags) {
   if (data.verdicts) {
     const n = data.verdicts.counts;
     console.log(`  ${c.dim}Verdicts: ${n.pass} pass · ${n.fail} fail · ${n.empty} empty · ${n.inconclusive} inconclusive · ${n.blocked} blocked · ${n.skipped} skipped${c.reset}`);
+    const named = new Set();
+    for (const u of requiredUndecided(data)) {
+      named.add(u.key);
+      console.log(`  ${c.red}✗ ${u.name} is ${u.verdict} (required check): ${u.reason || 'no reason recorded'}${c.reset}`);
+    }
     if (flags.failOnInconclusive) {
       for (const v of undecided(data)) {
+        if (named.has(v.key)) continue;
         console.log(`  ${c.red}✗ ${v.name} is ${v.verdict} (--fail-on-inconclusive): ${v.applicability?.reason || 'no reason recorded'}${c.reset}`);
       }
     }

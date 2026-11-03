@@ -30,7 +30,9 @@ export const VERDICTS = Object.freeze(['pass', 'fail', 'empty', 'inconclusive', 
 
 /** One reason naming each gap's operation, cause and scope. */
 function gapReason(gaps) {
-  return 'Could not observe: ' + gaps.map(g => `${g.operation} (${g.cause}; ${g.scope?.count ?? 1} affected)`).join('; ');
+  const withheld = gaps.reduce((n, g) => n + (g.withheld || 0), 0);
+  return 'Could not observe: ' + gaps.map(g => `${g.operation} (${g.cause}; ${g.scope?.count ?? 1} affected)`).join('; ')
+    + (withheld ? `; ${withheld} absence finding${withheld === 1 ? '' : 's'} withheld` : '');
 }
 
 function baseCoverage(projectDir, config, result) {
@@ -86,7 +88,8 @@ export function summarizeVerdicts(results) {
   const gaps = [];
   for (const r of results) {
     counts[r.verdict]++;
-    for (const g of r.observations || []) gaps.push({ validator: r.key, ...g });
+    // A propagated entry only marks a validator that a gap elsewhere affected; it is not a gap itself.
+    for (const g of r.observations || []) if (!g.propagated) gaps.push({ validator: r.key, ...g });
   }
   return { counts, gaps };
 }

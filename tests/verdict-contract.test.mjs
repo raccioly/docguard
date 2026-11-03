@@ -140,9 +140,10 @@ describe('US1 — a failed git call is a gap, not a finding', { skip: !POSIX }, 
     const v = validator(r, 'pathScopedRules');
     assert.equal(v.applicability.status, 'partial');
     assert.ok(v.observations.some(o => /ls-files/.test(o.operation)));
-    // The missing pointer is still found from the working tree.
-    assert.ok(codes(r, 'PSR002').some(f => /docs\/missing\.md/.test(f.message)));
-    assert.equal(v.verdict, 'fail');
+    // The working-tree walk skips dot directories, so "does not exist" is not
+    // provable: the absence claim is withheld and the check cannot decide.
+    assert.equal(codes(r, 'PSR002').length, 0);
+    assert.equal(v.verdict, 'inconclusive');
   });
 
   it('docsForPath falls back to the working tree when ls-files fails', t => {
@@ -252,12 +253,22 @@ describe('US2 — every validator result ends in one closed verdict', () => {
     assert.notEqual(validator(r, 'todoTracking').verdict, 'skipped');
   });
 
-  it('a finding dominates a partial view: fail, with the gap still recorded', t => {
-    const dir = project(t, POINTERS);
-    const r = withPath(POSIX ? stubGit(t, 'ls-files') : process.env.PATH, () => runGuardInternal(dir, config(only('pathScopedRules'))));
+  it('a finding dominates a partial view: fail, with the gap still recorded', async () => {
+    const { deriveVerdict } = await import('../cli/validator-coverage.mjs');
+    const gap = [{ operation: 'git ls-files', cause: 'exit 128', scope: { count: 1 } }];
+    const finding = { code: 'PSR003', severity: 'warn', message: 'over budget' };
+    assert.equal(deriveVerdict({ findings: [finding], warnings: ['over budget'], errors: [], observations: gap, applicability: { status: 'partial' } }), 'fail');
+    assert.equal(deriveVerdict({ findings: [], warnings: [], errors: [], observations: gap, applicability: { status: 'partial' } }), 'inconclusive');
+  });
+
+  it('an absence claim is withheld run-wide while any gap stands, and the validator says so', t => {
+    // A gap in Path-Scoped-Rules (check-ignore) also withholds Reference-Existence's
+    // absence claims: shared inputs may be incomplete for every reader.
+    const dir = project(t, { ...POINTERS, 'src/x.js': 'export const keep = 1;\n' });
+    const r = withPath(POSIX ? stubGit(t, 'check-ignore') : process.env.PATH, () => runGuardInternal(dir, config(only('pathScopedRules'))));
     if (!POSIX) return;
-    assert.equal(validator(r, 'pathScopedRules').verdict, 'fail');
-    assert.equal(validator(r, 'pathScopedRules').applicability.status, 'partial');
+    assert.equal(codes(r, 'PSR002').length, 0);
+    assert.ok(r.verdicts.gaps.every(g => !g.propagated));
   });
 
   it('a validator that throws is blocked; its status and exit effect are unchanged', t => {
@@ -399,11 +410,34 @@ const GIT_CALL_SITES = {
   'cli/scanners/reconciliation.mjs': { getHeadInfo: 'silent: reconciliation reports a missing HEAD as its own blocker', getDiffSnapshot: 'silent: the snapshot carries status error and the reconciliation reports it (spec 028)' },
   'cli/scanners/spec-first.mjs': { getDiffSnapshot: 'silent: the snapshot carries status error and spec-first reports it' },
   'cli/scanners/speckit.mjs': { gitIgnoredPaths: 'gap' },
+  'cli/validators/aidlc.mjs': { lastCommitHash: 'silent: an uncommitted manifest is counted as unjudged and reported partial' },
   'cli/validators/diff-suspicion.mjs': { fileContentAtRev: 'silent: a file added or deleted in range has no other side', getDiffText: 'gap' },
   'cli/validators/path-scoped-rules.mjs': { listTrackedFiles: 'fallback', gitIgnoredPaths: 'gap' },
   'cli/validators/reference-existence.mjs': { symbolExistsAtRev: 'gap', lastCommitHash: 'silent: an untracked doc has no revision to compare' },
   'cli/validators/spec-registry.mjs': { listTrackedFiles: 'fallback' },
 };
+/**
+ * Every git subprocess a validator or scanner starts itself, outside the
+ * shared helpers, keyed by file and git subcommand. `gap` means it goes
+ * through runGit (spawn failures are recorded); `silent: …` says why no answer
+ * is a legitimate state there.
+ */
+const PRIVATE_GIT_CALLS = {
+  'cli/scanners/anchor-cache.mjs': { 'ls-files': 'silent: only decides whether the cache directory is committed; a failure disables the cache' },
+  'cli/scanners/document-lifecycle.mjs': { runGit: 'gap' },
+  'cli/scanners/doc-deps.mjs': { runGit: 'gap' },
+  'cli/scanners/reconciliation.mjs': { 'rev-parse': 'silent: an unknown ref is reported by reconciliation as its own blocker', 'ls-files': 'silent: an unknown answer keeps the directory as present, the conservative side' },
+  'cli/scanners/revision-anchor.mjs': { runGit: 'gap' },
+  'cli/scanners/semantic-claims.mjs': { 'rev-parse': 'silent: evidence provenance only; null records no revision', status: 'silent: evidence provenance only; dirty stays unknown' },
+  'cli/scanners/spec-first.mjs': { args: 'silent: spec-first reports an unreadable range as inconclusive (exit 2), spec 015' },
+  'cli/scanners/spec-registry.mjs': { runGit: 'gap', 'ls-files': 'silent: an asset path git cannot confirm tracked and clean is not attributed', diff: 'silent: an asset path git cannot confirm tracked and clean is not attributed' },
+  'cli/scanners/speckit.mjs': { runGit: 'gap', args: 'silent: featureTouchedPaths returns null and SPK010 stays silent for the feature (spec 080 FR-004)', 'ls-files': 'silent: unobservablePaths returns null and SPK010 stays silent (spec 080 FR-004)' },
+  'cli/validators/aidlc.mjs': { runGit: 'gap' },
+  'cli/validators/changelog.mjs': { diff: 'silent: no staged list means no staged-change reminder, never a finding' },
+  'cli/validators/freshness.mjs': { log: 'silent: freshness signals are escalations; an unknown count raises none', diff: 'silent: freshness signals are escalations; an unknown staged list raises none', 'rev-list': 'silent: freshness signals are escalations; an unknown count raises none' },
+};
+const PRIVATE_GIT_RE = /(?:spawnSync|execFileSync|execSync)\(\s*'git',\s*(?:\[\s*'([a-z-]+)'|(args))|\brunGit\(/g;
+
 const NO_ANSWER_HELPERS = ['listTrackedFiles', 'gitIgnoredPaths', 'changedFilesSince', 'getDiffText', 'getDiffSnapshot', 'fileContentAtRev', 'symbolExistsAtRev', 'lastCommitHash', 'getHeadInfo', 'getLastCommitDate', 'getFileHistory', 'getRenameHistory', 'countCommitsSince'];
 
 function walk(dir, out = []) {
@@ -416,6 +450,23 @@ function walk(dir, out = []) {
 }
 
 describe('FR-008 — git call-site inventory', () => {
+  it('lists every private git subprocess in cli/validators and cli/scanners', () => {
+    const found = {};
+    for (const file of [...walk('cli/validators'), ...walk('cli/scanners')]) {
+      const text = readFileSync(file, 'utf8').replace(/^\s*(?:\/\/|\*).*$/gm, '');
+      for (const m of text.matchAll(PRIVATE_GIT_RE)) {
+        const key = m[0].startsWith('runGit') ? 'runGit' : (m[1] || m[2]);
+        ((found[file.replace(/\\/g, '/')] ||= new Set())).add(key);
+      }
+    }
+    const actual = Object.fromEntries(Object.entries(found).map(([f, s]) => [f, [...s].sort()]).sort());
+    const listed = Object.fromEntries(Object.entries(PRIVATE_GIT_CALLS).map(([f, h]) => [f, Object.keys(h).sort()]).sort());
+    assert.deepEqual(actual, listed);
+    for (const handlers of Object.values(PRIVATE_GIT_CALLS)) {
+      for (const how of Object.values(handlers)) assert.match(how, /^(gap|silent: .{10,})$/);
+    }
+  });
+
   it('matches every call site in cli/validators and cli/scanners exactly', () => {
     const found = {};
     for (const file of [...walk('cli/validators'), ...walk('cli/scanners')]) {

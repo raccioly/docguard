@@ -4,7 +4,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { gitMetadataStatus, runGit } from '../shared-git.mjs';
 import { dirname, resolve } from 'node:path';
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { readSpecRegistry } from './spec-registry.mjs';
@@ -32,20 +32,20 @@ function readVerifiedLivingSpecPaths(projectDir) {
 }
 
 function trackedFiles(projectDir) {
-  const result = spawnSync('git', ['ls-files', '-z'], {
-    cwd: projectDir,
-    encoding: 'utf8',
-    maxBuffer: 8 * 1024 * 1024,
+  const result = runGit(projectDir, ['ls-files', '-z'], {
+    operation: 'git ls-files (document lifecycle)', answers: [0], maxBuffer: 8 * 1024 * 1024,
   });
-  if (result.status !== 0) {
+  if (result.status !== 0 || result.error) {
     const error = result.error?.message || result.stderr || result.stdout || 'git ls-files failed';
+    const notGit = /not a git repository|must be run in a work tree/i.test(error);
     return {
       ok: false,
       files: [],
-      reason: /not a git repository|must be run in a work tree/i.test(error)
-        ? 'not-git'
-        : 'git-unavailable',
+      reason: notGit ? 'not-git' : 'git-unavailable',
       error: error.trim(),
+      // docguard.verdict-contract#FR-004: git is readable but this call failed;
+      // runGit recorded the gap, so the validator reports partial, not DLC003.
+      gap: !notGit && gitMetadataStatus(projectDir).status === 'ok',
     };
   }
   return { ok: true, files: result.stdout.split('\0').filter(Boolean), reason: null, error: null };
@@ -81,6 +81,7 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
         reason: inventory.ok ? 'manifest-invalid' : inventory.reason,
         error: inventory.error || retired.error,
         unreadable: [],
+        ...(inventory.gap ? { gap: true } : {}),
       },
     };
   }

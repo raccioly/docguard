@@ -26,11 +26,10 @@
  * @implements docguard.doc-dependency-lock#FR-008
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { buildIgnoreFilter, globMatch, listCanonicalDocs, loadDocguardIgnore, relPosix, walkFiles } from '../shared-ignore.mjs';
-import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
+import { fileContentAtRev, listTrackedFiles, runGit } from '../shared-git.mjs';
 import { inspectSections } from '../writers/sections.mjs';
 import { findJsSymbol, normalizeJsV0, sha256 } from './fingerprint.mjs';
 import { parseJsTs } from './js-ast.mjs';
@@ -268,7 +267,8 @@ function lockProblem(lock) {
 
 export function revisionResolves(projectDir, revision) {
   if (!REVISION_RE.test(revision || '')) return false;
-  try { execFileSync('git', ['cat-file', '-e', `${revision}^{commit}`], { cwd: projectDir, stdio: 'ignore' }); return true; } catch { return false; }
+  const r = runGit(projectDir, ['cat-file', '-e', `${revision}^{commit}`], { operation: 'git cat-file (doc lock revision)', stdio: 'ignore' });
+  return r.status === 0 && !r.error;
 }
 
 /**

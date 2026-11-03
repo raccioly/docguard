@@ -51,7 +51,12 @@ It targets development teams and AI coding agents that need to maintain document
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
 | **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written. The opt-in tree-sitter tier (`ts-anchors.mjs`, `ts-decls.mjs`, `ts-anchors-child.mjs`) refines pattern-tier symbols from hash-pinned artifacts; `tools/anchor-oracle` measures the pattern tier against it in CI. A `docguard:volatile` comment marks its line, and every tier fingerprints what lies wholly on that line as a placeholder, from one set of marked lines per file (`volatileLinesFor`) | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/scanners/ts-anchors.mjs`, `cli/scanners/ts-decls.mjs`, `cli/scanners/ts-anchors-child.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
-| **Verdict contract** | Ends every validator result in one closed verdict and keeps a per-run observation ledger: a git call that fails while git is readable (spawn error, signal, timeout, or an exit outside the subcommand's documented answers) is retried once if transient, then recorded as a gap on the validator during whose run it happened, and findings that depend on it are withheld (PSR002, REF001). `--fail-on-inconclusive` exits 4 (spec 081) | `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`, `APPLICABILITY_CLASS`), `cli/commands/guard.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs` | A gap is never a finding and never a pass; whole-run unreadable git stays `missing-prerequisite` (spec 022) |
+| **Verdict contract** | Ends every validator result in one closed verdict and keeps a per-run observation ledger: a git call that fails while git is readable (spawn error, signal, timeout, or an exit outside the subcommand's documented answers) is retried once if transient, then recorded as a gap on the validator during whose run it happened, and findings that depend on it are withheld: while any gap stands, absence claims (`ABSENCE_CLAIM_CODES`: PSR001/2, REF001, TRC002–005, SPK008, SPK010, SPR008, XRF001/2) are withheld run-wide, because shared inputs may be incomplete for every reader. A run-level list collects gaps recorded between validator brackets. `--fail-on-inconclusive` exits 4 (spec 081) | `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`, `APPLICABILITY_CLASS`), `cli/commands/guard.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs` | A gap is never a finding and never a pass; whole-run unreadable git stays `missing-prerequisite` (spec 022) |
+| **AI-DLC records** | Reads AWS AI-DLC workspaces read-only and re-checks after the workflow what AI-DLC verified at its gates: traceability targets that no longer exist, gaps left in completed stages, unit deliverables removed later (git decides removal versus the unit's own deletion), unreadable records (AID001–AID004, advisory; spec 089) | `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs` | Never writes AI-DLC files |
+| **Agent memory governance** | Re-checks AWS AI-DLC memory against the code (learned rules and CodeKB naming paths or env vars that are gone: MEM001, MEM002), feeds AI-DLC verified facts through its knowledge folder (`memory --export aidlc`), and consolidates stage diaries by exact normalized grouping (`memory --consolidate aidlc`) (spec 091) | `cli/validators/aidlc.mjs`, `cli/scanners/aidlc.mjs`, `cli/commands/memory-aidlc.mjs` | Never writes AI-DLC memory layers; never runs `aidlc` |
+| **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
+| **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
+| **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -1674,6 +1679,12 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
+| `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs`: removed targets, gaps in completed stages, later removals versus own deletions, uncommitted manifests, legacy layout, malformed and escaping records (spec 089) | `tests/aidlc-profile.test.mjs` | ✅ |
+| `cli/commands/memory-aidlc.mjs` and MEM001/MEM002 in `cli/validators/aidlc.mjs`: stale rules and CodeKB, verified-only export, dry run, untouched memory layers, diary consolidation (spec 091) | `tests/memory-governance.test.mjs` | ✅ |
+| `cli/validators/decision-records.mjs`: statuses, MADR front matter, one-way/dangling/successor-less supersession, index mismatches, unanswered clarifications and `[Answer]:` tags, scaffold quiet (spec 086) | `tests/decision-records.test.mjs` | ✅ |
+| `cli/scanners/chain-coverage.mjs` and its Spec-Kit wiring: uncovered (SPK013), dangling (SPK014), floating (SPK015) and unlabeled stories (SPK016); ranges, sub-IDs, qualified IDs, inline code, terminal features, caps, advisory level (spec 085) | `tests/upstream-coverage.test.mjs` | ✅ |
+| `cli/waiver-metadata.mjs`, waiver metadata in `cli/findings.mjs` pragmas, `cli/validator-markers.mjs`, section markers in `cli/validators/structure.mjs`, `cli/shared-ignore.mjs` (`configIgnoreEntry`, `normalizeIgnoreConfig`), `cli/validators/suppressions.mjs` (IGN001 for every kind, IGN004, IGN005), `ignore --owner` (spec 084) | `tests/accountable-suppressions.test.mjs` | ✅ |
+| `cli/required-checks.mjs`, `cli/commands/policy.mjs`, ci history evidence: required checks (inconclusive, empty, N/A marker, disabled, unknown key), ci readiness, history fields, promotion categories (spec 083) | `tests/enforcement-ladder.test.mjs` | ✅ |
 | `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`): six verdicts, applicability class, observation gaps under a stub git, PSR002/REF001 withholding, retry, `--fail-on-inconclusive`, verdicts in JSON, compact, SARIF, JUnit and text, baseline safety, and the reviewed git call-site inventory (spec 081) | `tests/verdict-contract.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
@@ -1943,6 +1954,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
     codes are unchanged.
 
+- **Required checks and evidence-based promotion** (`docguard.enforcement-ladder`,
+  spec 083). `requiredChecks` in `.docguard.json` names the validators a
+  project depends on: one that does not decide makes `guard` exit 4 and `ci`
+  block, and only a reasoned N/A marker bypasses it (REQ001 when config
+  disables a required check, REQ002 for an unknown key). `ci` history now
+  records per-code counts and levels, and the new read-only `docguard policy`
+  lists advisory codes this project's history shows are ready to promote and
+  blocking codes that are noisy.
+
+- **AWS AI-DLC workspaces are read natively** (`docguard.aidlc-profile`, spec
+  089). A new advisory AI-DLC validator re-checks, on every change, what
+  AI-DLC verified once at its gates: traceability targets that no longer exist
+  (AID001), GAP/ORPHAN rows left in completed stages (AID002), unit
+  deliverables removed after the unit (AID003; git tells a later removal from
+  the unit's own deletion), and unreadable records (AID004). DocGuard never
+  writes AI-DLC files. COMPARISONS.md gains an AI-DLC section and corrects the
+  Kiro row.
+- **AI-DLC agent memory is governed** (`docguard.memory-governance`, spec 091).
+  Guard reports AI-DLC learned rules and CodeKB files that name deleted paths
+  or unused environment variables (MEM001, MEM002, advisory).
+  `docguard memory --export aidlc` feeds AI-DLC the facts DocGuard verified
+  (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
+  repeated stage-diary entries and flags stale ones without writing anything.
+  DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+- **Decision records are checked** (`docguard.decision-records`, spec 086). A
+  new advisory Decision-Records validator reads ADRs (one file with
+  `## ADR-NNN` sections, or one file per decision) and reports a missing or
+  unknown status (DEC001), a link or index row naming no record (DEC002),
+  one-way supersession (DEC003), a superseded status without a successor or
+  the reverse (DEC004), an index that disagrees with its record (DEC005), and
+  Spec Kit clarifications or AI-DLC `[Answer]:` tags left unanswered (DEC006).
+  Disable with `"validators": { "decisionRecords": false }`.
+- **The Spec Kit chain is checked end to end** (`docguard.upstream-coverage`,
+  spec 085). For each feature, the Spec-Kit validator reports requirements no
+  task or plan cites (SPK013), cited IDs the spec does not define (SPK014), a
+  plan or task list that names no upstream (SPK015), and user stories with no
+  `[USn]` task (SPK016). The codes are advisory by default and never change the
+  exit code until a project promotes them with `findingSeverity`; ranges,
+  sub-IDs, IDs qualified by another spec, and IDs in code spans are handled.
+- **Every suppression can name an owner and an end date** (`docguard.accountable-suppressions`,
+  spec 084). Inline pragmas, validator and section N/A markers and
+  `.docguardignore` reasons accept trailing `owner:` and `expires:` tokens, and
+  `.docguard.json` ignore arrays accept `{ pattern, reason, owner, expires }`
+  objects. An expired suppression of any kind stops suppressing.
+  `suppressions.requireOwner` (IGN004) and `suppressions.maxDays` (IGN005)
+  make waivers accountable; `docguard ignore --owner` filters by owner. Forms
+  without the new tokens read exactly as before.
+
 ### Fixed
 
 - **A git call that fails is a gap, not a finding.** On a loaded machine
@@ -1951,8 +2010,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   make REF001 report a documented symbol as removed. Shared git helpers now
   retry a transient spawn error once, then record the failure on the
   validator that was running. PSR002 and REF001 withhold what git could not
-  answer and say how much. `--update-baseline` refuses to freeze a run with a
-  gap, so withheld findings cannot drop out of the baseline.
+  answer and say how much. Because one failed call can leave shared inputs
+  incomplete for every check (a fault-injection run turned 288 TRC004 into
+  476 on one project), every absence claim (a missing pointer, symbol, test,
+  link, source, revision or implementation evidence) is withheld while any
+  gap stands, and the checks it affected report `inconclusive`. Private git
+  calls in Document-Lifecycle, Spec-Registry, revision anchors, doc locks and
+  task evidence now record gaps too; Document-Lifecycle reports a gap as
+  `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
+  with a gap, so withheld findings cannot drop out of the baseline.
 
 ## [0.45.2] - 2026-11-02
 
@@ -2260,63 +2326,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     as stale. No requirement text is proposed and no model is called.
   - **Granularity.** `score` and `trace` report links by scope and tier as
     information, once a project has opted in.
-- **`docguard trace --matrix` exports the requirement → anchor → test chain**
-  (`specs/070-requirement-anchors`, user story 8).
-  - **CSV.** Fixed, documented columns: requirement, fingerprints, spec state,
-    file, anchor, scope, tier, link state, review revision and date, and the
-    test with its status. Rows are in UTF-8 byte order, quoted per RFC 4180,
-    and a cell that could run as a spreadsheet formula gets a `'` prefix.
-  - **ReqIF 1.2.** `--format reqif` holds requirements, anchors and tests as
-    spec objects, with `implements` and `verifies` relations, hash-stable
-    identifiers and a fixed creation time, so two runs give the same bytes.
-  - **Output.** `--spec` keeps one spec. `--out` (or `--output`) writes
-    through the safe write, which backs up an existing file.
-- **Requirement anchors read StrictDoc and OpenFastTrace tags**
-  (`specs/070-requirement-anchors`, user story 9).
-  - **Opt in.** `anchors.import: ["strictdoc", "openfasttrace"]` reads
-    `@relation(REQ-1, scope=function)` and `[impl->dsn~name~3]` tags as
-    anchors to the requirements `anchors.importMap` names, so existing tags
-    gain content-based suspect detection without being rewritten.
-  - **Findings.** An unmapped ID is ANC007. Native and imported tags for
-    different requirements on one symbol are ANC006. An OpenFastTrace tag
-    behind the mapped revision is an outdated, code-side suspect (ANC001,
-    `cause: "oft-outdated"`).
-  - **Cache.** The import settings are part of the anchor cache's identity,
-    so editing the map is never answered from the cache.
-- **Requirement anchors: provably deterministic fingerprints, and an opt-in
-  tree-sitter tier** (`specs/070-requirement-anchors`, user story 10).
-  - **Golden fixtures.** The golden set covers all 13 languages the anchors
-    read. Python `ast` values are recorded for 3.11 through 3.14, because
-    they differ between versions. Any change to a fingerprint fails the
-    suite until the algorithm version is bumped. An entry stamped under an
-    algorithm this DocGuard does not compute is unverifiable, never suspect.
-  - **Oracle.** A CI-only job (`tools/anchor-oracle`) measures the pattern
-    tier against tree-sitter on a vendored corpus of idiomatic code and the
-    anchor fixtures. It fails when a high-confidence language disagrees on
-    more than 1% of declarations. Every package in it passes the dependency
-    vetting recorded in `VETTING.md` (Kotlin's and Swift's grammars do not,
-    so those languages have no oracle). It installs from a lockfile with no
-    install scripts, and nothing in it ships.
-  - **Tree-sitter tier.** `anchors.treeSitter.artifacts` lets tree-sitter
-    refine the span and exact fingerprint of each pattern-tier symbol in Go,
-    Rust, Java, C#, PHP, Ruby, C and C++, keeping keys and floors unchanged.
-    Only files matching the hashes in
-    `schemas/docguard-anchor-treesitter.manifest.json` load. They are staged
-    under `.docguard/ts/` and parsed in a child process with no environment,
-    never through `node_modules`. Anything missing or mismatched is ANC010,
-    and the pattern tier answers.
-  - **Pattern tier fixes the oracle found.** These are:
-    - Ruby `Const = Struct.new … do` class bodies;
-    - Java compact constructors, and annotation elements with defaults;
-    - C# expression bodies that span a switch expression;
-    - C functions returning `struct x`;
-    - C++ inline namespaces, user-defined literal operators, and
-      `= delete` / `= default` members.
 
-    On the corpus, every measured language agrees 100% with tree-sitter.
-  - **Explicit scope wins.** `{scope=symbol}` in a file's leading comment
-
-<!-- truncated: 5938 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 5993 more lines — read CHANGELOG.md directly -->
 
 ---
 

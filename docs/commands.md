@@ -832,6 +832,43 @@ only:
   written (for example `globs:` in a Claude Code rule, which reads only
   `paths:`).
 
+### `docguard memory --export aidlc` / `--consolidate aidlc`
+
+**Govern AWS AI-DLC's agent memory** (spec 091). `--export aidlc` builds a
+digest of the facts DocGuard verified against code (only comparisons that
+matched) and, with `--write`, writes it to
+`aidlc/spaces/<space>/knowledge/docguard/canonical-memory.md`; it prints the
+`aidlc engine knowledge onboard` command that indexes it and never runs it.
+`--consolidate aidlc` groups repeated stage-diary entries across intents and
+flags those naming paths that are gone; it writes nothing. Guard's AI-DLC
+validator reports learned rules and CodeKB files that name deleted paths or
+unused env vars (MEM001, MEM002). DocGuard never edits AI-DLC memory layers.
+
+```bash
+npx docguard-cli memory --export aidlc            # dry run
+npx docguard-cli memory --export aidlc --write --space default
+npx docguard-cli memory --consolidate aidlc --format json
+```
+
+### `docguard policy`
+
+**The enforcement ladder, with evidence from this project's CI history.** For
+every finding code it shows what `.docguard.json` sets (`findingSeverity`,
+the validator's `severity`, or the code's default), the level the code last had
+when it fired, and how many of the last `--window` usable `ci` runs (default 5)
+saw it. A code is **ready to promote** when its last level was advisory, this
+project has exercised it at least once, and it stayed silent for the whole
+window; the report prints the `findingSeverity` line that promotes it. A
+blocking code that fired in at least half the window is listed as **noisy**.
+Runs with observation gaps (spec 081) and runs recorded before per-code
+evidence are not counted. Keep `.docguard/history.jsonl` between CI runs
+(CI-RECIPES) or there is no evidence. Read-only.
+
+```bash
+npx docguard-cli policy
+npx docguard-cli policy --window 10 --format json
+```
+
 ### `docguard ignore`
 
 **Every suppression in the project, and why.** Lists each way the project tells
@@ -839,7 +876,8 @@ DocGuard not to look, with its scope, reason (or `no reason`), expiry, state and
 source location: `.docguardignore` entries, the `.docguard.json` arrays
 (`ignore`, `securityIgnore`, `todoIgnore`), inline `docguard:ignore` pragmas,
 validator and section N/A markers, and the baseline's frozen fingerprints.
-Read-only.
+Each entry carries its `owner` (or `null`); `--owner <owner>` lists only that
+owner's suppressions (spec 084). Read-only.
 
 ```bash
 npx docguard-cli ignore

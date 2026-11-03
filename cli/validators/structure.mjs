@@ -1,3 +1,4 @@
+import { isExpired, splitWaiverMetadata } from '../waiver-metadata.mjs';
 import { remapDocPath } from '../shared-doc-roles.mjs';
 /**
  * Structure Validator — Checks that all required CDD files exist
@@ -186,13 +187,17 @@ export function validateDocSections(projectDir, config) {
       // Reason must start with an actual letter or digit (not `>` from `-->`
       // and not whitespace). This makes sure `<!-- ... n/a -->` (no reason)
       // is rejected, while `<!-- ... n/a — CLI tool -->` is accepted.
+      // docguard.accountable-suppressions#FR-004: an expired marker, or one with
+      // unreadable owner/expiry metadata, no longer owns the absence.
       const naRe = new RegExp(
-        '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]',
+        '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*([A-Za-z0-9][\\s\\S]*?)(?:\\s*-->|$)',
         'i'
       );
+      const naMatch = naRe.exec(content);
+      const naMeta = naMatch ? splitWaiverMetadata(naMatch[1].split('-->')[0].trim()) : null;
       if (docHasSection(content, section)) {
         passed++;
-      } else if (naRe.test(content)) {
+      } else if (naMeta && !naMeta.problem && !isExpired(naMeta.expires)) {
         // v0.16-P7: explicit N/A — counts as passed (the project has owned
         // the absence) and doesn't pollute the warnings list.
         passed++;
