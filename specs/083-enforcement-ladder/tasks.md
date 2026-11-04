@@ -31,7 +31,7 @@ Tests come first. The US1 reproductions must fail on the 081 commit before the c
 
 - [x] T015 `npm test`, `guard`, `npm run budget`.
 - [x] T015a `cli/commands/guard.mjs`: an advisory-only validator renders as an informational row; test in `tests/enforcement-ladder.test.mjs` (FR-012)
-- [ ] T017 SC-003: once this repository has 5 or more CI history entries, run `docguard policy` and check each recommendation by hand against the run logs
+- [x] T017 SC-003: once this repository has 5 or more CI history entries, run `docguard policy` and check each recommendation by hand against the run logs (12 replayed entries; CI now keeps the history)
 - [x] T016 Hermetic A/B against the 081 commit on every local project (SC-002).
 
 ## Verification record (2026-11-03)

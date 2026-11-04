@@ -112,7 +112,11 @@ As a CI owner, I keep the history artifact between runs (CI-RECIPES), and each e
 
 - **SC-001**: the US1 tests run against v0.45.2 fail 9 of 10. The one that passes is the control without `requiredChecks`.
 - **SC-002**: no local project sets `requiredChecks`, so REQ001 and REQ002 cannot fire there. The A/B of this spec's commit (with 084–086, 089 and 091) against v0.45.2 changed no exit code, and every finding it added came from specs 085 and 086. The final branch A/B (spec 082's Verification Notes) agrees.
-- **SC-003**: not yet measured. It needs 5 CI history entries on this repository, and remains an open task.
+- **SC-003**: measured on 2026-11-04. This repository's CI never kept its history, so each runner started empty. The CI workflow now restores main's `.docguard/history.jsonl` and saves it on every push to main. To measure now, `docguard ci` from this program's head was replayed over main's last 12 first-parent commits, from `be2bcb7` to `779b8b4`, into one history file. That gave 12 usable entries with no observation gaps. `docguard policy` (window 5) then made one recommendation: promote DLC002.
+  - Checked by hand against the 12 run reports: DLC002 fired at `9cfd6c0` (`specs/079-doc-validator-fidelity`, 25 checked tasks and none open) and at `0d92d59` (`specs/080-consumer-report-precision`, 21). It was silent in the 5 runs from `479a781` to `779b8b4`, which is what the rule asks for.
+  - The recommendation is correct as evidence and is not adopted. On this repository, DLC002 fires by design between a merge and the spec's completion record, so promoting it would block that step.
+  - No blocking code fired in half the window, so none is noisy.
+  - The same replay showed SPR008 on `779b8b4`, the squash merge of #608: ten recorded review revisions missing from main's history. Re-anchoring the ten specs cleared it.
 
 ## Assumptions
 
