@@ -1984,6 +1984,11 @@
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
             "line": 1203
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/shared-drift.mjs",
+            "line": 37
           }
         ],
         "testEvidence": [
@@ -5628,10 +5633,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "5bb14b4daa81282cc81d50b8fd8d6eb382599cdd",
+          "lastReviewedRevision": "d0b34a4125bd9a2dd9f75a9348fc3dc5bb0f2b46",
           "outcomes": [
             {
-              "revision": "5bb14b4daa81282cc81d50b8fd8d6eb382599cdd",
+              "revision": "d0b34a4125bd9a2dd9f75a9348fc3dc5bb0f2b46",
               "reason": "SC-003 measured: policy over 12 replayed CI entries recommends DLC002, checked by hand; CI now keeps its history",
               "evidence": [
                 "cli/commands/ci.mjs",
@@ -5644,7 +5649,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "5bb14b4daa81282cc81d50b8fd8d6eb382599cdd",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -5672,7 +5681,7 @@
         "artifacts": [
           {
             "path": "specs/083-enforcement-ladder/spec.md",
-            "digest": "sha256:15a39ff039273e81c57fdf87cc58920b575fd9810d1990e984d4ad32c64b8569"
+            "digest": "sha256:688aa260f39f4308a421e75acbb078cf3e35f28704a815d0dae839afa254640a"
           },
           {
             "path": "specs/083-enforcement-ladder/plan.md",
