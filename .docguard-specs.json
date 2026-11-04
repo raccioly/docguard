@@ -13656,7 +13656,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -13678,8 +13678,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "a7b007ade8cccf608bdd1d5765ed4eec54039e59",
+          "outcomes": [
+            {
+              "revision": "a7b007ade8cccf608bdd1d5765ed4eec54039e59",
+              "reason": "SC-003 measured on the v0.46.0 release: 5m10s in parallel with the test matrix, no wall time added; the gate stopped the first publish on a missing exemption, as designed",
+              "evidence": [
+                ".github/workflows/release.yml",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/program-verification.test.mjs",
+                "tests/release-trend-gate.test.mjs",
+                "tools/release-ab.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -13698,7 +13715,7 @@
         "artifacts": [
           {
             "path": "specs/087-release-trend-gate/spec.md",
-            "digest": "sha256:8392024e4c3b06668f1a8b4615caa2bc9365c2bc3629d5998a923c4199c6f3b9"
+            "digest": "sha256:cba1cd643392202ac42a64eae481f388109ebec508d517b5379f07d38034a431"
           },
           {
             "path": "specs/087-release-trend-gate/plan.md",

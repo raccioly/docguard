@@ -95,3 +95,9 @@ SC-003, measured in CI on the v0.46.0 release (2026-11-04):
 ## Out of Scope
 
 - Comparing on private consumer projects (privacy). The manual A/B covers them before a feature merges.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `a7b007ade8cccf608bdd1d5765ed4eec54039e59` — SC-003 measured on the v0.46.0 release: 5m10s in parallel with the test matrix, no wall time added; the gate stopped the first publish on a missing exemption, as designed Evidence: `.github/workflows/release.yml`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/release-trend-gate.test.mjs`, `tools/release-ab.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
