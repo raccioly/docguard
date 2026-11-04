@@ -86,6 +86,11 @@ Constraints from AI-DLC itself: plugins may not contribute `memory`, and the lea
 - **SC-002**: A test asserts that no file under any `memory/` directory changes during `--export --write` or `--consolidate`.
 - **SC-003**: The hermetic A/B changes nothing in projects without AI-DLC spaces.
 
+## Verification Notes
+
+- **SC-003**: the final branch A/B against v0.45.2 added no MEM finding on any local project. None of them has an AI-DLC space.
+- **Precision on a stock project**: on a fresh AI-DLC 2.11.2 project, MEM001 first flagged six references in AI-DLC's own `org.md`. These were template placeholders (`aidlc/spaces/<active-space>/memory/project.md`) and an example list (`pyproject.toml`, etc.). Placeholders and globs are no longer paths. In a git repository, a missing path is now reported only when history once had it, and the stock file reports nothing.
+
 ## Assumptions
 
 - AI-DLC's knowledge folder is team-owned input that AI-DLC indexes on request. Writing one file there, under a `docguard/` subfolder, at the user's explicit `--write`, is within DocGuard's safe-write rule (Constitution VI).

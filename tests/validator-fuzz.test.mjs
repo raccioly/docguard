@@ -8,6 +8,7 @@
  * @req docguard.validator-fuzz#FR-003
  * @req docguard.validator-fuzz#FR-004
  * @req docguard.validator-fuzz#SC-001
+ * @req docguard.validator-fuzz#SC-003
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,7 +21,9 @@ const FIXTURES = resolve('tests/fixtures/fuzz');
 
 describe('US1 — every parser, fixed seed', () => {
   it('200 generated documents and the pathological set: no throw, same answer twice, linear time', () => {
+    const start = performance.now();
     const failures = fuzz({ seed: 20261103, cases: 200 });
+    assert.ok(performance.now() - start < 5000, 'the fixed-seed run stays under 5 seconds (SC-003)');
     assert.deepEqual(failures.map(f => `${f.target} ${f.kind} (${f.index}): ${f.detail}`), []);
   });
 

@@ -9,6 +9,7 @@
  * failure exactly as it would on a loaded runner.
  *
  * @req docguard.verdict-contract#FR-001
+ * @req docguard.verdict-contract#FR-016
  * @req docguard.verdict-contract#FR-002
  * @req docguard.verdict-contract#FR-003
  * @req docguard.verdict-contract#FR-004

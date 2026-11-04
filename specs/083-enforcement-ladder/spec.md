@@ -108,6 +108,12 @@ As a CI owner, I keep the history artifact between runs (CI-RECIPES), and each e
 - **SC-002**: A hermetic A/B against the release before this change, on this repository and every local project, with configs that set no `requiredChecks`, shows no changed finding, status or exit code.
 - **SC-003**: On this repository, with 5 or more CI history entries collected, `docguard policy` makes at least one promotion recommendation. Each one is checked by hand against the run logs.
 
+## Verification Notes
+
+- **SC-001**: the US1 tests run against v0.45.2 fail 9 of 10. The one that passes is the control without `requiredChecks`.
+- **SC-002**: no local project sets `requiredChecks`, so REQ001 and REQ002 cannot fire there. The A/B of this spec's commit (with 084–086, 089 and 091) against v0.45.2 changed no exit code, and every finding it added came from specs 085 and 086. The final branch A/B (spec 082's Verification Notes) agrees.
+- **SC-003**: not yet measured. It needs 5 CI history entries on this repository, and remains an open task.
+
 ## Assumptions
 
 - Exit 4 is shared with `--fail-on-inconclusive`. Both mean the same thing: the team asked that a check decide, and it did not.

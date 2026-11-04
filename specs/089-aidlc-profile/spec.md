@@ -85,6 +85,16 @@
 - **SC-002**: On a scratch project run through `aidlc config` with hand-placed construction records, `guard` reports exactly the seeded drift.
 - **SC-003**: The hermetic A/B on every local project changes nothing in projects without AI-DLC records.
 
+## Verification Notes
+
+- **SC-002**: an AI-DLC 2.11.2 project set up through `aidlc config --harness claude` had three planted faults:
+  - a traceability row marked OK whose target does not exist;
+  - a GAP row in a stage marked complete;
+  - a manifest write, committed, whose file was later deleted.
+
+  `guard` reported exactly AID001, AID002 and AID003, one each. The same run first showed six MEM001 on AI-DLC's own stock `org.md` (template placeholders and an example list), which spec 091's history rule now excludes.
+- **SC-003**: the final branch A/B against v0.45.2 added no AID or MEM finding on any of the 45 local projects. None of them has AI-DLC records.
+
 ## Assumptions
 
 - The 2.11.2 formats are the contract. A later AI-DLC format change is handled by updating fixtures pinned to the new version.

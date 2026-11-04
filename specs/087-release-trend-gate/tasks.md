@@ -17,3 +17,4 @@ Built from [plan.md](plan.md) and [spec.md](spec.md).
 - [x] T005 Tests with two synthetic CLI trees for every acceptance scenario (SC-001)
 - [x] T006 Run between v0.45.2 and this branch; record every change and its changelog explanation in Verification Notes (SC-002)
 - [x] T007 Docs: CI-RECIPES or contributing, TEST-SPEC, CHANGELOG (FR-005)
+- [ ] T008 SC-003: measure the `release-gate` job on the first release that runs it, and record its time

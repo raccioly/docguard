@@ -67,8 +67,10 @@ export function definedIds(specText) {
 
 // An ID right after another spec's name is that spec's requirement, not this
 // one's: "spec 013 FR-020", "`docguard.verdict-contract` FR-002", "060's FR-003".
-// A canonical document's own IDs ("REQUIREMENTS FR-024") belong to it too.
-const OTHER_SPEC_BEFORE = /(?:\b[Ss]pecs?\s*\d{1,4}(?:'s)?|`[a-z0-9-]+\.[a-z0-9.-]+`(?:'s)?|(?<![\w-])\d{3}'s|\b[A-Z][A-Z]{2,}(?:-[A-Z]+)*(?:\.md)?)\s*(?:\(|,|and|or|\s)*$/;
+// A requirements document's own IDs ("REQUIREMENTS FR-024") belong to it too. Only
+// documents that define requirements qualify: "TEST-SPEC, CHANGELOG (FR-007)" in a
+// task names the docs to update and still cites this spec's FR-007.
+const OTHER_SPEC_BEFORE = /(?:\b[Ss]pecs?\s*\d{1,4}(?:'s)?|`[a-z0-9-]+\.[a-z0-9.-]+`(?:'s)?|(?<![\w-])\d{3}'s|\b(?:REQUIREMENTS|PRD|SRS|BRD)(?:\.md)?)\s*(?:\(|,|and|or|\s)*$/;
 const qualified = (line, index) => OTHER_SPEC_BEFORE.test(line.slice(Math.max(0, index - 48), index));
 
 /** Every unqualified ID cited, with its first line; same-prefix ranges expand. */

@@ -49,7 +49,7 @@
         "artifacts": [
           {
             "path": "specs/084-accountable-suppressions/spec.md",
-            "digest": "sha256:866e5041ea24bfb6aef66fe23792506d1f7d33cc1f42773821e62915c6627084"
+            "digest": "sha256:535bd2b190ee3983712674733f9452f95650e1cd9feced80d64f19a1ced514f9"
           },
           {
             "path": "specs/084-accountable-suppressions/plan.md",
@@ -143,9 +143,24 @@
             "line": 12
           },
           {
+            "requirementId": "FR-009",
+            "file": "tests/program-verification.test.mjs",
+            "line": 70
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/accountable-suppressions.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 187
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 160
           }
         ]
       }
@@ -742,7 +757,7 @@
         "artifacts": [
           {
             "path": "specs/090-aidlc-plugin/spec.md",
-            "digest": "sha256:1c642af2910e585b5db98444d07b7841bbf1c3c3c7b82e3e61d5d15d014f6171"
+            "digest": "sha256:667edcc2e6f0340e4dea7182563a96b16fce77ff90e9b7b5868e5882279d04b8"
           },
           {
             "path": "specs/090-aidlc-plugin/plan.md",
@@ -767,6 +782,16 @@
             "requirementId": "FR-002",
             "file": "cli/commands/sensor.mjs",
             "line": 18
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "extensions/aidlc/docguard/tools/aidlc-sensor-docguard-guard.ts",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "extensions/aidlc/docguard/tools/aidlc-sensor-docguard-guard.ts",
+            "line": 14
           },
           {
             "requirementId": "FR-005",
@@ -796,14 +821,34 @@
             "line": 9
           },
           {
-            "requirementId": "FR-006",
+            "requirementId": "FR-005",
             "file": "tests/aidlc-plugin.test.mjs",
             "line": 10
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "FR-006",
             "file": "tests/aidlc-plugin.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/program-verification.test.mjs",
+            "line": 122
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/program-verification.test.mjs",
+            "line": 201
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/aidlc-plugin.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 202
           }
         ]
       }
@@ -854,7 +899,7 @@
         "artifacts": [
           {
             "path": "specs/089-aidlc-profile/spec.md",
-            "digest": "sha256:eadd8c1b2a8b79cf1bc33822539bf684ded9292ff235cd3ac6d6ad03d18a8a11"
+            "digest": "sha256:98b32b648f553b6957233764af506250b1d60909634c11dab1a58ef76ff24afb"
           },
           {
             "path": "specs/089-aidlc-profile/plan.md",
@@ -862,7 +907,7 @@
           },
           {
             "path": "specs/089-aidlc-profile/tasks.md",
-            "digest": "sha256:41be1ab3682e6a2b984836d3aad4e80f7ea397d3d76e89ef943a5f5d27c42763"
+            "digest": "sha256:ba081bd389b18d8330ba8cbf3be0098dc3e5ef5bdd419323599dffe82617f3ad"
           }
         ],
         "taskCompletion": {
@@ -943,9 +988,24 @@
             "line": 12
           },
           {
+            "requirementId": "FR-008",
+            "file": "tests/program-verification.test.mjs",
+            "line": 112
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/aidlc-profile.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 198
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 199
           }
         ]
       }
@@ -1380,9 +1440,19 @@
             "line": 11
           },
           {
+            "requirementId": "FR-007",
+            "file": "tests/program-verification.test.mjs",
+            "line": 52
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/authoring-contract.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 183
           }
         ]
       }
@@ -3216,7 +3286,7 @@
         "artifacts": [
           {
             "path": "specs/086-decision-records/spec.md",
-            "digest": "sha256:02c80164823584565bae7300e1df4ee4190f238065d0466cdeed3437be27f932"
+            "digest": "sha256:083635c04d9357246e7d2e7ccfbe64afabfe3bfe261affca44b7bd7dec1c6120"
           },
           {
             "path": "specs/086-decision-records/plan.md",
@@ -3310,9 +3380,19 @@
             "line": 11
           },
           {
+            "requirementId": "FR-009",
+            "file": "tests/program-verification.test.mjs",
+            "line": 87
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/decision-records.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 192
           },
           {
             "requirementId": "SC-003",
@@ -5303,6 +5383,11 @@
           },
           {
             "requirementId": "FR-005",
+            "file": "cli/scanners/lifecycle-status.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
             "file": "cli/sensor-cache.mjs",
             "line": 5
           },
@@ -5339,9 +5424,19 @@
             "line": 8
           },
           {
+            "requirementId": "FR-006",
+            "file": "tests/program-verification.test.mjs",
+            "line": 141
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/dora-evidence.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 169
           },
           {
             "requirementId": "SC-003",
@@ -5401,7 +5496,7 @@
         "artifacts": [
           {
             "path": "specs/083-enforcement-ladder/spec.md",
-            "digest": "sha256:dcf7db2064f7106afb5e17647d3096efea6e4fbf0a4cfa4498505ad0a54179cf"
+            "digest": "sha256:b9d04b8a34ddb261c9e14c23b0f1cdd15f26fbdf32923f8f41597a9bd1c484ad"
           },
           {
             "path": "specs/083-enforcement-ladder/plan.md",
@@ -5409,12 +5504,12 @@
           },
           {
             "path": "specs/083-enforcement-ladder/tasks.md",
-            "digest": "sha256:696ed9ea956a1024531e46cfe77260019afd2df1bc28c51aec0d9717cce9913e"
+            "digest": "sha256:3ee9489a220fd804616200928a95e127dbfe8443ac87c9d9cd4cfe270e5a03d4"
           }
         ],
         "taskCompletion": {
-          "checked": 16,
-          "total": 16
+          "checked": 17,
+          "total": 18
         },
         "implementationEvidence": [
           {
@@ -5515,6 +5610,11 @@
             "line": 13
           },
           {
+            "requirementId": "FR-011",
+            "file": "tests/program-verification.test.mjs",
+            "line": 60
+          },
+          {
             "requirementId": "FR-012",
             "file": "tests/enforcement-ladder.test.mjs",
             "line": 14
@@ -5523,6 +5623,11 @@
             "requirementId": "SC-001",
             "file": "tests/enforcement-ladder.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 185
           }
         ]
       }
@@ -10039,7 +10144,7 @@
         "artifacts": [
           {
             "path": "specs/091-memory-governance/spec.md",
-            "digest": "sha256:4854fd52b3e46c0f1e02d81e0706932be71a82f32e98544efee888760a572620"
+            "digest": "sha256:e4bda95e8d94fef8c5ad6b066063eec6b4951f06aaf9771b808b55569d0ea790"
           },
           {
             "path": "specs/091-memory-governance/plan.md",
@@ -10093,6 +10198,11 @@
             "line": 9
           },
           {
+            "requirementId": "FR-006",
+            "file": "tests/program-verification.test.mjs",
+            "line": 131
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/memory-governance.test.mjs",
             "line": 10
@@ -10101,6 +10211,11 @@
             "requirementId": "SC-002",
             "file": "tests/memory-governance.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 204
           }
         ]
       }
@@ -13353,12 +13468,12 @@
           },
           {
             "path": "specs/087-release-trend-gate/tasks.md",
-            "digest": "sha256:9ce4d1b34fe7edd1fa519f37585e25185f15e501579314265492fc19bb95c271"
+            "digest": "sha256:293747143347962f45e1608559dbe1e5fc5aa3c018f66a8f983ae481b9560ee8"
           }
         ],
         "taskCompletion": {
           "checked": 7,
-          "total": 7
+          "total": 8
         },
         "implementationEvidence": [
           {
@@ -13394,14 +13509,29 @@
             "line": 6
           },
           {
-            "requirementId": "FR-004",
+            "requirementId": "FR-003",
             "file": "tests/release-trend-gate.test.mjs",
             "line": 7
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-004",
             "file": "tests/release-trend-gate.test.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/program-verification.test.mjs",
+            "line": 97
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 194
           }
         ]
       }
@@ -17098,7 +17228,7 @@
         "artifacts": [
           {
             "path": "specs/085-upstream-coverage/spec.md",
-            "digest": "sha256:4eca7db18760867c914d6de2f38708fff4cdadfeb1a1390007eb89b3c98e3188"
+            "digest": "sha256:a86fd52016313449a699d333cc77de82a472b06d4add00b8cc60c9268f84b6b4"
           },
           {
             "path": "specs/085-upstream-coverage/plan.md",
@@ -17106,7 +17236,7 @@
           },
           {
             "path": "specs/085-upstream-coverage/tasks.md",
-            "digest": "sha256:89da2e88a21ed7a3a47660f5226bcc17a8fc2d04aa3e9547992a3eda54f1f2fc"
+            "digest": "sha256:7488b89490ba11ab95cdf011c631ea7974e85f61dc6f51f3a9e591dc9e8b53a2"
           }
         ],
         "taskCompletion": {
@@ -17138,6 +17268,11 @@
             "requirementId": "FR-005",
             "file": "cli/scanners/chain-coverage.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/lifecycle-status.mjs",
+            "line": 6
           }
         ],
         "testEvidence": [
@@ -17177,9 +17312,24 @@
             "line": 10
           },
           {
+            "requirementId": "FR-008",
+            "file": "tests/program-verification.test.mjs",
+            "line": 79
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/upstream-coverage.test.mjs",
             "line": 11
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 189
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 190
           }
         ]
       }
@@ -17368,7 +17518,7 @@
         "artifacts": [
           {
             "path": "specs/088-validator-fuzz/spec.md",
-            "digest": "sha256:81c549c836e508b9c97eb23414062d58b47822864a64a2d89c46a6f58ee11272"
+            "digest": "sha256:2c213f4a9356833981de6b88e4157bb92e90814cd9c02d08e0eb7f34d9a648f1"
           },
           {
             "path": "specs/088-validator-fuzz/plan.md",
@@ -17422,9 +17572,24 @@
             "line": 9
           },
           {
+            "requirementId": "FR-005",
+            "file": "tests/program-verification.test.mjs",
+            "line": 105
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/validator-fuzz.test.mjs",
             "line": 10
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 196
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/validator-fuzz.test.mjs",
+            "line": 11
           }
         ]
       }
@@ -17487,7 +17652,7 @@
         "artifacts": [
           {
             "path": "specs/081-verdict-contract/spec.md",
-            "digest": "sha256:9af85de48ae5afde9bfe2ea999f8754491b8b509fdd251e7ee1f18f95ae539f3"
+            "digest": "sha256:c613874f472f8282d9e29cb0b8e75c993d8bf2f625c89b6cf25b9da266d4e47a"
           },
           {
             "path": "specs/081-verdict-contract/plan.md",
@@ -17495,7 +17660,7 @@
           },
           {
             "path": "specs/081-verdict-contract/tasks.md",
-            "digest": "sha256:f596efe7d7f0369621642ef628e7e3f4ab3697651e5ee3c15d89b68a7f61fb10"
+            "digest": "sha256:a0e6b6d55030acee9ab9b674e8f3459655b5c7adb7cfa5f4699f7611c3d46f7a"
           }
         ],
         "taskCompletion": {
@@ -17578,87 +17743,112 @@
           {
             "requirementId": "FR-002",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-003",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 13
+            "line": 14
           },
           {
             "requirementId": "FR-004",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 14
+            "line": 15
           },
           {
             "requirementId": "FR-005",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-006",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-007",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-008",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-009",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 19
+            "line": 20
           },
           {
             "requirementId": "FR-010",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 20
+            "line": 21
           },
           {
             "requirementId": "FR-011",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "FR-012",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "FR-013",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-014",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "FR-015",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 25
+            "line": 26
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/verdict-contract.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/program-verification.test.mjs",
+            "line": 40
           },
           {
             "requirementId": "SC-001",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 26
+            "line": 27
           },
           {
             "requirementId": "SC-002",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 27
+            "line": 28
           },
           {
             "requirementId": "SC-003",
             "file": "tests/verdict-contract.test.mjs",
-            "line": 28
+            "line": 29
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/program-verification.test.mjs",
+            "line": 180
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/program-verification.test.mjs",
+            "line": 181
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/program-verification.test.mjs",
+            "line": 153
           }
         ]
       }

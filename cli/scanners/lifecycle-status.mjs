@@ -2,6 +2,9 @@
  * A document's declared lifecycle status, read from its header. A leaf
  * module: `speckit.mjs` needs it, and importing it from
  * `document-lifecycle.mjs` closed an import cycle through `spec-registry.mjs`.
+ *
+ * @implements docguard.upstream-coverage#FR-007
+ * @implements docguard.dora-evidence#FR-005
  */
 
 export const RETIRED_STATUSES = new Set(['archived', 'deprecated', 'obsolete', 'superseded']);

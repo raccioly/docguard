@@ -76,6 +76,9 @@ The pathological set now includes about 200 KB inputs, and the old code fails it
 
 Generation was tuned until every parser was reached. In a 2,000-document sample, the low end was ADR parsing at 9%, covered sections at 8% and stage progress at 17%.
 
+- **SC-002**: seeds 1, 2, 3, 42, 1337 and 9001 ran 3,000 cases each across the 19 parsers, plus the pathological set, after the comment-reader fix. No failures.
+- **SC-003**: `tests/validator-fuzz.test.mjs` runs in about 1 second; the test asserts the fixed-seed run stays under 5 seconds.
+
 ## Assumptions
 
 - Parsers are pure functions of their text. Anything that reads the filesystem or git is out of scope here; spec 081's observation gaps cover those.

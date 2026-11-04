@@ -4,6 +4,7 @@
  *
  * @req docguard.release-trend-gate#FR-001
  * @req docguard.release-trend-gate#FR-002
+ * @req docguard.release-trend-gate#FR-003
  * @req docguard.release-trend-gate#FR-004
  * @req docguard.release-trend-gate#SC-001
  */
@@ -120,5 +121,21 @@ describe('FR-002 / FR-004 — judging and configuration', () => {
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     writeFileSync(join(dir, 'g.json'), JSON.stringify({ schemaVersion: 1, corpus: ['.'], volatileCodes: { FRS001: '' } }));
     assert.throws(() => loadGateConfig(join(dir, 'g.json')), /needs a reason/);
+  });
+});
+
+describe('FR-003 — the release workflow runs the gate before publishing', () => {
+  it('release-gate needs the version check, compares with the previous tag, and create-release waits for it', () => {
+    const wf = readFileSync('.github/workflows/release.yml', 'utf8');
+    const job = wf.slice(wf.indexOf('\n  release-gate:'), wf.indexOf('\n  create-release:'));
+    assert.ok(job.length > 100, 'a release-gate job exists before create-release');
+    assert.match(job, /needs: detect-version/);
+    assert.match(job, /persist-credentials: false/);
+    assert.match(job, /git describe --tags --abbrev=0 --match 'v\[0-9\]\*'/);
+    assert.match(job, /::notice::No previous release tag/);
+    assert.match(job, /node tools\/release-ab\.mjs --base "\$RUNNER_TEMP\/prev" --head \./);
+    assert.match(job, /node tools\/budget\.mjs ab --base "\$RUNNER_TEMP\/prev" --head \./);
+    assert.match(job, /node benchmarks\/run\.mjs --baseline "\$RUNNER_TEMP\/prev-baseline\.json"/);
+    assert.match(wf, /create-release:\n    needs: \[detect-version, test, release-gate\]/);
   });
 });

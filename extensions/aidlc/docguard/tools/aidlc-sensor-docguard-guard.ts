@@ -9,6 +9,9 @@
 // file in-process and calls main with the sensor's arguments, where
 // process.argv holds the engine's own; run directly (bun …), import.meta.main
 // is true and main gets process.argv.
+//
+// @implements docguard.aidlc-plugin#FR-003
+// @implements docguard.aidlc-plugin#FR-004
 import { spawnSync } from "node:child_process";
 
 export function main(argv: string[]): void {

@@ -4,7 +4,7 @@
 
 ## Phase 1 — Failing tests first
 
-- [x] T001 [US1] `tests/upstream-coverage.test.mjs`: `chainCoverage` on a fixture spec defining `FR-001`–`FR-003` and `SC-001`, a plan citing `FR-002`, and tasks citing `FR-001`, `FR-003` and `FR-009`: `FR-002` covered by the plan, `SC-001` uncovered, `FR-009` dangling (FR-001, FR-002).
+- [x] T001 [US1] `tests/upstream-coverage.test.mjs`: `chainCoverage` on a fixture spec defining `FR-001`–`FR-003` and `SC-001`, a plan citing `FR-002`, and tasks citing `FR-001`, `FR-003` and `FR-009`: `FR-002` covered by the plan, `SC-001` uncovered, `FR-009` dangling (FR-001, FR-002). (SC-001: the file fails on v0.45.2, where the scanner does not exist)
 - [x] T002 [US1] Same file: ranges (`FR-004 to FR-006`, `FR-004–FR-006`, `FR-004..FR-006`), a sub-ID (`FR-001a`), fenced code, HTML comments and qualified IDs (`x.y#FR-002`) (FR-005, Edge Cases).
 - [x] T003 [US1] Same file: tasks with no IDs at all give `checked: false` and no SPK013 (US1-4).
 - [x] T004 [US2] Same file: a plan naming `spec.md` passes; a plan naming neither the file nor any ID gives SPK015; tasks naming neither file nor any ID give SPK015 (FR-003).

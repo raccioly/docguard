@@ -155,6 +155,12 @@ As an engineer reading SARIF in GitHub code scanning, JUnit in Jenkins, or the M
 - **SC-005**: A fault-injection run with `check-ignore` and `ls-files` failing produces no new findings on any of those projects. Every validator affected is `inconclusive` or `fail`, never `pass`.
 - **SC-006**: On this repository, `guard --fail-on-inconclusive` passes. Each validator that is inconclusive today is resolved either by a reasoned N/A declaration that is true (for example, API-Surface on a CLI with no HTTP API) or by fixing its input. No declaration hides a check that applies.
 
+## Verification Notes
+
+- **SC-004**: a hermetic A/B, 0.45.2 against this spec's commit, on this repository and 44 other local projects. One fresh copy per CLI, run serially. All 45 projects identical, 3,497 findings on each side. The final branch A/B against v0.45.2 (spec 082's Verification Notes) removed no finding.
+- **SC-005**: fault injection replaced `git` with a stub that fails `check-ignore` and `ls-files`. The first run on this spec's code added findings (DLC003, TRC004 via the Spec-Registry fallback, SPK008), which led to run-wide absence withholding. The final run, over 46 projects, added nothing on 45 of them. On DocGuard's own repository it still added 25 ANC003 and one SPR001, so those codes, with SPR006 and SPR009, joined the withheld set. Re-run on a clone of that repository: 15 findings with working git, 15 with failing git, none added. No validator with a gap ended at `pass`.
+- **SC-006**: `guard --fail-on-inconclusive` on this repository exits 2 (warnings), never 4; checked by `tests/program-verification.test.mjs`.
+
 ## Assumptions
 
 - The verdict is derived per validator, not per finding. A finding already carries severity, confidence and disposition. A per-finding verdict would duplicate them.

@@ -120,6 +120,8 @@ Run 2026-11-03 with AI-DLC 2.11.2 installed from its checksum-verified release. 
   - The fires gave clean `passed`, doc drift `failed`, restored `passed`, and DocGuard missing `could-not-run`.
   - The earlier wrapper had also passed here, with no `script-error` note, so this 2.11.2 install ran it as a subprocess. The fix is for installs that load it in-process.
 
+- **SC-003**: `aidlc engine plugin validate` reports 0 errors and `aidlc engine plugin build claude` completes, both locally on AI-DLC 2.11.2 and in the `aidlc-plugin` CI job. That job passes from commit 584f58d, once validate ran from inside the configured project.
+
 ## Assumptions
 
 - AI-DLC 2.11.2 is the pinned target. The CI job installs it through its checksum- and attestation-verified installer.

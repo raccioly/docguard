@@ -6,7 +6,7 @@ Tests come first. The US1 reproductions must fail on the 081 commit before the c
 
 ## Phase 1 — Failing tests first
 
-- [x] T001 [US1] `tests/enforcement-ladder.test.mjs`: `requiredChecks: ["apiSurface"]` with no API reference exits 4 and names API-Surface. With a matching reference it does not exit 4 (FR-001).
+- [x] T001 [US1] `tests/enforcement-ladder.test.mjs`: `requiredChecks: ["apiSurface"]` with no API reference exits 4 and names API-Surface. With a matching reference it does not exit 4 (FR-001). (SC-001: 9 of the 10 tests fail on v0.45.2; the no-requiredChecks control passes, as it should)
 - [x] T002 [US1] Same file: required `drift` with no DRIFT comments (`empty`) exits 4. With a reasoned N/A marker it passes (FR-001, FR-002).
 - [x] T003 [US1] Same file: required and disabled → `REQ001` error, exit 1. Unknown key → `REQ002` naming the valid keys, and the other requirements still apply (FR-002, FR-003).
 - [x] T004 [US1] Same file: no `requiredChecks` → no `requiredChecks` result in the validator list, and exit code unchanged (SC-002 control).
@@ -30,6 +30,8 @@ Tests come first. The US1 reproductions must fail on the 081 commit before the c
 ## Phase 4 — Proof
 
 - [x] T015 `npm test`, `guard`, `npm run budget`.
+- [x] T015a `cli/commands/guard.mjs`: an advisory-only validator renders as an informational row; test in `tests/enforcement-ladder.test.mjs` (FR-012)
+- [ ] T017 SC-003: once this repository has 5 or more CI history entries, run `docguard policy` and check each recommendation by hand against the run logs
 - [x] T016 Hermetic A/B against the 081 commit on every local project (SC-002).
 
 ## Verification record (2026-11-03)

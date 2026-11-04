@@ -55,3 +55,15 @@ AIDLC_PROJECT_DIR=/path/to/project aidlc engine plugin build claude ./dist
 The sensor is advisory, like AI-DLC's own. To have it hold the gate, make it
 blocking in your AI-DLC scope. To have DocGuard itself require checks, list
 them in `requiredChecks` in `.docguard.json`.
+
+To see what the sensor sees, run what it runs, from the project root:
+
+```bash
+docguard sensor --aidlc --stage code-generation
+```
+
+It prints one JSON line: `pass`, the number of findings and of new findings,
+the first 20 findings, and the verdict counts. One guard run is cached per tree
+state in `.docguard/sensor-cache.json`, so a stage that fires the sensor once per
+output file runs guard once. Set `DOCGUARD_BIN` if DocGuard is not on the `PATH`
+AI-DLC uses.

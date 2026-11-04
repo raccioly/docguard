@@ -100,6 +100,9 @@ Precision was measured on 23 local projects that use Spec Kit (2026-11-02), and 
 
 Sampled SPK013 IDs had 0 citations in tasks and plans: the finding is literal. Output is capped at 10 per code per project.
 
+- **SC-002 on this repository**: all 28 SPK013 were checked by hand against their features' tasks and plans. Five were false: "TEST-SPEC, CHANGELOG (FR-007)" in a task was read as another document's FR-007, because any all-caps word before an ID counted as a qualifier. That is precision 0.82, below the 0.9 bar, so the qualifier now names only requirements documents (REQUIREMENTS, PRD, SRS, BRD). Across 30 local projects that changed two IDs and added no dangling one. This repository then has 23 SPK013, all literal, and no SPK014.
+- **SC-003**: the final branch A/B added 62 SPK013, 81 SPK015, 8 SPK016 and 1 SPK014 across 12 local projects (counted before the qualifier fix, which only removes). No exit code changed.
+
 ## Assumptions
 
 - Requirement IDs follow Spec Kit's template (`FR-###`, `SC-###`, optionally suffixed with a letter). Other ID schemes are out of scope here and handled by spec 089 for AI-DLC.

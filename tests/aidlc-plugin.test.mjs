@@ -7,6 +7,7 @@
  * @req docguard.aidlc-plugin#FR-002
  * @req docguard.aidlc-plugin#FR-003
  * @req docguard.aidlc-plugin#FR-004
+ * @req docguard.aidlc-plugin#FR-005
  * @req docguard.aidlc-plugin#FR-006
  * @req docguard.aidlc-plugin#SC-002
  */
@@ -118,5 +119,18 @@ describe('US3 — the plugin\'s static contract', () => {
       assert.match(c, new RegExp(`target: ${stage}`));
       assert.match(c, /sensors:\n\s+- docguard-guard/);
     }
+  });
+});
+
+describe('FR-005 — CI validates and builds the plugin on a checksum-verified AI-DLC', () => {
+  it('pins the release and its installer hash, validates from a configured project, and builds the claude projection', () => {
+    const wf = readFileSync('.github/workflows/ci.yml', 'utf8');
+    const job = wf.slice(wf.indexOf('\n  aidlc-plugin:'), wf.indexOf('\n  publish-check:'));
+    assert.match(job, /AIDLC_VERSION: \d+\.\d+\.\d+/);
+    assert.match(job, /AIDLC_INSTALLER_SHA256: [0-9a-f]{64}/);
+    assert.match(job, /sha256sum -c -/, 'the installer is verified before it runs');
+    assert.match(job, /\(cd "\$project" && aidlc engine plugin validate "\$GITHUB_WORKSPACE\/extensions\/aidlc\/docguard"\)/);
+    assert.match(job, /aidlc engine plugin build claude/);
+    assert.match(job, /marketplace\.json/);
   });
 });

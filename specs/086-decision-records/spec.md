@@ -94,6 +94,10 @@ Spec Kit's `/speckit-clarify` records `- Q: … → A: …` lines under `## Clar
 - **SC-002**: The hermetic A/B on every local project changes no exit code. Every DEC finding it adds is reviewed by hand, and the per-code precision is recorded.
 - **SC-003**: `docguard init`'s ADR template, freshly scaffolded, produces no DEC finding.
 
+## Verification Notes
+
+- **SC-002**: a first pass on the 45 local projects produced 107 DEC findings. Each was reviewed by hand, and three parser fixes followed (plan, Research decisions). That left 5, all genuine: 3 DEC001, 1 DEC003 and 1 DEC006. The final branch A/B against v0.45.2 added exactly those 5 and changed no exit code.
+
 ## Assumptions
 
 - ADR numbering is the identity. Titles are free text.

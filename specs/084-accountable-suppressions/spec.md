@@ -93,6 +93,11 @@ As a team lead, I can require every waiver to name an owner and to expire within
 - **SC-002**: A hermetic A/B on this repository and every local project shows no change in findings, suppression counts or exit codes, because none of them uses the new tokens.
 - **SC-003**: Every suppression in this repository is listed by `docguard ignore --format json` with its owner field present (`null` or set).
 
+## Verification Notes
+
+- **SC-002**: no `.docguardignore`, `.docguard.json`, pragma or marker in any local project carries an `owner:` or `expires:` token. `docguard ignore --format json` from v0.45.2 and from this branch, on a fresh clone of each of 46 local projects, lists the same suppressions by kind and expired count on every one. That is 878 entries across the 21 projects that have any. The final guard A/B added no IGN finding and changed no exit code.
+- **SC-003**: every entry `docguard ignore --format json` lists for this repository carries an `owner` field; checked by `tests/program-verification.test.mjs`.
+
 ## Assumptions
 
 - `owner:` and `expires:` use the same token style as spec 057's `expires:`, so one rule covers every kind.

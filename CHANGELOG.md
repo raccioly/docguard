@@ -128,6 +128,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[USn]` task (SPK016). The codes are advisory by default and never change the
   exit code until a project promotes them with `findingSeverity`; ranges,
   sub-IDs, IDs qualified by another spec, and IDs in code spans are handled.
+  A requirement ID after a document name counts as that document's only for
+  requirements documents (REQUIREMENTS, PRD, SRS, BRD): "TEST-SPEC, CHANGELOG
+  (FR-007)" in a task still cites the spec's FR-007.
+
 - **Every suppression can name an owner and an end date** (`docguard.accountable-suppressions`,
   spec 084). Inline pragmas, validator and section N/A markers and
   `.docguardignore` reasons accept trailing `owner:` and `expires:` tokens, and
