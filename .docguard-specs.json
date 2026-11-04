@@ -1984,11 +1984,6 @@
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
             "line": 1203
-          },
-          {
-            "requirementId": "FR-022",
-            "file": "cli/validators/drift.mjs",
-            "line": 44
           }
         ],
         "testEvidence": [

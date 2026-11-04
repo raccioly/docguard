@@ -165,7 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`docguard.calibrated-finding-channels` FR-022). It counted any added line
   containing `DRIFT:`, so a `// DRIFT:` inside a test's string fixture asked
   for a DRIFT-LOG review. It now uses Drift's own file and comment rules, and
-  reads file names from the diff with fixed prefixes.
+  reads file names from the diff with fixed prefixes. A hermetic A/B over 47
+  local projects changed no finding or exit code.
 
 - **A long line full of HTML comments no longer stalls guard** (spec 088).
   The comment reader re-masked the rest of the line's code spans for every

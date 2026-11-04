@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
 // FR-005: the shared helper, not a private copy of `git rev-parse`.
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
-import { DRIFT_COMMENT, driftReadsPath } from './drift.mjs';
+import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',

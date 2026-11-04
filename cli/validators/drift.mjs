@@ -8,45 +8,10 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname } from 'node:path';
+import { resolve, join } from 'node:path';
 import { relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.swift', '.kt',
-  '.rb', '.php', '.cs', '.c', '.cpp', '.h',
-]);
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'cli', // Exclude DocGuard's own source (contains DRIFT: in regex patterns)
-]);
-
-// v0.15 hotfix: test files commonly contain literal `// DRIFT:` inside string
-// fixtures (e.g. `'// DRIFT: a-drift\n'`). Reading the test as source would
-// treat the string as a real drift comment, so test files are skipped unless
-// the user opts in — same pattern TODO-Tracking uses.
-const TEST_PATH = /(^|\/)(__tests__|tests?|spec)\/|\.(test|spec)\.[^.]+$/;
-export const DRIFT_COMMENT = /(?:\/\/|#|\/\*|\-\-)\s*DRIFT:\s*(.+)/i;
-
-/** Whether Drift reads this file (repository-relative) for DRIFT comments. */
-function isDriftSourceFile(rel, config) {
-  if (!CODE_EXTENSIONS.has(extname(rel))) return false;
-  return config?.drift?.includeTestFiles === true || !TEST_PATH.test(rel);
-}
-
-/**
- * Whether a full Drift run reads this repository-relative path: a source file
- * outside the directories it skips. Freshness counts added DRIFT lines (FRS005)
- * with this rule and DRIFT_COMMENT, so it counts what Drift would log.
- * @implements docguard.calibrated-finding-channels#FR-022
- */
-export function driftReadsPath(rel, config) {
-  const dirs = String(rel).split('/').slice(0, -1);
-  return !dirs.some(d => IGNORE_DIRS.has(d)) && isDriftSourceFile(rel, config);
-}
+import { DRIFT_COMMENT, DRIFT_IGNORE_DIRS, isDriftSourceFile } from '../shared-drift.mjs';
 
 export function validateDrift(projectDir, config) {
   const findings = [];
@@ -133,9 +98,9 @@ export function validateDrift(projectDir, config) {
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker;
-// the IGNORE_DIRS set above stays local because its entries are intentional
+// the DRIFT_IGNORE_DIRS set (cli/shared-drift.mjs) stays drift-specific because its entries are intentional
 // per-validator variance (e.g. 'cli' — DocGuard's own source has DRIFT: in
 // regex patterns).
 function walkDir(dir, callback) {
-  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
+  sharedWalkFiles(dir, callback, { ignoreDirs: DRIFT_IGNORE_DIRS });
 }
