@@ -14064,6 +14064,7 @@
           "docguard.requirement-anchors#FR-041",
           "docguard.requirement-anchors#FR-042",
           "docguard.requirement-anchors#FR-043",
+          "docguard.requirement-anchors#FR-044",
           "docguard.requirement-anchors#SC-001",
           "docguard.requirement-anchors#SC-002",
           "docguard.requirement-anchors#SC-003",
@@ -14080,7 +14081,7 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:2400eb0562696154838f9d680860861711f7fefaac6afc7ca63e0f498362fafc"
+            "digest": "sha256:0da1f5477b27e144e712e376de3cb6715c8c579f507d814e34d1aa6df51fb50d"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
@@ -14329,7 +14330,7 @@
           {
             "requirementId": "FR-032",
             "file": "cli/scanners/anchors.mjs",
-            "line": 555
+            "line": 562
           },
           {
             "requirementId": "FR-033",
@@ -14349,7 +14350,7 @@
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchors.mjs",
-            "line": 636
+            "line": 643
           },
           {
             "requirementId": "FR-035",
@@ -14359,7 +14360,7 @@
           {
             "requirementId": "FR-036",
             "file": "cli/scanners/anchors.mjs",
-            "line": 703
+            "line": 710
           },
           {
             "requirementId": "FR-037",
@@ -14369,7 +14370,7 @@
           {
             "requirementId": "FR-037",
             "file": "cli/scanners/anchors.mjs",
-            "line": 734
+            "line": 741
           },
           {
             "requirementId": "FR-037",
@@ -14405,6 +14406,11 @@
             "requirementId": "FR-041",
             "file": "cli/scanners/anchors.mjs",
             "line": 26
+          },
+          {
+            "requirementId": "FR-044",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 143
           },
           {
             "requirementId": "SC-003",
@@ -14667,6 +14673,11 @@
             "requirementId": "FR-043",
             "file": "tests/requirement-anchors-adoption.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "FR-044",
+            "file": "tests/requirement-anchors.test.mjs",
+            "line": 161
           },
           {
             "requirementId": "SC-001",

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Installed Spec Kit extensions no longer raise ANC007**
+  (`docguard.requirement-anchors` FR-044). `specify extension add` copies an
+  extension's files into `.specify/extensions/`, and DocGuard's own extension
+  carries tags that cite DocGuard's specs. In the project that installed it,
+  `docguard anchors` reported four ANC007 findings it could not fix. Requirement
+  anchors now skip `.specify/extensions/`, like an installed package. On four
+  local projects that installed the extension, `docguard anchors` lost exactly
+  those four findings each and nothing else; a guard A/B over 47 projects
+  changed no finding.
+
 ## [0.46.0] - 2026-11-04
 
 ### Added

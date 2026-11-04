@@ -137,6 +137,13 @@ function extractorIdentity() {
   return extractorHash;
 }
 
+/**
+ * Files `specify extension add` installed: a copy of another project's
+ * package, whose tags cite that project's specs, not this one's.
+ * @implements docguard.requirement-anchors#FR-044
+ */
+const INSTALLED_EXTENSION = /^\.specify\/extensions\//;
+
 function candidateFiles(projectDir, config) {
   const ignored = buildIgnoreFilter(config.ignore || []);
   let files = listTrackedFiles(projectDir);
@@ -146,7 +153,7 @@ function candidateFiles(projectDir, config) {
     walkFiles(projectDir, abs => { files.push(relPosix(projectDir, abs)); });
   }
   return files
-    .filter(rel => SOURCE_EXT.test(rel) && !isTestSource(rel) && !ignored(rel))
+    .filter(rel => SOURCE_EXT.test(rel) && !isTestSource(rel) && !INSTALLED_EXTENSION.test(rel) && !ignored(rel))
     .sort();
 }
 
@@ -534,7 +541,7 @@ function testReferences(projectDir, config, index) {
   const patterns = requirementPatterns(config);
   const files = listTrackedFiles(projectDir) || (() => { const out = []; walkFiles(projectDir, abs => { out.push(relPosix(projectDir, abs)); }); return out; })();
   const ignored = buildIgnoreFilter(config.ignore || []);
-  const refs = scanTestFilesForReferences(projectDir, files.filter(f => !ignored(f)), patterns);
+  const refs = scanTestFilesForReferences(projectDir, files.filter(f => !INSTALLED_EXTENSION.test(f) && !ignored(f)), patterns);
   const byRequirement = new Map();
   for (const [key, list] of resolveRequirementReferences(index.definitions, refs, index.retired)) {
     const def = index.definitions.get(key);
