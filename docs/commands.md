@@ -599,7 +599,9 @@ Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
 ### `docguard anchors`
 
 **Which code each requirement tag points at.** A tag anchors to the code
-directly below it, not to the whole file:
+directly below it, not to the whole file. Files under `.specify/extensions/`
+are not read: they are other projects' packages that `specify extension add`
+installed, and their tags cite those projects' specs.
 
 ```js
 /** @implements acme.billing#FR-002 */

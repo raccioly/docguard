@@ -794,6 +794,13 @@ is reported unavailable and the pattern tier is used.
   the CODEOWNERS entry, run and commit the FR-027 replay, and move every tag
   that today sits inside a function body or above an unrelated statement to an
   explicit scope.
+- **FR-044** *(amended 2026-11-04)*: Files under `.specify/extensions/` MUST
+  NOT be read for tags. `specify extension add` copies another project's
+  package there, so its tags cite that project's specs, and the project that
+  installed it can neither resolve them nor fix them. Before this, installing
+  DocGuard's own Spec Kit extension made `docguard anchors` report four
+  ANC007 findings in the consumer's project, from tags in the copied
+  `extension.yml` and hook template.
 
 ### Key Entities
 

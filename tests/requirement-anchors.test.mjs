@@ -158,6 +158,28 @@ describe('fingerprints follow the code, not its formatting (FR-010, FR-011)', ()
   });
 });
 
+// @req docguard.requirement-anchors#FR-044
+describe('installed Spec Kit extensions are not read for tags (FR-044)', () => {
+  const STRAY = '# @implements vendor.tool#FR-001\nname: stray\n';
+  const problemsIn = dir => computeLinks(dir, {}, { noCache: true }).problems.filter(p => p.code === 'ANC007').map(p => p.file);
+
+  for (const tracked of [false, true]) {
+    it(`skips .specify/extensions/ and still reports the same tag elsewhere (${tracked ? 'tracked files' : 'no git'})`, () => {
+      const dir = copyFixture();
+      writeFileSync(join(dir, 'stray.yml'), STRAY);
+      cpSync(join(dir, 'stray.yml'), join(dir, '.specify/extensions/vendor/extension.yml'), { recursive: true });
+      if (tracked) {
+        fixtureGit(dir, ['init', '-q']);
+        fixtureGit(dir, ['add', '-A']);
+      }
+      assert.ok(existsSync(join(dir, '.specify/extensions/vendor/extension.yml')));
+      const files = problemsIn(dir);
+      assert.ok(files.includes('stray.yml'), JSON.stringify(files));
+      assert.equal(files.some(f => f.startsWith('.specify/extensions/')), false, JSON.stringify(files));
+    });
+  }
+});
+
 describe('opt-in and the cache (FR-026, FR-041)', () => {
   it('without a lock or anchors.enabled, guard reports nothing from the validator', () => {
     const dir = copyFixture();
