@@ -180,7 +180,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 187
+            "line": 203
           },
           {
             "requirementId": "SC-003",
@@ -850,7 +850,7 @@
           {
             "requirementId": "FR-005",
             "file": ".github/workflows/ci.yml",
-            "line": 375
+            "line": 396
           }
         ],
         "testEvidence": [
@@ -892,7 +892,7 @@
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 201
+            "line": 217
           },
           {
             "requirementId": "SC-002",
@@ -902,7 +902,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 202
+            "line": 218
           }
         ]
       }
@@ -1078,12 +1078,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 198
+            "line": 214
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 199
+            "line": 215
           }
         ]
       }
@@ -1553,7 +1553,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 183
+            "line": 198
           }
         ]
       }
@@ -3514,7 +3514,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 192
+            "line": 208
           },
           {
             "requirementId": "SC-003",
@@ -5649,7 +5649,7 @@
         "artifacts": [
           {
             "path": "specs/083-enforcement-ladder/spec.md",
-            "digest": "sha256:b9d04b8a34ddb261c9e14c23b0f1cdd15f26fbdf32923f8f41597a9bd1c484ad"
+            "digest": "sha256:8b41c197c214f5202e90420f3e921452d6fa63a9e1d91114652895666c1dcc67"
           },
           {
             "path": "specs/083-enforcement-ladder/plan.md",
@@ -5657,11 +5657,11 @@
           },
           {
             "path": "specs/083-enforcement-ladder/tasks.md",
-            "digest": "sha256:3ee9489a220fd804616200928a95e127dbfe8443ac87c9d9cd4cfe270e5a03d4"
+            "digest": "sha256:440873dfd47e77f5e0b1fa29c007d828ff76643a9fb3d3117bc1d33be84f2f28"
           }
         ],
         "taskCompletion": {
-          "checked": 17,
+          "checked": 18,
           "total": 18
         },
         "implementationEvidence": [
@@ -5780,7 +5780,17 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 185
+            "line": 200
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 180
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 201
           }
         ]
       }
@@ -10391,7 +10401,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 204
+            "line": 220
           }
         ]
       }
@@ -10688,7 +10698,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 296
+            "line": 317
           },
           {
             "requirementId": "FR-004",
@@ -10982,6 +10992,11 @@
           }
         ],
         "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/fix-apply.test.mjs",
+            "line": 5
+          },
           {
             "requirementId": "FR-001",
             "file": "tests/output-ux.test.mjs",
@@ -13712,7 +13727,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 194
+            "line": 210
           }
         ]
       }
@@ -14301,7 +14316,7 @@
           {
             "requirementId": "FR-040",
             "file": ".github/workflows/ci.yml",
-            "line": 341
+            "line": 362
           },
           {
             "requirementId": "FR-040",
@@ -14326,7 +14341,7 @@
           {
             "requirementId": "SC-003",
             "file": ".github/workflows/ci.yml",
-            "line": 297
+            "line": 318
           }
         ],
         "testEvidence": [
@@ -16333,7 +16348,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
-            "line": 212
+            "line": 233
           }
         ],
         "testEvidence": [
@@ -17527,12 +17542,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 189
+            "line": 205
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 190
+            "line": 206
           }
         ]
       }
@@ -17808,7 +17823,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 196
+            "line": 212
           },
           {
             "requirementId": "SC-003",
@@ -18088,12 +18103,12 @@
           {
             "requirementId": "SC-004",
             "file": "tests/program-verification.test.mjs",
-            "line": 180
+            "line": 195
           },
           {
             "requirementId": "SC-005",
             "file": "tests/program-verification.test.mjs",
-            "line": 181
+            "line": 196
           },
           {
             "requirementId": "SC-006",

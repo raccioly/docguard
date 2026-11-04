@@ -1,3 +1,9 @@
+/**
+ * `docguard fix`: the mechanical-fix summary, and runFix's machine output in
+ * JSON, history, write and prompt modes parses as one clean JSON document.
+ *
+ * @req docguard.output-ux#FR-001
+ */
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
