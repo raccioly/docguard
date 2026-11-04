@@ -1989,6 +1989,16 @@
             "requirementId": "FR-022",
             "file": "cli/shared-drift.mjs",
             "line": 37
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/drift.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/freshness.mjs",
+            "line": 8
           }
         ],
         "testEvidence": [

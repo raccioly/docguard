@@ -3,6 +3,9 @@
  * Uses git history to compare when docs were last modified vs when code was last changed.
  * 
  * This is a repository-wide review heuristic, not proof of semantic drift.
+ *
+ * FRS005 counts added DRIFT lines with Drift's own rules (cli/shared-drift.mjs).
+ * @implements docguard.calibrated-finding-channels#FR-022
  */
 
 import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
