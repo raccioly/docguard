@@ -133,5 +133,5 @@ As a CI owner, I keep the history artifact between runs (CI-RECIPES), and each e
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `5bb14b4daa81282cc81d50b8fd8d6eb382599cdd` — SC-003 measured: policy over 12 replayed CI entries recommends DLC002, checked by hand; CI now keeps its history Evidence: `cli/commands/ci.mjs`, `cli/commands/policy.mjs`, `cli/required-checks.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/enforcement-ladder.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+- `d0b34a4125bd9a2dd9f75a9348fc3dc5bb0f2b46` — SC-003 measured: policy over 12 replayed CI entries recommends DLC002, checked by hand; CI now keeps its history Evidence: `cli/commands/ci.mjs`, `cli/commands/policy.mjs`, `cli/required-checks.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/enforcement-ladder.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->
