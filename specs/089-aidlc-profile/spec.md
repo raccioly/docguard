@@ -104,3 +104,9 @@
 
 - Re-running AI-DLC's sensors, or judging stage quality.
 - CodeKB freshness and memory rules (spec 091).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `98b93785df700e41369406d9a7e598d663b72ee0` — AID001-AID004 on AI-DLC 2.11.2 records; a seeded aidlc-config project reports exactly the three planted faults; no change on projects without records. Evidence: `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/aidlc-profile.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -886,7 +886,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -907,8 +907,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "98b93785df700e41369406d9a7e598d663b72ee0",
+          "outcomes": [
+            {
+              "revision": "98b93785df700e41369406d9a7e598d663b72ee0",
+              "reason": "AID001-AID004 on AI-DLC 2.11.2 records; a seeded aidlc-config project reports exactly the three planted faults; no change on projects without records.",
+              "evidence": [
+                "cli/scanners/aidlc.mjs",
+                "cli/validators/aidlc.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/aidlc-profile.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -930,7 +946,7 @@
         "artifacts": [
           {
             "path": "specs/089-aidlc-profile/spec.md",
-            "digest": "sha256:98b32b648f553b6957233764af506250b1d60909634c11dab1a58ef76ff24afb"
+            "digest": "sha256:daa58d76bf2be1393863beae41fd52114ef43262f444939c4ab14b5c7a4c2aae"
           },
           {
             "path": "specs/089-aidlc-profile/plan.md",
