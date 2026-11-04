@@ -892,7 +892,7 @@
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 217
+            "line": 218
           },
           {
             "requirementId": "SC-002",
@@ -902,7 +902,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 218
+            "line": 219
           }
         ]
       }
@@ -1078,12 +1078,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 214
+            "line": 215
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 215
+            "line": 216
           }
         ]
       }
@@ -10433,7 +10433,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 220
+            "line": 221
           }
         ]
       }
@@ -13650,7 +13650,7 @@
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -13688,7 +13688,7 @@
         "artifacts": [
           {
             "path": "specs/087-release-trend-gate/spec.md",
-            "digest": "sha256:e83d8f3c32c9ecde915b81343dbbce57b160e1b77857bcf1e27fa2b14999ad1b"
+            "digest": "sha256:8392024e4c3b06668f1a8b4615caa2bc9365c2bc3629d5998a923c4199c6f3b9"
           },
           {
             "path": "specs/087-release-trend-gate/plan.md",
@@ -13696,11 +13696,11 @@
           },
           {
             "path": "specs/087-release-trend-gate/tasks.md",
-            "digest": "sha256:293747143347962f45e1608559dbe1e5fc5aa3c018f66a8f983ae481b9560ee8"
+            "digest": "sha256:558bd9fb58e8adda85a82758e6448bd0f8247ce30290f15a96ba479c8b1a3fa4"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
@@ -13760,6 +13760,11 @@
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
             "line": 210
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 211
           }
         ]
       }
@@ -17855,7 +17860,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 212
+            "line": 213
           },
           {
             "requirementId": "SC-003",

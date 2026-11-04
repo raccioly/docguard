@@ -208,7 +208,8 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.decision-records#SC-002
   it('086: the A/B and DEC precision', () => recorded('086-decision-records', ['SC-002']));
   // @req docguard.release-trend-gate#SC-002
-  it('087: the gate between v0.45.2 and this program', () => recorded('087-release-trend-gate', ['SC-002']));
+  // @req docguard.release-trend-gate#SC-003
+  it('087: the gate between v0.45.2 and this program, and its time on the v0.46.0 release', () => recorded('087-release-trend-gate', ['SC-002', 'SC-003']));
   // @req docguard.validator-fuzz#SC-002
   it('088: six deep seeds', () => recorded('088-validator-fuzz', ['SC-002']));
   // @req docguard.aidlc-profile#SC-002
