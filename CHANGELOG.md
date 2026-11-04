@@ -63,6 +63,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
   repeated stage-diary entries and flags stale ones without writing anything.
   DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+  A rule's path counts as gone only if git history once had it, and template
+  placeholders (`<active-space>`) are never paths: a fresh AI-DLC project's
+  stock `org.md` reports nothing.
+
 - **What DocGuard tells authors to write is what its validators accept**
   (`docguard.authoring-contract`, spec 082). One registry
   (`cli/authoring-contract.mjs`) now holds each canonical document's sections.

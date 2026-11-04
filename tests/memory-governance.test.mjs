@@ -18,6 +18,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateAidlc } from '../cli/validators/aidlc.mjs';
 import { ABSENCE_CLAIM_CODES, codeDefaultLevel } from '../cli/findings.mjs';
+import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const SPACE = 'aidlc/spaces/default';
@@ -51,6 +52,21 @@ describe('US1 — memory that names what is gone', () => {
     const mem2 = c.filter(x => x.startsWith('MEM002'));
     assert.equal(mem2.length, 1);
     assert.match(mem2[0], /architecture\.md:3 .*`src\/old-router\.ts`/);
+  });
+
+  it('in git, reports only paths history once had; placeholders and examples are not paths', t => {
+    // AI-DLC's stock org.md names `aidlc/spaces/<active-space>/memory/project.md`
+    // and "`pyproject.toml`, etc.": neither ever existed in the project.
+    const dir = project(t, {
+      [`${SPACE}/memory/org.md`]: '# Org\n\n- Read `aidlc/spaces/<active-space>/memory/project.md` first.\n- Configured in repo root (`.prettierrc`, `pyproject.toml`, etc.).\n- Auth lives in `src/legacy/auth.ts`.\n',
+      'src/legacy/auth.ts': 'export const a = 1;\n',
+    });
+    fixtureGit(dir, ['init', '-q', '-b', 'main']);
+    fixtureGit(dir, ['add', '-A']);
+    fixtureGit(dir, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'init']);
+    rmSync(join(dir, 'src/legacy/auth.ts'));
+    const mem1 = codes(validateAidlc(dir)).filter(x => x.startsWith('MEM001'));
+    assert.deepEqual(mem1.map(x => x.match(/`([^`]+)`, which/)[1]), ['src/legacy/auth.ts']);
   });
 
   it('ships advisory absence claims', () => {

@@ -23,7 +23,7 @@ import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { ENV_TOKEN, backtickRefs, codekbFiles, findAidlcRecords, findAidlcSpaces, isPathTarget, memoryLayerFiles, pathExists, readAidlcRecord, safeWorkspacePath } from '../scanners/aidlc.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
-import { lastCommitHash, runGit } from '../shared-git.mjs';
+import { gitMetadataStatus, lastCommitHash, runGit } from '../shared-git.mjs';
 
 const VALIDATOR = 'aidlc';
 const CAP = 10;
@@ -109,16 +109,33 @@ export function validateAidlc(projectDir) {
     try { text = readFileSync(f, 'utf-8'); } catch { return []; }
     return backtickRefs(text)
       .filter(r => !/^[a-z]+:\/\//i.test(r.token))
+      // A placeholder or glob (`<active-space>`, `{id}`, `*.md`) is a template, not a path.
+      .filter(r => !/[<>{}*?[\]$]/.test(r.token))
       .filter(r => isPathTarget(r.token) || (envToo && ENV_TOKEN.test(r.token)))
       .map(r => ({ ...r, file: rel(f) }));
   });
   const ruleRefs = refsOf(spaces.flatMap(s => memoryLayerFiles(s.abs)), true);
   const codekbRefs = refsOf(spaces.flatMap(s => codekbFiles(s.abs)), false);
   const envInUse = envNamesInUse(projectDir, new Set(ruleRefs.filter(r => ENV_TOKEN.test(r.token)).map(r => r.token)));
+  // "No longer exists" needs the path to have existed: in a git repository a
+  // missing path is reported only when history once had it. An example a rule
+  // names (`pyproject.toml, etc.`) was never there. AI-DLC's stock org.md has
+  // both kinds. A failed lookup reports, and runGit's gap withholds it.
+  const inGit = gitMetadataStatus(projectDir).status === 'ok';
+  const history = new Map();
+  const existedOnce = p => {
+    if (!inGit) return true;
+    if (!history.has(p)) {
+      const r = runGit(projectDir, ['log', '-1', '--all', '--format=%H', '--', p], { operation: 'git log (AI-DLC memory path history)', stdio: ['ignore', 'pipe', 'ignore'] });
+      history.set(p, r.status === 0 && !r.error ? Boolean(r.stdout.trim()) : true);
+    }
+    return history.get(p);
+  };
   const gone = r => {
     if (ENV_TOKEN.test(r.token)) return !envInUse.has(r.token);
-    const abs = safeWorkspacePath(projectDir, r.token.replace(/\/$/, ''));
-    return abs ? !pathExists(abs, r.token.endsWith('/')) : false;
+    const path = r.token.replace(/\/$/, '');
+    const abs = safeWorkspacePath(projectDir, path);
+    return abs ? !pathExists(abs, r.token.endsWith('/')) && existedOnce(path) : false;
   };
   for (const r of ruleRefs) {
     total++;
