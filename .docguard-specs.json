@@ -1357,7 +1357,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -1378,8 +1378,23 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c113229fd15d56a013362a3f37d4062251943071",
+          "outcomes": [
+            {
+              "revision": "c113229fd15d56a013362a3f37d4062251943071",
+              "reason": "One section registry read by STR003, score, explain, fix and the Spec Kit skill; guidance and templates round-trip; A/B: no exit change, 3 Doc Quality scores moved 2 points from the exemptions.",
+              "evidence": [
+                "cli/authoring-contract.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/authoring-contract.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -1399,7 +1414,7 @@
         "artifacts": [
           {
             "path": "specs/082-authoring-contract/spec.md",
-            "digest": "sha256:61d6121575688492e78c263e95265859d3e592b6432f60f8107dd0a118f7935f"
+            "digest": "sha256:049425a81014d05ef0d9ec939e4e7d1d74f72eb670ea430c0044ffe31a9ca269"
           },
           {
             "path": "specs/082-authoring-contract/plan.md",
