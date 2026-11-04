@@ -48,6 +48,7 @@ npx docguard-cli guard --format sarif    # SARIF 2.1.0 for GitHub Code Scanning
 npx docguard-cli guard --format junit    # JUnit XML for GitLab/Jenkins/Azure DevOps
 npx docguard-cli guard --update-baseline # Freeze current findings (brownfield adoption)
 npx docguard-cli guard --no-baseline     # Ignore the committed baseline this run
+npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not decide
 ```
 
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes
@@ -63,7 +64,9 @@ npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 **Exit codes:** `0` (pass), `1` (errors, or an invalid flag combination such
 as `--update-baseline --changed-only`), `2` (warnings only), `3` (errors in a
 project with no `.docguard.json`: DocGuard has not been adopted there, so a Git
-hook can tell "not initialised" from "failed"). Run `docguard init` to adopt;
+hook can tell "not initialised" from "failed"), `4` (with `--fail-on-inconclusive`:
+no error, but a check could not decide; it outranks warnings, so a pipeline
+that tolerates `2` still stops). Run `docguard init` to adopt;
 smart-mode `init` on an existing codebase writes the `.docguard.json` it
 inferred.
 
@@ -120,7 +123,38 @@ contract, `// docguard:ignore <CODE>` to suppress a false positive at the site.
 npx docguard-cli score                   # Visual bar chart
 npx docguard-cli score --format json     # Structured JSON
 npx docguard-cli score --tax             # Documentation tax estimate
+npx docguard-cli score --dora            # DORA documentation-quality and AI-capability evidence
 ```
+
+**`--dora`** maps facts DocGuard already computes onto [DORA's documentation
+quality capability](https://dora.dev/capabilities/documentation-quality/) and
+its AI Capabilities Model (spec 092). The view is display-only, like ALCOA+,
+and never changes the CDD score, the grade or the exit code. DORA measures
+these with a survey; this is the repository evidence beside that survey, not a
+replacement for it.
+
+Each of DORA's eight documentation items gets a 0–100 score, or `n/a` with a
+reason. Each is labeled by how it is measured:
+
+- `deterministic`: read from code and docs.
+- `proxy`: a stand-in. Understandability uses Doc Quality; incident use is
+  whether a runbook exists.
+- `survey-only`: not observable in a repository.
+
+The AI capabilities cover four things a repository can show:
+
+- **A clear AI stance**: agent rules in `AGENTS.md`.
+- **AI-accessible data**: Agent Readability and fact accuracy, an MCP server,
+  and agent instructions that point at superseded docs.
+- **Strong version control**: code, configuration and build scripts tracked
+  in git.
+- **Small batches**: in the last 90 days, the median files per commit and the
+  share of commits over 20 files.
+
+Three capabilities are `survey-only`: user-centric focus, a healthy data
+ecosystem and a quality internal platform. With `--format json` the view is the
+`dora` key, described by `schemas/docguard-dora.schema.json`. Without `--dora`
+the key is absent.
 
 **`--tax` output:**
 ```
@@ -829,6 +863,55 @@ only:
   written (for example `globs:` in a Claude Code rule, which reads only
   `paths:`).
 
+### `docguard sensor --aidlc`
+
+**DocGuard as an AWS AI-DLC sensor** (spec 090). Prints one JSON line in
+AI-DLC's sensor contract. `pass` is false when guard has a blocking finding, a
+validator that could not run, an undecided required check, or a finding the
+HEAD commit did not have (drift the work in progress introduced). Cached per
+tree state. The `docguard` AI-DLC plugin runs it; see the AI-DLC guide.
+
+```bash
+npx docguard-cli sensor --aidlc --stage code-generation
+```
+
+### `docguard memory --export aidlc` / `--consolidate aidlc`
+
+**Govern AWS AI-DLC's agent memory** (spec 091). `--export aidlc` builds a
+digest of the facts DocGuard verified against code (only comparisons that
+matched) and, with `--write`, writes it to
+`aidlc/spaces/<space>/knowledge/docguard/canonical-memory.md`; it prints the
+`aidlc engine knowledge onboard` command that indexes it and never runs it.
+`--consolidate aidlc` groups repeated stage-diary entries across intents and
+flags those naming paths that are gone; it writes nothing. Guard's AI-DLC
+validator reports learned rules and CodeKB files that name deleted paths or
+unused env vars (MEM001, MEM002). DocGuard never edits AI-DLC memory layers.
+
+```bash
+npx docguard-cli memory --export aidlc            # dry run
+npx docguard-cli memory --export aidlc --write --space default
+npx docguard-cli memory --consolidate aidlc --format json
+```
+
+### `docguard policy`
+
+**The enforcement ladder, with evidence from this project's CI history.** For
+every finding code it shows what `.docguard.json` sets (`findingSeverity`,
+the validator's `severity`, or the code's default), the level the code last had
+when it fired, and how many of the last `--window` usable `ci` runs (default 5)
+saw it. A code is **ready to promote** when its last level was advisory, this
+project has exercised it at least once, and it stayed silent for the whole
+window; the report prints the `findingSeverity` line that promotes it. A
+blocking code that fired in at least half the window is listed as **noisy**.
+Runs with observation gaps (spec 081) and runs recorded before per-code
+evidence are not counted. Keep `.docguard/history.jsonl` between CI runs
+(CI-RECIPES) or there is no evidence. Read-only.
+
+```bash
+npx docguard-cli policy
+npx docguard-cli policy --window 10 --format json
+```
+
 ### `docguard ignore`
 
 **Every suppression in the project, and why.** Lists each way the project tells
@@ -836,7 +919,8 @@ DocGuard not to look, with its scope, reason (or `no reason`), expiry, state and
 source location: `.docguardignore` entries, the `.docguard.json` arrays
 (`ignore`, `securityIgnore`, `todoIgnore`), inline `docguard:ignore` pragmas,
 validator and section N/A markers, and the baseline's frozen fingerprints.
-Read-only.
+Each entry carries its `owner` (or `null`); `--owner <owner>` lists only that
+owner's suppressions (spec 084). Read-only.
 
 ```bash
 npx docguard-cli ignore
@@ -1239,6 +1323,7 @@ and line, and those routes compare exactly.
 | `--doc <name>` | Target specific document (with `fix` command) |
 | `--threshold <n>` | Minimum score for CI pass (with `ci` command) |
 | `--fail-on-warning` | Fail CI on warnings (with `ci` command) |
+| `--fail-on-inconclusive` | Fail when a check could not decide: `guard` exits 4, `ci` blocks (`CI_INCONCLUSIVE_BLOCKED`) |
 | `--force` | Overwrite existing files |
 | `--help` | Show help |
 | `--version` | Show version |

@@ -1,3 +1,4 @@
+import { isExpired, splitWaiverMetadata } from '../waiver-metadata.mjs';
 import { remapDocPath } from '../shared-doc-roles.mjs';
 /**
  * Structure Validator — Checks that all required CDD files exist
@@ -16,6 +17,7 @@ import { remapDocPath } from '../shared-doc-roles.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { docHasSection } from '../shared.mjs';
+import { profileSections, requiredSectionMap } from '../authoring-contract.mjs';
 import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { measureInstructionChains, DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
@@ -147,17 +149,10 @@ export function validateDocSections(projectDir, config) {
   let total = 0;
   const ptc = config.projectTypeConfig || {};
 
-  const requiredSections = {
-    'docs-canonical/ARCHITECTURE.md': ['## System Overview', '## Component Map', '## Tech Stack'],
-    'docs-canonical/DATA-MODEL.md': ptc.needsDatabase !== false
-      ? ['## Entities']
-      : [], // CLI/library projects don't need entity docs
-    'docs-canonical/SECURITY.md': ['## Authentication', '## Secrets Management'],
-    'docs-canonical/TEST-SPEC.md': ['## Test Categories', '## Coverage Rules'],
-    'docs-canonical/ENVIRONMENT.md': ptc.needsEnvVars !== false
-      ? ['## Environment Variables', '## Setup Steps']
-      : ['## Setup Steps'], // Always need setup steps, env vars optional
-  };
+  // docguard.authoring-contract#FR-002: the one registry `fix`, the score,
+  // explain and the Spec Kit skill also read. DATA-MODEL's Entities and
+  // ENVIRONMENT's variables are exempt for projects without them.
+  const requiredSections = requiredSectionMap(ptc);
 
   for (const [defaultFile, sections] of Object.entries(requiredSections)) {
     const file = remapDocPath(config, defaultFile);
@@ -186,13 +181,17 @@ export function validateDocSections(projectDir, config) {
       // Reason must start with an actual letter or digit (not `>` from `-->`
       // and not whitespace). This makes sure `<!-- ... n/a -->` (no reason)
       // is rejected, while `<!-- ... n/a — CLI tool -->` is accepted.
+      // docguard.accountable-suppressions#FR-004: an expired marker, or one with
+      // unreadable owner/expiry metadata, no longer owns the absence.
       const naRe = new RegExp(
-        '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]',
+        '<!--\\s*docguard:section\\s+' + slug.replace(/-/g, '[-_]') + '\\s+n/a\\s*[—-]+\\s*([A-Za-z0-9][\\s\\S]*?)(?:\\s*-->|$)',
         'i'
       );
+      const naMatch = naRe.exec(content);
+      const naMeta = naMatch ? splitWaiverMetadata(naMatch[1].split('-->')[0].trim()) : null;
       if (docHasSection(content, section)) {
         passed++;
-      } else if (naRe.test(content)) {
+      } else if (naMeta && !naMeta.problem && !isExpired(naMeta.expires)) {
         // v0.16-P7: explicit N/A — counts as passed (the project has owned
         // the absence) and doesn't pollute the warnings list.
         passed++;
@@ -233,6 +232,29 @@ export function validateDocSections(projectDir, config) {
           text: 'Write the document, run `docguard generate --plan --write`, or own the absence with the inline N/A marker',
           pragma: '<!-- docguard:section scaffold n/a — your reason -->',
         },
+      }));
+    }
+  }
+
+  // docguard.authoring-contract#FR-006: a profile's extra sections (the
+  // enterprise-ai profile's Risk Assessment and Threat Model). Advisory, and kept
+  // out of passed/total so a project's counts do not move until it promotes STR007.
+  for (const [defaultFile, headings] of Object.entries(profileSections(config))) {
+    const file = remapDocPath(config, defaultFile);
+    const fullPath = resolve(projectDir, file);
+    if (!existsSync(fullPath)) continue;
+    const content = readFileSync(fullPath, 'utf-8');
+    for (const heading of headings) {
+      const slug = heading.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+      const owned = new RegExp(`<!--\\s*docguard:section\\s+${slug.replace(/-/g, '[-_]')}\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]`, 'i').test(content);
+      if (docHasSection(content, `## ${heading}`) || owned) continue;
+      findings.push(mkFinding({
+        code: 'STR007',
+        validator: 'docSections',
+        severity: 'warn',
+        message: `${file}: missing section "${heading}", which the active profile requires. If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->`,
+        location: file,
+        suggestion: { kind: 'suppress', text: 'Add the section, or own the absence with the inline N/A marker', pragma: `<!-- docguard:section ${slug} n/a — your reason -->` },
       }));
     }
   }

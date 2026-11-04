@@ -1,8 +1,8 @@
 # Data Model
 
-<!-- docguard:version 0.18.0 -->
+<!-- docguard:version 0.19.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-01 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -68,6 +68,10 @@ The primary data structure. Controls all CLI behavior.
 | `ignore` / `securityIgnore` / `todoIgnore` | `string[]` | No | `[]` | Path patterns skipped by every validator / Security only / TODO-Tracking only. `ignore` is merged with the active `.docguardignore` entries at load. Plain patterns: no reason, no expiry |
 | `validators.suppressions` | `boolean` | No | `true` | `.docguardignore` entry hygiene (IGN001–IGN003); not applicable when the file has no entries |
 | `suppressions.requireReason` | `boolean` | No | `false` | Report IGN002 for each `.docguardignore` entry with no `# reason`; the entry still applies |
+| `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
+| `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
+| `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
+| `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration
 
@@ -395,6 +399,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 | `.docguard/anchors.cache.json` | `docguard anchors` and the Requirement-Anchors validator, never in CI or with `--no-cache` | `{ v, identity, files }`: `v` is `1`, `identity` names the extractor (algorithm and tier versions), and `files` maps a path to `{ sha, value }`, where `sha` is the sha256 of the working-tree bytes. Another version or identity, or a different `sha`, is a miss. Ignored and reported (ANC010) while git tracks any file under `.docguard/` |
 | `.docguard/ts/<sha256>/` | the opt-in tree-sitter anchor tier | Copies of the configured runtime and grammar files whose sha256 matched the shipped manifest, named by that hash; the child process loads only these |
+| `release-gate.json` | maintainers | `schemaVersion: 1`; `corpus` (paths, `/*` for subdirectories, or `{ path, ignoreCodes: { CODE: reason } }`) and `volatileCodes` (`{ CODE: reason }`), read by `tools/release-ab.mjs` (spec 087) |
 | `budgets.json` | maintainers | `schemaVersion: 1`; sample count, guard targets, the time and byte budgets, and the agent tasks and MCP calls `tools/budget.mjs` measures |
 | `tools/suite-runtime-reference.json` | maintainers, with `tools/suite-runtime-budget.mjs reference` from CI test TAP | Per-test durations (ms) at reference-runner speed, with the runs they came from (`sources`, `inputs`), `speedFactorRange` and `maxNormalizedTestMs`. Used only to measure a run's speed factor for the per-test ceiling; refreshed when a run shares too few tests with it to measure that factor (`MIN_COMMON` in the tool; specs/051-release-cut-green FR-007) |
 | `benchmarks/agent-context/manifest-v2.json` | frozen once, before any run | Agent-context protocol v2: conditions `task-only`, `context-pack`, `context-pack-symbols`, six tasks with fixture and hidden-evaluator digests, and the promotion rule. Never run: its CLI version and model are unavailable on ChatGPT-account Codex (superseded by v3). `run.mjs` holds its digest and loads it only while every byte matches. Schemas: `docguard-agent-context-benchmark-v2.schema.json`, `docguard-agent-context-result-v2.schema.json` |
@@ -460,6 +465,8 @@ Validators emit findings and aggregate counts. The guard adapter adds names and 
 | `applicable` | `boolean` | Optional applicability indicator; false becomes N/A |
 | `effectiveErrors`, `effectiveWarnings`, `effectiveInfos` | `number` | Exit-code counts after exact-code and validator policy |
 | `effectiveStatus` | `string` | Per-validator `pass`, `warn`, or `fail` after policy; intrinsic `status` remains available |
+| `verdict` | `string` | Closed outcome of the check (spec 081): `pass`, `fail`, `empty` (nothing to judge), `inconclusive` (could not decide), `blocked` (threw), or `skipped` (disabled or declared N/A). Derived from findings after baseline, applicability and observation gaps; it describes the check, while enforcement still decides the exit code |
+| `observations` | `object[]` | Observation gaps recorded during this validator's run: `operation` (for example `git check-ignore`), `cause` (spawn error code, signal, or exit status with git's first error line) and `scope.count`. Empty when every observation succeeded |
 
 ## Precision evidence contract
 
@@ -563,6 +570,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.19.0 | 2026-11-03 | DocGuard Team | Specs 081–092: verdict, applicability class and observation gaps on every result; `requiredChecks`, `requiredSections` and the `ci` history fields; waiver `owner`/`expires`; the AI-DLC validator, sensor output and caches; the `dora` object; the `docs` map and compact `applicabilityClasses`; `release-gate.json` |
 | 0.18.0 | 2026-11-01 | DocGuard Team | `scan.unresolved` records `router-unresolved-path` for an auth `use()` under a path the router-library reader cannot read (spec 080) |
 | 0.17.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: the `anchors` configuration block and `validators.requirementAnchors`; the anchor cache and staged tree-sitter files in `.docguard/`; `tools/suite-runtime-reference.json` (spec 051 FR-007) |
 | 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag (ASP.NET Core, Express, Koa, Fastify, NestJS), `scan.caseNotes`, and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |
@@ -635,7 +643,7 @@ These rows are counted and kept outside every ratio. Scoring one as a false posi
 
 Guard's `coverage` object inventories Markdown documents by tier: `canonical`, `specKit` (Spec Kit feature artifacts under top-level `specs/` plus the constitution), `tracked`, `ignored`, and `unclassified[]` (paths under no tier). `specKit` is additive. Before it existed, Spec Kit artifacts were reported under `unclassified`.
 
-Each guard validator adds applicability with status and reason. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
+Each guard validator adds applicability with status, reason and `class` (spec 081): `applicable` (`checked`, `partial`), `not-applicable` (`disabled`, `not-applicable`) or `unknown` (`no-matches`, `missing-prerequisite`, `unsupported`, `error`). Only a `not-applicable` result can have verdict `skipped`. An observation gap turns a `checked` or `no-matches` result `partial`, naming each failed operation. The run carries `verdicts: { counts, gaps }`, with one count per verdict and every gap tagged with its validator; the compact form keeps `verdicts.gaps` once and replaces each validator's `observations` with `observationCount`. While any gap stands, a run with a baseline carries `baselineStaleUncertain: true`, and `--update-baseline` refuses to write. Every suppression-model entry (spec 084) carries `owner` (or `null`) and `expires`; pragmas, validator and section N/A markers, `.docguardignore` reasons and `.docguard.json` object entries `{ pattern, reason?, owner?, expires? }` read trailing `owner:`/`expires:` tokens through one parser (`cli/waiver-metadata.mjs`), and an expired one suppresses nothing. `docguard sensor --aidlc` (spec 090) prints `{ pass, findings_count, new_findings_count, compared_with, findings[≤20], verdicts, blocked?, undecided?, docguard, cached? }` and keeps `.docguard/sensor-cache.json` (tree key → result, plus `fileCodes`: file → finding codes) and `.docguard/sensor-head.json` (HEAD → finding fingerprints). `score --dora --format json` (spec 092) adds `dora: { schemaVersion: 1, source, caveat, documentation[8], documentationScore, ai[7] }`, where each item is `{ id, label, measure, score, evidence[], improve, reason? }` (`schemas/docguard-dora.schema.json`). `docguard_docs_for_path` adds `docs: { findingsBasis, lifecycle?: { <doc>: status }, openFindings?: { <doc>: [codes] } }`, listing only documents that are not active and findings only from a current sensor cache. The compact guard JSON states `applicabilityClasses` (status → class) once instead of a class per validator, and gives `observationCount` only when it is not zero. The AI-DLC validator (specs 089, 091) carries `aidlc: { records, units, tables, manifests }`; `memory --consolidate aidlc --format json` returns `{ space, entries: [{ text, occurrences[], references[], stale }], note }`. With `requiredChecks` configured (spec 083), the run also carries `requiredChecks: { required[], undecided[] }` and a `Required-Checks` result holding REQ001/REQ002; each `ci` history entry carries `docguardVersion`, `codes` (code → `{ n, level }` after baseline) and `verdicts` (counts plus `gaps`), which `docguard policy` reads. checkCoverage contains counts by status, limitations naming checks that were not fully performed, and an explanatory limitation. These fields describe coverage independently from legacy status, totals, findings, and exit codes. CI/report consumers preserve them, including disabled-check counts.
 
 Document discovery does not depend on the default filenames alone. A filename is
 normalised to letters and digits — separators, case and Markdown extension are

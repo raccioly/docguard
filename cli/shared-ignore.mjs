@@ -1,3 +1,4 @@
+import { isExpired, isOwner, parseWaiverDate, splitWaiverMetadata } from './waiver-metadata.mjs';
 import { resolveDocRole } from './shared-doc-roles.mjs';
 /**
  * Shared Ignore Utility — Unified file filtering for all validators.
@@ -269,12 +270,27 @@ export function parseDocguardIgnore(raw, { today = utcToday() } = {}) {
       expiryText = last.slice(EXPIRES_PREFIX.length);
       body = body.slice(0, body.length - last.length).trim();
     }
+    // docguard.accountable-suppressions#FR-002: `owner:` (and an `expires:`
+    // written in the comment) trail the reason. Without them the reason is
+    // exactly what spec 057 read.
+    let owner = null;
+    let metaProblem = null;
+    if (reason && /(?:owner|expires):/.test(reason)) {
+      const meta = splitWaiverMetadata(reason);
+      reason = meta.reason;
+      owner = meta.owner;
+      metaProblem = meta.problem;
+      if (meta.expires) {
+        if (expiryText !== null) metaProblem = 'duplicate expires: token';
+        else expiryText = meta.expires;
+      }
+    }
     const pattern = body || null;
     const expiryReadable = expiryText === null || isCalendarDay(expiryText);
-    const problem = !pattern ? 'no-pattern' : !expiryReadable ? 'unreadable-expiry' : null;
+    const problem = !pattern ? 'no-pattern' : !expiryReadable ? 'unreadable-expiry' : metaProblem ? 'unreadable-metadata' : null;
     const expires = expiryText !== null && expiryReadable ? expiryText : null;
     const state = problem ? 'invalid' : expires && today > expires ? 'expired' : 'active';
-    entries.push({ pattern, reason, expires, expiryText, state, problem, line: index + 1, raw: rawLine });
+    entries.push({ pattern, reason, owner, expires, expiryText, state, problem, ...(metaProblem ? { metadataProblem: metaProblem } : {}), line: index + 1, raw: rawLine });
   });
   return entries;
 }
@@ -365,6 +381,52 @@ export function loadGitIgnoredFilter(projectDir) {
  *
  * Idempotent — calling twice produces the same result. Skips duplicates.
  */
+/**
+ * One `.docguard.json` ignore-array item — a plain pattern string, or an
+ * object `{ pattern, reason?, owner?, expires? }` — as a suppression entry.
+ * A string reads exactly as before. Returns null for an item with no pattern.
+ * @implements docguard.accountable-suppressions#FR-003
+ */
+export function configIgnoreEntry(item, today = utcToday()) {
+  if (typeof item === 'string') return item ? { pattern: item, reason: null, owner: null, expires: null, state: 'active' } : null;
+  if (!item || typeof item !== 'object' || typeof item.pattern !== 'string' || !item.pattern) return null;
+  const reason = typeof item.reason === 'string' && item.reason.trim() ? item.reason.trim() : null;
+  let metadataProblem = null;
+  let owner = null;
+  if (item.owner != null) {
+    if (isOwner(item.owner)) owner = item.owner;
+    else metadataProblem = `owner "${item.owner}" is not @handle, team/name or an email`;
+  }
+  let expires = null;
+  if (item.expires != null) {
+    expires = parseWaiverDate(String(item.expires));
+    if (!expires) metadataProblem = `expires "${item.expires}" is not a real YYYY-MM-DD date`;
+  }
+  const state = metadataProblem ? 'invalid' : isExpired(expires, today) ? 'expired' : 'active';
+  return { pattern: item.pattern, reason, owner, expires, state, ...(metadataProblem ? { problem: 'unreadable-metadata', metadataProblem } : {}) };
+}
+
+/** The `.docguard.json` arrays that may hold object entries. */
+const OBJECT_IGNORE_KEYS = ['ignore', 'securityIgnore', 'todoIgnore'];
+
+/**
+ * Turn object entries in the config's ignore arrays into the pattern strings
+ * every reader expects, keeping only those that apply today. Idempotent: an
+ * array of strings is returned unchanged, so in-process callers that pass a
+ * raw config and `loadConfig` agree.
+ * @implements docguard.accountable-suppressions#FR-003
+ * @implements docguard.accountable-suppressions#FR-004
+ */
+export function normalizeIgnoreConfig(config, today = utcToday()) {
+  if (!config || typeof config !== 'object') return config;
+  for (const key of OBJECT_IGNORE_KEYS) {
+    const arr = config[key];
+    if (!Array.isArray(arr) || arr.every(x => typeof x === 'string')) continue;
+    config[key] = arr.map(x => configIgnoreEntry(x, today)).filter(e => e && e.state === 'active').map(e => e.pattern);
+  }
+  return config;
+}
+
 export function mergeIgnoreFile(projectDir, config) {
   const filePatterns = loadDocguardIgnore(projectDir);
   if (filePatterns.length === 0) return config;

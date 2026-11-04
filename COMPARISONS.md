@@ -44,14 +44,29 @@
 
 | Dimension | Kiro | CDD |
 |-----------|------|-----|
-| **Type** | IDE (proprietary) | Documentation standard + CLI (open-source) |
-| **Portability** | ❌ Kiro IDE only | ✅ Any IDE, any agent |
-| **Vendor lock-in** | ❌ AWS/Bedrock only | ✅ No vendor lock-in |
-| **SDD built-in** | ✅ requirements → design → tasks | ✅ canonical docs → implementation |
-| **Post-build governance** | ❌ Limited (hooks only) | ✅ Full governance (drift, tests, architecture) |
-| **Reverse engineering** | ❌ No | ✅ Generate mode |
+| **Type** | Agentic IDE and CLI (proprietary) | Documentation standard + CLI (open-source) |
+| **Portability** | Kiro IDE and Kiro CLI | ✅ Any IDE, any agent |
+| **SDD built-in** | ✅ requirements → design → tasks; runs AWS AI-DLC workflows through steering | ✅ canonical docs → implementation, with Spec Kit |
+| **Post-build governance** | Hooks; AI-DLC sensors check at each gate | ✅ Every change: drift, tests, architecture, AI-DLC records (spec 089) |
+| **Reverse engineering** | ✅ Through AI-DLC's reverse-engineering stage (CodeKB) | ✅ Generate mode |
 
-**Verdict**: Kiro is a great IDE but proprietary. CDD is portable and goes deeper on governance.
+**Verdict**: Kiro is a capable environment for spec-driven work, and AI-DLC gives it a rigorous workflow. DocGuard is portable across agents and keeps what those workflows produced true after they finish; the two compose.
+
+---
+
+### CDD vs AWS AI-DLC
+
+[AI-DLC](https://github.com/awslabs/aidlc-workflows) (MIT-0) turns a coding agent into a gated workflow (Inception → Construction → Operation) across seven harnesses, with hook-enforced human approvals, an audit log, and deterministic sensors at each gate.
+
+| Dimension | AI-DLC | DocGuard |
+|-----------|--------|----------|
+| **Role** | Runs the workflow, from intent to pull request | Keeps docs, specs and records true to the code, on every change |
+| **When it checks** | At each stage gate, while the workflow runs | After the workflow, continuously, in CI and hooks |
+| **Traceability** | `traceability.json` per stage, checked once at the gate | Re-checks those tables against the code after the gate (AID001–AID004) |
+| **Human gates** | Hook-enforced approvals | Not its job |
+| **Determinism** | Sensors deterministic; reviewers LLM | Zero-LLM validators with a measured precision benchmark |
+
+**Verdict**: AI-DLC builds; DocGuard keeps what was built true. DocGuard reads AI-DLC workspaces natively (the `aidlc` validator) and ships as an AI-DLC plugin (spec 090).
 
 ---
 

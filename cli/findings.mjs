@@ -74,6 +74,7 @@
 
 import { readFileSync } from 'node:fs';
 import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
+import { isExpired, splitWaiverMetadata } from './waiver-metadata.mjs';
 
 /**
  * Stable finding-code registry. `docguard explain <CODE>` reads this, and
@@ -172,6 +173,13 @@ export const CODES = {
     title: 'Canonical doc is an unedited scaffold',
     help: 'A canonical doc holds nothing a reader wrote beyond the template `docguard init` created it from: every line is template text, an HTML-comment placeholder, an empty table cell, the Metadata table or a date. It scores as unfinished in docQuality, ALCOA+ Legible and Machine markers. Write the document (or run `docguard generate --plan --write`, which fills code-derived sections), or — if it is intentionally blank — own it with `<!-- docguard:section scaffold n/a — reason -->` (any reasoned section N/A marker owns the document, and it is then scored as written). A placeholder owner or unchosen status alone is not reported: `generate --plan --write` leaves both. A document that `docs.roles` remaps is compared with the template of its role.',
     suppress: '<!-- docguard:section scaffold n/a — reason -->',
+  },
+  STR007: {
+    validator: 'docSections',
+    defaultLevel: 'info',
+    title: 'Section the active profile requires is missing',
+    help: 'A profile can require sections beyond the canonical ones (the `enterprise-ai` profile requires Risk Assessment and Threat Model in SECURITY.md; `requiredSections` in `.docguard.json` adds more). Add the heading, or own its absence with `<!-- docguard:section <slug> n/a — reason -->`. Informational by default (spec 082): it never changes the exit code unless `findingSeverity.STR007` says so.',
+    suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
   CHG001: {
     validator: 'changelog',
@@ -574,6 +582,51 @@ export const CODES = {
     title: 'Two feature directories share a spec number',
     help: 'Two or more top-level `specs/` feature directories use the same numeric prefix (for example `016-a` and `016-b`), usually because parallel agents each picked "the next number" from their own checkout. References to "spec 016" become ambiguous and tools that key on the number pick one arbitrarily. Renumber the later feature with `git mv` and update references. Projects that create specs in parallel can set Spec Kit\'s `feature_numbering` to `timestamp` in `.specify/init-options.json`.',
     suppress: null,
+  },
+  // docguard.aidlc-profile — AWS AI-DLC records after the workflow; advisory by default.
+  AID001: { validator: 'aidlc', title: 'AI-DLC traceability target no longer exists', help: 'An AI-DLC traceability.json row marked OK or Deferred names a workspace path that no longer exists: the code it was traced to at the gate was renamed or removed. Point the requirement at the code that implements it now, or reopen it. Withheld while an observation gap stands. Informational by default.', suppress: null, defaultLevel: 'info' },
+  AID002: { validator: 'aidlc', title: 'AI-DLC gap left in a completed stage', help: 'A traceability row is GAP or ORPHAN in a stage aidlc-state.md marks completed. AI-DLC\'s traceability sensor is advisory by default, so a gate can close with gaps. Build the requirement, record it Deferred/N/A with a reason, or fix the orphan. Informational by default.', suppress: null, defaultLevel: 'info' },
+  AID003: { validator: 'aidlc', title: 'AI-DLC unit deliverable removed after the unit', help: 'A path a unit\'s source-manifest.json claims existed when the manifest was committed and no longer exists. Paths the unit itself deleted are not reported. Confirm the move or removal was intended and update the record. Withheld while an observation gap stands. Informational by default.', suppress: null, defaultLevel: 'info' },
+  AID004: { validator: 'aidlc', title: 'AI-DLC record unreadable', help: 'A traceability.json or source-manifest.json is not valid JSON in AI-DLC\'s shape, or names a path that escapes the project. Restore the file or regenerate the stage output. Informational by default.', suppress: null, defaultLevel: 'info' },
+  // docguard.memory-governance — agent memory that names what is gone; advisory by default.
+  MEM001: { validator: 'aidlc', title: 'Learned rule names something gone', help: 'A rule in an AI-DLC memory layer (memory/org.md, team.md, project.md or phases/*.md) names, in backticks, a path that no longer exists or an environment variable no code or env example uses. The rule keeps steering every later stage. Update or retire it through AI-DLC; DocGuard never edits memory layers. Withheld while an observation gap stands. Informational by default.', suppress: null, defaultLevel: 'info' },
+  MEM002: { validator: 'aidlc', title: 'CodeKB names a path that is gone', help: 'A file in an AI-DLC CodeKB (codekb/<repo>/*.md) names, in backticks, a path that no longer exists, so agents load a stale map of the code. Rerun AI-DLC reverse engineering for that repository. Informational by default.', suppress: null, defaultLevel: 'info' },
+  // docguard.decision-records — advisory by default (docguard.enforcement-ladder).
+  DEC001: { validator: 'decisionRecords', title: 'ADR status missing or unknown', help: 'An ADR has no status line, or one that is not proposed, accepted, rejected, deprecated or superseded (Approved, Draft, Proposal, Obsolete and Replaced are read as synonyms). Without a known status nobody can tell whether the decision is in force. Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC002: { validator: 'decisionRecords', title: 'Decision link names no record', help: 'A Supersedes / Superseded-by link, or an index row, names an ADR number that no decision record defines. Fix the number or write the record. Withheld while an observation gap stands (spec 081). Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC003: { validator: 'decisionRecords', title: 'One-way supersession', help: 'One ADR says it supersedes (or is superseded by) another, and the other does not say the reverse, so a reader of the older record follows a decision that is no longer in force. Make both records name each other and set the older one to superseded. Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC004: { validator: 'decisionRecords', title: 'Superseded status and successor disagree', help: 'An ADR is superseded but names no successor, or names a successor while its status is still something else. Add the link or correct the status. Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC005: { validator: 'decisionRecords', title: 'ADR index disagrees with the record', help: 'The ADR index table gives a status that differs from the record\'s own status line. Make the row match the record. Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC006: { validator: 'decisionRecords', title: 'Question with no answer', help: 'A Spec Kit clarification (`- Q: … → A:`) or an AI-DLC `[Answer]:` tag has no answer, so whatever was written after it rests on a guess. Answer it and revisit those artifacts, or remove the question. Informational by default.', suppress: null, defaultLevel: 'info' },
+  // docguard.upstream-coverage — the spec → plan → tasks chain. Advisory by
+  // default (docguard.enforcement-ladder): promote with findingSeverity.
+  SPK013: {
+    validator: 'specKit',
+    title: 'Requirement no task or plan cites',
+    help: 'spec.md defines this FR/SC ID, and tasks.md cites requirement IDs, but neither tasks.md nor plan.md names this one, so nothing plans its implementation on purpose. Add a task (or a plan decision) that names it, or remove the requirement. A task list that cites no IDs at all is not checked. Informational by default; `docguard policy` shows when it is quiet enough to promote with `findingSeverity`.',
+    suppress: null,
+    defaultLevel: 'info',
+  },
+  SPK014: {
+    validator: 'specKit',
+    title: 'Task or plan cites a requirement the spec does not define',
+    help: 'tasks.md or plan.md cites an unqualified FR/SC ID that spec.md does not define: the spec was renumbered or trimmed, or the ID belongs to another spec. Point it at the requirement it means, or qualify it (`spec 013 FR-020`, `docguard.other-spec#FR-020`). IDs inside inline code, fences and HTML comments are ignored. Informational by default.',
+    suppress: null,
+    defaultLevel: 'info',
+  },
+  SPK015: {
+    validator: 'specKit',
+    title: 'Spec Kit artifact names no upstream',
+    help: 'plan.md names neither spec.md nor any requirement ID it defines, or tasks.md names neither plan.md, spec.md nor any such ID, so nothing shows it was made from them. Link the upstream artifact or cite the requirements it addresses. Informational by default.',
+    suppress: null,
+    defaultLevel: 'info',
+  },
+  SPK016: {
+    validator: 'specKit',
+    title: 'User story with no labeled task',
+    help: 'tasks.md labels tasks with [USn], and no task carries this story\'s label, so the story is unplanned. Plan and label its tasks, or drop the story. A task list without [USn] labels is not checked. Informational by default.',
+    suppress: null,
+    defaultLevel: 'info',
   },
   SPK009: {
     validator: 'specKit',
@@ -997,11 +1050,36 @@ export const CODES = {
     help: 'The adapter version, command, source type, report shape, or predicate is outside the implemented contract. Keep the finding visible and contribute a synthetic failing fixture plus a neighboring valid control before expanding support.',
     suppress: null,
   },
+  // docguard.enforcement-ladder#FR-002, FR-003 — required checks.
+  REQ001: {
+    validator: 'requiredChecks',
+    title: 'Required check disabled in config',
+    help: 'A validator named in `requiredChecks` is turned off with `"validators": { "<key>": false }`, so the configuration both requires and disables it. Enable it, or remove it from `requiredChecks`. If the check genuinely does not apply to this project, declare that in-repo with a reasoned `<!-- docguard:validator <key> n/a — reason -->` marker: a declared N/A satisfies a required check, a config switch does not.',
+    suppress: null,
+  },
+  REQ002: {
+    validator: 'requiredChecks',
+    title: 'Required check names no validator',
+    help: 'An entry in `requiredChecks` is not a validator key, so nothing is required by it. The message lists the valid keys; `docguard guard --format json` shows each validator\'s `key`. The other required checks still apply.',
+    suppress: null,
+  },
   // docguard.ignore-reasons#FR-005 — `.docguardignore` entry hygiene.
   IGN001: {
     validator: 'suppressions',
-    title: 'Ignore entry expired',
-    help: 'A `.docguardignore` entry carries `expires:YYYY-MM-DD` and that day has passed (UTC). It no longer excludes anything: DocGuard validates the paths it used to hide, so findings in them can appear in this run. If the reason still holds, set a new date; otherwise delete the line. `docguard ignore` lists every entry with its reason and expiry. Opt out of these checks with `"validators": { "suppressions": false }`.',
+    title: 'Suppression expired',
+    help: 'A suppression carries `expires:YYYY-MM-DD` and that day has passed (UTC): a `.docguardignore` entry, a `.docguard.json` object entry, a validator or section N/A marker, or (when a waiver policy is set) an inline pragma. It no longer suppresses anything: DocGuard validates the paths it used to hide, so findings in them can appear in this run. If the reason still holds, set a new date; otherwise delete the line. `docguard ignore` lists every entry with its reason and expiry. Opt out of these checks with `"validators": { "suppressions": false }`.',
+    suppress: null,
+  },
+  IGN004: {
+    validator: 'suppressions',
+    title: 'Suppression names no owner',
+    help: '`"suppressions": { "requireOwner": true }` is set and this suppression has no `owner:` token. The suppression still applies. End its reason with `owner:@handle`, `owner:team/name` or an email address so someone answers for the waiver (spec 084). Baseline fingerprints are exempt.',
+    suppress: null,
+  },
+  IGN005: {
+    validator: 'suppressions',
+    title: 'Suppression outlives the allowed window',
+    help: '`"suppressions": { "maxDays": N }` is set and this suppression expires more than N days from today (UTC), or never. The suppression still applies. Set `expires:YYYY-MM-DD` within the window and renew it then if the reason still holds (spec 084). Baseline fingerprints are exempt.',
     suppress: null,
   },
   IGN002: {
@@ -1123,6 +1201,20 @@ function normalizeLocation(loc) {
 }
 
 /** A code's registered default enforcement level, or null (docguard.agent-instruction-budget#FR-004). */
+/**
+ * Codes that claim something is ABSENT: a pointer, symbol, test, link or
+ * source that does not exist. An absence claim is only provable on a complete
+ * view, so guard withholds these from a validator whose run recorded an
+ * observation gap (docguard.verdict-contract#FR-006) and counts them instead.
+ */
+export const ABSENCE_CLAIM_CODES = Object.freeze(new Set([
+  'PSR001', 'PSR002', 'REF001', 'TRC002', 'TRC003', 'TRC004', 'TRC005', 'AID001', 'AID003', 'DEC002', 'MEM001', 'MEM002', 'SPK008', 'SPK010', 'SPR008', 'XRF001', 'XRF002',
+  // The final fault-injection run (spec 081 SC-005): with ls-files failing, 25 ANC003
+  // and one SPR001 appeared on DocGuard's own repository. Each claims something is
+  // missing from a file list git could not give; SPR006 and SPR009 read the same list.
+  'ANC003', 'SPR001', 'SPR006', 'SPR009',
+]));
+
 export function codeDefaultLevel(code) {
   const level = typeof code === 'string' ? CODES[code.toUpperCase()]?.defaultLevel : undefined;
   return level === 'info' ? level : null;
@@ -1246,6 +1338,13 @@ export function suppressesCode(text, code) {
   if (!text || !code) return false;
   const m = text.match(PRAGMA_RE);
   if (!m) return false;
+  // docguard.accountable-suppressions#FR-004: an expired pragma, or one whose
+  // owner/expiry metadata is unreadable, suppresses nothing.
+  const tail = text.slice(m.index + m[0].length);
+  if (/(?:owner|expires):/.test(tail)) {
+    const meta = splitWaiverMetadata(tail.replace(/\s*(?:-->|\*\/)\s*$/, ''));
+    if (meta.problem || isExpired(meta.expires)) return false;
+  }
   if (m[1]) return /^SEC/i.test(code);            // ignore-secret alias
   const arg = (m[2] || '').trim();
   if (!arg) return true;                           // bare ignore → any code
@@ -1283,11 +1382,14 @@ export function parseInlinePragma(text) {
     const tokens = (m[2] || '').split(',').map((s) => s.trim()).filter(Boolean);
     codes = tokens.length === 0 || tokens.some((t) => t.toLowerCase() === 'all') ? null : tokens;
   }
-  const reason = source.slice(m.index + m[0].length)
+  const raw = source.slice(m.index + m[0].length)
     .replace(/\s*(?:-->|\*\/)\s*$/, '')
     .replace(/^\s*(?:[—–:]|-{1,2})\s*/, '')
     .trim();
-  return { codes, reason: reason || null };
+  // docguard.accountable-suppressions#FR-001: trailing owner:/expires: tokens.
+  const meta = splitWaiverMetadata(raw || null);
+  // Keys appear only when written, so every 0.45.2 form returns the same shape.
+  return { codes, reason: meta.reason || null, ...(meta.owner ? { owner: meta.owner } : {}), ...(meta.expires ? { expires: meta.expires } : {}), ...(meta.problem ? { problem: meta.problem } : {}) };
 }
 
 /**

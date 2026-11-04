@@ -15,7 +15,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { CODES } from './findings.mjs';
-import { mergeIgnoreFile } from './shared-ignore.mjs';
+import { mergeIgnoreFile, normalizeIgnoreConfig } from './shared-ignore.mjs';
 import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
 
 export function loadConfig(projectDir) {
@@ -95,6 +95,8 @@ export function loadConfig(projectDir) {
       diffSuspicion: true,
       referenceExistence: true,
       apiDocSmells: true,
+      decisionRecords: true,
+      aidlc: true,
     },
     findingSeverity: {},
   };
@@ -163,6 +165,7 @@ export function loadConfig(projectDir) {
       }
       // Merge .docguardignore patterns into config.ignore so every validator
       // honors them without having to know about the file.
+      normalizeIgnoreConfig(merged);
       mergeIgnoreFile(projectDir, merged);
       return applyDocRoles(projectDir, merged);
     } catch (e) {

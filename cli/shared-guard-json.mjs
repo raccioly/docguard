@@ -19,7 +19,7 @@
  * @implements docguard.compact-guard-response#FR-007
  */
 
-import { STANDARD_APPLICABILITY_REASONS } from './validator-coverage.mjs';
+import { APPLICABILITY_CLASS, STANDARD_APPLICABILITY_REASONS } from './validator-coverage.mjs';
 
 export const FULL_CONTRACT_HINT = 'Compact form: each fact once. For the full guard JSON contract call docguard_guard with {"detail":"full"} (CLI: docguard guard --format json).';
 
@@ -39,9 +39,14 @@ export function compactGuardResult(full) {
     };
   });
   const applicabilityReasons = {};
-  const validators = (full.validators || []).map(({ findings: structured, errors, warnings, ...validator }) => ({
+  // The class is a closed function of the status: stated once per status, not per validator.
+  const applicabilityClasses = {};
+  // docguard.verdict-contract#FR-012: each gap is stated once, in `verdicts.gaps`.
+  const validators = (full.validators || []).map(({ findings: structured, errors, warnings, observations, ...validator }) => ({
     ...validator,
-    ...(validator.applicability ? { applicability: compactApplicability(validator.applicability, applicabilityReasons) } : {}),
+    // Only a validator with gaps carries a count; zero is the default.
+    ...(Array.isArray(observations) && observations.length ? { observationCount: observations.length } : {}),
+    ...(validator.applicability ? { applicability: compactApplicability(validator.applicability, applicabilityReasons, applicabilityClasses) } : {}),
     errorCount: Array.isArray(errors) ? errors.length : 0,
     warningCount: Array.isArray(warnings) ? warnings.length : 0,
     // A validator without structured findings reports only through these
@@ -63,18 +68,21 @@ export function compactGuardResult(full) {
     evidenceByCode,
     validators,
     applicabilityReasons,
+    ...(Object.keys(applicabilityClasses).length ? { applicabilityClasses } : {}),
     ...(precision ? { precisionEvidence: precision } : {}),
   };
 }
 
 /** A standard reason is stated once, in `reasons`; any other reason stays where it is. */
-function compactApplicability(applicability, reasons) {
-  const { status, reason, ...rest } = applicability;
-  if (Object.hasOwn(STANDARD_APPLICABILITY_REASONS, status) && reason === STANDARD_APPLICABILITY_REASONS[status]) {
-    reasons[status] = reason;
-    return { status, ...rest };
+function compactApplicability(applicability, reasons, classes) {
+  const { status, reason, class: cls, ...rest } = applicability;
+  const out = { status };
+  if (cls !== undefined) {
+    if (APPLICABILITY_CLASS[status] === cls) classes[status] = cls; else out.class = cls;
   }
-  return applicability;
+  if (Object.hasOwn(STANDARD_APPLICABILITY_REASONS, status) && reason === STANDARD_APPLICABILITY_REASONS[status]) reasons[status] = reason;
+  else if (reason !== undefined) out.reason = reason;
+  return { ...out, ...rest };
 }
 
 /** Each limitation is a validator's own applicability, which `validators[]` already carries. */

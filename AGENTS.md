@@ -1,6 +1,6 @@
 # AI Agent Instructions — DocGuard
 
-<!-- docguard:last-reviewed 2026-10-13 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > This project follows **Canonical-Driven Development (CDD)**.
 > Documentation is the source of truth. Read before coding.
@@ -56,9 +56,9 @@ code-truth sections), `score` (CDD maturity 0-100).
 `review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
 `anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
-`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `memory` (what DocGuard
-remembers; `--pack [--symbols]` for the context pack), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map; `--matrix` exports requirement → anchor → test), `upgrade` (check npm for a newer
-release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard).
+`explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `policy` (which advisory codes CI history shows are ready to promote), `memory` (what DocGuard
+remembers; `--pack [--symbols]` for the context pack; `--export`/`--consolidate aidlc` for AWS AI-DLC memory), `trace` (requirements traceability; `--reverse`; `--owners` for the doc ownership map; `--matrix` exports requirement → anchor → test), `upgrade` (check npm for a newer
+release and migrate the config schema; `--apply` also refreshes out-of-date agent files and the registered Spec Kit extension; `--apply --schema-only` stays offline), `watch` (live re-guard). `sensor --aidlc` speaks AWS AI-DLC's sensor contract for the DocGuard AI-DLC plugin, and stays out of `--help` because it is meant for machines. `score --dora` maps DocGuard's evidence onto DORA's documentation and AI capabilities.
 
 **`init --with <name>`** scaffolders — `agents`, `hooks`, `ci`, `badge`, `llms`,
 `publish` (also reachable as standalone deprecation aliases).

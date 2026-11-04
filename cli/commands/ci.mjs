@@ -19,10 +19,29 @@ import { runScoreInternal } from './score.mjs';
 import { appendHistory } from '../writers/history.mjs';
 import { getHeadInfo, isGitRepo } from '../shared-git.mjs';
 import { buildReadinessAssessment } from '../assessment.mjs';
+import { readFileSync } from 'node:fs';
+
+const CLI_VERSION = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')).version;
+
+/**
+ * Per-code evidence for `docguard policy`: how often each code fired after
+ * the baseline, and the enforcement level it had when it did.
+ * @implements docguard.enforcement-ladder#FR-005
+ */
+function codeEvidence(findings) {
+  const codes = {};
+  for (const f of findings || []) {
+    if (!f.code) continue;
+    const entry = codes[f.code] ||= { n: 0, level: f.effectiveSeverity || f.severity };
+    entry.n++;
+  }
+  return codes;
+}
 
 export function runCI(projectDir, config, flags) {
   const threshold = parseInt(flags.threshold || '0', 10);
   const failOnWarning = flags.failOnWarning || false;
+  const failOnInconclusive = flags.failOnInconclusive || false;
   const isJson = flags.format === 'json';
 
   if (!isJson) {
@@ -63,6 +82,7 @@ export function runCI(projectDir, config, flags) {
     threshold,
     thresholdMet,
     failOnWarning,
+    failOnInconclusive,
   });
   const status = assessment.status === 'BLOCKED'
     ? 'FAIL'
@@ -83,6 +103,9 @@ export function runCI(projectDir, config, flags) {
       passed: guardData.passed,
       total: guardData.total,
       status,
+      docguardVersion: CLI_VERSION,
+      codes: codeEvidence(guardData.findings),
+      verdicts: { ...(guardData.verdicts?.counts || {}), gaps: guardData.verdicts?.gaps?.length || 0 },
     });
   }
 

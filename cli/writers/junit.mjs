@@ -52,7 +52,21 @@ export function toJUnit(data) {
     const warns = vFindings.filter(f => (f.effectiveSeverity || f.severity) !== 'error');
     const attrs = `name="${esc(v.name)}" classname="docguard.guard"`;
 
-    if (v.status === 'skipped' || v.status === 'na') {
+    // docguard.verdict-contract#FR-014: the verdict decides first; a result
+    // without one (older JSON piped in) falls through to the status branches.
+    const why = () => esc(`${v.verdict}: ${v.applicability?.reason || 'no reason recorded'}`);
+    if (v.verdict === 'blocked') {
+      errorCount++;
+      const body = (v.errors || []).join('\n') || v.applicability?.reason || 'validator could not run';
+      cases.push(
+        `    <testcase ${attrs}>\n` +
+        `      <error message="${why()}" type="docguard.blocked">${esc(body)}</error>\n` +
+        `    </testcase>`
+      );
+    } else if ((v.verdict === 'inconclusive' || v.verdict === 'empty') && errors.length === 0 && warns.length === 0) {
+      skipped++;
+      cases.push(`    <testcase ${attrs}><skipped message="${why()}"/></testcase>`);
+    } else if (v.verdict === 'skipped' || v.status === 'skipped' || v.status === 'na') {
       skipped++;
       cases.push(`    <testcase ${attrs}><skipped/></testcase>`);
     } else if (errors.length > 0) {

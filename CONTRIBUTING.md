@@ -205,6 +205,29 @@ The following papers directly influenced DocGuard's design:
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
 
+## Explain every finding change before a release
+
+A release is compared with the previous one, finding by finding
+(`tools/release-ab.mjs`, spec 087). The release fails unless the CHANGELOG section
+being released names each finding code whose findings changed. When your change
+adds, removes or rewords findings, name the code in your `[Unreleased]` entry and
+say why it changed. If it changes an exit code, add a line starting `Exit codes:`
+that says which runs now exit differently. For a release that grows a budget on
+purpose, add `Budget-Exempt: <metric> — <reason>` as a plain line in that section.
+To preview the gate locally against the last release:
+
+```bash
+git archive "$(git describe --tags --abbrev=0)" | tar -x -C ../prev
+ln -s "$PWD/node_modules" ../prev/
+node tools/release-ab.mjs --base ../prev --head .
+```
+
+## Fuzz the document parsers
+
+`npm test` fuzzes every text parser with a fixed seed (`tests/validator-fuzz.test.mjs`). Each parser must return without throwing, give the same answer twice, and finish within a budget linear in its input. When you add or change a parser that reads text people or agents write, add it to `TARGETS` in `tools/fuzz.mjs`, and add a structured block to the grammar if the generator doesn't reach it yet. The suite asserts every parser is reached.
+
+For a deep run, use `npm run fuzz -- --cases 20000 --seed <n>`. Add `--save` to shrink each failing input and keep it in `tests/fixtures/fuzz/`, where the suite replays it. Fix the parser; never exempt the input (`specs/088-validator-fuzz`).
+
 ## Turn a finding into a regression test
 
 A report or a test-only contribution is useful even when you cannot fix the detector. Start with `docguard feedback --code <CODE> --preview` for a disputed finding, or copy `templates/feedback-fixture.json` for a false negative or unsupported syntax case. Validate without writes using `docguard feedback --fixture-manifest <path> --reduce --preview --format json`.

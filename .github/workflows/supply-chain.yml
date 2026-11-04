@@ -52,8 +52,23 @@ jobs:
         with:
           persist-credentials: false
 
+      # Installed like OSV-Scanner below: a pinned release verified against its
+      # published checksums, outside the workspace the scan reads. From
+      # 2026-11-04 aquasecurity/setup-trivy's install script failed (curl exit 6)
+      # while GitHub release downloads on the same runners kept working.
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        env:
+          TRIVY_VERSION: 0.76.1
+        run: |
+          cd "$RUNNER_TEMP"
+          base="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}"
+          tarball="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          curl -sSfL -o "$tarball" "${base}/${tarball}"
+          curl -sSfL -o trivy_checksums.txt "${base}/trivy_${TRIVY_VERSION}_checksums.txt"
+          grep " ${tarball}\$" trivy_checksums.txt | sha256sum -c -
+          tar -xzf "$tarball" trivy
+          sudo install -m 0755 trivy /usr/local/bin/trivy
+          trivy --version
 
       - name: Install OSV-Scanner
         env:

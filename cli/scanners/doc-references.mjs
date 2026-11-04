@@ -33,6 +33,8 @@ import { coveredSections, docLockStatus } from './doc-deps.mjs';
 import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './instruction-scopes.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
 import { normalizePath } from './api-doc.mjs';
+import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
+import { currentFileCodes } from '../sensor-cache.mjs';
 
 export const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 export const READ_DEFAULT_BYTES = 8 * 1024;
@@ -315,6 +317,7 @@ export function docsForPath(projectDir, config, path) {
   }
   const uniq = arr => [...new Map(arr.map(x => [JSON.stringify(x), x])).values()];
   const owned = ownerOf(projectDir, config, normalized);
+  const docs = referencingDocs(projectDir, [...references, ...agentInstructions].map(r => r.doc));
   return {
     path: normalized,
     exists: target.exists,
@@ -327,6 +330,34 @@ export function docsForPath(projectDir, config, path) {
     // docguard.doc-ownership-map#FR-004: the declared owner, when a map exists.
     owner: owned.owner,
     ...(owned.reason ? { ownerReason: owned.reason } : {}),
+    docs,
+  };
+}
+
+/**
+ * docguard.dora-evidence#FR-005: how far to trust the referencing documents,
+ * in as few bytes as an agent can read it (spec 031 budgets them): only a
+ * document that is not active is listed under `lifecycle`, so an agent can
+ * skip a superseded one; `openFindings` lists a document's finding codes only
+ * from a sensor cache for this exact tree state, since running guard inside an
+ * MCP call is too slow to be worth it; `findingsBasis` says which.
+ */
+function referencingDocs(projectDir, files) {
+  const unique = [...new Set(files)].sort();
+  if (!unique.length) return {};
+  const codes = currentFileCodes(projectDir);
+  const lifecycle = {};
+  const openFindings = {};
+  for (const file of unique) {
+    let status = null;
+    try { status = parseLifecycleStatus(readFileSync(resolve(projectDir, file), 'utf8'))?.toLowerCase() || null; } catch { /* unreadable: no status */ }
+    if (status && status !== 'active') lifecycle[file] = status === 'superseded' ? 'superseded' : RETIRED_STATUSES.has(status) || status === 'retired' ? 'retired' : status;
+    if (codes?.[file]?.length) openFindings[file] = codes[file];
+  }
+  return {
+    findingsBasis: codes ? 'sensor-cache' : 'no-current-guard-run',
+    ...(Object.keys(lifecycle).length ? { lifecycle } : {}),
+    ...(codes ? { openFindings } : {}),
   };
 }
 

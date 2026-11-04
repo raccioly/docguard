@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DocGuard — Technical Brief</title>
-<meta name="description" content="How DocGuard decides whether a claim in your documentation has earned the right to be believed: the two-tier model, the 32 detectors, the research they implement, and the measurement discipline behind every number.">
+<meta name="description" content="How DocGuard decides whether a claim in your documentation has earned the right to be believed: the two-tier model, the 36 detectors, the research they implement, and the measurement discipline behind every number.">
 <style>
   :root {
     --paper:      #faf9f5;
@@ -166,7 +166,7 @@
 <div class="page">
   <div class="masthead">
     <div class="wordmark">Doc<span class="mark">Guard</span></div>
-    <div class="meta">Technical Brief · v0.44.0 · Ricardo Accioly · MIT</div>
+    <div class="meta">Technical Brief · v0.46.0 · Ricardo Accioly · MIT</div>
   </div>
 
   <h1>Your docs are green. That is not the same as your docs being true.</h1>
@@ -233,7 +233,7 @@
     <div class="attrib">The design constraint everything else follows from · PHILOSOPHY.md</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 1 of 9 · The idea</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 1 of 10 · The idea</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 2 — TWO TIERS ═══════════════ -->
@@ -310,7 +310,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="attrib">Pillar 2 of Canonical-Driven Development</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 2 of 9 · Two tiers</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 2 of 10 · Two tiers</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 3 — ONE CLAIM, DOC TO VERDICT ═══════════════ -->
@@ -408,7 +408,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="attrib">CHANGELOG · calibrated finding channels, September 2026</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 3 of 9 · Anatomy of a finding</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 3 of 10 · Anatomy of a finding</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 4 — THE DETECTORS ═══════════════ -->
@@ -419,13 +419,13 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   </div>
 
   <section style="margin-top:17px">
-    <h2>Thirty-three detectors, and every one had to earn default-on</h2>
+    <h2>Thirty-six detectors, and every one had to earn its default</h2>
     <p class="lede">Each validator compares one family of documented claims against one source of evidence,
     grouped here by what they read — which decides how much a finding is worth.</p>
 
     <div class="statband four">
-      <div><div class="fig indigo">33</div><div class="cap">validator modules, all on by default</div><div class="src">cli/validators/</div></div>
-      <div><div class="fig indigo">58</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
+      <div><div class="fig indigo">36</div><div class="cap">validator modules; new rules start advisory</div><div class="src">cli/validators/</div></div>
+      <div><div class="fig indigo">73</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
       <div><div class="fig sage">1</div><div class="cap">pinned runtime dependency, with a regex fallback</div><div class="src">@babel/parser</div></div>
       <div><div class="fig sage">0</div><div class="cap">model, network or telemetry calls at validation time</div><div class="src">PRIVACY.md</div></div>
     </div>
@@ -435,16 +435,15 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <table class="tight">
       <thead><tr><th>Family</th><th>Reads</th><th>Validators</th><th>The claim it tests</th></tr></thead>
       <tbody>
-        <tr><td>Code truth <span class="v-good">· 9</span></td><td>AST: routes, schemas, env reads, imports</td><td>Docs-Sync · Docs-Diff · API-Surface · Schema-Sync · Environment · Architecture · Surface-Sync · Docs-Coverage · Generated-Staleness</td><td>“This endpoint / entity / variable / layer rule exists and looks like this.” Both sides read from disk: the findings the tool fixes itself.</td></tr>
-        <tr><td>Structure <span class="v-good">· 7</span></td><td>File tree, headings, manifests</td><td>Structure (with Doc Sections) · Changelog · Document-Lifecycle · Spec-Registry · Spec-Kit · Metadata-Sync · Doc-Ownership</td><td>“Required chapters exist, specs have FR-IDs and phases, versions agree, retired plans left, every path has one owning section.” Completeness, not correctness.</td></tr>
-        <tr><td>References <span class="v-good">· 5</span></td><td>Links, symbols, IDs across two revisions</td><td>Cross-Reference · Reference-Existence · Traceability · Test-Spec · Path-Scoped-Rules</td><td>“This link resolves; this symbol exists; this requirement has a test; a path-scoped rule matches files.”</td></tr>
-        <tr><td>Change &amp; time <span class="v-judge">· 4</span></td><td><code>git log</code>, the diff since a ref, code fingerprints</td><td>Freshness · Diff-Suspicion · Drift-Comments · Doc-Dependency</td><td>“Something changed near this claim.” Exact, but escalated: a review is <em>due</em>.</td></tr>
+        <tr><td>Code truth <span class="v-good">· 9</span></td><td>AST: routes, schemas, env reads, imports</td><td>Docs-Sync · Docs-Diff · API-Surface · Schema-Sync · Environment · Architecture · Surface-Sync · Docs-Coverage · Generated-Staleness</td><td>“This endpoint / entity / variable / layer rule exists and looks like this.” The findings the tool fixes itself.</td></tr>
+        <tr><td>Structure <span class="v-good">· 8</span></td><td>File tree, headings, manifests</td><td>Structure (with Doc Sections) · Changelog · Document-Lifecycle · Spec-Registry · Spec-Kit · Metadata-Sync · Doc-Ownership · Decision-Records</td><td>“Required chapters exist, requirements reach tasks, versions agree, decisions name their successor.” Completeness, not correctness.</td></tr>
+        <tr><td>References <span class="v-good">· 6</span></td><td>Links, symbols, IDs across two revisions</td><td>Cross-Reference · Reference-Existence · Traceability · Test-Spec · Path-Scoped-Rules · AI-DLC</td><td>“This link resolves; this symbol exists; this requirement has a test; a path-scoped rule matches files; an AI-DLC record names real files.”</td></tr>
+        <tr><td>Change &amp; time <span class="v-judge">· 5</span></td><td><code>git log</code>, the diff since a ref, code fingerprints</td><td>Freshness · Diff-Suspicion · Drift-Comments · Doc-Dependency · Requirement-Anchors</td><td>“Something changed near this claim.” Exact, but escalated: a review is <em>due</em>.</td></tr>
         <tr><td>Numbers &amp; self <span class="v-good">· 3</span></td><td>Counts on disk, typed JSON, its own package</td><td>Metrics-Consistency · Canonical-Sync · Evidence</td><td>“The number in this sentence equals the number on disk.” Includes the tool's own README, so its count claims are checked, not remembered.</td></tr>
         <tr><td>Quality &amp; hygiene <span class="v-judge">· 5</span></td><td>Prose metrics, secret patterns, TODOs, suppressions</td><td>Doc-Quality · API-Doc-Smells · TODO-Tracking · Security · Suppressions</td><td>“Readable, not bloated, not documented in name only; no secret committed; no TODO untracked; no suppression past its expiry.” Soft by design.</td></tr>
       </tbody>
     </table>
-    <p class="note" style="margin-top:8px">A validator with nothing to validate returns <strong>N/A with a reason</strong>, never a pass — Canonical-Sync
-    outside DocGuard's own repository, Diff-Suspicion without git history. A green line says what it looked at.</p>
+    <p class="note" style="margin-top:8px">A validator with nothing to validate returns <strong>N/A with a reason</strong>, never a pass. A green line says what it looked at.</p>
   </section>
 
   <section class="rule-top">
@@ -456,7 +455,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     </div>
   </section>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 4 of 9 · The detectors</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 4 of 10 · The detectors</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 5 — THE RESEARCH ═══════════════ -->
@@ -521,7 +520,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="attrib">VALIDATION.md · “What we do not claim”</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 5 of 9 · The research</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 5 of 10 · The research</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 6 — THE MEASUREMENT ═══════════════ -->
@@ -604,7 +603,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="attrib">specs/007 · Independent Precision Evidence Loop</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 6 of 9 · The measurement</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 6 of 10 · The measurement</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 7 — FIELD REPORTS AND DOGFOODING ═══════════════ -->
@@ -616,7 +615,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 
   <section style="margin-top:17px">
     <h2>Field reports become tests, not tickets</h2>
-    <p class="lede">Ninety-three releases in under seven months. The cadence is not the point; what fed it is. Each report
+    <p class="lede">More than a hundred releases in under eight months. The cadence is not the point; what fed it is. Each report
     from a real working session — most of them written by an AI agent that hit friction on a real tree —
     was reproduced as a regression test <em>with a control</em>: the pre-fix behaviour, asserted, so a
     future change cannot silently re-break it.</p>
@@ -641,7 +640,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
           <circle cx="443" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="480" y="98" style="fill:#b85636">v0.29 · Jul 3</text><text class="s-sub" x="480" y="109">report #6: a wrong “16 extractors”</text><text class="s-sub" x="480" y="119">shipped past a green guard</text>
           <circle cx="722" cy="60" r="4" fill="#d97757"/><text class="s-lbl" x="620" y="98" style="fill:#b85636">Sep 17–22</text><text class="s-sub" x="620" y="109">reports 0415 / 0420; and the</text><text class="s-sub" x="620" y="119">tool's own README (below)</text>
         </g>
-        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 246 test files · 3,281 tests at v0.44.0 · Node 18 / 20 / 22 / 24 on every push</text>
+        <text class="s-tiny" x="30" y="143">195 test files · 2,085 tests at v0.42.0 → 295 test files · 4,244 tests at v0.46.0 · Node 18 / 20 / 22 / 24 on every push</text>
       </svg>
       <p class="figcap">Fig. 6 — Blue above the line: capability. Clay below: something real broke, and became a test.</p>
     </figure>
@@ -678,7 +677,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     guess — is the loop this page is about, and it is why the tool's limitations page comes next.</p>
   </section>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 7 of 9 · Field reports</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 7 of 10 · Field reports</span></div>
 </div>
 
 <!-- ═══════════════ PAGE 8 — WHAT 0.43 AND 0.44 ADD ═══════════════ -->
@@ -737,14 +736,71 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <div class="attrib">specs/014 – specs/064 · testguard.claims.json</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 9 · What 0.43 and 0.44 add</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 8 of 10 · What 0.43 and 0.44 add</span></div>
 </div>
 
-<!-- ═══════════════ PAGE 9 — WHAT IT DOES NOT CLAIM ═══════════════ -->
+<!-- ═══════════════ PAGE 9 — WHAT 0.45 AND 0.46 ADD ═══════════════ -->
 <div class="page">
   <div class="masthead">
     <div class="wordmark">Doc<span class="mark">Guard</span></div>
-    <div class="meta">09 — Limits and fit</div>
+    <div class="meta">09 — What 0.45 and 0.46 add</div>
+  </div>
+
+  <section style="margin-top:17px">
+    <h2>From governing change to proving every verdict</h2>
+    <p class="lede">Through 0.44, a green line meant the check found nothing. Versions 0.45 and 0.46 make it say what it
+    <em>looked at</em>: which function a requirement lives in, and whether a check could observe what it needed. Ideas from
+    AWS AI-DLC and DORA were rebuilt here, not copied.</p>
+
+    <div class="statband four">
+      <div><div class="fig indigo">22</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.44</div><div class="src">specs/070 – specs/092</div></div>
+      <div><div class="fig sage">6</div><div class="cap">closed verdicts; “could not look” is never a pass</div><div class="src">spec 081 · every validator</div></div>
+      <div><div class="fig sage">0</div><div class="cap">findings lost across 45 real projects, release against release</div><div class="src">hermetic A/B · v0.45.2 → 0.46</div></div>
+      <div><div class="fig indigo">4,244</div><div class="cap">tests on Node 18, 20, 22 and 24 at v0.46.0</div><div class="src">npm test</div></div>
+    </div>
+  </section>
+
+  <section class="rule-top">
+    <table class="tight">
+      <thead><tr><th>Area</th><th>What changed</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td>Requirements<br>in the code</td><td>An <code>@implements</code> tag anchors to the function under it, and turns suspect when that code or the requirement changes.</td><td>Traceability that knows <em>which function</em>, not just which file.</td></tr>
+        <tr><td>Every check<br>decides</td><td>Each validator ends in one of six verdicts. A git call that fails is a recorded gap, never a finding.</td><td>“Could not look” stops reading as “looked and found nothing”.</td></tr>
+        <tr><td>Rules you<br>grow into</td><td>New rules ship advisory; <code>docguard policy</code> shows which ones CI history says are ready to promote. Suppressions name an owner and an end date.</td><td>Stricter over time, on evidence from your own runs.</td></tr>
+        <tr><td>Chains and<br>decisions</td><td>Requirements must reach tasks; ADR supersession must run both ways; authoring guidance comes from the registry the validators read.</td><td>The tool’s own skill had told agents to write a section its checker rejected.</td></tr>
+        <tr><td>AWS AI-DLC</td><td>Reads AI-DLC’s records and memory; a plugin sensor fails a gate on drift the stage introduced, not drift it inherited.</td><td>A gate that fails on old warnings gets switched off.</td></tr>
+        <tr><td>DORA<br>evidence</td><td><code>score --dora</code> maps DORA’s documentation items and AI capabilities to repository evidence.</td><td>DORA found documentation multiplies what every practice pays back.</td></tr>
+        <tr><td>Releases<br>compared</td><td>Each release is compared with the last, finding by finding; nineteen parsers are fuzzed on every run.</td><td>A batch of fixes cannot quietly change what users see.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rule-top">
+    <div class="cols-2">
+      <div class="verdict good">
+        <span class="tag">found · by its own fuzzer</span>
+        <p>A 265 KB line of HTML comments took the comment reader 9.7 seconds. Now under a millisecond, with identical output.</p>
+      </div>
+      <div class="verdict judge">
+        <span class="tag">kept honest · advisory first</span>
+        <p>The release A/B added 159 findings across twelve projects, all advisory: listed, never counted against an exit code.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pull">
+    <p>A check that could not see is not a check that passed. Since 0.46, DocGuard says which one it was.</p>
+    <div class="attrib">specs/070 – specs/092 · CHANGELOG.md</div>
+  </div>
+
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 9 of 10 · What 0.45 and 0.46 add</span></div>
+</div>
+
+<!-- ═══════════════ PAGE 10 — WHAT IT DOES NOT CLAIM ═══════════════ -->
+<div class="page">
+  <div class="masthead">
+    <div class="wordmark">Doc<span class="mark">Guard</span></div>
+    <div class="meta">10 — Limits and fit</div>
   </div>
 
   <section style="margin-top:17px">
@@ -752,13 +808,13 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <div class="cols-2">
       <div><ul class="ticks">
         <li><strong>No recall guarantee.</strong> Precision-first means some real drift is missed by design. The variants that caught more were tested and rejected because they also flooded.</li>
-        <li><strong>No judgement of prose.</strong> Whether a paragraph is <em>true</em> is never auto-decided. Exact declarations in <code>.docguard-evidence.json</code> can verify selected statements against typed local evidence; every other statement stays marked unverified, and the count of unverified claims is printed on the badge.</li>
+        <li><strong>No judgement of prose.</strong> Whether a paragraph is <em>true</em> is never auto-decided. Exact declarations in <code>.docguard-evidence.json</code> can verify selected statements; every other statement stays unverified, and the badge prints how many.</li>
         <li><strong>No calibrated probabilities.</strong> HIGH / MEDIUM / LOW are deterministic strata. The one number DocGuard measures is precision on labelled cases, with n and a bound, and a caveat that cannot be deleted.</li>
       </ul></div>
       <div><ul class="ticks">
         <li><strong>Not proof that context helps.</strong> The AGENTS.md study on page 5 is cited in the README precisely because it cuts the other way. What DocGuard offers is a way to find out on your repository, with outcomes measured.</li>
         <li><strong>Soft by default.</strong> The research-backed detectors ship as low-confidence warnings. Exit code 2 still fails an ordinary shell step; the severity policy is yours.</li>
-        <li><strong>A maturity score is not a verdict.</strong> 100/100 means the map is whole. Only <code>guard</code> says whether it is true, and the two are printed apart on purpose.</li>
+        <li><strong>A maturity score is not a verdict.</strong> 100/100 means the map is whole; only <code>guard</code> says whether it is true. Nor is <code>score --dora</code> a DORA survey.</li>
       </ul></div>
     </div>
   </section>
@@ -771,6 +827,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
         <tr><td>GitHub Spec Kit</td><td>Generates feature specs, plans, tasks — spec → code, once.</td><td>Governance after generation: drift tracking, lifecycle (retire what shipped), spec-quality validation. DocGuard is an official Spec Kit community extension.</td></tr>
         <tr><td>AGENTS.md</td><td>One instruction file: build, test, style.</td><td>AGENTS.md is one of the required files. DocGuard validates it, packs task-specific context from the canonical docs, and keeps every agent on the same map.</td></tr>
         <tr><td>Kiro · Cursor rules</td><td>IDE-bound spec or rule files.</td><td>Portable across any IDE and any agent; enforced in CI rather than read by one editor.</td></tr>
+        <tr><td>AWS AI-DLC</td><td>A gated lifecycle where agents write each stage’s artifacts.</td><td>A plugin sensor that fails a gate on new drift; reads AI-DLC’s records and memory.</td></tr>
         <tr><td>TestGuard</td><td>Breaks a promise on purpose and asks whether a test noticed.</td><td>The other half of the same question: whether the <em>documentation</em> of that promise is still true. They share an evidence format, and TestGuard fault-probes DocGuard's own claims in CI.</td></tr>
       </tbody>
     </table>
@@ -789,7 +846,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
       </div>
       <div>
         <h3>Built for AI-written code</h3>
-        <p class="note">When an agent writes both the code and the docs, the failure mode is not “no docs”. It is confident, plausible documentation of a system that no longer exists. That is exactly what a deterministic comparison against the tree can see.</p>
+        <p class="note">When an agent writes both the code and the docs, the failure mode is confident, plausible documentation of a system that no longer exists. A deterministic comparison against the tree can see it.</p>
       </div>
     </div>
   </section>
@@ -799,7 +856,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <div class="attrib">github.com/raccioly/docguard · npm docguard-cli · MIT · Ricardo Accioly</div>
   </div>
 
-  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 9 of 9 · Limits and fit</span></div>
+  <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 10 of 10 · Limits and fit</span></div>
 </div>
 
 </body>

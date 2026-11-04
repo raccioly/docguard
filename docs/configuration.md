@@ -70,9 +70,33 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
   },
   "ignore": ["generated/"],
   "securityIgnore": ["tests/fixtures/"],
-  "suppressions": { "requireReason": false }
+  "suppressions": { "requireReason": false },
+  "requiredChecks": ["apiSurface", "traceability"]
 }
 ```
+
+`requiredChecks` names the validators the project depends on. Each must reach a
+decision (verdict `pass` or `fail`) in every run: one that found nothing to
+judge, could not decide or could not run makes `guard` exit 4 and `ci` block
+(`CI_REQUIRED_CHECK_UNDECIDED`). A reasoned in-repo
+`<!-- docguard:validator <key> n/a — reason -->` marker is the only bypass;
+disabling a required validator in config is reported as REQ001, and an
+unknown key as REQ002. `docguard policy` shows which advisory codes this
+project's CI history shows are ready to promote with `findingSeverity`.
+
+`requiredSections` adds sections a document must carry beyond the canonical
+ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the
+canonical document:
+
+```json
+{ "requiredSections": { "SECURITY.md": ["Threat Model"] } }
+```
+
+A missing heading is reported as STR007, informational until a project
+promotes it with `findingSeverity`. A reasoned
+`<!-- docguard:section threat-model n/a — reason -->` marker owns the absence.
+The `enterprise-ai` profile sets Risk Assessment and Threat Model for
+SECURITY.md (spec 082).
 
 ## Profile Field
 
@@ -101,6 +125,8 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
+| `aidlc` | `true` | AWS AI-DLC records after the workflow: traceability targets that no longer exist, gaps left in completed stages, unit deliverables removed later, unreadable records (AID001–AID004, informational by default) |
+| `decisionRecords` | `true` | ADR status, supersession links and index rows, and unanswered Spec Kit clarifications or `[Answer]:` tags (DEC001–DEC006, informational by default) |
 | `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, lock merge conflicts (ANC009), and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
@@ -219,8 +245,26 @@ Raise it to blocking with `"findingSeverity": { "IGN002": "high" }`.
 `.docguardignore` at load), `securityIgnore` (Security only) and `todoIgnore`
 (TODO-Tracking only), and `documentLifecycle` (paths the Document-Lifecycle
 check skips when it looks for terminal-status documents and completed specs).
-They hold plain patterns and cannot carry a reason or an expiry;
-`suppressions.requireReason` does not apply to them.
+They hold plain patterns, or objects that carry waiver metadata (spec 084):
+`{ "pattern": "vendor/**", "reason": "third-party", "owner": "@ops", "expires": "2027-01-01" }`.
+An expired object entry applies to nothing. `suppressions.requireReason` does
+not apply to them.
+
+Every other kind of suppression can carry the same metadata at the end of its
+reason: `// docguard:ignore SEC001 — rotating key in #812 owner:@ana expires:2026-12-31`,
+`<!-- docguard:validator apiSurface n/a — CLI only owner:@ana expires:2027-06-30 -->`,
+and `.docguardignore` lines (`dist/**  # build output owner:@ops`). An expired
+suppression of any kind stops suppressing the day after its date (UTC). Two
+policies make waivers accountable, and neither disables a suppression:
+
+```json
+{ "suppressions": { "requireOwner": true, "maxDays": 90 } }
+```
+
+`requireOwner` reports IGN004 for a waiver with no `owner:`; `maxDays` reports
+IGN005 for one that expires later than the window, or never. With either set,
+guard also reads inline pragmas across the project to report expired ones
+(IGN001); that full read is skipped otherwise. Baseline fingerprints are exempt.
 
 `docguard ignore` lists every suppression the project has, including inline
 pragmas, N/A markers and the baseline, with its reason and state;

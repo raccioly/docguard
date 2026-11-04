@@ -53,7 +53,7 @@ applies to stdio and `--transport http`).
 | `docguard_verify_evidence` | Exact declared statement-to-source checks with scoped verification states |
 | `docguard_verify_claims` | Documented numbers/limits/enums as verification tasks — **the caller checks each against the code** |
 | `docguard_report` | Commit-stamped compliance evidence with a tamper-evident integrity hash |
-| `docguard_docs_for_path` | Which canonical doc lines, agent-instruction lines, `@implements`/`@req` IDs, `@doc` annotations and `covers=` sections describe one file |
+| `docguard_docs_for_path` | Which canonical doc lines, agent-instruction lines, `@implements`/`@req` IDs, `@doc` annotations and `covers=` sections describe one file. `docs.lifecycle` names each referencing doc whose header status is not active (`superseded`, `retired`, or its status), so an agent can skip it. `docs.openFindings` gives each doc's finding codes when `docguard sensor --aidlc` has cached a guard run for the exact tree state; `docs.findingsBasis` says whether it has (`sensor-cache` or `no-current-guard-run`). |
 | `docguard_doc_structure` | One document's headings (with anchors, line ranges, bytes), section markers and fact markers |
 | `docguard_read_section` | One section by id, anchor or heading, bounded (8 KiB default, 32 KiB cap, `nextOffset` when truncated) |
 | `docguard_task_context` | The `agent --task` context packet: task-linked requirements, code and test pointers, excerpts |
@@ -88,7 +88,8 @@ npx docguard-cli guard --format json
 | `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
 | `coverage` | Markdown tier map: canonical / tracked / ignored / `unclassified[]` |
 | `semanticClaims.count` | Documented counts/limits/enums **not yet verified against code** |
-| `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass |
+| `validators[]` | Per-validator results — `na` means "nothing to validate", which is not a pass. Each carries `verdict`: `pass`, `fail`, `empty` (nothing to judge), `inconclusive` (could not decide), `blocked` (threw) or `skipped` (disabled or declared N/A), and `applicability.class` |
+| `verdicts` | `counts` per verdict and `gaps[]`: git calls that failed this run (`validator`, `operation`, `cause`, `scope.count`). Findings that depended on a gap were withheld, not reported |
 | `precisionEvidence` | Benchmark evidence for the finding codes in this run: `coverage` counts how many have ever been measured, `codes[CODE]` is `measured` or `not-measured`, and `caveat` must accompany any quoted rate |
 
 `--compact` (and the MCP tool's default) prints each fact once. Findings are

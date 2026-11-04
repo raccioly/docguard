@@ -155,7 +155,7 @@ const TOOLS = [
   {
     name: 'docguard_docs_for_path',
     title: 'Docs that describe a file',
-    description: 'Exact answer to "which documentation describes this file?": canonical doc lines that name it (with heading, anchor and section), AGENTS.md/CLAUDE.md/GEMINI.md lines, the @implements/@req IDs it declares, its @doc annotations, and doc sections whose covers= includes it with their review state. Deterministic, bounded, no model.',
+    description: 'Exact answer to "which documentation describes this file?": canonical doc lines that name it (with heading, anchor and section), AGENTS.md/CLAUDE.md/GEMINI.md lines, the @implements/@req IDs it declares, its @doc annotations, doc sections whose covers= includes it with their review state, the referencing docs that are not active (superseded, retired) under docs.lifecycle, and, when a guard run for this exact tree state is cached, the open finding codes of each doc under docs.openFindings. Deterministic, bounded, no model.',
     inputSchema: {
       type: 'object',
       properties: { path: { type: 'string', description: 'Project-relative file path, e.g. src/api/users.ts' }, ...PROJECT_DIR_PROP },

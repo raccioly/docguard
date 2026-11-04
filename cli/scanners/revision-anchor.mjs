@@ -20,21 +20,19 @@
  * @implements docguard.completion-revision-anchoring#FR-003
  */
 
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
-import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
+import { OWN_STATE_PATHSPEC, runGit } from '../shared-git.mjs';
 
 const REVISION_RE = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 export const HISTORY_LIMIT = 1000;
 
+// docguard.verdict-contract#FR-004: a spawn failure is recorded as a gap; a
+// non-zero exit (an unknown revision) stays an answer.
 function git(projectDir, args) {
-  try {
-    return { ok: true, out: execFileSync('git', args, { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024 }) };
-  } catch {
-    return { ok: false, out: '' };
-  }
+  const r = runGit(projectDir, args, { operation: `git ${args[0]} (revision anchor)`, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024 });
+  return r.status === 0 && !r.error ? { ok: true, out: r.stdout } : { ok: false, out: '' };
 }
 
 export function isShallowRepository(projectDir) {

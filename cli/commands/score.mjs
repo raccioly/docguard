@@ -18,6 +18,8 @@ import { loadHistory, sparkline } from '../writers/history.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { anchorGranularity } from '../scanners/anchors.mjs';
+import { computeDoraEvidence } from './score-dora.mjs';
+import { requiredSectionMap } from '../authoring-contract.mjs';
 
 /**
  * Detect whether the project configures a test runner (the "Check 3" of the
@@ -211,6 +213,8 @@ export function runScore(projectDir, config, flags) {
       };
     }
     if (granularity) result.anchorGranularity = { ...granularity, info: 'How precisely requirement tags anchor; information only, not part of the score.' };
+    // docguard.dora-evidence#FR-001: display-only, and absent without the flag.
+    if (flags.dora) result.dora = computeDoraEvidence(projectDir, config, { scores, agentRead: assessAgentReadability(projectDir, config) });
     console.log(JSON.stringify(result, null, 2));
     return;
   }
@@ -362,10 +366,35 @@ export function runScore(projectDir, config, flags) {
   console.log(`\n  ${arColor}${c.bold}Agent Readability: ${agentRead.score}% (${agentRead.grade})${c.reset}`);
   console.log('');
 
+  // ── DORA (--dora, docguard.dora-evidence#FR-001) ──
+  // Display-only, like ALCOA+: DORA measures these by survey; this is the
+  // repository evidence beside it, never part of the CDD grade.
+  if (flags.dora) renderDora(computeDoraEvidence(projectDir, config, { scores, agentRead }));
+
   // Badge snippet
   const bColor = totalScore >= 90 ? 'brightgreen' : totalScore >= 80 ? 'green' : totalScore >= 70 ? 'yellowgreen' : totalScore >= 60 ? 'yellow' : totalScore >= 50 ? 'orange' : 'red';
   const badgeUrl = `https://img.shields.io/badge/CDD_Score-${totalScore}%2F100_(${grade})-${bColor}`;
   console.log(`  ${c.dim}📎 Badge: ![CDD Score](${badgeUrl})${c.reset}\n`);
+}
+
+function renderDora(dora) {
+  const icon = i => (i.score === null ? `${c.dim}–` : i.score >= 75 ? `${c.green}✅` : i.score >= 50 ? `${c.yellow}⚠️` : `${c.red}❌`);
+  const row = i => {
+    const score = i.score === null ? 'n/a' : `${i.score}%`;
+    console.log(`  ${icon(i)} ${i.label.padEnd(30)}${c.reset} ${String(score).padStart(4)}  ${c.dim}${i.measure}${c.reset}`);
+    const detail = i.measure === 'survey-only' ? i.evidence[0] : i.score === null ? i.reason || i.evidence[0] : i.evidence[0];
+    if (detail) console.log(`  ${c.dim}     ${detail}${c.reset}`);
+    if (i.improve && i.score !== null && i.score < 75) console.log(`  ${c.dim}     Improve: ${i.improve}${c.reset}`);
+  };
+  console.log(`  ${c.bold}📐 DORA Documentation Quality${c.reset} ${c.dim}(repository evidence for DORA's eight survey items)${c.reset}`);
+  console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+  dora.documentation.forEach(row);
+  console.log(`\n  ${c.bold}Documentation quality evidence: ${dora.documentationScore ?? 'n/a'}${dora.documentationScore === null ? '' : '%'}${c.reset}\n`);
+  console.log(`  ${c.bold}🤖 DORA AI Capabilities${c.reset} ${c.dim}(what a repository can show)${c.reset}`);
+  console.log(`  ${c.dim}─────────────────────────────────${c.reset}`);
+  dora.ai.forEach(row);
+  console.log(`\n  ${c.dim}${dora.caveat}${c.reset}`);
+  console.log(`  ${c.dim}Source: ${dora.source.documentationQuality}${c.reset}\n`);
 }
 
 /**
@@ -686,13 +715,9 @@ function calcStructureScore(dir, config) {
 }
 
 function calcDocQualityScore(dir, config) {
-  const checks = {
-    'docs-canonical/ARCHITECTURE.md': ['## System Overview', '## Component Map', '## Tech Stack'],
-    'docs-canonical/DATA-MODEL.md': ['## Entities'],
-    'docs-canonical/SECURITY.md': ['## Authentication', '## Secrets Management'],
-    'docs-canonical/TEST-SPEC.md': ['## Test Categories', '## Coverage Rules'],
-    'docs-canonical/ENVIRONMENT.md': ['## Environment Variables', '## Setup Steps'],
-  };
+  // docguard.authoring-contract#FR-002: the sections STR003 requires, with
+  // its project-type exemptions; a separate list here had drifted from it.
+  const checks = requiredSectionMap(config.projectTypeConfig || {});
 
   let found = 0;
   let total = 0;

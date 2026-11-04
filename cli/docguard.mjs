@@ -57,6 +57,8 @@ import { runReview } from './commands/review.mjs';
 import { runAnchors } from './commands/anchors.mjs';
 import { runRules } from './commands/rules.mjs';
 import { runIgnore } from './commands/ignore.mjs';
+import { runPolicy } from './commands/policy.mjs';
+import { runSensor } from './commands/sensor.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from './repository-root.mjs';
 
 // ── Shared constants (imported to break circular dependencies) ──────────
@@ -101,6 +103,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}agent${c.reset}      Agent task graph or bounded task context (${c.cyan}--task <text>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}explain${c.reset}    Explain a validator key, warning text, or finding code (${c.cyan}docguard explain SEC001${c.reset})
   ${c.green}verify${c.reset}     Check declared local evidence or extract claims for review (${c.cyan}--evidence${c.reset}, ${c.cyan}--semantic${c.reset})
+  ${c.green}policy${c.reset}     Enforcement ladder: which advisory codes CI history shows are ready to promote
   ${c.green}ignore${c.reset}     Every suppression with its reason and expiry (${c.cyan}--format claimspec${c.reset} exports the reasoned ones)
   ${c.green}feedback${c.reset}   Report likely false positives back to DocGuard (local-first + 1-click prefilled issue)
   ${c.green}mcp${c.reset}        MCP server (stdio, or ${c.cyan}--transport http${c.reset} on loopback) — guard, score, verify, doc navigation and task context as agent tools
@@ -144,6 +147,7 @@ ${c.bold}Options:${c.reset}
   --remove        Remove installed DocGuard hooks
   --threshold <n> Minimum score for CI pass (used with ci command)
   --fail-on-warning  Fail CI on warnings (used with ci command)
+  --fail-on-inconclusive  Fail when a check could not decide (guard exits 4; ci blocks)
   --auto          Auto-fix what's possible (used with fix command)
   --write         Apply a command's explicit deterministic write path. For fix,
                   mapped human docs require unique source=code ownership and
@@ -156,6 +160,7 @@ ${c.bold}Options:${c.reset}
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Profile: starter, standard, cli, library, enterprise (init command)
   --tax           Show estimated documentation maintenance cost (with score)
+  --dora          Show DORA documentation-quality and AI-capability evidence (with score)
   --help          Show this help message
   --version       Show version
 
@@ -245,18 +250,20 @@ const COMMAND_HELP = {
       ['--changed-only', 'Only validate docs/code touched in the working tree'],
       ['--update-baseline', 'Freeze current findings to .docguard.baseline.json — adopt on a legacy repo without a red day one'],
       ['--no-baseline', 'Ignore the committed baseline for this run (show everything)'],
+      ['--fail-on-inconclusive', 'Exit 4 when any check could not decide (verdict inconclusive or blocked); empty and skipped checks never trip it'],
     ],
-    examples: ['docguard guard', 'docguard guard --format json', 'docguard guard --update-baseline'],
+    examples: ['docguard guard', 'docguard guard --format json', 'docguard guard --update-baseline', 'docguard guard --fail-on-inconclusive'],
   },
   score: {
     summary: 'CDD maturity score (0–100).',
-    usage: 'docguard score [--diff] [--tax] [--format json]',
+    usage: 'docguard score [--diff] [--tax] [--dora] [--format json]',
     flags: [
       ['--diff', 'Delta between two refs'],
       ['--tax', 'Estimated documentation maintenance cost'],
+      ['--dora', 'Repository evidence for DORA documentation quality and AI capabilities'],
       ['--format json', 'Machine-readable score'],
     ],
-    examples: ['docguard score', 'docguard score --tax'],
+    examples: ['docguard score', 'docguard score --tax', 'docguard score --dora'],
   },
   diff: {
     summary: 'Show gaps between docs and code.',
@@ -314,20 +321,24 @@ const COMMAND_HELP = {
   },
   ci: {
     summary: 'Pipeline gate: guard + score in one command (exit 1 on errors, threshold or --fail-on-warning).',
-    usage: 'docguard ci [--threshold <n>] [--fail-on-warning]',
+    usage: 'docguard ci [--threshold <n>] [--fail-on-warning] [--fail-on-inconclusive]',
     flags: [
       ['--threshold <n>', 'Minimum score for CI pass'],
       ['--fail-on-warning', 'Fail CI on warnings'],
+      ['--fail-on-inconclusive', 'Fail CI when any check could not decide (verdict inconclusive or blocked)'],
     ],
     examples: ['docguard ci'],
   },
   memory: {
     summary: 'Show what DocGuard remembers about the project.',
-    usage: 'docguard memory [--diff] | docguard memory --pack [--stdout] [--symbols]',
+    usage: 'docguard memory [--diff] | docguard memory --pack [--stdout] [--symbols] | docguard memory --export aidlc [--space <name>] [--write] | docguard memory --consolidate aidlc [--space <name>] [--format json]',
     flags: [
       ['--diff', 'Drill into drift between memory and code'],
       ['--pack', 'Write .docguard/context-pack.md, a session-start snapshot for an agent'],
       ['--stdout', 'With --pack: print the pack instead of writing it'],
+      ['--export aidlc', 'Write verified facts (only comparisons that matched code) to aidlc/spaces/<space>/knowledge/docguard/canonical-memory.md; dry run without --write. Prints, never runs, the aidlc onboard command'],
+      ['--consolidate aidlc', 'Group repeated AI-DLC stage-diary entries and flag those naming paths that are gone. Writes nothing'],
+      ['--space <name>', 'With --export/--consolidate: the AI-DLC space (default: default)'],
       ['--symbols', 'With --pack: add a symbol map (the most central files and their exported names, within memory.symbolMap.maxBytes). Opt-in: the agent-context benchmark found no benefit'],
     ],
     examples: ['docguard memory', 'docguard memory --diff', 'docguard memory --pack --symbols'],
@@ -436,10 +447,30 @@ const COMMAND_HELP = {
     ],
     examples: ['docguard rules --for src/api/users.ts', 'docguard rules --for src/api/users.ts --harness cursor --format json'],
   },
+  sensor: {
+    summary: 'Run guard as an AWS AI-DLC sensor: one JSON line { pass, findings_count, findings, verdicts }, cached per tree state. Used by the docguard AI-DLC plugin.',
+    usage: 'docguard sensor --aidlc [--stage <slug>] [--output-path <path>]',
+    flags: [
+      ['--aidlc', 'Speak the AI-DLC sensor contract (required)'],
+      ['--stage <slug>', 'The AI-DLC stage firing the sensor (recorded in the cache)'],
+      ['--output-path <path>', 'The output file the gate fired for (the whole project is checked either way)'],
+    ],
+    examples: ['docguard sensor --aidlc --stage code-generation'],
+  },
+  policy: {
+    summary: 'Enforcement ladder: each finding code\'s configured level, and which advisory codes this project\'s CI history shows are ready to promote. Writes nothing.',
+    usage: 'docguard policy [--window <n>] [--format json]',
+    flags: [
+      ['--window <n>', 'Usable CI runs to weigh (default 5); runs with observation gaps never count'],
+      ['--format json', 'The full report'],
+    ],
+    examples: ['docguard policy', 'docguard policy --window 10 --format json'],
+  },
   ignore: {
     summary: 'Every suppression in the project, with its reason, expiry, state and source. Writes nothing.',
-    usage: 'docguard ignore [--format json|claimspec]',
+    usage: 'docguard ignore [--owner <owner>] [--format json|claimspec]',
     flags: [
+      ['--owner <owner>', 'Only the suppressions that name this owner (owner:@handle, team/name or email)'],
       ['--format json', 'The suppression model plus the claimspec export report'],
       ['--format claimspec', 'A claimspec v1 ignore document on stdout (reasoned .docguardignore entries only); what it leaves out goes to stderr'],
     ],
@@ -519,11 +550,21 @@ async function main() {
       flags.list = true;
     } else if (args[i] === '--remove' && command !== 'anchors') {
       flags.remove = true;
+    } else if (args[i] === '--aidlc' && command === 'sensor') {
+      flags.aidlc = true;
+    } else if ((args[i] === '--stage' || args[i] === '--output-path') && args[i + 1] && command === 'sensor') {
+      flags[args[i] === '--stage' ? 'stage' : 'outputPath'] = args[i + 1];
+      i++;
+    } else if (args[i] === '--window' && args[i + 1]) {
+      flags.window = args[i + 1];
+      i++;
     } else if (args[i] === '--threshold' && args[i + 1]) {
       flags.threshold = args[i + 1];
       i++;
     } else if (args[i] === '--fail-on-warning') {
       flags.failOnWarning = true;
+    } else if (args[i] === '--fail-on-inconclusive') {
+      flags.failOnInconclusive = true;
     } else if (args[i] === '--auto') {
       flags.auto = true;
     } else if (args[i] === '--write') {
@@ -582,6 +623,15 @@ async function main() {
       flags.symbols = true;
     } else if (args[i] === '--owners') {
       flags.owners = true;
+    } else if ((args[i] === '--export' || args[i] === '--consolidate') && args[i + 1] && command === 'memory') {
+      flags[args[i].slice(2)] = args[i + 1];
+      i++;
+    } else if (args[i] === '--space' && args[i + 1] && command === 'memory') {
+      flags.space = args[i + 1];
+      i++;
+    } else if (args[i] === '--owner' && args[i + 1] && command === 'ignore') {
+      flags.owner = args[i + 1];
+      i++;
     } else if (args[i] === '--suggest' && command === 'trace') {
       flags.suggest = true;
     } else if (args[i] === '--features') {
@@ -820,6 +870,8 @@ async function main() {
       i++;
     } else if (args[i] === '--signals') {
       flags.signals = true;
+    } else if (args[i] === '--dora') {
+      flags.dora = true;
     } else if (args[i] === '--debate') {
       flags.debate = true;
     } else if (args[i] === '--stdout') {
@@ -877,11 +929,11 @@ async function main() {
   // `mcp`: stdout IS the JSON-RPC transport — any banner byte corrupts the stream.
   // `nudge-hook`: stdout is the Claude Code hook feedback channel — any banner
   // byte corrupts the JSON the hook runner parses.
-  // `report`: stdout IS the evidence artifact (markdown or JSON) — banner
+  // `report` and `sensor` (an AI-DLC sensor line): stdout IS the artifact — banner
   // bytes would corrupt it for redirection/piping in both formats.
   // `--stdout` (memory --pack, llms): stdout IS the artifact, so no banner
   // (docguard.output-ux#FR-001).
-  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report';
+  const headless = jsonMode || flags.stdout || flags.write || flags.checkOnly || flags.changedOnly || flags.quiet || flags.plan || command === 'agent' || command === 'mcp' || command === 'nudge-hook' || command === 'report' || command === 'sensor';
 
   if (!headless) printBanner();
 
@@ -1117,6 +1169,14 @@ async function main() {
     case 'ignore':
       // docguard.ignore-reasons#FR-007, FR-008: read-only.
       runIgnore(projectDir, config, flags);
+      break;
+    case 'sensor':
+      // docguard.aidlc-plugin#FR-001: AWS AI-DLC sensor contract (one JSON line).
+      runSensor(projectDir, config, flags);
+      break;
+    case 'policy':
+      // docguard.enforcement-ladder#FR-006–FR-010: read-only.
+      runPolicy(projectDir, config, flags);
       break;
     case 'demo':
       // v0.21: zero-install "ah-ha" moment — runs guard against a baked-in

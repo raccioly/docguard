@@ -7,9 +7,184 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Every check ends in a verdict** (`docguard.verdict-contract`, spec 081,
+  program issue #607).
+  - Each validator result carries a closed `verdict`: `pass`, `fail`,
+    `empty` (nothing to judge), `inconclusive` (could not decide), `blocked`
+    (threw) or `skipped` (disabled or declared N/A). Its applicability gains
+    `class` (`applicable`, `not-applicable`, `unknown`), and only a
+    `not-applicable` check can be skipped.
+  - Guard JSON adds a `verdicts` summary (counts and gaps). SARIF records
+    blocked and inconclusive checks as tool execution notifications, with
+    `executionSuccessful: false` when one is blocked. JUnit renders blocked as
+    `<error>` and inconclusive or empty as `<skipped message>`. Text output
+    prints a verdict line and the reason for every inconclusive check.
+  - `guard --fail-on-inconclusive` exits 4 when a check could not decide;
+    `ci --fail-on-inconclusive` blocks readiness (`CI_INCONCLUSIVE_BLOCKED`);
+    the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
+    codes are unchanged.
+
+- **Required checks and evidence-based promotion** (`docguard.enforcement-ladder`,
+  spec 083). `requiredChecks` in `.docguard.json` names the validators a
+  project depends on: one that does not decide makes `guard` exit 4 and `ci`
+  block, and only a reasoned N/A marker bypasses it (REQ001 when config
+  disables a required check, REQ002 for an unknown key). `ci` history now
+  records per-code counts and levels, and the new read-only `docguard policy`
+  lists advisory codes this project's history shows are ready to promote and
+  blocking codes that are noisy. In text output, a validator whose findings are all
+  informational now shows an informational row (ℹ️), not a warning (⚠️),
+  and still lists its findings.
+
+- **DocGuard runs inside AWS AI-DLC as a plugin** (`docguard.aidlc-plugin`,
+  spec 090). `extensions/aidlc/docguard/` is a third-party AI-DLC plugin, valid
+  under AI-DLC 2.11.2's own validator, whose `docguard-guard` sensor runs at the
+  code-generation and build-and-test gates. The new `docguard sensor --aidlc`
+  speaks AI-DLC's sensor contract and passes when the work in progress
+  introduced no drift compared with HEAD. Pre-existing warnings don't fail
+  gates. A missing DocGuard is recorded as "could not run", never as a pass.
+  Proven end to end through AI-DLC (clean, doc drift, code drift, missing
+  tool); CI validates and builds the plugin with a pinned, checksum-verified
+  AI-DLC release, and the release sync keeps its version equal to DocGuard's.
+  Guide: `docs/guides/aidlc.md`.
+- **AWS AI-DLC workspaces are read natively** (`docguard.aidlc-profile`, spec
+  089). A new advisory AI-DLC validator re-checks, on every change, what
+  AI-DLC verified once at its gates: traceability targets that no longer exist
+  (AID001), GAP/ORPHAN rows left in completed stages (AID002), unit
+  deliverables removed after the unit (AID003; git tells a later removal from
+  the unit's own deletion), and unreadable records (AID004). DocGuard never
+  writes AI-DLC files. COMPARISONS.md gains an AI-DLC section and corrects the
+  Kiro row.
+- **AI-DLC agent memory is governed** (`docguard.memory-governance`, spec 091).
+  Guard reports AI-DLC learned rules and CodeKB files that name deleted paths
+  or unused environment variables (MEM001, MEM002, advisory).
+  `docguard memory --export aidlc` feeds AI-DLC the facts DocGuard verified
+  (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
+  repeated stage-diary entries and flags stale ones without writing anything.
+  DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
+  A rule's path counts as gone only if git history once had it, and template
+  placeholders (`<active-space>`) are never paths: a fresh AI-DLC project's
+  stock `org.md` reports nothing.
+
+- **What DocGuard tells authors to write is what its validators accept**
+  (`docguard.authoring-contract`, spec 082). One registry
+  (`cli/authoring-contract.mjs`) now holds each canonical document's sections.
+  STR003, the Doc Quality score, `explain`, the `fix` prompts and the Spec Kit
+  `docguard-fix` skill all read it. Before this, the skill and `fix` asked
+  agents for sections STR003 does not accept, so an agent following
+  DocGuard's guidance wrote documents that failed DocGuard: "Technology
+  Choices" instead of Tech Stack, "Test Framework" instead of Test
+  Categories, "Data Structures" instead of Entities. A round-trip test feeds
+  every piece of guidance and every template back through the validators.
+  New STR007 reports a section the active profile requires (the
+  `enterprise-ai` profile's Risk Assessment and Threat Model, which nothing
+  read before). It is informational by default.
+- **Every document parser is fuzzed on every test run**
+  (`docguard.validator-fuzz`, spec 088). `tools/fuzz.mjs` is a seeded,
+  dependency-free fuzzer, and `npm test` runs it with a fixed seed. Each of 19
+  text parsers must not throw, must answer the same twice, and must finish
+  within time linear in its input. That covers requirement IDs, ADRs, AI-DLC
+  stage progress, waiver metadata, headings, doc sections, covers lists,
+  lifecycle status, API tables, HTML comments and `.docguardignore`.
+  `npm run fuzz -- --cases 20000 --save` runs deep and keeps what it finds.
+- **A release is compared with the previous release before it ships**
+  (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
+  `release.yml` runs the previous release's CLI and the candidate over the
+  repository and the benchmark fixtures. It fails unless this section names
+  every finding code whose findings changed, and any exit-code change. It also
+  re-runs the budgets and the precision benchmark against the previous tag.
+  Maintainer tooling only (`tools/release-ab.mjs`, `release-gate.json`); the
+  package is unchanged.
+- **DORA's documentation and AI capabilities, from the repository**
+  (`docguard.dora-evidence`, spec 092). `docguard score --dora` maps facts
+  DocGuard already computes onto DORA's eight documentation-quality survey
+  items and its AI Capabilities Model:
+  - doc and code agreement;
+  - the doc lock;
+  - Agent Readability;
+  - runbooks;
+  - commit size over the last 90 days;
+  - what git tracks.
+
+  Each item is labeled `deterministic`, `proxy` or `survey-only`. It is
+  `null`, with a reason, when there is no evidence. The view is display-only,
+  like ALCOA+. `docguard_docs_for_path` now gives each referencing doc's
+  `lifecycle`, so agents can skip superseded docs. It also gives that doc's
+  open findings when the AI-DLC sensor has cached a guard run for the current
+  tree state.
+- **Decision records are checked** (`docguard.decision-records`, spec 086). A
+  new advisory Decision-Records validator reads ADRs (one file with
+  `## ADR-NNN` sections, or one file per decision) and reports a missing or
+  unknown status (DEC001), a link or index row naming no record (DEC002),
+  one-way supersession (DEC003), a superseded status without a successor or
+  the reverse (DEC004), an index that disagrees with its record (DEC005), and
+  Spec Kit clarifications or AI-DLC `[Answer]:` tags left unanswered (DEC006).
+  Disable with `"validators": { "decisionRecords": false }`.
+- **The Spec Kit chain is checked end to end** (`docguard.upstream-coverage`,
+  spec 085). For each feature, the Spec-Kit validator reports requirements no
+  task or plan cites (SPK013), cited IDs the spec does not define (SPK014), a
+  plan or task list that names no upstream (SPK015), and user stories with no
+  `[USn]` task (SPK016). The codes are advisory by default and never change the
+  exit code until a project promotes them with `findingSeverity`; ranges,
+  sub-IDs, IDs qualified by another spec, and IDs in code spans are handled.
+  A requirement ID after a document name counts as that document's only for
+  requirements documents (REQUIREMENTS, PRD, SRS, BRD): "TEST-SPEC, CHANGELOG
+  (FR-007)" in a task still cites the spec's FR-007.
+
+- **Every suppression can name an owner and an end date** (`docguard.accountable-suppressions`,
+  spec 084). Inline pragmas, validator and section N/A markers and
+  `.docguardignore` reasons accept trailing `owner:` and `expires:` tokens, and
+  `.docguard.json` ignore arrays accept `{ pattern, reason, owner, expires }`
+  objects. An expired suppression of any kind stops suppressing.
+  `suppressions.requireOwner` (IGN004) and `suppressions.maxDays` (IGN005)
+  make waivers accountable; `docguard ignore --owner` filters by owner. Forms
+  without the new tokens read exactly as before.
+
+### Changed
+
+- **The Doc Quality score now asks for the same sections as STR003**
+  (spec 082). For a project without a database (`needsDatabase: false`) or
+  environment variables (`needsEnvVars: false`), it no longer counts the
+  Entities or Environment Variables section, whether the document has it or
+  not. Across 45 local projects, 3 Doc Quality scores moved by 2 points:
+  two rose and one fell, where the exempt sections were present. No total
+  score, grade or exit code changed.
+
+### Fixed
+
+- **A long line full of HTML comments no longer stalls guard** (spec 088).
+  The comment reader re-masked the rest of the line's code spans for every
+  comment, so its time grew with the square of the comment count. One 265 KB
+  line with 3,333 `docguard:section` comments took 9.7 s, and now takes under
+  1 ms. Output is unchanged: a differential run over 590,732 lines found no
+  difference. Docs-Sync, requirement parsing and instruction pointers all read
+  through it.
+
+- **A git call that fails is a gap, not a finding.** On a loaded machine
+  `git check-ignore` could fail to spawn, and PSR002 then reported every
+  unresolved pointer at high confidence; a failed `git grep` at HEAD could
+  make REF001 report a documented symbol as removed. Shared git helpers now
+  retry a transient spawn error once, then record the failure on the
+  validator that was running. PSR002 and REF001 withhold what git could not
+  answer and say how much. Because one failed call can leave shared inputs
+  incomplete for every check (a fault-injection run turned 288 TRC004 into
+  476 on one project), every absence claim (a missing pointer, symbol, test,
+  link, source, revision or implementation evidence) is withheld while any
+  gap stands, and the checks it affected report `inconclusive`. Private git
+  calls in Document-Lifecycle, Spec-Registry, revision anchors, doc locks and
+  task evidence now record gaps too; Document-Lifecycle reports a gap as
+  `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
+  with a gap, so withheld findings cannot drop out of the baseline.
+
 ## [0.45.2] - 2026-11-02
 
 ### Changed
+  Requirement-anchor links that "lost their code" (ANC003), a stale spec
+  registry (SPR001), checked tasks without annotations (SPR006) and asset
+  paths covering no file (SPR009) are withheld the same way: on DocGuard's
+  own repository, a failing `git ls-files` had produced 25 ANC003 and one
+  SPR001 before this.
 
 - **GitHub Actions pins move to their latest patch/minor releases** (#604).
   CI, release and the published `action.yml` now run `actions/setup-node`

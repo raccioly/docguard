@@ -38,6 +38,7 @@ docguard guard --format json $ARGUMENTS
 ```
 
 2. Parse each validator's result and build a severity-ranked findings table. Status glyphs: ✅ pass, ⚠️ warning, ❌ fail, ➖ N/A (nothing to validate — NOT a pass; the dimension was not assessed).
+   Read each validator's `verdict` first: `pass`, `fail`, `empty` (nothing to judge), `inconclusive` (could not decide — report its `applicability.reason`; it is never a pass), `blocked` (the validator threw — report it as a DocGuard failure, not a docs defect) or `skipped` (disabled or declared N/A). `verdicts.gaps` lists git calls that failed during the run; findings that depended on them were withheld, so rerun before concluding the docs are clean.
 
 3. **Triage by severity**:
    - **CRITICAL**: Structure, Security, Test-Spec, Evidence contradiction/manifest failures → fix immediately
@@ -78,4 +79,5 @@ docguard guard --format json $ARGUMENTS
 ## Flags
 
 - `--format json` — Output results as JSON
+- `--fail-on-inconclusive` — Exit 4 when any check could not decide (verdict `inconclusive` or `blocked`)
 - `--dir <path>` — Run on a different directory

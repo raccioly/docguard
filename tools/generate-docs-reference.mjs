@@ -15,9 +15,18 @@ import { fileURLToPath } from 'node:url';
 
 import { CODES, BLOCKER_CODES } from '../cli/findings.mjs';
 import { DISPLAY_NAMES } from '../cli/commands/explain.mjs';
+import { skillSectionBlock } from '../cli/authoring-contract.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const FINDINGS_REFERENCE = 'docs/reference/findings.md';
+/** Files that carry the authoring-contract block (docguard.authoring-contract#FR-003). */
+export const AUTHORING_BLOCK_FILES = ['extensions/spec-kit-docguard/skills/docguard-fix/SKILL.md', '.agent/skills/docguard-fix/SKILL.md'];
+const BLOCK_RE = /<!-- docguard:authoring-contract\b[^>]*-->[\s\S]*?<!-- \/docguard:authoring-contract -->/;
+
+/** `text` with its authoring-contract block replaced by the registry's, or null without a block. */
+export function withAuthoringBlock(text) {
+  return BLOCK_RE.test(text) ? text.replace(BLOCK_RE, skillSectionBlock()) : null;
+}
 
 const normalize = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
 const NAME_BY_KEY = new Map(Object.entries(DISPLAY_NAMES).map(([key, name]) => [normalize(key), { key, name }]));
@@ -80,19 +89,21 @@ export function renderFindingsReference() {
 }
 
 function main(argv) {
-  const path = resolve(ROOT, FINDINGS_REFERENCE);
-  const rendered = renderFindingsReference();
-  let current = null;
-  try { current = readFileSync(path, 'utf-8'); } catch { /* missing counts as stale */ }
-  if (argv.includes('--check')) {
-    if (current === rendered) { console.log(`${FINDINGS_REFERENCE} is current.`); return 0; }
-    console.error(`Out of date: ${FINDINGS_REFERENCE} — run \`npm run docs:reference\`.`);
-    return 1;
+  const targets = [[FINDINGS_REFERENCE, () => renderFindingsReference()]];
+  for (const rel of AUTHORING_BLOCK_FILES) targets.push([rel, current => withAuthoringBlock(current ?? '')]);
+  let stale = 0;
+  for (const [rel, render] of targets) {
+    const path = resolve(ROOT, rel);
+    let current = null;
+    try { current = readFileSync(path, 'utf-8'); } catch { /* missing counts as stale */ }
+    const rendered = render(current);
+    if (rendered === null) { console.error(`${rel} has no docguard:authoring-contract block.`); stale++; continue; }
+    if (current === rendered) { console.log(`${rel} ${argv.includes('--check') ? 'is current.' : 'already current — nothing written.'}`); continue; }
+    if (argv.includes('--check')) { console.error(`Out of date: ${rel} — run \`npm run docs:reference\`.`); stale++; continue; }
+    writeFileSync(path, rendered, 'utf-8');
+    console.log(`Regenerated: ${rel}`);
   }
-  if (current === rendered) { console.log(`${FINDINGS_REFERENCE} already current — nothing written.`); return 0; }
-  writeFileSync(path, rendered, 'utf-8');
-  console.log(`Regenerated: ${FINDINGS_REFERENCE}`);
-  return 0;
+  return stale ? 1 : 0;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

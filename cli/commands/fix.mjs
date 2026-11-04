@@ -22,6 +22,7 @@ import { existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { resolve, basename, dirname } from 'node:path';
 import { execSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { authoringLines } from '../authoring-contract.mjs';
 import { c } from '../shared.mjs';
 import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
 import { applyMechanicalFixes } from '../writers/mechanical.mjs';
@@ -55,7 +56,7 @@ export function applyApiSurfaceWrites(projectDir, config) {
 // ── Document Quality Definitions ───────────────────────────────────────────
 // What each doc SHOULD contain, and what to look for in the codebase
 
-const DOC_EXPECTATIONS = {
+export const DOC_EXPECTATIONS = {
   __proto__: null,
   'docs-canonical/ARCHITECTURE.md': {
     label: 'Architecture',
@@ -77,12 +78,9 @@ RESEARCH STEPS:
 6. Identify external dependencies and what role they play
 
 WRITE THE DOCUMENT:
-- System Overview: 2-3 sentences on what this project does and who uses it
-- Component Map: Table of each module/directory with its responsibility
-- Layer Boundaries: Which layers can import from which (draw import rules)
-- Data Flow: How a request/command flows through the system
-- Key Design Decisions: Why the architecture is the way it is
-- Technology Choices: List frameworks/tools and why they were chosen
+Use one ## heading per section, named as below.
+${authoringLines('docs-canonical/ARCHITECTURE.md').join('\n')}
+- Key Design Decisions (recommended): why the architecture is the way it is
 
 FORMAT: Use the docguard metadata header (version, status, last-reviewed).
 IMPORTANT: Use REAL file paths, REAL module names, REAL dependency names. No placeholders.`,
@@ -108,6 +106,8 @@ RESEARCH STEPS:
 6. If no database: document the config file format (.docguard.json, etc.)
 
 WRITE THE DOCUMENT:
+Use one ## heading per section, named as below.
+${authoringLines('docs-canonical/DATA-MODEL.md').join('\n')}
 - If database project: Document each table with columns, types, constraints, indexes, relationships
 - If config-driven: Document each config file format with all fields, types, defaults, and validation rules
 - If API project: Document request/response shapes
@@ -137,11 +137,8 @@ RESEARCH STEPS:
 6. Look for CORS configuration, rate limiting, input validation
 
 WRITE THE DOCUMENT:
-- Auth Mechanism: What auth does this project use? (OAuth, JWT, API key, none, etc.)
-- Secrets Inventory: List all secrets/env vars needed (names only, never values)
-- Secrets Storage: Where are secrets stored? (.env, Vault, AWS Secrets Manager, etc.)
-- Permissions/RBAC: What roles exist? What can each role do?
-- Security Boundaries: What is trusted vs untrusted input?
+Use one ## heading per section, named as below.
+${authoringLines('docs-canonical/SECURITY.md').join('\n')}
 - .gitignore Audit: Confirm sensitive files are excluded from version control
 - If CLI tool with no auth: State explicitly "No authentication required — this is a local CLI tool"
 
@@ -168,12 +165,8 @@ RESEARCH STEPS:
 6. Look for CI config that runs tests (.github/workflows/)
 
 WRITE THE DOCUMENT:
-- Test Framework: What testing tool is used and why
-- Test Structure: Where tests live, naming conventions
-- Test Commands: Exact commands to run unit, integration, E2E tests
-- Critical Flows: List the 5-10 most important things that MUST be tested
-- Coverage: Current coverage and target thresholds
-- CI Integration: How tests run in CI/CD
+Use one ## heading per section, named as below.
+${authoringLines('docs-canonical/TEST-SPEC.md').join('\n')}
 
 IMPORTANT: Reference REAL test files. If there are no tests yet, document what SHOULD be tested.`,
   },
@@ -231,9 +224,9 @@ RESEARCH STEPS:
 6. Look for setup scripts in scripts/ or Makefile
 
 WRITE THE DOCUMENT:
-- Prerequisites: Node version, package manager, any system deps
-- Setup Steps: Exact commands from clone to running (git clone → npm install → npm run dev)
-- Environment Variables: Table of all env vars (name, required/optional, description, example value — never real secrets)
+Use one ## heading per section, named as below.
+${authoringLines('docs-canonical/ENVIRONMENT.md').join('\n')}
+- In Environment Variables, a table: name, required/optional, description, example value (never a real secret)
 - If CLI with no env vars: State "No environment variables required"
 - Common Issues: Known gotchas during setup
 

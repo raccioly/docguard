@@ -66,13 +66,13 @@ DocGuard enforces **Canonical-Driven Development (CDD)** — a methodology where
 
 DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension. It validates the artifacts that Spec Kit creates, ensuring your specs stay high-quality throughout the development lifecycle.
 
-🧭 **[How it works (9-page brief)](https://raccioly.github.io/docguard/docguard-explained.html)** ([PDF](https://raccioly.github.io/docguard/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
+🧭 **[How it works (10-page brief)](https://raccioly.github.io/docguard/docguard-explained.html)** ([PDF](https://raccioly.github.io/docguard/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
 
 ### Architecture
 
 ```mermaid
 graph TD
-    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (27)"]
+    CLI["CLI Entry<br/>docguard.mjs"] --> Commands["Commands (28)"]
     Commands --> guard["guard"]
     Commands --> generate["generate"]
     Commands --> score["score"]
@@ -80,7 +80,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs · ignore<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (34)"]
+    guard --> Validators["Validators (36)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -223,6 +223,10 @@ guard ──▶ fix --write (mechanical, auto) ──▶ guard ──▶ diagnos
 
 ---
 
+## ☁️ AWS AI-DLC Integration
+
+DocGuard reads [AWS AI-DLC](https://github.com/awslabs/aidlc-workflows) workspaces on its own: traceability targets that no longer exist, gaps left in completed stages, deliverables removed after a unit, and agent memory that names what is gone (AID001–AID004, MEM001–MEM002). It also ships as an AI-DLC plugin, whose `docguard-guard` sensor fails a construction gate when the stage introduced drift. See the [AI-DLC guide](docs/guides/aidlc.md).
+
 ## 🌱 Spec Kit Integration
 
 DocGuard is a [community extension](https://github.com/github/spec-kit/blob/main/extensions/README.md) for GitHub's **Spec Kit** framework. While Spec Kit focuses on **creating** specifications (via AI slash commands like `/speckit.specify` and `/speckit.plan`), DocGuard focuses on **validating** their quality.
@@ -307,17 +311,17 @@ workflow hooks that run them.
 
 ## Usage
 
-DocGuard ships **27 commands** (the "Daily 5" + 22 situational tools, including lifecycle reconciliation, doc dependency review, requirement anchors, agent-rule resolution, the suppression listing, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
+DocGuard ships **28 commands** (the "Daily 5" + 23 situational tools, including lifecycle reconciliation, doc dependency review, requirement anchors, agent-rule resolution, the suppression listing, retirement and spec tracking, the zero-install `demo`, the `mcp` server, and the `ci` pipeline gate). Six additional one-shot scaffolders are accessed via `docguard init --with <name>`. Legacy command forms remain compatible until v1.0 and print their replacements.
 
 **The Daily 5** — what you'll reach for 95% of the time:
 
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Bootstrap a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Validate against canonical docs — 34 validators |
+| `guard` | Validate against canonical docs — 36 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
-| `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
+| `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs; `--dora` for DORA documentation-quality and AI-capability evidence) |
 
 **Tools (situational, but day-to-day useful):**
 
@@ -351,6 +355,8 @@ DocGuard ships **27 commands** (the "Daily 5" + 22 situational tools, including 
 | `score --trend` | Score trajectory from recorded `ci` runs — sparkline, delta, and the last 10 runs with commit stamps |
 | `memory` | Per-domain accuracy headline (endpoints / entities / env / tech) |
 | `memory --diff` | Drill into which specific claims don't match code |
+| `policy` | The enforcement ladder: which advisory finding codes CI history shows are ready to promote to warnings or errors |
+| `sensor --aidlc` | AWS AI-DLC's sensor contract, one JSON line: passes when the work in progress introduced no drift since HEAD. The DocGuard AI-DLC plugin runs it at construction gates; not listed in `--help`, because it is meant for machines |
 | `memory --pack` | Write `.docguard/context-pack.md` — compact, code-truth-stamped session-start context for AI agents |
 | `score --diff` | Drill into which checks pulled each category down |
 | `trace` / `trace --reverse <file>` | Requirements traceability — forward AND reverse |
@@ -460,7 +466,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **34 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
+DocGuard runs **36 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
 > **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
 > second check result (`Doc Sections`) under the same validator key, so rows are
@@ -503,8 +509,10 @@ DocGuard runs **34 automated validators** on every `guard` check. Source-facing 
 | 31 | **Doc-Dependency** | A doc section that declares `covers=` is reported when a covered symbol's code changes semantically since its last `docguard review --accept` (formatting, comments and line moves do not count); opt-in by declaration | ✅ On |
 | 32 | **Path-Scoped-Rules** | Agent instruction files per harness (nested AGENTS.md/CLAUDE.md, Claude Code rules and skills, Cursor `.mdc`, Copilot `.instructions.md`, OpenHands skills): scope globs that match no tracked file, pointers to missing paths (including routing tables), instructions loaded for one path over the byte budget, and scopes a harness cannot read | ✅ On |
 | 33 | **Doc-Ownership** | With an `ownership` map in `.docguard.json`: source directories no doc section owns, two equally specific owners, patterns that match nothing, entries naming missing docs; also lints a committed `.devin/wiki.json` against Devin's limits and for paths that are gone | ✅ On |
-| 34 | **Suppressions** | `.docguardignore` entries whose `expires:` date has passed (they no longer exclude anything), whose expiry is not a calendar date, or, with `suppressions.requireReason`, that have no `# reason` | ✅ On |
+| 34 | **Suppressions** | Suppressions of any kind whose `expires:` date has passed (they no longer suppress anything), whose expiry is not a calendar date, or, with `suppressions.requireReason`, that have no `# reason` | ✅ On |
 | 35 | **Requirement-Anchors** | With `.docguard-anchor-lock.jsonl` or `anchors.enabled`: reviewed code→requirement links whose code or requirement changed since review (ANC001/ANC002), reviewed links whose tag is gone (ANC003), tags citing an undeclared or retired requirement (ANC007/ANC008), lock problems (ANC005/ANC009) and files read below their exact tier (ANC010). `docguard anchors` lists every link; `anchors accept` records a review | ✅ On |
+| 36 | **Decision-Records** | ADR status, one-way or dangling supersession, index/record mismatches, and unanswered clarifications or `[Answer]:` tags (DEC001–DEC006). Informational by default | ✅ On |
+| 37 | **AIDLC** | AWS AI-DLC workspaces (`aidlc/spaces/…`, legacy `aidlc-docs/`): traceability targets that no longer exist (AID001), gaps left in completed stages (AID002), unit deliverables removed after the unit (AID003), unreadable records (AID004). Informational by default | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json
@@ -722,10 +730,10 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 3,322 tests (node:test, zero test dependencies)
+npm test    # 4,244 tests (node:test, zero test dependencies)
 ```
 
-Covers all 27 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
+Covers all 28 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
 
 ### CI Matrix
 

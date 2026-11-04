@@ -1,6 +1,6 @@
 # Drift Log
 
-<!-- docguard:last-reviewed 2026-09-14 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > Documents conscious deviations from canonical specifications.
 > Every `// DRIFT: reason` in code must have a corresponding entry here.
@@ -17,3 +17,4 @@
 | 2026-05-26 | `CHANGELOG.md` / `extensions/spec-kit-docguard/skills/*` | None | v0.12-v0.15 changelogs and release notes reference `// DRIFT:` in feature descriptions (e.g. K-3 .docguardignore, v0.13 sync, v0.14 P3 scoping). Documentation prose only, not actionable drift. | Info | By design — release notes |
 | 2026-07-03 | `templates/commands/*`, `CHANGELOG.md`, `docs/ai-integration.md` | None | v0.29 batch audit: the DRIFT mentions in recently-committed files are the known by-design classes above (template instruction text, validator docstrings, changelog prose, and the new AI-integration guide's workflow step 6 teaching the drift protocol). No new code deviations from canonical docs were introduced by the findings migration, generate split, or integration-surface work. | Info | Audited — no actionable drift |
 | 2026-07-03 | post-v0.29 batch (`cli/scanners/speckit.mjs`, `tests/speckit-phantom.test.mjs`, `packaging/*`) | None | Post-release batch audit (phantom detection, instruction audit, trace --features, distribution files): DRIFT mentions are validator/test/doc prose of the by-design classes above. No new code deviations. | Info | Audited — no actionable drift |
+| 2026-11-03 | specs 081–092 (`tests/verdict-contract.test.mjs`, `specs/081-verdict-contract/*`, `specs/083-enforcement-ladder/spec.md`) | None | Batch audit of the DocGuard × AI-DLC program: every added `// DRIFT:` mention is test data (the Drift validator's `no-matches` reason) or spec prose explaining the `empty` verdict. No code deviation from canonical docs was introduced. | Info | Audited — no actionable drift |

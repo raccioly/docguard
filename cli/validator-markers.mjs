@@ -20,6 +20,7 @@
  * Zero NPM dependencies — pure Node.js built-ins.
  */
 
+import { isExpired, splitWaiverMetadata } from './waiver-metadata.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { listCanonicalDocs, relPosix } from './shared-ignore.mjs';
@@ -72,7 +73,11 @@ export function loadValidatorSuppressions(projectDir, validKeys) {
     let m;
     while ((m = MARKER_RE.exec(content)) !== null) {
       const rawKey = m[1];
-      const reason = (m[2] || '').trim();
+      // docguard.accountable-suppressions#FR-004: an expired marker, or one with
+      // unreadable owner/expiry metadata, no longer declares anything.
+      const meta = splitWaiverMetadata((m[2] || '').trim());
+      if (meta.problem || isExpired(meta.expires)) continue;
+      const reason = meta.reason || '';
       const canonical = canonicalByNorm.get(norm(rawKey));
       if (!canonical) {
         unknown.push({ raw: rawKey, file });
@@ -109,10 +114,14 @@ export function listValidatorMarkers(projectDir, validKeys) {
     let m;
     while ((m = re.exec(content)) !== null) {
       const canonical = canonicalByNorm.get(norm(m[1]));
+      const meta = splitWaiverMetadata((m[2] || '').trim() || null);
       out.push({
         key: canonical || m[1],
         known: Boolean(canonical),
-        reason: (m[2] || '').trim() || null,
+        reason: meta.reason || null,
+        owner: meta.owner,
+        expires: meta.expires,
+        ...(meta.problem ? { metadataProblem: meta.problem } : {}),
         file: relPosix(projectDir, file),
         line: content.slice(0, m.index).split('\n').length,
       });

@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.4.7 -->
+<!-- docguard:version 1.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-01 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -136,9 +136,22 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | TODO tracking: keywords quoted in code spans or strings are not annotations; comments from the string-aware reader; no self-path skip (spec 073) | `tests/todo-tracking.test.mjs` | ✅ |
 | `cli/shared-requirements.mjs` (requirement `block`), `cli/scanners/requirement-docs.mjs` | `tests/shared-requirements-block.test.mjs`, `tests/traceability.test.mjs` | ✅ |
 | `tools/budget.mjs` (non-regression budgets) | `tests/budget.test.mjs` | ✅ |
+| Specs 081–092 as a whole: each spec's documentation requirement checked against the surfaces it names, the criteria measurable on this repository (`guard --fail-on-inconclusive`, `ignore --format json` owners, `score --dora`), and each one-time measurement checked for its recorded result in Verification Notes | `tests/program-verification.test.mjs` | ✅ |
+| `cli/authoring-contract.mjs` (authoring contract): guidance before spec 082 fails three required sections; fix prompts, skill block and explain name every required section; filled templates and `generate` output pass STR003/STR006; template readers (ADR, REQUIREMENTS, runbooks, CHANGELOG); the score's exemptions; STR007 (spec 082) | `tests/authoring-contract.test.mjs` | ✅ |
+| `tools/fuzz.mjs` (parser fuzz harness: 19 text parsers, seeded generation with structured blocks and mutations, pathological inputs up to about 200 KB; no throw, determinism, linear time) and the `stripHtmlComments` linear-time fix (spec 088) | `tests/validator-fuzz.test.mjs` | ✅ |
+| `tools/release-ab.mjs` and `release-gate.json` (release trend gate): added, removed and volatile findings, exit-code changes, status-only validator comparison, ignored codes, changelog judging and config validation, with two synthetic CLI trees (spec 087) | `tests/release-trend-gate.test.mjs` | ✅ |
 | `cli/commands/mcp.mjs` (MCP server over stdio and loopback HTTP; served-directory confinement) | `tests/mcp.test.mjs`, `tests/mcp-http.test.mjs`, `tests/mcp-doc-tools.test.mjs`, `tests/mcp-project-confinement.test.mjs` | ✅ |
 | `cli/release-age.mjs` (version-age note on guard text, MCP instructions and the context pack) | `tests/update-awareness.test.mjs` | ✅ |
 | `cli/shared-guard-json.mjs` (compact guard response) | `tests/compact-guard-response.test.mjs` | ✅ |
+| `cli/commands/sensor.mjs` and `extensions/aidlc/docguard/`: sensor contract, HEAD-relative pass, caching, plugin manifest, sensor and wrapper contract (spec 090); end to end through AI-DLC in spec 090's Verification Notes and the `aidlc-plugin` CI job | `tests/aidlc-plugin.test.mjs` | ✅ |
+| `cli/commands/score-dora.mjs`, `score --dora` and the `docguard_docs_for_path` `docs` map: DORA's item order and schema, route drift lowering reflects-capabilities, runbook proxy, small-batch scoring, null without git, version control without scoring infrastructure, AI stance, superseded-doc pointers, absence without the flag, and cache-gated open findings (spec 092) | `tests/dora-evidence.test.mjs` | ✅ |
+| `cli/scanners/aidlc.mjs`, `cli/validators/aidlc.mjs`: removed targets, gaps in completed stages, later removals versus own deletions, uncommitted manifests, legacy layout, malformed and escaping records (spec 089) | `tests/aidlc-profile.test.mjs` | ✅ |
+| `cli/commands/memory-aidlc.mjs` and MEM001/MEM002 in `cli/validators/aidlc.mjs`: stale rules and CodeKB, verified-only export, dry run, untouched memory layers, diary consolidation (spec 091) | `tests/memory-governance.test.mjs` | ✅ |
+| `cli/validators/decision-records.mjs`: statuses, MADR front matter, one-way/dangling/successor-less supersession, index mismatches, unanswered clarifications and `[Answer]:` tags, scaffold quiet (spec 086) | `tests/decision-records.test.mjs` | ✅ |
+| `cli/scanners/chain-coverage.mjs` and its Spec-Kit wiring: uncovered (SPK013), dangling (SPK014), floating (SPK015) and unlabeled stories (SPK016); ranges, sub-IDs, qualified IDs, inline code, terminal features, caps, advisory level (spec 085) | `tests/upstream-coverage.test.mjs` | ✅ |
+| `cli/waiver-metadata.mjs`, waiver metadata in `cli/findings.mjs` pragmas, `cli/validator-markers.mjs`, section markers in `cli/validators/structure.mjs`, `cli/shared-ignore.mjs` (`configIgnoreEntry`, `normalizeIgnoreConfig`), `cli/validators/suppressions.mjs` (IGN001 for every kind, IGN004, IGN005), `ignore --owner` (spec 084) | `tests/accountable-suppressions.test.mjs` | ✅ |
+| `cli/required-checks.mjs`, `cli/commands/policy.mjs`, ci history evidence: required checks (inconclusive, empty, N/A marker, disabled, unknown key), ci readiness, history fields, promotion categories (spec 083) | `tests/enforcement-ladder.test.mjs` | ✅ |
+| `cli/observations.mjs`, `cli/shared-git.mjs` (`runGit`), `cli/validator-coverage.mjs` (`deriveVerdict`): six verdicts, applicability class, observation gaps under a stub git, PSR002/REF001 withholding, retry, `--fail-on-inconclusive`, verdicts in JSON, compact, SARIF, JUnit and text, baseline safety, and the reviewed git call-site inventory (spec 081) | `tests/verdict-contract.test.mjs` | ✅ |
 | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs` (MCP doc navigation) | `tests/mcp-doc-tools.test.mjs`, `tests/trace-reverse.test.mjs` | ✅ |
 | `cli/shared-sync-scope.mjs` (`sync --since` section scope) | `tests/sync-since.test.mjs` | ✅ |
 | `cli/scanners/instruction-scopes.mjs`, `cli/scanners/frontmatter.mjs`, `cli/validators/path-scoped-rules.mjs`, `cli/commands/rules.mjs` (PSR001–PSR004, `rules --for`) | `tests/path-scoped-rules.test.mjs` | ✅ |
@@ -206,6 +219,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |
 | 1.4.7 | 2026-11-01 | DocGuard Team | Map spec 080's report-precision and router unresolved-path tests, and `tests/anchor-cache.test.mjs` |
 | 1.4.6 | 2026-10-13 | DocGuard Team | The CI runtime budget is a per-test ceiling at reference-runner speed (`tools/suite-runtime-budget.mjs`, spec 051 FR-007 revision) |
 | 1.4.5 | 2026-10-11 | DocGuard Team | Map `sync-tests.mjs` to its tests; `runCI`, `runSpecs` and `runSyncTests` have behaviour tests (#556) |

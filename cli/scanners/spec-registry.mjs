@@ -13,6 +13,7 @@
  * @implements docguard.first-spec-preflight#FR-004
  */
 
+import { runGit } from '../shared-git.mjs';
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -496,10 +497,10 @@ function taskCompletion(path) {
  * @implements docguard.lifecycle-evidence-gaps#FR-002
  */
 export function untrackedRequirementEvidence(projectDir) {
-  const r = spawnSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
-    cwd: projectDir, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+  const r = runGit(projectDir, ['ls-files', '--others', '--exclude-standard', '-z'], {
+    operation: 'git ls-files --others', answers: [0], maxBuffer: 16 * 1024 * 1024,
   });
-  if (r.status !== 0) return [];
+  if (r.status !== 0 || r.error) return [];
   const out = [];
   for (const rel of r.stdout.split('\0').filter(Boolean).map(posix).sort()) {
     if (!isTestSource(rel)) continue;
@@ -511,10 +512,10 @@ export function untrackedRequirementEvidence(projectDir) {
 }
 
 function projectFiles(projectDir) {
-  const tracked = spawnSync('git', ['ls-files', '-z'], {
-    cwd: projectDir,
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
+  // docguard.verdict-contract#FR-004: a failure while git is readable is a gap;
+  // the working-tree walk below then widens the inputs, which guard accounts for.
+  const tracked = runGit(projectDir, ['ls-files', '-z'], {
+    operation: 'git ls-files (spec registry)', answers: [0], maxBuffer: 16 * 1024 * 1024,
   });
   // During a conflicted merge `git ls-files` lists an unmerged path once per
   // stage (up to three times), which counted its evidence up to three times.
