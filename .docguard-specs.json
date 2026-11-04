@@ -3295,7 +3295,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -3315,8 +3315,22 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "b52a873849300c3f4a8d06e99378c3ee34e70cf7",
+          "outcomes": [
+            {
+              "revision": "b52a873849300c3f4a8d06e99378c3ee34e70cf7",
+              "reason": "DEC001-DEC006 advisory; 107 first-pass findings hand-reviewed to 5 genuine, exactly the 5 the final A/B adds; no exit change.",
+              "evidence": [
+                "cli/validators/decision-records.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/decision-records.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -3339,7 +3353,7 @@
         "artifacts": [
           {
             "path": "specs/086-decision-records/spec.md",
-            "digest": "sha256:083635c04d9357246e7d2e7ccfbe64afabfe3bfe261affca44b7bd7dec1c6120"
+            "digest": "sha256:355313cd2c9270885f07f7c0e337ca47f9fab5b082ada60fd24f7e1d9c9e7463"
           },
           {
             "path": "specs/086-decision-records/plan.md",
