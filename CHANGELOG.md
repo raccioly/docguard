@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-11-04
+
 ### Added
 
 - **Every check ends in a verdict** (`docguard.verdict-contract`, spec 081,
@@ -191,6 +193,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task evidence now record gaps too; Document-Lifecycle reports a gap as
   `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
   with a gap, so withheld findings cannot drop out of the baseline.
+
+### Commits
+
+- spec: re-anchor 083 onto main after the #610 squash; refresh registry (#611)
+- Pre-0.46.0: re-anchor 081–092, bring in #609, CI keeps its history, 083 verified, FRS005 precision (#610)
+- DocGuard × AI-DLC program: verdicts, enforcement ladder, AI-DLC plugin, DORA evidence, authoring contract, release gate, fuzzing (specs 081–092) (#608)
 
 ## [0.45.2] - 2026-11-02
 
