@@ -105,5 +105,5 @@ Hermetic A/B on 2026-11-03: v0.45.2 against this branch, 45 local projects, with
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `c113229fd15d56a013362a3f37d4062251943071` — One section registry read by STR003, score, explain, fix and the Spec Kit skill; guidance and templates round-trip; A/B: no exit change, 3 Doc Quality scores moved 2 points from the exemptions. Evidence: `cli/authoring-contract.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/authoring-contract.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — One section registry read by STR003, score, explain, fix and the Spec Kit skill; guidance and templates round-trip; A/B: no exit change, 3 Doc Quality scores moved 2 points from the exemptions. Evidence: `cli/authoring-contract.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/authoring-contract.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

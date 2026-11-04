@@ -104,5 +104,5 @@ Constraints from AI-DLC itself: plugins may not contribute `memory`, and the lea
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `7cd1a9b82439f8681ca297569f50e77f9135c505` — MEM001/MEM002 history-backed; export and consolidate read-only by default; a stock AI-DLC org.md reports nothing; no change on projects without spaces. Evidence: `cli/commands/memory-aidlc.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/memory-governance.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — MEM001/MEM002 history-backed; export and consolidate read-only by default; a stock AI-DLC org.md reports nothing; no change on projects without spaces. Evidence: `cli/commands/memory-aidlc.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/memory-governance.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

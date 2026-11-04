@@ -29,10 +29,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "da9a26e1bfecd4a989362a8bf74af9f72f1edb53",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "da9a26e1bfecd4a989362a8bf74af9f72f1edb53",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "Owner and expiry on every suppression kind through one parser; suppression listings identical on 46 projects (878 entries); no IGN finding added.",
               "evidence": [
                 "cli/shared-ignore.mjs",
@@ -45,7 +45,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "da9a26e1bfecd4a989362a8bf74af9f72f1edb53",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -70,7 +74,7 @@
         "artifacts": [
           {
             "path": "specs/084-accountable-suppressions/spec.md",
-            "digest": "sha256:5bcd3f8b0740f288168e093e26b403b26c4229bd4815e0acd72ccd72d52f3cc7"
+            "digest": "sha256:d4d6fb9611999066a2f79dc99481ae1b20769d913728dd09e2963fc5047b0306"
           },
           {
             "path": "specs/084-accountable-suppressions/plan.md",
@@ -762,10 +766,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "b419ab6a1e12fc6a52889d08110fbbbc66db9f86",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "b419ab6a1e12fc6a52889d08110fbbbc66db9f86",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "sensor --aidlc and the plugin: validate and build pass locally and in CI; clean passes, drift fails, missing DocGuard could-not-run on native 2.11.2; main(argv) contract.",
               "evidence": [
                 ".github/workflows/ci.yml",
@@ -780,7 +784,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "b419ab6a1e12fc6a52889d08110fbbbc66db9f86",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -803,7 +811,7 @@
         "artifacts": [
           {
             "path": "specs/090-aidlc-plugin/spec.md",
-            "digest": "sha256:b9cc54c1d9dc68ad0270e6b5d6777e2fe727f80932f291ea87d2f8b164a29a95"
+            "digest": "sha256:6c09bff84606a5a05e4d5dab6380be5803ad62dc6f779b4c4687f2a2e4a11276"
           },
           {
             "path": "specs/090-aidlc-plugin/plan.md",
@@ -926,10 +934,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "98b93785df700e41369406d9a7e598d663b72ee0",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "98b93785df700e41369406d9a7e598d663b72ee0",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "AID001-AID004 on AI-DLC 2.11.2 records; a seeded aidlc-config project reports exactly the three planted faults; no change on projects without records.",
               "evidence": [
                 "cli/scanners/aidlc.mjs",
@@ -941,7 +949,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "98b93785df700e41369406d9a7e598d663b72ee0",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -965,7 +977,7 @@
         "artifacts": [
           {
             "path": "specs/089-aidlc-profile/spec.md",
-            "digest": "sha256:daa58d76bf2be1393863beae41fd52114ef43262f444939c4ab14b5c7a4c2aae"
+            "digest": "sha256:0f12c1254e5d878d558cad0e4472304fdbc1ef5cbca1dcc444875d2dfd569db8"
           },
           {
             "path": "specs/089-aidlc-profile/plan.md",
@@ -1430,10 +1442,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "c113229fd15d56a013362a3f37d4062251943071",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "c113229fd15d56a013362a3f37d4062251943071",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "One section registry read by STR003, score, explain, fix and the Spec Kit skill; guidance and templates round-trip; A/B: no exit change, 3 Doc Quality scores moved 2 points from the exemptions.",
               "evidence": [
                 "cli/authoring-contract.mjs",
@@ -1444,7 +1456,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "c113229fd15d56a013362a3f37d4062251943071",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -1466,7 +1482,7 @@
         "artifacts": [
           {
             "path": "specs/082-authoring-contract/spec.md",
-            "digest": "sha256:049425a81014d05ef0d9ec939e4e7d1d74f72eb670ea430c0044ffe31a9ca269"
+            "digest": "sha256:8acefe69c5222821be45a623ffa836658e4f6bc335af6e506fca1662803cdddd"
           },
           {
             "path": "specs/082-authoring-contract/plan.md",
@@ -3350,10 +3366,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "b52a873849300c3f4a8d06e99378c3ee34e70cf7",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "b52a873849300c3f4a8d06e99378c3ee34e70cf7",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "DEC001-DEC006 advisory; 107 first-pass findings hand-reviewed to 5 genuine, exactly the 5 the final A/B adds; no exit change.",
               "evidence": [
                 "cli/validators/decision-records.mjs",
@@ -3363,7 +3379,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "b52a873849300c3f4a8d06e99378c3ee34e70cf7",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -3388,7 +3408,7 @@
         "artifacts": [
           {
             "path": "specs/086-decision-records/spec.md",
-            "digest": "sha256:355313cd2c9270885f07f7c0e337ca47f9fab5b082ada60fd24f7e1d9c9e7463"
+            "digest": "sha256:2be8dde2a8e8f1f2d8ec8f12169cc0ed22425b82a92912efc50008f3686e262e"
           },
           {
             "path": "specs/086-decision-records/plan.md",
@@ -5436,10 +5456,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "1a6fb44e7a0ac8e17739667aafa108d3de63235e",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "1a6fb44e7a0ac8e17739667aafa108d3de63235e",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "score --dora maps DORA's items and AI capabilities to repository evidence, 8 of 8 scored here; docs map within budget after slimming; display-only.",
               "evidence": [
                 "cli/commands/score-dora.mjs",
@@ -5453,7 +5473,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "1a6fb44e7a0ac8e17739667aafa108d3de63235e",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -5475,7 +5499,7 @@
         "artifacts": [
           {
             "path": "specs/092-dora-evidence/spec.md",
-            "digest": "sha256:f911aa5d2e87e8d08e1cc2e616b613041fe554fc364f45a6f034fcf33f91a72f"
+            "digest": "sha256:649e646d0eb1ad899ea0b90fefc24ddc61157a66b69dc6965d7639819ec3ba38"
           },
           {
             "path": "specs/092-dora-evidence/plan.md",
@@ -10256,10 +10280,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "7cd1a9b82439f8681ca297569f50e77f9135c505",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "7cd1a9b82439f8681ca297569f50e77f9135c505",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "MEM001/MEM002 history-backed; export and consolidate read-only by default; a stock AI-DLC org.md reports nothing; no change on projects without spaces.",
               "evidence": [
                 "cli/commands/memory-aidlc.mjs",
@@ -10270,7 +10294,11 @@
                 "tests/program-verification.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "7cd1a9b82439f8681ca297569f50e77f9135c505",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -10292,7 +10320,7 @@
         "artifacts": [
           {
             "path": "specs/091-memory-governance/spec.md",
-            "digest": "sha256:f24a4f5bf44d045943afdf7fcc839c02bbe9eb1c29a344a091bba477c511c742"
+            "digest": "sha256:1a23b56d840972c81a08102dcad448798a650091632a9efc66c05580d99762fc"
           },
           {
             "path": "specs/091-memory-governance/plan.md",
@@ -17361,10 +17389,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "dd5cc88875062704df54903355027df9c9e30c0d",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "dd5cc88875062704df54903355027df9c9e30c0d",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "SPK013-SPK016 advisory; qualifier narrowed after hand review (precision 0.82 to 1.0 on this repository); A/B adds only SPK codes, no exit change.",
               "evidence": [
                 "cli/scanners/chain-coverage.mjs",
@@ -17375,7 +17403,11 @@
                 "tests/upstream-coverage.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "dd5cc88875062704df54903355027df9c9e30c0d",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -17399,7 +17431,7 @@
         "artifacts": [
           {
             "path": "specs/085-upstream-coverage/spec.md",
-            "digest": "sha256:ba8cc786b7f680846ec772f25a7d2988cfeb1cf0d1c187d793d627b762a94c60"
+            "digest": "sha256:b9bbc18482e1e59f78c62f2b9760b6d4e8e65931fb77b44ba4cb7a94fc9eb032"
           },
           {
             "path": "specs/085-upstream-coverage/plan.md",
@@ -17672,10 +17704,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "1fe2d2c18244364520523110a2941f1871fcb93f",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "1fe2d2c18244364520523110a2941f1871fcb93f",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "19 parsers fuzzed each run; found and fixed the quadratic comment reader (9.7 s to under 1 ms, identical output); six deep seeds clean.",
               "evidence": [
                 "docs-canonical/ARCHITECTURE.md",
@@ -17685,7 +17717,11 @@
                 "tools/fuzz.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "1fe2d2c18244364520523110a2941f1871fcb93f",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -17706,7 +17742,7 @@
         "artifacts": [
           {
             "path": "specs/088-validator-fuzz/spec.md",
-            "digest": "sha256:610c00816fd6b75c81092c6aac6fda2d0f9b240cd53be02064d68decaf830249"
+            "digest": "sha256:1a73bca0cd4c93a8b28734ee7a80c5f038541f17f663a09ff33f1f1f67b90d23"
           },
           {
             "path": "specs/088-validator-fuzz/plan.md",
@@ -17809,10 +17845,10 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cead73abe89a01a969b8c0f8a168e8e502882cdc",
+          "lastReviewedRevision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
           "outcomes": [
             {
-              "revision": "cead73abe89a01a969b8c0f8a168e8e502882cdc",
+              "revision": "779b8b4eae47ef3fb49fe503246405aa02680df5",
               "reason": "Six closed verdicts and observation gaps; A/B identical on 45 projects; final fault injection adds nothing after ANC003/SPR001/SPR006/SPR009 joined the withheld set; --fail-on-inconclusive passes here.",
               "evidence": [
                 "cli/observations.mjs",
@@ -17826,7 +17862,11 @@
                 "tests/verdict-contract.test.mjs"
               ],
               "deviations": [],
-              "successor": null
+              "successor": null,
+              "reanchoredFrom": {
+                "revision": "cead73abe89a01a969b8c0f8a168e8e502882cdc",
+                "method": "blob-equal"
+              }
             }
           ]
         }
@@ -17862,7 +17902,7 @@
         "artifacts": [
           {
             "path": "specs/081-verdict-contract/spec.md",
-            "digest": "sha256:3e64fddd939b0f20134e39782c5070c7658dc4c6142ec9e0993cb531527b9bf6"
+            "digest": "sha256:a99b35dd9803dca5939c07320bc2c286b7b076d4dd8bc6180971b08772d601d1"
           },
           {
             "path": "specs/081-verdict-contract/plan.md",

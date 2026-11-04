@@ -91,5 +91,5 @@ Generation was tuned until every parser was reached. In a 2,000-document sample,
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `1fe2d2c18244364520523110a2941f1871fcb93f` — 19 parsers fuzzed each run; found and fixed the quadratic comment reader (9.7 s to under 1 ms, identical output); six deep seeds clean. Evidence: `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/validator-fuzz.test.mjs`, `tools/fuzz.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — 19 parsers fuzzed each run; found and fixed the quadratic comment reader (9.7 s to under 1 ms, identical output); six deep seeds clean. Evidence: `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/validator-fuzz.test.mjs`, `tools/fuzz.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->
