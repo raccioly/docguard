@@ -5414,7 +5414,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -5436,8 +5436,26 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "1a6fb44e7a0ac8e17739667aafa108d3de63235e",
+          "outcomes": [
+            {
+              "revision": "1a6fb44e7a0ac8e17739667aafa108d3de63235e",
+              "reason": "score --dora maps DORA's items and AI capabilities to repository evidence, 8 of 8 scored here; docs map within budget after slimming; display-only.",
+              "evidence": [
+                "cli/commands/score-dora.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "cli/sensor-cache.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/dora-evidence.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -5457,7 +5475,7 @@
         "artifacts": [
           {
             "path": "specs/092-dora-evidence/spec.md",
-            "digest": "sha256:1d7e6672b7edc288fb61f18873e5faf0add85e267487e43d3aac552e433371d4"
+            "digest": "sha256:f911aa5d2e87e8d08e1cc2e616b613041fe554fc364f45a6f034fcf33f91a72f"
           },
           {
             "path": "specs/092-dora-evidence/plan.md",
