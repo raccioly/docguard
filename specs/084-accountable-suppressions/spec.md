@@ -109,3 +109,9 @@ As a team lead, I can require every waiver to name an owner and to expire within
 - Signatures or approvals on waivers (AI-DLCOps' "decision-maker signature"). Ownership is a declared field, and review happens in the pull request that adds it.
 - Expiring baseline fingerprints individually.
 - Notifying owners.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `da9a26e1bfecd4a989362a8bf74af9f72f1edb53` — Owner and expiry on every suppression kind through one parser; suppression listings identical on 46 projects (878 entries); no IGN finding added. Evidence: `cli/shared-ignore.mjs`, `cli/validators/suppressions.mjs`, `cli/waiver-metadata.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/accountable-suppressions.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

@@ -8,7 +8,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -29,8 +29,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "da9a26e1bfecd4a989362a8bf74af9f72f1edb53",
+          "outcomes": [
+            {
+              "revision": "da9a26e1bfecd4a989362a8bf74af9f72f1edb53",
+              "reason": "Owner and expiry on every suppression kind through one parser; suppression listings identical on 46 projects (878 entries); no IGN finding added.",
+              "evidence": [
+                "cli/shared-ignore.mjs",
+                "cli/validators/suppressions.mjs",
+                "cli/waiver-metadata.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/accountable-suppressions.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -53,7 +70,7 @@
         "artifacts": [
           {
             "path": "specs/084-accountable-suppressions/spec.md",
-            "digest": "sha256:535bd2b190ee3983712674733f9452f95650e1cd9feced80d64f19a1ced514f9"
+            "digest": "sha256:5bcd3f8b0740f288168e093e26b403b26c4229bd4815e0acd72ccd72d52f3cc7"
           },
           {
             "path": "specs/084-accountable-suppressions/plan.md",
