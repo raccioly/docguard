@@ -148,7 +148,7 @@ The MCP server ships as a container image on GHCR — no Node.js install require
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:latest
 ```
 
-The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so don't pipe anything else into it. Mount the project you want inspected at `/workspace`; tools inspect it by default, and a `projectDir` in a tool call must be `/workspace` or a directory inside it (add `--root <dir>` after the image name to serve another mounted tree).
+The entrypoint is the **stdio** MCP transport: stdout is the JSON-RPC channel, so keep every other output off it. Mount the project you want inspected at `/workspace`; tools inspect it by default, and a `projectDir` in a tool call must be `/workspace` or a directory inside it (add `--root <dir>` after the image name to serve another mounted tree).
 
 Pin a version rather than tracking `latest` in CI:
 
@@ -156,7 +156,7 @@ Pin a version rather than tracking `latest` in CI:
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:0.34.9
 ```
 
-The server is **read-only** — it never writes to the mounted project.
+The server is **read-only**: it only reads the mounted project.
 
 ### More ways to integrate
 
@@ -209,7 +209,7 @@ DocGuard splits drift into two kinds and is explicit about which is which:
 | **Mechanical** (deterministic) | An endpoint documented in `API-REFERENCE.md` that the OpenAPI spec confirms is gone | `docguard fix --write` deletes the row + detail block itself — **no AI** |
 | **Agent** (needs judgment) | Rewriting an X-Ray prose section as CloudWatch; writing a new endpoint's request/response | Routed to an AI agent via `diagnose` / `fix --doc` prompts |
 
-`docguard fix --write` only touches docs marked `<!-- docguard:generated true -->` (override with `--force`), is idempotent, and prints exactly what changed. It never rewrites prose — that stays with the agent.
+`docguard fix --write` only touches docs marked `<!-- docguard:generated true -->` (override with `--force`), is idempotent, and prints exactly what changed. Prose stays with the agent.
 
 ### Continuous documentation workflow
 
@@ -468,11 +468,11 @@ $ npx docguard-cli generate
 
 DocGuard runs **36 automated validators** on every `guard` check. Source-facing validators are language-aware where their evidence model applies; repository and document validators operate independently of source language.
 
-> **Counting note:** `guard` prints 30 result rows, not 29. `Structure` emits a
-> second check result (`Doc Sections`) under the same validator key, so rows are
-> checks, not validators. The published number is the count of shipped
-> `cli/validators/*.mjs` modules and is enforced by tests — don't derive it by
-> counting output rows.
+> **Counting note:** `guard` prints one row per check. `Structure` emits a second
+> check (`Doc Sections`) under the same validator key, so the table below has one
+> row more than there are validators. The published number is the count of shipped
+> `cli/validators/*.mjs` modules, enforced by tests; count those modules rather
+> than output rows.
 
 | # | Validator | What It Checks | Default |
 |:--|:----------|:--------------|:--------|
@@ -628,7 +628,7 @@ DocGuard ships **18 professional templates** with metadata, badges, and revision
 - **Claude Desktop**: download `docguard-v<version>.mcpb` from the [latest release](https://github.com/raccioly/docguard/releases/latest) and drag it into Settings → Extensions — you'll be asked which project folder to analyze. No npm, no JSON editing.
 - **Anything MCP**: DocGuard is a verified namespace on the [official MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=docguard) (`io.github.raccioly/docguard`).
 
-DocGuard works with **every major AI coding agent**. All canonical docs are plain markdown — no vendor lock-in.
+DocGuard works with **every major AI coding agent**. All canonical docs are plain markdown, portable across vendors.
 
 | Agent | Compatibility | Auto-Generate Config |
 |:------|:---:|:---:|
@@ -730,7 +730,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 4,244 tests (node:test, zero test dependencies)
+npm test    # 4,282 tests (node:test, zero test dependencies)
 ```
 
 Covers all 28 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
@@ -752,7 +752,7 @@ DocGuard runs its own `guard`, `score`, `diff`, `diagnose`, and `badge` commands
 
 ## 🏢 Enterprise Adoption
 
-Everything runs local or in your CI — no SaaS, no data leaving your infra.
+Everything runs locally or in your CI, and your data stays in your infrastructure.
 The pieces that matter at company scale:
 
 | Need | DocGuard answer |

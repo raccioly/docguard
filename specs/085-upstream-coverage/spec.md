@@ -116,5 +116,5 @@ Sampled SPK013 IDs had 0 citations in tasks and plans: the finding is literal. O
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `dd5cc88875062704df54903355027df9c9e30c0d` — SPK013-SPK016 advisory; qualifier narrowed after hand review (precision 0.82 to 1.0 on this repository); A/B adds only SPK codes, no exit change. Evidence: `cli/scanners/chain-coverage.mjs`, `cli/scanners/lifecycle-status.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/upstream-coverage.test.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — SPK013-SPK016 advisory; qualifier narrowed after hand review (precision 0.82 to 1.0 on this repository); A/B adds only SPK codes, no exit change. Evidence: `cli/scanners/chain-coverage.mjs`, `cli/scanners/lifecycle-status.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/upstream-coverage.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

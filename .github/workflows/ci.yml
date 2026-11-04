@@ -139,8 +139,29 @@ jobs:
         run: node cli/docguard.mjs diagnose
 
       # ── v0.33 surfaces — dogfood every new command shape ──
+      # Recipe 4b on this repository: `policy` needs CI history to recommend a
+      # promotion (specs/083 SC-003), and a runner starts with none. Every run
+      # restores main's history; only a push to main, on one Node version, saves
+      # it, so pull requests never write a cache that main reads.
+      - name: Restore CI history
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .docguard/history.jsonl
+          key: docguard-history-${{ github.run_id }}
+          restore-keys: docguard-history-
+
       - name: CI gate (self, records history)
         run: node cli/docguard.mjs ci || [ $? -eq 2 ]
+
+      - name: Promotion evidence from the history
+        run: node cli/docguard.mjs policy
+
+      - name: Save CI history
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == 22
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .docguard/history.jsonl
+          key: docguard-history-${{ github.run_id }}
 
       - name: Score trend (reads history from the ci step)
         run: node cli/docguard.mjs score --trend

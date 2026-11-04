@@ -176,6 +176,21 @@ describe('criteria measured on this repository', () => {
   });
 });
 
+describe('this repository collects its own promotion evidence', () => {
+  // @req docguard.enforcement-ladder#SC-003
+  it('CI restores the history on every run and saves it only on a push to main', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const restore = ci.indexOf('uses: actions/cache/restore@');
+    const gate = ci.indexOf('node cli/docguard.mjs ci ');
+    const save = ci.indexOf('uses: actions/cache/save@');
+    assert.ok(restore > 0 && restore < gate && gate < save, 'restore, then ci, then save');
+    assert.match(ci, /node cli\/docguard\.mjs policy/);
+    const saveStep = ci.slice(ci.lastIndexOf('- name:', save), save);
+    assert.match(saveStep, /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/);
+    assert.equal((ci.match(/path: \.docguard\/history\.jsonl/g) || []).length, 2);
+  });
+});
+
 describe('one-time measurements, recorded', () => {
   // @req docguard.verdict-contract#SC-004
   // @req docguard.verdict-contract#SC-005
@@ -183,7 +198,8 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.authoring-contract#SC-002
   it('082: the A/B with score', () => recorded('082-authoring-contract', ['SC-002']));
   // @req docguard.enforcement-ladder#SC-002
-  it('083: the A/B without requiredChecks', () => recorded('083-enforcement-ladder', ['SC-002']));
+  // @req docguard.enforcement-ladder#SC-003
+  it('083: the A/B without requiredChecks, and the policy run checked by hand', () => recorded('083-enforcement-ladder', ['SC-002', 'SC-003']));
   // @req docguard.accountable-suppressions#SC-002
   it('084: the A/B', () => recorded('084-accountable-suppressions', ['SC-002']));
   // @req docguard.upstream-coverage#SC-002

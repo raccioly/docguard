@@ -140,6 +140,41 @@ describe('Field review clarity: freshness', () => {
     assert.equal(validateFreshness(dir, config).filter(r => r.status === 'warn').length, 0);
   });
 
+  // @req docguard.calibrated-finding-channels#FR-022
+  it('counts an added DRIFT line only where Drift would log it', () => {
+    const oldLog = () => {
+      put('deviations.md', oldReview);
+      git('add', 'deviations.md');
+      execFileSync('git', [...FIXTURE_GIT, 'commit', '-qm', 'Synthetic old drift log'], { cwd: dir, stdio: 'pipe',
+        env: { ...process.env, GIT_AUTHOR_DATE: '2020-01-01T12:00:00Z', GIT_COMMITTER_DATE: '2020-01-01T12:00:00Z' } });
+    };
+    const config = { requiredFiles: { driftLog: 'deviations.md' }, documentTypes: { 'deviations.md': { category: 'tracking' } } };
+    const frs005 = () => validateFreshness(dir, config).filter(r => r.code === 'FRS005');
+    git('init');
+    git('config', 'user.name', 'Test');
+    git('config', 'user.email', 'test@example.invalid');
+    git('config', 'core.hooksPath', '/dev/null');
+    oldLog();
+    for (let i = 0; i < 5; i++) {
+      put('src/feature.mjs', `export const value = ${i};\n`);
+      // A fixture string and a line of prose are not deviations to log.
+      put('tests/feature.test.mjs', `const fixture = '// DRIFT: fixture ${i}';\n`);
+      put('src/notes.mjs', `export const note = 'DRIFT: is the marker ${i}';\n`);
+      git('add', '-A');
+      git('commit', '-qm', 'Synthetic source change');
+    }
+    assert.deepEqual(frs005(), [], 'test fixtures and strings without a comment marker are not counted');
+
+    put('src/feature.mjs', 'export const value = 9;\n// DRIFT: intentional behavior\n');
+    git('add', '-A');
+    git('commit', '-qm', 'A real deviation');
+    const [hit] = frs005();
+    assert.match(hit.message, /1 added DRIFT comment lines/);
+
+    git('config', 'diff.noprefix', 'true');
+    assert.equal(frs005().length, 1, "a user's diff.noprefix does not hide the file name");
+  });
+
   it('does not claim currentness when a recent review satisfies the heuristic', () => {
     history();
     put('docs-canonical/reviewed.md', '<!-- docguard:last-reviewed 2025-01-01 -->\n');

@@ -92,7 +92,7 @@ npx docguard-cli watch --auto-fix
 
 ## What's Next?
 
-- [Commands Reference](./commands.md) — All 13 commands
+- [Commands Reference](./commands.md) — All 28 commands
 - [Configuration](./configuration.md) — `.docguard.json` options
 - [Profiles](./profiles.md) — Starter vs Standard vs Enterprise
 - [AI Integration](./ai-integration.md) — How AI agents use DocGuard

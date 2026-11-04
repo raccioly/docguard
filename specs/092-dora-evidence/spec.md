@@ -152,5 +152,5 @@ A first draft treated a `Dockerfile` as a deploy signal. It would have scored th
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `1a6fb44e7a0ac8e17739667aafa108d3de63235e` — score --dora maps DORA's items and AI capabilities to repository evidence, 8 of 8 scored here; docs map within budget after slimming; display-only. Evidence: `cli/commands/score-dora.mjs`, `cli/scanners/lifecycle-status.mjs`, `cli/sensor-cache.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/dora-evidence.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — score --dora maps DORA's items and AI capabilities to repository evidence, 8 of 8 scored here; docs map within budget after slimming; display-only. Evidence: `cli/commands/score-dora.mjs`, `cli/scanners/lifecycle-status.mjs`, `cli/sensor-cache.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/SECURITY.md`, `docs-canonical/TEST-SPEC.md`, `tests/dora-evidence.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->

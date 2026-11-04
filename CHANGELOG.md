@@ -151,7 +151,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   two rose and one fell, where the exempt sections were present. No total
   score, grade or exit code changed.
 
+- **DocGuard's own CI keeps its history between runs** (Recipe 4b, spec 083).
+  Every CI run restores the `.docguard/history.jsonl` that main saved, records
+  one more entry, and runs `docguard policy` on it. Only a push to main saves
+  the history, so a pull request never writes what main reads. Until now each
+  runner started empty, and `policy` could never recommend a promotion here.
+- **`docguard fix` has tests for its JSON, history, write and prompt modes**
+  (`tests/fix-apply.test.mjs`, contributed by the scheduled test-gap task).
+
 ### Fixed
+
+- **FRS005 counts only DRIFT comments that Drift would log**
+  (`docguard.calibrated-finding-channels` FR-022). It counted any added line
+  containing `DRIFT:`, so a `// DRIFT:` inside a test's string fixture asked
+  for a DRIFT-LOG review. It now uses Drift's own file and comment rules, and
+  reads file names from the diff with fixed prefixes. A hermetic A/B over 47
+  local projects changed no finding or exit code.
 
 - **A long line full of HTML comments no longer stalls guard** (spec 088).
   The comment reader re-masked the rest of the line's code spans for every

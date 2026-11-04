@@ -8,21 +8,10 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, extname } from 'node:path';
+import { resolve, join } from 'node:path';
 import { relPosix, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.swift', '.kt',
-  '.rb', '.php', '.cs', '.c', '.cpp', '.h',
-]);
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'cli', // Exclude DocGuard's own source (contains DRIFT: in regex patterns)
-]);
+import { DRIFT_COMMENT, DRIFT_IGNORE_DIRS, isDriftSourceFile } from '../shared-drift.mjs';
 
 export function validateDrift(projectDir, config) {
   const findings = [];
@@ -34,23 +23,13 @@ export function validateDrift(projectDir, config) {
   // git so they'll be caught by a full guard run; pre-commit hooks care
   // about NEW drift comments in this commit.
   const scanFile = (filePath) => {
-    const ext = extname(filePath);
-    if (!CODE_EXTENSIONS.has(ext)) return;
-    // v0.15 hotfix: test files commonly contain literal `// DRIFT:` inside
-    // string fixtures (e.g. `'// DRIFT: a-drift\n'`). Reading the test as
-    // source would treat the string as a real drift comment. Skip test
-    // files unless the user opts in — same pattern TODO-Tracking uses.
-    const rel = relPosix(projectDir, filePath);
-    const includeTests = config?.drift?.includeTestFiles === true;
-    if (!includeTests && /(^|\/)(__tests__|tests?|spec)\/|\.(test|spec)\.[^.]+$/.test(rel)) {
-      return;
-    }
+    if (!isDriftSourceFile(relPosix(projectDir, filePath), config)) return;
     let content;
     try { content = readFileSync(filePath, 'utf-8'); } catch { return; }
     if (!content.includes('DRIFT:')) return;
     const lines = content.split('\n');
     lines.forEach((line, i) => {
-      const match = line.match(/(?:\/\/|#|\/\*|\-\-)\s*DRIFT:\s*(.+)/i);
+      const match = line.match(DRIFT_COMMENT);
       if (match) {
         driftComments.push({
           file: relPosix(projectDir, filePath),
@@ -119,9 +98,9 @@ export function validateDrift(projectDir, config) {
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker;
-// the IGNORE_DIRS set above stays local because its entries are intentional
+// the DRIFT_IGNORE_DIRS set (cli/shared-drift.mjs) stays drift-specific because its entries are intentional
 // per-validator variance (e.g. 'cli' — DocGuard's own source has DRIFT: in
 // regex patterns).
 function walkDir(dir, callback) {
-  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
+  sharedWalkFiles(dir, callback, { ignoreDirs: DRIFT_IGNORE_DIRS });
 }

@@ -111,5 +111,5 @@ Spec Kit's `/speckit-clarify` records `- Q: … → A: …` lines under `## Clar
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes
 
-- `b52a873849300c3f4a8d06e99378c3ee34e70cf7` — DEC001-DEC006 advisory; 107 first-pass findings hand-reviewed to 5 genuine, exactly the 5 the final A/B adds; no exit change. Evidence: `cli/validators/decision-records.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/decision-records.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
+- `779b8b4eae47ef3fb49fe503246405aa02680df5` — DEC001-DEC006 advisory; 107 first-pass findings hand-reviewed to 5 genuine, exactly the 5 the final A/B adds; no exit change. Evidence: `cli/validators/decision-records.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/TEST-SPEC.md`, `tests/decision-records.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none.
 <!-- docguard:implementation-outcomes:end -->
