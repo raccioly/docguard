@@ -17259,7 +17259,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -17279,8 +17279,23 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "dd5cc88875062704df54903355027df9c9e30c0d",
+          "outcomes": [
+            {
+              "revision": "dd5cc88875062704df54903355027df9c9e30c0d",
+              "reason": "SPK013-SPK016 advisory; qualifier narrowed after hand review (precision 0.82 to 1.0 on this repository); A/B adds only SPK codes, no exit change.",
+              "evidence": [
+                "cli/scanners/chain-coverage.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/program-verification.test.mjs",
+                "tests/upstream-coverage.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -17302,7 +17317,7 @@
         "artifacts": [
           {
             "path": "specs/085-upstream-coverage/spec.md",
-            "digest": "sha256:a86fd52016313449a699d333cc77de82a472b06d4add00b8cc60c9268f84b6b4"
+            "digest": "sha256:ba8cc786b7f680846ec772f25a7d2988cfeb1cf0d1c187d793d627b762a94c60"
           },
           {
             "path": "specs/085-upstream-coverage/plan.md",
