@@ -1984,6 +1984,11 @@
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
             "line": 1203
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/shared-drift.mjs",
+            "line": 37
           }
         ],
         "testEvidence": [
