@@ -1,8 +1,8 @@
 # Test Specification
 
-<!-- docguard:version 1.4.7 -->
+<!-- docguard:version 1.5.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-01 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -218,6 +218,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |
 | 1.4.7 | 2026-11-01 | DocGuard Team | Map spec 080's report-precision and router unresolved-path tests, and `tests/anchor-cache.test.mjs` |
 | 1.4.6 | 2026-10-13 | DocGuard Team | The CI runtime budget is a per-test ceiling at reference-runner speed (`tools/suite-runtime-budget.mjs`, spec 051 FR-007 revision) |
 | 1.4.5 | 2026-10-11 | DocGuard Team | Map `sync-tests.mjs` to its tests; `runCI`, `runSpecs` and `runSyncTests` have behaviour tests (#556) |

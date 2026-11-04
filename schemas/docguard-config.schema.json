@@ -164,6 +164,11 @@
       },
       "additionalProperties": false
     },
+    "requiredSections": {
+      "type": "object",
+      "description": "Extra sections a document must have, keyed by file (a bare name such as \"SECURITY.md\" means the canonical document). A missing heading is STR007, informational by default; a reasoned `docguard:section <slug> n/a` marker owns its absence. The enterprise-ai profile sets SECURITY.md: Risk Assessment, Threat Model. Spec 082.",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
     "requiredChecks": {
       "type": "array",
       "description": "Validator keys this project depends on. A required check must reach a decision (verdict pass or fail) in every run, or guard exits 4 and ci blocks; a reasoned in-repo `docguard:validator <key> n/a` marker is the only bypass. Spec 083.",

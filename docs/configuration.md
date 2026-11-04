@@ -84,6 +84,20 @@ disabling a required validator in config is reported as REQ001, and an
 unknown key as REQ002. `docguard policy` shows which advisory codes this
 project's CI history shows are ready to promote with `findingSeverity`.
 
+`requiredSections` adds sections a document must carry beyond the canonical
+ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the
+canonical document:
+
+```json
+{ "requiredSections": { "SECURITY.md": ["Threat Model"] } }
+```
+
+A missing heading is reported as STR007, informational until a project
+promotes it with `findingSeverity`. A reasoned
+`<!-- docguard:section threat-model n/a — reason -->` marker owns the absence.
+The `enterprise-ai` profile sets Risk Assessment and Threat Model for
+SECURITY.md (spec 082).
+
 ## Profile Field
 
 The `profile` field sets a baseline preset. User config overrides profile defaults.

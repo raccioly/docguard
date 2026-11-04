@@ -1,8 +1,8 @@
 # Data Model
 
-<!-- docguard:version 0.18.0 -->
+<!-- docguard:version 0.19.0 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-01 -->
+<!-- docguard:last-reviewed 2026-11-03 -->
 
 | Metadata | Value |
 |----------|-------|
@@ -68,6 +68,10 @@ The primary data structure. Controls all CLI behavior.
 | `ignore` / `securityIgnore` / `todoIgnore` | `string[]` | No | `[]` | Path patterns skipped by every validator / Security only / TODO-Tracking only. `ignore` is merged with the active `.docguardignore` entries at load. Plain patterns: no reason, no expiry |
 | `validators.suppressions` | `boolean` | No | `true` | `.docguardignore` entry hygiene (IGN001–IGN003); not applicable when the file has no entries |
 | `suppressions.requireReason` | `boolean` | No | `false` | Report IGN002 for each `.docguardignore` entry with no `# reason`; the entry still applies |
+| `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
+| `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
+| `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
+| `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration
 
@@ -566,6 +570,7 @@ The `score --format json` output:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 0.19.0 | 2026-11-03 | DocGuard Team | Specs 081–092: verdict, applicability class and observation gaps on every result; `requiredChecks`, `requiredSections` and the `ci` history fields; waiver `owner`/`expires`; the AI-DLC validator, sensor output and caches; the `dora` object; the `docs` map and compact `applicabilityClasses`; `release-gate.json` |
 | 0.18.0 | 2026-11-01 | DocGuard Team | `scan.unresolved` records `router-unresolved-path` for an auth `use()` under a path the router-library reader cannot read (spec 080) |
 | 0.17.0 | 2026-10-13 | DocGuard Team | Freshness review after specs 070–078: the `anchors` configuration block and `validators.requirementAnchors`; the anchor cache and staged tree-sitter files in `.docguard/`; `tools/suite-runtime-reference.json` (spec 051 FR-007) |
 | 0.16.0 | 2026-10-10 | DocGuard Team | Route records' `caseInsensitive` flag (ASP.NET Core, Express, Koa, Fastify, NestJS), `scan.caseNotes`, and `scan.unresolved` with Python limitations; the plan's `patternRead`/`patternLanguages` beside `degraded` (spec 063) |

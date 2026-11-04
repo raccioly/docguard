@@ -66,7 +66,7 @@ DocGuard enforces **Canonical-Driven Development (CDD)** — a methodology where
 
 DocGuard is an official [GitHub Spec Kit](https://github.com/github/spec-kit) community extension. It validates the artifacts that Spec Kit creates, ensuring your specs stay high-quality throughout the development lifecycle.
 
-🧭 **[How it works (9-page brief)](https://raccioly.github.io/docguard/docguard-explained.html)** ([PDF](https://raccioly.github.io/docguard/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
+🧭 **[How it works (10-page brief)](https://raccioly.github.io/docguard/docguard-explained.html)** ([PDF](https://raccioly.github.io/docguard/docguard-explained.pdf)) · 📖 **[Philosophy](PHILOSOPHY.md)** · 📋 **[CDD Standard](STANDARD.md)** · ⚖️ **[Comparisons](https://github.com/raccioly/docguard/blob/main/COMPARISONS.md)** · 🔬 **[Validation](https://github.com/raccioly/docguard/blob/main/VALIDATION.md)** · 🗺️ **[Roadmap](https://github.com/raccioly/docguard/blob/main/ROADMAP.md)**
 
 ### Architecture
 
@@ -321,7 +321,7 @@ DocGuard ships **28 commands** (the "Daily 5" + 23 situational tools, including 
 | `guard` | Validate against canonical docs — 36 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh code-truth doc sections, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code — keeps memory always up to date |
-| `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs) |
+| `score` | Structural CDD maturity score (0-100; not a guard verdict; `--diff` for delta between refs; `--dora` for DORA documentation-quality and AI-capability evidence) |
 
 **Tools (situational, but day-to-day useful):**
 
@@ -730,7 +730,7 @@ See [examples/README.md](https://github.com/raccioly/docguard/blob/main/examples
 ### Test Suite
 
 ```bash
-npm test    # 3,441 tests (node:test, zero test dependencies)
+npm test    # 4,244 tests (node:test, zero test dependencies)
 ```
 
 Covers all 28 commands, every validator, project type detection, compliance profiles, JSON/SARIF/JUnit output, the packed npm tarball, and downstream field reports replayed as regression cases. Static test-case declarations are a lower bound of that number: Metrics-Consistency flags this line if it ever falls below what the test files declare.
