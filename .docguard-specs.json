@@ -5601,7 +5601,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -5622,8 +5622,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "5bb14b4daa81282cc81d50b8fd8d6eb382599cdd",
+          "outcomes": [
+            {
+              "revision": "5bb14b4daa81282cc81d50b8fd8d6eb382599cdd",
+              "reason": "SC-003 measured: policy over 12 replayed CI entries recommends DLC002, checked by hand; CI now keeps its history",
+              "evidence": [
+                "cli/commands/ci.mjs",
+                "cli/commands/policy.mjs",
+                "cli/required-checks.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/enforcement-ladder.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -5649,7 +5666,7 @@
         "artifacts": [
           {
             "path": "specs/083-enforcement-ladder/spec.md",
-            "digest": "sha256:8b41c197c214f5202e90420f3e921452d6fa63a9e1d91114652895666c1dcc67"
+            "digest": "sha256:15a39ff039273e81c57fdf87cc58920b575fd9810d1990e984d4ad32c64b8569"
           },
           {
             "path": "specs/083-enforcement-ladder/plan.md",
