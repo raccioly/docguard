@@ -7650,12 +7650,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1357
+            "line": 1361
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1367
+            "line": 1371
           },
           {
             "requirementId": "FR-006",

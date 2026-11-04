@@ -172,6 +172,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.45.2] - 2026-11-02
 
 ### Changed
+  Requirement-anchor links that "lost their code" (ANC003), a stale spec
+  registry (SPR001), checked tasks without annotations (SPR006) and asset
+  paths covering no file (SPR009) are withheld the same way: on DocGuard's
+  own repository, a failing `git ls-files` had produced 25 ANC003 and one
+  SPR001 before this.
 
 - **GitHub Actions pins move to their latest patch/minor releases** (#604).
   CI, release and the published `action.yml` now run `actions/setup-node`

@@ -2148,6 +2148,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.45.2] - 2026-11-02
 
 ### Changed
+  Requirement-anchor links that "lost their code" (ANC003), a stale spec
+  registry (SPR001), checked tasks without annotations (SPR006) and asset
+  paths covering no file (SPR009) are withheld the same way: on DocGuard's
+  own repository, a failing `git ls-files` had produced 25 ANC003 and one
+  SPR001 before this.
 
 - **GitHub Actions pins move to their latest patch/minor releases** (#604).
   CI, release and the published `action.yml` now run `actions/setup-node`
@@ -2369,13 +2374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       do not count);
     - ANC002: a link whose requirement text changed (whitespace does not
       count);
-    - ANC003: a reviewed link whose tag is gone;
-    - ANC005: an unreadable lock, which fails;
-    - ANC008: a tag citing a retired requirement;
-    - ANC009: two different lock lines for one link after a merge.
-  - **What DocGuard does not do.** It edits `.gitattributes` only with
 
-<!-- truncated: 6070 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6075 more lines — read CHANGELOG.md directly -->
 
 ---
 

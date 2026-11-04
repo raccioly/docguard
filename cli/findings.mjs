@@ -1209,6 +1209,10 @@ function normalizeLocation(loc) {
  */
 export const ABSENCE_CLAIM_CODES = Object.freeze(new Set([
   'PSR001', 'PSR002', 'REF001', 'TRC002', 'TRC003', 'TRC004', 'TRC005', 'AID001', 'AID003', 'DEC002', 'MEM001', 'MEM002', 'SPK008', 'SPK010', 'SPR008', 'XRF001', 'XRF002',
+  // The final fault-injection run (spec 081 SC-005): with ls-files failing, 25 ANC003
+  // and one SPR001 appeared on DocGuard's own repository. Each claims something is
+  // missing from a file list git could not give; SPR006 and SPR009 read the same list.
+  'ANC003', 'SPR001', 'SPR006', 'SPR009',
 ]));
 
 export function codeDefaultLevel(code) {

@@ -27,6 +27,7 @@
  * @req docguard.verdict-contract#SC-002
  * @req docguard.verdict-contract#SC-003
  */
+import { ABSENCE_CLAIM_CODES } from '../cli/findings.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -269,6 +270,12 @@ describe('US2 — every validator result ends in one closed verdict', () => {
     if (!POSIX) return;
     assert.equal(codes(r, 'PSR002').length, 0);
     assert.ok(r.verdicts.gaps.every(g => !g.propagated));
+  });
+
+  it('every claim that something is missing from a file list is withheld while a gap stands', () => {
+    // The final fault-injection run found ANC003 and SPR001 reported from a file
+    // list git could not give; SPR006 and SPR009 read the same list.
+    for (const code of ['ANC003', 'SPR001', 'SPR006', 'SPR009', 'PSR002', 'TRC004']) assert.ok(ABSENCE_CLAIM_CODES.has(code), code);
   });
 
   it('a validator that throws is blocked; its status and exit effect are unchanged', t => {
