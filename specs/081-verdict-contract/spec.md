@@ -174,3 +174,9 @@ As an engineer reading SARIF in GitHub code scanning, JUnit in Jenkins, or the M
 - Gaps from non-git sources (parser timeouts, unreadable files). The ledger accepts them, but only git helpers are instrumented here. Other sources are added where later specs touch them.
 - A verdict per finding, or per evidence declaration (evidence keeps the states of `docguard.evidence-scoped-verification`).
 - Persisting gaps across runs.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cead73abe89a01a969b8c0f8a168e8e502882cdc` — Six closed verdicts and observation gaps; A/B identical on 45 projects; final fault injection adds nothing after ANC003/SPR001/SPR006/SPR009 joined the withheld set; --fail-on-inconclusive passes here. Evidence: `cli/observations.mjs`, `cli/shared-git.mjs`, `cli/validator-coverage.mjs`, `cli/writers/sarif.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/verdict-contract.test.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

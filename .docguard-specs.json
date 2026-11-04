@@ -17645,7 +17645,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -17666,8 +17666,26 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "cead73abe89a01a969b8c0f8a168e8e502882cdc",
+          "outcomes": [
+            {
+              "revision": "cead73abe89a01a969b8c0f8a168e8e502882cdc",
+              "reason": "Six closed verdicts and observation gaps; A/B identical on 45 projects; final fault injection adds nothing after ANC003/SPR001/SPR006/SPR009 joined the withheld set; --fail-on-inconclusive passes here.",
+              "evidence": [
+                "cli/observations.mjs",
+                "cli/shared-git.mjs",
+                "cli/validator-coverage.mjs",
+                "cli/writers/sarif.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/program-verification.test.mjs",
+                "tests/verdict-contract.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -17701,7 +17719,7 @@
         "artifacts": [
           {
             "path": "specs/081-verdict-contract/spec.md",
-            "digest": "sha256:c613874f472f8282d9e29cb0b8e75c993d8bf2f625c89b6cf25b9da266d4e47a"
+            "digest": "sha256:3e64fddd939b0f20134e39782c5070c7658dc4c6142ec9e0993cb531527b9bf6"
           },
           {
             "path": "specs/081-verdict-contract/plan.md",
