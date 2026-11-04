@@ -892,7 +892,7 @@
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 217
+            "line": 218
           },
           {
             "requirementId": "SC-002",
@@ -902,7 +902,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 218
+            "line": 219
           }
         ]
       }
@@ -1078,12 +1078,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 214
+            "line": 215
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 215
+            "line": 216
           }
         ]
       }
@@ -1989,6 +1989,16 @@
             "requirementId": "FR-022",
             "file": "cli/shared-drift.mjs",
             "line": 37
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/drift.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/freshness.mjs",
+            "line": 8
           }
         ],
         "testEvidence": [
@@ -10433,7 +10443,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 220
+            "line": 221
           }
         ]
       }
@@ -13646,11 +13656,11 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -13668,8 +13678,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "a7b007ade8cccf608bdd1d5765ed4eec54039e59",
+          "outcomes": [
+            {
+              "revision": "a7b007ade8cccf608bdd1d5765ed4eec54039e59",
+              "reason": "SC-003 measured on the v0.46.0 release: 5m10s in parallel with the test matrix, no wall time added; the gate stopped the first publish on a missing exemption, as designed",
+              "evidence": [
+                ".github/workflows/release.yml",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/program-verification.test.mjs",
+                "tests/release-trend-gate.test.mjs",
+                "tools/release-ab.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -13688,7 +13715,7 @@
         "artifacts": [
           {
             "path": "specs/087-release-trend-gate/spec.md",
-            "digest": "sha256:e83d8f3c32c9ecde915b81343dbbce57b160e1b77857bcf1e27fa2b14999ad1b"
+            "digest": "sha256:cba1cd643392202ac42a64eae481f388109ebec508d517b5379f07d38034a431"
           },
           {
             "path": "specs/087-release-trend-gate/plan.md",
@@ -13696,11 +13723,11 @@
           },
           {
             "path": "specs/087-release-trend-gate/tasks.md",
-            "digest": "sha256:293747143347962f45e1608559dbe1e5fc5aa3c018f66a8f983ae481b9560ee8"
+            "digest": "sha256:558bd9fb58e8adda85a82758e6448bd0f8247ce30290f15a96ba479c8b1a3fa4"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [
@@ -13760,6 +13787,11 @@
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
             "line": 210
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 211
           }
         ]
       }
@@ -17855,7 +17887,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 212
+            "line": 213
           },
           {
             "requirementId": "SC-003",

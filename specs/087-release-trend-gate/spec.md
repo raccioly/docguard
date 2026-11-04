@@ -79,6 +79,14 @@ Run locally on 2026-11-03, comparing v0.45.2 with this branch over 14 directorie
 
 The first run listed every validator as changed, because v0.45.2 has no `verdict` field. That is why FR-001 compares the verdict only when both releases have one.
 
+SC-003, measured in CI on the v0.46.0 release (2026-11-04):
+- **First run** ([41866882356](https://github.com/raccioly/docguard/actions/runs/41866882356)): the gate job stopped the publish, as designed.
+  - The trend step passed in 37 s, with every finding change named.
+  - The budget step failed: `bytes:mcp:docguard_docs_for_path` was 612 bytes over, against 489 allowed. #608 had exempted it in its PR body, but the release reads the `[0.46.0]` section, which had no exemption. #613 carried the exemption into the release notes.
+- **Passing run** ([41872260375](https://github.com/raccioly/docguard/actions/runs/41872260375)): the `release-gate` job took 5 min 10 s (16:55:00–17:00:10), including the budget and precision-benchmark steps.
+  - It runs in parallel with the test matrix, and `create-release` waits for both.
+  - The slowest test job, Node 24, finished at 17:01:43, and `create-release` started at 17:01:45. So the gate added nothing to the release's wall time, against the 5 minutes allowed.
+
 ## Assumptions
 
 - Changelog sections follow Keep a Changelog. "The section being released" is `[Unreleased]` before the version cut, and `[<version>]` after it.
@@ -87,3 +95,9 @@ The first run listed every validator as changed, because v0.45.2 has no `verdict
 ## Out of Scope
 
 - Comparing on private consumer projects (privacy). The manual A/B covers them before a feature merges.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `a7b007ade8cccf608bdd1d5765ed4eec54039e59` — SC-003 measured on the v0.46.0 release: 5m10s in parallel with the test matrix, no wall time added; the gate stopped the first publish on a missing exemption, as designed Evidence: `.github/workflows/release.yml`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/DATA-MODEL.md`, `docs-canonical/TEST-SPEC.md`, `tests/program-verification.test.mjs`, `tests/release-trend-gate.test.mjs`, `tools/release-ab.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->

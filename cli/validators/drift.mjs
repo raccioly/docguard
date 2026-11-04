@@ -5,6 +5,9 @@
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings, so counts, exit codes, and
  * existing tests are unaffected; guard just renders richer output.
+ *
+ * What it reads lives in cli/shared-drift.mjs, so FRS005 counts the same lines.
+ * @implements docguard.calibrated-finding-channels#FR-022
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
