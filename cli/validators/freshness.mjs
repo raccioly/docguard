@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
 // FR-005: the shared helper, not a private copy of `git rev-parse`.
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
+import { DRIFT_COMMENT, driftReadsPath } from './drift.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -401,18 +402,22 @@ export function validateFreshness(dir, config) {
     // lines, unchanged context, and every branch (`--all`) — wildly inflating
     // the count and depending on `grep`. Here we read the last-5-commits diff
     // for the current branch and count only ADDED lines (`+`, not the `+++`
-    // file header) that introduce a DRIFT comment.
+    // file header) that introduce a DRIFT comment, in a file Drift reads and in
+    // Drift's comment form: a `// DRIFT:` inside a test's string fixture is not
+    // a deviation to log (spec 013 FR-022).
     try {
       const diff = execFileSync(
         'git',
-        ['log', '-5', '-p', '--', ...[...new Set(history.slice(0, 5).flatMap(commit => commit.paths))]
+        ['log', '-5', '-p', '--src-prefix=a/', '--dst-prefix=b/', '--', ...[...new Set(history.slice(0, 5).flatMap(commit => commit.paths))]
           .map(path => `:(literal)${path}`)],
         { cwd: dir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
       );
-      const driftCount = diff
-        .split('\n')
-        .filter(l => /^\+(?!\+\+)/.test(l) && l.includes('DRIFT:'))
-        .length;
+      let file = null;
+      let driftCount = 0;
+      for (const l of diff.split('\n')) {
+        if (l.startsWith('+++ ')) file = l.startsWith('+++ b/') ? l.slice(6) : null;
+        else if (file && /^\+(?!\+\+)/.test(l) && DRIFT_COMMENT.test(l) && driftReadsPath(file, config)) driftCount++;
+      }
       if (driftCount > 0 && driftDate) {
         const codeCommitsSince = getCodeCommitsSince(driftDate);
         if (codeCommitsSince > 3) {

@@ -226,6 +226,17 @@ the summary prints `21 of 30 validators checked` and the badge colour is
   MUST stay silent when git is unavailable or the spec has no introducing
   commit.
 
+### Added DRIFT lines
+
+- **FR-022** *(amended 2026-11-04)*: FRS005 MUST count an added line only when
+  Drift would log it in a full run: the line is in a file Drift reads (its
+  source extensions, outside the directories it skips, and outside test files
+  unless `drift.includeTestFiles` is true) and has Drift's comment form. The
+  file names MUST come from the diff with fixed prefixes, so a user's diff
+  configuration cannot hide them. Before this, a `// DRIFT:` inside a test's
+  string fixture counted, and the warning asked for a DRIFT-LOG review that
+  Drift itself never asked for.
+
 ### Headline coverage
 
 - **FR-020**: The guard summary MUST print `checked` validator count beside the

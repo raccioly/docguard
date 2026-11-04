@@ -1878,6 +1878,7 @@
           "docguard.calibrated-finding-channels#FR-019",
           "docguard.calibrated-finding-channels#FR-020",
           "docguard.calibrated-finding-channels#FR-021",
+          "docguard.calibrated-finding-channels#FR-022",
           "docguard.calibrated-finding-channels#SC-001",
           "docguard.calibrated-finding-channels#SC-002",
           "docguard.calibrated-finding-channels#SC-003",
@@ -1893,7 +1894,7 @@
         "artifacts": [
           {
             "path": "specs/013-calibrated-finding-channels/spec.md",
-            "digest": "sha256:fe9dac22ee605dab3e6262fc79598b9923bd2c1085e4d54b77d0cc77f34b0444"
+            "digest": "sha256:f76e075e5a205aeab0049332a94bf3138e734fb09bcc81d57f78a742694221d0"
           },
           {
             "path": "specs/013-calibrated-finding-channels/plan.md",
@@ -1983,6 +1984,11 @@
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
             "line": 1203
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/drift.mjs",
+            "line": 44
           }
         ],
         "testEvidence": [
@@ -2095,6 +2101,11 @@
             "requirementId": "FR-021",
             "file": "tests/untouched-claims.test.mjs",
             "line": 20
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "tests/field-review-clarity.test.mjs",
+            "line": 143
           },
           {
             "requirementId": "SC-001",
