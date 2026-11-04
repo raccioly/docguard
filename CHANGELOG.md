@@ -194,6 +194,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
   with a gap, so withheld findings cannot drop out of the baseline.
 
+### Budgets
+
+The `docguard_docs_for_path` MCP response is 612 bytes larger than in 0.45.2,
+over its 489-byte allowance. 36 bytes are the new `docs` map (spec 092); the
+rest is reference text the tool returns, because TEST-SPEC names
+`cli/findings.mjs` in one more row.
+
+Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs map; the rest is one more TEST-SPEC row naming cli/findings.mjs, returned as reference text
+
 ### Commits
 
 - spec: re-anchor 083 onto main after the #610 squash; refresh registry (#611)
