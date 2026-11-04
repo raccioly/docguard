@@ -739,7 +739,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -762,8 +762,27 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "b419ab6a1e12fc6a52889d08110fbbbc66db9f86",
+          "outcomes": [
+            {
+              "revision": "b419ab6a1e12fc6a52889d08110fbbbc66db9f86",
+              "reason": "sensor --aidlc and the plugin: validate and build pass locally and in CI; clean passes, drift fails, missing DocGuard could-not-run on native 2.11.2; main(argv) contract.",
+              "evidence": [
+                ".github/workflows/ci.yml",
+                "cli/commands/sensor.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/ENVIRONMENT.md",
+                "docs-canonical/SECURITY.md",
+                "docs-canonical/TEST-SPEC.md",
+                "extensions/aidlc/docguard/tools/aidlc-sensor-docguard-guard.ts",
+                "tests/aidlc-plugin.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -784,7 +803,7 @@
         "artifacts": [
           {
             "path": "specs/090-aidlc-plugin/spec.md",
-            "digest": "sha256:667edcc2e6f0340e4dea7182563a96b16fce77ff90e9b7b5868e5882279d04b8"
+            "digest": "sha256:b9cc54c1d9dc68ad0270e6b5d6777e2fe727f80932f291ea87d2f8b164a29a95"
           },
           {
             "path": "specs/090-aidlc-plugin/plan.md",
