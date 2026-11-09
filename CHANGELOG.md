@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.1] - 2026-11-09
+
 ### Fixed
 
 - **Installed Spec Kit extensions no longer raise ANC007**
@@ -18,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   local projects that installed the extension, `docguard anchors` lost exactly
   those four findings each and nothing else; a guard A/B over 47 projects
   changed no finding.
+
+### Commits
+
+- fix(anchors): skip files Spec Kit installed under .specify/extensions/ (FR-044) (#616)
+- spec: re-anchor docguard.release-trend-gate onto main after the #614 squash merge (#615)
+- spec(release-trend-gate): verified — SC-003 measured on the v0.46.0 release (#614)
 
 ## [0.46.0] - 2026-11-04
 

@@ -1,6 +1,6 @@
 {
   "name": "docguard",
-  "version": "0.46.0",
+  "version": "0.46.1",
   "description": "DocGuard for AWS AI-DLC: keeps docs, specs and AI-DLC records true to the code at the construction gates, and governs agent memory. Deterministic, zero-LLM.",
   "author": {
     "name": "Ricardo Accioly"
