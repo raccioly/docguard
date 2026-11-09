@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **mcp.market safety badge in the README.** mcp.market scans every server in
+  the official MCP registry and graded DocGuard A (92/100) with no critical or
+  high findings. The badge updates itself after each scan; the full report is at
+  <https://mcp.market/is-it-safe/raccioly-docguard>.
+
 ### Fixed
 
 - **Installed Spec Kit extensions no longer raise ANC007**

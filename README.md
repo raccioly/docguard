@@ -15,6 +15,7 @@
 [![Spec Kit Extension](https://img.shields.io/badge/Spec_Kit-Extension-blueviolet)](https://github.com/github/spec-kit)
 [![Glama](https://glama.ai/mcp/servers/raccioly/docguard/badges/score.svg)](https://glama.ai/mcp/servers/raccioly/docguard)
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-0a7ea4)](https://registry.modelcontextprotocol.io/)
+[![mcp.market](https://mcp.market/badge/raccioly-docguard.svg)](https://mcp.market/server/raccioly-docguard)
 
 ---
 
