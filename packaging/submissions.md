@@ -58,6 +58,18 @@ codebase · 🏠 local service (stdio, runs on the user's machine).
   claim `raccioly/docguard`) unlocks editing the listing and adds the
   "official" badge.
 
+### mcp.market (https://mcp.market — auto-indexed from the official MCP Registry)
+
+- No submission needed: it scans every server in the official registry.
+- **Grade:** A (92/100) as of 2026-11-09, no critical or high findings.
+  Report: https://mcp.market/is-it-safe/raccioly-docguard
+- **Badge:** in the README, `https://mcp.market/badge/raccioly-docguard.svg`
+  linking to `https://mcp.market/server/raccioly-docguard`. It updates itself
+  after every scan.
+- **(owner)** Claim the listing at https://mcp.market/claim/raccioly-docguard to
+  edit it and reply to reviews. Dispute a finding with "Appeal a finding" on the
+  report page.
+
 ---
 
 ## c) GitHub Actions Marketplace listing (owner)
