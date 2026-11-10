@@ -72,7 +72,8 @@ function printText(result) {
       console.log(`      ${c.dim}↳ may affect ${link.ripple.count} files (${link.ripple.files.join(', ')}, …)${c.reset}`);
     }
     for (const t of link.tests || []) {
-      const label = t.status === 're-verified' ? `${c.green}re-verified at ${t.evidenceHead.slice(0, 12)}${c.reset}${c.dim} (${t.claims.join(', ')})`
+      const gap = t.notChecked?.length ? `; not checked: ${t.notChecked.join(', ')}` : '';
+      const label = t.status === 're-verified' ? `${t.notChecked?.length ? c.yellow : c.green}re-verified at ${t.evidenceHead.slice(0, 12)}${c.reset}${c.dim} (${t.claims.join(', ')}${gap})`
         : t.status === 'inconclusive' ? `${c.yellow}inconclusive${c.reset}${c.dim}: ${t.message}`
           : `needs re-verification: ${t.message}`;
       console.log(`      ${c.dim}⊢ test ${t.file}:${t.line} ${label}${c.reset}`);

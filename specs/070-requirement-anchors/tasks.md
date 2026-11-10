@@ -366,6 +366,8 @@ follow the policy, and completion is not deadlocked.
 - [x] T077 Run `docguard reconcile --since <base> --format json` and `docguard specs complete --id docguard.requirement-anchors --write --reason "…"` once all PRs have merged
 - [x] T078 Run `/speckit-analyze` for cross-artifact consistency before PR 1 opens, and again before T077
 - [x] T079 Before any release that contains spec 070, complete every item of the release gate in `checklists/remediation.md`, and record its results for the exact commit being released. These include the A/B runs against the base release on this repository and on the Guard-family repositories. Keep the finding table there current as each PR merges (C1–C2, H1–H2, M1–M5, L1–L5)
+- [x] T080 [US6] Follow the dependency-closure freshness fields in `cli/scanners/testguard-evidence.mjs` and `tests/requirement-anchors-testchain.test.mjs`: complete closure compared like defender hashes, indeterminate closure inconclusive, malformed fields inconclusive, legacy evidence reported as not checked (FR-045)
+- [x] T081 [US6] Read claims supplied from outside the repository (`run.claimsSource`): skip the claims file unless configured, report `claims-not-compared` and `notChecked`, render the gap in `cli/commands/anchors.mjs`, update `docs/commands.md`, `docs/configuration.md` and `CHANGELOG.md` (FR-046)
 
 ## Dependencies and order
 

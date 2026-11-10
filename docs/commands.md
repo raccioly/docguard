@@ -748,6 +748,24 @@ test is **re-verified at `<revision>`** only when all of these hold:
 - the test is among the defenders TestGuard recorded for that claim;
 - every fault of the claim was killed, and the claim, its faults, its targets
   and its defenders are unchanged since the probe.
+- when the evidence records the import closure of its targets and defenders
+  (`dependencyHashes` with `dependencyClosure: "complete"`), every module in it
+  is unchanged too. An `indeterminate` closure is inconclusive
+  (`closure-indeterminate`): freshness cannot be established. These fields come
+  from a TestGuard evidence schema that is not yet released; evidence without
+  them keeps its verdicts, but the result lists `dependency-closure` under
+  `notChecked`.
+
+A `re-verified` test that rested on something DocGuard did not check carries a
+`notChecked` list in `--format json` and prints in yellow with
+`not checked: …`. When the evidence says its claims were supplied from outside
+the repository (`run.claimsSource.external`) and `anchors.testguard.claims` is
+not set, DocGuard reads no claims file, not even the default, because that file
+is not the one that was probed. The test is `re-verified` with reason
+`claims-not-compared` and `notChecked` lists `claim-changed` and
+`fault-unprobed`; every other check still applies. Setting
+`anchors.testguard.claims` to a copy of the claims file restores the full
+comparison against that file.
 
 Evidence that cannot be trusted is **inconclusive**, with the reason. That
 covers an unreadable or provisional report, a revision this clone lacks, or a

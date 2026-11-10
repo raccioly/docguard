@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the official MCP registry and graded DocGuard A (92/100) with no critical or
   high findings. The badge updates itself after each scan; the full report is at
   <https://mcp.market/is-it-safe/raccioly-docguard>.
+- **The test chain follows TestGuard's dependency-closure and external-claims
+  evidence** (`docguard.requirement-anchors` FR-045, FR-046). These fields come
+  from a TestGuard evidence schema that is not yet released, so the reader is
+  tolerant and legacy evidence keeps every verdict. When a record carries its
+  import closure, a changed imported module makes the test `inconclusive`
+  (`inputs-stale`, naming the file) and an `indeterminate` closure is
+  `closure-indeterminate`. When the claims were supplied from outside the
+  repository and no claims file is configured, DocGuard reads none and reports
+  `re-verified` with reason `claims-not-compared`. A `re-verified` test that
+  rested on something not checked now lists it in `notChecked` (JSON) and
+  prints in yellow, so it is no longer indistinguishable from a full pass.
 
 ### Fixed
 
