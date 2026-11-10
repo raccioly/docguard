@@ -304,6 +304,17 @@ re-verification with a hint about the unstructured reference.
    the result is inconclusive with a reason, never re-verified. **Given** one
    with no structured claim for the requirement, **Then** the test still needs
    re-verification, with the `req:` form to write.
+4. **Given** evidence that records a complete dependency closure, **When** a
+   module the target imports changed after the probe, **Then** the result is
+   inconclusive (`inputs-stale`) and names that module. **Given** a closure
+   TestGuard marked indeterminate, **Then** it is inconclusive
+   (`closure-indeterminate`). **Given** evidence with no closure at all,
+   **Then** the verdict is unchanged and the result says the closure was not
+   checked.
+5. **Given** evidence whose claims were supplied from outside the repository
+   and no configured claims file, **Then** a test that meets every other
+   condition is re-verified with reason `claims-not-compared`, and the result
+   lists what was not compared. A fault not killed still needs re-verification.
 
 ---
 
@@ -801,6 +812,43 @@ is reported unavailable and the pattern tier is used.
   DocGuard's own Spec Kit extension made `docguard anchors` report four
   ANC007 findings in the consumer's project, from tags in the copied
   `extension.yml` and hook template.
+- **FR-045** *(amended 2026-11-10)*: The TestGuard adapter MUST follow the
+  dependency-closure freshness fields of a record's `inputs`
+  (`dependencyHashes`, `dependencyClosure`, `dependencyIssues`). Both of the
+  first two or neither must be present.
+  - Neither present (legacy evidence): the verdict is unchanged, and the
+    result reports `dependency-closure` as not checked.
+  - Exactly one present, a hash map that is not a plain object, has more than
+    20,000 entries, an unsafe path or a value that is not a sha256, or a
+    closure other than `complete` or `indeterminate`: inconclusive
+    (`inputs-stale`).
+  - `indeterminate`: inconclusive (`closure-indeterminate`), naming the first
+    well-formed `dependencyIssues` entry. Issue text is untrusted: only the
+    four known codes are printed, and the file is length-bounded.
+  - `complete`: every entry is compared with the file today, exactly as the
+    defender hashes are; a missing or unreadable file is a mismatch. The
+    first mismatch in sorted order is inconclusive (`inputs-stale`) and names
+    the file.
+  - These fields come from a TestGuard evidence schema that is not yet
+    released. The reader is tolerant: evidence without them keeps its
+    verdicts.
+- **FR-046** *(amended 2026-11-10)*: The adapter MUST handle claims supplied
+  from outside the repository.
+  - `run.claimsSource`, when present, is `{ "external": boolean }` plus a
+    64-hex `sha256` when `external` is true; anything else is
+    `evidence-invalid`.
+  - When `external` is true and `anchors.testguard.claims` is not set, no
+    claims file is read, not even the default `testguard.claims.json`, which
+    is not the file that was probed. Each claim is read from the evidence
+    alone. The `claim-changed` and `fault-unprobed` comparisons are skipped;
+    every other check stays. A test that passes them is `re-verified` with
+    reason `claims-not-compared`, never the plain `evidence-current`.
+  - When `external` is true and a claims path is configured, the adapter
+    behaves as for in-repository claims, against that file.
+  - A `re-verified` result carries `notChecked`, a sorted list drawn from
+    `dependency-closure`, `claim-changed` and `fault-unprobed`, whenever any
+    of those was not checked, and the listing says so. No path outside the
+    project is ever read.
 
 ### Key Entities
 

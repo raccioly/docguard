@@ -18,7 +18,14 @@
  * fault set must equal the claims file, and every recorded target and
  * defender hash must equal the file today.
  *
+ * Dependency-closure and external-claims fields come from a TestGuard
+ * evidence schema that is not yet released. They are read tolerantly: evidence
+ * without them keeps its verdicts, and a re-verified answer that rested on
+ * something not checked says so in `notChecked`.
+ *
  * @implements docguard.requirement-anchors#FR-033
+ * @implements docguard.requirement-anchors#FR-045
+ * @implements docguard.requirement-anchors#FR-046
  */
 
 import { existsSync } from 'node:fs';
@@ -32,6 +39,10 @@ const MAX_REPORT_BYTES = 32 * 1024 * 1024;
 const MAX_RECORDS = 50_000;
 const COMMIT = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 const SHA256 = /^[0-9a-f]{64}$/;
+const MAX_DEPENDENCIES = 20_000;
+const CLOSURE_VALUES = new Set(['complete', 'indeterminate']);
+const ISSUE_CODES = new Set(['computed-specifier', 'unreadable-module', 'unsupported-syntax', 'graph-limit']);
+const MAX_PRINTED_FILE = 120;
 
 /** The structured form TestGuard's `requirementRef()` accepts (its `$defs/claimSource`). */
 export const REQUIREMENT_REF = /^req:([A-Za-z0-9][A-Za-z0-9._-]{0,127})#([A-Za-z][A-Za-z0-9._-]{0,63})$/u;
@@ -59,6 +70,10 @@ function evidenceShapeError(doc) {
   if (!isObject(doc.run) || !isObject(doc.run.repo)) return 'run.repo is missing';
   if (!COMMIT.test(String(doc.run.repo.head))) return 'run.repo.head is not a commit id';
   if (doc.run.repo.snapshot !== undefined && !COMMIT.test(String(doc.run.repo.snapshot))) return 'run.repo.snapshot is not a commit id';
+  const source = doc.run.claimsSource;
+  if (source !== undefined && (!isObject(source) || typeof source.external !== 'boolean' || (source.external && !SHA256.test(String(source.sha256))))) {
+    return 'run.claimsSource is not { external, sha256 }';
+  }
   if (!Array.isArray(doc.records) || doc.records.length > MAX_RECORDS) return 'records is not a bounded array';
   for (const [i, r] of doc.records.entries()) {
     if (!isObject(r) || !isObject(r.claim) || typeof r.claim.id !== 'string' || !isObject(r.claim.source)
@@ -113,7 +128,11 @@ export function loadTestguardEvidence(projectDir, config = {}) {
   }
   let current = null;
   let claimsError = null;
-  if (unsafePath(claimsPath)) claimsError = `the TestGuard claims path ${JSON.stringify(claimsPath)} is not a project-relative path`;
+  // Claims supplied from outside the repository: the default file is not the
+  // file that was probed, so it is never read unless the project named one.
+  const claimsExternal = doc.run.claimsSource?.external === true && config.anchors?.testguard?.claims === undefined;
+  if (claimsExternal) { /* read each claim from the evidence alone */ }
+  else if (unsafePath(claimsPath)) claimsError = `the TestGuard claims path ${JSON.stringify(claimsPath)} is not a project-relative path`;
   else {
     const c = read(claimsPath);
     if (c.content === null) claimsError = `${claimsPath} cannot be read safely (${c.evidence.reason})`;
@@ -125,26 +144,64 @@ export function loadTestguardEvidence(projectDir, config = {}) {
       } catch { claimsError = `${claimsPath} is not a TestGuard claims file`; }
     }
   }
+  // A closure shared by many records is hashed once.
+  const hashes = new Map();
   const hashOf = path => {
-    if (unsafePath(path)) return null;
-    const s = read(path);
-    return s.content === null ? null : s.evidence.hash.replace(/^sha256:/, '');
+    if (hashes.has(path)) return hashes.get(path);
+    let hash = null;
+    if (!unsafePath(path)) {
+      const s = read(path);
+      hash = s.content === null ? null : s.evidence.hash.replace(/^sha256:/, '');
+    }
+    hashes.set(path, hash);
+    return hash;
   };
-  return { status: 'ok', path: evidencePath, claimsPath, revision, claims, current, claimsError, hashOf };
+  return { status: 'ok', path: evidencePath, claimsPath, revision, claims, current, claimsError, claimsExternal, hashOf };
 }
 
-/** Why a claim's saved records no longer describe the project, or null when they do. */
-function staleness(evidence, entry) {
+/** Untrusted text from the evidence, printable and bounded, before it reaches a message. */
+const bounded = text => {
+  const clean = String(text).replace(/[^\x20-\x7e]/g, '?');
+  return clean.length > MAX_PRINTED_FILE ? `${clean.slice(0, MAX_PRINTED_FILE)}…` : clean;
+};
+
+/** Whether a record's dependency fields are well formed: both or neither, with safe paths and sha256 values. */
+function dependencyShapeOk(inputs) {
+  const hasHashes = inputs.dependencyHashes !== undefined;
+  const hasClosure = inputs.dependencyClosure !== undefined;
+  if (hasHashes !== hasClosure) return false;
+  if (!hasHashes) return true;
+  if (!CLOSURE_VALUES.has(inputs.dependencyClosure) || !isObject(inputs.dependencyHashes)) return false;
+  const entries = Object.entries(inputs.dependencyHashes);
+  return entries.length <= MAX_DEPENDENCIES && entries.every(([file, hash]) => !unsafePath(file) && SHA256.test(String(hash)));
+}
+
+/** The first well-formed issue of an indeterminate closure, as text safe to print. */
+function firstIssue(inputs) {
+  const issue = Array.isArray(inputs.dependencyIssues) ? inputs.dependencyIssues.find(i => isObject(i) && ISSUE_CODES.has(i.code) && typeof i.file === 'string') : null;
+  return issue ? ` (${issue.code} in ${bounded(issue.file)})` : '';
+}
+
+/**
+ * Why a claim's saved records no longer describe the project, or null when
+ * they do. `gaps` collects the checks that were not made.
+ */
+function staleness(evidence, entry, gaps) {
   const recorded = entry.claim;
-  const now = evidence.current.get(recorded.id);
-  if (!now) return answer('inconclusive', 'claim-changed', `claim ${recorded.id} is no longer in ${evidence.claimsPath}`);
-  if (metadata(now) !== metadata(recorded)) return answer('inconclusive', 'claim-changed', `claim ${recorded.id} changed in ${evidence.claimsPath} since it was probed`);
-  const probed = new Set(entry.records.map(r => r.subject.id));
-  const faults = Array.isArray(now.faults) ? now.faults.map(f => f?.id) : [];
-  const unprobed = faults.filter(id => !probed.has(id));
-  if (unprobed.length) return answer('inconclusive', 'fault-unprobed', `${recorded.id}/${unprobed.join(', ')} has no record in ${evidence.path}`);
-  const gone = [...probed].filter(id => !faults.includes(id));
-  if (gone.length) return answer('inconclusive', 'claim-changed', `${recorded.id}/${gone.join(', ')} was probed but is no longer in ${evidence.claimsPath}`);
+  if (evidence.current) {
+    const now = evidence.current.get(recorded.id);
+    if (!now) return answer('inconclusive', 'claim-changed', `claim ${recorded.id} is no longer in ${evidence.claimsPath}`);
+    if (metadata(now) !== metadata(recorded)) return answer('inconclusive', 'claim-changed', `claim ${recorded.id} changed in ${evidence.claimsPath} since it was probed`);
+    const probed = new Set(entry.records.map(r => r.subject.id));
+    const faults = Array.isArray(now.faults) ? now.faults.map(f => f?.id) : [];
+    const unprobed = faults.filter(id => !probed.has(id));
+    if (unprobed.length) return answer('inconclusive', 'fault-unprobed', `${recorded.id}/${unprobed.join(', ')} has no record in ${evidence.path}`);
+    const gone = [...probed].filter(id => !faults.includes(id));
+    if (gone.length) return answer('inconclusive', 'claim-changed', `${recorded.id}/${gone.join(', ')} was probed but is no longer in ${evidence.claimsPath}`);
+  } else {
+    gaps.add('claim-changed');
+    gaps.add('fault-unprobed');
+  }
   for (const r of entry.records) {
     const inputs = r.inputs;
     if (!isObject(inputs) || !SHA256.test(String(inputs.targetHash)) || !isObject(inputs.defenderHashes) || typeof r.subject.file !== 'string') {
@@ -153,6 +210,14 @@ function staleness(evidence, entry) {
     if (evidence.hashOf(r.subject.file) !== inputs.targetHash) return answer('inconclusive', 'inputs-stale', `${r.subject.file} changed since ${recorded.id}/${r.subject.id} was probed`);
     for (const [file, hash] of Object.entries(inputs.defenderHashes)) {
       if (evidence.hashOf(file) !== hash) return answer('inconclusive', 'inputs-stale', `${file} changed since ${recorded.id}/${r.subject.id} was probed`);
+    }
+    if (!dependencyShapeOk(inputs)) return answer('inconclusive', 'inputs-stale', `${recorded.id}/${r.subject.id} has malformed dependency hashes, so its freshness cannot be checked`);
+    if (inputs.dependencyClosure === undefined) { gaps.add('dependency-closure'); continue; }
+    if (inputs.dependencyClosure === 'indeterminate') {
+      return answer('inconclusive', 'closure-indeterminate', `${recorded.id}/${r.subject.id}: freshness cannot be established because TestGuard could not resolve the import closure${firstIssue(inputs)}`);
+    }
+    for (const file of Object.keys(inputs.dependencyHashes).sort()) {
+      if (evidence.hashOf(file) !== inputs.dependencyHashes[file]) return answer('inconclusive', 'inputs-stale', `${file} changed since ${recorded.id}/${r.subject.id} was probed`);
     }
   }
   return null;
@@ -175,14 +240,22 @@ export function testStatus(evidence, { requirement, testFile, atRevision, hint }
   }
   const defending = naming.filter(e => e.records.some(r => strings(r.defenders?.resolved) && r.defenders.resolved.includes(testFile)));
   if (!defending.length) return answer('needs-reverification', 'not-a-defender', `not among the defenders TestGuard recorded for ${naming.map(e => e.claim.id).join(', ')}`);
+  const gaps = new Set();
   for (const entry of defending) {
-    const stale = staleness(evidence, entry);
+    const stale = staleness(evidence, entry, gaps);
     if (stale) return stale;
   }
   const notKilled = defending.flatMap(e => e.records.filter(r => r.verdict !== 'killed').map(r => `${e.claim.id}/${r.subject.id} ${r.verdict}`));
   if (notKilled.length) return answer('needs-reverification', 'fault-not-killed', `TestGuard did not prove the claim: ${notKilled.join(', ')}`);
   const ids = defending.map(e => e.claim.id);
-  return answer('re-verified', 'evidence-current', `re-verified at ${short} by ${ids.join(', ')}`, { evidenceHead: evidence.revision, claims: ids });
+  const base = { evidenceHead: evidence.revision, claims: ids };
+  if (!gaps.size) return answer('re-verified', 'evidence-current', `re-verified at ${short} by ${ids.join(', ')}`, base);
+  const notChecked = [...gaps].sort();
+  const why = [];
+  if (gaps.has('claim-changed')) why.push('the claims came from outside the repository, so they were not compared with a claims file');
+  if (gaps.has('dependency-closure')) why.push('the evidence records no import closure, so imported modules were not hashed');
+  return answer('re-verified', gaps.has('claim-changed') ? 'claims-not-compared' : 'evidence-current',
+    `re-verified at ${short} by ${ids.join(', ')}; not checked: ${notChecked.join(', ')} (${why.join('; ')})`, { ...base, notChecked });
 }
 
 /**

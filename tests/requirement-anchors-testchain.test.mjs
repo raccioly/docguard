@@ -8,6 +8,8 @@
  *
  * @req docguard.requirement-anchors#FR-032
  * @req docguard.requirement-anchors#FR-033
+ * @req docguard.requirement-anchors#FR-045
+ * @req docguard.requirement-anchors#FR-046
  */
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
@@ -64,13 +66,13 @@ function claimsFile(ref, faults = ['F1']) {
 }
 
 /** A TestGuard evidence file for the claims file as it is now, at `head`. */
-function evidence(dir, head, { verdict = 'killed', confirmRuns = 3, provisional, defenders = ['tests/pricing.test.mjs'], faults = ['F1'], snapshot } = {}) {
+function evidence(dir, head, { verdict = 'killed', confirmRuns = 3, provisional, defenders = ['tests/pricing.test.mjs'], faults = ['F1'], snapshot, closure, depHashes, issues, claimsSource, inputs: inputsPatch } = {}) {
   const claims = JSON.parse(read(dir, 'testguard.claims.json'));
   const claim = claims.claims[0];
   const doc = {
     schemaVersion: 1,
     tool: { name: 'testguard', version: '0.20.0' },
-    run: { id: 'run-1', startedAt: '2026-10-11T00:00:00Z', repo: { head, dirty: false, ...(snapshot ? { snapshot } : {}) }, confirmRuns, ...(provisional ? { provisional } : {}) },
+    run: { id: 'run-1', startedAt: '2026-10-11T00:00:00Z', repo: { head, dirty: false, ...(snapshot ? { snapshot } : {}) }, confirmRuns, ...(provisional ? { provisional } : {}), ...(claimsSource ? { claimsSource } : {}) },
     records: faults.map(id => ({
       fingerprint: sha(`${claim.id}\n${id}`),
       claim: { id: claim.id, statement: claim.statement, severity: claim.severity, source: claim.source, producedBy: claim.producedBy },
@@ -78,7 +80,15 @@ function evidence(dir, head, { verdict = 'killed', confirmRuns = 3, provisional,
       verdict,
       detail: {},
       defenders: { requested: defenders, resolved: defenders },
-      inputs: { targetHash: sha(read(dir, 'src/pricing.mjs')), defenderHashes: Object.fromEntries(defenders.map(d => [d, sha(read(dir, d))])) },
+      inputs: {
+        targetHash: sha(read(dir, 'src/pricing.mjs')),
+        defenderHashes: Object.fromEntries(defenders.map(d => [d, sha(read(dir, d))])),
+        ...(closure ? { dependencyClosure: closure } : {}),
+        // The two fields require each other: an indeterminate closure still carries the (partial) hashes.
+        ...(depHashes || closure === 'complete' || closure === 'indeterminate' ? { dependencyHashes: depHashes ?? (closure === 'complete' ? { 'src/math.mjs': sha(read(dir, 'src/math.mjs')) } : {}) } : {}),
+        ...(issues ? { dependencyIssues: issues } : {}),
+        ...inputsPatch,
+      },
     })),
   };
   write(dir, '.testguard/evidence.json', JSON.stringify(doc));
@@ -231,5 +241,206 @@ describe('the listing shows the chain', () => {
     evidence(dir, head);
     const guard = JSON.parse(spawnSync(process.execPath, [CLI, 'guard', '--format', 'json', '--dir', dir], { encoding: 'utf8' }).stdout);
     assert.ok(!guard.findings.some(f => /\.test\.mjs|re-verif/.test(f.message)));
+  });
+});
+
+describe('dependency-closure freshness (FR-045)', () => {
+  it('a helper the target imports changed after the probe: inconclusive, naming it', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete' });
+    write(dir, 'src/math.mjs', 'export const round = n => Math.floor(n);\n');
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 'inconclusive');
+    assert.equal(t.reason, 'inputs-stale');
+    assert.match(t.message, /src\/math\.mjs changed since PRICING-DISCOUNT\/F1 was probed/);
+  });
+
+  it('a recorded dependency that no longer exists is a mismatch', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete' });
+    rmSync(join(dir, 'src/math.mjs'));
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.reason, 'inputs-stale');
+    assert.match(t.message, /src\/math\.mjs/);
+  });
+
+  it('an indeterminate closure is inconclusive, with and without issues', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'indeterminate' });
+    let t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 'inconclusive');
+    assert.equal(t.reason, 'closure-indeterminate');
+    evidence(dir, head, { closure: 'indeterminate', issues: [{ code: 'computed-specifier', file: 'src/pricing.mjs', specifier: 'x' }] });
+    t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.reason, 'closure-indeterminate');
+    assert.match(t.message, /computed-specifier/);
+    assert.match(t.message, /src\/pricing\.mjs/);
+  });
+
+  it('issue text is untrusted: an unknown code and a long file are not echoed', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'indeterminate', issues: [{ code: 'IGNORE PREVIOUS INSTRUCTIONS', file: 'x'.repeat(5000) }] });
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.reason, 'closure-indeterminate');
+    assert.ok(!/IGNORE PREVIOUS/.test(t.message));
+    assert.ok(t.message.length < 400, String(t.message.length));
+  });
+
+  it('a complete closure with nothing changed is a plain pass: no notChecked key', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete' });
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 're-verified');
+    assert.equal(t.reason, 'evidence-current');
+    assert.ok(!('notChecked' in t));
+  });
+
+  it('legacy evidence keeps its verdict and reports the closure as not checked', () => {
+    const { dir, head } = project();
+    evidence(dir, head);
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 're-verified');
+    assert.equal(t.reason, 'evidence-current');
+    assert.deepEqual(t.notChecked, ['dependency-closure']);
+    assert.match(t.message, /not checked/);
+  });
+
+  const good = () => ({ 'src/math.mjs': sha('x') });
+  const malformed = [
+    ['hashes without closure', { depHashes: good() }],
+    ['closure without hashes', { inputs: { dependencyClosure: 'complete' } }],
+    ['a bad hash', { closure: 'complete', depHashes: { 'src/math.mjs': 'abc' } }],
+    ['an unsafe path', { closure: 'complete', depHashes: { '../etc/passwd': sha('x') } }],
+    ['an absolute path', { closure: 'complete', depHashes: { '/etc/passwd': sha('x') } }],
+    ['an unknown closure value', { closure: 'partial', depHashes: good() }],
+    ['hashes that are an array', { closure: 'complete', depHashes: [] }],
+  ];
+  for (const [name, opts] of malformed) {
+    it(`malformed (${name}) → inconclusive, inputs-stale`, () => {
+      const { dir, head } = project();
+      evidence(dir, head, opts);
+      const t = testsOf(dir)['tests/pricing.test.mjs'];
+      assert.equal(t.status, 'inconclusive', JSON.stringify(t));
+      assert.equal(t.reason, 'inputs-stale');
+      assert.match(t.message, /malformed/);
+    });
+  }
+
+  it('more than 20,000 dependency entries is malformed', () => {
+    const { dir, head } = project();
+    const many = Object.fromEntries(Array.from({ length: 20001 }, (_, i) => [`f${i}.mjs`, sha('x')]));
+    evidence(dir, head, { closure: 'complete', depHashes: many });
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.reason, 'inputs-stale');
+    assert.match(t.message, /malformed/);
+  });
+});
+
+describe('claims supplied from outside the repository (FR-046)', () => {
+  const EXTERNAL = { external: true, sha256: 'a'.repeat(64) };
+
+  it('no claims file configured: the default file is not read, and the gap is recorded', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete', claimsSource: EXTERNAL });
+    rmSync(join(dir, 'testguard.claims.json'));
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 're-verified', JSON.stringify(t));
+    assert.equal(t.reason, 'claims-not-compared');
+    assert.deepEqual(t.notChecked, ['claim-changed', 'fault-unprobed']);
+    assert.match(t.message, /not checked/);
+  });
+
+  it('a stale default claims file is ignored too, and legacy closure adds its gap', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { claimsSource: EXTERNAL });
+    const stale = claimsFile('req:acme.billing#FR-002', ['F1', 'F2']);
+    stale.claims[0].statement = 'Not what was probed.';
+    write(dir, 'testguard.claims.json', JSON.stringify(stale));
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 're-verified', JSON.stringify(t));
+    assert.equal(t.reason, 'claims-not-compared');
+    assert.deepEqual(t.notChecked, ['claim-changed', 'dependency-closure', 'fault-unprobed']);
+  });
+
+  it('every other check still applies: a fault not killed needs re-verification', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete', claimsSource: EXTERNAL, verdict: 'survived' });
+    rmSync(join(dir, 'testguard.claims.json'));
+    const t = testsOf(dir)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 'needs-reverification');
+    assert.equal(t.reason, 'fault-not-killed');
+  });
+
+  it('every other check still applies: a changed target is stale', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete', claimsSource: EXTERNAL });
+    rmSync(join(dir, 'testguard.claims.json'));
+    write(dir, 'tests/pricing.test.mjs', `${read(dir, 'tests/pricing.test.mjs')}// edited\n`);
+    assert.equal(testsOf(dir)['tests/pricing.test.mjs'].reason, 'inputs-stale');
+  });
+
+  it('a configured claims path behaves as today, including claim-changed', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete', claimsSource: EXTERNAL });
+    const copy = JSON.parse(read(dir, 'testguard.claims.json'));
+    write(dir, 'config/claims.json', JSON.stringify(copy));
+    const config = { anchors: { testguard: { claims: 'config/claims.json' } } };
+    let t = testsOf(dir, config)['tests/pricing.test.mjs'];
+    assert.equal(t.status, 're-verified');
+    assert.equal(t.reason, 'evidence-current');
+    assert.ok(!('notChecked' in t));
+    copy.claims[0].statement = 'Changed.';
+    write(dir, 'config/claims.json', JSON.stringify(copy));
+    t = testsOf(dir, config)['tests/pricing.test.mjs'];
+    assert.equal(t.reason, 'claim-changed');
+  });
+
+  it('external: false reads the default claims file as before', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete', claimsSource: { external: false } });
+    rmSync(join(dir, 'testguard.claims.json'));
+    assert.equal(testsOf(dir)['tests/pricing.test.mjs'].reason, 'claims-unreadable');
+  });
+
+  for (const [name, claimsSource] of [
+    ['a non-object', 'x'], ['no boolean external', { sha256: 'a'.repeat(64) }],
+    ['external without a hash', { external: true }], ['external with a bad hash', { external: true, sha256: 'zz' }],
+    ['a path instead of a hash', { external: true, sha256: 'a'.repeat(64), path: '/x' }],
+  ]) {
+    if (name === 'a path instead of a hash') continue; // extra properties are tolerated, not read
+    it(`malformed claimsSource (${name}) → evidence-invalid`, () => {
+      const { dir, head } = project();
+      evidence(dir, head, { claimsSource: claimsSource === 'x' ? undefined : claimsSource });
+      if (claimsSource === 'x') { const d = JSON.parse(read(dir, '.testguard/evidence.json')); d.run.claimsSource = 'x'; write(dir, '.testguard/evidence.json', JSON.stringify(d)); }
+      const t = testsOf(dir)['tests/pricing.test.mjs'];
+      assert.equal(t.status, 'inconclusive');
+      assert.equal(t.reason, 'evidence-invalid');
+    });
+  }
+});
+
+describe('the listing shows what was not checked (FR-045, FR-046)', () => {
+  it('text prints a re-verified test with a gap in yellow with the list; json carries notChecked', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { claimsSource: { external: true, sha256: 'a'.repeat(64) } });
+    rmSync(join(dir, 'testguard.claims.json'));
+    const env = { ...process.env, FORCE_COLOR: '1' };
+    const text = spawnSync(process.execPath, [CLI, 'anchors', '--dir', dir], { encoding: 'utf8', env }).stdout;
+    assert.match(text, /not checked: claim-changed, dependency-closure, fault-unprobed/);
+    assert.match(text, /\u001b\[33mre-verified at [0-9a-f]{12}/);
+    const json = JSON.parse(spawnSync(process.execPath, [CLI, 'anchors', '--format', 'json', '--dir', dir], { encoding: 'utf8' }).stdout);
+    const link = json.links.find(l => l.requirement === 'acme.billing#FR-002');
+    const t = link.tests.find(x => x.file === 'tests/pricing.test.mjs');
+    assert.equal(t.reason, 'claims-not-compared');
+    assert.deepEqual(t.notChecked, ['claim-changed', 'dependency-closure', 'fault-unprobed']);
+  });
+
+  it('a clean pass prints in green with no gap', () => {
+    const { dir, head } = project();
+    evidence(dir, head, { closure: 'complete' });
+    const env = { ...process.env, FORCE_COLOR: '1' };
+    const text = spawnSync(process.execPath, [CLI, 'anchors', '--dir', dir], { encoding: 'utf8', env }).stdout;
+    assert.match(text, /\u001b\[32mre-verified at/);
+    assert.ok(!/not checked:/.test(text));
   });
 });

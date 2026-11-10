@@ -20,7 +20,11 @@ layer never runs an external tool.
   - `run.confirmRuns`, `run.provisional` and `run.method`;
   - per record: `claim` (`id`, `statement`, `severity`, `source`,
     `producedBy`), `subject.id`, `subject.file`, `verdict`,
-    `defenders.resolved`, `inputs.targetHash` and `inputs.defenderHashes`.
+    `defenders.resolved`, `inputs.targetHash` and `inputs.defenderHashes`;
+  - optional, from a TestGuard evidence schema not yet released (FR-045,
+    FR-046): per record `inputs.dependencyHashes`, `inputs.dependencyClosure`
+    (`complete` | `indeterminate`) and `inputs.dependencyIssues`; and
+    `run.claimsSource` (`{ external, sha256 }`).
 - **Requirement reference.** TestGuard companion spec 003 defines
   `claims[].source = { "kind": "spec", "ref": "req:<spec-id>#<requirement-id>" }`.
   It is the only form that names a requirement.
@@ -48,8 +52,17 @@ the commit-id pattern.
 | 11 | A defending claim changed or was removed in the claims file | `inconclusive` | `claim-changed` |
 | 12 | A fault in the claims file has no record | `inconclusive` | `fault-unprobed` |
 | 13 | A recorded target or defender hash differs from the file today | `inconclusive` | `inputs-stale` |
+| 13a | Dependency fields malformed (one without the other, bad hash, unsafe path, unknown closure value, over 20,000 entries) | `inconclusive` | `inputs-stale` |
+| 13b | `dependencyClosure` is `indeterminate` | `inconclusive` | `closure-indeterminate` |
+| 13c | `dependencyClosure` is `complete` and a recorded dependency hash differs from the file today | `inconclusive` | `inputs-stale`, naming the file |
 | 14 | A defending claim has a fault not `killed` | `needs-reverification` | `fault-not-killed` |
-| 15 | Otherwise | `re-verified` | `evidence-current`, with `evidenceHead` and `claims` |
+| 15 | Otherwise | `re-verified` | `evidence-current`, with `evidenceHead` and `claims`; `notChecked: ["dependency-closure"]` for legacy evidence |
+| 15a | Otherwise, and `run.claimsSource.external` with no configured claims file | `re-verified` | `claims-not-compared`, with `notChecked` including `claim-changed` and `fault-unprobed` |
+
+Rows 8, 11 and 12 do not apply when `run.claimsSource.external` is true and no
+claims path is configured: no claims file is read, not even the default. With
+a configured path they apply against that file. `run.claimsSource` that is
+present but malformed is row 3.
 
 Code comparison at the revision uses the same rule as the lock: the exact
 fingerprint when the tier is unchanged, otherwise the floor.

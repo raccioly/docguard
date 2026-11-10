@@ -14065,6 +14065,8 @@
           "docguard.requirement-anchors#FR-042",
           "docguard.requirement-anchors#FR-043",
           "docguard.requirement-anchors#FR-044",
+          "docguard.requirement-anchors#FR-045",
+          "docguard.requirement-anchors#FR-046",
           "docguard.requirement-anchors#SC-001",
           "docguard.requirement-anchors#SC-002",
           "docguard.requirement-anchors#SC-003",
@@ -14081,7 +14083,7 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:0da1f5477b27e144e712e376de3cb6715c8c579f507d814e34d1aa6df51fb50d"
+            "digest": "sha256:0d9c0fc66f1dcbca69c2bb5d36c96ae66f0439c804946e63e03449d478b46db5"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
@@ -14089,12 +14091,12 @@
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
-            "digest": "sha256:6951875299e9b8e706dbad68ba9929cbc25d878e0443deeff65695a3ae5e5097"
+            "digest": "sha256:ad79542eb2bdd99ad39b9cc8c901ab71677f12eee2a979336173d0700e7d1953"
           }
         ],
         "taskCompletion": {
-          "checked": 79,
-          "total": 79
+          "checked": 81,
+          "total": 81
         },
         "implementationEvidence": [
           {
@@ -14340,7 +14342,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/testguard-evidence.mjs",
-            "line": 21
+            "line": 26
           },
           {
             "requirementId": "FR-034",
@@ -14355,7 +14357,7 @@
           {
             "requirementId": "FR-035",
             "file": "cli/commands/anchors.mjs",
-            "line": 141
+            "line": 142
           },
           {
             "requirementId": "FR-036",
@@ -14411,6 +14413,16 @@
             "requirementId": "FR-044",
             "file": "cli/scanners/anchors.mjs",
             "line": 143
+          },
+          {
+            "requirementId": "FR-045",
+            "file": "cli/scanners/testguard-evidence.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-046",
+            "file": "cli/scanners/testguard-evidence.mjs",
+            "line": 28
           },
           {
             "requirementId": "SC-003",
@@ -14678,6 +14690,16 @@
             "requirementId": "FR-044",
             "file": "tests/requirement-anchors.test.mjs",
             "line": 161
+          },
+          {
+            "requirementId": "FR-045",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-046",
+            "file": "tests/requirement-anchors-testchain.test.mjs",
+            "line": 12
           },
           {
             "requirementId": "SC-001",
