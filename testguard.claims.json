@@ -9586,6 +9586,73 @@
           }
         }
       ]
+    },
+    {
+      "id": "RELEASE-LISTS-ON-MCP-REGISTRY",
+      "source": {
+        "kind": "spec",
+        "ref": "specs/026-release-readiness/spec.md#FR-007"
+      },
+      "severity": "high",
+      "producedBy": {
+        "producer": "agent",
+        "by": "claude-sonnet-5.5 (MCP registry publish)"
+      },
+      "statement": "The release is listed on the official MCP registry only when the registry is readable and behind: a registry ahead of the release is never overwritten, an unreadable answer publishes nothing, the tag's server.json and package.json must agree on the version, and the registry's own duplicate-version refusal ends the job green.",
+      "defendedBy": [
+        "tests/mcp-registry.test.mjs",
+        "tests/release-readiness.test.mjs"
+      ],
+      "faults": [
+        {
+          "id": "F1",
+          "description": "The sweep publishes an older version over a newer registry listing.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/mcp-registry.mjs",
+          "find": "missing: order < 0,",
+          "replace": "missing: order !== 0,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (MCP registry publish)"
+          }
+        },
+        {
+          "id": "F2",
+          "description": "A duplicate-version refusal fails the job instead of ending green.",
+          "faultClass": "literal-changed",
+          "file": ".github/scripts/mcp-registry.mjs",
+          "find": "/cannot publish duplicate version/i",
+          "replace": "/(?!)/i",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (MCP registry publish)"
+          }
+        },
+        {
+          "id": "F3",
+          "description": "A tag whose package.json disagrees with server.json is published.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/mcp-registry.mjs",
+          "find": "if (pkg.version !== version) problems.push(",
+          "replace": "if (false) problems.push(",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (MCP registry publish)"
+          }
+        },
+        {
+          "id": "F4",
+          "description": "An unreadable registry answer publishes instead of failing closed.",
+          "faultClass": "condition-forced",
+          "file": ".github/scripts/mcp-registry.mjs",
+          "find": "if (!result.ok) return { missing: false,",
+          "replace": "if (!result.ok) return { missing: true,",
+          "producedBy": {
+            "producer": "agent",
+            "by": "claude-sonnet-5.5 (MCP registry publish)"
+          }
+        }
+      ]
     }
   ]
 }

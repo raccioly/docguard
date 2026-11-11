@@ -64,6 +64,17 @@ thing without anyone noticing:
 2. **Given** no deploy key, **Then** the job warns once and skips; the sweep does
    not warn every 10 minutes.
 
+### User Story 5 - The MCP registry lists the release (Priority: P2)
+
+1. **Given** a release whose npm package is served, **When** the release workflow
+   runs, **Then** `server.json` of that tag is published to the official MCP
+   registry with no stored secret.
+2. **Given** a tagged version newer than the registry's latest, **When** the
+   sweep runs, **Then** it publishes that version; **given** the registry is
+   current, ahead, or unreadable, **Then** it publishes nothing.
+3. **Given** a race or re-run where the registry already lists the version,
+   **Then** the job ends green without a second listing.
+
 ### Edge Cases
 
 - A version section that already exists is never overwritten.
@@ -99,6 +110,15 @@ thing without anyone noticing:
   subcommand and mode its own `--help` lists.
 - **FR-006**: The config schema MUST declare every configuration key that a
   finding's help text tells users to set.
+- **FR-007** *(amended 2026-11-10)*: Every release MUST be published to the
+  official MCP registry (`registry.modelcontextprotocol.io`) by the release
+  workflow, authenticated by the repository's GitHub OIDC token, after the npm
+  package it names is served. The 10-minute sweep MUST publish the released
+  version when the registry's latest version is behind it, fail closed (no
+  publish) when the registry cannot be read, and end green without publishing
+  when the registry already lists that version. Before this, publishing there
+  was a manual step nothing prompted: v0.41 through v0.47 never reached it and
+  the listing stayed at 0.40.5.
 
 ## Success Criteria *(mandatory)*
 

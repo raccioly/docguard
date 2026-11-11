@@ -134,6 +134,17 @@ Docs: https://docs.gitlab.com/ci/components/#publish-a-new-release
 `server.json` at the repo root already conforms to the
 `2025-12-11` registry schema. To publish to registry.modelcontextprotocol.io:
 
+**Automated.** The release workflow's `publish-mcp-registry` job publishes
+`server.json` of every release tag, authenticated by GitHub OIDC (no stored
+secret), once the npm package is served. `detect-version` also reports
+`registry_missing` when the registry's latest is older than the released
+version, so the 10-minute sweep backfills a listing that fell behind, and a
+version the registry already lists ends green without publishing. Check the
+listing with
+`curl -s 'https://registry.modelcontextprotocol.io/v0/servers?search=docguard&limit=100'`
+(the entry with `isLatest: true`). The manual steps below are the fallback when
+the job is failing.
+
 1. Install the publisher CLI: `brew install mcp-publisher` (or download from
    https://github.com/modelcontextprotocol/registry/releases).
 2. From the repo root: `mcp-publisher login github` (the `io.github.raccioly/*`
@@ -142,7 +153,8 @@ Docs: https://docs.gitlab.com/ci/components/#publish-a-new-release
    `"mcpName": "io.github.raccioly/docguard"` to `package.json` before the
    next `npm publish` (the registry checks the published package for it).
 4. `mcp-publisher publish` — validates `server.json` and creates the listing.
-5. Repeat per release (bump both `version` fields in `server.json`).
+5. Not needed per release: the workflow does this. The release cut bumps both
+   `version` fields in `server.json`.
 
 ## f) Smithery (owner)
 

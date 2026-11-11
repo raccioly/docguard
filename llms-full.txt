@@ -452,6 +452,20 @@ the Actions secret `HOMEBREW_TAP_DEPLOY_KEY`. Without the secret the job warns
 and skips. With it, the 10-minute sweep retries until the tap serves the
 released version.
 
+The `publish-mcp-registry` job lists each release in the official MCP registry
+(`registry.modelcontextprotocol.io`, server `io.github.raccioly/docguard`)
+once npm serves the package `server.json` names
+(`specs/026-release-readiness` FR-007). It holds `contents: read` and
+`id-token: write` only, with no stored secret: `mcp-publisher login
+github-oidc` proves the `io.github.raccioly/*` namespace with the repository's
+OIDC token. It checks out the released tag, asserts that `server.json` and
+`package.json` carry the version being published, verifies a pinned
+`mcp-publisher` with cosign, skips when the registry already lists the version,
+and counts a duplicate-version refusal as success. `detect-version` also
+reports `registry_missing` when the tag exists and the registry's latest is
+older, so the 10-minute sweep backfills a listing that fell behind. An
+unreadable registry answer publishes nothing and warns.
+
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
 the held run executes its jobs without producing a second completion event for
@@ -1537,7 +1551,7 @@ change the directory passed to a command.
 
 Dependency audit results are time-specific observations. Run the current audit and supported Node-version matrix before release; a historical clean audit is not a continuing guarantee. Pin third-party CI actions to verified commit SHAs and install from the lockfile. The release workflow's `publish-homebrew` job holds the only stored release secret, `HOMEBREW_TAP_DEPLOY_KEY`, a write deploy key scoped to `raccioly/homebrew-tap`. It checks the downloaded npm tarball against `dist.integrity` and pins GitHub's SSH host keys before pushing.
 
-No workflow job runs code beside a token that can write to the repository. Every workflow defaults to `contents: read`, and a job that writes asks for its own scope. A job that runs the test suite or DocGuard on itself holds no write permission and checks out with `persist-credentials: false`, because a bot may merge new test files without a maintainer (spec 067). A job holding `contents`, `actions`, `pull-requests` or `issues` write runs no package manager, build tool or test: the release assets (Spec Kit ZIP, Claude Desktop bundle, PyPI distribution) are built in read-only jobs and handed over as workflow artifacts, the scheduled release cuts and tests in read-only jobs and pushes the exact patch it validated from a job that runs only `git`, `gh` and `jq`, and the GHCR job logs in only after building and smoke-testing the image. The publishing jobs hold only their registry credential (`id-token` or `packages`). `tests/workflow-permissions.test.mjs` fails any workflow that breaks these rules (spec 068).
+No workflow job runs code beside a token that can write to the repository. Every workflow defaults to `contents: read`, and a job that writes asks for its own scope. A job that runs the test suite or DocGuard on itself holds no write permission and checks out with `persist-credentials: false`, because a bot may merge new test files without a maintainer (spec 067). A job holding `contents`, `actions`, `pull-requests` or `issues` write runs no package manager, build tool or test: the release assets (Spec Kit ZIP, Claude Desktop bundle, PyPI distribution) are built in read-only jobs and handed over as workflow artifacts, the scheduled release cuts and tests in read-only jobs and pushes the exact patch it validated from a job that runs only `git`, `gh` and `jq`, and the GHCR job logs in only after building and smoke-testing the image. The publishing jobs hold only their registry credential (`id-token` or `packages`); `publish-mcp-registry` holds `id-token: write` to prove the `io.github.raccioly/*` namespace to the official MCP registry by OIDC, checks out the released tag without persisted credentials, runs no package manager, and verifies the `mcp-publisher` binary (pinned version) with cosign before using it. `tests/workflow-permissions.test.mjs` fails any workflow that breaks these rules (spec 068).
 
 ## .gitignore Audit
 
@@ -1688,6 +1702,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-test-cases.mjs` | `tests/test-case-count.test.mjs` | ✅ |
 | `cli/scanners/speckit.mjs` (SPK010 directory claims) | `tests/spk010-directory-claims.test.mjs`, `tests/spec-kit-artifact-coverage.test.mjs` | ✅ |
 | `.github/scripts/release-changelog.mjs`, `.github/scripts/homebrew-formula.mjs` | `tests/release-readiness.test.mjs` | ✅ |
+| `.github/scripts/mcp-registry.mjs` (official MCP registry detection, version assertion, idempotent publish) and the `publish-mcp-registry` job | `tests/mcp-registry.test.mjs`, `tests/release-readiness.test.mjs` | ✅ |
 | `cli/scanners/revision-anchor.mjs` (`specs reanchor`, SPR008) | `tests/completion-revision-anchoring.test.mjs` | ✅ |
 | `cli/scanners/reconciliation.mjs` (canonical requirement links) | `tests/canonical-requirement-links.test.mjs`, `tests/reconcile.test.mjs` | ✅ |
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
@@ -1984,6 +1999,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Releases are now published to the official MCP registry.** The listing at
+  `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because
+  publishing there was a manual step. The release workflow's new
+  `publish-mcp-registry` job publishes each release with GitHub OIDC (no stored
+  secret), and the 10-minute sweep backfills the registry whenever its latest
+  version is behind the released one, so v0.47.0 is listed by the first sweep
+  after this lands. An unreadable registry publishes nothing
+  (`docguard.release-readiness` FR-007).
+
+## [0.47.0] - 2026-11-10
+
 ### Added
 
 - **mcp.market safety badge in the README.** mcp.market scans every server in
@@ -2013,6 +2041,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   local projects that installed the extension, `docguard anchors` lost exactly
   those four findings each and nothing else; a guard A/B over 47 projects
   changed no finding.
+
+### Commits
+
+- feat(anchors): follow TestGuard dependency-closure and external-claims evidence (FR-045, FR-046) (#620)
+- docs: add mcp.market safety-grade badge (A, 92/100) (#618)
+- fix(anchors): skip files Spec Kit installed under .specify/extensions/ (FR-044) (#616)
+- spec: re-anchor docguard.release-trend-gate onto main after the #614 squash merge (#615)
+- spec(release-trend-gate): verified — SC-003 measured on the v0.46.0 release (#614)
 
 ## [0.46.0] - 2026-11-04
 
@@ -2354,29 +2390,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
     is named `constructor` no longer crashes `generate --plan`.
 
 - **A living spec reviewed long ago can complete its maintenance again**
-  (`specs/028-completion-revision-anchoring`, FR-008–FR-010). Completion
-  reconciles from the spec's recorded revision, and `reconcile` read that
-  range's whole patch in one Git call capped at 5 MB. Spec 028's own
-  maintenance, recorded 83 commits before 0.45.0, was BLOCKED ("Patch exceeded
-  its byte budget") with no way forward. A range whose single read overflows
-  or times out is now read again in batches of changed paths, each under the
-  same 5 MB budget (a rename's two paths together, every path literal), keeping
-  only each file's derived links between batches. Coverage is complete and the
-  classifications match one unbounded read; `range.batches` reports the reads.
-  The range from spec 028's recorded revision (763 files, 7.2 MB) now
-  reconciles in 4 batches. A range past every bound (one file's patch over
-  5 MB, 64 MB in total, two minutes, or the 5,000-file inventory) stays
-  BLOCKED and names the bound or the file.
-- **`specs complete --since` no longer skips reviewed history silently.** With
-  a recorded revision, `--since` replaced it unconditionally, so a newer ref
-  dropped the commits in between from reconciliation and the outcome recorded
-  nothing about it; `--help` described the flag as used only when no revision
-  is recorded. The same or an older ref is accepted. A newer ref on `HEAD`'s
-  history is accepted only when the recorded range is BLOCKED by a budget even
-  in batches, and the outcome then records `narrowedFrom` (`revision`,
-  `since`, `skippedCommits`, `reason`) in the registry, and the spec's outcome
 
-<!-- truncated: 6145 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6166 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -3008,4 +3023,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.46.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.47.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)

@@ -117,6 +117,20 @@ the Actions secret `HOMEBREW_TAP_DEPLOY_KEY`. Without the secret the job warns
 and skips. With it, the 10-minute sweep retries until the tap serves the
 released version.
 
+The `publish-mcp-registry` job lists each release in the official MCP registry
+(`registry.modelcontextprotocol.io`, server `io.github.raccioly/docguard`)
+once npm serves the package `server.json` names
+(`specs/026-release-readiness` FR-007). It holds `contents: read` and
+`id-token: write` only, with no stored secret: `mcp-publisher login
+github-oidc` proves the `io.github.raccioly/*` namespace with the repository's
+OIDC token. It checks out the released tag, asserts that `server.json` and
+`package.json` carry the version being published, verifies a pinned
+`mcp-publisher` with cosign, skips when the registry already lists the version,
+and counts a duplicate-version refusal as success. `detect-version` also
+reports `registry_missing` when the tag exists and the registry's latest is
+older, so the 10-minute sweep backfills a listing that fell behind. An
+unreadable registry answer publishes nothing and warns.
+
 Do not use a post-approval `workflow_run` listener as the release continuation.
 The approval-required completion is the event that listener observes; approving
 the held run executes its jobs without producing a second completion event for
