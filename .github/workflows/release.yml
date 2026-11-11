@@ -38,6 +38,8 @@ jobs:
       version: ${{ steps.check.outputs.version }}
       changed: ${{ steps.check.outputs.changed }}
       brew_missing: ${{ steps.brew.outputs.brew_missing }}
+      current: ${{ steps.check.outputs.current }}
+      registry_missing: ${{ steps.registry.outputs.registry_missing }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,6 +51,7 @@ jobs:
           CURRENT=$(node -p "require('./package.json').version")
           TAG="v${CURRENT}"
           echo "current=$CURRENT"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
           # TAG-DRIVEN gate (not HEAD~1): a version needs releasing iff no tag
           # v$CURRENT exists yet. The old HEAD~1 comparison skipped the release
           # whenever a push carried commits AFTER the version-bump commit (the
@@ -84,6 +87,24 @@ jobs:
             echo "tap serves ${TAP:-nothing}; released v$CURRENT"
           fi
           echo "brew_missing=$BEHIND" >> "$GITHUB_OUTPUT"
+
+      # The official MCP registry is another surface that falls behind on its
+      # own: publishing there was a manual step, and v0.41 through v0.47 never
+      # reached it. Once the tag exists, ask the registry what it lists as
+      # latest; the sweep publishes this version when that is older. A failed or
+      # unreadable query is `false` with a warning (fail closed). Whatever the
+      # registry returns is compared as text, never run
+      # (.github/scripts/mcp-registry.mjs).
+      # @implements docguard.release-readiness#FR-007
+      - name: Is the MCP registry behind the released version?
+        id: registry
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if git ls-remote --tags origin "refs/tags/v$CURRENT" | grep -q "refs/tags/v$CURRENT$"; then
+            node .github/scripts/mcp-registry.mjs detect --version "$CURRENT"
+          else
+            echo "registry_missing=false" >> "$GITHUB_OUTPUT"
+          fi
 
   # ── Step 2: Run full test suite ────────────────────────────────────────
   test:
@@ -726,3 +747,106 @@ jobs:
             echo
             echo "Submit it through the form (do **not** open a PR against the catalog)."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Step 8: Publish to the official MCP registry ───────────────────────
+  # registry.modelcontextprotocol.io lists io.github.raccioly/docguard, and the
+  # sites that read it show whatever version it holds. Runs after the package
+  # it names is published, and on its own when the sweep finds the registry
+  # behind the released version, the same way publish-homebrew does.
+  #
+  # No secret: `mcp-publisher login github-oidc` proves the io.github.raccioly/*
+  # namespace with this repository's OIDC token, which is why the job holds
+  # id-token: write and nothing else. It checks out the RELEASED TAG so the
+  # server.json it publishes is the one that shipped, and runs no package
+  # manager or project code: the only repository scripts are read from the
+  # workflow's own commit (a sweep of an old tag predates them), and the
+  # publisher binary is fetched at a pinned version and verified with cosign.
+  # Concurrency: the workflow-wide docguard-release group runs one release or
+  # sweep at a time, so two publishes cannot overlap; a re-run that finds the
+  # version already listed ends green without publishing.
+  # @implements docguard.release-readiness#FR-007
+  publish-mcp-registry:
+    needs: [detect-version, publish-npm]
+    if: >-
+      !cancelled()
+      && (needs.detect-version.outputs.registry_missing == 'true'
+          || (needs.detect-version.outputs.changed == 'true' && needs.publish-npm.result == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Pinned release of github.com/modelcontextprotocol/registry (never the
+      # mutable latest URL). Update it deliberately; its cosign identity is tied to
+      # this tag.
+      MCP_PUBLISHER_VERSION: v1.8.9
+      VERSION: ${{ needs.detect-version.outputs.current }}
+    steps:
+      - name: Check out the release scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Check out the released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/v${{ needs.detect-version.outputs.current }}
+          path: release
+          persist-credentials: false
+
+      - name: Assert the tag carries the version being published
+        run: node .github/scripts/mcp-registry.mjs assert-versions --version "$VERSION" --dir release
+
+      # The registry validates the package server.json names, and a fresh
+      # tarball can 404 for several minutes while the version is already listed.
+      - name: Wait until the package is served
+        run: node .github/scripts/mcp-registry.mjs wait-package --version "$VERSION" --wait 900
+
+      # v4.1.2. The commit SHA is the one the registry's own docs pin.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          mkdir -p "$RUNNER_TEMP/mcp"
+          cd "$RUNNER_TEMP/mcp"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      # A release run and a sweep run, or a re-run, can reach this point for a
+      # version the registry already lists: that is done, not an error.
+      - name: Is this version already listed?
+        id: listed
+        run: |
+          if node .github/scripts/mcp-registry.mjs listed --version "$VERSION"; then
+            echo "listed=true" >> "$GITHUB_OUTPUT"
+            echo "The MCP registry already lists $VERSION; nothing to publish."
+          else
+            echo "listed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate to the MCP registry (GitHub OIDC)
+        if: steps.listed.outputs.listed != 'true'
+        run: |
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+            echo "::error::ACTIONS_ID_TOKEN_REQUEST_URL is unset — this job lacks id-token: write, so github-oidc login cannot work."
+            exit 1
+          fi
+          "$RUNNER_TEMP/mcp/mcp-publisher" login github-oidc
+
+      # A duplicate-version refusal counts as success; any other failure fails
+      # the job and the next 10-minute sweep retries it.
+      - name: Publish server.json to the MCP registry
+        if: steps.listed.outputs.listed != 'true'
+        run: node .github/scripts/mcp-registry.mjs publish --bin "$RUNNER_TEMP/mcp/mcp-publisher" --dir release

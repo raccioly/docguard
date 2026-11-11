@@ -10,6 +10,7 @@
  * @req docguard.release-readiness#FR-004
  * @req docguard.release-readiness#FR-005
  * @req docguard.release-readiness#FR-006
+ * @req docguard.release-readiness#FR-007
  * @req docguard.release-readiness#SC-001
  * @req docguard.release-readiness#SC-002
  */
@@ -196,5 +197,69 @@ describe('the config schema declares every key a finding tells users to set (FR-
     for (const [section, key] of pairs) {
       assert.ok(schema.properties?.[section]?.properties?.[key], `schema lacks ${section}.${key}`);
     }
+  });
+});
+
+describe('every release is published to the official MCP registry (FR-007)', () => {
+  const wf = readFileSync('.github/workflows/release.yml', 'utf8');
+  const jobText = name => {
+    const start = wf.indexOf(`\n  ${name}:\n`);
+    assert.ok(start >= 0, `release.yml has a ${name} job`);
+    const next = wf.slice(start + 1).search(/\n  [a-z0-9-]+:\n/);
+    return wf.slice(start, next < 0 ? undefined : start + 1 + next);
+  };
+  const job = jobText.bind(null, 'publish-mcp-registry');
+  const before = (text, a, b) => { assert.ok(text.indexOf(a) >= 0, `missing ${a}`); assert.ok(text.indexOf(b) >= 0, `missing ${b}`); assert.ok(text.indexOf(a) < text.indexOf(b), `${a} must precede ${b}`); };
+
+  it('detect-version exposes registry_missing from a tag-gated registry query', () => {
+    assert.match(jobText('detect-version'), /registry_missing: \$\{\{ steps\.registry\.outputs\.registry_missing \}\}/);
+    assert.match(wf, /id: registry\n/);
+    assert.match(wf, /mcp-registry\.mjs detect --version "\$CURRENT"/);
+    assert.match(wf, /git ls-remote --tags origin "refs\/tags\/v\$CURRENT"[^\n]*\n(?:.*\n){0,6}?.*mcp-registry\.mjs detect/);
+  });
+
+  it('runs after npm on a release and on its own when the sweep finds the registry behind', () => {
+    const text = job();
+    assert.match(text, /needs: \[detect-version, publish-npm\]/);
+    assert.match(text, /!cancelled\(\)/);
+    assert.match(text, /registry_missing == 'true'/);
+    assert.match(text, /changed == 'true' && needs\.publish-npm\.result == 'success'/);
+  });
+
+  it('holds exactly contents: read and id-token: write, and checks out without credentials', () => {
+    const text = job();
+    const perms = text.match(/permissions:\n((?:\s{6}.+\n)+)/)[1].trim().split('\n').map(l => l.trim());
+    assert.deepEqual(perms.sort(), ['contents: read', 'id-token: write']);
+    const checkouts = text.match(/actions\/checkout@[0-9a-f]{40}[^\n]*\n(?:\s{8,}.+\n)+/g) || [];
+    assert.ok(checkouts.length >= 1 && checkouts.every(c => /persist-credentials: false/.test(c)));
+    assert.match(text, /ref: refs\/tags\/v\$\{\{ needs\.detect-version\.outputs\.current \}\}/, 'the released tag, not a branch');
+    assert.doesNotMatch(text, /\bnpm\s|\bnpx\s|\bnode --test\b|\bnode cli\//, 'no package manager, test or CLI run');
+  });
+
+  it('pins the publisher and cosign, never releases/latest', () => {
+    const text = job();
+    assert.match(text, /MCP_PUBLISHER_VERSION: v1\.8\.9/);
+    assert.match(text, /sigstore\/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4\.1\.2/);
+    assert.doesNotMatch(wf, /releases\/latest/);
+    assert.match(text, /releases\/download\/\$\{MCP_PUBLISHER_VERSION\}/);
+  });
+
+  it('verifies the publisher signature before it logs in, and logs in before it publishes', () => {
+    const text = job();
+    before(text, 'cosign verify-blob', 'login github-oidc');
+    before(text, 'login github-oidc', 'mcp-registry.mjs publish');
+    assert.match(text, /--certificate-identity "https:\/\/github\.com\/modelcontextprotocol\/registry\/\.github\/workflows\/release\.yml@refs\/tags\/\$\{MCP_PUBLISHER_VERSION\}"/);
+    assert.match(text, /--certificate-oidc-issuer "https:\/\/token\.actions\.githubusercontent\.com"/);
+  });
+
+  it('asserts the versions and waits for npm before the publisher is fetched', () => {
+    const text = job();
+    before(text, 'mcp-registry.mjs assert-versions', 'cosign verify-blob');
+    before(text, 'mcp-registry.mjs wait-package', 'cosign verify-blob');
+  });
+
+  it('checks the registry for this version right before publishing', () => {
+    const text = job();
+    before(text, 'mcp-registry.mjs listed', 'mcp-registry.mjs publish');
   });
 });

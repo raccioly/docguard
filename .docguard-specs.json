@@ -13372,27 +13372,27 @@
           {
             "requirementId": "FR-002",
             "file": ".github/workflows/release.yml",
-            "line": 93
+            "line": 114
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 254
+            "line": 275
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 350
+            "line": 371
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 385
+            "line": 406
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 564
+            "line": 585
           },
           {
             "requirementId": "FR-005",
@@ -13402,7 +13402,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/release.yml",
-            "line": 313
+            "line": 334
           }
         ],
         "testEvidence": [
@@ -13516,6 +13516,7 @@
           "docguard.release-readiness#FR-004",
           "docguard.release-readiness#FR-005",
           "docguard.release-readiness#FR-006",
+          "docguard.release-readiness#FR-007",
           "docguard.release-readiness#SC-001",
           "docguard.release-readiness#SC-002"
         ]
@@ -13524,7 +13525,7 @@
         "artifacts": [
           {
             "path": "specs/026-release-readiness/spec.md",
-            "digest": "sha256:284c786899635b0ca8eec88a05f94344ea4c742f899663e56426ac480a96175d"
+            "digest": "sha256:57ebc07b5b800031e2a1d2615e5f9a0b535a4a4d172aa6f5b0f97e2e3ec6b4bd"
           },
           {
             "path": "specs/026-release-readiness/plan.md",
@@ -13532,12 +13533,12 @@
           },
           {
             "path": "specs/026-release-readiness/tasks.md",
-            "digest": "sha256:3d3bca40aa37c761bc25762f03b9cb951a3c3073acaca481e67c7526fa9b0624"
+            "digest": "sha256:fd3e3466ac95b8ce4d85f9fe36756e27b6d5546058f3330a23fcff04cac5fa8f"
           }
         ],
         "taskCompletion": {
-          "checked": 9,
-          "total": 9
+          "checked": 10,
+          "total": 10
         },
         "implementationEvidence": [
           {
@@ -13588,17 +13589,37 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 72
+            "line": 75
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 417
+            "line": 438
           },
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
             "line": 82
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/scripts/mcp-registry.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/scripts/mcp-registry.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/workflows/release.yml",
+            "line": 98
+          },
+          {
+            "requirementId": "FR-007",
+            "file": ".github/workflows/release.yml",
+            "line": 767
           }
         ],
         "testEvidence": [
@@ -13638,14 +13659,24 @@
             "line": 12
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-007",
+            "file": "tests/mcp-registry.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-007",
             "file": "tests/release-readiness.test.mjs",
             "line": 13
           },
           {
-            "requirementId": "SC-002",
+            "requirementId": "SC-001",
             "file": "tests/release-readiness.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/release-readiness.test.mjs",
+            "line": 15
           }
         ]
       }
@@ -13748,7 +13779,7 @@
           {
             "requirementId": "FR-003",
             "file": ".github/workflows/release.yml",
-            "line": 122
+            "line": 143
           },
           {
             "requirementId": "FR-004",

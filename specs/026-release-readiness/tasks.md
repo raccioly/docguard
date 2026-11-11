@@ -10,6 +10,8 @@
 - [x] T002 `action.yml`, `.github/scripts/sync-release-version.mjs`, `cli/release-pr-policy.mjs`: the CLI pin and synced Action examples (FR-003).
 - [x] T003 `packaging/homebrew/docguard.rb`, `.github/scripts/homebrew-formula.mjs`, `.github/scripts/publish-homebrew-tap.sh`, `.github/workflows/release.yml`: the Homebrew tap (FR-004).
 
+- [x] T010 `.github/scripts/mcp-registry.mjs`, `.github/workflows/release.yml`, `packaging/submissions.md`, `docs-canonical/SECURITY.md`, `tests/mcp-registry.test.mjs`, `tests/release-readiness.test.mjs`: publish each release to the official MCP registry and backfill it from the sweep (FR-007).
+
 ## Phase 2: Shipped surfaces
 
 - [x] T004 `cli/docguard.mjs`: top-level help summaries (FR-005).

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Releases are now published to the official MCP registry.** The listing at
+  `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because
+  publishing there was a manual step. The release workflow's new
+  `publish-mcp-registry` job publishes each release with GitHub OIDC (no stored
+  secret), and the 10-minute sweep backfills the registry whenever its latest
+  version is behind the released one, so v0.47.0 is listed by the first sweep
+  after this lands. An unreadable registry publishes nothing
+  (`docguard.release-readiness` FR-007).
+
 ## [0.47.0] - 2026-11-10
 
 ### Added
