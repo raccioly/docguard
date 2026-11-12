@@ -65,6 +65,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Security reports how many files it scanned and why a run scanned none**
+  (spec 097, stage A). The result now carries `performed` (files scanned),
+  `applies` (a project applies when it has a source or configuration file with a
+  scanned extension) and its evidence. When `securityIgnore`, `ignore` or
+  `.docguardignore` excludes every candidate, the SEC011 suggestion names the
+  setting. No finding, level, count or exit code changes under `standard`.
 - **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
   "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
   finding; Freshness records that it is reviewed through its target. Installed
@@ -78,6 +84,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   where they were `pass`. No exit code changes under `standard`: `empty` does not
   affect one, except for a validator named in `requiredChecks`, which already
   held the gate on `empty` (FR-004).
+
+- **Security classifies where a literal sits and drops provably synthetic values**
+  (spec 097 FR-010, stage A). Two changes. (1) Every SEC001–SEC004 finding now
+  carries `context: "product"` or `"test-path"` (`--format json`, SARIF
+  `properties.context`, and the JUnit body). `test-path` is a test, fixture,
+  example or mock path. The level does not change: a real secret pasted into a
+  test file is still a leaked secret, and the message text is unchanged so
+  baseline fingerprints do not move. `isGatingEligible(finding)` is false for
+  `test-path`, so a later release can never make such a finding fail a build
+  under strict. (2) A SEC001–SEC004 value that is synthetic by its own text
+  (`placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme`,
+  `change-me`, or one repeated character) is no longer reported, in every mode,
+  alongside the existing `EXAMPLE` and `password123` exemptions. The word must
+  be a whole segment or open the value; one buried in a high-entropy run does not
+  count. `xxx` and `your-` values are still reported. Provider-signature keys
+  (AWS, `sk-`) are unaffected.
 
 ### Fixed
 

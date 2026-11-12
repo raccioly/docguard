@@ -160,6 +160,7 @@ export function toSarif(guardData, opts = {}) {
       evidence: f.evidence && f.evidence.status === 'measured' ? 'measured' : 'not-measured',
       parserTier: typeof f.parserTier === 'string' ? f.parserTier : 'not-applicable',
       reportable: !!f.reportable,
+      ...(f.context === 'product' || f.context === 'test-path' ? { context: f.context } : {}),
       ...(f.suggestion && f.suggestion.kind ? { suggestionKind: f.suggestion.kind } : {}),
     };
     return result;
