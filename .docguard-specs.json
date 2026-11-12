@@ -13285,11 +13285,11 @@
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
-            "digest": "sha256:14983cc9c5f7fa72d4ea9dd3dcad556d6de642d117078aef566cb8399611669c"
+            "digest": "sha256:c0d684ad874e8900307b949455faddbe1b882ee9220dc7aec898b91e7e6c3400"
           },
           {
             "path": "specs/095-recorded-document-reviews/tasks.md",
-            "digest": "sha256:3363efab95e9b00d4e21d93696a952fd3a11e819006bb504e475002eac40c2dc"
+            "digest": "sha256:17e45296d2a3ab1ae1e9b2fb7ba3c6e7b180e40c4f3020db450a0bed2708c6a3"
           }
         ],
         "taskCompletion": {
@@ -13329,7 +13329,7 @@
           },
           {
             "requirementId": "FR-006",
-            "file": "cli/validators/freshness-reviews.mjs",
+            "file": "cli/scanners/recorded-review-signals.mjs",
             "line": 19
           },
           {
@@ -13339,17 +13339,17 @@
           },
           {
             "requirementId": "FR-007",
-            "file": "cli/validators/freshness-reviews.mjs",
+            "file": "cli/scanners/recorded-review-signals.mjs",
             "line": 20
           },
           {
             "requirementId": "FR-008",
-            "file": "cli/validators/freshness-reviews.mjs",
+            "file": "cli/scanners/recorded-review-signals.mjs",
             "line": 21
           },
           {
             "requirementId": "FR-009",
-            "file": "cli/validators/freshness-reviews.mjs",
+            "file": "cli/scanners/recorded-review-signals.mjs",
             "line": 22
           }
         ],

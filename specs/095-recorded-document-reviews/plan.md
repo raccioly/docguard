@@ -8,7 +8,7 @@
 |---|---|
 | FR-001–FR-004 | New `cli/scanners/doc-reviews.mjs`. It reads, validates and serializes `.docguard-doc-reviews.json`, extracts references (backticks, links, slash-paths, fenced blocks included), applies the exclusions, and builds the entry (doc-lock `fingerprint()` tiers). `cli/commands/review.mjs`: `--accept <doc>` without `#id` records it through `commitFileTransaction`; an identical rerun writes nothing. |
 | FR-005 | New `cli/scanners/reference-staleness.mjs`. One `git diff -M --numstat` and one `--diff-filter=A` per review point. The document is blamed, and a reference re-measured from its line's commit, only for references over the threshold. |
-| FR-006–FR-009, FR-014 | New `cli/validators/freshness-reviews.mjs`, called from `validateFreshness`, also in repositories under 3 commits. It emits FRS006–FRS010 and attaches evidence to canonical FRS002/FRS003. The recorded review date counts for FRS002/FRS003. |
+| FR-006–FR-009, FR-014 | New `cli/scanners/recorded-review-signals.mjs`, called from `validateFreshness`, also in repositories under 3 commits. It emits FRS006–FRS010 and attaches evidence to canonical FRS002/FRS003. The recorded review date counts for FRS002/FRS003. |
 | FR-010 | `cli/shared.mjs` `resolveFindingEnforcement` reads `{ role: level }`. `cli/config.mjs` validates it (`FINDING_SEVERITY_ROLES`). `schemas/docguard-config.schema.json` gains the `oneOf` and `freshness.referenceShare`. |
 | FR-011 | `cli/commands/guard.mjs`: `staleInstructionsOf()`, the JSON field and the text line (default and `--quiet`). `cli/findings.mjs` `mkFinding` carries `documentRole`, `staleness` and `surface`. |
 | FR-012 | `benchmarks/history-replay/run.mjs`, with results for the public repositories. |
@@ -19,7 +19,7 @@
 ```text
 cli/scanners/doc-reviews.mjs            # new
 cli/scanners/reference-staleness.mjs    # new
-cli/validators/freshness-reviews.mjs    # new
+cli/scanners/recorded-review-signals.mjs    # new
 cli/validators/freshness.mjs, cli/commands/{guard,review}.mjs, cli/{findings,shared,config,docguard}.mjs
 schemas/docguard-doc-reviews.schema.json (new), schemas/docguard-config.schema.json
 benchmarks/history-replay/              # new

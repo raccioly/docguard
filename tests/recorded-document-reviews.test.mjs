@@ -182,7 +182,10 @@ describe('US4 — FRS008: agent instructions with no review record', () => {
   it('a recently committed AGENTS.md with no marker and no recorded review', t => {
     const hits = codes(validateFreshness(project(t, { marker: false, grow: false, surface: false }), {}), 'FRS008');
     assert.equal(hits.length, 1);
-    assert.equal(hits[0].suggestion.command, 'docguard review --accept AGENTS.md --reason "<what you checked>"');
+    // The exact command is in the text; it is not a machine-run `command`: an
+    // agent must not record a review it did not do.
+    assert.match(hits[0].suggestion.text, /docguard review --accept AGENTS\.md --reason "<what you checked>"/);
+    assert.equal(hits[0].suggestion.command, undefined);
     assert.equal(hits[0].status, 'warn');
   });
 });

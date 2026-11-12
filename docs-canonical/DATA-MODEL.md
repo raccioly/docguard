@@ -523,6 +523,8 @@ A finding answers three independent questions, one field each. A single `confide
 `reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
 
 `location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
+
+Only a Freshness finding about a role document carries three more fields (spec 095): `documentRole` (`agent-instruction` or `canonical`, which a role-scoped `findingSeverity` reads), `staleness` (the review point and the measured references, on FRS006 and on a canonical document's FRS002/FRS003) and `surface` (FRS007's unmentioned scripts and directories). No other finding has them.
 <!-- /docguard:section -->
 
 ## Route records and the plan's parser tiers

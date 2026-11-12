@@ -6,7 +6,7 @@
 ## Phase 2 — Implementation
 - [x] T002 `cli/scanners/doc-reviews.mjs` (FR-001–FR-004).
 - [x] T003 `cli/scanners/reference-staleness.mjs` (FR-005).
-- [x] T004 `cli/validators/freshness-reviews.mjs` and the Freshness wiring (FR-006–FR-009, FR-014).
+- [x] T004 `cli/scanners/recorded-review-signals.mjs` and the Freshness wiring (FR-006–FR-009, FR-014).
 - [x] T005 `review --accept <doc>` (FR-001).
 - [x] T006 Role-scoped `findingSeverity`, config schema (FR-010).
 - [x] T007 Stale-instructions line and JSON; `mkFinding` fields (FR-011).

@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:9dd2ff5c173907b8014e19fd5e276b06e8e82ac02da9947753e58b9d9c580dc7",
+          "fingerprint": "sha256:7846d34ff674a0d9c6aa719ff4c70c37ef1e883577ef473fe4683f8b9be153fc",
           "tier": "ast"
         }
       },
-      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
-      "reviewedAt": "2026-09-30",
-      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+      "reason": "mkFinding now carries documentRole, staleness and surface for Freshness findings; section says so (spec 095)",
+      "reviewedAt": "2026-11-12",
+      "reviewedRevision": "d98adb371d08ef48877a4c3ba3fed0d3bd064fe7"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

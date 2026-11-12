@@ -17,13 +17,13 @@
       "repo": "docguard",
       "head": "020fa510353607f4754aa3a39080236c15587025",
       "reviewPoints": 127,
-      "hits": 72
+      "hits": 37
     },
     {
       "repo": "testguard",
       "head": "f89ca462f94b96bcfd7c38e855efac2f2f635a93",
       "reviewPoints": 21,
-      "hits": 84
+      "hits": 74
     }
   ],
   "summary": [
@@ -35,7 +35,7 @@
       "n": 0,
       "tp": 0,
       "fp": 0,
-      "unlabeled": 4,
+      "unlabeled": 1,
       "precision": null,
       "confidence95": null
     },
@@ -47,7 +47,7 @@
       "n": 0,
       "tp": 0,
       "fp": 0,
-      "unlabeled": 4,
+      "unlabeled": 1,
       "precision": null,
       "confidence95": null
     },
@@ -59,7 +59,7 @@
       "n": 0,
       "tp": 0,
       "fp": 0,
-      "unlabeled": 7,
+      "unlabeled": 4,
       "precision": null,
       "confidence95": null
     },
@@ -71,7 +71,7 @@
       "n": 0,
       "tp": 0,
       "fp": 0,
-      "unlabeled": 2,
+      "unlabeled": 1,
       "precision": null,
       "confidence95": null
     },
@@ -80,44 +80,44 @@
       "role": "canonical",
       "horizonDays": 14,
       "threshold": 0.25,
-      "n": 12,
+      "n": 8,
       "tp": 0,
-      "fp": 12,
-      "unlabeled": 21,
-      "precision": 0,
-      "confidence95": {
-        "lower": 0,
-        "upper": 0.242501
-      }
-    },
-    {
-      "code": "FRS006",
-      "role": "canonical",
-      "horizonDays": 28,
-      "threshold": 0.25,
-      "n": 13,
-      "tp": 0,
-      "fp": 13,
-      "unlabeled": 26,
-      "precision": 0,
-      "confidence95": {
-        "lower": 0,
-        "upper": 0.228102
-      }
-    },
-    {
-      "code": "FRS006",
-      "role": "canonical",
-      "horizonDays": 56,
-      "threshold": 0.25,
-      "n": 10,
-      "tp": 2,
       "fp": 8,
-      "unlabeled": 48,
-      "precision": 0.2,
+      "unlabeled": 15,
+      "precision": 0,
       "confidence95": {
-        "lower": 0.056681,
-        "upper": 0.509843
+        "lower": 0,
+        "upper": 0.324416
+      }
+    },
+    {
+      "code": "FRS006",
+      "role": "canonical",
+      "horizonDays": 28,
+      "threshold": 0.25,
+      "n": 8,
+      "tp": 0,
+      "fp": 8,
+      "unlabeled": 19,
+      "precision": 0,
+      "confidence95": {
+        "lower": 0,
+        "upper": 0.324416
+      }
+    },
+    {
+      "code": "FRS006",
+      "role": "canonical",
+      "horizonDays": 56,
+      "threshold": 0.25,
+      "n": 5,
+      "tp": 2,
+      "fp": 3,
+      "unlabeled": 39,
+      "precision": 0.4,
+      "confidence95": {
+        "lower": 0.117618,
+        "upper": 0.76928
       }
     },
     {
@@ -125,45 +125,36 @@
       "role": "canonical",
       "horizonDays": 14,
       "threshold": 0.5,
-      "n": 1,
+      "n": 0,
       "tp": 0,
-      "fp": 1,
+      "fp": 0,
       "unlabeled": 3,
-      "precision": 0,
-      "confidence95": {
-        "lower": 0,
-        "upper": 0.793457
-      }
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
       "role": "canonical",
       "horizonDays": 28,
       "threshold": 0.5,
-      "n": 2,
+      "n": 0,
       "tp": 0,
-      "fp": 2,
+      "fp": 0,
       "unlabeled": 4,
-      "precision": 0,
-      "confidence95": {
-        "lower": 0,
-        "upper": 0.657628
-      }
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
       "role": "canonical",
       "horizonDays": 56,
       "threshold": 0.5,
-      "n": 2,
+      "n": 0,
       "tp": 0,
-      "fp": 2,
+      "fp": 0,
       "unlabeled": 17,
-      "precision": 0,
-      "confidence95": {
-        "lower": 0,
-        "upper": 0.657628
-      }
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
@@ -288,20 +279,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|AGENTS.md|2026-11-03|+14d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 212,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|AGENTS.md|2026-11-03|+14d|FRS007|fuzz",
       "repo": "docguard",
       "doc": "AGENTS.md",
@@ -315,20 +292,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|AGENTS.md|2026-11-03|+28d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 212,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|AGENTS.md|2026-11-03|+28d|FRS007|fuzz",
       "repo": "docguard",
       "doc": "AGENTS.md",
@@ -338,20 +301,6 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|AGENTS.md|2026-11-03|+56d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 212,
-      "share": 0.3165,
       "label": null,
       "labelSource": "proxy"
     },
@@ -408,48 +357,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-03-13|+14d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.6786,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-03-13|+28d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.6786,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-03-13|+56d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.6786,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-05-31|+14d|FRS006|cli/docguard.mjs",
       "repo": "docguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -492,20 +399,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-07-03|+14d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 56,
-      "share": 0.25,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-07-03|+28d|FRS006|.jules-setup.sh",
       "repo": "docguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -516,20 +409,6 @@
       "subject": ".jules-setup.sh",
       "line": 59,
       "share": 0.3333,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-07-03|+28d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 56,
-      "share": 0.25,
       "label": false,
       "labelSource": "proxy"
     },
@@ -548,20 +427,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-07-03|+56d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 56,
-      "share": 0.25,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-11-03|+14d|FRS006|cli/scanners/testguard-evidence.mjs",
       "repo": "docguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -572,20 +437,6 @@
       "subject": "cli/scanners/testguard-evidence.mjs",
       "line": 43,
       "share": 0.3333,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-11-03|+14d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 43,
-      "share": 0.3165,
       "label": null,
       "labelSource": "proxy"
     },
@@ -604,20 +455,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-11-03|+28d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 43,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-11-03|+56d|FRS006|cli/scanners/testguard-evidence.mjs",
       "repo": "docguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -628,188 +465,6 @@
       "subject": "cli/scanners/testguard-evidence.mjs",
       "line": 43,
       "share": 0.3333,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-11-03|+56d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 43,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/CI-RECIPES.md|2026-11-03|+14d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/CI-RECIPES.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 289,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/CI-RECIPES.md|2026-11-03|+28d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/CI-RECIPES.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 289,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/CI-RECIPES.md|2026-11-03|+56d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/CI-RECIPES.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 289,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-07-03|+14d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.25,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-07-03|+28d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.25,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-07-03|+56d|FRS006|.docguardignore",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-07-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguardignore",
-      "line": 53,
-      "share": 0.25,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+14d|FRS006|.docguard-specs.json",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-specs.json",
-      "line": 144,
-      "share": 0.4736,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+14d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 253,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+28d|FRS006|.docguard-specs.json",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-specs.json",
-      "line": 144,
-      "share": 0.4736,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+28d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 253,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+56d|FRS006|.docguard-specs.json",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-specs.json",
-      "line": 144,
-      "share": 0.4736,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/DATA-MODEL.md|2026-11-03|+56d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 253,
-      "share": 0.3165,
       "label": null,
       "labelSource": "proxy"
     },
@@ -856,20 +511,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/SECURITY.md|2026-11-03|+14d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/SECURITY.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 113,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/SECURITY.md|2026-11-03|+28d|FRS006|cli/scanners/testguard-evidence.mjs",
       "repo": "docguard",
       "doc": "docs-canonical/SECURITY.md",
@@ -880,20 +521,6 @@
       "subject": "cli/scanners/testguard-evidence.mjs",
       "line": 82,
       "share": 0.3333,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/SECURITY.md|2026-11-03|+28d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/SECURITY.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 113,
-      "share": 0.3165,
       "label": null,
       "labelSource": "proxy"
     },
@@ -909,34 +536,6 @@
       "line": 82,
       "share": 0.3333,
       "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/SECURITY.md|2026-11-03|+56d|FRS006|.docguard-anchor-lock.jsonl",
-      "repo": "docguard",
-      "doc": "docs-canonical/SECURITY.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": ".docguard-anchor-lock.jsonl",
-      "line": 113,
-      "share": 0.3165,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+14d|FRS006|tests/commands.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": "tests/commands.test.mjs",
-      "line": 49,
-      "share": 0.3731,
-      "label": false,
       "labelSource": "proxy"
     },
     {
@@ -968,34 +567,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+28d|FRS006|tests/schemas.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "tests/schemas.test.mjs",
-      "line": 98,
-      "share": 0.6905,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+28d|FRS006|tests/commands.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "tests/commands.test.mjs",
-      "line": 49,
-      "share": 0.4656,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
       "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+28d|FRS006|cli/commands/init.mjs",
       "repo": "docguard",
       "doc": "docs-canonical/TEST-SPEC.md",
@@ -1020,34 +591,6 @@
       "subject": "cli/validators/docs-diff.mjs",
       "line": 66,
       "share": 0.2951,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+56d|FRS006|tests/schemas.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "tests/schemas.test.mjs",
-      "line": 98,
-      "share": 0.6905,
-      "label": false,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-03-13|+56d|FRS006|tests/commands.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-03-13",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "tests/commands.test.mjs",
-      "line": 49,
-      "share": 0.4656,
       "label": false,
       "labelSource": "proxy"
     },
@@ -1206,62 +749,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-11-03|+14d|FRS006|tests/requirement-anchors-testchain.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": "tests/requirement-anchors-testchain.test.mjs",
-      "line": 123,
-      "share": 0.4798,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-11-03|+28d|FRS006|tests/requirement-anchors-testchain.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "tests/requirement-anchors-testchain.test.mjs",
-      "line": 123,
-      "share": 0.4798,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "docguard|docs-canonical/TEST-SPEC.md|2026-11-03|+56d|FRS006|tests/requirement-anchors-testchain.test.mjs",
-      "repo": "docguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-11-03",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "tests/requirement-anchors-testchain.test.mjs",
-      "line": 123,
-      "share": 0.4798,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|AGENTS.md|2026-09-22|+14d|FRS006|src/init/templates/SKILL.md",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": "src/init/templates/SKILL.md",
-      "line": 43,
-      "share": 0.4847,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "testguard|AGENTS.md|2026-09-22|+14d|FRS006|src/probe/probe.mjs",
       "repo": "testguard",
       "doc": "AGENTS.md",
@@ -1272,34 +759,6 @@
       "subject": "src/probe/probe.mjs",
       "line": 34,
       "share": 0.2965,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|AGENTS.md|2026-09-22|+14d|FRS006|spec/lib/validate.mjs",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 14,
-      "code": "FRS006",
-      "subject": "spec/lib/validate.mjs",
-      "line": 31,
-      "share": 0.2776,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|AGENTS.md|2026-09-22|+28d|FRS006|src/init/templates/SKILL.md",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "src/init/templates/SKILL.md",
-      "line": 43,
-      "share": 0.4847,
       "label": null,
       "labelSource": "proxy"
     },
@@ -1318,20 +777,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "testguard|AGENTS.md|2026-09-22|+28d|FRS006|spec/lib/validate.mjs",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "spec/lib/validate.mjs",
-      "line": 31,
-      "share": 0.3037,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/probe/probe.mjs",
       "repo": "testguard",
       "doc": "AGENTS.md",
@@ -1342,34 +787,6 @@
       "subject": "src/probe/probe.mjs",
       "line": 35,
       "share": 0.7444,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/init/templates/SKILL.md",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "src/init/templates/SKILL.md",
-      "line": 44,
-      "share": 0.5661,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|spec/lib/validate.mjs",
-      "repo": "testguard",
-      "doc": "AGENTS.md",
-      "role": "agent-instruction",
-      "review": "2026-09-22",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "spec/lib/validate.mjs",
-      "line": 32,
-      "share": 0.475,
       "label": null,
       "labelSource": "proxy"
     },
@@ -1610,20 +1027,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+28d|FRS006|AGENTS.md",
-      "repo": "testguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-09-19",
-      "horizonDays": 28,
-      "code": "FRS006",
-      "subject": "AGENTS.md",
-      "line": 60,
-      "share": 0.2913,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+28d|FRS006|packaging/gitlab/testguard.gitlab-ci.yml",
       "repo": "testguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -1848,20 +1251,6 @@
       "labelSource": "proxy"
     },
     {
-      "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+56d|FRS006|AGENTS.md",
-      "repo": "testguard",
-      "doc": "docs-canonical/ARCHITECTURE.md",
-      "role": "canonical",
-      "review": "2026-09-19",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "AGENTS.md",
-      "line": 60,
-      "share": 0.2981,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
       "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+56d|FRS006|src/probe/rank.mjs",
       "repo": "testguard",
       "doc": "docs-canonical/ARCHITECTURE.md",
@@ -1928,20 +1317,6 @@
       "subject": "testguard.ignore.json",
       "line": 26,
       "share": 0.7205,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|docs-canonical/DATA-MODEL.md|2026-09-30|+56d|FRS006|spec/lib/validate.mjs",
-      "repo": "testguard",
-      "doc": "docs-canonical/DATA-MODEL.md",
-      "role": "canonical",
-      "review": "2026-09-30",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "spec/lib/validate.mjs",
-      "line": 48,
-      "share": 0.4213,
       "label": null,
       "labelSource": "proxy"
     },
@@ -2390,20 +1765,6 @@
       "subject": "src/status/status.mjs",
       "line": 89,
       "share": 0.2973,
-      "label": null,
-      "labelSource": "proxy"
-    },
-    {
-      "key": "testguard|docs-canonical/TEST-SPEC.md|2026-09-30|+56d|FRS006|test/contention.test.mjs",
-      "repo": "testguard",
-      "doc": "docs-canonical/TEST-SPEC.md",
-      "role": "canonical",
-      "review": "2026-09-30",
-      "horizonDays": 56,
-      "code": "FRS006",
-      "subject": "test/contention.test.mjs",
-      "line": 86,
-      "share": 0.2742,
       "label": null,
       "labelSource": "proxy"
     },

@@ -19,7 +19,7 @@ import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } 
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
-import { recordedReviewSignals, recordedReviewDate, laterDate } from './freshness-reviews.mjs';
+import { recordedReviewSignals, recordedReviewDate, laterDate } from '../scanners/recorded-review-signals.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',

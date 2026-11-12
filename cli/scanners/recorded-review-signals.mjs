@@ -26,11 +26,11 @@ import { lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { listTrackedFiles, runGit } from '../shared-git.mjs';
-import { createContext, fingerprint } from '../scanners/doc-deps.mjs';
-import { DOC_REVIEWS_PATH, documentReferences, readDocReviews } from '../scanners/doc-reviews.mjs';
+import { createContext, fingerprint } from './doc-deps.mjs';
+import { DOC_REVIEWS_PATH, documentReferences, readDocReviews } from './doc-reviews.mjs';
 import {
   commitAtEndOfDay, commitExists, commitTime, measureReferences, mentionsDir, mentionsScript, surfaceAt, surfaceNow,
-} from '../scanners/reference-staleness.mjs';
+} from './reference-staleness.mjs';
 
 export const DEFAULT_REFERENCE_SHARE = 0.5;
 const MARKER_RE = /<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/;
@@ -110,6 +110,7 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
   const tracked = listTrackedFiles(dir);
   if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
   const roleSet = new Set(authored.map(d => d.path));
+  const trackedSet = new Set(tracked);
   const canonical = docFiles.filter(f => !roleSet.has(f) && !vendored.has(f));
   const cache = new Map();
   let fpCtx = null;
@@ -149,10 +150,13 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     const point = reviewPointOf(doc.path, content);
     if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
     if (!point) {
+      // An uncommitted file has FRS001 (no dated signal at all); FRS008 is for a
+      // committed file that still has no review record: a commit is not a review.
+      if (!trackedSet.has(doc.path)) continue;
       out.push({
-        status: 'warn', code: 'FRS008', doc: doc.path, documentRole: 'agent-instruction', confidence: 'high', disposition: 'act',
+        status: 'warn', code: 'FRS008', doc: doc.path, documentRole: 'agent-instruction', confidence: 'high', disposition: 'escalate',
         message: `${doc.path} — agent instructions with no review record: nothing says when, or against what, this file was last checked`,
-        suggestion: { kind: 'review', text: `Read it against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"`, command: `docguard review --accept ${doc.path} --reason "<what you checked>"` },
+        suggestion: { kind: 'review', text: `Read it against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` },
       });
       continue;
     }
