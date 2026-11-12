@@ -16135,6 +16135,51 @@
       }
     },
     {
+      "specId": "docguard.staleness-visibility",
+      "path": "specs/096-staleness-visibility/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": []
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/096-staleness-visibility/spec.md",
+            "digest": "sha256:754d111afe80138895ba4caa9f6a46e17d898005b6b7cb8a220a8d8aba5ae201"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 0
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.symbol-map",
       "path": "specs/036-symbol-map/spec.md",
       "reviewed": {
