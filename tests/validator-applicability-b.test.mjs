@@ -30,7 +30,7 @@ import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { EMPTY_CAUSES, validateResultContract } from '../cli/validator-coverage.mjs';
 
-import { ALL_KEYS, BASE, CONFIG_FILES, DOCS, FIXTURES, FINAL_TEMPLATE, KEYS, PKG, SPEC, SPEC_SHORT_IDS, SPEC_TEMPLATE, SRC, cfg, only, project, put, run, temporary } from './helpers/applicability-fixtures-b.mjs';
+import { ALL_KEYS, BASE, CONFIG_FILES, DOCS, FIXTURES, FINAL_TEMPLATE, KEYS, NON_REQUIREMENT_IDS, PKG, SPEC, SPEC_SHORT_IDS, SPEC_TEMPLATE, SRC, cfg, only, project, put, run, temporary } from './helpers/applicability-fixtures-b.mjs';
 
 const MODULE = {
   specRegistry: 'spec-registry', docDependency: 'doc-dependency', requirementAnchors: 'requirement-anchors',
@@ -279,5 +279,23 @@ describe('group B: fix texts never tell a project to move code or documents (FR-
   it('layout-not-recognized is used only when the limit is DocGuard\'s: a project\'s own wrong glob is needs-content', () => {
     const { result } = run('metricsConsistency', FIXTURES.metricsConsistency.empties['needs-content (a declared glob matches no file)']);
     assert.equal(result.emptyCause, 'needs-content');
+  });
+});
+
+describe('group B: Requirement-Anchors counts only requirement IDs (spec 097 T018f)', () => {
+  it('a project whose only IDs are decision, open-item, task and design IDs does not apply, and says which kinds it saw', () => {
+    const { result } = run('requirementAnchors', { files: { ...BASE, ...NON_REQUIREMENT_IDS } });
+    assert.equal(result.applies.applies, false);
+    for (const kind of [/decision/, /open-item/, /task/, /design/]) assert.match(result.applies.evidence, kind);
+  });
+  it('a requirement is an FR, NFR, SC or REQ ID in a spec or requirement document, and the evidence names those prefixes', () => {
+    const { result } = run('requirementAnchors', FIXTURES.requirementAnchors.empties['needs-declaration']);
+    assert.equal(result.applies.applies, true);
+    assert.match(result.applies.evidence, /requirement ID/);
+  });
+  it('a configured requirement pattern is the definition: its IDs count wherever they are declared', () => {
+    const { result } = run('requirementAnchors', { files: { ...BASE, ...NON_REQUIREMENT_IDS }, extra: { traceability: { requirementPattern: '\\b(ARCH)-(\\d{3})\\b' } } });
+    assert.equal(result.applies.applies, true);
+    assert.match(result.applies.evidence, /traceability\.requirementPattern/);
   });
 });
