@@ -73,3 +73,22 @@
 - New finding codes.
 - Changing exit-code semantics.
 - The fixed `AGENTS.md` candidate in the task-context packet. Moving it to the agent-instruction role would change the frozen agent-context benchmark's selection, and needs its own evaluation.
+
+## Verification Notes
+
+Verified 2026-11-12 on the branch head. Private projects are not named.
+
+- **SC-001**: `tests/staleness-visibility.test.mjs` passes 6 of 6. The full suite ran 4,405 tests: 4,399 pass, 0 fail, 6 skipped.
+- **SC-002, TestGuard at f89ca46**:
+  - Every empty validator shows "↳ to check it: …". For example, Doc-Dependency says to add `covers=` and run `review --accept <doc>#<id>`.
+  - Freshness shows FRS008 and FRS006 for `AGENTS.md`, FRS007, three FRS002 (TEST-SPEC first, by its evidence) and "[FRS002] and 5 more document(s) … (--verbose lists them)".
+  - `agent --task "change how probe.mjs plans faults"` prints, under `AGENTS.md:29-44`: "⚠ possibly stale: names src/probe/probe.mjs 74% — most of its lines are new since this document's 2026-09-22 review".
+- **SC-003, budget**: `npm run budget -- --base <main worktree>` PASS.
+  - Guard on DocGuard went 24,103 → 22,942 ms; no new errors.
+  - `bytes:mcp:docguard_guard:sparse-doc-control` went 36,988 → 37,791 (+2%).
+  - A first run measured +25% on that metric, because the compact projection repeated every empty validator's reason. The compact view now lists keys only, and `explain <validator>` carries the hint.
+  - An earlier run against a `git archive` base (no `.git`) reported guard time +115%. That base skips the git-based checks, so the comparison did not hold. Against a real worktree of main, interleaved medians were 30.4 s on main and 26.5 s on this branch.
+- **A/B, main → branch, 28 local projects**:
+  - No exit code changed.
+  - The spec 095 codes are unchanged from that A/B: FRS006 2, FRS007 5, FRS008 60.
+  - Verdict changes: Canonical-Sync empty → skipped in 19 projects (FR-002), and Freshness pass → fail in 3 projects (warnings).

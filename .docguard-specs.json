@@ -16314,7 +16314,7 @@
         "artifacts": [
           {
             "path": "specs/096-staleness-visibility/spec.md",
-            "digest": "sha256:e691c89ccdbb1a94f35d7b90c1923a21a05edabe7025b4c97bdc4680b5958756"
+            "digest": "sha256:c85907c055b1b4a09e84c17afc7edd6d3fb1632360329d6c400f5fdeedafd3c3"
           },
           {
             "path": "specs/096-staleness-visibility/plan.md",
@@ -16322,11 +16322,11 @@
           },
           {
             "path": "specs/096-staleness-visibility/tasks.md",
-            "digest": "sha256:be15a9f69cffa038d9b063ceffcb7e87baf661b8a61532335a9dd033bfd5f8d2"
+            "digest": "sha256:2bde8c21369a3907b1f4d0b06c6aa898870ba17940b40fa329690139274c8f18"
           }
         ],
         "taskCompletion": {
-          "checked": 6,
+          "checked": 7,
           "total": 7
         },
         "implementationEvidence": [],
