@@ -171,6 +171,15 @@ describe('US3 — FRS007 names surface added since the review', () => {
     assert.ok(!/precorpus|`test`|`src\/`/.test(hits[0].message));
   });
 
+  it('a file that says to follow AGENTS.md inherits its mentions', t => {
+    const dir = project(t);
+    commit(dir, { 'AGENTS.md': readFileSync(join(dir, 'AGENTS.md'), 'utf8').replace('Run `npm test` before pushing.', 'Run `npm test` before pushing; `npm run corpus` rebuilds `corpus/`.') }, 'mention', '2025-05-03');
+    const claude = `${'<!-- docguard:last-reviewed 2025-03-01 -->\n'}# Claude\n\nFollow \`AGENTS.md\`.\n\n${Array.from({ length: 8 }, (_, i) => `- local note ${i}`).join('\n')}\n`;
+    commit(dir, { 'CLAUDE.md': claude }, 'claude', '2025-05-04');
+    const hits = codes(validateFreshness(dir, {}), 'FRS007');
+    assert.deepEqual(hits.map(h => h.doc), []);
+  });
+
   it('a mention silences it, including one in a pointer file', t => {
     const dir = project(t);
     commit(dir, { 'CLAUDE.md': '@AGENTS.md\n\nAlso: `npm run corpus` rebuilds the `corpus/` benchmark.\n' }, 'pointer', '2025-05-03');

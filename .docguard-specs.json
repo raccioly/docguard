@@ -13281,7 +13281,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:b6cdc6894ad7ea91cf2a6b2c51ba79cfa25d59f3e96a64461ec5900dd0164642"
+            "digest": "sha256:233504b27cceb2fe83647758a59e5c0d5df618ea65ac9b64d8a770f14b086457"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",

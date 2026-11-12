@@ -194,3 +194,6 @@ Verified 2026-11-12 on the branch head. Private projects are not named.
   - **FRS007:** 5 findings in 4 projects. True: TestGuard's `corpus`. Lean true: one project's nine new scripts. Unclear: DocGuard's own `fuzz` dev script, reported in AGENTS.md and CLAUDE.md.
   - **FRS008:** 60 findings in 22 projects. Root AGENTS.md 18, CLAUDE.md 6, GEMINI.md 1, authored skills 18, rules 10 (7 of them OpenWolf's generated rule), nested instruction files 6, Copilot instructions 1.
   - **FRS009, FRS010, PSR005:** 0.
+- **Follow-up from the A/B and self-guard:** DocGuard's own CLAUDE.md said "Follow `AGENTS.md`" but drew its own FRS007. A file that names another instruction file now inherits that file's mentions (FR-008). DocGuard's AGENTS.md now mentions `npm run fuzz`.
+- **Budget:** `npm run budget` passed guard time (66,455 → 65,395 ms on DocGuard, machine under load), self errors (0) and package size. It failed `bytes:mcp:docguard_read_section` (+391 bytes, the DATA-MODEL `finding-channels` section). The section was shortened: +129 bytes, measured directly through MCP.
+- **Suite:** 4,398 tests, 4,396 pass, 1 skipped. The one failure was the fuzz test's 5-second wall-clock limit at load average about 100. Run alone, it took 1.3 s and 1.4 s on this branch against 1.5 s and 1.9 s on main.

@@ -183,6 +183,8 @@ extensions/spec-kit-docguard/
   The CI test job fails any single test over 100 seconds at reference-runner
   speed (`TEST_CEILING_MS`, `tools/suite-runtime-budget.mjs`); the suite total
   is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
+  A change to a parser that reads documents runs `npm run fuzz` (seeded
+  fuzzing: no throw, same answer twice, bounded time; specs/088-validator-fuzz).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

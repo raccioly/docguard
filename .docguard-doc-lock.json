@@ -27,9 +27,9 @@
           "tier": "ast"
         }
       },
-      "reason": "mkFinding now carries documentRole, staleness and surface for Freshness findings; section says so (spec 095)",
+      "reason": "mkFinding carries documentRole, staleness and surface for Freshness findings; section points to their description (spec 095)",
       "reviewedAt": "2026-11-12",
-      "reviewedRevision": "d98adb371d08ef48877a4c3ba3fed0d3bd064fe7"
+      "reviewedRevision": "dcab6d11cca67a724c4c86442db68f3a18eeeb97"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

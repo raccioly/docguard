@@ -175,7 +175,11 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     // FRS007: surface added since the review that the document never mentions.
     const then = surfaceAt(dir, point.revision);
     const now = surfaceNow(dir, tracked);
-    const text = `${content}\n${pointerText.get(doc.path) || ''}`;
+    // A file that tells agents to follow another instruction file (CLAUDE.md:
+    // "Follow `AGENTS.md`") inherits that file's mentions.
+    const followed = role.filter(r => r.path !== doc.path && new RegExp(`[\`(/]${r.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\`)]`).test(content))
+      .map(r => { try { return readFileSync(resolve(dir, r.path), 'utf8'); } catch { return ''; } }).join('\n');
+    const text = `${content}\n${pointerText.get(doc.path) || ''}\n${followed}`;
     const scripts = [...now.scripts].filter(s => !then.scripts.has(s) && !mentionsScript(text, s)).sort();
     const dirs = [...now.dirs].filter(d => !then.dirs.has(d) && !mentionsDir(text, d)).sort();
     if (scripts.length || dirs.length) {
