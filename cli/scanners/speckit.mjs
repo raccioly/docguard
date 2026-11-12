@@ -33,6 +33,7 @@ import { parseLifecycleStatus } from './lifecycle-status.mjs';
 const TERMINAL_STATUS_RE = /\b(?:superseded|retired|archived|withdrawn|obsolete|abandoned)\b/i;
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 // ──── Spec Kit Mandatory Sections ────
 // Based on spec-kit's spec-template.md, plan-template.md, tasks-template.md
@@ -717,6 +718,25 @@ export function generateFromSpecKit(projectDir, config, flags) {
  * above for the tier design). Opt out per-project with
  * `"specKit": { "phantomCheck": false }` in .docguard.json.
  */
+/**
+ * Whether Spec-Kit's kind of check belongs to the project. It always does: the
+ * validator answers, for every project, whether it carries Spec Kit artifacts
+ * (SPK001 when it does not), and checks their structure and quality when it
+ * does, so it examines something in every run.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function specKitApplies() {
+  return { applies: true, evidence: 'every project is checked for Spec Kit artifacts, and its specs, plans and tasks are checked when it has them' };
+}
+
+function specKitContract(performed, found) {
+  return contractFields({
+    performed, found, ran: `checked ${performed} Spec Kit artifact(s)`,
+    decide: specKitApplies,
+    empty: () => ({ emptyCause: 'needs-content', note: 'Spec-Kit checked no artifact, although it reports an absent Spec Kit as a finding.', howToConfigure: 'Run `specify init` to create the .specify/ directory and the specs/ layout that Spec-Kit checks.' }),
+  });
+}
+
 export function validateSpecKitIntegration(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -736,7 +756,7 @@ export function validateSpecKitIntegration(projectDir, config) {
       location: null,
       suggestion: { kind: 'review', text: 'Adopt spec-driven development by initializing Spec Kit', command: 'specify init' },
     }));
-    return resultFromFindings(findings, { passed, total });
+    return { ...resultFromFindings(findings, { passed, total }), ...specKitContract(total, true) };
   }
 
   // ── Check 1: .specify/ directory exists ──
@@ -1042,7 +1062,7 @@ export function validateSpecKitIntegration(projectDir, config) {
     }));
   }
 
-  const result = resultFromFindings(findings, { passed, total });
+  const result = { ...resultFromFindings(findings, { passed, total }), ...specKitContract(total, findings.length > 0) };
   return untouchedUnavailable ? { ...result, applicability: { status: 'partial', reason: untouchedUnavailable } } : result;
 }
 

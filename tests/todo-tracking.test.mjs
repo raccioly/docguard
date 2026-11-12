@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
 import { CODES } from '../cli/findings.mjs';
 import { loadConfig } from '../cli/config.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('Todo-Tracking Validator', () => {
   let tmpDir;
@@ -29,7 +30,7 @@ describe('Todo-Tracking Validator', () => {
 
   it('handles empty project gracefully', () => {
     const result = validateTodoTracking(tmpDir, {});
-    assert.deepEqual(result, { errors: [], warnings: [], passed: 1, total: 1 });
+    assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 1, total: 1 });
   });
 
   it('warns about skipped test without explanation', () => {

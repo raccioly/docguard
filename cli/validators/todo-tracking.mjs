@@ -30,6 +30,7 @@ import { resolve, join, relative, extname } from 'node:path';
 import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { maskCodeSpans } from '../shared-html-comments.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { findDocsByName } from '../shared-doc-roles.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { realComments } from '../scanners/anchor-tags.mjs';
@@ -276,6 +277,40 @@ function maskJsNonCode(content) {
  * byte-identical to the legacy strings — resultFromFindings derives the
  * errors/warnings arrays from the same findings array.
  */
+/**
+ * Whether TODO-Tracking's kind of check belongs to the project: it applies when
+ * the project has a source file it reads (a source file that is not a test and
+ * not ignored by `todoIgnore` or `ignore`) or a test file. A project with no
+ * source code has no comment to track and no test to skip.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  let source = null;
+  sharedWalkFiles(projectDir, (full) => {
+    if (source || !SOURCE_EXTENSIONS.has(extname(full).toLowerCase())) return;
+    const rel = relative(projectDir, full);
+    if (config?.todoTracking?.includeTestFiles !== true && isTestFilePath(rel)) return;
+    if (shouldIgnore(rel, config, 'todoIgnore')) return;
+    source = rel;
+  }, { ignoreDirs: IGNORE_DIRS });
+  if (source) return { applies: true, evidence: `${source} is a source file whose comments are read` };
+  const tests = [];
+  findTestFiles(projectDir, projectDir, tests, config);
+  return tests.length > 0
+    ? { applies: true, evidence: `${tests[0]} is a test file whose skips are read` }
+    : { applies: false, evidence: 'no source file and no test file that TODO-Tracking reads' };
+}
+
+function todoContract(projectDir, config, performed, found) {
+  return contractFields({
+    performed, found, ran: `read ${performed} kind(s) of annotation: skipped tests and TODO/FIXME comments`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => decision.applies
+      ? { emptyCause: 'needs-content', note: 'TODO-Tracking read none of the project\'s files in this run (a `--changed-only` run reads only the changed files), so it checked no skipped test and no TODO comment.', howToConfigure: 'Nothing to fix: this run read only the changed files. A full `docguard guard` reads every source and test file.' }
+      : { note: 'TODO-Tracking found no source file and no test file, so there is no TODO or skipped test to track.', howToConfigure: 'Nothing to configure unless the project has source code: then TODO-Tracking reads its comments and test skips.' },
+  });
+}
+
 export function validateTodoTracking(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -288,12 +323,17 @@ export function validateTodoTracking(projectDir, config) {
   total += skipResults.total;
 
   // ── Part 2: Untracked Annotations ──
-  const todoResults = checkUntrackedTodos(projectDir, config);
+  const todos = [];
+  todos.scanned = 0;
+  const todoResults = checkUntrackedTodos(projectDir, config, todos);
   findings.push(...todoResults.findings);
   passed += todoResults.passed;
   total += todoResults.total;
 
-  const res = resultFromFindings(findings, { passed, total });
+  // Checks genuinely made: skipped-test comments of the test files read, and TODO comments of the source files read.
+  // `total` also counts a pass for "has tests" and for "no TODO found", which is the legacy count and stays.
+  const performed = (skipResults.scanned > 0 ? 1 : 0) + (todos.scanned > 0 ? 1 : 0);
+  const res = { ...resultFromFindings(findings, { passed, total }), ...todoContract(projectDir, config, performed, findings.length > 0) };
   // Back-compat: on a clean run the legacy result carried no extra keys (the
   // empty-project test deep-equals the whole object), and an empty findings
   // array has nothing to render — so omit the key when there are no findings.
@@ -314,7 +354,7 @@ function checkSkippedTests(projectDir, config) {
   const testFiles = [];
   findTestFiles(projectDir, projectDir, testFiles, config);
 
-  if (testFiles.length === 0) return { findings, passed, total };
+  if (testFiles.length === 0) return { findings, passed, total, scanned: 0 };
 
   // Check: "Project has test files" → pass
   total++;
@@ -363,7 +403,7 @@ function checkSkippedTests(projectDir, config) {
     }
   }
 
-  return { findings, passed, total };
+  return { findings, passed, total, scanned: testFiles.length };
 }
 
 // ──── Untracked Annotations ────────────────────────────────────────────────
@@ -372,13 +412,12 @@ function checkSkippedTests(projectDir, config) {
  * Scan source files for TODO/FIXME annotations and check if they appear
  * in tracking documentation.
  */
-function checkUntrackedTodos(projectDir, config) {
+function checkUntrackedTodos(projectDir, config, todos) {
   const findings = [];
   let passed = 0;
   let total = 0;
 
   // Collect all TODO/FIXME items from source
-  const todos = [];
   findTodos(projectDir, projectDir, todos, config);
 
   if (todos.length === 0) {
@@ -571,6 +610,7 @@ function _scanTodoFile(rootDir, full, todos, config) {
 
   let content;
   try { content = readFileSync(full, 'utf-8'); } catch { return; }
+  todos.scanned = (todos.scanned || 0) + 1;
   if (!TODO_PREFILTER.test(content)) return;
 
   for (const { text, line } of commentLines(content, relPath)) {
