@@ -265,17 +265,17 @@ function computeDocs(projectDir, config) {
     const fromManifest = manifests.vendored.get(doc.path);
     if (fromManifest) {
       const first = fromManifest[0];
-      doc.vendored = { source: `spec-kit:${first.integration}`, integration: first.integration, version: first.version,
+      doc.vendored = { source: `spec-kit:${first.integration}`, reason: 'install manifest', integration: first.integration, version: first.version,
         hashes: fromManifest.map(m => m.hash).filter(Boolean), installs: fromManifest };
     } else if (!doc.root && generatedBy(read(doc.path))) {
-      doc.vendored = { source: `generated:${generatedBy(read(doc.path))}` };
+      doc.vendored = { source: `generated:${generatedBy(read(doc.path))}`, reason: 'generated-by header' };
     } else if (!doc.root && registry.skills.has(skillName(doc.path))) {
       const { extension, version } = registry.skills.get(skillName(doc.path));
-      doc.vendored = { source: `spec-kit-extension:${extension}`, extension, version };
+      doc.vendored = { source: `spec-kit-extension:${extension}`, reason: 'extension registry', extension, version };
     } else if (!doc.root && specKitProject && SPEC_KIT_CORE_SKILLS.has(skillName(doc.path))) {
-      doc.vendored = { source: 'spec-kit' };
+      doc.vendored = { source: 'spec-kit', reason: 'Spec Kit core skill name' };
     } else if (!doc.root && shipped.has(skillName(doc.path))) {
-      doc.vendored = { source: 'docguard' };
+      doc.vendored = { source: 'docguard', reason: 'DocGuard-shipped skill name' };
     } else {
       doc.vendored = null;
     }

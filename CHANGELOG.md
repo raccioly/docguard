@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration installed, listed with its sha256 in
   `.specify/integrations/<integration>.manifest.json`, no longer matches what was
   installed. The next install overwrites the edit (FR-007).
+- **Vendored instruction files are counted and listed.** Guard's summary line says how
+  many instruction files were treated as vendored and not reviewed, and JSON lists each
+  with its reason in `coverage.vendoredInstructions[]`. A root file such as `AGENTS.md`
+  is never vendored by a header alone, only by an install record with a hash (FR-011).
 
 ### Changed
 

@@ -2015,6 +2015,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration installed, listed with its sha256 in
   `.specify/integrations/<integration>.manifest.json`, no longer matches what was
   installed. The next install overwrites the edit (FR-007).
+- **Vendored instruction files are counted and listed.** Guard's summary line says how
+  many instruction files were treated as vendored and not reviewed, and JSON lists each
+  with its reason in `coverage.vendoredInstructions[]`. A root file such as `AGENTS.md`
+  is never vendored by a header alone, only by an install record with a hash (FR-011).
 
 ### Changed
 
@@ -2387,12 +2391,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   - **Measured.** It passes all 445 recorded jobs: the slowest normal test is
     56.9 seconds at reference speed, 1.76× below the ceiling. It catches a
     165-second runaway in one test in all 445, whether the runaway scales with
-    the runner or not.
-  - **Unaffected by growth.** Adding tests does not change the check.
-  - **Reported, not gated.** The suite total goes to the log and the job
-    summary.
 
-<!-- truncated: 6218 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6222 more lines — read CHANGELOG.md directly -->
 
 ---
 
