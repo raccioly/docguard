@@ -32,6 +32,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
+- **The cause-and-fix contract reaches sixteen more validators.** Spec-Registry,
+  Doc-Dependency, Requirement-Anchors, Path-Scoped-Rules, Doc-Ownership, Evidence,
+  Cross-Reference, Generated-Staleness, Suppressions, Diff-Suspicion,
+  Reference-Existence, API-Doc-Smells, Decision-Records, AI-DLC, Canonical-Sync and
+  Metrics-Consistency each report how many checks they performed, whether the kind
+  of check belongs to the project (decided from the project's files, never from the
+  validator's own missing configuration) and, on an empty result, a cause and the
+  exact file, key or snippet that makes them examine something. Requirement-Anchors and
+  Doc-Dependency need a declaration no tool can infer and apply to a project that
+  has the specs or documents and the code, saying what a person must write;
+  Doc-Ownership and Evidence apply only once a map or manifest is declared. A
+  validator that could not observe its input (unreadable git) is `inconclusive`
+  and needs no cause. The drafted ownership block is never offered as a fix without
+  saying it must be edited
+  (`docguard.strict-by-default` FR-004 to FR-006, stage A).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
@@ -90,6 +105,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (AWS, `sk-`) are unaffected.
 
 ### Fixed
+
+- **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
+  for `<!-- status: draft -->` or `status: draft` front matter, while every
+  generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
+  in draft was not flagged (GST001) and a project whose only generated documents
+  were drafts was reported as having none. Both spellings are read. Under
+  `standard` this adds GST001 findings for a draft left unchanged beyond the
+  staleness window (14 days by default).
 
 - **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
   had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).

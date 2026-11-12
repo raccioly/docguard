@@ -2027,6 +2027,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
+- **The cause-and-fix contract reaches sixteen more validators.** Spec-Registry,
+  Doc-Dependency, Requirement-Anchors, Path-Scoped-Rules, Doc-Ownership, Evidence,
+  Cross-Reference, Generated-Staleness, Suppressions, Diff-Suspicion,
+  Reference-Existence, API-Doc-Smells, Decision-Records, AI-DLC, Canonical-Sync and
+  Metrics-Consistency each report how many checks they performed, whether the kind
+  of check belongs to the project (decided from the project's files, never from the
+  validator's own missing configuration) and, on an empty result, a cause and the
+  exact file, key or snippet that makes them examine something. Requirement-Anchors and
+  Doc-Dependency need a declaration no tool can infer and apply to a project that
+  has the specs or documents and the code, saying what a person must write;
+  Doc-Ownership and Evidence apply only once a map or manifest is declared. A
+  validator that could not observe its input (unreadable git) is `inconclusive`
+  and needs no cause. The drafted ownership block is never offered as a fix without
+  saying it must be edited
+  (`docguard.strict-by-default` FR-004 to FR-006, stage A).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
@@ -2085,6 +2100,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (AWS, `sk-`) are unaffected.
 
 ### Fixed
+
+- **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
+  for `<!-- status: draft -->` or `status: draft` front matter, while every
+  generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
+  in draft was not flagged (GST001) and a project whose only generated documents
+  were drafts was reported as having none. Both spellings are read. Under
+  `standard` this adds GST001 findings for a draft left unchanged beyond the
+  staleness window (14 days by default).
 
 - **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
   had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
@@ -2370,31 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
 
 - spec: re-anchor 083 onto main after the #610 squash; refresh registry (#611)
 - Pre-0.46.0: re-anchor 081–092, bring in #609, CI keeps its history, 083 verified, FRS005 precision (#610)
-- DocGuard × AI-DLC program: verdicts, enforcement ladder, AI-DLC plugin, DORA evidence, authoring contract, release gate, fuzzing (specs 081–092) (#608)
 
-## [0.45.2] - 2026-11-02
-
-### Changed
-  Requirement-anchor links that "lost their code" (ANC003), a stale spec
-  registry (SPR001), checked tasks without annotations (SPR006) and asset
-  paths covering no file (SPR009) are withheld the same way: on DocGuard's
-  own repository, a failing `git ls-files` had produced 25 ANC003 and one
-  SPR001 before this.
-
-- **GitHub Actions pins move to their latest patch/minor releases** (#604).
-  CI, release and the published `action.yml` now run `actions/setup-node`
-  v7.1.0, `actions/upload-artifact` v7.0.2, `actions/download-artifact`
-  v8.0.2, `actions/setup-python` v7.1.0, `pypa/gh-action-pypi-publish`
-  v1.14.3, `google/osv-scanner-action` v2.7.0 and `websec-validator` v0.22.3.
-  The CI workflows that `docguard init` and the Spec Kit extension generate
-  pin the same setup-node and upload-artifact releases. Every commit SHA was
-  checked against its official release tag before it was recorded as reviewed.
-
-### Fixed
-
-- **Counts are read whole, and only when they are counts**
-
-<!-- truncated: 6283 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6306 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -36,6 +36,23 @@ import { walkFiles, countGlobFiles } from '../shared-ignore.mjs';
 import { findTestFiles, countDeclaredTestCases } from '../shared-test-cases.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { sample } from '../shared-project-evidence.mjs';
+
+/**
+ * Does this kind of check belong to the project? It does when the project's
+ * documents state a number it can compare: a count of checks, validators or
+ * tests bound to DocGuard or to the project's own suite, a count of a collection
+ * the project declared (`collections`), or a runtime-dependency claim. A project
+ * whose documents state none has nothing of this kind; a declared collection
+ * whose glob matches no file, while a document counts it, is a layout it does not read.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}, guardResults) {
+  const run = validateMetricsConsistency(projectDir, config, guardResults);
+  return { applies: run.applies.applies, evidence: run.applies.evidence };
+}
 
 /**
  * Validate metrics consistency across documentation.
@@ -116,12 +133,14 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
   // an unresolved glob (0 matches) never asserts "0", so a misconfigured pattern
   // can't manufacture a false drift. Reserved nouns keep the built-in count.
   const RESERVED = new Set(['checks', 'validators', 'tests']);
+  const unresolved = []; // declared collections whose glob matched no file: counted claims about them are not compared
   const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // noun stems, not globs
   const collections = (config && config.collections && typeof config.collections === 'object') ? config.collections : {};
   for (const [noun, glob] of Object.entries(collections)) {
     const key = String(noun).toLowerCase();
     if (RESERVED.has(key) || typeof glob !== 'string' || !glob.trim()) continue;
     const count = countGlobFiles(projectDir, glob);
+    if (count <= 0) unresolved.push({ noun: String(noun), glob, regex: new RegExp(`${COUNT_START}(\\d{1,3}(?:,\\d{3})+|\\d+)\\s+${escapeRegExp(String(noun).replace(/s$/i, ''))}s?\\b`, 'i') });
     // <= 0 covers BOTH "unresolved/empty glob" (0) and "walk incomplete" (-1,
     // e.g. permission-denied subtree). Either way: never assert a count we
     // can't stand behind — a partial count auto-"fixing" a correct doc number
@@ -269,7 +288,33 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
   passed += deps.passed;
   total += deps.total;
 
-  return { ...resultFromFindings(findings, { passed, total }), fixes };
+  const decide = () => {
+    // Only an empty result pays for the second read.
+    const counted = [];
+    if (unresolved.length) {
+      for (const mdFile of mdFiles) {
+        const rel = relative(projectDir, mdFile);
+        if (rel.toLowerCase().includes('changelog') || isIgnored(rel)) continue;
+        let content;
+        try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
+        for (const u of unresolved) if (u.regex.test(content) && !counted.includes(u)) counted.push(u);
+      }
+    }
+    if (counted.length) return { applies: true, kind: 'unresolved', collections: counted, evidence: `a document counts ${sample(counted.map(u => u.noun))}, but the glob declared for ${counted.length === 1 ? 'it' : 'them'} matches no file` };
+    return { applies: false, kind: 'none', evidence: `${mdFiles.length} document(s) scanned, none states a count of DocGuard's checks or validators, of the project's tests, of a declared collection, or of runtime dependencies` };
+  };
+  return {
+    ...resultFromFindings(findings, { passed, total }), fixes,
+    ...contractFields({
+      performed: total,
+      found: findings.length > 0,
+      ran: `${total} documented count(s) compared with the code`,
+      decide,
+      empty: d => (d.applies
+        ? { emptyCause: 'layout-not-recognized', note: `Metrics-Consistency read a count it could not compare: ${d.evidence}.`, howToConfigure: `The "collections" entry for ${d.collections.map(u => `${u.noun} (${u.glob})`).join(', ')} in .docguard.json matches no file, so the count a document states is not compared. Point the glob at the files you count (it is relative to the project root), or remove the entry.` }
+        : { emptyCause: 'nothing-of-this-kind', note: `Metrics-Consistency found no documented count to compare: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the documents state a count: Metrics-Consistency compares "N checks" and "N validators" bound to DocGuard, "N tests" about the project\'s own suite, "N <noun>" for a noun declared under `collections` in .docguard.json (`{ "extractors": "src/extractors/*.js" }`), and runtime-dependency claims.' }),
+    }),
+  };
 }
 
 /**

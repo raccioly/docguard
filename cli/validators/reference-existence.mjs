@@ -47,6 +47,23 @@ import { readScannable } from '../shared-source.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+
+const NOTHING_HOW = 'Nothing to configure unless a document backticks a code identifier (camelCase, snake_case or PascalCase) or source code cites an ADR in a comment (`ADR-012`): Reference-Existence compares what a document names with the code at the commit where the document was last updated and at HEAD, and checks that a cited ADR is defined.';
+
+/**
+ * Does this kind of check belong to the project? It does when the project is a
+ * git repository and either a canonical or agent-instruction document backticks
+ * a compound code identifier, or non-test source code cites `ADR-NNN` in a
+ * comment (and `referenceExistence.adrCitations` is not switched off). A project
+ * that names no code in its documents and cites no decision has no reference to check.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const run = validateReferenceExistence(projectDir, config);
+  return { applies: run.applies.applies, evidence: run.applies.evidence };
+}
 
 const CODE_EXT = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs', '.java',
@@ -194,16 +211,21 @@ export function validateReferenceExistence(projectDir, config = {}) {
   // docguard.unreadable-git-metadata#FR-002: unreadable metadata means this
   // check could not run — say so, instead of looking like nothing matched.
   const git = gitMetadataStatus(projectDir);
+  const nothing = d => ({ emptyCause: 'nothing-of-this-kind', note: `Reference-Existence found no reference to check: ${d.evidence}.`, howToConfigure: NOTHING_HOW });
+  const notApplicable = evidence => ({ ...resultFromFindings([], { passed: 0, total: 0, applicable: false }), ...contractFields({ performed: 0, decide: () => ({ applies: false, evidence }), empty: nothing }) });
   if (git.status === 'unreadable') {
-    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git) };
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git),
+      // An observation gap, not an empty result: inconclusive, and its reason is the gap (no emptyCause).
+      performed: 0,
+      applies: { applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so the documents' references could not be compared across revisions` },
+    };
   }
-  if (git.status !== 'ok') {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
-  }
+  if (git.status !== 'ok') return notApplicable('the project is not a git repository, so there is no history to compare a reference across');
   const docs = indexDocs(projectDir, config);
   const needIds = docs.some(d => d.refs.length > 0);
   if (!needIds && !adrEnabled) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return notApplicable(`no document backticks a compound code identifier, and ADR citations are switched off (referenceExistence.adrCitations: false)`);
   }
 
   // ONE walk over the source tree serves both checks: the REF001 identifier
@@ -230,7 +252,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
   });
 
   if (!needIds && citations.length === 0) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return notApplicable(`${docs.length} document(s) read, none backticks a compound code identifier (camelCase, snake_case, PascalCase) and no source comment cites ADR-NNN`);
   }
 
   const revPresence = new Map(); // `${sym}\0${rev}` → true | false | null (no answer)
@@ -320,11 +342,20 @@ export function validateReferenceExistence(projectDir, config = {}) {
   // A missing number beyond the finding cap is still a failed check.
   const total = totalChecked + adrDistinct;
   const overCap = Math.max(0, adrMissing - MAX_ADR_FINDINGS);
-  const res = resultFromFindings(findings, {
-    passed: total - findings.length - overCap,
-    total,
-    applicable: true,
-  });
+  const res = {
+    ...resultFromFindings(findings, {
+      passed: total - findings.length - overCap,
+      total,
+      applicable: true,
+    }),
+    ...contractFields({
+      performed: total,
+      found: findings.length > 0,
+      ran: `${totalChecked} code reference(s) and ${adrDistinct} ADR citation(s) checked`,
+      decide: () => ({ applies: false, evidence: `${docs.length} document(s) read, but every reference is outside the per-document limit (referenceExistence.maxRefsPerDoc: ${maxRefsPerDoc})` }),
+      empty: nothing,
+    }),
+  };
   res.absentAtHead = absentAtHead; // instrumentation: proves the pipeline reaches the rev check
   if (unknownPresence > 0) {
     res.applicability = { status: 'partial', reason: `git could not tell whether ${unknownPresence} referenced symbol${unknownPresence === 1 ? '' : 's'} exist${unknownPresence === 1 ? 's' : ''}; ${unknownPresence === 1 ? 'it was' : 'they were'} not checked` };

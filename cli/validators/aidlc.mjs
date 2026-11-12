@@ -24,6 +24,7 @@ import { relative } from 'node:path';
 import { ENV_TOKEN, backtickRefs, codekbFiles, findAidlcRecords, findAidlcSpaces, isPathTarget, memoryLayerFiles, pathExists, readAidlcRecord, safeWorkspacePath } from '../scanners/aidlc.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { gitMetadataStatus, lastCommitHash, runGit } from '../shared-git.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const VALIDATOR = 'aidlc';
 const CAP = 10;
@@ -42,12 +43,34 @@ function envNamesInUse(projectDir, candidates) {
   return found;
 }
 
+/**
+ * Does this kind of check belong to the project? It does when the project has
+ * an AI-DLC workspace: `aidlc/spaces/<space>/` or the legacy `aidlc-docs/`.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir) {
+  const records = findAidlcRecords(projectDir);
+  const spaces = findAidlcSpaces(projectDir);
+  if (records.length === 0 && spaces.length === 0) return { applies: false, evidence: 'no aidlc/spaces/<space>/ directory and no aidlc-docs/ directory, so no AI-DLC workflow has run in this project' };
+  return { applies: true, evidence: `an AI-DLC workspace: ${records.length} intent record(s) and ${spaces.length} space(s)` };
+}
+
 export function validateAidlc(projectDir) {
   const records = findAidlcRecords(projectDir).map(r => readAidlcRecord(projectDir, r));
   const tables = records.reduce((n, r) => n + r.tables.length, 0);
   const manifests = records.reduce((n, r) => n + r.manifests.length, 0);
   const spaces = findAidlcSpaces(projectDir);
-  if (records.length === 0 && spaces.length === 0) return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+  if (records.length === 0 && spaces.length === 0) {
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `AI-DLC found no workspace: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project uses the AI-DLC workflow: it writes aidlc/spaces/<space>/intents/<intent>/ (or the legacy aidlc-docs/).' }),
+      }),
+    };
+  }
 
   const findings = [];
   const counts = { AID001: 0, AID002: 0, AID003: 0, AID004: 0, MEM001: 0, MEM002: 0 };
@@ -149,7 +172,20 @@ export function validateAidlc(projectDir) {
   for (const code of Object.keys(elided)) {
     if (elided[code]) findings.push(mkFinding({ code, validator: VALIDATOR, severity: 'warn', confidence: 'high', disposition: 'escalate', message: `${elided[code]} more ${code} finding(s) elided after the first ${CAP}`, location: 'aidlc', suggestion: { kind: 'review', text: 'Run guard --format json and filter by code to list them all' } }));
   }
-  const result = resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true });
+  const result = {
+    ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true }),
+    ...contractFields({
+      performed: total,
+      found: findings.length > 0,
+      ran: `${total} AI-DLC traceability row(s), manifest path(s) and memory reference(s) checked against the workspace`,
+      decide: () => applies(projectDir),
+      empty: d => ({
+        emptyCause: 'needs-content',
+        note: `AI-DLC workspace found (${records.length} record(s)) with no traceability tables or source manifests yet`,
+        howToConfigure: `${d.evidence}, but it holds no stage output to check. DocGuard reads <stage>/traceability.json ({ "stage", "upstream_ids", "coverage": [{ "id", "status", "target" }] }), <stage>/source-manifest.json ({ "stage", "unit", "version", "writes": [{ "path" }] }), and memory/ and codekb/ files under aidlc/spaces/<space>/. Complete an AI-DLC stage so it writes them; DocGuard never writes AI-DLC files.`,
+      }),
+    }),
+  };
   result.aidlc = { records: records.length, units: new Set(records.flatMap(r => [...r.tables, ...r.manifests].map(x => x.unit).filter(Boolean))).size, tables, manifests };
   if (unknownDeletions) result.applicability = { status: 'partial', reason: `${unknownDeletions} missing manifest path(s) not judged: the manifest is not committed, so git cannot tell a later removal from the unit's own deletion` };
   if (total === 0) result.note = `AI-DLC workspace found (${records.length} record(s)) with no traceability tables or source manifests yet`;

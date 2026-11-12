@@ -18,6 +18,10 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { revisionResolves } from '../scanners/doc-deps.mjs';
 import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
+import { collectRequirementIds } from '../scanners/requirement-docs.mjs';
+import { requirementPatterns } from '../shared-requirements.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_FINDINGS = 25;
 
@@ -60,11 +64,40 @@ function suggestionFor(projectDir, p) {
   }
 }
 
+/**
+ * Does this kind of check belong to the project? It does when the project
+ * declares requirement IDs (a spec or requirement document) and has source code
+ * to tag: those are facts about the project. Writing the tags, and opting in, is
+ * the declaration the validator then asks for (specs/097-strict-by-default FR-006).
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const definitions = collectRequirementIds(projectDir, config, requirementPatterns(config));
+  if (definitions.size === 0) return { applies: false, evidence: 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
+  const source = firstProductSource(projectDir, config);
+  const ids = sample([...definitions.values()].map(d => d.specId ? `${d.specId}#${d.id}` : d.id));
+  if (!source) return { applies: false, evidence: `${definitions.size} requirement ID(s) are declared (${ids}) but the project has no source file to tag` };
+  return { applies: true, evidence: `${definitions.size} requirement ID(s) are declared (${ids}) and the project has source code (${source}), so code can cite them` };
+}
+
+const ENABLE_HOW = 'Set "anchors": { "enabled": true } in .docguard.json, then tag the code that implements a requirement with a comment such as `// @implements <Spec ID>#FR-001` and record the review with `docguard anchors accept --baseline --bulk --reason "<what you checked>"`. Anchors are links a person reviews: DocGuard does not tag your code.';
+const TAG_HOW = 'Anchors are enabled but no source file carries a tag that cites a requirement. Tag the code that implements one with a comment such as `// @implements <Spec ID>#FR-001` (`docguard anchors` lists the requirements still untagged), then record the review with `docguard anchors accept --baseline --bulk --reason "<what you checked>"`.';
+
 export function validateRequirementAnchors(projectDir, config = {}, { status = null } = {}) {
   // Decide applicability BEFORE reading any source: a project that has not
   // opted in pays nothing for this validator (FR-026, FR-041).
   if (!status && !anchorsActivated(projectDir, config)) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config),
+        empty: d => (d.applies
+          ? { emptyCause: 'needs-declaration', note: `Requirement-Anchors is not enabled: ${d.evidence}, but the project has no ${ANCHOR_LOCK_PATH} and sets no anchors.enabled.`, howToConfigure: ENABLE_HOW }
+          : { emptyCause: 'nothing-of-this-kind', note: `Requirement-Anchors found no requirement to anchor: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project declares requirement IDs (for example `- **FR-001**: …` in specs/<feature>/spec.md) and has source code that implements them.' }),
+      }),
+    };
   }
   const computed = status || computeAnchorStatus(projectDir, config);
   const policy = failOnPolicy(config);
@@ -90,7 +123,21 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
   // with zero anchors is `empty`, not `pass` (specs/097-strict-by-default FR-004).
   const result = { ...resultFromFindings(shown, { passed: counted, total: Math.max(1, computed.links.length + (computed.lost?.length || 0)), applicable: true }), performed: counted };
   const degraded = computed.files.filter(f => f.degraded).length;
+  const decision = () => applies(projectDir, config);
+  const contract = explainPaddedEmpty(contractFields({
+    performed: counted,
+    found: shown.length > 0,
+    ran: `${counted} anchor link(s) compared with their requirement and code`,
+    decide: decision,
+    empty: d => ({
+      emptyCause: d.applies ? 'needs-content' : 'nothing-of-this-kind',
+      note: d.applies
+        ? `Requirement-Anchors is enabled but no source file carries a requirement tag: ${d.evidence}.`
+        : `Requirement-Anchors is enabled but found no requirement to anchor: ${d.evidence}.`,
+      howToConfigure: d.applies ? TAG_HOW : 'Nothing to configure unless the project declares requirement IDs (for example `- **FR-001**: …` in specs/<feature>/spec.md) and has source code that implements them.',
+    }),
+  }));
   return degraded
-    ? { ...result, applicability: { status: 'partial', reason: `${degraded} tagged file(s) were anchored below their exact tier` } }
-    : result;
+    ? { ...result, ...contract, applicability: { status: 'partial', reason: `${degraded} tagged file(s) were anchored below their exact tier` } }
+    : { ...result, ...contract };
 }
