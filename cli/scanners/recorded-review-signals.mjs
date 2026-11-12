@@ -7,7 +7,6 @@
  *           review, whose fingerprint changed)
  *   FRS007  package scripts / top-level directories added since the review
  *           that the document never mentions
- *   FRS008  an agent-instruction document with no review record
  *   FRS009  a review marker advanced past a recorded review by a commit that
  *           changed nothing else in the document
  *   FRS010  the reviews file cannot be read: every recorded review is unusable
@@ -110,7 +109,6 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
   const tracked = listTrackedFiles(dir);
   if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
   const roleSet = new Set(authored.map(d => d.path));
-  const trackedSet = new Set(tracked);
   const canonical = docFiles.filter(f => !roleSet.has(f) && !vendored.has(f));
   const cache = new Map();
   let fpCtx = null;
@@ -154,17 +152,10 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { continue; }
     const point = reviewPointOf(doc.path, content);
     if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
-    if (!point) {
-      // An uncommitted file has FRS001 (no dated signal at all); FRS008 is for a
-      // committed file that still has no review record: a commit is not a review.
-      if (!trackedSet.has(doc.path)) continue;
-      out.push({
-        status: 'warn', code: 'FRS008', doc: doc.path, documentRole: 'agent-instruction', confidence: 'high', disposition: 'escalate',
-        message: `${doc.path} — agent instructions with no review record: nothing says when, or against what, this file was last checked`,
-        suggestion: { kind: 'review', text: `Read it against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` },
-      });
-      continue;
-    }
+    // No review point: spec 097 reports this as Freshness applying and
+    // examining nothing (`empty`, cause `needs-declaration`), through
+    // agentInstructionDocsWithoutReviewPoint below, not as a finding.
+    if (!point) continue;
     const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
     if (!complete) out.push({ status: 'skip', doc: doc.path, message: `${doc.path}: some references could not be measured against ${point.revision.slice(0, 12)}` });
     if (crossing.length) {
@@ -224,5 +215,32 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     if (crossing.length) due.staleness = { reviewPoint: { date: point.date, revision: point.revision, source: point.source }, threshold, references: crossing.slice(0, 10) };
   }
   for (const r of results) if (!r.documentRole && r.doc && roleSet.has(r.doc)) r.documentRole = 'agent-instruction';
+  return out;
+}
+
+/**
+ * Agent-instruction documents (authored, non-pointer, committed) that have
+ * no review point: no `docguard:last-reviewed` marker and no recorded review.
+ * Spec 097's Freshness applicability reports them as `empty` with cause
+ * `needs-declaration`; each entry carries the command that records a review.
+ * Uncommitted files are left to FRS001.
+ *
+ * @implements docguard.recorded-document-reviews#FR-009
+ * @returns {{ path: string, howToConfigure: string }[]}
+ */
+export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
+  const tracked = listTrackedFiles(dir);
+  if (!tracked) return [];
+  const trackedSet = new Set(tracked);
+  const recorded = reviewsFor(dir).reviews?.documents || {};
+  const out = [];
+  for (const doc of agentInstructionDocs(dir, config).docs) {
+    if (doc.pointer || doc.vendored || !trackedSet.has(doc.path)) continue;
+    if (recorded[doc.path]?.reviewedRevision) continue;
+    let content = '';
+    try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { continue; }
+    if (markerDate(content)) continue;
+    out.push({ path: doc.path, howToConfigure: `Read ${doc.path} against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` });
+  }
   return out;
 }

@@ -7210,7 +7210,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1140
+            "line": 1134
           },
           {
             "requirementId": "FR-008",
@@ -8236,12 +8236,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1401
+            "line": 1395
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1411
+            "line": 1405
           },
           {
             "requirementId": "FR-006",
@@ -13281,11 +13281,11 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:3bdfd1ecc211844752427d928d172be4ce0cdfaf7ddf8e67e6dc3346ae88b013"
+            "digest": "sha256:348a19f27fb698cbef3c18a07fde9be9c1586b1e500bd07cc294e315779daf1a"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
-            "digest": "sha256:c0d684ad874e8900307b949455faddbe1b882ee9220dc7aec898b91e7e6c3400"
+            "digest": "sha256:9a309e2d9aeaa4c10931ad4af86f68b30ace49d703cc7cf757983395f0a034dc"
           },
           {
             "path": "specs/095-recorded-document-reviews/tasks.md",
@@ -13330,7 +13330,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 19
+            "line": 18
           },
           {
             "requirementId": "FR-006",
@@ -13340,17 +13340,22 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 20
+            "line": 19
           },
           {
             "requirementId": "FR-008",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
             "line": 21
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 22
+            "line": 228
           }
         ],
         "testEvidence": [

@@ -20,8 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `+added/−deleted`. On TestGuard at f89ca46 it reports `AGENTS.md:35 src/probe/probe.mjs 74%
   (+1066/−190)`. Canonical documents carry the same evidence on their FRS002.
 - **FRS007: surface added since the review that the document never mentions** (package scripts,
-  top-level directories). **FRS008**: agent instructions with no review record, with the exact
-  `review --accept` command. **FRS009**: a review date moved past a recorded review by a commit
+  top-level directories). **FRS009**: a review date moved past a recorded review by a commit
   that changed nothing else. **FRS010**: an unreadable reviews file fails the run.
 - **Guard says first when agents are served stale instructions**, in text (also with `--quiet`)
   and as `staleInstructions[]` in JSON.

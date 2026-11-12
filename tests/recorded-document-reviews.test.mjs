@@ -25,6 +25,7 @@ import { fixtureGit } from './helpers/git.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { documentReferences, readDocReviews, DOC_REVIEWS_PATH } from '../cli/scanners/doc-reviews.mjs';
 import { resolveFindingEnforcement } from '../cli/shared.mjs';
+import { agentInstructionDocsWithoutReviewPoint } from '../cli/scanners/recorded-review-signals.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const write = (dir, path, body) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), body); };
@@ -187,15 +188,21 @@ describe('US3 — FRS007 names surface added since the review', () => {
   });
 });
 
-describe('US4 — FRS008: agent instructions with no review record', () => {
-  it('a recently committed AGENTS.md with no marker and no recorded review', t => {
-    const hits = codes(validateFreshness(project(t, { marker: false, grow: false, surface: false }), {}), 'FRS008');
-    assert.equal(hits.length, 1);
-    // The exact command is in the text; it is not a machine-run `command`: an
-    // agent must not record a review it did not do.
-    assert.match(hits[0].suggestion.text, /docguard review --accept AGENTS\.md --reason "<what you checked>"/);
-    assert.equal(hits[0].suggestion.command, undefined);
-    assert.equal(hits[0].status, 'warn');
+describe('US4 — agent instructions with no review point (spec 097 needs-declaration)', () => {
+  it('is not a finding; agentInstructionDocsWithoutReviewPoint names it with the command that records a review', t => {
+    const dir = project(t, { marker: false, grow: false, surface: false });
+    assert.equal(validateFreshness(dir, {}).filter(r => r.code === 'FRS008').length, 0);
+    const missing = agentInstructionDocsWithoutReviewPoint(dir, {});
+    assert.deepEqual(missing.map(m => m.path), ['AGENTS.md']);
+    assert.match(missing[0].howToConfigure, /docguard review --accept AGENTS\.md --reason "<what you checked>"/);
+    assert.equal(run(dir, ['review', '--accept', 'AGENTS.md', '--reason', 'read the key files against the code']).status, 0);
+    assert.deepEqual(agentInstructionDocsWithoutReviewPoint(dir, {}), []);
+  });
+
+  it('a marked document and an uncommitted one are not listed', t => {
+    const dir = project(t, { grow: false, surface: false });
+    write(dir, 'GEMINI.md', '# Gemini\n\nRun the suite before every commit, always, and read AGENTS.md first.\n'.repeat(3));
+    assert.deepEqual(agentInstructionDocsWithoutReviewPoint(dir, {}), []);
   });
 });
 

@@ -233,6 +233,14 @@ describe('US3 — vendored copies are excluded and checked for drift', () => {
     assert.equal(intact.findings.filter(f => f.code === 'PSR005').length, 0);
   });
 
+  it('PSR005 says line endings when CRLF is the only difference', t => {
+    const dir = vendoredRepo(t);
+    writeFileSync(join(dir, '.claude/skills/speckit-plan/SKILL.md'), SPECKIT_SKILL.replace(/\n/g, '\r\n'));
+    const hits = validatePathScopedRules(dir, {}).findings.filter(f => f.code === 'PSR005');
+    assert.equal(hits.length, 1);
+    assert.match(hits[0].message, /only in line endings \(CRLF\)/);
+  });
+
   it('a malformed manifest vendors nothing and is reported as partial coverage (FR-006)', t => {
     const dir = vendoredRepo(t, { manifest: '{ not json' });
     const { docs, limitations } = agentInstructionDocs(dir, {});

@@ -30,7 +30,7 @@ tests/recorded-document-reviews.test.mjs
 
 - **A separate reviews file.** The doc lock rejects unknown top-level fields (`lockProblem`). Approved by the orchestrator; the new file's `extensions` rule avoids a third file later.
 - **Numstat, not blame, for the share.** On the Stage 1 sample it ranked references the same as blame (74/70, 47/48, …), at about 14 ms per call against 5–55 s of blame per repository.
-- **FRS008 and FRS009 default to warn.** Both conditions are facts, not heuristics (orchestrator decision 2).
+- **No FRS008.** "No review record" is Freshness applying and examining nothing (spec 097 `needs-declaration`), exposed as `agentInstructionDocsWithoutReviewPoint`. FRS009 is a warning until spec 097 sets default levels.
 - **Rejected:**
   - Directory-level churn (false in the Stage 1 sample).
   - FRS006 for unmarked documents (0 true of 7).

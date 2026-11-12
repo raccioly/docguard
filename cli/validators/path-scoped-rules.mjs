@@ -194,9 +194,14 @@ export function validatePathScopedRules(projectDir, config = {}) {
     const actual = fileSha256(projectDir, doc.path);
     if (actual === null || doc.vendored.hashes.includes(actual)) continue;
     const { integration, version } = doc.vendored;
+    // A Windows checkout with core.autocrlf rewrites LF as CRLF: say so rather
+    // than calling a byte-identical copy edited (coordinator review of #633).
+    const lineEndingsOnly = doc.vendored.hashes.includes(fileSha256(projectDir, doc.path, { normalizeLineEndings: true }));
     findings.push(mkFinding({
       code: 'PSR005', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
-      message: `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}); reinstall it or move the change to an authored file`,
+      message: lineEndingsOnly
+        ? `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}) only in line endings (CRLF): a checkout with core.autocrlf converted it; mark it \`text eol=lf\` in .gitattributes`
+        : `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}); reinstall it or move the change to an authored file`,
       location: { file: doc.path },
       suggestion: { kind: 'review', text: `Reinstall the ${integration} integration (specify integration install ${integration}) to restore the installed copy, or keep the change in a file the project owns: an edit here is lost on the next install` },
     }));

@@ -67,10 +67,12 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
 
 ### User Story 4 - An agent-instruction document with no review record says what to run (Priority: P2)
 
+This is not a finding. Under spec 097 it is Freshness applying and examining nothing: an `empty` result with cause `needs-declaration`. Decided by the DocGuard coordinating session on 2026-11-12; it replaces the FRS008 code of an earlier draft.
+
 **Acceptance Scenarios**:
 
-1. **Given** a `GEMINI.md` with no marker and no recorded review, **Then** FRS008 says it has no review record and gives the exact command: `docguard review --accept GEMINI.md --reason "<what you checked>"`. It is a warning (orchestrator decision 2: complete by default; both conditions are facts).
-2. **Given** a root `AGENTS.md` committed 2 days ago with no marker, **Then** FRS008 is still reported. A commit is not a review.
+1. **Given** a committed `GEMINI.md` with no marker and no recorded review, **Then** `agentInstructionDocsWithoutReviewPoint()` lists it with the exact command, `docguard review --accept GEMINI.md --reason "<what you checked>"`, and guard emits no finding for it.
+2. **Given** a root `AGENTS.md` committed 2 days ago with no marker, **Then** it is still listed. A commit is not a review.
 
 ### User Story 5 - A marker advanced without a recorded review is visible (Priority: P2)
 
@@ -136,10 +138,10 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
   - top-level tracked directories (not dot-directories).
 
   A script is mentioned as `npm|pnpm|yarn|bun run <name>`, `npm <name>` for lifecycle names, or `` `<name>` ``. A directory is mentioned as a whole token, with or without a trailing slash. Severity `warn`, disposition `escalate`, confidence `high`.
-- **FR-009**: New codes, both warnings by default (orchestrator decision 2; whether they fail the build is decided by the separate defaults audit):
-  - **FRS008**: an agent-instruction document (non-pointer, non-vendored) with no marker and no recorded review. Its suggestion is the exact `docguard review --accept <path> --reason "<what you checked>"` command.
-  - **FRS009**: a document whose marker date is later than its recorded review's `reviewedAt`, set by a commit that changed no other line of the document. It names that commit. FRS006 keeps measuring from the recorded review.
-- **FR-010**: `findingSeverity` MUST accept a role-scoped value, `{ "FRS006": { "agent-instruction": "high" } }`. The level applies to findings whose document is in that role; other findings of the code keep the default. This is the only new configuration shape. The JSON schema and DATA-MODEL document it.
+- **FR-009**: Two parts:
+  - `agentInstructionDocsWithoutReviewPoint(dir, config)` (`cli/scanners/recorded-review-signals.mjs`) MUST return every committed, authored, non-pointer agent-instruction document with no marker and no recorded review, each with a `howToConfigure` text naming the `review --accept` command. Spec 097's Freshness applicability calls it to report `empty` with cause `needs-declaration`. Uncommitted files stay FRS001's.
+  - New code **FRS009**, a warning: a document whose marker date is later than its recorded review's `reviewedAt`, set by a commit that changed no other line of the document. It names that commit. FRS006 keeps measuring from the recorded review.
+- **FR-010** (*open item, decided by spec 097*): `findingSeverity` MUST accept a role-scoped value, `{ "FRS006": { "agent-instruction": "high" } }`. The level applies to findings whose document is in that role; other findings of the code keep the default. This is the only new configuration shape. The JSON schema and DATA-MODEL document it.
 - **FR-011**: When any agent-instruction document has FRS006 or FRS007, guard's human output MUST print one line before the validator list, whatever the severity, on the default output and with `--quiet`, and JSON MUST carry `staleInstructions: [{ doc, codes }]`.
 - **FR-014**: New code **FRS010**, Freshness, severity `error`: the reviews file cannot be read (not JSON, an unsupported `schemaVersion`, or an unknown field outside `extensions`). It never reads as "no reviews". The reviews file's compatibility rule is part of its schema: a future field goes under `extensions` (top level, per document or per reference), which readers ignore.
 - **FR-012**: A history-replay benchmark (`benchmarks/history-replay/`) MUST measure FRS006 and FRS007 precision.
@@ -148,6 +150,8 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
   - **Output**: precision with its Wilson interval per role and threshold, committed as the precision evidence for FRS006 and FRS007.
   - **Private projects**: results from local private projects are reported to the maintainer only, never committed.
 - **FR-013**: `cli/findings.mjs` (FRS006 to FRS009), `docs/reference/findings.md`, DATA-MODEL (the reviews file and the `findingSeverity` form), ARCHITECTURE, the `review` command help and `CHANGELOG.md` MUST describe the change.
+
+**Open item.** Default levels and exit behavior for FRS006, FRS007, FRS009 and FRS010 are decided by spec 097 (strict by default). There, a code gates by default only with at least 30 labeled findings and a 95% Wilson lower bound of 0.85. Until then they are warnings, and FR-010's per-project form may be superseded.
 
 ## Success Criteria *(mandatory)*
 
