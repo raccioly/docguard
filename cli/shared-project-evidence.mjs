@@ -17,10 +17,14 @@ const SOURCE_EXTENSIONS = new Set([
   '.php', '.cs', '.swift', '.scala', '.c', '.cc', '.cpp', '.h', '.hpp',
 ]);
 
-/** The first source file that is the project's own product code, or null: not a test, fixture, example or benchmark path. */
+// Tooling configuration is code in a source extension but not the project's product: a lint, test-runner,
+// bundler or ORM config, an rc file, a test setup file.
+const CONFIG_FILE = /(?:^|\/)[\w.-]*\.config\.[cm]?[jt]sx?$|(?:^|\/)\.[\w-]*rc\.[cm]?[jt]sx?$|(?:^|\/)[\w.-]*\.setup\.[cm]?[jt]sx?$|(?:^|\/)(?:setup|globalSetup|jest\.setup)[\w.-]*\.[cm]?[jt]sx?$/;
+
+/** The first source file that is the project's own product code, or null: not a test, fixture, example, benchmark or configuration file. */
 export function firstProductSource(projectDir, config = {}) {
   const tracked = listTrackedFiles(projectDir);
-  const isProduct = rel => SOURCE_EXTENSIONS.has(extname(rel)) && !isNonProductPath(rel, config) && !isTestFile(rel);
+  const isProduct = rel => SOURCE_EXTENSIONS.has(extname(rel)) && !isNonProductPath(rel, config) && !isTestFile(rel) && !CONFIG_FILE.test(rel);
   if (tracked) {
     for (const rel of tracked) if (isProduct(rel)) return rel;
     return null;

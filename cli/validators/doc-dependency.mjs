@@ -29,7 +29,7 @@ export function applies(projectDir, config = {}) {
   const docs = canonicalDocPaths(projectDir, config);
   if (docs.length === 0) return { applies: false, evidence: 'the project has no canonical document (docs-canonical/ or a mapped document role) that could name the code it describes', docs };
   const source = firstProductSource(projectDir, config);
-  if (!source) return { applies: false, evidence: `${docs.length} canonical document(s) (${sample(docs)}) but no source file for a section to cover`, docs };
+  if (!source) return { applies: false, evidence: `${docs.length} canonical document(s) (${sample(docs)}) but no product source file for a section to cover (tooling configuration files do not count)`, docs };
   return { applies: true, evidence: `${docs.length} canonical document(s) (${sample(docs)}) and source code (${source}) that a section can declare it covers`, docs, source };
 }
 

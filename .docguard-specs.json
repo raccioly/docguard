@@ -16148,11 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:10ffdf3a6e54d84b4ce063fdbb99fa1e446dd622efde1cbce9d8632ee1cca932"
+            "digest": "sha256:f3381c1b19517ebb8f5b5ae268fdbf096bc8aae76e7665d4097ff9085254af4a"
           }
         ],
         "taskCompletion": {
-          "checked": 18,
+          "checked": 21,
           "total": 37
         },
         "implementationEvidence": [
@@ -16314,7 +16314,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/generated-staleness.mjs",
-            "line": 123
+            "line": 125
           },
           {
             "requirementId": "FR-006",
@@ -16339,7 +16339,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/requirement-anchors.mjs",
-            "line": 73
+            "line": 103
           },
           {
             "requirementId": "FR-006",

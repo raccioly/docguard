@@ -2161,6 +2161,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Generated-Staleness read a draft status out of body text.** The draft pattern's
+  lazy front-matter match could run past the closing `---` into the body, so a
+  published template whose front matter says `status: final` and whose body quotes
+  "Status: Draft / Approved" was reported as a draft. The status is read only from
+  the front matter that opens the document or from a marker, and the evidence now
+  names the file it found (`docguard.strict-by-default` FR-006).
+- **Spec-Registry could report no check beside findings.** A specification with no
+  Spec ID was a finding but not a check, so a baselined or waived finding left an
+  empty result with no cause. Every detected specification now counts as examined.
+- **Requirement-Anchors and Doc-Dependency evidence.** A template row such as
+  "System MUST [capability]" no longer counts as a requirement; tooling
+  configuration (`*.config.*`, rc and setup files) is no longer offered as the
+  project's source code or as the `covers=` example; the fix says where a Spec ID is
+  declared; requirement IDs in a form the scanner does not read (`FR-1`) are
+  reported as `layout-not-recognized` with the `traceability.requirementPattern`
+  setting that reads them.
+- **Cross-Reference no longer tells a project to move its documents.** Where the
+  documents live outside what it reads, the text names what it reads and the
+  `docs.roles` mapping; a declared collection whose glob matches nothing is
+  `needs-content`, not a layout DocGuard fails to read.
+
 - **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
   for `<!-- status: draft -->` or `status: draft` front matter, while every
   generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
@@ -2372,29 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   (FR-007)" in a task still cites the spec's FR-007.
 
 - **Every suppression can name an owner and an end date** (`docguard.accountable-suppressions`,
-  spec 084). Inline pragmas, validator and section N/A markers and
-  `.docguardignore` reasons accept trailing `owner:` and `expires:` tokens, and
-  `.docguard.json` ignore arrays accept `{ pattern, reason, owner, expires }`
-  objects. An expired suppression of any kind stops suppressing.
-  `suppressions.requireOwner` (IGN004) and `suppressions.maxDays` (IGN005)
-  make waivers accountable; `docguard ignore --owner` filters by owner. Forms
-  without the new tokens read exactly as before.
 
-### Changed
-
-- **The Doc Quality score now asks for the same sections as STR003**
-  (spec 082). For a project without a database (`needsDatabase: false`) or
-  environment variables (`needsEnvVars: false`), it no longer counts the
-  Entities or Environment Variables section, whether the document has it or
-  not. Across 45 local projects, 3 Doc Quality scores moved by 2 points:
-  two rose and one fell, where the exempt sections were present. No total
-  score, grade or exit code changed.
-
-- **DocGuard's own CI keeps its history between runs** (Recipe 4b, spec 083).
-  Every CI run restores the `.docguard/history.jsonl` that main saved, records
-  one more entry, and runs `docguard policy` on it. Only a push to main saves
-
-<!-- truncated: 6357 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6378 more lines — read CHANGELOG.md directly -->
 
 ---
 

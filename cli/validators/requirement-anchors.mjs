@@ -18,7 +18,9 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { revisionResolves } from '../scanners/doc-deps.mjs';
 import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
-import { collectRequirementIds } from '../scanners/requirement-docs.mjs';
+import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
+import { readFileSync } from 'node:fs';
+import { relative } from 'node:path';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
@@ -64,25 +66,69 @@ function suggestionFor(projectDir, p) {
   }
 }
 
+// A requirement line whose text is a bracketed placeholder ("System MUST [capability]") is a template row, not a requirement.
+const PLACEHOLDER_TEXT = /\[[^\]\n]+\](?!\()/;
+const isPlaceholder = def => PLACEHOLDER_TEXT.test(String(def.text || '').replace(def.id, '').replace(/[*_`]/g, ''));
+// A declaration-shaped line that opens with an ID the default patterns do not read (FR-1: one digit, R-12: one letter).
+const LOOSE_ID = /^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*([A-Z]{1,6}-\d{1,5})\b/;
+
+/** Requirement-like IDs in the requirement documents that the active patterns do not read, with the first document that has them. */
+function unreadIds(projectDir, config, patterns) {
+  const found = new Map();
+  for (const doc of getRequirementDocPaths(projectDir, config)) {
+    let text;
+    try { text = readFileSync(doc, 'utf-8'); } catch { continue; }
+    let fence = false;
+    for (const line of text.split('\n')) {
+      if (/^\s{0,3}(`{3,}|~{3,})/.test(line)) { fence = !fence; continue; }
+      if (fence) continue;
+      const m = line.match(LOOSE_ID);
+      if (!m || PLACEHOLDER_TEXT.test(line)) continue;
+      if (patterns.some(p => { p.lastIndex = 0; return p.test(m[1]); })) continue;
+      if (!found.has(m[1])) found.set(m[1], relative(projectDir, doc).replace(/\\/g, '/'));
+    }
+  }
+  return found;
+}
+
 /**
  * Does this kind of check belong to the project? It does when the project
- * declares requirement IDs (a spec or requirement document) and has source code
- * to tag: those are facts about the project. Writing the tags, and opting in, is
- * the declaration the validator then asks for (specs/097-strict-by-default FR-006).
+ * declares requirement IDs (a spec or requirement document; a template row such
+ * as "System MUST [capability]" declares none) and has product source code to
+ * tag (a lint, test-runner or ORM configuration file is not product source).
+ * Requirement-like IDs in a form the scanner does not read are a layout it does
+ * not recognize, not "nothing to anchor". Writing the tags, and opting in, is the
+ * declaration the validator then asks for (specs/097-strict-by-default FR-006).
  *
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
-  const definitions = collectRequirementIds(projectDir, config, requirementPatterns(config));
-  if (definitions.size === 0) return { applies: false, evidence: 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
+  const patterns = requirementPatterns(config);
+  const all = [...collectRequirementIds(projectDir, config, patterns).values()];
+  const real = all.filter(d => !isPlaceholder(d));
+  const placeholders = all.length - real.length;
   const source = firstProductSource(projectDir, config);
-  const ids = sample([...definitions.values()].map(d => d.specId ? `${d.specId}#${d.id}` : d.id));
-  if (!source) return { applies: false, evidence: `${definitions.size} requirement ID(s) are declared (${ids}) but the project has no source file to tag` };
-  return { applies: true, evidence: `${definitions.size} requirement ID(s) are declared (${ids}) and the project has source code (${source}), so code can cite them` };
+  if (real.length === 0) {
+    const loose = source ? unreadIds(projectDir, config, patterns) : new Map();
+    if (loose.size >= 2) {
+      const [first, file] = [...loose.entries()][0];
+      return { applies: true, kind: 'unrecognized', ids: [...loose.keys()], file, evidence: `${loose.size} requirement-like ID(s) in a form the scanner does not read (${sample([...loose.keys()])}, first in ${file}) and source code (${source})` };
+    }
+    return { applies: false, evidence: placeholders
+      ? `${placeholders} requirement line(s) are template placeholders (such as "System MUST [capability]"), so no requirement is declared yet`
+      : 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
+  }
+  const ids = sample(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id));
+  if (!source) return { applies: false, evidence: `${real.length} requirement ID(s) are declared (${ids}) but the project has no product source file to tag (configuration files do not count)` };
+  const withSpec = real.find(d => d.specId);
+  return { applies: true, kind: 'recognized', example: withSpec ? `${withSpec.specId}#${withSpec.id}` : null, evidence: `${real.length} requirement ID(s) are declared (${ids}) and the project has source code (${source}), so code can cite them` };
 }
 
-const ENABLE_HOW = 'Set "anchors": { "enabled": true } in .docguard.json, then tag the code that implements a requirement with a comment such as `// @implements <Spec ID>#FR-001` and record the review with `docguard anchors accept --baseline --bulk --reason "<what you checked>"`. Anchors are links a person reviews: DocGuard does not tag your code.';
-const TAG_HOW = 'Anchors are enabled but no source file carries a tag that cites a requirement. Tag the code that implements one with a comment such as `// @implements <Spec ID>#FR-001` (`docguard anchors` lists the requirements still untagged), then record the review with `docguard anchors accept --baseline --bulk --reason "<what you checked>"`.';
+const SPEC_ID_HOW = d => `Qualify each tag with the Spec ID of the spec that declares the requirement${d.example ? `, such as \`// @implements ${d.example}\`` : ', such as `// @implements <spec-id>#FR-001`'}. A Spec ID is declared in the spec itself: a \`**Spec ID**: <unique-id>\` line under the title of specs/<feature>/spec.md (or \`<!-- docguard:spec-id <unique-id> -->\`), and \`docguard specs --write\` records it; a spec that has none needs one added, because a bare FR-001 collides (ANC007) as soon as two specs declare it.`;
+const ENABLE_HOW = d => `Set "anchors": { "enabled": true } in .docguard.json, then tag the code that implements a requirement with a comment, and record the review with \`docguard anchors accept --baseline --bulk --reason "<what you checked>"\`. ${SPEC_ID_HOW(d)} Anchors are links a person reviews: DocGuard does not tag your code.`;
+const TAG_HOW = d => `Anchors are enabled but no source file carries a tag that cites a requirement. Tag the code that implements one with a comment. ${SPEC_ID_HOW(d)} \`docguard anchors\` lists the requirements still untagged; record the review with \`docguard anchors accept --baseline --bulk --reason "<what you checked>"\`.`;
+const UNREAD_HOW = d => `Requirement-Anchors reads requirement IDs shaped REQ, FR, NFR, US, STORY, AC, UC, SYS, ARCH, MOD or SC followed by two to four digits, at the start of a list item, heading or table row. ${d.file} declares ${sample(d.ids)}, which that reading does not match. Set "traceability": { "requirementPattern": "<regex>" } in .docguard.json to read your form (a pattern with a prefix and digits, such as \`\\\\b(FR)-(\\\\d{1,4})\\\\b\`); this is a limit of the default reading, and nothing in your documents needs to change.`;
+const NOTHING_HOW = 'Nothing to configure unless the project declares requirement IDs (for example `- **FR-001**: …` in specs/<feature>/spec.md, with real text rather than a template placeholder) and has product source code that implements them.';
 
 export function validateRequirementAnchors(projectDir, config = {}, { status = null } = {}) {
   // Decide applicability BEFORE reading any source: a project that has not
@@ -93,9 +139,11 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
       ...contractFields({
         performed: 0,
         decide: () => applies(projectDir, config),
-        empty: d => (d.applies
-          ? { emptyCause: 'needs-declaration', note: `Requirement-Anchors is not enabled: ${d.evidence}, but the project has no ${ANCHOR_LOCK_PATH} and sets no anchors.enabled.`, howToConfigure: ENABLE_HOW }
-          : { emptyCause: 'nothing-of-this-kind', note: `Requirement-Anchors found no requirement to anchor: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project declares requirement IDs (for example `- **FR-001**: …` in specs/<feature>/spec.md) and has source code that implements them.' }),
+        empty: d => (d.kind === 'unrecognized'
+          ? { emptyCause: 'layout-not-recognized', note: `Requirement-Anchors found requirement IDs it does not read: ${d.evidence}.`, howToConfigure: UNREAD_HOW(d) }
+          : d.applies
+            ? { emptyCause: 'needs-declaration', note: `Requirement-Anchors is not enabled: ${d.evidence}, but the project has no ${ANCHOR_LOCK_PATH} and sets no anchors.enabled.`, howToConfigure: ENABLE_HOW(d) }
+            : { emptyCause: 'nothing-of-this-kind', note: `Requirement-Anchors found no requirement to anchor: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
       }),
     };
   }
@@ -129,13 +177,11 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
     found: shown.length > 0,
     ran: `${counted} anchor link(s) compared with their requirement and code`,
     decide: decision,
-    empty: d => ({
-      emptyCause: d.applies ? 'needs-content' : 'nothing-of-this-kind',
-      note: d.applies
-        ? `Requirement-Anchors is enabled but no source file carries a requirement tag: ${d.evidence}.`
-        : `Requirement-Anchors is enabled but found no requirement to anchor: ${d.evidence}.`,
-      howToConfigure: d.applies ? TAG_HOW : 'Nothing to configure unless the project declares requirement IDs (for example `- **FR-001**: …` in specs/<feature>/spec.md) and has source code that implements them.',
-    }),
+    empty: d => (d.kind === 'unrecognized'
+      ? { emptyCause: 'layout-not-recognized', note: `Requirement-Anchors is enabled but the requirement IDs are in a form it does not read: ${d.evidence}.`, howToConfigure: UNREAD_HOW(d) }
+      : d.applies
+        ? { emptyCause: 'needs-content', note: `Requirement-Anchors is enabled but no source file carries a requirement tag: ${d.evidence}.`, howToConfigure: TAG_HOW(d) }
+        : { emptyCause: 'nothing-of-this-kind', note: `Requirement-Anchors is enabled but found no requirement to anchor: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
   }));
   return degraded
     ? { ...result, ...contract, applicability: { status: 'partial', reason: `${degraded} tagged file(s) were anchored below their exact tier` } }
