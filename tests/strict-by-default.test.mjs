@@ -90,11 +90,13 @@ const NO_API = { 'package.json': JSON.stringify({ name: 'lib', version: '1.0.0' 
 
 // ── T001: an older DocGuard must keep working on a config that carries the key (FR-002) ──
 const TAG = 'v0.47.0';
+// fixture-git-exempt: read-only lookups of this repository's own tag; no fixture is built.
 const tagExists = spawnSync('git', ['rev-parse', '--verify', '-q', `${TAG}^{commit}`], { cwd: ROOT }).status === 0;
 let V047 = null;
 function baseCli() {
   if (V047) return V047;
   const dir = scratch('docguard-v047-');
+  // fixture-git-exempt: read-only archive of this repository's own tag.
   const archive = spawnSync('git', ['archive', TAG], { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 });
   assert.equal(archive.status, 0, 'git archive failed');
   const tar = spawnSync('tar', ['-x', '-C', dir], { input: archive.stdout });
@@ -370,6 +372,16 @@ describe('Requirement-Anchors enabled with zero anchors is empty, not pass', () 
     const dir = project(NO_API, cfg(only('requirementAnchors'), { anchors: { enabled: true } }));
     const v = verdictOf(guardJson(dir).json, 'requirementAnchors');
     assert.equal(v.total, 1);
+  });
+});
+
+describe('Doc-Dependency with a lock that covers nothing is empty, not pass', () => {
+  it('performed counts compared sections, not the padded total', () => {
+    const dir = project({ ...NO_API, '.docguard-doc-lock.json': JSON.stringify({ schemaVersion: 1, sections: {} }) }, cfg(only('docDependency')));
+    const v = verdictOf(guardJson(dir).json, 'docDependency');
+    assert.equal(v.performed, 0);
+    assert.equal(v.total, 1, 'the printed total keeps its pad under standard');
+    assert.equal(v.verdict, 'empty');
   });
 });
 
