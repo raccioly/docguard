@@ -2133,6 +2133,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `fingerprint` kind, which DocGuard never exported (#619;
   `docguard.configured-canonical-paths` FR-006).
 
+### Budgets
+
+`bytes:mcp:docguard_read_section` grew by 439 bytes on the `finding-channels`
+section of DATA-MODEL, 107 over its 332-byte allowance. The section now
+documents the `context` field that Security findings carry and the rule that a
+`test-path` finding never counts toward failing a build (spec 097 FR-010).
+
+Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section documents the new Security `context` field (spec 097 FR-010)
+
 ## [0.47.0] - 2026-11-10
 
 ### Added
@@ -2384,17 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   own repository, a failing `git ls-files` had produced 25 ANC003 and one
   SPR001 before this.
 
-- **GitHub Actions pins move to their latest patch/minor releases** (#604).
-  CI, release and the published `action.yml` now run `actions/setup-node`
-  v7.1.0, `actions/upload-artifact` v7.0.2, `actions/download-artifact`
-  v8.0.2, `actions/setup-python` v7.1.0, `pypa/gh-action-pypi-publish`
-  v1.14.3, `google/osv-scanner-action` v2.7.0 and `websec-validator` v0.22.3.
-  The CI workflows that `docguard init` and the Spec Kit extension generate
-  pin the same setup-node and upload-artifact releases. Every commit SHA was
-  checked against its official release tag before it was recorded as reviewed.
 
-
-<!-- truncated: 6286 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6295 more lines — read CHANGELOG.md directly -->
 
 ---
 
