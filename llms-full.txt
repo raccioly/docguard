@@ -2055,9 +2055,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
   Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
   for them.
-
-### Changed
-
 - **A validator that performed no check is `empty`, never `pass`.** The verdict
   now requires at least one performed check. Requirement-Anchors enabled with
   zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
@@ -2393,8 +2390,11 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   auth records nothing.
 - **The anchor-cache tests pass on CI** (#599). They asserted an enabled
   cache, but the cache turns itself off whenever `CI` is set.
+- **The unreadable-git test accepts the CI runners' newer git wording**
+  (`docguard.unreadable-git-metadata`). The runners' git now reports
+  `gitfile does not point to a valid repository` where it used to say `not a
 
-<!-- truncated: 6255 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6252 more lines — read CHANGELOG.md directly -->
 
 ---
 
