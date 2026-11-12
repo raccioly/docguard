@@ -239,11 +239,11 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
   });
 
   it('a validator that is empty but not yet migrated is listed as not-yet-classified and does NOT exit 4', () => {
-    // Doc-Dependency is not migrated in Stage A: it returns empty with no cause.
-    const dir = project(NO_API, cfg(only('docDependency'), { enforcement: 'strict' }));
+    // Schema-Sync is not migrated yet: it returns empty with no cause.
+    const dir = project(NO_API, cfg(only('schemaSync'), { enforcement: 'strict' }));
     const { status, json } = guardJson(dir);
-    assert.equal(verdictOf(json, 'docDependency').verdict, 'empty');
-    const u = json.strict.unexamined.find(x => x.validator === 'docDependency');
+    assert.equal(verdictOf(json, 'schemaSync').verdict, 'empty');
+    const u = json.strict.unexamined.find(x => x.validator === 'schemaSync');
     assert.equal(u.cause, 'not-yet-classified');
     assert.equal(u.blocking, false);
     assert.equal(status, 0);
@@ -469,14 +469,17 @@ const validateResultContract = (r) => coverage.validateResultContract(r);
  * "cause not yet classified" and never exits 4.
  */
 const NOT_YET_MIGRATED = [
-  'specRegistry', 'docDependency', 'requirementAnchors',
-  'pathScopedRules', 'docOwnership', 'evidence', 'crossReference', 'generatedStaleness', 'suppressions',
-  'diffSuspicion', 'referenceExistence', 'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
 ];
-const MIGRATED = ['apiSurface', 'docsSync', 'surfaceSync', 'security',
-  // group A: its fixtures are in tests/validator-applicability-a.test.mjs
+// Group A (tests/validator-applicability-a.test.mjs holds its fixtures) and group B
+// (tests/validator-applicability-b.test.mjs) are migrated: nothing is left on this list.
+const MIGRATED = [
+  'apiSurface', 'docsSync', 'surfaceSync', 'security',
   'structure', 'docSections', 'drift', 'changelog', 'testSpec', 'environment', 'architecture', 'freshness', 'traceability',
-  'docsDiff', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking', 'schemaSync', 'specKit', 'documentLifecycle'];
+  'docsDiff', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking', 'schemaSync', 'specKit', 'documentLifecycle',
+  'specRegistry', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'evidence',
+  'crossReference', 'generatedStaleness', 'suppressions', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
+  'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
+];
 
 /** Fixtures per migrated validator: where it applies and is empty, where it does not apply, and the fix applied. */
 const API_ROUTES = { ...ROUTES };

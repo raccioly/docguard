@@ -27,6 +27,7 @@ import { basename, relative, resolve } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { resolveDocDirs } from '../shared.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const VALIDATOR = 'decisionRecords';
 const STATUS = new Set(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded']);
@@ -188,7 +189,7 @@ function unansweredQuestions(projectDir) {
   return out;
 }
 
-export function validateDecisionRecords(projectDir, config = {}) {
+function gather(projectDir, config) {
   const records = [];
   const index = [];
   for (const full of adrFiles(projectDir, config)) {
@@ -198,9 +199,37 @@ export function validateDecisionRecords(projectDir, config = {}) {
     records.push(...parsed.records);
     index.push(...parsed.index);
   }
-  const questions = unansweredQuestions(projectDir);
+  return { records, index, questions: unansweredQuestions(projectDir) };
+}
+
+const describeSubject = ({ records, index, questions }) => `${records.length} decision record(s), ${index.length} index row(s) and ${questions.length} unanswered question(s)`;
+
+/**
+ * Does this kind of check belong to the project? It does when the project keeps
+ * decision records (an ADR file, an adr/ or decisions/ directory, an index of
+ * them) or asks questions that await an answer (a Spec Kit clarification).
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}, found = gather(projectDir, config)) {
+  if (found.records.length === 0 && found.index.length === 0 && found.questions.length === 0) {
+    return { applies: false, evidence: 'no ADR file, no adr/, adrs/ or decisions/ directory, no ADR index and no unanswered question in specs/*/spec.md or *questions.md' };
+  }
+  return { applies: true, evidence: describeSubject(found) };
+}
+
+export function validateDecisionRecords(projectDir, config = {}) {
+  const found = gather(projectDir, config);
+  const { records, index, questions } = found;
   if (records.length === 0 && index.length === 0 && questions.length === 0) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config, found),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Decision-Records found no decision to judge: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project records decisions: Decision-Records reads `## ADR-NNN` sections in one file, or one file per decision under adr/, adrs/ or decisions/ (`docguard init` writes templates/ADR.md).' }),
+      }),
+    };
   }
   const findings = [];
   const add = (code, message, location, suggestion, extra = {}) => findings.push(mkFinding({
@@ -237,5 +266,8 @@ export function validateDecisionRecords(projectDir, config = {}) {
   for (const q of questions) add('DEC006', `${q.file}:${q.line} — question has no answer: ${q.text.slice(0, 120)}`, `${q.file}:${q.line}`, 'Answer it (and update the artifacts written on a guess), or remove the question', { disposition: 'escalate' });
 
   const total = records.length + index.length + questions.length;
-  return resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true });
+  return {
+    ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true }),
+    ...contractFields({ performed: total, found: findings.length > 0, ran: `${describeSubject(found)} judged`, decide: () => applies(projectDir, config, found), empty: () => ({ note: '', howToConfigure: '' }) }),
+  };
 }

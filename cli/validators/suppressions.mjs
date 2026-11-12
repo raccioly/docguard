@@ -24,6 +24,7 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadDocguardIgnoreEntries, utcToday } from '../shared-ignore.mjs';
 import { collectSuppressions } from '../scanners/suppressions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
@@ -36,14 +37,9 @@ const VALIDATOR = 'suppressions';
 const show = entry => entry.pattern ? `"${entry.pattern}"` : 'the entry';
 const because = entry => entry.reason ? ` (reason: ${entry.reason})` : '';
 
-/**
- * @param {string} projectDir
- * @param {object} [config]
- * @param {{ today?: string }} [opts] - `YYYY-MM-DD` (UTC); defaults to now
- */
-export function validateSuppressions(projectDir, config = {}, { today = utcToday() } = {}) {
+/** The suppressions this validator judges: `.docguardignore` lines and every other kind that carries waiver metadata. */
+function subjects(projectDir, config, today) {
   const entries = loadDocguardIgnoreEntries(projectDir, { today });
-  const requireReason = config?.suppressions?.requireReason === true;
   const requireOwner = config?.suppressions?.requireOwner === true;
   const maxDays = Number.isInteger(config?.suppressions?.maxDays) && config.suppressions.maxDays > 0 ? config.suppressions.maxDays : null;
   // Every other kind, from the one suppression model (docguard.ignore-reasons#FR-006).
@@ -55,7 +51,46 @@ export function validateSuppressions(projectDir, config = {}, { today = utcToday
   const others = collectSuppressions(projectDir, config, { today, inline: policyOn }).entries
     .filter(e => e.kind !== 'fingerprint' && !(e.kind === 'path' && e.source.file === '.docguardignore'))
     .filter(e => policyOn || e.owner || e.expires || e.metadataProblem);
-  if (entries.length === 0 && others.length === 0) return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+  return { entries, others, policyOn };
+}
+
+/**
+ * Does this kind of check belong to the project? It does when the project
+ * suppresses anything this validator judges: a `.docguardignore` entry, or a
+ * waiver (pragma, N/A marker, configuration entry) that carries an owner, an
+ * expiry or metadata, or any suppression once a waiver policy is set. A project
+ * with none has nothing to judge, and never needs a declaration.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}, { today = utcToday() } = {}) {
+  const { entries, others, policyOn } = subjects(projectDir, config, today);
+  if (entries.length + others.length === 0) {
+    return { applies: false, evidence: `.docguardignore has no entry and no waiver carries an owner, expiry or metadata${policyOn ? '' : ' (plain inline pragmas are judged only under a suppressions policy: requireOwner or maxDays)'}` };
+  }
+  return { applies: true, evidence: `${entries.length} .docguardignore entr(ies) and ${others.length} other suppression(s) to judge` };
+}
+
+/**
+ * @param {string} projectDir
+ * @param {object} [config]
+ * @param {{ today?: string }} [opts] - `YYYY-MM-DD` (UTC); defaults to now
+ */
+export function validateSuppressions(projectDir, config = {}, { today = utcToday() } = {}) {
+  const { entries, others } = subjects(projectDir, config, today);
+  const requireReason = config?.suppressions?.requireReason === true;
+  const requireOwner = config?.suppressions?.requireOwner === true;
+  const maxDays = Number.isInteger(config?.suppressions?.maxDays) && config.suppressions.maxDays > 0 ? config.suppressions.maxDays : null;
+  if (entries.length === 0 && others.length === 0) {
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config, { today }),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Suppressions found nothing to judge: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project suppresses something: Suppressions judges .docguardignore entries and waivers that carry an owner or an expiry (`docguard:validator <key> n/a — reason owner:<@handle> expires:<YYYY-MM-DD>`).' }),
+      }),
+    };
+  }
   const findings = [];
   let passed = 0;
   const policy = (e, location) => {
@@ -157,5 +192,9 @@ export function validateSuppressions(projectDir, config = {}, { today = utcToday
     }
     if (findings.length === before) passed++;
   }
-  return resultFromFindings(findings, { passed, total: entries.length + others.length, applicable: true });
+  const judged = entries.length + others.length;
+  return {
+    ...resultFromFindings(findings, { passed, total: judged, applicable: true }),
+    ...contractFields({ performed: judged, found: findings.length > 0, ran: `${judged} suppression(s) judged against their expiry, reason and owner`, decide: () => applies(projectDir, config, { today }), empty: () => ({ note: '', howToConfigure: '' }) }),
+  };
 }

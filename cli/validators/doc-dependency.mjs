@@ -11,14 +11,48 @@
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { docLockStatus, DOC_LOCK_PATH, revisionResolves } from '../scanners/doc-deps.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { canonicalDocPaths, explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_FINDINGS = 25;
 const PARSER_TIER = { ast: 'js-ast', 'python-ast': 'py-ast' };
 
+/**
+ * Does this kind of check belong to the project? It does when the project has
+ * canonical documents and source code: the documents can then say which code
+ * they describe. Writing `covers=` is the declaration the validator asks for
+ * (specs/097-strict-by-default FR-006); no tool can infer what a section describes.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const docs = canonicalDocPaths(projectDir, config);
+  if (docs.length === 0) return { applies: false, evidence: 'the project has no canonical document (docs-canonical/ or a mapped document role) that could name the code it describes', docs };
+  const source = firstProductSource(projectDir, config);
+  if (!source) return { applies: false, evidence: `${docs.length} canonical document(s) (${sample(docs)}) but no source file for a section to cover`, docs };
+  return { applies: true, evidence: `${docs.length} canonical document(s) (${sample(docs)}) and source code (${source}) that a section can declare it covers`, docs, source };
+}
+
+function declareHow(d) {
+  const doc = d.docs?.[0] || 'docs-canonical/ARCHITECTURE.md';
+  const code = d.source || 'src/<file>';
+  return `Mark a section of a canonical document with the code it describes, for example in ${doc}: \`<!-- docguard:section id=<id> source=human covers="${code}[#symbol]" -->\` … \`<!-- /docguard:section -->\`, then record that you read it against the code with \`docguard review --accept ${doc}#<id> --reason "<what you checked>"\`. \`docguard review --suggest ${doc}\` proposes covers= at low confidence: check each one. A covers= you did not read is the pass that checks nothing.`;
+}
+const NO_DOC_OR_SOURCE = 'Nothing to configure unless the project has canonical documents (docs-canonical/) and source code: a `covers=` marker names the code a section describes.';
+
 export function validateDocDependency(projectDir, config = {}) {
   const status = docLockStatus(projectDir, config);
   if (!status.anyCovered && !status.lockExists) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config),
+        empty: d => (d.applies
+          ? { emptyCause: 'needs-declaration', note: `Doc-Dependency found no covers= declaration to compare: ${d.evidence}, but no section declares what it covers and there is no ${DOC_LOCK_PATH}.`, howToConfigure: declareHow(d) }
+          : { emptyCause: 'nothing-of-this-kind', note: `Doc-Dependency has no section to compare: ${d.evidence}.`, howToConfigure: NO_DOC_OR_SOURCE }),
+      }),
+    };
   }
   const findings = [];
   if (status.lockError) {
@@ -27,7 +61,7 @@ export function validateDocDependency(projectDir, config = {}) {
       message: status.lockError, location: DOC_LOCK_PATH,
       suggestion: { kind: 'review', text: 'Restore the lock from git, or delete it and accept each covered section again' },
     }));
-    return resultFromFindings(findings, { passed: 0, total: 1, applicable: true });
+    return { ...resultFromFindings(findings, { passed: 0, total: 1, applicable: true }), performed: 0, applies: { applies: true, evidence: `${DOC_LOCK_PATH} could not be read, so no section was compared` } };
   }
   const accept = key => `docguard review --accept ${key} --reason "<what you checked>"`;
   let unverifiable = 0;
@@ -80,7 +114,16 @@ export function validateDocDependency(projectDir, config = {}) {
   // that pad is not a check. `performed` is the sections and orphans compared, so a
   // lock that covers nothing is `empty`, not `pass` (specs/097-strict-by-default FR-004).
   const result = { ...resultFromFindings(shown, { passed: Math.max(0, total - findings.length - unverifiable), total, applicable: true }), performed: compared };
+  const contract = explainPaddedEmpty(contractFields({
+    performed: compared,
+    found: shown.length > 0,
+    ran: `${status.sections.length} covered section(s) and ${status.orphans.length} orphaned lock entr(ies) compared`,
+    decide: () => applies(projectDir, config),
+    empty: d => (d.applies
+      ? { emptyCause: 'needs-declaration', note: `Doc-Dependency has a ${DOC_LOCK_PATH} but it covers no section: ${d.evidence}, and no section declares covers=.`, howToConfigure: declareHow(d) }
+      : { emptyCause: 'nothing-of-this-kind', note: `Doc-Dependency has a ${DOC_LOCK_PATH} but nothing to compare: ${d.evidence}.`, howToConfigure: NO_DOC_OR_SOURCE }),
+  }));
   return unverifiable
-    ? { ...result, applicability: { status: 'partial', reason: `${unverifiable} covered section(s) could not be compared at their recorded fingerprint tier (a parser is unavailable here, or a different python3 serializes the code differently)` } }
-    : result;
+    ? { ...result, ...contract, applicability: { status: 'partial', reason: `${unverifiable} covered section(s) could not be compared at their recorded fingerprint tier (a parser is unavailable here, or a different python3 serializes the code differently)` } }
+    : { ...result, ...contract };
 }

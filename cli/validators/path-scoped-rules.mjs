@@ -31,10 +31,27 @@ import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
 import { agentInstructionDocs, fileSha256 } from '../shared-agent-instructions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 const MAX_POINTER_FINDINGS = 50;
 const SKILL_DIRS_RE = /^(\.\/)?(scripts|references|assets)\//;
+
+const NOTHING_HOW = 'Nothing to configure unless an agent-instruction file carries something to check: a path scope (a `globs:`, `paths:` or `applyTo:` field), a path pointer (`docs/ARCHITECTURE.md`, `@docs/guide.md`), or a vendored Spec Kit copy. Path-Scoped-Rules reads AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions and the other files of the agent-instruction role.';
+
+/**
+ * Does this kind of check belong to the project? It does when an agent
+ * instruction file carries something for it to examine: a path scope, a path
+ * pointer, an `@` import or a vendored copy. A project whose instruction files
+ * are prose only, or that has none, has nothing of this kind (the validator
+ * would examine nothing, and no declaration makes it examine something).
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const run = validatePathScopedRules(projectDir, config);
+  return { applies: run.applies.applies, evidence: run.applies.evidence };
+}
 
 export function validatePathScopedRules(projectDir, config = {}) {
   const tracked = listTrackedFiles(projectDir);
@@ -52,7 +69,14 @@ export function validatePathScopedRules(projectDir, config = {}) {
   const entries = all.filter(e => !isNonProductPath(e.file, config));
   const role = agentInstructionDocs(projectDir, config);
   if (entries.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
-    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files' };
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files',
+      ...contractFields({
+        performed: 0,
+        decide: () => ({ applies: false, evidence: 'the project has no agent-instruction file (AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions) outside test, fixture and example paths' }),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules found no agent instruction file to read: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
+      }),
+    };
   }
 
   const findings = [];
@@ -203,7 +227,16 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
 
   const passed = Math.max(0, total - findings.length);
-  const result = resultFromFindings(findings, { passed, total });
+  const result = {
+    ...resultFromFindings(findings, { passed, total }),
+    ...contractFields({
+      performed: total,
+      found: findings.length > 0,
+      ran: `${total} scope, pointer, import and vendored-copy check(s) over ${instructionFiles.length} instruction file(s)`,
+      decide: () => ({ applies: false, evidence: `${entries.length} agent-instruction file(s) but none carries a path scope, a path pointer, an @import or a vendored copy` }),
+      empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules read ${entries.length} instruction file(s) and found nothing to check: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
+    }),
+  };
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   result.instructionFiles = instructionFiles.length;
   return result;
