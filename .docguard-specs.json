@@ -776,6 +776,7 @@
           "docguard.agent-instruction-role#FR-008",
           "docguard.agent-instruction-role#FR-009",
           "docguard.agent-instruction-role#FR-010",
+          "docguard.agent-instruction-role#FR-011",
           "docguard.agent-instruction-role#SC-001",
           "docguard.agent-instruction-role#SC-002",
           "docguard.agent-instruction-role#SC-003"
@@ -785,7 +786,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:54c6338a18fbf419644f3482de00d1dfea35fd4a7fbb929a974027f2ce73fa59"
+            "digest": "sha256:17873cacee9e96b9bcad86f62433ed8c849eb582ee6f78797a3c4cba60eb800a"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -889,9 +890,14 @@
             "line": 13
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-011",
             "file": "tests/agent-instruction-role.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 15
           }
         ]
       }
@@ -2132,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 715
+            "line": 723
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 742
+            "line": 750
           },
           {
             "requirementId": "FR-021",
@@ -6327,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 7
+            "line": 8
           },
           {
             "requirementId": "FR-010",
@@ -11190,7 +11196,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-002",
@@ -11235,7 +11241,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 9
+            "line": 10
           },
           {
             "requirementId": "FR-009",
