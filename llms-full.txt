@@ -2135,6 +2135,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
+
 ### Changed
 
 - **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
@@ -2385,16 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
 The `docguard_docs_for_path` MCP response is 612 bytes larger than in 0.45.2,
 over its 489-byte allowance. 36 bytes are the new `docs` map (spec 092); the
 rest is reference text the tool returns, because TEST-SPEC names
-`cli/findings.mjs` in one more row.
 
-Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs map; the rest is one more TEST-SPEC row naming cli/findings.mjs, returned as reference text
-
-### Commits
-
-- spec: re-anchor 083 onto main after the #610 squash; refresh registry (#611)
-- Pre-0.46.0: re-anchor 081–092, bring in #609, CI keeps its history, 083 verified, FRS005 precision (#610)
-
-<!-- truncated: 6306 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6314 more lines — read CHANGELOG.md directly -->
 
 ---
 

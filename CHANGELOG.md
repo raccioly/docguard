@@ -140,6 +140,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
+
 ### Changed
 
 - **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
