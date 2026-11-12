@@ -148,7 +148,7 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 
 #### Truthful verdicts (both modes)
 
-- **FR-004**: A validator result MUST report how many checks it performed. `deriveVerdict` MUST return `pass` only when that count is at least one. A result with no findings and zero checks is `empty`. This applies in both modes, because it corrects the verdict and does not change an exit code under `standard`.
+- **FR-004**: A validator result MUST report how many checks it performed. `deriveVerdict` MUST return `pass` only when that count is at least one. A result with no findings and zero checks is `empty`. This applies in both modes, because it corrects the verdict. Under `standard` it changes an exit code in one case only, which is intended: a validator named in `requiredChecks` that performed nothing was a padded `pass` and is now `empty`, so it holds the gate as spec 083 says it should.
   - Requirement-Anchors enabled with zero anchors is `empty`.
   - A Doc-Ownership entry whose purpose is a placeholder (`<purpose>` or empty) MUST be a finding, so a drafted block applied unedited does not pass.
 - **FR-005**: Every `empty` result MUST carry a cause from this closed set and a `howToConfigure` text, both owned by the validator beside its applicability logic, not by a central table:
@@ -161,7 +161,7 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 
 #### Applicability
 
-- **FR-006**: Every validator MUST decide whether it applies to the project from the project's files, and return `applies: true | false` with the evidence it used. `nothing-of-this-kind` means it does not apply, and the verdict is `skipped` with that evidence as the reason. The other three causes mean it applies. A validator MUST NOT answer `false` because its own configuration is missing.
+- **FR-006**: Every validator MUST decide whether it applies to the project from the project's files, and return `applies: true | false` with the evidence it used. `nothing-of-this-kind` means it does not apply, and the verdict is `skipped` with that evidence as the reason. The other three causes mean it applies. A validator MUST NOT answer `false` because its own configuration is missing. `applies`, the cause and the fix are reported in both modes. The verdict becomes `skipped` on `applies: false` under `strict` only, where the result's applicability is set to `not-applicable` (spec 081 FR-003) and keeps what it was in `applicability.before`; under `standard` the verdict stays what it was, so no `--fail-on-inconclusive` or `requiredChecks` exit moves.
 - **FR-007**: Under `strict`, guard MUST exit 4 when no error is present and a validator that applies has verdict `empty`, `inconclusive` or `blocked`, unless a waiver covers it. This is the `requiredChecks` rule of spec 083 applied to every applicable validator. `requiredChecks` keeps working under `standard`; under `strict` it adds nothing.
 
 #### Which findings fail a build
@@ -197,7 +197,7 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 
 #### Compatibility and proof
 
-- **FR-019**: Under `"enforcement": "standard"`, on the audit corpus and on DocGuard itself, findings and exit codes MUST equal v0.47.0, except verdicts corrected by FR-004, findings removed by the placeholder vocabulary of FR-010, and the mode line.
+- **FR-019**: Under `"enforcement": "standard"`, on the audit corpus and on DocGuard itself, findings and exit codes MUST equal v0.47.0, except verdicts corrected by FR-004 (and the `requiredChecks` exit that follows from one), the new placeholder-purpose finding, findings removed by the placeholder vocabulary of FR-010, and the mode line.
 - **FR-020**: The DocGuard repository MUST run on the strict default and pass without `"enforcement": "standard"`. Each validator it does not examine MUST be fixed or waived with a reason, an owner and an expiry.
 - **FR-021**: Spec 095's codes MUST follow FR-008 and FR-009. Its role-scoped `findingSeverity` form stays as an override. Spec 096's requirements are FR-005, FR-014 and FR-015 here.
 - **FR-022**: `README.md` (quick start), `docs/configuration.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md` (exit codes and the mode), `docs-canonical/DATA-MODEL.md` (`enforcement`, the `strict` JSON block, the release table), `docs-canonical/CI-RECIPES.md`, `action.yml`, the Spec Kit extension's guard command, `schemas/docguard-config.schema.json`, a migration page "Upgrading to the strict default", and `CHANGELOG.md` with a breaking-change entry MUST describe the change.

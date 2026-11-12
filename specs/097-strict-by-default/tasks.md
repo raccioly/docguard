@@ -8,23 +8,23 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 
 ### A0 — Compatibility gate (before anything else)
 
-- [ ] T001 `tests/strict-by-default.test.mjs`: load a configuration that carries `enforcement` (string and object forms) with the v0.47.0 CLI from a `git archive` copy; it must run guard without a configuration error (FR-002). If it fails, stop and report: the key must ship first in a release that only accepts it.
+- [x] T001 `tests/strict-by-default.test.mjs`: load a configuration that carries `enforcement` (string and object forms) with the v0.47.0 CLI from a `git archive` copy; it must run guard without a configuration error (FR-002). If it fails, stop and report: the key must ship first in a release that only accepts it.
 
 ### A1 — Mode, exit code, output
 
-- [ ] T002 [US1] Failing tests: `"enforcement": "strict"` with an applicable validator that is `empty` exits 4 and lists it; a validator that does not apply is `skipped` with its evidence; a waiver removes it from the list (FR-006, FR-007).
-- [ ] T003 [US4] Failing tests: `"enforcement": "standard"` reproduces the v0.47.0 exit code on the same fixtures; no key resolves to `standard` in Stage A and the mode line says so (FR-001, FR-016, FR-019).
-- [ ] T004 [US3] Failing test: the closed list of codes that can exit 1 under the 0.47.0 defaults, derived by running the v0.47.0 registry, equals the list in the plan (FR-008).
-- [ ] T005 `cli/config.mjs` `resolveEnforcement`; `cli/enforcement.mjs`; `schemas/docguard-config.schema.json`.
-- [ ] T006 `cli/commands/guard.mjs`: `exitFor` under strict, the Adopt block, the mode line, JSON `enforcement` and `strict`; SARIF and JUnit rendering of an unexamined validator (FR-014 to FR-016).
-- [ ] T007 [US4] `cli/commands/upgrade.mjs`: the read-only strict report (FR-018), with a test that it writes nothing.
+- [x] T002 [US1] Failing tests: `"enforcement": "strict"` with an applicable validator that is `empty` exits 4 and lists it; a validator that does not apply is `skipped` with its evidence; a waiver removes it from the list (FR-006, FR-007).
+- [x] T003 [US4] Failing tests: `"enforcement": "standard"` reproduces the v0.47.0 exit code on the same fixtures; no key resolves to `standard` in Stage A and the mode line says so (FR-001, FR-016, FR-019).
+- [x] T004 [US3] Failing test: the closed list of codes that can exit 1 under the 0.47.0 defaults, derived by running the v0.47.0 registry, equals the list in the plan (FR-008).
+- [x] T005 `cli/config.mjs` `resolveEnforcement`; `cli/enforcement.mjs`; `schemas/docguard-config.schema.json`.
+- [x] T006 `cli/commands/guard.mjs`: `exitFor` under strict, the Adopt block, the mode line, JSON `enforcement` and `strict`; SARIF and JUnit rendering of an unexamined validator (FR-014 to FR-016).
+- [x] T007 [US4] `cli/commands/upgrade.mjs`: the read-only strict report (FR-018), with a test that it writes nothing.
 
 ### A2 — Performed checks, causes, applicability
 
-- [ ] T008 [US1] Failing tests: `deriveVerdict` returns `empty` for a result with zero performed checks and no findings; Requirement-Anchors enabled with zero anchors is `empty`; a Doc-Ownership entry with a placeholder purpose is a finding (FR-004).
+- [x] T008 [US1] Failing tests: `deriveVerdict` returns `empty` for a result with zero performed checks and no findings; Requirement-Anchors enabled with zero anchors is `empty`; a Doc-Ownership entry with a placeholder purpose is a finding (FR-004).
 - [ ] T009 [US2] `tests/validator-applicability.test.mjs`: for every registered validator, one fixture where it applies and is empty and one where it does not apply. Assert the cause, a non-empty `howToConfigure`, `applies`, and that applying the fix to the fixture makes the validator perform at least one check. The test enumerates the registry, so a new validator without fixtures fails it (FR-005, FR-006, SC-006).
-- [ ] T010 [US2] Failing tests: no two validators share an empty reason sentence; no validator returns `empty` without a cause (FR-005).
-- [ ] T011 `cli/validator-coverage.mjs`: the performed-check count in the result contract, the cause set, `applies`.
+- [x] T010 [US2] Failing tests: no two validators share an empty reason sentence; no validator returns `empty` without a cause (FR-005).
+- [x] T011 `cli/validator-coverage.mjs`: the performed-check count in the result contract, the cause set, `applies`.
 - [ ] T012 Each validator in `cli/validators/`: report performed checks, implement `applies(project)` from the project's files, and own its causes and `howToConfigure`. Verify each against the code, using the audit inventories only as a starting map. Split by family if one session cannot hold all 37.
 
 ### A3 — Security classification
