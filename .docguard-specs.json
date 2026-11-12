@@ -16319,7 +16319,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metadata-sync.mjs",
-            "line": 62
+            "line": 118
           },
           {
             "requirementId": "FR-006",

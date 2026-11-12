@@ -65,6 +65,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   project's declaration) rather than `layout-not-recognized`. Findings, levels
   and exit codes under `standard` do not change; reasons and fix texts do
   (`docguard.strict-by-default` FR-007, T018b to T018d).
+- **Metadata-Sync asks for nothing to compare.** It applies only when the
+  manifest has a version and a document it reads states one (a URL with a
+  version, a `version:` line, `<package>@x.y.z`); where no document states a
+  version nothing can drift, so it is not applicable instead of asking the
+  project to write the version down. Docs-Diff offers the `docs.roles` mapping
+  for an architecture document kept elsewhere even when the test spec exists,
+  and Test-Spec names both accepted map headings in every fix text
+  (`docguard.strict-by-default` FR-006, T018f).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).

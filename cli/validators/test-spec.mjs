@@ -79,7 +79,7 @@ function testSpecContract(projectDir, config, { performed, found, mapped }) {
         return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).` };
       }
       return mapped
-        ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
+        ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map (or the older Service-to-Test Map) in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
         : { emptyCause: 'needs-declaration', note: `${specDoc} declares no service-to-test mappings, so Test-Spec checked no source or test file.`, howToConfigure: `Add a "## Source-to-Test Map" table (or the older "## Service-to-Test Map") to ${specDoc}: column 1 the source, column 2 the test file, the last column the status (\`| Source File | Unit Test | Status |\`); \`docguard explain testSpec\` describes the shapes it reads.` };
     },
   });

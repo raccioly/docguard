@@ -95,9 +95,9 @@ function docsDiffContract(projectDir, config, performed, found) {
     empty: (decision) => {
       if (!decision.applies) return { note: `Docs-Diff found no package manifest and no test file, so it compared no technology with ${arch} and no test with ${testSpec}.`, howToConfigure: `Nothing to configure unless the project has a package manifest or tests: then Docs-Diff compares them with ${arch} and ${testSpec}.` };
       const noDocs = !existsSync(resolveDocRole(projectDir, config, 'architecture')) && !existsSync(resolveDocRole(projectDir, config, 'testSpec'));
-      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.` };
       const a = roleDocument(projectDir, config, 'architecture');
       const t = roleDocument(projectDir, config, 'testSpec');
+      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `${a.lead}${t.lead}Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.` };
       const archNeeds = 'the technologies the project uses (for example "Express" for an express dependency)';
       const testNeeds = 'the test files listed in backticks (`tests/a.test.js`)';
       const howToConfigure = [
