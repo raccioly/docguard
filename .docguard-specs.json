@@ -786,7 +786,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:17873cacee9e96b9bcad86f62433ed8c849eb582ee6f78797a3c4cba60eb800a"
+            "digest": "sha256:5b0476bea0477ccd32c48c0e740f182f818569953b2c546392cdd3ae1823e184"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -13281,7 +13281,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:348a19f27fb698cbef3c18a07fde9be9c1586b1e500bd07cc294e315779daf1a"
+            "digest": "sha256:1d50270fa59a7e63e909afa9b7a3547ffa337495a67e59cd0492049f744af0ad"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",

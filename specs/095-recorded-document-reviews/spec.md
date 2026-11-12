@@ -201,3 +201,16 @@ Verified 2026-11-12 on the branch head. Private projects are not named.
 - **Follow-up from the A/B and self-guard:** DocGuard's own CLAUDE.md said "Follow `AGENTS.md`" but drew its own FRS007. A file that names another instruction file now inherits that file's mentions (FR-008). DocGuard's AGENTS.md now mentions `npm run fuzz`.
 - **Budget:** `npm run budget` passed guard time (66,455 → 65,395 ms on DocGuard, machine under load), self errors (0) and package size. It failed `bytes:mcp:docguard_read_section` (+391 bytes, the DATA-MODEL `finding-channels` section). The section was shortened: +129 bytes, measured directly through MCP.
 - **Suite:** 4,398 tests, 4,396 pass, 1 skipped. The one failure was the fuzz test's 5-second wall-clock limit at load average about 100. Run alone, it took 1.3 s and 1.4 s on this branch against 1.5 s and 1.9 s on main.
+
+### Update 2026-11-12, after spec 094 merged and spec 097 took over defaults
+
+- **FRS008 removed.** "No review record" is reported by spec 097 as Freshness `empty` with cause `needs-declaration`, through `agentInstructionDocsWithoutReviewPoint()`. The 60 FRS008 warnings in 22 projects measured above no longer ship as findings.
+- **PSR005** names line endings when CRLF is the only difference: a Windows checkout with `core.autocrlf` (coordinator review of #633).
+- **Replay labels.** `labels-public.json` adds reviewed labels for the public hits. These are overrides set by the implementing session; a maintainer should confirm them.
+  - Agent-instruction role at 0.5: FRS006 n = 1 (1 true).
+  - FRS007 at +56 days: n = 5 (3 true).
+- **Path to 30.** Spec 097 gates a code with at least 30 labeled findings and a Wilson lower bound of 0.85.
+  - The 16 repositories hold about 47 marker review points on agent-instruction files, and they produced 1 FRS006 hit at ≥0.5. That is a hit rate near 2%.
+  - At that rate, 30 labeled FRS006 hits need about 1,400 agent-instruction review points with an observed 8-week window.
+  - This history does not exist yet. It needs either recorded reviews accumulating in adopters, or a wider replay source (for example, public repositories with long `AGENTS.md` histories, taking each content edit as a review point). The second is a change of method that needs the coordinating session's decision.
+- **Gates on the merged branch:** `npm test` exit 0 (4,401 tests, 4,400 pass, 1 skipped). `npm run budget -- --base <origin/main worktree>` exit 0 (guard on DocGuard 30,909 → 27,066 ms, no new errors). The fuzz test alone took 538 ms.
