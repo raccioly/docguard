@@ -89,19 +89,18 @@ function unreadSchemaEvidence(projectDir, config) {
  * missing DATA-MODEL.md is not the reason.
  * @implements docguard.strict-by-default#FR-006
  */
-export function applies(projectDir, config = {}) {
-  const models = detectAllModels(projectDir, config);
+export function applies(projectDir, config = {}, models = detectAllModels(projectDir, config)) {
   if (models.length > 0) return { applies: true, evidence: `${models.length} database model(s) detected (${[...new Set(models.map(m => m.framework))].join(', ')})` };
   const unread = unreadSchemaEvidence(projectDir, config);
   if (unread) return { applies: true, evidence: unread, unread: true };
   return { applies: false, evidence: 'no model of Prisma, Drizzle, Mongoose, TypeORM, Sequelize, Knex, Rails or Python ORMs, no SQL file that creates tables and no database library dependency' };
 }
 
-function schemaContract(projectDir, config, performed, found) {
+function schemaContract(projectDir, config, performed, found, models) {
   const doc = docRolePath(config, 'dataModel');
   return contractFields({
     performed, found, ran: `compared ${performed} database model(s) with ${doc}`,
-    decide: () => applies(projectDir, config),
+    decide: () => applies(projectDir, config, models),
     empty: (decision) => decision.applies
       ? { emptyCause: 'layout-not-recognized', note: `Schema-Sync found ${decision.evidence}, but no model in a form it reads, so it compared no table with ${doc}.`, howToConfigure: `Schema-Sync reads Prisma, Drizzle, Mongoose, TypeORM and Sequelize models, Python (Django, SQLAlchemy, SQLModel) models, Knex migrations under migrations/ or db/migrations/ and Rails migrations under db/migrate/. It has no setting for another location or format: keep the schema in one of those forms (for example a Knex migration with createTable) and list each table in ${doc}.` }
       : { note: 'Schema-Sync found no database model, no SQL file that creates tables and no database library dependency, so there is no data model to document.', howToConfigure: `Nothing to configure unless the project stores data: then define the models in a form Schema-Sync reads and describe them in ${doc}.` },
@@ -139,7 +138,7 @@ export function validateSchemaSync(projectDir, config) {
         suggestion: { kind: 'fix', text: 'Create DATA-MODEL.md, then document the detected models in it', command: 'docguard init' },
       }));
     }
-    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0) };
+    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0, detectedModels) };
   }
 
   const dataModelContent = readFileSync(dataModelPath, 'utf-8').toLowerCase();
@@ -149,7 +148,7 @@ export function validateSchemaSync(projectDir, config) {
 
   if (detectedModels.length === 0) {
     // No schema files found: nothing was compared, which the contract reports as empty, not as a pass.
-    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, false) };
+    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, false, detectedModels) };
   }
 
   // Check each model appears in DATA-MODEL.md
@@ -181,7 +180,7 @@ export function validateSchemaSync(projectDir, config) {
     }
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0) };
+  return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0, detectedModels) };
 }
 
 // ──── Model Detection ──────────────────────────────────────────────────────
