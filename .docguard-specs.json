@@ -16140,7 +16140,7 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:18b8adbdb2a9c8241e4f4cb27bff547170be92c32935316cd0e3ed3ed8fb2fec"
+            "digest": "sha256:ca90608430cd5073a5e42b3bbd78ef97d47d4542e7e06fb23b020bf14f3fe0cf"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
@@ -16148,12 +16148,12 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:d6d01de6cd1a0121b0660e9af8be65bd28488afc1dc22e72a1e81487f979c8a7"
+            "digest": "sha256:ebac775fc48ee107066714c6b7bab79c74e700e905726ff6e91fe50ee1c18597"
           }
         ],
         "taskCompletion": {
           "checked": 14,
-          "total": 31
+          "total": 32
         },
         "implementationEvidence": [
           {
