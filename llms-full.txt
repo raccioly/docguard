@@ -3016,6 +3016,8 @@ npx testguard-cli@0.24.0 probe --confirm 3 \
 
 An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
 
+On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.24.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.24.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
+
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
