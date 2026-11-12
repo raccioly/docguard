@@ -3,6 +3,8 @@
  * @implements docguard.evidence-scoped-verification#FR-010
  */
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { evaluateEvidence } from '../evidence/evaluate.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
@@ -28,22 +30,27 @@ const stateFinding = {
 };
 
 /**
- * Does this kind of check belong to the project? It does when the project's
- * documents make a claim that evidence could back: a number with a unit, or an
- * enumerated list of values, which is what `docguard verify --semantic` extracts.
- * The manifest that ties a claim to its source is the declaration the validator
- * asks for (specs/097-strict-by-default FR-006); no tool can infer which source backs it.
+ * Does this kind of check belong to the project? Only a project that declared a
+ * manifest (`.docguard-evidence.json`).
+ *
+ * This is one of two declared-only validators (the other is Doc-Ownership), by
+ * the coordinator's decision on spec 097 FR-006. The manifest supports four
+ * source adapters, so a claim such as "30 days" with no file behind it cannot be
+ * declared; a red that cannot always be resolved is what the strict default must
+ * not produce. Guard's semantic-claims line keeps reporting how many documented
+ * claims are unverified.
  *
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
   const claims = extractSemanticClaims(projectDir, config);
-  if (claims.length === 0) return { applies: false, evidence: 'no document states a number with a unit or an enumerated list of values, so there is no claim for evidence to back' };
-  const first = claims[0];
-  return { applies: true, evidence: `${claims.length} verifiable claim(s) in the documents, for example ${first.doc}:${first.line} (${first.text.slice(0, 80)})`, first };
+  if (!existsSync(resolve(projectDir, '.docguard-evidence.json'))) {
+    return { applies: false, evidence: `no .docguard-evidence.json manifest is declared${claims.length ? `; the ${claims.length} documented claim(s) with a unit or an enumerated list remain reported by guard's semantic-claims line` : ''}`, first: claims[0] };
+  }
+  return { applies: true, evidence: '.docguard-evidence.json is declared', first: claims[0] };
 }
 
-const MANIFEST_HOW = (d) => `Write ${'.docguard-evidence.json'} with one declaration per claim you want backed. Each ties a sentence in a document (target.document, target.heading, target.statement with one {{value}} slot) to the file that proves it (source: a json-pointer into a JSON file, a collection-count over a glob, a python-literal-count, or a saved oasdiff or buf report) and a predicate (equals, set-equals, count-equals or no-findings). Start from the claim at ${d.first.doc}:${d.first.line}; the schema is schemas/docguard-evidence.schema.json, and \`docguard verify --evidence\` runs the declarations. A claim with no file behind it cannot be declared: leave it out.`;
+const MANIFEST_HOW = (d) => `Write ${'.docguard-evidence.json'} with one declaration per claim you want backed. Each ties a sentence in a document (target.document, target.heading, target.statement with one {{value}} slot) to the file that proves it (source: a json-pointer into a JSON file, a collection-count over a glob, a python-literal-count, or a saved oasdiff or buf report) and a predicate (equals, set-equals, count-equals or no-findings). ${d.first ? `Start from the claim at ${d.first.doc}:${d.first.line}; ` : ''}The schema is schemas/docguard-evidence.schema.json, and \`docguard verify --evidence\` runs the declarations. A claim with no file behind it cannot be declared: leave it out.`;
 
 export function validateEvidence(projectDir, config = {}) {
   const evaluation = evaluateEvidence(projectDir, config);
@@ -53,9 +60,7 @@ export function validateEvidence(projectDir, config = {}) {
       ...contractFields({
         performed: 0,
         decide: () => applies(projectDir, config),
-        empty: d => (d.applies
-          ? { emptyCause: 'needs-declaration', note: `Evidence has no manifest to verify: ${d.evidence}, and the project has no .docguard-evidence.json.`, howToConfigure: MANIFEST_HOW(d) }
-          : { emptyCause: 'nothing-of-this-kind', note: `Evidence has no claim to back: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the documents state a number with a unit or a list of values that a file can prove: .docguard-evidence.json ties one such statement to its source.' }),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Evidence has no manifest to verify: ${d.evidence}.`, howToConfigure: `Nothing to configure until you declare a manifest: .docguard-evidence.json ties a statement in a document to the file that proves it (json-pointer, collection-count, python-literal-count, or a saved oasdiff or buf report). ${MANIFEST_HOW(d)}` }),
       }),
     };
   }
@@ -88,7 +93,7 @@ export function validateEvidence(projectDir, config = {}) {
       ran: `${performed} evidence declaration(s) evaluated against their sources`,
       decide: () => applies(projectDir, config),
       // A valid manifest declares at least one declaration, so this is a manifest the strict loader refused.
-      empty: d => ({ emptyCause: 'needs-content', note: 'Evidence read .docguard-evidence.json and evaluated no declaration.', howToConfigure: `Add at least one declaration to .docguard-evidence.json (${d.applies ? MANIFEST_HOW(d) : 'see schemas/docguard-evidence.schema.json'}).` }),
+      empty: d => ({ emptyCause: 'needs-content', note: 'Evidence read .docguard-evidence.json and evaluated no declaration.', howToConfigure: `Add at least one declaration to .docguard-evidence.json. ${MANIFEST_HOW(d)}` }),
     }),
   };
 }

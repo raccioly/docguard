@@ -45,7 +45,7 @@ function put(dir, files) {
  * list of file maps, each committed on top of the first (so a diff exists).
  * `aged` is { path: days }: the file's mtime is moved back by that many days.
  */
-function project(files, config, { git = true, history = [], aged = {} } = {}) {
+function project(files, config, { git = true, history = [], aged = {}, brokenGit = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-applies-b-'));
   temporary.push(dir);
   put(dir, files);
@@ -54,6 +54,8 @@ function project(files, config, { git = true, history = [], aged = {} } = {}) {
     const then = new Date(Date.now() - days * 86_400_000);
     utimesSync(join(dir, path), then, then);
   }
+  // A `.git` that names a repository which is not there: present, and unreadable.
+  if (brokenGit) { writeFileSync(join(dir, '.git'), 'gitdir: /nonexistent/docguard-test.git\n'); return dir; }
   if (!git) return dir;
   const run = (...args) => execFileSync('git', [...FIXTURE_GIT, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: dir });
   run('init', '-q', '-b', 'main');
@@ -129,18 +131,19 @@ const FIXTURES = {
     fix: { files: { ...BASE, 'AGENTS.md': '# Agents\n\nThe entry point is `src/index.js`.\n' } },
   },
   docOwnership: {
+    // Declared-only (coordinator's decision on FR-006): no map, no subject; a declared empty block is needs-content.
     empties: {
-      'needs-declaration': { files: { ...BASE, ...DOCS }, cause: 'needs-declaration' },
+      'nothing-of-this-kind (not declared)': { files: { ...BASE, ...DOCS }, cause: 'nothing-of-this-kind' },
       'needs-content': { files: { ...BASE, ...DOCS }, extra: { ownership: { entries: [] } }, cause: 'needs-content' },
-      'nothing-of-this-kind (no documents)': { files: BASE, cause: 'nothing-of-this-kind' },
-      'nothing-of-this-kind (no source)': { files: { 'package.json': PKG, ...DOCS }, cause: 'nothing-of-this-kind' },
     },
     fix: { files: { ...BASE, ...DOCS }, extra: { ownership: { roots: ['src'], entries: [{ doc: 'docs-canonical/ARCHITECTURE.md', purpose: 'Explains the entry point', paths: ['src/**'] }] } } },
   },
+  // Declared-only (coordinator's decision on FR-006). A manifest always declares something (the strict loader
+  // refuses an empty one with EVD001), so there is no declared-and-empty fixture.
   evidence: {
     empties: {
-      'needs-declaration': { files: { ...BASE, 'docs-canonical/LIMITS.md': '# Limits\n\n## Retention\n\nSessions expire after 30 days.\n' }, cause: 'needs-declaration' },
-      'nothing-of-this-kind': { files: { ...BASE, ...DOCS }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (not declared, a claim exists)': { files: { ...BASE, 'docs-canonical/LIMITS.md': '# Limits\n\n## Retention\n\nSessions expire after 30 days.\n' }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (not declared)': { files: { ...BASE, ...DOCS }, cause: 'nothing-of-this-kind' },
     },
     fix: {
       files: {
@@ -342,7 +345,7 @@ describe('group B: the result contract, per validator', () => {
 
   it('no fix text leads to a pass that checks nothing', () => {
     // A drafted ownership block is the known trap: its purpose is a placeholder (OWN008).
-    const { result } = run('docOwnership', FIXTURES.docOwnership.empties['needs-declaration']);
+    const { result } = run('docOwnership', FIXTURES.docOwnership.empties['needs-content']);
     assert.match(result.howToConfigure, /edit|write/i);
     assert.doesNotMatch(result.howToConfigure, /--suggest(?![^.]*(edit|before))/i);
   });
@@ -374,4 +377,32 @@ describe('group B: standard mode keeps its verdicts', () => {
     assert.equal(result.performed, 0);
     assert.equal(result.verdict, 'empty');
   });
+});
+
+describe('group B: an observation gap is not an empty result', () => {
+  const gapped = { key: 'k', performed: 0, applies: { applies: true, evidence: 'x' }, findings: [], errors: [], warnings: [] };
+  it('validateResultContract does not ask a gap for a cause or a fix', () => {
+    assert.deepEqual(validateResultContract({ ...gapped, applicability: { status: 'missing-prerequisite', reason: 'git unreadable' } }), []);
+    assert.deepEqual(validateResultContract({ ...gapped, applicability: { status: 'partial', reason: 'a part was not read' } }), []);
+    assert.deepEqual(validateResultContract({ ...gapped, observations: [{ operation: 'git', cause: 'unreadable', scope: { count: 1 } }] }), []);
+  });
+  it('an empty result with no gap still needs both', () => {
+    assert.match(validateResultContract({ ...gapped, applicability: { status: 'no-matches', reason: 'x' } }).join(), /emptyCause/);
+    assert.match(validateResultContract(gapped).join(), /howToConfigure/);
+  });
+  it('a gap that carries a cause is still held to the cause rules', () => {
+    assert.match(validateResultContract({ ...gapped, applicability: { status: 'partial', reason: 'x' }, emptyCause: 'nothing-of-this-kind' }).join(), /nothing-of-this-kind/);
+  });
+  for (const key of ['diffSuspicion', 'referenceExistence']) {
+    it(`${key} with unreadable git is inconclusive, carries no cause, and passes the contract`, () => {
+      const { result, data } = run(key, { files: { ...BASE, 'docs-canonical/ARCHITECTURE.md': '# A\n\nThe `computeTotal` helper.\n' }, opts: { brokenGit: true } });
+      assert.equal(result.verdict, 'inconclusive');
+      assert.equal(result.emptyCause, undefined);
+      assert.equal(result.howToConfigure, undefined);
+      assert.equal(result.applies.applies, true);
+      assert.equal(result.performed, 0);
+      assert.deepEqual(validateResultContract(result), []);
+      assert.ok(data.strict.blocking.includes(key), 'an inconclusive validator that applies still blocks under strict');
+    });
+  }
 });

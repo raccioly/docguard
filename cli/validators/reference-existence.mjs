@@ -49,7 +49,6 @@ import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
-const GIT_UNREADABLE_HOW = "Git reports the metadata is unreadable: in an agent sandbox, expose the repository's git directory (ai-jail: --worktree; other sandboxes: mount the gitdir named in .git); otherwise repair the repository.";
 const NOTHING_HOW = 'Nothing to configure unless a document backticks a code identifier (camelCase, snake_case or PascalCase) or source code cites an ADR in a comment (`ADR-012`): Reference-Existence compares what a document names with the code at the commit where the document was last updated and at HEAD, and checks that a cited ADR is defined.';
 
 /**
@@ -217,11 +216,9 @@ export function validateReferenceExistence(projectDir, config = {}) {
   if (git.status === 'unreadable') {
     return {
       ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git),
-      ...contractFields({
-        performed: 0,
-        decide: () => ({ applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so the documents' references could not be compared across revisions` }),
-        empty: d => ({ emptyCause: 'layout-not-recognized', note: `Reference-Existence could not read git: ${d.evidence}.`, howToConfigure: GIT_UNREADABLE_HOW }),
-      }),
+      // An observation gap, not an empty result: inconclusive, and its reason is the gap (no emptyCause).
+      performed: 0,
+      applies: { applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so the documents' references could not be compared across revisions` },
     };
   }
   if (git.status !== 'ok') return notApplicable('the project is not a git repository, so there is no history to compare a reference across');

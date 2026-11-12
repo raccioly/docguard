@@ -3266,7 +3266,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 142
+            "line": 141
           }
         ],
         "testEvidence": [
@@ -11306,7 +11306,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/validators/reference-existence.mjs",
-            "line": 206
+            "line": 205
           }
         ],
         "testEvidence": [
@@ -16174,7 +16174,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validator-coverage.mjs",
-            "line": 155
+            "line": 162
           },
           {
             "requirementId": "FR-005",
@@ -16204,7 +16204,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validator-coverage.mjs",
-            "line": 156
+            "line": 163
           },
           {
             "requirementId": "FR-006",
@@ -16239,7 +16239,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 206
+            "line": 205
           },
           {
             "requirementId": "FR-006",
@@ -16249,7 +16249,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/doc-ownership.mjs",
-            "line": 37
+            "line": 42
           },
           {
             "requirementId": "FR-006",
@@ -16259,7 +16259,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/evidence.mjs",
-            "line": 37
+            "line": 43
           },
           {
             "requirementId": "FR-006",
@@ -16279,7 +16279,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/reference-existence.mjs",
-            "line": 62
+            "line": 61
           },
           {
             "requirementId": "FR-006",
@@ -18683,7 +18683,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validator-coverage.mjs",
-            "line": 152
+            "line": 159
           },
           {
             "requirementId": "FR-002",
@@ -18698,7 +18698,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validator-coverage.mjs",
-            "line": 153
+            "line": 160
           },
           {
             "requirementId": "FR-004",
@@ -18733,12 +18733,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/validator-coverage.mjs",
-            "line": 154
+            "line": 161
           },
           {
             "requirementId": "FR-012",
             "file": "cli/validator-coverage.mjs",
-            "line": 174
+            "line": 181
           },
           {
             "requirementId": "FR-013",
@@ -19413,7 +19413,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 91
+            "line": 90
           }
         ],
         "testEvidence": [

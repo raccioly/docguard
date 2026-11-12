@@ -126,7 +126,14 @@ export function validateResultContract(result) {
   if (!Number.isInteger(result?.performed) || result.performed < 0) problems.push(`${key}: performed must be an integer >= 0`);
   const nothingFound = !(result?.findings?.length > 0) && (result?.errors?.length || 0) + (result?.warnings?.length || 0) === 0;
   const emptyish = nothingFound && result?.performed === 0;
-  if (emptyish) {
+  // An observation gap (`observations`, or an applicability that is partial, a missing prerequisite,
+  // unsupported or an error) is `inconclusive` or `blocked`, not empty: its reason is the gap, so it
+  // is not required to carry a cause or a fix. One that does carry them is still held to them.
+  const gap = (result?.observations?.length || 0) > 0
+    || ['partial', 'missing-prerequisite', 'unsupported', 'error'].includes(result?.applicability?.status);
+  if (emptyish && gap && result.emptyCause === undefined && result.howToConfigure === undefined) {
+    // complete: nothing more is required of a gap
+  } else if (emptyish) {
     if (!EMPTY_CAUSES.includes(result.emptyCause)) problems.push(`${key}: an empty result needs emptyCause from ${EMPTY_CAUSES.join(' | ')}`);
     if (typeof result.howToConfigure !== 'string' || !result.howToConfigure.trim()) problems.push(`${key}: an empty result needs howToConfigure`);
     if (a && typeof a.applies === 'boolean' && (result.emptyCause === 'nothing-of-this-kind') !== (a.applies === false)) {

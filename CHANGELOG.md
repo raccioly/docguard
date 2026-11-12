@@ -39,10 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Metrics-Consistency each report how many checks they performed, whether the kind
   of check belongs to the project (decided from the project's files, never from the
   validator's own missing configuration) and, on an empty result, a cause and the
-  exact file, key or snippet that makes them examine something. The ones that need a
-  declaration no tool can infer (anchors, ownership, covers=, evidence) apply to a
-  project that has the documents and the code, and say what a person must write; the
-  drafted ownership block is never offered as a fix without saying it must be edited
+  exact file, key or snippet that makes them examine something. Requirement-Anchors and
+  Doc-Dependency need a declaration no tool can infer and apply to a project that
+  has the specs or documents and the code, saying what a person must write;
+  Doc-Ownership and Evidence apply only once a map or manifest is declared. A
+  validator that could not observe its input (unreadable git) is `inconclusive`
+  and needs no cause. The drafted ownership block is never offered as a fix without
+  saying it must be edited
   (`docguard.strict-by-default` FR-004 to FR-006, stage A).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which

@@ -29,19 +29,27 @@ import { canonicalDocPaths, explainPaddedEmpty, firstProductSource, sample } fro
 const MAX_PER_CODE = 25;
 
 /**
- * Does this kind of check belong to the project? It does when the project has
- * canonical documents and source code: someone is then responsible for saying
- * which section explains which code. The map is the declaration the validator
- * asks for (specs/097-strict-by-default FR-006); a tool can draft one, not know it.
+ * Does this kind of check belong to the project? Only a project that declared an
+ * ownership map (an `ownership` block or `.devin/wiki.json`).
+ *
+ * This is one of two declared-only validators (the other is Evidence), by the
+ * coordinator's decision on spec 097 FR-006. Doc-Dependency already declares, at
+ * a finer grain, which document covers which code, so requiring an ownership map
+ * as well would make a project declare one relation twice; and the only honest
+ * fix, a hand-written map, cannot be inferred. Doc-Dependency stays the strict
+ * check on that relation.
  *
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
+  const map = loadOwnership(projectDir, config);
+  const wiki = lintDevinWiki(projectDir, config);
+  if (!map.present && !wiki.present) {
+    return { applies: false, evidence: 'no ownership map is declared (no "ownership" block in .docguard.json and no .devin/wiki.json); which document covers which code is checked by Doc-Dependency through covers= markers' };
+  }
   const docs = canonicalDocPaths(projectDir, config);
-  if (docs.length === 0) return { applies: false, evidence: 'the project has no canonical document (docs-canonical/ or a mapped document role) that could own source code', docs };
   const source = firstProductSource(projectDir, config);
-  if (!source) return { applies: false, evidence: `${docs.length} canonical document(s) (${sample(docs)}) but no source file for a section to own`, docs };
-  return { applies: true, evidence: `${docs.length} canonical document(s) (${sample(docs)}) and source code (${source}) that a section can own`, docs, source };
+  return { applies: true, evidence: `${map.present ? 'an ownership block' : '.devin/wiki.json'} is declared${docs.length ? `; ${docs.length} canonical document(s) (${sample(docs)})` : ''}${source ? ` and source code (${source})` : ''}`, docs, source };
 }
 
 function ownHow(d, { entriesMissing }) {
@@ -49,7 +57,7 @@ function ownHow(d, { entriesMissing }) {
   const dir = (d.source || 'src/x').includes('/') ? `${d.source.slice(0, d.source.indexOf('/'))}/**` : '<dir>/**';
   return `${entriesMissing ? 'The ownership block has no entries. ' : ''}Add an "ownership" block to .docguard.json and write every value yourself: { "entries": [ { "doc": "${doc}", "section": "<section id or heading anchor in that document>", "purpose": "<one sentence, written by a person, saying what that section explains>", "paths": ["${dir}"] } ] }. \`docguard trace --owners --suggest\` drafts a block, but its purposes are placeholders (OWN008) and its assignments are guesses: edit every entry before you commit it.`;
 }
-const NO_OWNER_SUBJECT = 'Nothing to configure unless the project has canonical documents (docs-canonical/) and source code: an ownership entry names the document section responsible for a path.';
+const NO_OWNER_SUBJECT = 'Nothing to configure until you declare an ownership map: an "ownership" block in .docguard.json (or .devin/wiki.json) whose entries name the document section responsible for each path, written by a person. Which document covers which code is checked meanwhile by Doc-Dependency (covers= markers).';
 
 export function validateDocOwnership(projectDir, config = {}) {
   const map = loadOwnership(projectDir, config);
@@ -60,9 +68,7 @@ export function validateDocOwnership(projectDir, config = {}) {
       ...contractFields({
         performed: 0,
         decide: () => applies(projectDir, config),
-        empty: d => (d.applies
-          ? { emptyCause: 'needs-declaration', note: `Doc-Ownership has no ownership map to check: ${d.evidence}, but .docguard.json has no ownership block and the project has no .devin/wiki.json.`, howToConfigure: ownHow(d, { entriesMissing: false }) }
-          : { emptyCause: 'nothing-of-this-kind', note: `Doc-Ownership has no ownership map and no subject for one: ${d.evidence}.`, howToConfigure: NO_OWNER_SUBJECT }),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Doc-Ownership has no ownership map to check: ${d.evidence}.`, howToConfigure: NO_OWNER_SUBJECT }),
       }),
     };
   }

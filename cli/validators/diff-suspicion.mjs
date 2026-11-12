@@ -30,7 +30,6 @@ import { namesToken } from '../scanners/doc-references.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
-const GIT_UNREADABLE_HOW = "Git reports the metadata is unreadable: in an agent sandbox, expose the repository's git directory (ai-jail: --worktree; other sandboxes: mount the gitdir named in .git); otherwise repair the repository.";
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
 // Generic framework / language noise that overlaps between ANY React/TS doc and
@@ -223,11 +222,9 @@ export function validateDiffSuspicion(projectDir, config = {}) {
   if (git.status === 'unreadable') {
     return {
       ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git),
-      ...contractFields({
-        performed: 0,
-        decide: () => ({ applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so whether ${ref}..HEAD changes documented code could not be observed` }),
-        empty: d => ({ emptyCause: 'layout-not-recognized', note: `Diff-Suspicion could not read git: ${d.evidence}.`, howToConfigure: GIT_UNREADABLE_HOW }),
-      }),
+      // An observation gap, not an empty result: inconclusive, and its reason is the gap (no emptyCause).
+      performed: 0,
+      applies: { applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so whether ${ref}..HEAD changes documented code could not be observed` },
     };
   }
   const nothing = d => ({ emptyCause: 'nothing-of-this-kind', note: `Diff-Suspicion found no changed, documented code: ${d.evidence}.`, howToConfigure: NOTHING_HOW });
