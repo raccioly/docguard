@@ -82,6 +82,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
+| **Agent-instruction role** | One list of the project's agent instructions: root `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and `requiredFiles.agentFile` (root-level, loaded every session), plus tracked nested AGENTS/CLAUDE/GEMINI files and harness rules and skills outside test, fixture and example paths. Each entry says whether it is a pointer (a short body that imports a file or names another role document; reviewed through its target) and whether it is vendored (listed in a Spec Kit integration manifest, or a skill DocGuard ships) | `cli/shared-agent-instructions.mjs` | Every reader of agent files asks it: Freshness, Reference-Existence, Diff-Suspicion, Canonical-Sync, Doc-Dependency candidates, semantic claims, the instruction audit, `diff --since`, `diff`/MCP references, `diagnose`, the hook nudge and `score --dora`. Path-Scoped-Rules reports PSR005 for a manifest copy whose sha256 changed (spec 094) |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
@@ -230,7 +231,7 @@ guard.mjs
   │
   ▼
 Output (text | json)
-  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn) | 3 (errors, but project not initialised)
+  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn) | 3 (errors, but project not initialised) | 4 (a check that had to decide did not: --fail-on-inconclusive, requiredChecks)
 ```
 
 ### AI Fix Flow: `docguard fix --doc architecture`
@@ -260,7 +261,7 @@ docguard guard → validates the newly written document
 | **Config-driven validation** | `.docguard.json` lets projects customize which validators run. A CLI project can skip database docs. |
 | **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |
-| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn), `3` (errors in a project with no `.docguard.json`) enables `docguard ci` to gate deployments. `3` stays non-zero so an any-non-zero gate is unchanged, but it lets the generated Git hook distinguish "never adopted DocGuard" from "failed its checks". |
+| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn), `3` (errors in a project with no `.docguard.json`), `4` (a validator that had to decide did not: inconclusive or blocked under `--fail-on-inconclusive`, or an undecided `requiredChecks` entry) enables `docguard ci` to gate deployments. `3` stays non-zero so an any-non-zero gate is unchanged, but it lets the generated Git hook distinguish "never adopted DocGuard" from "failed its checks". |
 | **Scoped factual evidence** | `.docguard-evidence.json` declares narrow, typed source-to-statement predicates. Contradictions fail guard; stale, inconclusive, and unsupported evidence stays visible. A verified statement never exempts its document from freshness or semantic review. |
 | **Evidence before context volume** | `agent --task` returns a bounded retrieval packet only after the frozen evaluation showed equal hidden-test safety and lower steps/latency. It remains opt-in because uncached token use increased and the synthetic protocol does not establish universal benefit. |
 
@@ -768,7 +769,7 @@ The primary data structure. Controls all CLI behavior.
 | `version` | `string` | No | `"0.1"` | Config schema version |
 | `projectType` | `string` | No | Auto-detected | One of: `cli`, `webapp`, `api`, `library`, `monorepo` |
 | `requiredFiles.canonical` | `string[]` | No | 5 docs-canonical files | Paths to required CDD documents |
-| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list |
+| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list. Each entry that exists is also a root-level document of the agent-instruction role (spec 094), which every agent-file reader uses; the role also finds `GEMINI.md`, `.github/copilot-instructions.md`, nested instruction files and harness rules and skills without configuration |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
 
@@ -1837,7 +1838,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
-A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 26 measured cases across 13 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 30 measured cases across 15 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
 
 The finding shape is itself a contract, because findings are copied verbatim into shareable feedback records. `tests/precision-evidence.test.mjs` pins the exact key set a guard run emits, so a field added without a specification fails the suite; it also asserts that `location` is a string or null and that `disposition` and `evidence.status` hold values from their declared vocabularies. `tests/findings-channels.test.mjs` pins the derivation rules for the three channels: `disposition` from `suggestion.kind` with `escalate` as the fail-closed default, `evidence` projected per code and always standing alone, and `reportable` true for an unmeasured code even at high confidence. A malformed `suggestion.kind` must omit the suggestion, so a typo stays visible as a missing suggestion instead of reclassifying a fix as a review.
 
@@ -1999,7 +2000,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **One agent-instruction document role** (#628, spec 094). DocGuard decided which
+  files are agent instructions in twelve separate lists, and they disagreed: Freshness
+  read only `AGENTS.md` and `CLAUDE.md`, so a stale `GEMINI.md` or
+  `.github/copilot-instructions.md` was checked by nothing. One role now lists
+  them: the root files every session loads (`AGENTS.md`, `AGENTS.override.md`,
+  `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, configured
+  `requiredFiles.agentFile`), plus tracked nested instruction files and harness
+  rules and skills outside test and fixture paths. Every agent-file reader uses it
+  (`docguard.agent-instruction-role` FR-001 to FR-003).
+- **PSR005: an installed instruction copy was edited.** A skill that a Spec Kit
+  integration installed, listed with its sha256 in
+  `.specify/integrations/<integration>.manifest.json`, no longer matches what was
+  installed. The next install overwrites the edit (FR-007).
+
+### Changed
+
+- **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
+  "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
+  finding; Freshness records that it is reviewed through its target. Installed
+  Spec Kit and DocGuard skill copies are no longer reviewed for staleness, because
+  they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
+  Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
+  for them.
+
 ### Fixed
+
+- **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
+  had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
 
 - **Releases are now published to the official MCP registry.** The listing at
   `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because
@@ -2361,37 +2391,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   - **Unaffected by growth.** Adding tests does not change the check.
   - **Reported, not gated.** The suite total goes to the log and the job
     summary.
-  - **TAP artifact.** Each leg uploads its TAP as `test-tap-node-<version>`,
-    the input for refreshing the reference.
 
-### Fixed
-
-- **Five validator defects reported against 0.45.0** (`specs/079-doc-validator-fidelity`,
-  issues 584–588). Four remove false statements; one stops a blank template
-  from scoring as finished.
-  - **ENV001 and ENV002 match headings as STR003 does** (FR-001). `## Setup steps`
-    and `## Environment variables` were "missing" although sentence case passed
-    STR003. Both validators now use `docHasSection`: any case, section
-    numbers, synonyms (`Getting Started`, `Env Vars`). The generic synonyms
-    `Environment` and `Configuration` now name a section only as the whole
-    heading (or followed by `Reference`, `Variables`, `(.env)` …), for STR003 and
-    `generate` too: `## Configuration Files` and `## Production environment`
-    no longer satisfy Environment Variables.
-  - **A brace pattern documents the files it expands to** (FR-002).
-    `` `src/tests/{alpha,beta}.test.ts` `` and `` `foo.{test,spec}.ts` `` expand
-    one level (at most 64 paths) in DDF002 and `docguard diff`; a missing
-    expansion is reported by its expanded path; spaces after the commas are
-    ignored. A brace glob (`src/**/*.test.{js,jsx}`) is one pattern matched as
-    a union; in a documented glob `?` is one character and `**/` also matches
-    no directory (`src/**/*.test.js` documents `src/a.test.js`).
-  - **DDF001 reads negation over a list and removal verbs** (FR-003–FR-005).
-    `no CDK, Terraform or Pulumi stacks`, `We removed Terraform`, `migrated off`,
-    `was replaced by` no longer count as documenting the technology, and a
-    Revision History, Changelog or Release Notes section is not read as a
-    Tech Stack claim (a `#` line in a code fence is not a heading).
-    `replaced MySQL with PostgreSQL` keeps PostgreSQL live, and so do sentences
-
-<!-- truncated: 6189 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6218 more lines — read CHANGELOG.md directly -->
 
 ---
 

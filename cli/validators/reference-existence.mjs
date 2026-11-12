@@ -46,6 +46,7 @@ import { findConstitution } from '../scanners/speckit.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 
 const CODE_EXT = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs', '.java',
@@ -163,7 +164,7 @@ function extractRefs(content) {
   return [...refs];
 }
 
-function indexDocs(projectDir) {
+function indexDocs(projectDir, config = {}) {
   const docs = [];
   const push = (name, full, rel = name) => {
     try {
@@ -174,10 +175,8 @@ function indexDocs(projectDir) {
   // Recursive. `name` stays the bare basename — matches this validator's
   // pre-existing flat-tree message/location format exactly.
   for (const doc of listCanonicalDocs(projectDir)) push(basename(doc.rel), doc.abs, doc.rel);
-  for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
-    const p = resolve(projectDir, agent);
-    if (existsSync(p)) push(agent, p);
-  }
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  for (const agent of rootAgentDocs(projectDir, config)) push(agent, resolve(projectDir, agent));
   // docguard.spec-kit-artifact-coverage#FR-006: the Spec Kit constitution names
   // the functions and modules its principles depend on; check them like any
   // governing document. It lives in a dot directory the source walk skips.
@@ -201,7 +200,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
   if (git.status !== 'ok') {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
-  const docs = indexDocs(projectDir);
+  const docs = indexDocs(projectDir, config);
   const needIds = docs.some(d => d.refs.length > 0);
   if (!needIds && !adrEnabled) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });

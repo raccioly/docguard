@@ -33,14 +33,14 @@ describe('reviewed baseline envelope', () => {
     assert.equal(baseline.review.measures, 'benchmark-precision');
     assert.equal(baseline.review.caveat, benchmarkCaveat(baseline.core.cases));
     assert.match(baseline.review.caveat, /not the probability that a finding in your repository is real/);
-    assert.match(baseline.review.caveat, /13 defect and 13 clean-control cases/);
+    assert.match(baseline.review.caveat, /15 defect and 15 clean-control cases/);
   });
 
   it('keeps its published metrics recomputable from its retained cases', () => {
     const baseline = committed();
     assert.deepEqual(baseline.core.metrics, calculateMetrics(baseline.core.cases));
     assert.equal(baseline.core.metrics.aggregate.precision, 1);
-    assert.deepEqual(baseline.core.metrics.aggregate.confidence95.precision, { lower: 0.771898, upper: 1 });
+    assert.deepEqual(baseline.core.metrics.aggregate.confidence95.precision, { lower: 0.796111, upper: 1 });
   });
 
   it('rejects a hand-edited ratio, a stale caveat, a missing measure, and the pre-provenance envelope', () => {
@@ -84,7 +84,7 @@ describe('reviewed baseline envelope', () => {
 
   it('derives the caveat from case counts so it cannot drift from the numbers it qualifies', () => {
     const cases = committed().core.cases.filter(item => item.split === 'development');
-    assert.match(benchmarkCaveat(cases), /^Benchmark precision on a deliberately balanced corpus of 6 defect and 6 clean-control cases across 6 repository groups and 6 causal families\./);
+    assert.match(benchmarkCaveat(cases), /^Benchmark precision on a deliberately balanced corpus of 7 defect and 7 clean-control cases across 7 repository groups and 7 causal families\./);
     assert.ok(benchmarkCaveat(cases).length <= 512);
     assert.deepEqual(benchmarkProvenance({ cases }), { measures: BASELINE_MEASURES, caveat: benchmarkCaveat(cases) });
   });

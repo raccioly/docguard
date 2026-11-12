@@ -29,7 +29,7 @@ The primary data structure. Controls all CLI behavior.
 | `version` | `string` | No | `"0.1"` | Config schema version |
 | `projectType` | `string` | No | Auto-detected | One of: `cli`, `webapp`, `api`, `library`, `monorepo` |
 | `requiredFiles.canonical` | `string[]` | No | 5 docs-canonical files | Paths to required CDD documents |
-| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list |
+| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list. Each entry that exists is also a root-level document of the agent-instruction role (spec 094), which every agent-file reader uses; the role also finds `GEMINI.md`, `.github/copilot-instructions.md`, nested instruction files and harness rules and skills without configuration |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
 
