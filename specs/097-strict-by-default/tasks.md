@@ -35,9 +35,17 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 ### A4 — Dogfood and proof
 
 - [x] T015 DocGuard's own `.docguard.json` sets `"enforcement": "strict"`; each unexamined validator is fixed or waived with a reason, an owner and an expiry (FR-020, SC-005).
-- [ ] T016 Hermetic A/B against v0.47.0, `standard` mode, on the eight audit repositories and on DocGuard: no difference beyond FR-004 verdict corrections (SC-003). Record the result by kind of project.
-- [ ] T017 Strict on the same eight: label every validator reported as "applies here, examined nothing" and apply its fix (SC-001). A validator that fails the label goes back to T012.
+- [x] T016 Hermetic A/B against v0.47.0, `standard` mode, on the eight audit repositories and on DocGuard: no difference beyond FR-004 verdict corrections (SC-003). Record the result by kind of project.
+- [x] T017 Strict on the same eight: label every validator reported as "applies here, examined nothing" and apply its fix (SC-001). A validator that fails the label goes back to T012.
 - [ ] T018 Docs for Stage A: `docs/configuration.md`, `docs/commands.md`, DATA-MODEL, ARCHITECTURE, `npm run docs:reference`, `npm run llms`, CHANGELOG; `docguard specs --write`; `anchors accept` for touched anchored files.
+
+### A5 — Fixes from the Stage A proof (`verification.md`)
+
+- [ ] T018a FR-007 as amended: only a validator with zero checks and cause `needs-declaration` or `needs-content` (or one that could not observe at all) exits 4; partial results and `layout-not-recognized` go to a "could not read" list in text and JSON. Failing tests first.
+- [ ] T018b `applies` defects: Metadata-Sync on a package marked private or never published; API-Surface on a project with a UI framework and no route; Generated-Staleness reading a draft status out of body text; Spec-Registry returning `empty` with no cause after comparing specs; Requirement-Anchors counting template placeholder rows as requirement IDs.
+- [ ] T018c Documents kept outside `docs-canonical/`: a validator whose document the project maps through `docs.roles` (spec 093) reads it there, and its fix text names the mapping before it suggests creating a file.
+- [ ] T018d Fix texts: no text tells a project to move code or documents; Test-Spec accepts the older "Service-to-Test Map" heading; Requirement-Anchors says where a Spec ID comes from; Doc-Dependency and Requirement-Anchors examples name a product source file, not a configuration file; Metadata-Sync names the workspace package it read.
+- [ ] T018e Run the proof again (T016, T017) and update `verification.md`.
 
 ## Stage B — the default changes
 
