@@ -14,7 +14,7 @@
 ## Phase 3 — Docs and evidence
 - [x] T008 Findings registry, reference docs, DATA-MODEL, ARCHITECTURE, help, CHANGELOG, reviews schema (FR-013).
 - [ ] T009 History-replay benchmark and results (FR-012, SC-003).
-- [ ] T010 Anchors accepted, spec registry, `npm run llms`.
+- [x] T010 Anchors accepted, spec registry, `npm run llms`.
 
 ## Phase 4 — Proof
 - [x] T011 SC-002 demo on TestGuard f89ca46.
