@@ -60,9 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
   Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
   for them.
-
-### Changed
-
 - **A validator that performed no check is `empty`, never `pass`.** The verdict
   now requires at least one performed check. Requirement-Anchors enabled with
   zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`

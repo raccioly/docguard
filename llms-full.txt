@@ -62,6 +62,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
 | **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
 | **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
+| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies and examined nothing, whose result carries a cause and fix, exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`. A validator not yet on the contract is listed as "cause not yet classified" and never exits 4. An absent key resolves to `standard` until the stage that changes the default | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -811,6 +812,7 @@ The primary data structure. Controls all CLI behavior.
 | `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
 | `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
 | `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
+| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode (`standard` until the release that makes `strict` the default); `profile` never selects it. `asOf` is `major.minor`. A malformed value is a configuration error |
 | `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration
@@ -1137,9 +1139,8 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | File | Written by | Shape |
 |---|---|---|
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
-| `.docguard/anchors.cache.json` | `docguard anchors` and the Requirement-Anchors validator, never in CI or with `--no-cache` | `{ v, identity, files }`: `v` is `1`, `identity` names the extractor (algorithm and tier versions), and `files` maps a path to `{ sha, value }`, where `sha` is the sha256 of the working-tree bytes. Another version or identity, or a different `sha`, is a miss. Ignored and reported (ANC010) while git tracks any file under `.docguard/` |
 
-<!-- truncated: 281 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 282 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -2003,6 +2004,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **An enforcement mode, `strict` or `standard`, that a project can select
+  today.** `"enforcement": "strict"` (or `{ "mode": "strict", "asOf": "0.49" }`)
+  in `.docguard.json` makes guard exit 4 when a validator that applies to the
+  project examined nothing, and `docguard guard` prints an **Adopt** block with
+  the fix for each one, the baseline command, the waiver form and the key for
+  the lower mode. `--format json` carries `enforcement` and `strict`; SARIF and
+  JUnit render an unexamined validator as they render an `inconclusive` one;
+  `ci` blocks (`CI_STRICT_UNEXAMINED`). `docguard upgrade` reports, read-only,
+  what strict would change for the project. The default is unchanged in this
+  release: an absent key is `standard`, and the first line of the summary says
+  so (`docguard.strict-by-default` FR-001, FR-007, FR-014 to FR-016, FR-018;
+  stage A of specs/097-strict-by-default).
+- **A cause and a fix on an empty result.** API-Surface, Docs-Sync and
+  Surface-Sync now report whether they apply to the project, how many checks
+  they performed, and, when they examined nothing, a cause (`needs-declaration`,
+  `needs-content`, `layout-not-recognized` or `nothing-of-this-kind`) with the
+  text that makes them examine something. The contract is defined in
+  `cli/validator-coverage.mjs`; the other validators move onto it next, and
+  under strict a validator that is empty without a cause is listed as "cause
+  not yet classified" and never fails the run (FR-005, FR-006).
+- **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
+  blank or a `<placeholder>` is reported, so a drafted block applied unedited no
+  longer passes. An entry that omits `purpose` is unaffected (FR-004).
+
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
   read only `AGENTS.md` and `CLAUDE.md`, so a stale `GEMINI.md` or
@@ -2030,6 +2055,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
   Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
   for them.
+
+### Changed
+
+- **A validator that performed no check is `empty`, never `pass`.** The verdict
+  now requires at least one performed check. Requirement-Anchors enabled with
+  zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
+  where they were `pass`. No exit code changes under `standard`: `empty` does not
+  affect one, except for a validator named in `requiredChecks`, which already
+  held the gate on `empty` (FR-004).
 
 ### Fixed
 
@@ -2359,41 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   auth records nothing.
 - **The anchor-cache tests pass on CI** (#599). They asserted an enabled
   cache, but the cache turns itself off whenever `CI` is set.
-- **The unreadable-git test accepts the CI runners' newer git wording**
-  (`docguard.unreadable-git-metadata`). The runners' git now reports
-  `gitfile does not point to a valid repository` where it used to say `not a
-  git repository`. DocGuard already reported git's own first line; only the
-  test pinned the old text. Test-only.
 
-### Commits
-
-- chore(deps): bump the all-actions group with 8 updates (#604)
-- chore(deps): bump @babel/parser (#603)
-- chore: re-anchor spec 080 to main after the squash merge of #601 (#602)
-- maint: 2026-11-01 — spec 080 implementation outcomes (verified) (#601)
-- fix: counts, SPK010, DSP001 and router auth say only what they can prove (spec 080) (#600)
-
-## [0.45.1] - 2026-10-16
-
-### Changed
-
-- **The CI test runtime budget checks each test, not the suite total**
-  (`specs/051-release-cut-green`, FR-007 revision).
-  - **Why the total failed.** The 465-second total had been raised three
-    times. Across 445 recent CI jobs, identical code ran 188–369 seconds: the
-    spread is one speed factor per runner, not the code. The total also missed
-    the class it exists for. Test files run about 2.8 at a time, so a test that
-    gains 165 seconds (PR #328) adds about 59 to the wall clock. Replayed on
-    all 445 jobs, the 465-second total caught none of those runaways.
-  - **The new check.** `tools/suite-runtime-budget.mjs` reads the suite's TAP.
-    It divides every top-level test by the run's speed factor, measured
-    against `tools/suite-runtime-reference.json`, and fails any test over
-    `TEST_CEILING_MS` (100 seconds at reference speed).
-  - **Measured.** It passes all 445 recorded jobs: the slowest normal test is
-    56.9 seconds at reference speed, 1.76× below the ceiling. It catches a
-    165-second runaway in one test in all 445, whether the runaway scales with
-
-<!-- truncated: 6222 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6255 more lines — read CHANGELOG.md directly -->
 
 ---
 
