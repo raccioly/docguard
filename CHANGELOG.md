@@ -46,6 +46,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under `standard` do not change; an Architecture run over a clean import graph
   now counts the cycle check it made (`performed` 1, `total` unchanged)
   (`docguard.strict-by-default` FR-004 to FR-006, group A of stage A).
+- **Group A answers to the Stage A proof.** Metadata-Sync does not apply to a
+  package marked `"private": true`, and in a monorepo whose root has no version
+  it reads the one published workspace package and names it (several published
+  packages, or none, is not a project version). Test-Spec reads the older
+  "Service-to-Test Map" heading at any level and every map section of a
+  document, not only the first. Test-Spec, Environment and Docs-Diff name a
+  `docs.roles` mapping, or a same-role document found elsewhere, before they
+  suggest creating the default file. Schema-Sync no longer asks a DynamoDB or
+  SQL project to write a model file it does not use, Architecture's partial
+  result says plainly which imports it did not follow, and an Architecture
+  `layers` entry that names a missing directory is `needs-declaration` (the
+  project's declaration) rather than `layout-not-recognized`. Findings, levels
+  and exit codes under `standard` do not change; reasons and fix texts do
+  (`docguard.strict-by-default` FR-007, T018b to T018d).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).

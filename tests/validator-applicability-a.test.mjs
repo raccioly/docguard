@@ -137,3 +137,178 @@ describe('group A: standard mode keeps its verdicts', () => {
     assert.equal(result.applies.applies, false);
   });
 });
+
+/**
+ * The proof of spec 097 Stage A on eight repositories (FR-007 amended): each case below is a defect the
+ * proof found, described by the kind of project and never by name.
+ */
+describe('group A: defects the Stage A proof found', () => {
+  const resultOf = (key, fixture) => run(key, fixture).result;
+  const decideOf = async (module, name, key, fixture) => {
+    const { dir, config } = run(key, fixture);
+    return (await import(`../cli/validators/${module}.mjs`))[name](dir, config);
+  };
+
+  describe('Metadata-Sync decides from the manifest', () => {
+    const rootNoVersion = (workspaces) => ({ 'package.json': JSON.stringify({ name: 'root', private: true, workspaces: ['packages/*'] }), ...workspaces });
+    const lib = (name, extra = {}) => JSON.stringify({ name, version: '3.1.0', ...extra });
+
+    it('a private package does not apply, and the evidence says it is private', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'app', version: '0.1.0', private: true }) } });
+      assert.equal(a.applies, false);
+      assert.match(a.evidence, /"private": true/);
+      assert.match(a.evidence, /0\.1\.0/);
+    });
+
+    it('a package with no version does not apply', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'app' }) } });
+      assert.equal(a.applies, false);
+    });
+
+    it('a monorepo whose root has no version reads the one published workspace package, and names it', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: rootNoVersion({ 'packages/lib/package.json': lib('lib'), 'packages/web/package.json': lib('web', { private: true }) }) });
+      assert.equal(a.applies, true);
+      assert.match(a.evidence, /packages\/lib\/package\.json/);
+      assert.match(a.evidence, /lib/);
+      assert.match(a.evidence, /only published/);
+    });
+
+    it('two published workspace packages are not the project\'s version: it does not apply and names both', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: rootNoVersion({ 'packages/a/package.json': lib('a'), 'packages/b/package.json': lib('b') }) });
+      assert.equal(a.applies, false);
+      assert.match(a.evidence, /packages\/a\/package\.json/);
+      assert.match(a.evidence, /packages\/b\/package\.json/);
+    });
+
+    it('under standard a private package still has its documents checked (no finding changes)', () => {
+      const dir = project({ 'package.json': JSON.stringify({ name: 'app', version: '2.0.0', private: true }), 'README.md': '# app\n\nInstall app@2.0.0 today.\n' }, cfg('metadataSync', { enforcement: 'standard' }));
+      const result = runGuardInternal(dir, loadConfig(dir)).validators.find(v => v.key === 'metadataSync');
+      assert.ok(result.performed >= 1, 'it keeps comparing the references it always compared');
+    });
+  });
+
+  describe('Test-Spec reads the older heading and every map section', () => {
+    const SPEC = (body) => ({ files: { 'package.json': PKG, 'src/a.js': 'export const a = 1;\n', 'src/b.js': 'export const b = 1;\n', 'tests/a.test.js': 't\n', 'tests/b.test.js': 't\n', 'docs-canonical/TEST-SPEC.md': `# Test Spec\n\n${body}` } });
+    const table = (heading, rows) => `${heading}\n\n| Source File | Unit Test | Status |\n|---|---|---|\n${rows}\n\n`;
+
+    it('accepts "Service-to-Test Map", at any heading level and with a number before it', () => {
+      for (const heading of ['## Service-to-Test Map', '### 2. Service-to-Test Map', '## Source-to-Test Map']) {
+        const result = resultOf('testSpec', SPEC(table(heading, '| `src/a.js` | `tests/a.test.js` | ✅ |')));
+        assert.equal(result.performed, 2, heading);
+      }
+    });
+
+    it('reads a second map heading appended after the first one', () => {
+      const body = table('## Service-to-Test Map', '| `src/a.js` | `tests/a.test.js` | ✅ |') + table('## Source-to-Test Map', '| `src/b.js` | `tests/b.test.js` | ✅ |');
+      assert.equal(resultOf('testSpec', SPEC(body)).performed, 4);
+    });
+
+    it('names the table it reads in the fix text for a document with no map', () => {
+      const result = resultOf('testSpec', SPEC('We test things.\n'));
+      assert.match(result.howToConfigure, /Source-to-Test Map/);
+      assert.match(result.howToConfigure, /Service-to-Test Map/);
+    });
+  });
+
+  describe('a document the project keeps elsewhere is named before a new one is suggested', () => {
+    const TESTS = { 'package.json': PKG, 'src/a.js': 'export const a = 1;\n', 'tests/a.test.js': 't\n' };
+    const before = (text, a, b) => text.indexOf(a) >= 0 && text.indexOf(a) < (text.indexOf(b) < 0 ? Infinity : text.indexOf(b));
+
+    it('Test-Spec: a role mapped to a file that does not exist says so, and does not ask for the default path', () => {
+      const r = resultOf('testSpec', { files: TESTS, extra: { docs: { roles: { testSpec: 'docs/testing/PLAN.md' } } } });
+      assert.match(r.howToConfigure, /docs\.roles/);
+      assert.match(r.howToConfigure, /docs\/testing\/PLAN\.md/);
+      assert.doesNotMatch(r.howToConfigure, /docs-canonical\/TEST-SPEC\.md/);
+    });
+
+    it('Test-Spec: an unmapped test document elsewhere is offered as a docs.roles mapping before a new file', () => {
+      const r = resultOf('testSpec', { files: { ...TESTS, 'docs-implementation/TESTING.md': '# Testing\n\nWe test.\n' } });
+      assert.match(r.howToConfigure, /"testSpec": "docs-implementation\/TESTING\.md"/);
+      assert.ok(before(r.howToConfigure, 'docs.roles', 'Create'), r.howToConfigure);
+    });
+
+    it('Test-Spec: a mapped document with a Service-to-Test Map clears the validator', () => {
+      const r = resultOf('testSpec', { files: { ...TESTS, 'docs-implementation/TESTING.md': '# Testing\n\n## Service-to-Test Map\n\n| Source | Test | Status |\n|---|---|---|\n| `src/a.js` | `tests/a.test.js` | ✅ |\n' }, extra: { docs: { roles: { testSpec: 'docs-implementation/TESTING.md' } } } });
+      assert.ok(r.performed >= 1);
+      assert.equal(r.emptyCause, undefined);
+    });
+
+    it('Environment: a role mapped elsewhere is named, and the default path is not requested', () => {
+      const r = resultOf('environment', { files: { 'package.json': PKG, 'src/index.js': 'export const k = process.env.API_KEY;\n' }, extra: { docs: { roles: { environment: 'docs/setup/ENV.md' } } } });
+      assert.match(r.howToConfigure, /docs\.roles/);
+      assert.match(r.howToConfigure, /docs\/setup\/ENV\.md/);
+      assert.doesNotMatch(r.howToConfigure, /docs-canonical\/ENVIRONMENT\.md/);
+    });
+
+    it('Environment: an unmapped environment document elsewhere is offered as a mapping', () => {
+      const r = resultOf('environment', { files: { 'package.json': PKG, 'src/index.js': 'export const k = process.env.API_KEY;\n', 'docs-implementation/ENVIRONMENT.md': '# Environment\n\nVars.\n' } });
+      assert.match(r.howToConfigure, /"environment": "docs-implementation\/ENVIRONMENT\.md"/);
+    });
+
+    it('Docs-Diff: roles mapped elsewhere are named, and neither default path is requested', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'tests/a.test.js': 't\n' }, extra: { docs: { roles: { architecture: 'docs/design/SYSTEM.md', testSpec: 'docs/design/TESTS.md' } } } });
+      assert.match(r.howToConfigure, /docs\.roles/);
+      assert.match(r.howToConfigure, /docs\/design\/SYSTEM\.md/);
+      assert.doesNotMatch(r.howToConfigure, /docs-canonical\/ARCHITECTURE\.md|docs-canonical\/TEST-SPEC\.md/);
+    });
+
+    it('Docs-Diff: an unmapped architecture document elsewhere is offered as a mapping', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'tests/a.test.js': 't\n', 'docs-implementation/ARCHITECTURE.md': '# Architecture\n\nExpress.\n' } });
+      assert.match(r.howToConfigure, /"architecture": "docs-implementation\/ARCHITECTURE\.md"/);
+    });
+  });
+
+  describe('Schema-Sync does not ask a project to write a model file it does not use', () => {
+    const DYNAMO = { files: { 'package.json': JSON.stringify({ name: 'svc', version: '1.0.0', dependencies: { '@aws-sdk/client-dynamodb': '3.0.0' } }), 'src/db.js': 'export const t = "orders";\n' }, cause: 'layout-not-recognized' };
+
+    it('a DynamoDB project: layout-not-recognized, names what it reads, asks for no Knex, Prisma or SQL model', () => {
+      const r = resultOf('schemaSync', DYNAMO);
+      assert.equal(r.emptyCause, 'layout-not-recognized');
+      assert.match(r.howToConfigure, /Prisma, Drizzle, Mongoose/);
+      assert.match(r.howToConfigure, /DynamoDB/);
+      assert.doesNotMatch(r.howToConfigure, /keep the schema in one of those forms|for example a Knex migration/i);
+      assert.doesNotMatch(r.howToConfigure, /\b(write|create|add|define|keep)\b[^.]*\b(Knex|Prisma|SQL) (model|migration|file)/i);
+    });
+
+    it('a SQL-file project still gets a fix it can complete without moving its schema', () => {
+      const r = resultOf('schemaSync', { files: { 'package.json': PKG, 'db/schema.sql': 'CREATE TABLE orders (id int);\n' } });
+      assert.equal(r.emptyCause, 'layout-not-recognized');
+      assert.doesNotMatch(r.howToConfigure, /\bmove\b/i);
+    });
+  });
+
+  describe('Architecture says plainly what it did not follow', () => {
+    it('a partial result names the imports it could not follow and carries no cause, fix or cause-less reason about a runtime path', () => {
+      const r = resultOf('architecture', { files: { 'package.json': PKG, 'pkg/__init__.py': '', 'pkg/main.py': 'from . import helper\nimport importlib, sys\nsys.path.append(extra)\nimportlib.import_module(name)\n', 'pkg/helper.py': 'VALUE = 1\n' } });
+      const reason = r.applicability.reason;
+      assert.match(reason, /could not follow/i);
+      assert.match(reason, /sys\.path/);
+      assert.match(reason, /not in the (?:cycle )?check/i);
+      assert.doesNotMatch(reason, /^Static import findings are retained/);
+      assert.equal(r.emptyCause, undefined);
+      assert.equal(r.howToConfigure, undefined);
+    });
+  });
+
+  describe('no fix text of the group tells a project to move code or documents', () => {
+    it('the empty results of every fixture of the group', () => {
+      for (const key of KEYS) {
+        for (const [name, fixture] of Object.entries(FIXTURES[key].empties)) {
+          const how = run(key, fixture).result.howToConfigure;
+          if (!how) continue;
+          assert.doesNotMatch(how, /\b(move|moving|relocate|rename|restructure)\b/i, `${key}/${name}: ${how}`);
+        }
+      }
+    });
+
+    it('layout-not-recognized is used where the limit is DocGuard\'s: the fixtures name a validator-side limit', () => {
+      for (const key of KEYS) {
+        for (const [name, fixture] of Object.entries(FIXTURES[key].empties)) {
+          if (fixture.cause !== 'layout-not-recognized') continue;
+          const r = run(key, fixture).result;
+          assert.match(r.howToConfigure, /reads|cannot read|does not read|read /i, `${key}/${name} says what the validator reads`);
+        }
+      }
+    });
+  });
+});

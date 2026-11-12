@@ -10,7 +10,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join, relative, extname } from 'node:path';
+import { resolve, join, relative, extname, sep } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { collectPackageJsons } from '../shared-source.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
@@ -46,15 +46,48 @@ function readPackageVersion(projectDir, config) {
 
 /**
  * Whether Metadata-Sync's kind of check belongs to the project: it applies to a
- * project that declares a version, in package.json (the one it reads) or in
- * another ecosystem's manifest (which it does not read, see the cause). A
- * project that declares no version has no version string to keep in step with
- * its documents.
+ * package somebody installs, whose version the documents quote. It does not apply
+ * to a package marked `"private": true` (nobody installs it, so no document quotes
+ * a version to keep current), nor to a project that declares no version.
+ *
+ * Which version it reads, and the evidence always names it:
+ *   - the root package.json, when it declares a version;
+ *   - otherwise a workspace package, only when exactly one workspace package is
+ *     published (not private): a workspace package is not the project's version
+ *     when several are published or none is. The root of a monorepo usually has
+ *     no version of its own, so one published package is the only unambiguous
+ *     candidate.
+ * Only this decision follows that rule; the check itself keeps reading the version
+ * it always read, so no finding changes under `standard`.
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
-  const { version } = readPackageVersion(projectDir, config);
-  if (version) return { applies: true, evidence: `package.json declares version ${version}` };
+  const rootPath = resolve(projectDir, 'package.json');
+  let root = null;
+  try { root = JSON.parse(readFileSync(rootPath, 'utf-8')); } catch { /* absent or unreadable: no root version */ }
+  if (root?.version) {
+    return root.private === true
+      ? { applies: false, evidence: `package.json declares version ${root.version} but is marked "private": true, so nobody installs it and no document quotes its version`, private: true }
+      : { applies: true, evidence: `package.json declares version ${root.version}` };
+  }
+  const versioned = collectPackageJsons(projectDir, config)
+    .filter(({ dir, pkg }) => resolve(dir) !== resolve(projectDir) && pkg.version)
+    .map(({ dir, pkg }) => ({ file: `${relative(projectDir, dir).split(sep).join('/')}/package.json`, pkg }));
+  if (versioned.length) {
+    const published = versioned.filter(({ pkg }) => pkg.private !== true);
+    if (published.length === 1) {
+      const { file, pkg } = published[0];
+      return { applies: true, evidence: `the root package.json declares no version; ${file} (${pkg.name || 'unnamed'}, version ${pkg.version}) is the only published workspace package, so its version is the project's` };
+    }
+    const listed = (published.length ? published : versioned).map(v => v.file).join(', ');
+    return {
+      applies: false,
+      private: published.length === 0,
+      evidence: published.length === 0
+        ? `the root package.json declares no version and every workspace package that declares one is marked "private": true (${listed}), so nobody installs a versioned package`
+        : `the root package.json declares no version and ${published.length} workspace packages are published (${listed}), so no single version is the project's`,
+    };
+  }
   const other = OTHER_VERSIONED_MANIFESTS.find(f => existsSync(resolve(projectDir, f)));
   if (other) return { applies: true, evidence: `${other} exists, a manifest that carries a version Metadata-Sync does not read`, otherManifest: other };
   return { applies: false, evidence: 'no package.json with a version field, and no other versioned manifest (pyproject.toml, Cargo.toml, pom.xml and similar)' };
@@ -65,8 +98,9 @@ function metadataContract(projectDir, config, performed, found) {
     performed, found, ran: `compared ${performed} version reference(s) with the version package.json declares`,
     decide: () => applies(projectDir, config),
     empty: (decision) => {
+      if (!decision.applies && decision.private !== undefined) return { emptyCause: 'nothing-of-this-kind', note: `Metadata-Sync compared nothing because ${decision.evidence}.`, howToConfigure: 'Nothing to configure for a package nobody installs. If it is published, remove `"private": true` from the package.json that carries the version and Metadata-Sync keeps the documents that name it in step.' };
       if (!decision.applies) return { note: 'Metadata-Sync found no versioned manifest, so there is no version string to compare with the documents.', howToConfigure: 'Nothing to configure unless the project is versioned: then declare `version` in package.json and Metadata-Sync keeps the documents that name it in step.' };
-      if (decision.otherManifest) return { emptyCause: 'layout-not-recognized', note: `Metadata-Sync reads the version from package.json only, and this project's version lives in ${decision.otherManifest}, so it compared no document with it.`, howToConfigure: `Metadata-Sync cannot read ${decision.otherManifest}. Declare the same version in a package.json "version" field next to it and keep it in step with ${decision.otherManifest}, or keep version references out of the documents.` };
+      if (decision.otherManifest) return { emptyCause: 'layout-not-recognized', note: `Metadata-Sync reads the version from package.json only, and this project's version lives in ${decision.otherManifest}, so it compared no document with it.`, howToConfigure: `Metadata-Sync reads package.json and extension.yml versions, not ${decision.otherManifest}: that is a limit of DocGuard, and the project is not asked to add a package.json or change its manifest. Until DocGuard reads ${decision.otherManifest}, keep version references in the documents in step by hand; to have them checked, ask for ${decision.otherManifest} to be supported by opening an issue on the DocGuard repository.` };
       return { emptyCause: 'needs-content', note: 'package.json declares a version but no Markdown file or extension.yml names it in a URL, a `version:` line or a `<package>@x.y.z` install command, so Metadata-Sync compared nothing.', howToConfigure: 'Name the version where readers copy it from, for example `npm install <name>@<version>` in README.md; Metadata-Sync then flags the reference when package.json moves on.' };
     },
   });

@@ -96,7 +96,8 @@ export const FIXTURES = {
   architecture: {
     empties: {
       'nothing-of-this-kind': { files: { 'package.json': PKG, 'src/index.js': 'export const x = 1;\n' }, cause: 'nothing-of-this-kind' },
-      'layout-not-recognized': { files: { 'package.json': PKG, 'src/index.js': 'export const x = 1;\n' }, extra: { layers: { routes: { dir: 'src/routes', canImport: ['services'] }, services: { dir: 'src/services', canImport: [] } } }, cause: 'layout-not-recognized' },
+      // The layers name directories the project does not have: the project's declaration is wrong, not DocGuard's reading.
+      'needs-declaration (layers name no existing directory)': { files: { 'package.json': PKG, 'src/index.js': 'export const x = 1;\n' }, extra: { layers: { routes: { dir: 'src/routes', canImport: ['services'] }, services: { dir: 'src/services', canImport: [] } } }, cause: 'needs-declaration' },
     },
     fix: { files: { 'package.json': PKG, 'src/index.js': "import { b } from './b.js';\nexport const x = b;\n", 'src/b.js': 'export const b = 1;\n' } },
   },
@@ -127,6 +128,10 @@ export const FIXTURES = {
       'needs-content': { files: { 'package.json': PKG, 'README.md': '# svc\n\nA service.\n' }, cause: 'needs-content' },
       'layout-not-recognized': { files: { 'pyproject.toml': '[project]\nname = "svc"\nversion = "1.2.0"\n', 'README.md': '# svc\n' }, cause: 'layout-not-recognized' },
       'nothing-of-this-kind': { files: { 'src/index.js': 'export const x = 1;\n' }, cause: 'nothing-of-this-kind' },
+      // A private application: a version, but nobody installs it.
+      'nothing-of-this-kind (private package)': { files: { 'package.json': JSON.stringify({ name: 'app', version: '0.1.0', private: true }), 'README.md': '# app\n' }, cause: 'nothing-of-this-kind' },
+      // A monorepo whose root has no version and whose only versioned package is private.
+      'nothing-of-this-kind (private workspace)': { files: { 'package.json': JSON.stringify({ name: 'root', private: true, workspaces: ['packages/*'] }), 'packages/web/package.json': JSON.stringify({ name: 'web', version: '2.0.0', private: true }), 'README.md': '# root\n' }, cause: 'nothing-of-this-kind' },
     },
     fix: { files: { 'package.json': PKG, 'README.md': '# svc\n\nInstall with `npm install svc@1.2.0`.\n' } },
   },

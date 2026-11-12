@@ -27,6 +27,7 @@ import { shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } fr
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { scanCodeTechnologies, TECH_PATTERNS } from '../scanners/tech-stack.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -94,9 +95,17 @@ function docsDiffContract(projectDir, config, performed, found) {
     empty: (decision) => {
       if (!decision.applies) return { note: `Docs-Diff found no package manifest and no test file, so it compared no technology with ${arch} and no test with ${testSpec}.`, howToConfigure: `Nothing to configure unless the project has a package manifest or tests: then Docs-Diff compares them with ${arch} and ${testSpec}.` };
       const noDocs = !existsSync(resolveDocRole(projectDir, config, 'architecture')) && !existsSync(resolveDocRole(projectDir, config, 'testSpec'));
-      return noDocs
-        ? { emptyCause: 'needs-declaration', note: `Docs-Diff found ${decision.evidence}, but neither ${arch} nor ${testSpec}, so it compared nothing with a document.`, howToConfigure: `Create ${arch} and name the technologies the project uses (for example "Express" for an express dependency), and ${testSpec} listing the test files in backticks (\`tests/a.test.js\`); \`docguard generate\` drafts both.` }
-        : { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.` };
+      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.` };
+      const a = roleDocument(projectDir, config, 'architecture');
+      const t = roleDocument(projectDir, config, 'testSpec');
+      const archNeeds = 'the technologies the project uses (for example "Express" for an express dependency)';
+      const testNeeds = 'the test files listed in backticks (`tests/a.test.js`)';
+      const howToConfigure = [
+        a.lead ? `${a.lead}It needs ${archNeeds} named.` : `Create ${arch} naming ${archNeeds}.`,
+        t.lead ? `${t.lead}It needs ${testNeeds}.` : `Create ${testSpec} listing the test files in backticks (\`tests/a.test.js\`).`,
+        !a.lead && !t.lead ? '`docguard generate` drafts both.' : '',
+      ].filter(Boolean).join(' ');
+      return { emptyCause: 'needs-declaration', note: `Docs-Diff found ${decision.evidence}, but neither ${arch} nor ${testSpec}, so it compared nothing with a document.`, howToConfigure };
     },
   });
 }

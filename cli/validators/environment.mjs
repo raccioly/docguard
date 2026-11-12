@@ -6,6 +6,7 @@
  * @implements docguard.fallback-language-coverage#FR-004
  */
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example
  * Now respects projectTypeConfig (e.g., skip env checks for CLI tools)
@@ -106,7 +107,11 @@ function environmentContract(projectDir, config, performed, found) {
     performed, found, ran: `checked the sections of ${envDoc} and the variables the code reads against it`,
     decide: () => applies(projectDir, config),
     empty: (decision) => decision.applies
-      ? { emptyCause: 'needs-declaration', note: `Environment found ${decision.evidence}, but no ${envDoc}, so it compared no variable with a document.`, howToConfigure: `Create ${envDoc} with a "## Setup Steps" section and a "## Environment Variables" section that lists every variable the code reads (\`docguard generate\` drafts it from the code); \`.env.example\` entries count as documentation.` }
+      ? (() => {
+        const role = roleDocument(projectDir, config, 'environment');
+        const content = 'a "## Setup Steps" section and a "## Environment Variables" section that lists every variable the code reads; `.env.example` entries count as documentation';
+        return { emptyCause: 'needs-declaration', note: `Environment found ${decision.evidence}, but no ${envDoc}, so it compared no variable with a document.`, howToConfigure: role.lead ? `${role.lead}The document needs ${content}.` : `Create ${envDoc} with ${content} (\`docguard generate\` drafts it from the code).` };
+      })()
       : { note: `Environment found no ${envDoc}, no .env template and no source that reads an environment variable, so there is nothing to document.`, howToConfigure: `Nothing to configure unless the project reads environment variables: then document them in ${envDoc}.` },
   });
 }
