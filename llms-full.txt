@@ -2024,6 +2024,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
+
 ### Changed
 
 - **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
@@ -2382,16 +2390,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
     one level (at most 64 paths) in DDF002 and `docguard diff`; a missing
     expansion is reported by its expanded path; spaces after the commas are
     ignored. A brace glob (`src/**/*.test.{js,jsx}`) is one pattern matched as
-    a union; in a documented glob `?` is one character and `**/` also matches
-    no directory (`src/**/*.test.js` documents `src/a.test.js`).
-  - **DDF001 reads negation over a list and removal verbs** (FR-003–FR-005).
-    `no CDK, Terraform or Pulumi stacks`, `We removed Terraform`, `migrated off`,
-    `was replaced by` no longer count as documenting the technology, and a
-    Revision History, Changelog or Release Notes section is not read as a
-    Tech Stack claim (a `#` line in a code fence is not a heading).
-    `replaced MySQL with PostgreSQL` keeps PostgreSQL live, and so do sentences
 
-<!-- truncated: 6189 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6197 more lines — read CHANGELOG.md directly -->
 
 ---
 
