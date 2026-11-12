@@ -135,6 +135,7 @@ const FIXTURES = {
     empties: {
       'nothing-of-this-kind (not declared)': { files: { ...BASE, ...DOCS }, cause: 'nothing-of-this-kind' },
       'needs-content': { files: { ...BASE, ...DOCS }, extra: { ownership: { entries: [] } }, cause: 'needs-content' },
+      'needs-content (declared, no source file)': { files: { 'package.json': PKG }, extra: { ownership: { entries: [] } }, cause: 'needs-content' },
     },
     fix: { files: { ...BASE, ...DOCS }, extra: { ownership: { roots: ['src'], entries: [{ doc: 'docs-canonical/ARCHITECTURE.md', purpose: 'Explains the entry point', paths: ['src/**'] }] } } },
   },

@@ -54,7 +54,8 @@ export function applies(projectDir, config = {}) {
 
 function ownHow(d, { entriesMissing }) {
   const doc = d.docs?.[0] || 'docs-canonical/ARCHITECTURE.md';
-  const dir = (d.source || 'src/x').includes('/') ? `${d.source.slice(0, d.source.indexOf('/'))}/**` : '<dir>/**';
+  const src = d.source || 'src/x';
+  const dir = src.includes('/') ? `${src.slice(0, src.indexOf('/'))}/**` : '<dir>/**';
   return `${entriesMissing ? 'The ownership block has no entries. ' : ''}Add an "ownership" block to .docguard.json and write every value yourself: { "entries": [ { "doc": "${doc}", "section": "<section id or heading anchor in that document>", "purpose": "<one sentence, written by a person, saying what that section explains>", "paths": ["${dir}"] } ] }. \`docguard trace --owners --suggest\` drafts a block, but its purposes are placeholders (OWN008) and its assignments are guesses: edit every entry before you commit it.`;
 }
 const NO_OWNER_SUBJECT = 'Nothing to configure until you declare an ownership map: an "ownership" block in .docguard.json (or .devin/wiki.json) whose entries name the document section responsible for each path, written by a person. Which document covers which code is checked meanwhile by Doc-Dependency (covers= markers).';
