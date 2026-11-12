@@ -565,6 +565,86 @@
       "expected": [],
       "forbidden": [],
       "oppositeControl": null
+    },
+    {
+      "id": "dev-vendored-instruction-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-agent-instructions",
+      "causalFamily": "vendored-instruction-drift",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/agent-instruction-control" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR005"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "PSR005@.claude/skills/speckit-plan/SKILL.md",
+        "PSR005@.claude/skills/release-notes/SKILL.md"
+      ],
+      "oppositeControl": "dev-vendored-instruction-defect"
+    },
+    {
+      "id": "dev-vendored-instruction-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-agent-instructions",
+      "causalFamily": "vendored-instruction-drift",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/agent-instruction-control" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR005"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [
+        { "path": ".claude/skills/speckit-plan/SKILL.md", "find": "2. Fill the plan template.", "replace": "2. Fill the plan template, then skip the constitution check.", "expectedOccurrences": 1 }
+      ],
+      "expected": [
+        "PSR005@.claude/skills/speckit-plan/SKILL.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "dev-vendored-instruction-control"
+    },
+    {
+      "id": "eval-vendored-instruction-control",
+      "split": "evaluation",
+      "repositoryGroup": "synthetic-agent-instructions-heldout",
+      "causalFamily": "installed-skill-local-edit",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/agent-instruction-heldout" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR005"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [
+        { "path": ".agents/skills/triage/SKILL.md", "find": "if any.", "replace": "if any, and the owning team.", "expectedOccurrences": 1 }
+      ],
+      "expected": [],
+      "forbidden": [
+        "PSR005@.agents/skills/speckit-tasks/SKILL.md",
+        "PSR005@.agents/skills/triage/SKILL.md"
+      ],
+      "oppositeControl": "eval-vendored-instruction-defect"
+    },
+    {
+      "id": "eval-vendored-instruction-defect",
+      "split": "evaluation",
+      "repositoryGroup": "synthetic-agent-instructions-heldout",
+      "causalFamily": "installed-skill-local-edit",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/agent-instruction-heldout" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR005"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [
+        { "path": ".agents/skills/speckit-tasks/SKILL.md", "find": "1. Read plan.md.", "replace": "1. Read plan.md and spec.md.", "expectedOccurrences": 1 }
+      ],
+      "expected": [
+        "PSR005@.agents/skills/speckit-tasks/SKILL.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "eval-vendored-instruction-control"
     }
   ]
 }

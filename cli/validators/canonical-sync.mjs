@@ -38,6 +38,7 @@
  * Zero NPM runtime dependencies — pure Node.js built-ins only.
  */
 
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -132,7 +133,8 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   // Both carry "N commands / N validators" surface claims. Scanning only the
   // README is why AGENTS.md's counts ("Commands (15 total)", "24 validators")
   // drifted unchecked for releases — close that gap by checking both.
-  const surfaceFiles = ['README.md', 'AGENTS.md'];
+  // docguard.agent-instruction-role#FR-002: README plus the role's root-level documents.
+  const surfaceFiles = ['README.md', ...rootAgentDocs(projectDir)];
   let readme = '';
   let readAny = false;
   for (const f of surfaceFiles) {
