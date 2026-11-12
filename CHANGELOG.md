@@ -80,6 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The compact guard response carries the result contract by exception.** The
+  MCP `docguard_guard` default and `guard --format json --compact` had grown by
+  27 KB on the fixture the budget measures once every validator reported
+  `performed`, `applies`, a cause and a fix. The compact form now drops
+  `performed`, `applies` and `applicability.before`, keeps `emptyCause` where a
+  validator examined nothing, keeps `howToConfigure` only where it applies and is
+  empty, states the sentence of every validator that has nothing to check once,
+  and refers to validators by key in `strict.unexamined`. The full form keeps
+  every field.
 - **Security reports how many files it scanned and why a run scanned none**
   (spec 097, stage A). The result now carries `performed` (files scanned),
   `applies` (a project applies when it has a source or configuration file with a

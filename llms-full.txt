@@ -2075,6 +2075,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The compact guard response carries the result contract by exception.** The
+  MCP `docguard_guard` default and `guard --format json --compact` had grown by
+  27 KB on the fixture the budget measures once every validator reported
+  `performed`, `applies`, a cause and a fix. The compact form now drops
+  `performed`, `applies` and `applicability.before`, keeps `emptyCause` where a
+  validator examined nothing, keeps `howToConfigure` only where it applies and is
+  empty, states the sentence of every validator that has nothing to check once,
+  and refers to validators by key in `strict.unexamined`. The full form keeps
+  every field.
 - **Security reports how many files it scanned and why a run scanned none**
   (spec 097, stage A). The result now carries `performed` (files scanned),
   `applies` (a project applies when it has a source or configuration file with a
@@ -2384,17 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
 
 - **A git call that fails is a gap, not a finding.** On a loaded machine
   `git check-ignore` could fail to spawn, and PSR002 then reported every
-  unresolved pointer at high confidence; a failed `git grep` at HEAD could
-  make REF001 report a documented symbol as removed. Shared git helpers now
-  retry a transient spawn error once, then record the failure on the
-  validator that was running. PSR002 and REF001 withhold what git could not
-  answer and say how much. Because one failed call can leave shared inputs
-  incomplete for every check (a fault-injection run turned 288 TRC004 into
-  476 on one project), every absence claim (a missing pointer, symbol, test,
-  link, source, revision or implementation evidence) is withheld while any
-  gap stands, and the checks it affected report `inconclusive`. Private git
 
-<!-- truncated: 6324 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6333 more lines — read CHANGELOG.md directly -->
 
 ---
 

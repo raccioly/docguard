@@ -21,12 +21,28 @@ import { resolve } from 'node:path';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { compactGuardResult, FULL_CONTRACT_HINT } from '../cli/shared-guard-json.mjs';
+import { STANDARD_APPLICABILITY_REASONS } from '../cli/validator-coverage.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const TARGETS = ['.', 'benchmarks/fixtures/sparse-doc-control', 'benchmarks/fixtures/monorepo-security-control', 'benchmarks/fixtures/python-layered-control'];
 const size = value => Buffer.byteLength(JSON.stringify(value));
 const full = {};
 for (const target of TARGETS) full[target] = runGuardInternal(resolve(target), loadConfig(resolve(target)));
+
+/**
+ * What the compact form keeps of an applicability (specs/097-strict-by-default): not the status
+ * a strict `applies: false` remap replaced (`before`), and not the sentence of a validator that
+ * has nothing to check (`emptyCause` nothing-of-this-kind), which the compact form states once as
+ * `emptyCauses`. Both stay in the full form.
+ */
+function compactApplicability(full, applicability, key) {
+  if (!applicability) return applicability;
+  const { before: _before, ...rest } = applicability;
+  const validator = full.validators.find(v => v.key === key);
+  const standard = Object.values(STANDARD_APPLICABILITY_REASONS).includes(rest.reason);
+  if (validator?.emptyCause === 'nothing-of-this-kind' && !standard) delete rest.reason;
+  return rest;
+}
 
 /** Read a validator's applicability back out of the compact form. */
 function applicabilityOf(compact, validator) {
@@ -66,7 +82,8 @@ describe('the compact form loses nothing (FR-005, SC-003)', () => {
         'nextStep', 'baselineSuppressed', 'baselineBySeverity', 'baselineStillFiring', 'baselineStale', 'coverage', 'semanticClaims']) {
         assert.deepEqual(c[key], f[key], key);
       }
-      assert.deepEqual({ ...c.checkCoverage, limitations: limitationsOf(c) }, f.checkCoverage, 'checkCoverage is derivable (FR-007)');
+      assert.deepEqual({ ...c.checkCoverage, limitations: limitationsOf(c) },
+        { ...f.checkCoverage, limitations: f.checkCoverage.limitations.map(l => ({ ...compactApplicability(f, l, l.key), key: l.key, name: l.name })) }, 'checkCoverage is derivable (FR-007)');
       assert.equal(c.checkCoverage.limitations, undefined, 'each limitation is already a validator\'s applicability');
       assert.equal(c.validators.length, f.validators.length);
       c.validators.forEach((v, i) => {
@@ -74,7 +91,7 @@ describe('the compact form loses nothing (FR-005, SC-003)', () => {
         for (const key of ['key', 'name', 'status', 'effectiveStatus', 'passed', 'total', 'effectiveErrors', 'effectiveWarnings', 'effectiveInfos']) {
           assert.deepEqual(v[key], o[key], `${o.key}.${key}`);
         }
-        assert.deepEqual(applicabilityOf(c, v), o.applicability, `${o.key}.applicability`);
+        assert.deepEqual(applicabilityOf(c, v), compactApplicability(f, o.applicability, o.key), `${o.key}.applicability`);
         assert.equal(v.errorCount, o.errors.length);
         assert.equal(v.warningCount, o.warnings.length);
         assert.equal(v.findings, undefined);
@@ -144,6 +161,61 @@ function mcpGuard(args) {
   const byId = new Map(out.split('\n').filter(Boolean).map(line => { try { const m = JSON.parse(line); return [m.id, m]; } catch { return [null, null]; } }));
   return { list: byId.get(1), call: byId.get(2) };
 }
+
+describe('the result contract rides in the full form only (specs/097-strict-by-default, budget)', () => {
+  const dir = resolve('benchmarks/fixtures/sparse-doc-control');
+  const text = mcpGuard({ projectDir: dir }).call.result.content[0].text;
+  const compact = JSON.parse(text);
+  const full = JSON.parse(mcpGuard({ projectDir: dir, detail: 'full' }).call.result.content[0].text);
+
+  it('the compact validators carry none of performed, applies or applicability.before', () => {
+    for (const v of compact.validators) {
+      assert.equal(v.performed, undefined, `${v.key}.performed`);
+      assert.equal(v.applies, undefined, `${v.key}.applies`);
+      assert.equal(v.applicability?.before, undefined, `${v.key}.applicability.before`);
+    }
+  });
+
+  it('a validator that applies and examined nothing carries its cause and its fix', () => {
+    const v = compact.validators.find(x => x.key === 'changelog');
+    assert.equal(v.verdict, 'empty');
+    assert.equal(v.emptyCause, 'needs-declaration');
+    assert.match(v.howToConfigure, /CHANGELOG\.md/);
+    assert.ok(v.applicability.reason, 'one reason');
+    assert.equal(v.note, undefined, 'the note is the reason, stated once');
+  });
+
+  it('a validator with nothing to check carries its cause, no fix and no sentence of its own', () => {
+    const v = compact.validators.find(x => x.emptyCause === 'nothing-of-this-kind');
+    assert.ok(v, 'the fixture has one');
+    assert.equal(v.howToConfigure, undefined);
+    assert.equal(v.applicability.reason, undefined);
+    assert.match(compact.emptyCauses['nothing-of-this-kind'], /nothing to configure/);
+  });
+
+  it('the full form keeps every contract field', () => {
+    const v = full.validators.find(x => x.key === 'pathScopedRules');
+    assert.equal(typeof v.performed, 'number');
+    assert.equal(typeof v.applies.evidence, 'string');
+    assert.ok(v.howToConfigure && v.note);
+  });
+
+  it('under strict the compact strict block refers to validators by key and repeats no text', () => {
+    const strictFull = runGuardInternal(dir, { ...loadConfig(dir), enforcement: 'strict' });
+    const c = compactGuardResult(strictFull);
+    assert.ok(c.strict.unexamined.length > 0);
+    for (const u of c.strict.unexamined) {
+      assert.deepEqual(Object.keys(u).sort(), ['blocking', 'cause', 'newIn', 'validator', 'verdict'].sort());
+      assert.ok(c.validators.some(v => v.key === u.validator), 'the validator entry carries the text');
+    }
+    assert.ok(strictFull.strict.unexamined.every(u => 'howToConfigure' in u && 'name' in u), 'the full form keeps them');
+  });
+
+  it('the response stays within its size budget', () => {
+    // 37,026 bytes on v0.47.0; the budget allows +10%. The contract adds causes and fixes, not copies.
+    assert.ok(Buffer.byteLength(text) <= 40_500, `${Buffer.byteLength(text)} bytes`);
+  });
+});
 
 describe('agents get the compact form; the full contract stays reachable (FR-003, FR-004)', () => {
   it('docguard_guard is compact by default and full with detail "full"', () => {
