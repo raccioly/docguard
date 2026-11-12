@@ -81,6 +81,23 @@ O DocGuard foi desenhado para ser usado **por** agentes de IA, não só por huma
 
 Guia completo: [docs/ai-integration.md](docs/ai-integration.md) (em inglês).
 
+## Documentação em outro idioma
+
+O DocGuard lê documentação escrita em qualquer idioma, mas alguns rótulos que ele procura só são reconhecidos em inglês. O suporte a outros idiomas é acompanhado na [issue #644](https://github.com/raccioly/docguard/issues/644).
+
+**Funciona hoje.** Texto corrido em qualquer idioma, com acentos, e ids de requisito como `FR-001` dentro de frases em qualquer idioma.
+
+**Precisa ficar em inglês por enquanto.** Escreva estes rótulos exatamente como aparecem e mantenha todo o resto no seu idioma:
+
+- **Títulos dos documentos canônicos** (sem diferenciar maiúsculas de minúsculas; numeração de seção no início é aceita): `ARCHITECTURE.md` exige `## System Overview`, `## Component Map` e `## Tech Stack`; `DATA-MODEL.md` exige `## Entities`; `SECURITY.md` exige `## Authentication` e `## Secrets Management`; `TEST-SPEC.md` exige `## Test Categories` e `## Coverage Rules`; `ENVIRONMENT.md` exige `## Environment Variables` e `## Setup Steps`. Um perfil de projeto pode acrescentar outros títulos obrigatórios.
+- **Nomes das seções do Spec Kit**: o `spec.md` precisa de títulos que contenham `User Scenarios`, `Requirements` e `Success Criteria`, além de ids como `FR-001` e `SC-001`; o `plan.md` precisa de `Summary`, `Technical Context` e `Project Structure`; o `tasks.md` precisa de um título no estilo `Phase 1` e de ids como `T001`.
+- **Marcador do changelog**: o `CHANGELOG.md` precisa conter `[Unreleased]`.
+- **Status do registro de decisão**: a primeira palavra de `**Status:**` deve ser `Proposed`, `Accepted`, `Rejected`, `Deprecated` ou `Superseded` (também valem `Approved`, `Draft`, `Proposal`, `Obsolete` e `Replaced`).
+
+Uma seção obrigatória que não se aplica ao seu projeto pode ser marcada com `<!-- docguard:section <slug> n/a — motivo -->`, em que `<slug>` é o título em inglês, em minúsculas e com hífens (por exemplo `system-overview`). O motivo deve começar com uma letra ou dígito de `A-Z`, `a-z` ou `0-9`.
+
+**Ignore os números de qualidade do texto.** Voz passiva, negação, carga condicional e as demais métricas parecidas usam listas de palavras em inglês; em documentos de outro idioma, os valores não significam nada até que o próprio DocGuard passe a avisar isso.
+
 ## Documentação
 
 Os guias completos estão em inglês, em

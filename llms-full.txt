@@ -2081,6 +2081,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
+
 ### Changed
 
 - **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
@@ -2387,16 +2395,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   git repository`. DocGuard already reported git's own first line; only the
   test pinned the old text. Test-only.
 
-### Commits
 
-- chore(deps): bump the all-actions group with 8 updates (#604)
-- chore(deps): bump @babel/parser (#603)
-- chore: re-anchor spec 080 to main after the squash merge of #601 (#602)
-- maint: 2026-11-01 — spec 080 implementation outcomes (verified) (#601)
-- fix: counts, SPK010, DSP001 and router auth say only what they can prove (spec 080) (#600)
-
-
-<!-- truncated: 6241 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6249 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -49,6 +49,7 @@
 - [CI/CD Integration](#%EF%B8%8F-cicd-integration)
 - [What's New](#-whats-new)
 - [File Structure](#-file-structure)
+- [Docs in another language](#-writing-your-docs-in-another-language)
 - [Configuration](#%EF%B8%8F-configuration)
 - [Research Credits](#-research-credits)
 
@@ -906,6 +907,25 @@ your-project/
 ├── llms.txt                         # AI-friendly summary
 └── .docguard.json                   # DocGuard configuration
 ```
+
+---
+
+## 🌐 Writing your docs in another language
+
+DocGuard reads documentation written in any language, but a few labels it looks for are matched in English only. Support for other languages is tracked in [issue #644](https://github.com/raccioly/docguard/issues/644).
+
+**Works today.** Prose in any language, accents included, and requirement ids such as `FR-001` inside sentences in any language.
+
+**Must stay in English today.** Write these labels exactly as shown and keep everything else in your language:
+
+- **Canonical document headings** (case-insensitive; a leading section number is fine): `ARCHITECTURE.md` needs `## System Overview`, `## Component Map` and `## Tech Stack`; `DATA-MODEL.md` needs `## Entities`; `SECURITY.md` needs `## Authentication` and `## Secrets Management`; `TEST-SPEC.md` needs `## Test Categories` and `## Coverage Rules`; `ENVIRONMENT.md` needs `## Environment Variables` and `## Setup Steps`. A project profile can add more required headings.
+- **Spec Kit section names**: a `spec.md` needs a heading containing `User Scenarios`, `Requirements` and `Success Criteria`, plus ids such as `FR-001` and `SC-001`; a `plan.md` needs `Summary`, `Technical Context` and `Project Structure`; a `tasks.md` needs a `Phase 1` style heading and ids such as `T001`.
+- **Changelog marker**: `CHANGELOG.md` must contain `[Unreleased]`.
+- **Decision-record status**: the first word of `**Status:**` must be `Proposed`, `Accepted`, `Rejected`, `Deprecated` or `Superseded` (also accepted: `Approved`, `Draft`, `Proposal`, `Obsolete`, `Replaced`).
+
+A required section that does not apply to your project can be marked with `<!-- docguard:section <slug> n/a — reason -->`, where `<slug>` is the English heading in lowercase with hyphens (for example `system-overview`). The reason must begin with a letter or digit from `A-Z`, `a-z` or `0-9`.
+
+**Ignore the text-quality numbers.** Passive voice, negation, conditional load and the similar metrics rely on English word lists, so for documents in another language their numbers carry no meaning until DocGuard can say so itself.
 
 ---
 
