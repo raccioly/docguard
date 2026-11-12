@@ -22,10 +22,10 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 ### A2 — Performed checks, causes, applicability
 
 - [x] T008 [US1] Failing tests: `deriveVerdict` returns `empty` for a result with zero performed checks and no findings; Requirement-Anchors enabled with zero anchors is `empty`; a Doc-Ownership entry with a placeholder purpose is a finding (FR-004).
-- [ ] T009 [US2] `tests/validator-applicability.test.mjs`: for every registered validator, one fixture where it applies and is empty and one where it does not apply. Assert the cause, a non-empty `howToConfigure`, `applies`, and that applying the fix to the fixture makes the validator perform at least one check. The test enumerates the registry, so a new validator without fixtures fails it (FR-005, FR-006, SC-006).
+- [x] T009 [US2] `tests/validator-applicability.test.mjs`: for every registered validator, one fixture where it applies and is empty and one where it does not apply. Assert the cause, a non-empty `howToConfigure`, `applies`, and that applying the fix to the fixture makes the validator perform at least one check. The test enumerates the registry, so a new validator without fixtures fails it (FR-005, FR-006, SC-006).
 - [x] T010 [US2] Failing tests: no two validators share an empty reason sentence; no validator returns `empty` without a cause (FR-005).
 - [x] T011 `cli/validator-coverage.mjs`: the performed-check count in the result contract, the cause set, `applies`.
-- [ ] T012 Each validator in `cli/validators/`: report performed checks, implement `applies(project)` from the project's files, and own its causes and `howToConfigure`. Verify each against the code, using the audit inventories only as a starting map. Split by family if one session cannot hold all 37.
+- [x] T012 Each validator in `cli/validators/`: report performed checks, implement `applies(project)` from the project's files, and own its causes and `howToConfigure`. Verify each against the code, using the audit inventories only as a starting map. Split by family if one session cannot hold all 37.
 
 ### A3 — Security classification
 
