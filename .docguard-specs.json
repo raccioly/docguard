@@ -13281,7 +13281,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:233504b27cceb2fe83647758a59e5c0d5df618ea65ac9b64d8a770f14b086457"
+            "digest": "sha256:3bdfd1ecc211844752427d928d172be4ce0cdfaf7ddf8e67e6dc3346ae88b013"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
@@ -13289,11 +13289,11 @@
           },
           {
             "path": "specs/095-recorded-document-reviews/tasks.md",
-            "digest": "sha256:17e45296d2a3ab1ae1e9b2fb7ba3c6e7b180e40c4f3020db450a0bed2708c6a3"
+            "digest": "sha256:4ff880eceffd6518974220d2353507dbc152b4453d68a0805cd973be3661625f"
           }
         ],
         "taskCompletion": {
-          "checked": 10,
+          "checked": 13,
           "total": 13
         },
         "implementationEvidence": [
