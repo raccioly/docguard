@@ -2027,6 +2027,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
+- **The cause-and-fix contract reaches sixteen more validators.** Spec-Registry,
+  Doc-Dependency, Requirement-Anchors, Path-Scoped-Rules, Doc-Ownership, Evidence,
+  Cross-Reference, Generated-Staleness, Suppressions, Diff-Suspicion,
+  Reference-Existence, API-Doc-Smells, Decision-Records, AI-DLC, Canonical-Sync and
+  Metrics-Consistency each report how many checks they performed, whether the kind
+  of check belongs to the project (decided from the project's files, never from the
+  validator's own missing configuration) and, on an empty result, a cause and the
+  exact file, key or snippet that makes them examine something. The ones that need a
+  declaration no tool can infer (anchors, ownership, covers=, evidence) apply to a
+  project that has the documents and the code, and say what a person must write; the
+  drafted ownership block is never offered as a fix without saying it must be edited
+  (`docguard.strict-by-default` FR-004 to FR-006, stage A).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
@@ -2063,6 +2075,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   held the gate on `empty` (FR-004).
 
 ### Fixed
+
+- **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
+  for `<!-- status: draft -->` or `status: draft` front matter, while every
+  generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
+  in draft was not flagged (GST001) and a project whose only generated documents
+  were drafts was reported as having none. Both spellings are read. Under
+  `standard` this adds GST001 findings for a draft left unchanged beyond the
+  staleness window (14 days by default).
 
 - **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
   had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
@@ -2373,28 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
     Counts of test files, suites, modules and runs are not compared with
     declared cases, while `20 test cases` still is.
 - **SPK010 no longer says a git-ignored file was "never changed"** (#597).
-  Git cannot observe an ignored, untracked file such as a local diagnostic
-  receipt, so its absence from the feature's history proves nothing. A
-  tracked file is still reported, even under an ignore rule.
-- **DSP001 reads the overlap where the document names the file** (#598).
-  The removed-token overlap was computed over the whole document. A test file
-  named once in an inventory table was therefore paired with common words
-  from unrelated sections, and from other rows of the same table, which
-  blocked `guard --fail-on-warning`. It is now counted in the smallest
-  section holding the reference, without the table rows that name other
-  files.
-- **Auth middleware behind a path the router reader cannot read no longer
-  marks every route as protected** (#595, found by the Jules bug-hunt
-  routine). `router.use(API_PREFIX, requireAuth)` covers an unknown scope, so
-  it is now recorded in `scan.unresolved`. A `use()` whose middleware is not
-  auth records nothing.
-- **The anchor-cache tests pass on CI** (#599). They asserted an enabled
-  cache, but the cache turns itself off whenever `CI` is set.
-- **The unreadable-git test accepts the CI runners' newer git wording**
-  (`docguard.unreadable-git-metadata`). The runners' git now reports
-  `gitfile does not point to a valid repository` where it used to say `not a
 
-<!-- truncated: 6252 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6272 more lines — read CHANGELOG.md directly -->
 
 ---
 
