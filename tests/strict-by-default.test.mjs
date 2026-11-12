@@ -19,6 +19,8 @@
  * @req docguard.strict-by-default#FR-015
  * @req docguard.strict-by-default#FR-016
  * @req docguard.strict-by-default#FR-018
+ * @req docguard.strict-by-default#FR-020
+ * @req docguard.strict-by-default#SC-005
  * @req docguard.strict-by-default#SC-006
  */
 import { describe, it, before, after } from 'node:test';
@@ -767,5 +769,16 @@ describe('upgrade: the read-only strict report', () => {
   it('prints nothing about strict for a project with no .docguard.json', () => {
     const dir = project(NO_API);
     assert.doesNotMatch(upgrade(dir).stdout, /Strict\s+mode/);
+  });
+});
+
+describe('DocGuard runs its own strict mode (FR-020, SC-005)', () => {
+  it('this repository selects strict and guard on it exits 0 or 2, never 1 or 4', () => {
+    const config = JSON.parse(readFileSync(join(ROOT, '.docguard.json'), 'utf8'));
+    assert.equal(config.enforcement, 'strict');
+    const r = spawnSync(process.execPath, [CLI, 'guard'], { cwd: ROOT, encoding: 'utf8', env: ENV, maxBuffer: 64 * 1024 * 1024 });
+    assert.ok([0, 2].includes(r.status), `guard exited ${r.status}\n${r.stdout.slice(-2000)}`);
+    assert.match(r.stdout, /Enforcement: strict/);
+    assert.doesNotMatch(r.stdout, /Adopt/);
   });
 });

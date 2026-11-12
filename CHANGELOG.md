@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **DocGuard's own repository runs strict.** Its `.docguard.json` sets
+  `"enforcement": "strict"`; in a full checkout no applicable validator is
+  empty, inconclusive or blocked, so guard still exits 2 (warnings only) and CI
+  needs no change. A test pins the key and the exit code (spec 097, FR-020).
+
 - **An enforcement mode, `strict` or `standard`, that a project can select
   today.** `"enforcement": "strict"` (or `{ "mode": "strict", "asOf": "0.49" }`)
   in `.docguard.json` makes guard exit 4 when a validator that applies to the
