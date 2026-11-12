@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **An enforcement mode, `strict` or `standard`, that a project can select
+  today.** `"enforcement": "strict"` (or `{ "mode": "strict", "asOf": "0.49" }`)
+  in `.docguard.json` makes guard exit 4 when a validator that applies to the
+  project examined nothing, and `docguard guard` prints an **Adopt** block with
+  the fix for each one, the baseline command, the waiver form and the key for
+  the lower mode. `--format json` carries `enforcement` and `strict`; SARIF and
+  JUnit render an unexamined validator as they render an `inconclusive` one;
+  `ci` blocks (`CI_STRICT_UNEXAMINED`). `docguard upgrade` reports, read-only,
+  what strict would change for the project. The default is unchanged in this
+  release: an absent key is `standard`, and the first line of the summary says
+  so (`docguard.strict-by-default` FR-001, FR-007, FR-014 to FR-016, FR-018;
+  stage A of specs/097-strict-by-default).
+- **A cause and a fix on an empty result.** API-Surface, Docs-Sync and
+  Surface-Sync now report whether they apply to the project, how many checks
+  they performed, and, when they examined nothing, a cause (`needs-declaration`,
+  `needs-content`, `layout-not-recognized` or `nothing-of-this-kind`) with the
+  text that makes them examine something. The contract is defined in
+  `cli/validator-coverage.mjs`; the other validators move onto it next, and
+  under strict a validator that is empty without a cause is listed as "cause
+  not yet classified" and never fails the run (FR-005, FR-006).
+- **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
+  blank or a `<placeholder>` is reported, so a drafted block applied unedited no
+  longer passes. An entry that omits `purpose` is unaffected (FR-004).
+
+### Changed
+
+- **A validator that performed no check is `empty`, never `pass`.** The verdict
+  now requires at least one performed check. Requirement-Anchors enabled with
+  zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
+  where they were `pass`. No exit code changes under `standard`: `empty` does not
+  affect one, except for a validator named in `requiredChecks`, which already
+  held the gate on `empty` (FR-004).
+
 ### Fixed
 
 - **Releases are now published to the official MCP registry.** The listing at

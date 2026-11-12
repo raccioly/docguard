@@ -230,7 +230,7 @@ function extractDocumentedTokens(content) {
  * byte-identical to the legacy strings.
  */
 function checkSurface(projectDir, surface) {
-  const out = { findings: [], fixes: [], passed: 0, total: 0 };
+  const out = { findings: [], fixes: [], passed: 0, total: 0, idle: null };
   const name = surface.name || 'unnamed';
   const extractor = surface.extract || 'basename-no-ext';
   const ignore = new Set(surface.ignore || []);
@@ -267,10 +267,12 @@ function checkSurface(projectDir, surface) {
     // (the user has explicitly enabled the surface, but the glob found
     // nothing — maybe they renamed a directory; surface up the info but
     // do NOT escalate into a check failure).
+    out.idle = { kind: 'glob-empty', name, glob: surface.glob };
     return out;
   }
 
   // For each target doc, compute documented set and diff.
+  let docsFound = 0;
   for (const docRel of docs) {
     const docPath = resolve(projectDir, docRel);
     if (!existsSync(docPath)) {
@@ -285,6 +287,7 @@ function checkSurface(projectDir, surface) {
     } catch {
       continue;
     }
+    docsFound++;
 
     // Optional section scope: restrict scanning to a single heading's body.
     // Without this, every backticked first-column token in the doc is
@@ -338,6 +341,7 @@ function checkSurface(projectDir, surface) {
     }));
   }
 
+  if (docsFound === 0) out.idle = { kind: 'docs-missing', name, docs };
   return out;
 }
 
@@ -353,6 +357,72 @@ function surfaceNameLooksValid(t) {
     && /^[a-z][a-z0-9_.-]*$/i.test(t);
 }
 
+// Directories that conventionally hold an enumerable surface (a command set, a
+// validator set, a template set) and the extension their files carry.
+const SURFACE_DIRS = ['cli/commands', 'src/commands', 'commands', 'cli/validators', 'src/validators', 'templates'];
+const MIN_SURFACE_FILES = 3;
+
+/**
+ * Does Surface-Sync apply to this project? Decided from the project's files,
+ * not from whether `surfaceSync.surfaces` is configured (specs/097 FR-006):
+ * a project applies when it holds an enumerable surface, meaning at least
+ * three files side by side in a conventional surface directory, or when it
+ * has already declared surfaces (a declaration is itself the evidence).
+ *
+ * @returns {{ applies: boolean, evidence: string, found: Array<{dir:string, files:number, glob:string}> }}
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config) {
+  const declared = Array.isArray(config?.surfaceSync?.surfaces) ? config.surfaceSync.surfaces : [];
+  const found = [];
+  for (const dir of SURFACE_DIRS) {
+    const abs = resolve(projectDir, dir);
+    let names = [];
+    try { names = readdirSync(abs).filter(n => { try { return statSync(join(abs, n)).isFile(); } catch { return false; } }); } catch { continue; }
+    if (names.length < MIN_SURFACE_FILES) continue;
+    const ext = extname(names[0]);
+    found.push({ dir, files: names.length, glob: `${dir}/*${ext}` });
+  }
+  if (declared.length > 0) return { applies: true, found, evidence: `surfaceSync.surfaces declares ${declared.length} surface(s): ${declared.map(s => s?.name || 'unnamed').join(', ')}` };
+  if (found.length > 0) return { applies: true, found, evidence: `${found.map(f => `${f.dir} holds ${f.files} files`).join('; ')}` };
+  return { applies: false, found, evidence: `no directory among ${SURFACE_DIRS.join(', ')} holds ${MIN_SURFACE_FILES} or more files, and surfaceSync.surfaces declares none` };
+}
+
+/** Result-contract fields of a Surface-Sync result that performed no check. */
+function surfaceContract(projectDir, config, { performed, idle }) {
+  if (performed > 0) return { performed, applies: { applies: true, evidence: `compared ${performed} surface/document pair(s)` } };
+  const a = applies(projectDir, config);
+  const applied = { applies: a.applies, evidence: a.evidence };
+  if (!a.applies) {
+    return {
+      performed, applies: applied, emptyCause: 'nothing-of-this-kind',
+      note: `Surface-Sync found no enumerable surface: ${a.evidence}.`,
+      howToConfigure: 'Nothing to configure unless the project lists something enumerable in its docs (a command table, a validator list): then declare it under surfaceSync.surfaces in .docguard.json.',
+    };
+  }
+  const declared = Array.isArray(config?.surfaceSync?.surfaces) ? config.surfaceSync.surfaces : [];
+  if (declared.length === 0) {
+    const example = a.found[0] || { glob: 'cli/commands/*.mjs' };
+    return {
+      performed, applies: applied, emptyCause: 'needs-declaration',
+      note: `Surface-Sync applies (${a.evidence}) but .docguard.json declares no surface, so no list was compared with its document.`,
+      howToConfigure: `Declare the surface in .docguard.json: "surfaceSync": { "surfaces": [ { "name": "commands", "glob": "${example.glob}", "extract": "basename-no-ext", "docs": ["README.md"] } ] }`,
+    };
+  }
+  if (idle?.kind === 'docs-missing') {
+    return {
+      performed, applies: applied, emptyCause: 'needs-declaration',
+      note: `Surface-Sync's surface "${idle.name}" found its items, but none of its documents exists (${idle.docs.join(', ')}).`,
+      howToConfigure: `Create ${idle.docs[0]} with a table or list of the "${idle.name}" items, or point the surface's "docs" at the document that lists them.`,
+    };
+  }
+  return {
+    performed, applies: applied, emptyCause: 'layout-not-recognized',
+    note: `Surface-Sync's surface "${idle?.name || 'unnamed'}" matched no file${idle?.glob ? ` with the glob ${idle.glob}` : ''}, so there was nothing to compare.`,
+    howToConfigure: `Correct the glob${idle?.glob ? ` "${idle.glob}"` : ''} in surfaceSync.surfaces so it matches the files of the surface; only a \`*\` in the last path segment is supported (no \`**\`).`,
+  };
+}
+
 /**
  * Public entry point. Returns N/A when no surfaces are configured — by
  * design, this validator is opt-in. Projects that don't declare surfaces
@@ -366,13 +436,14 @@ export function validateSurfaceSync(projectDir, config) {
   if (surfaceCfg.length === 0) {
     // No surfaces configured → N/A. The validator infrastructure surfaces
     // this as "nothing to validate" rather than a fail. Legacy shape kept.
-    return { errors: [], warnings: [], fixes: [], passed: 0, total: 0 };
+    return { errors: [], warnings: [], fixes: [], passed: 0, total: 0, ...surfaceContract(projectDir, config, { performed: 0, idle: null }) };
   }
 
   const findings = [];
   const fixes = [];
   let passed = 0;
   let total = 0;
+  let idle = null;
 
   for (const surface of surfaceCfg) {
     const r = checkSurface(projectDir, surface);
@@ -380,7 +451,11 @@ export function validateSurfaceSync(projectDir, config) {
     fixes.push(...r.fixes);
     passed += r.passed;
     total += r.total;
+    idle ??= r.idle;
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), fixes };
+  return {
+    ...resultFromFindings(findings, { passed, total }), fixes,
+    ...(findings.length === 0 ? surfaceContract(projectDir, config, { performed: total, idle }) : { performed: total, applies: { applies: true, evidence: 'Surface-Sync produced findings' } }),
+  };
 }

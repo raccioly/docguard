@@ -30,6 +30,7 @@ import { c, CURRENT_SCHEMA_VERSION, compareVersions } from '../shared.mjs';
 import { installAgentAssets, staleAgentAssets } from '../ensure-skills.mjs';
 import { readAgentSurface } from '../agent-surface.mjs';
 import { packagedExtensionVersion, readRegistryEntry, refreshSpecKitExtension } from '../spec-kit-delegation.mjs';
+import { adoptLines, modeLine, resolveEnforcement } from '../enforcement.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -295,6 +296,38 @@ function rollbackUpgradePR(projectDir, { start, branch, priorConfig, pushed }, e
   return { ok: false, error: message };
 }
 
+/**
+ * Read-only: what the strict enforcement mode would change for this project
+ * (specs/097-strict-by-default FR-018). Runs guard in memory with the mode
+ * forced to strict and reports the unexamined validators with cause and fix,
+ * the findings that would fail the build by code, and the commands that
+ * record or waive them. It writes nothing; the only file it can touch is
+ * DocGuard's own self-ignoring `.docguard/` state directory, as `guard` does.
+ *
+ * @param {string} projectDir
+ * @param {object} config loaded configuration
+ * @returns {Promise<string[]>} plain lines, no color
+ * @implements docguard.strict-by-default#FR-018
+ */
+export async function strictUpgradeLines(projectDir, config) {
+  // Dynamic: guard.mjs imports this module for its schema nudge.
+  const { runGuardInternal } = await import('./guard.mjs');
+  const current = resolveEnforcement(config);
+  const data = runGuardInternal(projectDir, { ...config, enforcement: 'strict' });
+  const strict = data.strict;
+  const lines = [modeLine(current)];
+  const unclassified = strict.unexamined.filter(u => u.cause === 'not-yet-classified').length;
+  const gating = strict.gating.reduce((n, g) => n + g.count, 0);
+  if (strict.blocking.length === 0 && gating === 0 && unclassified === 0) {
+    lines.push('Strict would change nothing for this project: every validator that applies examined something, and no finding is newly blocking.');
+    return lines;
+  }
+  lines.push(`Under strict this project would report ${strict.blocking.length} validator(s) that apply and examined nothing${unclassified ? ` (plus ${unclassified} whose cause is not yet classified)` : ''} and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
+  lines.push(...adoptLines(strict).slice(1));
+  lines.push('Nothing was written.');
+  return lines;
+}
+
 export async function runUpgrade(projectDir, _config, flags) {
   const checkOnly = flags.checkOnly || flags['check-only'];
   const apply = flags.apply;
@@ -361,6 +394,17 @@ export async function runUpgrade(projectDir, _config, flags) {
     console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.yellow}${agentFiles.stale.length} out of date${extensionNote}${c.reset}`);
   } else {
     console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.green}current${c.reset}`);
+  }
+
+  // specs/097 FR-018: what the strict mode would change here. Read-only; skipped for
+  // a project that has not adopted DocGuard (no .docguard.json), which strict does not touch.
+  if (projectSchema !== null && _config) {
+    console.log(`\n  ${c.cyan}Strict${c.reset}  mode:      ${c.dim}what strict enforcement would change for this project (read-only)${c.reset}`);
+    try {
+      for (const line of await strictUpgradeLines(projectDir, _config)) console.log(`         ${c.dim}${line}${c.reset}`);
+    } catch (e) {
+      console.log(`         ${c.yellow}could not evaluate strict: ${e.message}${c.reset}`);
+    }
   }
 
   console.log();

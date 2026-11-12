@@ -88,7 +88,11 @@ function compile(projectDir, block) {
     }
     const doc = safePattern(e.doc);
     const section = e.section?.trim() || null;
-    entries.push({ index, doc, section, purpose: e.purpose || null, key: section ? `${doc}#${section}` : doc, patterns });
+    // specs/097 FR-004: a purpose that was written but says nothing (blank, or a
+    // `<purpose>` placeholder from a drafted block) is not documentation. An
+    // entry that omits `purpose` stays valid: the field is optional.
+    const placeholderPurpose = e.purpose !== undefined && (!e.purpose.trim() || /^<[^<>]*>$/.test(e.purpose.trim()));
+    entries.push({ index, doc, section, purpose: e.purpose || null, placeholderPurpose, key: section ? `${doc}#${section}` : doc, patterns });
   }
   return { present: true, error: null, roots, entries };
 }

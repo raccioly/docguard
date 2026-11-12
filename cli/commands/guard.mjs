@@ -2,6 +2,7 @@ import { compactGuardResult } from '../shared-guard-json.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
+import { resolveEnforcement, buildStrictReport, adoptLines, modeLine, strictBlocks } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -322,6 +323,9 @@ function computeDocCoverage(projectDir, config) {
 
 export function runGuardInternal(projectDir, config) {
   config = applyDocRoles(projectDir, normalizeIgnoreConfig(config));
+  // specs/097-strict-by-default FR-001: the mode of this run and where it came from.
+  const enforcement = resolveEnforcement(config);
+  const strict = enforcement.mode === 'strict';
   const validators = config.validators || {};
   const results = [];
 
@@ -570,7 +574,12 @@ export function runGuardInternal(projectDir, config) {
       result.observations = result.observations.map((g, i) => (i === 0 ? { ...g, withheld } : g));
     }
     result.applicability = describeCheckCoverage(projectDir, config, result);
-    result.verdict = deriveVerdict(result);
+    result.verdict = deriveVerdict(result, { strict });
+    // specs/097 FR-006: a validator that decided it does not apply is skipped, and
+    // its reason is what it looked for, not a prerequisite it never needed.
+    if (strict && result.verdict === 'skipped' && result.applies?.applies === false && result.applicability.class !== 'not-applicable') {
+      result.applicability = { ...result.applicability, reason: result.applies.evidence };
+    }
   }
   // docguard.enforcement-ladder#FR-001–FR-003: composed from the verdicts above,
   // present only when the project names required checks.
@@ -582,7 +591,7 @@ export function runGuardInternal(projectDir, config) {
     };
     Object.assign(reqResult, classifyResult(reqResult));
     reqResult.applicability = describeCheckCoverage(projectDir, config, reqResult);
-    reqResult.verdict = deriveVerdict(reqResult);
+    reqResult.verdict = deriveVerdict(reqResult, { strict });
     results.push(reqResult);
   }
   const checkCoverage = summarizeCheckCoverage(results);
@@ -627,6 +636,10 @@ export function runGuardInternal(projectDir, config) {
   const effectiveErrors = activeResults.reduce((sum, v) => sum + v.effectiveErrors, 0);
   const effectiveWarnings = activeResults.reduce((sum, v) => sum + v.effectiveWarnings, 0);
   const effectiveInfos = activeResults.reduce((sum, v) => sum + v.effectiveInfos, 0);
+  // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
+  // the full validator set, so it never evaluates the unexamined rule (the report
+  // says so with `evaluated: false`).
+  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite: Array.isArray(config.changedFiles) }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -690,6 +703,8 @@ export function runGuardInternal(projectDir, config) {
     coverage,
     checkCoverage,
     verdicts,
+    enforcement,
+    ...(strictReport ? { strict: strictReport } : {}),
     ...(required ? { requiredChecks: { required: required.required, undecided: required.undecided } } : {}),
     semanticClaims,
     evidence,
@@ -837,7 +852,11 @@ export function runGuard(projectDir, config, flags) {
       : '';
     // docguard.output-ux#FR-001: in a machine format stdout is the artifact,
     // so the note explaining the reduced validator set goes to stderr.
-    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`;
+    // specs/097: the lite set is not the full validator set, so strict's
+    // unexamined-validator rule is not evaluated here; say so in one line.
+    const strictNote = resolveEnforcement(config).mode === 'strict'
+      ? `\n${c.dim}   enforcement strict: the unexamined-validator rule needs the full validator set and is not evaluated under --changed-only${c.reset}` : '';
+    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}${strictNote}\n`;
     if (['json', 'sarif', 'junit'].includes(flags.format)) process.stderr.write(`${note}\n`);
     else console.log(note);
   }
@@ -892,7 +911,7 @@ export function runGuard(projectDir, config, flags) {
   const requiredUndecided = d => d.requiredChecks?.undecided || [];
   const exitFor = d => (d.effectiveErrors > 0
     ? (uninitialised ? 3 : 1)
-    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 ? 4
+    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 || strictBlocks(d) ? 4
     : d.effectiveWarnings > 0 ? 2 : 0);
 
   // ── SARIF output (2.1.0) ──
@@ -948,7 +967,9 @@ export function runGuard(projectDir, config, flags) {
     // Not applicable — nothing to validate. Render neutrally (NOT a green pass)
     // so the reader can tell "checked and clean" apart from "nothing checked".
     if (v.status === 'na') {
-      const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
+      const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status)
+        || (data.enforcement?.mode === 'strict' && v.applies?.applies === false) // FR-006: say what was looked for
+        || (data.strict?.unexamined || []).some(u => u.validator === v.key && u.blocking);
       const reason = showReason ? ` ${c.dim}(${v.applicability.reason})${c.reset}` : '';
       console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[${v.applicability.status}]${c.reset}${reason}`);
       continue;
@@ -1022,6 +1043,8 @@ export function runGuard(projectDir, config, flags) {
 
   // Summary
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
+  // specs/097 FR-016: the first line of the summary states the mode and where it came from.
+  if (data.enforcement) console.log(`  ${c.dim}${modeLine(data.enforcement)}${c.reset}`);
   if (data.verdicts) {
     const n = data.verdicts.counts;
     console.log(`  ${c.dim}Verdicts: ${n.pass} pass · ${n.fail} fail · ${n.empty} empty · ${n.inconclusive} inconclusive · ${n.blocked} blocked · ${n.skipped} skipped${c.reset}`);
@@ -1056,6 +1079,16 @@ export function runGuard(projectDir, config, flags) {
     // note below spells out any escalation/demotion.
     const warnSuffix = data.effectiveWarnings > 0 ? `, ${data.effectiveWarnings} warning(s)` : '';
     console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.effectiveErrors} blocking issue(s)${warnSuffix}${c.reset}`);
+  }
+
+  // specs/097 FR-014: under strict, a run that exits 1 or 4 says what to do next,
+  // as one block: the fix per unexamined validator, the command that records the
+  // existing findings, the waiver form, and the key that selects the lower mode.
+  // It is printed with --quiet too: that flag removes banners, not instructions.
+  if (data.strict && [1, 4].includes(exitFor(data))) {
+    console.log('');
+    for (const line of adoptLines(data.strict)) console.log(`  ${line.startsWith('Adopt') ? c.bold + line : c.dim + line}${c.reset}`);
+    console.log('');
   }
 
   // Baseline suppression is always visible — a gate that hides findings

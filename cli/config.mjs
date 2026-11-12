@@ -17,6 +17,12 @@ import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { CODES } from './findings.mjs';
 import { mergeIgnoreFile, normalizeIgnoreConfig } from './shared-ignore.mjs';
 import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
+import { resolveEnforcement } from './enforcement.mjs';
+
+// The mode resolves in one place (specs/097-strict-by-default FR-001); it lives
+// beside profile resolution for callers, and in enforcement.mjs so a module that
+// only reads results never pulls the loader.
+export { resolveEnforcement };
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
@@ -144,6 +150,11 @@ export function loadConfig(projectDir) {
           }
         }
       }
+
+      // FR-001: a malformed `enforcement` is a configuration error, reported like
+      // a bad findingSeverity. The key is never defaulted here, so a run can tell
+      // a chosen mode (source "config") from the default (source "default").
+      resolveEnforcement(merged);
 
       // Auto-detect project type if not set
       if (!merged.projectType) {

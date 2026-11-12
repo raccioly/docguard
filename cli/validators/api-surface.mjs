@@ -348,6 +348,76 @@ export function computeSpecVsRouteDrift(projectDir, config) {
   };
 }
 
+/**
+ * Does this project have an API surface for the validator to check? Decided
+ * from the project's files, never from this validator's own configuration
+ * (specs/097-strict-by-default FR-006):
+ *   - an OpenAPI/Swagger spec that declares endpoints, or
+ *   - route registrations the code scan reads, or
+ *   - a route framework in a manifest whose routes the scan could not read
+ *     (the surface exists and is unseen, so this is a layout gap, not an
+ *     absence).
+ * `false` only when none of the three holds.
+ *
+ * @returns {{ applies: boolean, evidence: string, kind: 'spec'|'code'|'framework'|'none' }}
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config) {
+  const specs = findAllOpenApiSpecs(projectDir, config);
+  if (specs.length > 0) {
+    return { applies: true, kind: 'spec', evidence: `OpenAPI spec ${specs[0].relPath} declares ${specs[0].endpoints.length} endpoint(s)` };
+  }
+  const surface = resolveApiSurface(projectDir, config);
+  if (surface.confidence === 'code') {
+    return { applies: true, kind: 'code', evidence: `the route scan read ${surface.endpoints.length} route(s)` };
+  }
+  const framework = detectFramework(projectDir, config);
+  if (framework) {
+    return { applies: true, kind: 'framework', evidence: `${framework} is declared in a manifest, but the route scan read no route` };
+  }
+  return { applies: false, kind: 'none', evidence: 'no OpenAPI/Swagger spec with endpoints, no route registration the scan reads, and no route framework in a manifest' };
+}
+
+/**
+ * The result-contract fields of an API-Surface result that performed no check
+ * (specs/097 FR-004 to FR-006). Each cause names the validator's own inputs:
+ *   needs-declaration       an API surface exists and the API reference document does not
+ *   needs-content           the document exists and lists no endpoint
+ *   layout-not-recognized   the document lists endpoints and the scan read no surface
+ *   nothing-of-this-kind    there is no API surface at all
+ */
+function apiContract(projectDir, config, { performed, apiDocPath, API_DOC, documentedCount }) {
+  if (performed > 0) return { performed, applies: { applies: true, evidence: `compared ${performed} endpoint(s)` } };
+  const a = applies(projectDir, config);
+  const applied = { applies: a.applies, evidence: a.evidence };
+  if (!a.applies) {
+    return {
+      performed, applies: applied, emptyCause: 'nothing-of-this-kind',
+      note: `API-Surface found no API to check: ${a.evidence}.`,
+      howToConfigure: `Nothing to configure unless the project does expose an API: then add an OpenAPI spec (openapi.yaml or openapi.json) or use a framework whose routes DocGuard reads, and list the endpoints in ${API_DOC}.`,
+    };
+  }
+  if (!existsSync(apiDocPath)) {
+    return {
+      performed, applies: applied, emptyCause: 'needs-declaration',
+      note: `API-Surface applies (${a.evidence}) but ${API_DOC} does not exist, so no endpoint was compared.`,
+      howToConfigure: `Create ${API_DOC} with one table row per endpoint (\`GET /path\`); \`docguard generate\` drafts it from the routes it reads.`,
+    };
+  }
+  if (documentedCount === 0) {
+    return {
+      performed, applies: applied, emptyCause: 'needs-content',
+      note: `API-Surface applies (${a.evidence}) but ${API_DOC} lists no endpoint, so none was compared.`,
+      howToConfigure: `List every endpoint in ${API_DOC} as a table row or bullet written \`METHOD /path\` (for example \`GET /users/{id}\`).`,
+    };
+  }
+  return {
+    performed, applies: applied, emptyCause: 'layout-not-recognized',
+    note: `API-Surface applies (${a.evidence}) and ${API_DOC} lists ${documentedCount} endpoint(s), but the route scan read no surface to compare them with.`,
+    howToConfigure: `Add an OpenAPI spec that declares these endpoints, or point sourceRoot in .docguard.json at the directory that registers the routes, or set detection.includeNonProduct to true if they live under a test, fixture or example path.`,
+  };
+}
+
 // Findings retain the authority behind each mismatch; contract authority
 // must never be presented as proof that no implementation exists.
 export function validateApiSurface(projectDir, config) {
@@ -477,11 +547,14 @@ export function validateApiSurface(projectDir, config) {
     // a python3 interpreter yields zero routes, because the pattern fallback
     // cannot match `@app.route(...)` at all, and the result was indistinguishable
     // from a project that genuinely registers none.
+    const base = resultFromFindings(findings, { passed: specRoutePassed, total: specRouteTotal });
     return {
-      ...resultFromFindings(findings, { passed: specRoutePassed, total: specRouteTotal }),
+      ...base,
       fixes,
       authoritativeSpec: drift.source || specRoute.specPath,
       ...(coverage ? { applicability: coverage } : {}),
+      ...(findings.length === 0 ? apiContract(projectDir, config, { performed: specRouteTotal, apiDocPath: resolveDocRole(projectDir, config, 'apiReference'), API_DOC, documentedCount: (drift.documented || []).length })
+        : { performed: specRouteTotal, applies: { applies: true, evidence: 'API-Surface produced findings' } }),
     };
   }
 
@@ -578,5 +651,6 @@ export function validateApiSurface(projectDir, config) {
     fixes,
     authoritativeSpec: source,
     ...(coverage ? { applicability: coverage } : {}),
+    performed: total, applies: { applies: true, evidence: `compared ${total} endpoint(s) in ${API_DOC} with ${source === 'code-scan' ? 'the code scan' : source}` },
   };
 }

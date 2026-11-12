@@ -51,6 +51,14 @@ npx docguard-cli guard --no-baseline     # Ignore the committed baseline this ru
 npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not decide
 ```
 
+**Enforcement mode (spec 097).** The first line of the summary states the mode
+(`strict` or `standard`) and whether it came from `"enforcement"` in
+`.docguard.json` or from the default. Under `strict`, a validator that applies
+to the project and examined nothing exits 4, and the **Adopt** block (printed
+with `--quiet` too) lists each one with its cause and fix, the baseline
+command, the waiver form and the key for the lower mode. See
+[Configuration](configuration.md#enforcement-mode).
+
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes
 `.docguard.baseline.json` (commit it). From then on guard/ci suppress those
 frozen findings — visibly — and gate only new drift. Fingerprints are stable
@@ -224,6 +232,11 @@ npx docguard-cli upgrade              # Report only; writes nothing
 npx docguard-cli upgrade --check-only # Exit 1 when anything is behind
 npx docguard-cli upgrade --apply      # Install the CLI, migrate the schema, refresh agent files
 ```
+
+The report also states what the `strict` enforcement mode would change for this
+project: the validators that apply and examined nothing (cause and fix), the
+findings that would fail the build by code, and the commands that record or
+waive them. That part is read-only and runs offline.
 
 `upgrade --apply` refreshes agent files the way `init` installs them: DocGuard's
 skills and commands that differ from this CLI's copies, and a Spec Kit extension

@@ -175,6 +175,21 @@
       "items": { "type": "string" },
       "uniqueItems": true
     },
+    "enforcement": {
+      "description": "How strictly guard judges the project (specs/097-strict-by-default). `strict`: every validator that applies must examine something, or guard exits 4. `standard`: the behavior before this key existed. Absent: the default mode (standard until a later release makes strict the default). `profile` never selects it. The object form adds `asOf`, a release line (`major.minor`) that holds checks added after it as pending.",
+      "oneOf": [
+        { "type": "string", "enum": ["strict", "standard"] },
+        {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["strict", "standard"] },
+            "asOf": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$", "description": "Release line, for example \"0.49\"." }
+          },
+          "required": ["mode"],
+          "additionalProperties": false
+        }
+      ]
+    },
     "severity": {
       "type": "object",
       "description": "Per-validator severity overrides. Affects EXIT CODE only — display is unchanged. high = warnings fail CI (exit 1). low = warnings ignored. medium (default) = exit 2.",

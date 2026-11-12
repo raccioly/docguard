@@ -85,7 +85,10 @@ export function validateRequirementAnchors(projectDir, config = {}, { status = n
   // Every error is shown (an error count must equal what `specs complete`
   // exempts, FR-029); warnings are capped to keep the report readable.
   const shown = [...findings.filter(f => f.severity === 'error'), ...findings.filter(f => f.severity !== 'error').slice(0, MAX_FINDINGS)];
-  const result = resultFromFindings(shown, { passed: counted, total: Math.max(1, computed.links.length + (computed.lost?.length || 0)), applicable: true });
+  // `total` is padded to 1 so an enabled validator prints 1 check, not 0/0; that
+  // pad is not a check. `performed` is the links actually compared, so enabled
+  // with zero anchors is `empty`, not `pass` (specs/097-strict-by-default FR-004).
+  const result = { ...resultFromFindings(shown, { passed: counted, total: Math.max(1, computed.links.length + (computed.lost?.length || 0)), applicable: true }), performed: counted };
   const degraded = computed.files.filter(f => f.degraded).length;
   return degraded
     ? { ...result, applicability: { status: 'partial', reason: `${degraded} tagged file(s) were anchored below their exact tier` } }

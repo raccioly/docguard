@@ -820,6 +820,12 @@ export const CODES = {
     help: 'The `ownership` block in `.docguard.json` is malformed (for example `entries` is not a list, or a path uses `..` or an absolute prefix), or `.devin/wiki.json` is not valid JSON. Nothing in it can be trusted, so no path counts as owned. Fix it.',
     suppress: null,
   },
+  OWN008: {
+    validator: 'docOwnership',
+    title: 'Ownership entry has a placeholder purpose',
+    help: 'An `ownership.entries[]` entry carries a `purpose` that is blank or a `<placeholder>` such as `<purpose>`, usually a drafted block applied unedited. The entry names a doc section and says nothing about what it is responsible for, so it looks like coverage and documents none. Write one sentence for the entry, or remove the `purpose` (the field is optional). An entry with no `purpose` is not reported.',
+    suppress: null,
+  },
   PSR001: {
     validator: 'pathScopedRules',
     title: 'Path-scoped rule matches no tracked file',
