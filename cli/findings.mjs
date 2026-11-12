@@ -235,6 +235,36 @@ export const CODES = {
     help: 'At least 10 code commits followed the document update or review. This repository-wide heuristic does not prove the document is stale. Review its purpose, intended behavior and relevant code before deciding which side needs a change. Agent-instruction documents come from one role (spec 094): root AGENTS.md, CLAUDE.md, GEMINI.md, `.github/copilot-instructions.md`, configured `requiredFiles.agentFile`, nested AGENTS/CLAUDE/GEMINI files, and harness rules and skills. A pointer file (a body of at most 6 lines that imports a file or names another agent-instruction document, such as `Follow AGENTS.md` or `@AGENTS.md`) is reviewed through its target and gets no finding of its own; a copy installed by Spec Kit or DocGuard is reviewed upstream (PSR005 checks a Spec Kit copy still matches its install manifest).',
     suppress: null,
   },
+  FRS006: {
+    validator: 'freshness',
+    title: 'Agent instructions name a file that changed since their review',
+    help: 'An agent-instruction document (AGENTS.md, CLAUDE.md, GEMINI.md, Copilot instructions, an authored skill or rule) names a file in backticks, a link or a path, and at least `freshness.referenceShare` (default 0.5) of that file\'s current lines were added since the document was reviewed. The review point is a recorded review (`docguard review --accept <doc>`), whose fingerprint must also have changed, or else the `docguard:last-reviewed` marker; a line of the document edited after the review is measured from that edit. Directories, vendored copies, other documents, test/fixture/example paths, changelogs, lockfiles, claims/evidence JSON, DocGuard state files, generated files and files under 20 lines are not measured. Read what the document says about each named file against the file now, update it, and record the review. Agent instructions are executed by every session, so this is reported for that role only; canonical documents carry the same evidence on FRS002 (spec 095). Make it fail the build with `findingSeverity: { "FRS006": { "agent-instruction": "high" } }`.',
+    suppress: null,
+  },
+  FRS007: {
+    validator: 'freshness',
+    title: 'Agent instructions never mention surface added since their review',
+    help: 'A package script (`package.json` `scripts`) or a top-level directory was added after the agent-instruction document\'s review point, and neither the document nor a pointer file that points to it mentions it (`npm run <name>`, `` `<name>` ``, or the directory as a whole word). Surface that existed at the review is not reported: this is about what changed, not about completeness. Decide whether agents need to know about it, say so, and record the review with `docguard review --accept <doc>` (spec 095).',
+    suppress: null,
+  },
+  FRS008: {
+    validator: 'freshness',
+    title: 'Agent instructions have no review record',
+    help: 'An agent-instruction document has neither a `docguard:last-reviewed` marker nor a recorded review, so nothing says when, or against what, it was last checked. A commit is not a review. Read it against the code, then run the command in the suggestion: `docguard review --accept <path> --reason "<what you checked>"` (spec 095).',
+    suppress: null,
+  },
+  FRS009: {
+    validator: 'freshness',
+    title: 'Review date advanced without a recorded review',
+    help: 'A document\'s `docguard:last-reviewed` marker is later than its recorded review, and the commit that set it changed nothing else in the document. A date alone does not say what was checked, so staleness is still measured from the recorded review. If the document was reviewed, record it with `docguard review --accept <doc> --reason "…"` (spec 095).',
+    suppress: null,
+  },
+  FRS010: {
+    validator: 'freshness',
+    title: 'Recorded document reviews cannot be read',
+    help: '`.docguard-doc-reviews.json` is not valid JSON, has an unsupported `schemaVersion`, or has a field outside the schema. Every recorded review is then unusable, so this fails instead of reading as "no reviews". Restore the file from git, or delete it and record the reviews again. A new field belongs under an `extensions` object (top level or per document), which every reader ignores (spec 095).',
+    suppress: null,
+  },
   FRS003: {
     validator: 'freshness',
     title: 'Document review due after elapsed repository history',
@@ -1292,6 +1322,10 @@ export function mkFinding(f) {
     suggestion,
     reportable: f.reportable === true || confidence === 'low' || evidence.status === 'not-measured',
     redactedContext: f.redactedContext || null,
+    // docguard.recorded-document-reviews: only freshness findings carry these.
+    ...(typeof f.documentRole === 'string' ? { documentRole: f.documentRole } : {}),
+    ...(f.staleness && typeof f.staleness === 'object' ? { staleness: f.staleness } : {}),
+    ...(f.surface && typeof f.surface === 'object' ? { surface: f.surface } : {}),
   };
 }
 

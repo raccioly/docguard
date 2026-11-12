@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Recorded document reviews** (#628, spec 095). `docguard review --accept <doc> --reason "…"`
+  now records a whole-document review in `.docguard-doc-reviews.json`: the commit, the reason
+  and a fingerprint of every file the document references. A `docguard:last-reviewed` date says
+  when; this says what was checked.
+- **FRS006: agent instructions name a file that changed since their review.** For AGENTS.md,
+  CLAUDE.md, GEMINI.md, Copilot instructions and authored skills and rules: a referenced file at
+  least half of whose current lines were added since the review (and, with a recorded review,
+  whose fingerprint changed). The message names the line, the file, the share and
+  `+added/−deleted`. On TestGuard at f89ca46 it reports `AGENTS.md:35 src/probe/probe.mjs 74%
+  (+1066/−190)`. Canonical documents carry the same evidence on their FRS002.
+- **FRS007: surface added since the review that the document never mentions** (package scripts,
+  top-level directories). **FRS008**: agent instructions with no review record, with the exact
+  `review --accept` command. **FRS009**: a review date moved past a recorded review by a commit
+  that changed nothing else. **FRS010**: an unreadable reviews file fails the run.
+- **Guard says first when agents are served stale instructions**, in text (also with `--quiet`)
+  and as `staleInstructions[]` in JSON.
+- **`findingSeverity` accepts a document role**: `{ "FRS006": { "agent-instruction": "high" } }`
+  fails the build for agent instructions only. `freshness.referenceShare` sets the FRS006
+  threshold (default 0.5).
+
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
   read only `AGENTS.md` and `CLAUDE.md`, so a stale `GEMINI.md` or
@@ -22,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration installed, listed with its sha256 in
   `.specify/integrations/<integration>.manifest.json`, no longer matches what was
   installed. The next install overwrites the edit (FR-007).
+- **Vendored instruction files are counted and listed.** Guard's summary line says how
+  many instruction files were treated as vendored and not reviewed, and JSON lists each
+  with its reason in `coverage.vendoredInstructions[]`. A root file such as `AGENTS.md`
+  is never vendored by a header alone, only by an install record with a hash (FR-011).
 
 ### Changed
 

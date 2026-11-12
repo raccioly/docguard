@@ -776,6 +776,7 @@
           "docguard.agent-instruction-role#FR-008",
           "docguard.agent-instruction-role#FR-009",
           "docguard.agent-instruction-role#FR-010",
+          "docguard.agent-instruction-role#FR-011",
           "docguard.agent-instruction-role#SC-001",
           "docguard.agent-instruction-role#SC-002",
           "docguard.agent-instruction-role#SC-003"
@@ -785,7 +786,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:54c6338a18fbf419644f3482de00d1dfea35fd4a7fbb929a974027f2ce73fa59"
+            "digest": "sha256:17873cacee9e96b9bcad86f62433ed8c849eb582ee6f78797a3c4cba60eb800a"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -889,9 +890,14 @@
             "line": 13
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-011",
             "file": "tests/agent-instruction-role.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 15
           }
         ]
       }
@@ -2132,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 715
+            "line": 741
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 742
+            "line": 768
           },
           {
             "requirementId": "FR-021",
@@ -4295,7 +4301,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared.mjs",
-            "line": 140
+            "line": 143
           },
           {
             "requirementId": "FR-001",
@@ -6327,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 7
+            "line": 8
           },
           {
             "requirementId": "FR-010",
@@ -7204,7 +7210,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1110
+            "line": 1140
           },
           {
             "requirementId": "FR-008",
@@ -7414,7 +7420,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared.mjs",
-            "line": 184
+            "line": 187
           },
           {
             "requirementId": "FR-003",
@@ -8230,12 +8236,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1367
+            "line": 1401
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1377
+            "line": 1411
           },
           {
             "requirementId": "FR-006",
@@ -10513,7 +10519,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 760
+            "line": 761
           },
           {
             "requirementId": "FR-006",
@@ -11190,17 +11196,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 239
+            "line": 242
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 244
+            "line": 247
           },
           {
             "requirementId": "FR-003",
@@ -11235,7 +11241,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 9
+            "line": 10
           },
           {
             "requirementId": "FR-009",
@@ -11295,7 +11301,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 197
+            "line": 208
           },
           {
             "requirementId": "FR-016",
@@ -12556,7 +12562,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 196
+            "line": 207
           },
           {
             "requirementId": "FR-011",
@@ -12931,7 +12937,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 969
+            "line": 970
           },
           {
             "requirementId": "FR-001",
@@ -12941,17 +12947,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 970
+            "line": 971
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 971
+            "line": 972
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 972
+            "line": 973
           },
           {
             "requirementId": "FR-005",
@@ -13264,6 +13270,7 @@
           "docguard.recorded-document-reviews#FR-011",
           "docguard.recorded-document-reviews#FR-012",
           "docguard.recorded-document-reviews#FR-013",
+          "docguard.recorded-document-reviews#FR-014",
           "docguard.recorded-document-reviews#SC-001",
           "docguard.recorded-document-reviews#SC-002",
           "docguard.recorded-document-reviews#SC-003",
@@ -13274,15 +13281,145 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:ee0f24db9d7b592a939335d6ec957c25b7b0a3ddf9bd288cee56ad1328580d4f"
+            "digest": "sha256:233504b27cceb2fe83647758a59e5c0d5df618ea65ac9b64d8a770f14b086457"
+          },
+          {
+            "path": "specs/095-recorded-document-reviews/plan.md",
+            "digest": "sha256:c0d684ad874e8900307b949455faddbe1b882ee9220dc7aec898b91e7e6c3400"
+          },
+          {
+            "path": "specs/095-recorded-document-reviews/tasks.md",
+            "digest": "sha256:17e45296d2a3ab1ae1e9b2fb7ba3c6e7b180e40c4f3020db450a0bed2708c6a3"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
-          "total": 0
+          "checked": 10,
+          "total": 13
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/commands/review.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/doc-reviews.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/doc-reviews.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/doc-reviews.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/scanners/doc-reviews.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/reference-staleness.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/freshness.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 22
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/history-replay.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 16
+          }
+        ]
       }
     },
     {
@@ -16629,7 +16766,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1060
+            "line": 1061
           },
           {
             "requirementId": "FR-011",

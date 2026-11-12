@@ -53,7 +53,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `retire` (remove reviewed docs from active context),
 `specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
-`review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
+`review` (doc sections whose covered code changed; `--accept <doc>` records a document review with a fingerprint per referenced file, `--accept <doc>#<id>` a section review; `--prune`, `--suggest`),
 `anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
 `explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `policy` (which advisory codes CI history shows are ready to promote), `memory` (what DocGuard
@@ -183,6 +183,8 @@ extensions/spec-kit-docguard/
   The CI test job fails any single test over 100 seconds at reference-runner
   speed (`TEST_CEILING_MS`, `tools/suite-runtime-budget.mjs`); the suite total
   is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
+  A change to a parser that reads documents runs `npm run fuzz` (seeded
+  fuzzing: no throw, same answer twice, bounded time; specs/088-validator-fuzz).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

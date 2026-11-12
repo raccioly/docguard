@@ -17,6 +17,9 @@ import { c, PROFILES, SEVERITY_LEVELS } from './shared.mjs';
 import { CODES } from './findings.mjs';
 import { mergeIgnoreFile, normalizeIgnoreConfig } from './shared-ignore.mjs';
 import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
+/** Document roles a role-scoped `findingSeverity` value may name (spec 095 FR-010). */
+export const FINDING_SEVERITY_ROLES = Object.freeze(['agent-instruction', 'canonical']);
+
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
@@ -139,8 +142,16 @@ export function loadConfig(projectDir) {
           if (!Object.hasOwn(CODES, code)) {
             throw new Error(`findingSeverity.${code} is not a known finding code`);
           }
+          // docguard.recorded-document-reviews#FR-010: { "<role>": level } scopes a level to a document role.
+          if (val && typeof val === 'object' && !Array.isArray(val)) {
+            for (const [role, level] of Object.entries(val)) {
+              if (!FINDING_SEVERITY_ROLES.includes(role)) throw new Error(`findingSeverity.${code}.${role} is not a document role (use ${FINDING_SEVERITY_ROLES.join(' or ')})`);
+              if (typeof level !== 'string' || !SEVERITY_LEVELS.has(level.toLowerCase())) throw new Error(`findingSeverity.${code}.${role} must be high, medium, or low`);
+            }
+            continue;
+          }
           if (typeof val !== 'string' || !SEVERITY_LEVELS.has(val.toLowerCase())) {
-            throw new Error(`findingSeverity.${code} must be high, medium, or low`);
+            throw new Error(`findingSeverity.${code} must be high, medium, or low, or an object of document role to level`);
           }
         }
       }
@@ -280,7 +291,10 @@ function normalizeConfig(cfg) {
       if (Object.hasOwn(normalized, code)) {
         throw new Error(`findingSeverity contains duplicate code ${code}`);
       }
-      normalized[code] = typeof value === 'string' ? value.toLowerCase() : value;
+      normalized[code] = typeof value === 'string' ? value.toLowerCase()
+        : value && typeof value === 'object' && !Array.isArray(value)
+          ? Object.fromEntries(Object.entries(value).map(([r, l]) => [r, typeof l === 'string' ? l.toLowerCase() : l]))
+          : value;
     }
     out.findingSeverity = normalized;
   }

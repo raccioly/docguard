@@ -426,16 +426,17 @@ const COMMAND_HELP = {
     examples: ['docguard anchors', 'docguard anchors --state suspect --format json', 'docguard anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"', "docguard anchors accept --link 'acme.billing#FR-003|src/pricing.mjs|applyDiscount|symbol' --reason \"rounding fix keeps FR-003\""],
   },
   review: {
-    summary: 'Track which code each doc section describes, and review a section when that code changes.',
+    summary: 'Record what a document review checked, and review a document or section when the code it names changes.',
     usage: 'docguard review [--format json] | docguard review --accept <doc>#<section>|<doc> --reason <text> | docguard review --prune | docguard review --suggest <doc>',
     flags: [
-      ['--accept <doc>#<id>', 'Record a review: fingerprint the section\'s covers= dependencies at HEAD (requires --reason)'],
+      ['--accept <doc>', 'Record a document review in .docguard-doc-reviews.json: the commit and a fingerprint of every file the document references (requires --reason; spec 095)'],
+      ['--accept <doc>#<id>', 'Record a section review: fingerprint the section\'s covers= dependencies at HEAD (requires --reason)'],
       ['--reason <text>', 'With --accept: what you checked (8-500 characters)'],
       ['--prune', 'Remove lock entries whose section no longer declares covers='],
       ['--suggest <doc>', 'Propose covers= values from paths the doc already mentions (low confidence; never writes)'],
       ['--format json', 'Machine-readable status'],
     ],
-    examples: ['docguard review', 'docguard review --accept docs-canonical/ARCHITECTURE.md#as-built --reason "Checked against checkAsBuiltSync"', 'docguard review --suggest docs-canonical/ARCHITECTURE.md'],
+    examples: ['docguard review', 'docguard review --accept AGENTS.md --reason "Key files checked against src/probe and package scripts"', 'docguard review --accept docs-canonical/ARCHITECTURE.md#as-built --reason "Checked against checkAsBuiltSync"', 'docguard review --suggest docs-canonical/ARCHITECTURE.md'],
   },
   rules: {
     summary: 'Which agent instruction files each harness loads for a path, why, and how many bytes.',

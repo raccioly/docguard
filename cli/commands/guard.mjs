@@ -1,4 +1,5 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
+import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
@@ -289,6 +290,19 @@ function collectMarkdown(projectDir) {
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
  */
+/** Agent-instruction documents with FRS006 or FRS007, for the top line and JSON (spec 095 FR-011). */
+export function staleInstructionsOf(findings) {
+  const byDoc = new Map();
+  for (const f of findings || []) {
+    if (f.code !== 'FRS006' && f.code !== 'FRS007') continue;
+    const doc = String(f.location || '').replace(/:\d+$/, '');
+    if (!doc) continue;
+    if (!byDoc.has(doc)) byDoc.set(doc, new Set());
+    byDoc.get(doc).add(f.code);
+  }
+  return [...byDoc].map(([doc, codes]) => ({ doc, codes: [...codes].sort() })).sort((a, b) => a.doc.localeCompare(b.doc));
+}
+
 function computeDocCoverage(projectDir, config) {
   const fileIgnored = loadIgnorePatterns(projectDir);
   const configIgnored = buildIgnoreFilter(config.ignore || []);
@@ -317,7 +331,14 @@ function computeDocCoverage(projectDir, config) {
     if (inHome || atRoot || known.has(rel)) { tracked++; continue; }
     unclassified.push(rel);
   }
-  return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified };
+  // docguard.agent-instruction-role#FR-011: an exemption is visible — every
+  // instruction file treated as vendored is counted and listed with its reason.
+  let vendoredInstructions = [];
+  try {
+    vendoredInstructions = agentInstructionDocs(projectDir, config).docs.filter(d => d.vendored)
+      .map(d => ({ path: d.path, source: d.vendored.source, reason: d.vendored.reason }));
+  } catch { vendoredInstructions = []; }
+  return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified, vendoredInstructions };
 }
 
 export function runGuardInternal(projectDir, config) {
@@ -358,6 +379,8 @@ export function runGuardInternal(projectDir, config) {
           message: r.message,
           location: r.doc || null,
           suggestion: r.suggestion || { kind: 'review', text: 'Review the document against its intended scope. A history signal does not establish which side should change.' },
+          // docguard.recorded-document-reviews#FR-006–FR-010: the evidence travels with the finding.
+          documentRole: r.documentRole, staleness: r.staleness, surface: r.surface,
         }));
       }
       const skipped = freshnessResults.filter(r => r.status === 'skip');
@@ -693,6 +716,9 @@ export function runGuardInternal(projectDir, config) {
     ...(required ? { requiredChecks: { required: required.required, undecided: required.undecided } } : {}),
     semanticClaims,
     evidence,
+    // docguard.recorded-document-reviews#FR-011: agents read these files every
+    // session, so their staleness is said first, whatever its severity.
+    staleInstructions: staleInstructionsOf(allFindings),
     // Benchmark evidence for the codes this run actually emitted. Codes the
     // corpus never exercised say so; none inherits another code's measurement.
     precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
@@ -936,6 +962,9 @@ export function runGuard(projectDir, config, flags) {
   // ── Text output ──
   console.log(`${c.bold}🛡️  DocGuard Guard — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  if (data.staleInstructions?.length) {
+    console.log(`  ${c.yellow}⚠ Agents are being served stale instructions: ${data.staleInstructions.map(s => `${s.doc} (${s.codes.join(', ')})`).join('; ')}${c.reset}\n`);
+  }
 
   for (const v of data.validators) {
     if (v.status === 'skipped') {
@@ -1158,7 +1187,8 @@ export function runGuard(projectDir, config, flags) {
     const cov = data.coverage;
     const unclassN = cov.unclassified.length;
     const tierLine = `${cov.canonical} canonical · ${cov.specKit ? `${cov.specKit} spec-kit · ` : ''}${cov.tracked} tracked · ${cov.ignored} ignored`
-      + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '');
+      + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '')
+      + (cov.vendoredInstructions?.length ? ` · ${cov.vendoredInstructions.length} vendored instruction file(s), not reviewed for staleness` : '');
     console.log(`\n  ${c.dim}📑 Docs: ${tierLine} ${c.reset}${c.dim}(${cov.discovered} Markdown files)${c.reset}`);
     if (unclassN > 0) {
       // Calm by default — surface the COUNT every run (so non-coverage is never
