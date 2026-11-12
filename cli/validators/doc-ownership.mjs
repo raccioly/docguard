@@ -23,14 +23,48 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import {
   DEVIN_WIKI, entryTargetProblem, lintDevinWiki, loadOwnership, ownershipReport, projectFiles,
 } from '../scanners/doc-ownership.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { canonicalDocPaths, explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_PER_CODE = 25;
+
+/**
+ * Does this kind of check belong to the project? It does when the project has
+ * canonical documents and source code: someone is then responsible for saying
+ * which section explains which code. The map is the declaration the validator
+ * asks for (specs/097-strict-by-default FR-006); a tool can draft one, not know it.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const docs = canonicalDocPaths(projectDir, config);
+  if (docs.length === 0) return { applies: false, evidence: 'the project has no canonical document (docs-canonical/ or a mapped document role) that could own source code', docs };
+  const source = firstProductSource(projectDir, config);
+  if (!source) return { applies: false, evidence: `${docs.length} canonical document(s) (${sample(docs)}) but no source file for a section to own`, docs };
+  return { applies: true, evidence: `${docs.length} canonical document(s) (${sample(docs)}) and source code (${source}) that a section can own`, docs, source };
+}
+
+function ownHow(d, { entriesMissing }) {
+  const doc = d.docs?.[0] || 'docs-canonical/ARCHITECTURE.md';
+  const dir = (d.source || 'src/x').includes('/') ? `${d.source.slice(0, d.source.indexOf('/'))}/**` : '<dir>/**';
+  return `${entriesMissing ? 'The ownership block has no entries. ' : ''}Add an "ownership" block to .docguard.json and write every value yourself: { "entries": [ { "doc": "${doc}", "section": "<section id or heading anchor in that document>", "purpose": "<one sentence, written by a person, saying what that section explains>", "paths": ["${dir}"] } ] }. \`docguard trace --owners --suggest\` drafts a block, but its purposes are placeholders (OWN008) and its assignments are guesses: edit every entry before you commit it.`;
+}
+const NO_OWNER_SUBJECT = 'Nothing to configure unless the project has canonical documents (docs-canonical/) and source code: an ownership entry names the document section responsible for a path.';
 
 export function validateDocOwnership(projectDir, config = {}) {
   const map = loadOwnership(projectDir, config);
   const wiki = lintDevinWiki(projectDir, config);
   if (!map.present && !wiki.present) {
-    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no ownership block and no .devin/wiki.json' };
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no ownership block and no .devin/wiki.json',
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config),
+        empty: d => (d.applies
+          ? { emptyCause: 'needs-declaration', note: `Doc-Ownership has no ownership map to check: ${d.evidence}, but .docguard.json has no ownership block and the project has no .devin/wiki.json.`, howToConfigure: ownHow(d, { entriesMissing: false }) }
+          : { emptyCause: 'nothing-of-this-kind', note: `Doc-Ownership has no ownership map and no subject for one: ${d.evidence}.`, howToConfigure: NO_OWNER_SUBJECT }),
+      }),
+    };
   }
   const findings = [];
   let total = 0;
@@ -143,7 +177,25 @@ export function validateDocOwnership(projectDir, config = {}) {
     }
   }
 
-  const result = { ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total }), performed: Math.max(0, total - presence) };
+  const performed = Math.max(0, total - presence);
+  const result = {
+    ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total }),
+    ...explainPaddedEmpty(contractFields({
+      performed,
+      found: findings.length > 0,
+      ran: `${performed} ownership check(s) made against the project's files`,
+      decide: () => applies(projectDir, config),
+      empty: d => (d.applies
+        ? {
+          emptyCause: 'needs-content',
+          note: map.present
+            ? `Doc-Ownership has an ownership block with no entries to check: ${d.evidence}.`
+            : `Doc-Ownership has a .devin/wiki.json that names no path to check: ${d.evidence}.`,
+          howToConfigure: map.present ? ownHow(d, { entriesMissing: true }) : `${DEVIN_WIKI.path} names no page or note path to check. Add the notes and pages Devin should read, or add an "ownership" block as well: ${ownHow(d, { entriesMissing: false })}`,
+        }
+        : { emptyCause: 'nothing-of-this-kind', note: `Doc-Ownership has nothing to own: ${d.evidence}.`, howToConfigure: NO_OWNER_SUBJECT }),
+    })),
+  };
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   return result;
 }
