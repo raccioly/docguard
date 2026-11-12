@@ -79,10 +79,9 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   }
 
   if (pkg.name !== 'docguard-cli') {
-    return compose({
-      na: true,
-      naReason: 'canonical-sync only runs in the docguard-cli repo (it polices DocGuard\'s own surface)',
-    });
+    // docguard.staleness-visibility#FR-002: not this project's check, and it says so.
+    const naReason = 'canonical-sync only runs in the docguard-cli repo (it polices DocGuard\'s own surface)';
+    return compose({ na: true, naReason, applicability: { status: 'not-applicable', reason: naReason } });
   }
 
   // ── Gather code-truth ────────────────────────────────────────────────

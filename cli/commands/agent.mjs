@@ -153,6 +153,10 @@ export function runAgent(projectDir, config, flags) {
     }
     for (const excerpt of packet.excerpts) {
       console.log(`  ${c.bold}${excerpt.path}:${excerpt.startLine}-${excerpt.endLine}${c.reset} ${c.dim}[${excerpt.kind} · score ${excerpt.score}]${c.reset}`);
+      if (excerpt.staleness) {
+        const refs = excerpt.staleness.references.slice(0, 3).map(r => `${r.path} ${Math.round(r.share * 100)}%`).join(', ');
+        console.log(`  ${c.yellow}⚠ possibly stale: names ${refs} — most of ${excerpt.staleness.references.length > 1 ? 'their' : 'its'} lines are new since this document's ${excerpt.staleness.reviewPoint.date} review; read the code before trusting this excerpt${c.reset}`);
+      }
       for (const line of excerpt.content.split('\n')) console.log(`    ${line}`);
       console.log('');
     }

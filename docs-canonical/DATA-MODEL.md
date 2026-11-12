@@ -223,7 +223,8 @@ a commit that changed nothing else. Findings about these documents carry `docume
 `references[]` with `path`, `line`, `added`, `deleted`, `total`, `share`, `newSinceBase`, `base`),
 FRS007 carries `surface` (`scripts`, `dirs`, `reviewPoint`), and a canonical document's FRS002/FRS003
 carries the same `staleness` as information. Guard JSON lists agent-instruction documents with
-FRS006 or FRS007 in `staleInstructions[]` (`{ doc, codes }`).
+FRS006 or FRS007 in `staleInstructions[]` (`{ doc, codes }`), and every validator that selected nothing or lacks its
+prerequisite document in `emptyValidators[]` (`{ key, name, status, reason, howToConfigure }`, spec 096).
 
 ## Doc Dependency Lock: `.docguard-doc-lock.json`
 
@@ -448,6 +449,7 @@ task or packet.
 | `task.digest`, `task.characters` | Normalized task identity and bounded length; raw task text is omitted |
 | `provenance.git`, `provenance.registry` | Captured Git and lifecycle-registry state |
 | `assurance` | Retrieval-only scope, unknown factual accuracy, and unverified status |
+| `excerpts[].staleness` | Present when a line inside the excerpt names a file at least `freshness.referenceShare` of whose lines were added since the document's review (FRS006's measure and exclusions): `reviewPoint`, `threshold`, `references[]` (`path`, `line`, `share`, `added`, `deleted`, `newSinceBase`). Read the code before trusting such an excerpt (spec 096) |
 | `selection` | Targeted or abstained state, threshold, candidate/omission counts, excluded lifecycle documents, and fixed budgets |
 | `excerpts[]` | Repository-relative path, line range, content/file hashes, kind, optional spec ID, score, reasons, and bounded content |
 | `pointers[]` | Safe task, cited-source, implementation, or test paths with hashes and qualified requirements |

@@ -221,3 +221,45 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
   for (const r of results) if (!r.documentRole && r.doc && roleSet.has(r.doc)) r.documentRole = 'agent-instruction';
   return out;
 }
+
+/**
+ * Stale references of one document named on lines `from`–`to`, for an
+ * excerpt served to an agent (docguard.staleness-visibility#FR-004). Only a
+ * document with a review point (recorded review or marker) is measured; the
+ * same exclusions and threshold as FRS006 apply.
+ * @returns {null | { reviewPoint, threshold, references: object[] }}
+ */
+export function excerptStaleness(dir, config, doc, from, to, { cache = new Map() } = {}) {
+  let content;
+  try { content = readFileSync(resolve(dir, doc), 'utf8'); } catch { return null; }
+  const entry = reviewsFor(dir).reviews?.documents?.[doc];
+  let point = null;
+  if (entry?.reviewedRevision && commitExists(dir, entry.reviewedRevision)) point = { revision: entry.reviewedRevision, date: entry.reviewedAt, source: 'recorded' };
+  else {
+    const marker = markerDate(content);
+    const revision = marker ? commitAtEndOfDay(dir, marker) : null;
+    if (revision) point = { revision, date: marker, source: 'marker' };
+  }
+  if (!point) return null;
+  const tracked = listTrackedFiles(dir);
+  if (!tracked) return null;
+  const vendored = new Set(agentInstructionDocs(dir, config).docs.filter(d => d.vendored).map(d => d.path));
+  const { references } = documentReferences(dir, doc, content, { tracked, vendored, config });
+  const inRange = references.filter(r => r.line >= from && r.line <= to);
+  if (!inRange.length) return null;
+  const threshold = referenceShare(config);
+  const { references: measured } = measureReferences(dir, doc, inRange, { revision: point.revision, time: commitTime(dir, point.revision) }, { threshold, cache });
+  let fpCtx = null;
+  const crossing = measured.filter(r => r.share >= threshold && (point.source !== 'recorded' || (() => {
+    const rec = entry.references?.[r.path];
+    if (!rec) return true;
+    fpCtx ||= createContext(dir, config);
+    const now = fingerprint(fpCtx, r.path, { preferTier: rec.tier });
+    return !now.ok || now.fingerprint !== rec.fingerprint;
+  })()));
+  if (!crossing.length) return null;
+  return {
+    reviewPoint: { date: point.date, revision: point.revision, source: point.source }, threshold,
+    references: crossing.map(r => ({ path: r.path, line: r.line, share: Number(r.share.toFixed(4)), added: r.added, deleted: r.deleted, newSinceBase: r.newSinceBase })),
+  };
+}

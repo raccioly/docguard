@@ -25,6 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that changed nothing else. **FRS010**: an unreadable reviews file fails the run.
 - **Guard says first when agents are served stale instructions**, in text (also with `--quiet`)
   and as `staleInstructions[]` in JSON.
+- **Empty validators say what it takes** (#628, spec 096). Under each validator that selected
+  nothing, guard prints one "to check it" line (for example, how to declare `covers=` for
+  Doc-Dependency), and JSON lists them in `emptyValidators[]`. Canonical-Sync outside DocGuard
+  is now `not-applicable` with its reason instead of a bare no-matches.
+- **FRS002 is ranked and capped.** Documents whose referenced files changed most come first,
+  then by commit count; three are shown and the rest summarized in one line. `--verbose` and
+  JSON keep every finding.
+- **`agent --task` warns about a stale excerpt.** An excerpt that names a file most of whose
+  lines are new since the document's review carries `staleness` and a warning line, so an
+  agent reads the code before trusting it.
 - **`findingSeverity` accepts a document role**: `{ "FRS006": { "agent-instruction": "high" } }`
   fails the build for agent instructions only. `freshness.referenceShare` sets the FRS006
   threshold (default 0.5).

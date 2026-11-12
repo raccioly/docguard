@@ -1,6 +1,6 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
-import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
+import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts, howToConfigure } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
@@ -234,6 +234,8 @@ function renderableItems(v) {
       // nothing while the summary counts said escalations existed.
       disposition: f.disposition,
       suggestion: f.suggestion,
+      location: f.location,
+      staleness: f.staleness,
     }));
   }
   return [
@@ -290,6 +292,18 @@ function collectMarkdown(projectDir) {
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
  */
+export const FRS002_SHOWN = 3;
+
+/**
+ * FRS002 in reading order: a document whose referenced files changed most
+ * (spec 095 evidence) first, then by the commit count in the message.
+ */
+export function rankFrs002(items) {
+  const share = i => Math.max(0, ...((i.staleness?.references || []).map(r => r.share)));
+  const commits = i => Number((String(i.message || '').match(/(\d+) code commits/) || [])[1]) || 0;
+  return [...items].sort((a, b) => share(b) - share(a) || commits(b) - commits(a) || String(a.location).localeCompare(String(b.location)));
+}
+
 /** Agent-instruction documents with FRS006 or FRS007, for the top line and JSON (spec 095 FR-011). */
 export function staleInstructionsOf(findings) {
   const byDoc = new Map();
@@ -719,6 +733,9 @@ export function runGuardInternal(projectDir, config) {
     // docguard.recorded-document-reviews#FR-011: agents read these files every
     // session, so their staleness is said first, whatever its severity.
     staleInstructions: staleInstructionsOf(allFindings),
+    // docguard.staleness-visibility#FR-001: validators that selected nothing, with why and what it takes.
+    emptyValidators: results.filter(r => r.verdict === 'empty' || r.applicability?.status === 'missing-prerequisite')
+      .map(r => ({ key: r.key, name: r.name, status: r.applicability?.status, reason: r.applicability?.reason || null, howToConfigure: howToConfigure(r.key) })),
     // Benchmark evidence for the codes this run actually emitted. Codes the
     // corpus never exercised say so; none inherits another code's measurement.
     precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
@@ -980,6 +997,10 @@ export function runGuard(projectDir, config, flags) {
       const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
       const reason = showReason ? ` ${c.dim}(${v.applicability.reason})${c.reset}` : '';
       console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[${v.applicability.status}]${c.reset}${reason}`);
+      // docguard.staleness-visibility#FR-001: "selected nothing" is coverage the
+      // project does not have; say what it would take, without --verbose.
+      const hint = v.verdict === 'empty' || v.applicability.status === 'missing-prerequisite' ? howToConfigure(v.key) : null;
+      if (hint) console.log(`     ${c.dim}↳ to check it: ${hint}${c.reset}`);
       continue;
     }
 
@@ -1017,7 +1038,19 @@ export function runGuard(projectDir, config, flags) {
     // v0.27: render from structured findings when the validator emits them
     // (each issue carries a code, confidence, and a `→ suggestion`); otherwise
     // fall back to the legacy error/warning strings. Identical gating.
-    for (const item of renderableItems(v)) {
+    // docguard.staleness-visibility#FR-003: identical FRS002 lines train readers
+    // to skip them. Rank them (evidence first, then commit count) and show the
+    // first FRS002_SHOWN; --verbose and JSON keep every one.
+    let items = renderableItems(v);
+    let hiddenFrs002 = 0;
+    if (v.key === 'freshness') {
+      const frs002 = rankFrs002(items.filter(i => i.code === 'FRS002'));
+      const others = items.filter(i => i.code !== 'FRS002');
+      const shown = flags.verbose ? frs002 : frs002.slice(0, FRS002_SHOWN);
+      hiddenFrs002 = frs002.length - shown.length;
+      items = [...others, ...shown];
+    }
+    for (const item of items) {
       if (item.severity === 'error' && !showErr) continue;
       if (item.severity === 'warn' && !showWarn) continue;
       const effective = item.effectiveSeverity || item.severity;
@@ -1040,6 +1073,9 @@ export function runGuard(projectDir, config, flags) {
           console.log(`         ${c.dim}${item.suggestion.pragma}${c.reset}`);
         }
       }
+    }
+    if (hiddenFrs002 > 0 && showWarn) {
+      console.log(`     ${c.yellow}⚠${c.reset} ${c.dim}[FRS002] and ${hiddenFrs002} more document(s) due for review by the repository-wide count (--verbose lists them)${c.reset}`);
     }
     // If a validator reports passed < total but has no errors/warnings, surface
     // the gap honestly so users aren't left wondering where the deficit went.

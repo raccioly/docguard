@@ -12,6 +12,7 @@
  * @implements docguard.task-specific-agent-context#FR-009
  */
 
+import { excerptStaleness } from './recorded-review-signals.mjs';
 import { basename } from 'node:path';
 import { citedSources, contentHash, createEvidenceReader, evidenceDocs, gitEvidence } from './semantic-claims.mjs';
 import { compileGlob } from '../shared-ignore.mjs';
@@ -263,6 +264,15 @@ export function buildTaskContextPacket(projectDir, config = {}, taskText) {
     chars += content.length;
   }
   if (ranked.length > selected.length) truncated = true;
+  // docguard.staleness-visibility#FR-004: an excerpt that names a file most of
+  // whose lines are new since the document's review says so, so an agent is
+  // not handed stale instructions as if they were current.
+  const stalenessCache = new Map();
+  for (const item of selected) {
+    let note = null;
+    try { note = excerptStaleness(projectDir, config, item.path, item.startLine, item.endLine, { cache: stalenessCache }); } catch { note = null; }
+    if (note) item.staleness = note;
+  }
 
   const status = selected.length ? 'targeted' : 'abstained';
   const limitations = [

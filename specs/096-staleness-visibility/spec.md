@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-12
 
-**Status**: Draft (not yet planned)
+**Status**: Implemented
 
 **Spec ID**: `docguard.staleness-visibility`
 
@@ -43,9 +43,33 @@
 
 ## Requirements *(mandatory)*
 
-To be written after spec 095's codes and evidence shape are settled. The list of empty-validator reasons and configuration hints is owned by each validator (a `howToConfigure` string next to its applicability), not by a central table.
+### Functional Requirements
+
+- **FR-001**: Guard MUST show, in default text output, under each validator that selected nothing (verdict `empty`) or is missing its prerequisite document:
+  - the reason, as before;
+  - one line "to check it: <hint>".
+
+  Hints live in one table keyed by validator (`CONFIGURE_HINTS` in `cli/validator-coverage.mjs`). A test requires an entry for every registered validator; `null` means the validator always selects something in a DocGuard project. Guard JSON MUST carry `emptyValidators: [{ key, name, status, reason, howToConfigure }]`.
+- **FR-002**: Canonical-Sync outside DocGuard's own package MUST report `not-applicable` with its reason (verdict `skipped`), not a generic `no-matches`. An unreadable package or `cli/` tree keeps its existing outcome.
+- **FR-003**: In default text output, Freshness MUST list FRS002 findings in this order, then show the first `FRS002_SHOWN` (3) and summarize the rest in one line ("and N more … (--verbose lists them)"):
+  1. documents whose FRS002 carries spec 095 `staleness` evidence, by maximum share;
+  2. the rest, by commit count.
+
+  `--verbose` and JSON keep every finding. Exit codes and counts are unchanged.
+- **FR-004**: `agent --task`, and the MCP task context built by the same packet code, MUST attach `staleness` to an excerpt when a file the excerpt names (on a line inside the excerpt) crossed the FRS006 threshold since its document's review point. The review point is a recorded review whose fingerprint changed, or else the marker; the FRS006 exclusions apply. The text output prints one warning line under the excerpt header. `schemas/docguard-task-context.schema.json` defines the field.
+- **FR-005**: `cli/findings.mjs` is unchanged (no new codes). DATA-MODEL (guard JSON `emptyValidators`, the task-context `staleness`), ARCHITECTURE and `CHANGELOG.md` MUST describe the change.
+
+## Success Criteria *(mandatory)*
+
+- **SC-001**: Each acceptance scenario has a test that fails on the base and passes after.
+- **SC-002**: On TestGuard at f89ca46:
+  - guard shows a "to check it" line under each of its empty validators;
+  - FRS002 shows 3 of 9 lines plus the summary;
+  - `agent --task "change how probe.mjs plans faults"` marks the `AGENTS.md:29-44` excerpt as naming `src/probe/probe.mjs` 74%.
+- **SC-003**: The budget job passes, including agent-facing bytes (+10%).
 
 ## Out of Scope
 
 - New finding codes.
 - Changing exit-code semantics.
+- The fixed `AGENTS.md` candidate in the task-context packet. Moving it to the agent-instruction role would change the frozen agent-context benchmark's selection, and needs its own evaluation.

@@ -116,6 +116,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
 | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
 | `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
+| `cli/validator-coverage.mjs` (`CONFIGURE_HINTS`), `cli/commands/guard.mjs` (`rankFrs002`, `emptyValidators`), `cli/scanners/task-context.mjs` (excerpt staleness, spec 096) | `tests/staleness-visibility.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |

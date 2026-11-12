@@ -35,6 +35,59 @@ function gapReason(gaps) {
     + (withheld ? `; ${withheld} absence finding${withheld === 1 ? '' : 's'} withheld` : '');
 }
 
+/**
+ * What it takes for each validator to select something, shown next to a
+ * validator that selected nothing (docguard.staleness-visibility#FR-001).
+ * Every registered validator has an entry; `null` means it always selects
+ * something in a DocGuard project, so emptiness needs no hint.
+ */
+export const CONFIGURE_HINTS = Object.freeze({
+  __proto__: null,
+  structure: null,
+  docSections: 'Add the canonical documents (docguard init); their required sections are checked once they exist.',
+  docsSync: 'Applies to projects with route or service directories (src/routes, src/services, src/lib, app/api); nothing to configure otherwise.',
+  drift: 'Write `// DRIFT: <reason>` where code deliberately departs from the docs; each one is then checked against DRIFT-LOG.md.',
+  changelog: 'Add a CHANGELOG.md (or set requiredFiles.changelog).',
+  testSpec: 'Add docs-canonical/TEST-SPEC.md with its Source-to-Test Map.',
+  environment: 'Add docs-canonical/ENVIRONMENT.md listing the environment variables the code reads.',
+  security: 'Applies to code with secrets, auth or input handling; add docs-canonical/SECURITY.md.',
+  architecture: 'Add docs-canonical/ARCHITECTURE.md with its layer rules.',
+  freshness: 'Needs git history with at least 3 commits.',
+  traceability: 'Give requirements IDs (FR-001) in REQUIREMENTS.md or specs/, and tag tests with them.',
+  docsDiff: 'Add the canonical documents that list routes, entities, environment variables and tests.',
+  apiSurface: 'Create docs-canonical/API-REFERENCE.md, or map docs.roles.apiReference to the document that lists the API.',
+  metadataSync: 'Applies to a package that publishes versioned artifacts (extension.yml, versioned install URLs).',
+  docsCoverage: null,
+  docQuality: null,
+  todoTracking: null,
+  schemaSync: 'Applies when the project has schema files (Prisma, SQL migrations, ORM models) and a DATA-MODEL.md.',
+  specKit: 'Initialize Spec Kit (specify init).',
+  documentLifecycle: null,
+  specRegistry: 'Run `docguard specs --write` in a Spec Kit project to create .docguard-specs.json.',
+  docDependency: 'Add covers="path#symbol" to a docguard:section marker, then `docguard review --accept <doc>#<id> --reason "…"`.',
+  requirementAnchors: 'Tag code with `@implements <spec>#FR-NNN`, then `docguard anchors accept --baseline --bulk --reason "…"` (or set anchors.enabled).',
+  pathScopedRules: 'Applies when the project has agent instruction files (AGENTS.md, CLAUDE.md, rules, skills).',
+  docOwnership: 'Add an ownership block to .docguard.json; `docguard trace --owners --suggest` drafts one.',
+  evidence: 'Declare typed source-to-statement predicates in .docguard-evidence.json.',
+  crossReference: null,
+  generatedStaleness: 'Mark code-truth sections with `<!-- docguard:section … source=code -->`; `docguard sync` writes them.',
+  surfaceSync: 'Set surfaceSync.surfaces in .docguard.json: a glob of code items and the document section that must list each one.',
+  suppressions: null,
+  diffSuspicion: 'Runs on a change: `docguard guard --changed-only`, or set diffSuspicion.since.',
+  referenceExistence: null,
+  apiDocSmells: 'Applies when the project has canonical documents with API sections.',
+  decisionRecords: 'Applies when the project keeps decision records (docs/adr or docs/decisions).',
+  aidlc: 'Applies to AWS AI-DLC projects (aidlc-docs/).',
+  canonicalSync: null,
+  metricsConsistency: null,
+  requiredChecks: null,
+});
+
+/** The configuration hint for a validator key, or null. */
+export function howToConfigure(key) {
+  return CONFIGURE_HINTS[key] ?? null;
+}
+
 function baseCoverage(projectDir, config, result) {
   if (result.status === 'skipped') return { status: 'disabled', reason: STANDARD_APPLICABILITY_REASONS.disabled };
   if (result.note?.startsWith('declared N/A')) return { status: 'not-applicable', reason: result.note };
