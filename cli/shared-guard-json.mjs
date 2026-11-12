@@ -53,7 +53,7 @@ export function compactGuardResult(full) {
     // messages, and they never reach the top-level findings: keep them.
     ...(Array.isArray(structured) ? {} : { errors, warnings }),
   }));
-  const { findings: _all, reportable: _reportable, validators: _validators, precisionEvidence, checkCoverage, ...top } = full;
+  const { findings: _all, reportable: _reportable, validators: _validators, precisionEvidence, checkCoverage, emptyValidators, ...top } = full;
   let precision;
   if (precisionEvidence && typeof precisionEvidence === 'object') {
     const { codes: _codes, ...summary } = precisionEvidence;
@@ -70,6 +70,10 @@ export function compactGuardResult(full) {
     applicabilityReasons,
     ...(Object.keys(applicabilityClasses).length ? { applicabilityClasses } : {}),
     ...(precision ? { precisionEvidence: precision } : {}),
+    // docguard.staleness-visibility#FR-001: each reason is already on its
+    // validator; the compact view names the empty ones and leaves the hints to
+    // the full contract and `docguard explain <validator>`.
+    ...(Array.isArray(emptyValidators) ? { emptyValidators: emptyValidators.map(v => v.key) } : {}),
   };
 }
 

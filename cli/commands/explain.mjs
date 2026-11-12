@@ -18,6 +18,7 @@
  * Zero NPM dependencies. Pure lookup table.
  */
 
+import { howToConfigure } from '../validator-coverage.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve as resolvePath, dirname as dn } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
@@ -670,7 +671,7 @@ export function runExplain(projectDir, _config, flags) {
 
   const e = EXPLAINERS[match.key];
   if (isJson) {
-    console.log(JSON.stringify({ query, match: { key: match.key, ...e, matchedTrigger: match.trigger } }, null, 2));
+    console.log(JSON.stringify({ query, match: { key: match.key, ...e, matchedTrigger: match.trigger, howToConfigure: howToConfigure(match.key) } }, null, 2));
     return;
   }
 
@@ -679,6 +680,8 @@ export function runExplain(projectDir, _config, flags) {
 
   console.log(`${c.bold}What it checks:${c.reset}\n  ${e.what}\n`);
   console.log(`${c.bold}Why:${c.reset}\n  ${e.why}\n`);
+  // docguard.staleness-visibility#FR-001: what it takes for this check to select something.
+  if (howToConfigure(match.key)) console.log(`${c.bold}When it selects nothing:${c.reset}\n  ${howToConfigure(match.key)}\n`);
 
   if (match.trigger) {
     console.log(`${c.bold}Your warning ("${query}") matches:${c.reset}`);

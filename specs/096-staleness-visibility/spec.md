@@ -49,7 +49,7 @@
   - the reason, as before;
   - one line "to check it: <hint>".
 
-  Hints live in one table keyed by validator (`CONFIGURE_HINTS` in `cli/validator-coverage.mjs`). A test requires an entry for every registered validator; `null` means the validator always selects something in a DocGuard project. Guard JSON MUST carry `emptyValidators: [{ key, name, status, reason, howToConfigure }]`.
+  Hints live in one table keyed by validator (`CONFIGURE_HINTS` in `cli/validator-coverage.mjs`). A test requires an entry for every registered validator; `null` means the validator always selects something in a DocGuard project. Guard JSON MUST carry `emptyValidators: [{ key, name, status, reason, howToConfigure }]`. The compact projection (`--compact`, MCP) carries only their keys, because each reason is already on its validator and the budget job caps agent-facing bytes. `docguard explain <validator>` prints the hint ("When it selects nothing").
 - **FR-002**: Canonical-Sync outside DocGuard's own package MUST report `not-applicable` with its reason (verdict `skipped`), not a generic `no-matches`. An unreadable package or `cli/` tree keeps its existing outcome.
 - **FR-003**: In default text output, Freshness MUST list FRS002 findings in this order, then show the first `FRS002_SHOWN` (3) and summarize the rest in one line ("and N more … (--verbose lists them)"):
   1. documents whose FRS002 carries spec 095 `staleness` evidence, by maximum share;
