@@ -28,6 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 
 
 // Numbers are only claims when adjacent to a recognized unit.
@@ -48,7 +49,7 @@ const NUMBER_PATTERNS = [
 const ENUM_LIST_RE = /\b[A-Z][A-Z0-9_]{2,}(?:\s*(?:\/|,|\||\bor\b)\s*[A-Z][A-Z0-9_]{2,}){1,}\b/g;
 const ENUM_CONTEXT_RE = /\b(status|state|enum|values?|one of|phase|stage|transitions?)\b/i;
 
-export const SEMANTIC_COVERAGE_LIMITATION = 'Semantic claim discovery is limited to docs-canonical/**/*.md, explicitly mapped Markdown document roles, README.md, and AGENTS.md, subject to ignores, safety checks, and scan budgets. Other resolved documentation homes are unscanned/unsupported by this extractor; guard coverage labels do not extend this scope. Hashes cover only captured document and cited-source inputs, not all documentation or factual correctness.';
+export const SEMANTIC_COVERAGE_LIMITATION = 'Semantic claim discovery is limited to docs-canonical/**/*.md, explicitly mapped Markdown document roles, README.md, and the root-level agent-instruction documents (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, configured agent files), subject to ignores, safety checks, and scan budgets. Other resolved documentation homes are unscanned/unsupported by this extractor; guard coverage labels do not extend this scope. Hashes cover only captured document and cited-source inputs, not all documentation or factual correctness.';
 
 const MAX_CLAIMS = 80;
 const MAX_EVIDENCE_FILE_BYTES = 1024 * 1024;
@@ -212,7 +213,8 @@ export function evidenceDocs(projectDir, config = {}) {
 function claimSourceDocs(projectDir, read, config) {
   // The legacy matcher reads its file itself; never call it for an unsafe file.
   const isIgnored = read('.docguardignore').content === null ? () => false : loadIgnorePatterns(projectDir);
-  return [...evidenceDocs(projectDir, config), 'README.md', 'AGENTS.md'].filter(doc => !isIgnored(doc));
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  return [...new Set([...evidenceDocs(projectDir, config), 'README.md', ...rootAgentDocs(projectDir, config)])].filter(doc => !isIgnored(doc));
 }
 
 /** True if a line is inside a fenced code block (toggled by the caller). */

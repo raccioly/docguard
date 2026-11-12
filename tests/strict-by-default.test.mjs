@@ -29,7 +29,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { FIXTURE_GIT } from './helpers/git.mjs';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -90,16 +90,15 @@ const NO_API = { 'package.json': JSON.stringify({ name: 'lib', version: '1.0.0' 
 
 // ── T001: an older DocGuard must keep working on a config that carries the key (FR-002) ──
 const TAG = 'v0.47.0';
-// fixture-git-exempt: read-only lookups of this repository's own tag; no fixture is built.
-const tagExists = spawnSync('git', ['rev-parse', '--verify', '-q', `${TAG}^{commit}`], { cwd: ROOT }).status === 0;
+const tagExists = (() => { try { fixtureGit(ROOT, ['rev-parse', '--verify', '-q', `${TAG}^{commit}`]); return true; } catch { return false; } })();
 let V047 = null;
 function baseCli() {
   if (V047) return V047;
   const dir = scratch('docguard-v047-');
-  // fixture-git-exempt: read-only archive of this repository's own tag.
-  const archive = spawnSync('git', ['archive', TAG], { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 });
-  assert.equal(archive.status, 0, 'git archive failed');
-  const tar = spawnSync('tar', ['-x', '-C', dir], { input: archive.stdout });
+  const tarball = join(dir, '.tag.tar');
+  fixtureGit(ROOT, ['archive', '-o', tarball, TAG]);
+  const tar = spawnSync('tar', ['-x', '-f', tarball, '-C', dir]);
+  rmSync(tarball, { force: true });
   assert.equal(tar.status, 0, 'tar extract failed');
   V047 = dir;
   return dir;

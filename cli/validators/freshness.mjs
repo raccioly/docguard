@@ -6,6 +6,8 @@
  *
  * FRS005 counts added DRIFT lines with Drift's own rules (cli/shared-drift.mjs).
  * @implements docguard.calibrated-finding-channels#FR-022
+ * @implements docguard.agent-instruction-role#FR-003
+ * @implements docguard.agent-instruction-role#FR-005
  */
 
 import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
@@ -15,6 +17,7 @@ import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } 
 // FR-005: the shared helper, not a private copy of `git rev-parse`.
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
+import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -62,8 +65,12 @@ function collectDocs(dir, config, ignored) {
   // Additional homes are opt-in: inferred doc directories are not review policy.
   for (const path of Array.isArray(config.docs?.dirs) ? config.docs.dirs : []) add(path, true);
   for (const file of config.requiredFiles?.canonical || []) add(file, true);
-  const agents = config.requiredFiles?.agentFile || ['AGENTS.md', 'CLAUDE.md'];
-  for (const file of Array.isArray(agents) ? agents : [agents]) add(file);
+  // docguard.agent-instruction-role#FR-003: every authored agent-instruction
+  // document; pointers are reviewed through their target, vendored copies by
+  // their upstream (PSR005 checks that the copy is unchanged).
+  for (const doc of agentInstructionDocs(dir, config).docs) {
+    if (!doc.pointer && !doc.vendored) add(doc.path);
+  }
   for (const [file, spec] of Object.entries(config.documentTypes || {})) {
     if (spec?.category === 'canonical') add(file, true);
   }
@@ -276,6 +283,15 @@ export function validateFreshness(dir, config) {
   const WARNING_THRESHOLD_COMMITS = 10; // Repository-wide review trigger
 
   const stagedPaths = getStagedPaths(dir);
+
+  // docguard.agent-instruction-role#FR-005: a pointer has no content of its
+  // own to go stale; its target's review covers it.
+  for (const doc of agentInstructionDocs(dir, config).docs) {
+    if (!doc.pointer || ignored(doc.path)) continue;
+    results.push({ status: 'skip', doc: doc.path, message: doc.pointer.target
+      ? `${doc.path} points to ${doc.pointer.target}; reviewed through it`
+      : `${doc.path} only points at a file outside the repository's instructions; no reviewed target, nothing here carries its instructions` });
+  }
 
   for (const docFile of docFiles) {
     const docPath = resolve(dir, docFile);
