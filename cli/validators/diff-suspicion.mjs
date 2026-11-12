@@ -28,7 +28,9 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { namesToken } from '../scanners/doc-references.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
+const GIT_UNREADABLE_HOW = "Git reports the metadata is unreadable: in an agent sandbox, expose the repository's git directory (ai-jail: --worktree; other sandboxes: mount the gitdir named in .git); otherwise repair the repository.";
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
 // Generic framework / language noise that overlaps between ANY React/TS doc and
@@ -193,6 +195,23 @@ function sameJsAst(projectDir, ref, file) {
   return normalize(oldTree.ast) === normalize(newTree.ast);
 }
 
+/**
+ * Does this kind of check belong to the project? It does when the project is a
+ * git repository whose revision range (`diffSuspicion.since`, `--changed-only`'s
+ * ref, else HEAD~1) changes a code file that removes tokens, and a canonical or
+ * agent-instruction document names that file. Whether a range changes documented
+ * code is the normal state of a commit, not a gap in the project, so a range that
+ * does not is "nothing of this kind" and never "applies, examined nothing".
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const run = validateDiffSuspicion(projectDir, config);
+  return { applies: run.applies.applies, evidence: run.applies.evidence };
+}
+
+const NOTHING_HOW = 'Nothing to configure unless a commit changes code that a document names: Diff-Suspicion compares the old side of the diff (HEAD~1..HEAD, or `diffSuspicion.since`, or the `--changed-only` ref) with the words of a canonical or agent-instruction document that names the changed file by path or `module` name.';
+
 export function validateDiffSuspicion(projectDir, config = {}) {
   const cfg = config.diffSuspicion || {};
   const minOverlap = Number.isInteger(cfg.minOverlap) ? cfg.minOverlap : 2;
@@ -202,10 +221,18 @@ export function validateDiffSuspicion(projectDir, config = {}) {
   // check could not run — say so, instead of looking like nothing matched.
   const git = gitMetadataStatus(projectDir);
   if (git.status === 'unreadable') {
-    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git) };
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0 }), applicability: unreadableGitApplicability(git),
+      ...contractFields({
+        performed: 0,
+        decide: () => ({ applies: true, evidence: `git metadata is present but unreadable (${git.reason}), so whether ${ref}..HEAD changes documented code could not be observed` }),
+        empty: d => ({ emptyCause: 'layout-not-recognized', note: `Diff-Suspicion could not read git: ${d.evidence}.`, howToConfigure: GIT_UNREADABLE_HOW }),
+      }),
+    };
   }
+  const nothing = d => ({ emptyCause: 'nothing-of-this-kind', note: `Diff-Suspicion found no changed, documented code: ${d.evidence}.`, howToConfigure: NOTHING_HOW });
   if (git.status !== 'ok') {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return { ...resultFromFindings([], { passed: 0, total: 0, applicable: false }), ...contractFields({ performed: 0, decide: () => ({ applies: false, evidence: 'the project is not a git repository, so there is no revision range to compare' }), empty: nothing }) };
   }
 
   const diffText = getDiffText(projectDir, ref);
@@ -220,12 +247,12 @@ export function validateDiffSuspicion(projectDir, config = {}) {
     .filter(f => !/\.[cm]?[jt]sx?$/.test(f.path) || !sameJsAst(projectDir, ref, f.file));
 
   if (changed.length === 0) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return { ...resultFromFindings([], { passed: 0, total: 0, applicable: false }), ...contractFields({ performed: 0, decide: () => ({ applies: false, evidence: `${ref}..HEAD changes no code file that removes tokens (${changedFiles.length} code file(s) changed, none with a semantic removal)` }), empty: nothing }) };
   }
 
   const docs = indexDocs(projectDir, config);
   if (docs.size === 0) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return { ...resultFromFindings([], { passed: 0, total: 0, applicable: false }), ...contractFields({ performed: 0, decide: () => ({ applies: false, evidence: `${ref}..HEAD changes ${changed.length} code file(s), but the project has no canonical or agent-instruction document to compare them with` }), empty: nothing }) };
   }
 
   const maxPerDoc = Number.isInteger(cfg.maxPerDoc) ? cfg.maxPerDoc : 5;
@@ -276,9 +303,18 @@ export function validateDiffSuspicion(projectDir, config = {}) {
     }
   }
 
-  return resultFromFindings(findings, {
-    passed: pairsChecked - findings.length,
-    total: pairsChecked,
-    applicable: true,
-  });
+  return {
+    ...resultFromFindings(findings, {
+      passed: pairsChecked - findings.length,
+      total: pairsChecked,
+      applicable: true,
+    }),
+    ...contractFields({
+      performed: pairsChecked,
+      found: findings.length > 0,
+      ran: `${pairsChecked} (document, changed file) pair(s) compared over ${ref}..HEAD`,
+      decide: () => ({ applies: false, evidence: `${ref}..HEAD changes ${changed.length} code file(s) with removed tokens, but none is named by a canonical or agent-instruction document` }),
+      empty: nothing,
+    }),
+  };
 }

@@ -333,7 +333,8 @@ describe('group B: the result contract, per validator', () => {
       for (const [name, fixture] of Object.entries(FIXTURES[key].empties)) {
         if (fixture.cause === 'nothing-of-this-kind') continue;
         const how = run(key, fixture).result.howToConfigure;
-        for (const [other, who] of seen) assert.notEqual(how, other, `${key}/${name} shares its fix with ${who}`);
+        // One validator may give the same fix for the same cause on two fixtures; two validators may not share one.
+        for (const [other, who] of seen) if (!who.startsWith(`${key}/`)) assert.notEqual(how, other, `${key}/${name} shares its fix with ${who}`);
         seen.set(how, `${key}/${name}`);
       }
     }
