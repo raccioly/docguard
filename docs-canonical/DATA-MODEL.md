@@ -487,6 +487,7 @@ A finding answers three independent questions, one field each. A single `confide
 | `confidence` | How sure is the detector of its **observation**? | `high`, `low` |
 | `evidence` | Has the reviewed corpus ever measured this code? | `{ status: 'measured' \| 'not-measured', … }` |
 | `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
+| `context` | Where does the evidence sit? (optional, Security SEC001–SEC004 only) | `product`, `test-path` |
 
 `disposition` is `act` when DocGuard asserts a defect and names the correction, `escalate` when it reports a signal whose judgement belongs to the reader. A detector may set it explicitly; otherwise it derives from `suggestion.kind` (`fix`/`suppress` → `act`; `review`/`report` → `escalate`), and falls back to `escalate` when the suggestion is absent or malformed — a finding DocGuard can describe but can only describe is one a human should read. The three channels vary independently: FRS002 counts commits read directly from Git, so it is `confidence: high` and `disposition: escalate`. The count is a fact; the inference to staleness remains the reader's call.
 
@@ -495,6 +496,8 @@ A finding answers three independent questions, one field each. A single `confide
 `reportable` is true when `evidence.status` is `not-measured` **or** `confidence` is `low`. Under the previous rule, which read confidence alone, the default feedback sample omitted the population where a wrong label costs most: a confident label on a code the corpus has yet to measure.
 
 `location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
+`context` is a classification, never a level: a `test-path` finding (a test, fixture, example or mock path) keeps the severity it had, and `isGatingEligible` returns false for it so it can never count toward failing a build under strict (`docguard.strict-by-default#FR-010`). The field is absent on every other finding.
+
 <!-- /docguard:section -->
 
 ## Route records and the plan's parser tiers

@@ -29,8 +29,8 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 
 ### A3 — Security classification
 
-- [ ] T013 [US3] Failing tests: a secret-shaped literal in a test path keeps its level and carries `context: test-path`; `isGatingEligible` is false for it; a value that is provably synthetic by its own text produces no finding; the existing field-context tests stay unmodified and green (FR-010).
-- [ ] T014 `cli/validators/security.mjs` (context, the gating-eligibility predicate, the placeholder vocabulary) and precision-evidence rows per context.
+- [x] T013 [US3] Failing tests: a secret-shaped literal in a test path keeps its level and carries `context: test-path`; `isGatingEligible` is false for it; a value that is provably synthetic by its own text produces no finding; the existing field-context tests stay unmodified and green (FR-010).
+- [x] T014 `cli/validators/security.mjs` (context, the gating-eligibility predicate, the placeholder vocabulary) and precision-evidence rows per context.
 
 ### A4 — Dogfood and proof
 

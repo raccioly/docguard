@@ -30,7 +30,8 @@ function esc(s) {
 function findingLine(f) {
   const code = f.code ? `[${f.code}] ` : '';
   const loc = f.location ? ` (${f.location})` : '';
-  return `${code}${f.message}${loc}`;
+  const ctx = f.context ? ` [context: ${f.context}]` : '';
+  return `${code}${f.message}${loc}${ctx}`;
 }
 
 /**

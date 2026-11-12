@@ -17,8 +17,8 @@ export const PRECISION_EVIDENCE = Object.freeze({
   "source": {
     "manifestDigest": "sha256:3476ca6ca0e23373aa4c4697dbae1ffa8516271073655944774b62435e323f5f",
     "toolVersion": "0.47.0",
-    "toolRevision": "48144fe9411b0d6e6626a4dcd14a9084115453c9",
-    "detectorsDigest": "sha256:833d46018328cf56b4c81282f85b19f5ff54c8e561447c1fa88ebf3b3774dcde",
+    "toolRevision": "354e3d63421ed79eae8d761400bfbb3946945bfa",
+    "detectorsDigest": "sha256:02ad4b5f158ddaa46370071b0b2e044a9986aa03515955563ddc5a348b5380b0",
     "reviewStatus": "reviewed",
     "reviewedAt": "2026-11-12",
     "reviewer": "DocGuard maintainers",
