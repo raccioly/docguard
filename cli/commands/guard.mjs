@@ -4,7 +4,7 @@ import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarize
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
 import { listValidatorMarkers } from '../validator-markers.mjs';
-import { resolveEnforcement, buildStrictReport, adoptLines, modeLine, strictBlocks } from '../enforcement.mjs';
+import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, modeLine, strictBlocks } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -1101,6 +1101,15 @@ export function runGuard(projectDir, config, flags) {
   if (data.strict && [1, 4].includes(exitFor(data))) {
     console.log('');
     for (const line of adoptLines(data.strict)) console.log(`  ${line.startsWith('Adopt') ? c.bold + line : c.dim + line}${c.reset}`);
+    console.log('');
+  }
+
+  // specs/097 FR-007: what DocGuard could not read does not change the exit code; it is said after the
+  // Adopt block, on every strict run that has something to say, so a limit of the tool is never mistaken
+  // for a gap in the project.
+  const unread = data.strict ? couldNotReadLines(data.strict) : [];
+  if (unread.length > 0) {
+    for (const line of unread) console.log(`  ${line.startsWith('DocGuard') ? c.bold + line : c.dim + line}${c.reset}`);
     console.log('');
   }
 

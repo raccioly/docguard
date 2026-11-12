@@ -54,9 +54,11 @@ npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not d
 **Enforcement mode (spec 097).** The first line of the summary states the mode
 (`strict` or `standard`) and whether it came from `"enforcement"` in
 `.docguard.json` or from the default. Under `strict`, a validator that applies
-to the project and examined nothing exits 4, and the **Adopt** block (printed
-with `--quiet` too) lists each one with its cause and fix, the baseline
-command, the waiver form and the key for the lower mode. See
+to the project and examined nothing, for a reason the project can resolve,
+exits 4, and the **Adopt** block (printed with `--quiet` too) lists each one
+with its cause and fix, the baseline command, the waiver form and the key for
+the lower mode. A partial result and a layout DocGuard does not read are listed
+after it under "DocGuard could not read" and leave the exit code alone. See
 [Configuration](configuration.md#enforcement-mode).
 
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes

@@ -84,12 +84,16 @@ describe('group B: the result contract, per validator', () => {
         assert.equal(mod.applies(dir, config).applies, true, 'the applying project applies');
       });
 
-      it('under strict, an applicable empty result blocks and a skipped one does not', () => {
+      it('under strict, an applicable empty result blocks (an unread layout is listed instead) and a skipped one does not', () => {
         for (const [name, fixture] of Object.entries(FIXTURES[key].empties)) {
           const { data, result } = run(key, fixture);
           if (fixture.cause === 'nothing-of-this-kind') {
             assert.equal(result.verdict, 'skipped', name);
             assert.ok(!data.strict.blocking.includes(key), name);
+          } else if (fixture.cause === 'layout-not-recognized') {
+            // A layout DocGuard does not read is a limit of the tool, not a gap in the project (FR-007): listed, never blocking.
+            assert.ok(!data.strict.blocking.includes(key), name);
+            assert.ok(data.strict.couldNotRead.some(c => c.validator === key), `${name}: listed as could not read`);
           } else {
             assert.equal(result.verdict, 'empty', name);
             assert.ok(data.strict.blocking.includes(key), name);

@@ -108,6 +108,7 @@ function withoutLimitations({ limitations: _limitations, ...coverage }) {
  *     needs neither, and one that did not says why in its applicability reason
  *     (the evidence sentence of `applies` is that reason);
  *   - `note` is dropped when it is the applicability reason it produced;
+ *   - `layouts` (the layouts an unread-layout validator does read) is on `strict.couldNotRead`;
  *   - `applicability.before` (the status an `applies: false` remap replaced) is dropped;
  *   - `emptyCause` stays on a validator that examined nothing (empty, inconclusive,
  *     or skipped because it does not apply);
@@ -116,7 +117,7 @@ function withoutLimitations({ limitations: _limitations, ...coverage }) {
  * The full form (`docguard guard --format json`, MCP `detail: "full"`) keeps all of it.
  */
 function compactContract(validator) {
-  const { performed: _performed, applies, note, howToConfigure, emptyCause, applicability, ...rest } = validator;
+  const { performed: _performed, layouts: _layouts, applies, note, howToConfigure, emptyCause, applicability, ...rest } = validator;
   const out = { ...rest };
   const reason = emptyCause === 'nothing-of-this-kind' && !Object.values(STANDARD_APPLICABILITY_REASONS).includes(applicability?.reason) ? undefined : applicability?.reason;
   if (applicability) {
@@ -136,9 +137,12 @@ function compactContract(validator) {
 
 /** Each unexamined validator is on `validators[]` with its reason and fix; refer to it by key. */
 function compactStrict(strict) {
-  const { unexamined, ...rest } = strict;
+  const { unexamined, couldNotRead, ...rest } = strict;
+  const short = (text, max = 160) => (typeof text === 'string' && text.length > max ? `${text.slice(0, max - 1)}…` : text);
   return {
     ...rest,
     unexamined: (unexamined || []).map(({ name: _name, reason: _reason, howToConfigure: _fix, ...u }) => u),
+    // Keys and a short reason: the validator's own entry carries the full text.
+    couldNotRead: (couldNotRead || []).map(({ name: _name, reason, ...u }) => ({ ...u, reason: short(reason) })),
   };
 }

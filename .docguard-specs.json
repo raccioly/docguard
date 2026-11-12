@@ -3118,12 +3118,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 74
+            "line": 93
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 75
+            "line": 94
           },
           {
             "requirementId": "FR-003",
@@ -4542,17 +4542,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 152
-          },
-          {
-            "requirementId": "FR-002",
-            "file": "cli/validators/docs-sync.mjs",
-            "line": 134
-          },
-          {
-            "requirementId": "FR-002",
-            "file": "cli/validators/docs-sync.mjs",
             "line": 153
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 135
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 154
           },
           {
             "requirementId": "FR-003",
@@ -4567,12 +4567,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 87
+            "line": 88
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 88
+            "line": 89
           },
           {
             "requirementId": "FR-005",
@@ -4582,7 +4582,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 89
+            "line": 90
           },
           {
             "requirementId": "FR-008",
@@ -4592,7 +4592,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 154
+            "line": 155
           }
         ],
         "testEvidence": [
@@ -5441,7 +5441,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 25
+            "line": 44
           },
           {
             "requirementId": "FR-003",
@@ -9836,7 +9836,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 102
+            "line": 121
           },
           {
             "requirementId": "FR-010",
@@ -9861,7 +9861,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 103
+            "line": 122
           },
           {
             "requirementId": "FR-011",
@@ -16148,11 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:838417b854c8714e28b029e72c3b261c23b6e783fb658a82ee3a8ca00c8380a4"
+            "digest": "sha256:10ffdf3a6e54d84b4ce063fdbb99fa1e446dd622efde1cbce9d8632ee1cca932"
           }
         ],
         "taskCompletion": {
-          "checked": 17,
+          "checked": 18,
           "total": 37
         },
         "implementationEvidence": [
@@ -16224,7 +16224,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/api-surface.mjs",
-            "line": 363
+            "line": 385
           },
           {
             "requirementId": "FR-006",
@@ -16284,7 +16284,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 260
+            "line": 289
           },
           {
             "requirementId": "FR-006",
@@ -19523,7 +19523,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 133
+            "line": 134
           },
           {
             "requirementId": "FR-004",
