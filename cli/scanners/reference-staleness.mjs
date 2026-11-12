@@ -42,20 +42,26 @@ export function commitTime(projectDir, revision) {
 function diffSince(projectDir, base, cache) {
   if (cache.has(base)) return cache.get(base);
   const out = { numstat: new Map(), added: new Set(), ok: true };
-  const ns = runGit(projectDir, ['diff', '-z', '-M', '--numstat', base, 'HEAD'], { operation: 'git diff --numstat (reference staleness)', answers: [0], maxBuffer: 64 * 1024 * 1024 });
-  const st = runGit(projectDir, ['diff', '-z', '-M', '--name-status', '--diff-filter=A', base, 'HEAD'], { operation: 'git diff --name-status (reference staleness)', answers: [0], maxBuffer: 64 * 1024 * 1024 });
-  if (ns.status !== 0 || st.status !== 0) { out.ok = false; cache.set(base, out); return out; }
-  // -z numstat: "added\tdeleted\tpath\0" or, for a rename, "added\tdeleted\t\0old\0new\0".
+  // One spawn: numstat for the counts, --summary for the files that are new.
+  const ns = runGit(projectDir, ['diff', '-z', '-M', '--numstat', '--summary', base, 'HEAD'], { operation: 'git diff --numstat (reference staleness)', answers: [0], maxBuffer: 64 * 1024 * 1024 });
+  if (ns.status !== 0) { out.ok = false; cache.set(base, out); return out; }
+  // -z numstat: "added\tdeleted\tpath\0" or, for a rename, "added\tdeleted\t\0old\0new\0";
+  // the summary follows as newline-separated " create mode <mode> <path>" lines.
   const parts = ns.stdout.split('\0');
   for (let i = 0; i < parts.length; i++) {
-    const m = parts[i].match(/^(-|\d+)\t(-|\d+)\t(.*)$/s);
-    if (!m) continue;
-    let path = m[3];
-    if (path === '') { path = parts[i + 2]; i += 2; }
-    out.numstat.set(path, { added: m[1] === '-' ? null : Number(m[1]), deleted: m[2] === '-' ? null : Number(m[2]) });
+    const chunk = parts[i];
+    const m = chunk.match(/^(-|\d+)\t(-|\d+)\t(.*)$/s);
+    if (m) {
+      let path = m[3];
+      if (path === '') { path = parts[i + 2]; i += 2; }
+      out.numstat.set(path, { added: m[1] === '-' ? null : Number(m[1]), deleted: m[2] === '-' ? null : Number(m[2]) });
+      continue;
+    }
+    for (const line of chunk.split('\n')) {
+      const c = line.match(/^ create mode \d+ (.+)$/);
+      if (c) out.added.add(c[1]);
+    }
   }
-  const sp = st.stdout.split('\0').filter(Boolean);
-  for (let i = 0; i + 1 < sp.length; i += 2) if (sp[i] === 'A') out.added.add(sp[i + 1]);
   cache.set(base, out);
   return out;
 }
