@@ -129,16 +129,16 @@ export const WAIVER_FORM = '<!-- docguard:validator <key> n/a — <reason> owner
  */
 export function adoptLines(strict) {
   const lines = ['Adopt — what strict found and how to resolve each item:'];
-  const shown = strict.unexamined.filter(u => u.blocking || u.cause === 'not-yet-classified');
-  for (const u of shown) {
-    if (u.cause === 'not-yet-classified') {
-      lines.push(`  • ${u.name} applies here and examined nothing — cause not yet classified (does not fail this run). ${u.reason || ''}`.trimEnd());
-    } else {
-      const head = `  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`;
-      lines.push(head);
-      const fix = u.howToConfigure || u.reason;
-      if (fix) lines.push(`      ${fix}`);
-    }
+  for (const u of strict.unexamined.filter(u => u.blocking)) {
+    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
+    const fix = u.howToConfigure || u.reason;
+    if (fix) lines.push(`      ${fix}`);
+  }
+  // A validator that has not been migrated to the result contract cannot say whether it
+  // applies, so it is named once, in one line, and never fails the run.
+  const unclassified = strict.unexamined.filter(u => u.cause === 'not-yet-classified');
+  if (unclassified.length > 0) {
+    lines.push(`  • ${unclassified.length} validator(s) examined nothing and their cause is not yet classified; they do not fail this run: ${unclassified.map(u => u.validator).join(', ')}`);
   }
   const gatingTotal = strict.gating.reduce((n, g) => n + g.count, 0);
   if (gatingTotal > 0) {
