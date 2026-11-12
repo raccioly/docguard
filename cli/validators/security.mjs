@@ -245,6 +245,49 @@ function fixturePasswordEvidence(content, filename) {
   return evidence;
 }
 
+/**
+ * Files this validator would scan, before any ignore setting: the walker's
+ * files with a scanned extension, minus the dotenv files it skips on purpose.
+ * @returns {string[]} project-relative POSIX paths
+ */
+function candidateFiles(projectDir) {
+  const found = [];
+  walkDir(projectDir, (filePath) => {
+    if (!CODE_EXTENSIONS.has(extname(filePath))) return;
+    if (filePath.endsWith('.env') || filePath.endsWith('.env.local') || filePath.endsWith('.env.example')) return;
+    found.push(relPosix(projectDir, filePath));
+  });
+  return found;
+}
+
+/**
+ * Does a secret scan belong to this project, and what excluded the candidates?
+ * It applies when the project holds at least one source or configuration file
+ * with a scanned extension. Excluding every one of them with `securityIgnore`,
+ * `ignore` or `.docguardignore` does not make it not apply: that is a setting
+ * the project chose, and the evidence names it (spec 097 FR-006).
+ * @returns {{ applies: boolean, evidence: string, candidates: number, scannable: number, excludedBy: string|null }}
+ */
+export function applies(projectDir, config = {}) {
+  const candidates = candidateFiles(projectDir);
+  if (candidates.length === 0) {
+    return {
+      applies: false, candidates: 0, scannable: 0, excludedBy: null,
+      evidence: `no file with a scanned extension (${[...CODE_EXTENSIONS].join(' ')}) exists in the project, so there is nothing to scan for secrets`,
+    };
+  }
+  const scannable = candidates.filter(rel => !shouldIgnore(rel, config, 'securityIgnore'));
+  if (scannable.length > 0) {
+    return { applies: true, candidates: candidates.length, scannable: scannable.length, excludedBy: null, evidence: `${scannable.length} source or configuration file(s) can be scanned, for example ${scannable[0]}` };
+  }
+  const byGlobal = candidates.some(rel => shouldIgnore(rel, { ...config, securityIgnore: [] }, 'securityIgnore'));
+  const excludedBy = byGlobal ? 'ignore / .docguardignore' : 'securityIgnore';
+  return {
+    applies: true, candidates: candidates.length, scannable: 0, excludedBy,
+    evidence: `${candidates.length} candidate file(s) exist but every one is excluded by ${excludedBy}`,
+  };
+}
+
 export function validateSecurity(projectDir, config) {
   /** @type {import('../findings.mjs').Finding[]} */
   const findings = [];
@@ -375,10 +418,13 @@ export function validateSecurity(projectDir, config) {
     // Low-confidence (prose) findings do not fail the check — only real secrets do.
     if (realSecretCount === 0) passed++;
   } else {
+    const a = applies(projectDir, config);
     findings.push(mkFinding({
       code: 'SEC011', validator: 'security', severity: 'warn', confidence: 'high',
       message: 'No source files were scanned for secrets — check config.sourceRoot / ignore patterns',
-      suggestion: { kind: 'review', text: 'Verify config.sourceRoot and ignore patterns actually include your source tree.' },
+      suggestion: { kind: 'review', text: !a.applies
+        ? 'The project has no file with a scanned extension, so there is nothing to scan; no setting needs to change unless source files live somewhere the scan does not reach.'
+        : `${a.candidates} candidate file(s) exist but every one is excluded by ${a.excludedBy}. Narrow ${a.excludedBy === 'securityIgnore' ? '"securityIgnore" in .docguard.json' : '"ignore" in .docguard.json or .docguardignore'} so at least the product source is scanned.` },
     }));
   }
 
@@ -405,7 +451,15 @@ export function validateSecurity(projectDir, config) {
     }));
   }
 
-  return resultFromFindings(findings, { passed, total });
+  // Result contract (spec 097 FR-004 to FR-006). `performed` is the number of
+  // files genuinely scanned; `total` stays as it was (it also counts the
+  // .gitignore check) so no standard count moves. A run that scanned nothing
+  // already carries SEC011, so the verdict is never `empty` and no emptyCause
+  // is set; the cause is in `applies.evidence` and the SEC011 suggestion.
+  const contract = scanned > 0
+    ? { performed: scanned, applies: { applies: true, evidence: `scanned ${scanned} file(s) for hardcoded secrets` } }
+    : (() => { const a = applies(projectDir, config); return { performed: 0, applies: { applies: a.applies, evidence: a.evidence } }; })();
+  return { ...resultFromFindings(findings, { passed, total }), ...contract };
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.

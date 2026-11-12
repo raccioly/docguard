@@ -469,13 +469,13 @@ const validateResultContract = (r) => coverage.validateResultContract(r);
  * "cause not yet classified" and never exits 4.
  */
 const NOT_YET_MIGRATED = [
-  'structure', 'docSections', 'drift', 'changelog', 'testSpec', 'environment', 'security', 'architecture',
+  'structure', 'docSections', 'drift', 'changelog', 'testSpec', 'environment', 'architecture',
   'freshness', 'traceability', 'docsDiff', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'documentLifecycle', 'specRegistry', 'docDependency', 'requirementAnchors',
   'pathScopedRules', 'docOwnership', 'evidence', 'crossReference', 'generatedStaleness', 'suppressions',
   'diffSuspicion', 'referenceExistence', 'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
 ];
-const MIGRATED = ['apiSurface', 'docsSync', 'surfaceSync'];
+const MIGRATED = ['apiSurface', 'docsSync', 'surfaceSync', 'security'];
 
 /** Fixtures per migrated validator: where it applies and is empty, where it does not apply, and the fix applied. */
 const API_ROUTES = { ...ROUTES };
@@ -513,7 +513,7 @@ let awaitedConfig;
 before(async () => { awaitedConfig = await import('../cli/config.mjs'); });
 
 describe('the result contract, per migrated validator', () => {
-  for (const key of MIGRATED) {
+  for (const key of MIGRATED.filter(k => FIXTURES[k])) { // security: its fixtures live in validator-applicability-security.test.mjs
     describe(key, () => {
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
@@ -575,7 +575,7 @@ describe('the registry', () => {
   });
 
   it('no migrated validator can be empty without a cause and a fix (SC-006)', () => {
-    for (const key of MIGRATED) {
+    for (const key of MIGRATED.filter(k => FIXTURES[k])) { // security: its fixtures live in validator-applicability-security.test.mjs
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
         const { result } = run(key, fixture);
@@ -589,7 +589,7 @@ describe('the registry', () => {
 
   it('no two validators share an empty reason sentence (SC-006)', () => {
     const seen = new Map();
-    for (const key of MIGRATED) {
+    for (const key of MIGRATED.filter(k => FIXTURES[k])) { // security: its fixtures live in validator-applicability-security.test.mjs
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
         const { result } = run(key, fixture);

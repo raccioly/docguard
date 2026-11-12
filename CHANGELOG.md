@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Security reports how many files it scanned and why a run scanned none**
+  (spec 097, stage A). The result now carries `performed` (files scanned),
+  `applies` (a project applies when it has a source or configuration file with a
+  scanned extension) and its evidence. When `securityIgnore`, `ignore` or
+  `.docguardignore` excludes every candidate, the SEC011 suggestion names the
+  setting. No finding, level, count or exit code changes under `standard`.
 - **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
   "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
   finding; Freshness records that it is reviewed through its target. Installed
