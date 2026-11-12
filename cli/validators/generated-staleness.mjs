@@ -27,7 +27,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, basename, join } from 'node:path';
+import { resolve, basename, join, relative } from 'node:path';
 
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { getSection } from '../writers/sections.mjs';
@@ -48,7 +48,7 @@ import { sample } from '../shared-project-evidence.mjs';
  * Returns { hasMarkers, hasDrafts }.
  */
 function _quickScan(projectDir) {
-  const out = { hasMarkers: false, hasDrafts: false };
+  const out = { hasMarkers: false, hasDrafts: false, markerFile: null, draftFile: null };
   // Recursive for docs-canonical/ — a marker in a nested doc must still be
   // found, or this pre-flight false-negatives and skips the ENTIRE validator
   // (buildMemoryPlan never even runs), silently disabling drift detection.
@@ -74,11 +74,13 @@ function _quickScan(projectDir) {
     try { content = readFileSync(full, 'utf-8'); } catch { continue; }
     if (!out.hasMarkers && /<!--\s*docguard:section\s+[^>]*source=code/i.test(content)) {
       out.hasMarkers = true;
+      out.markerFile = relative(projectDir, full).replace(/\\/g, '/');
     }
-    // `<!-- docguard:status draft -->` is the marker DocGuard's own generators write
-    // (cli/writers/doc-generators.mjs); `<!-- status: draft -->` is the older spelling.
-    if (!out.hasDrafts && /(?:^---\s*\n[\s\S]*?\bstatus:\s*draft\b[\s\S]*?\n---|<!--\s*(?:docguard:)?status:?\s*draft\s*-->)/im.test(content)) {
+    // The status is read the way the check reads it: from the front matter that opens the document, or from
+    // a marker. Body text that quotes "Status: Draft" is not a status.
+    if (!out.hasDrafts && extractDocStatus(content) === 'draft') {
       out.hasDrafts = true;
+      out.draftFile = relative(projectDir, full).replace(/\\/g, '/');
     }
     if (out.hasMarkers && out.hasDrafts) return out;
   }
@@ -100,7 +102,7 @@ const DRAFT_STALENESS_DAYS = 14;
 function extractDocStatus(content) {
   if (!content) return null;
   // YAML frontmatter: --- ... ---
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (fmMatch) {
     const sm = fmMatch[1].match(/^\s*status:\s*(\S+)\s*$/m);
     if (sm) return sm[1].toLowerCase();
@@ -132,19 +134,18 @@ const NOTHING_HOW = 'Nothing to configure unless the project has generated docum
 /** The result when a marker or draft exists that the memory plan does not generate. */
 function unplanned(result, quick, plan) {
   const docs = (plan?.docs || []).map(d => d.path);
-  const ids = (plan?.docs || []).flatMap(d => d.sections.filter(s => s.source === 'code').map(s => s.id));
-  const what = [quick.hasMarkers ? 'a docguard:section source=code marker' : null, quick.hasDrafts ? 'a draft document' : null].filter(Boolean).join(' and ');
+  const found = [quick.markerFile ? `a source=code marker in ${quick.markerFile}` : null, quick.draftFile ? `a draft document, ${quick.draftFile}` : null].filter(Boolean).join(' and ');
   return {
     ...result, applicable: undefined,
     ...contractFields({
       performed: result.total,
       found: false,
       ran: '',
-      decide: () => ({ applies: true, evidence: `${what} found, in a document or under a section id that DocGuard does not generate` }),
+      decide: () => ({ applies: true, evidence: `${found}, in a document DocGuard does not generate` }),
       empty: d => ({
         emptyCause: 'layout-not-recognized',
-        note: `Generated-Staleness found ${what} but nothing it compares: ${d.evidence}.`,
-        howToConfigure: `Generated-Staleness compares only the documents and section ids DocGuard generates${docs.length ? ` (${sample(docs, 6)}${ids.length ? `; code sections ${sample(ids, 6)}` : ''})` : ''}. Put the marker in one of those documents under one of those ids, or remove a marker nothing generates; a section you maintain by hand is \`source=human\`.`,
+        note: `Generated-Staleness found ${found} but nothing it compares: ${d.evidence}.`,
+        howToConfigure: `Generated-Staleness compares only the documents DocGuard generates${docs.length ? ` (${sample(docs, 6)})` : ''}, so ${quick.markerFile || quick.draftFile} is outside what it reads. That is a limit of DocGuard, not of your project: nothing needs to change. If the section should be compared, report the layout with \`docguard feedback\`; if you maintain it by hand, mark it \`source=human\`.`,
       }),
     }),
   };
@@ -325,11 +326,12 @@ export function validateGeneratedStaleness(projectDir, config = {}) {
       performed: result.total,
       found: findings.length > 0,
       ran: `${result.total} generated section(s) and draft document(s) compared with the scanner`,
-      decide: () => ({ applies: true, evidence: 'a docguard:section source=code marker or a draft document exists' }),
+      decide: () => ({ applies: true, evidence: `${quick.markerFile ? `a source=code marker in ${quick.markerFile}` : `a draft document, ${quick.draftFile}`} names no section the scanner generates` }),
       empty: () => ({
-        emptyCause: 'layout-not-recognized',
-        note: `Generated-Staleness found ${partialSections.length ? 'sections it could not compare' : 'markers that name no section the scanner generates'}: none of them matched a generated section.`,
-        howToConfigure: `The \`docguard:section source=code\` markers present name section ids that the scanner does not generate (${sample((plan.docs).flatMap(d => d.sections.filter(s => s.source === 'code').map(s => `${s.id}`)), 6)}). Rename the marker to a generated id, or make it source=human if you maintain it by hand.`,
+        // The project's own marker names a section nothing generates: it is yours to fix, not a limit of DocGuard.
+        emptyCause: 'needs-content',
+        note: `Generated-Staleness found ${partialSections.length ? 'sections it could not compare' : `markers (${quick.markerFile || quick.draftFile}) that name no section the scanner generates`}: none of them matched a generated section.`,
+        howToConfigure: `The \`docguard:section source=code\` marker in ${quick.markerFile || quick.draftFile} names a section id that the scanner does not generate (${sample((plan.docs).flatMap(d => d.sections.filter(s => s.source === 'code').map(s => `${s.id}`)), 6)}). Rename the marker to a generated id, or make it source=human if you maintain it by hand.`,
       }),
     }),
     ...(partialSections.length ? {

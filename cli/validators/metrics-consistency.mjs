@@ -311,7 +311,7 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
       ran: `${total} documented count(s) compared with the code`,
       decide,
       empty: d => (d.applies
-        ? { emptyCause: 'layout-not-recognized', note: `Metrics-Consistency read a count it could not compare: ${d.evidence}.`, howToConfigure: `The "collections" entry for ${d.collections.map(u => `${u.noun} (${u.glob})`).join(', ')} in .docguard.json matches no file, so the count a document states is not compared. Point the glob at the files you count (it is relative to the project root), or remove the entry.` }
+        ? { emptyCause: 'needs-content', note: `Metrics-Consistency read a count it could not compare: ${d.evidence}.`, howToConfigure: `The "collections" entry for ${d.collections.map(u => `${u.noun} (${u.glob})`).join(', ')} in .docguard.json matches no file, so the count a document states is not compared. Point the glob at the files you count (it is relative to the project root), or remove the entry.` }
         : { emptyCause: 'nothing-of-this-kind', note: `Metrics-Consistency found no documented count to compare: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the documents state a count: Metrics-Consistency compares "N checks" and "N validators" bound to DocGuard, "N tests" about the project\'s own suite, "N <noun>" for a noun declared under `collections` in .docguard.json (`{ "extractors": "src/extractors/*.js" }`), and runtime-dependency claims.' }),
     }),
   };

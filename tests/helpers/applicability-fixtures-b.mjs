@@ -79,6 +79,16 @@ export const SPEC = {
  * replaces it for a validator that cannot be empty while it applies (`why` says
  * so). Both may carry `extra` (configuration) and `opts` (git history, file age).
  */
+// A published template: its front matter says the status is final, its body quotes "Status: Draft / Approved"
+// and has a horizontal rule after it (the draft pattern's lazy match ran from the front matter into the body).
+export const FINAL_TEMPLATE = '---\nstatus: final\n---\n# Template\n\nStatus: Draft / Approved\n\n---\n\nFill in the sections below.\n';
+// A spec template: requirement lines whose text is a bracketed placeholder.
+export const SPEC_TEMPLATE = { 'specs/001-template/spec.md': '# Feature: [name]\n\n**Spec ID**: demo.template\n\n## Requirements\n\n- **FR-001**: System MUST [capability]\n- **FR-002**: System MUST [NEEDS CLARIFICATION: auth method]\n' };
+// Requirement IDs of one digit, a form the scanner does not read (it reads two to four digits).
+export const SPEC_SHORT_IDS = { 'specs/001-short/spec.md': '# Feature: Short\n\n## Requirements\n\n- **FR-1**: The service MUST return the list.\n- **FR-2**: The service MUST page the list.\n- **FR-3**: The service MUST sort the list.\n' };
+// Tooling configuration is not product source: it sorts before src/ in a repository listing.
+export const CONFIG_FILES = { 'eslint.config.js': 'export default [];\n', 'playwright.config.ts': 'export default {};\n', 'drizzle.config.ts': 'export default {};\n' };
+
 export const FIXTURES = {
   // A project with specs is never empty here: a spec without registry evidence is a finding (SPR001), not silence.
   specRegistry: {
@@ -101,6 +111,8 @@ export const FIXTURES = {
       'needs-content': { files: { ...BASE, ...SPEC }, extra: { anchors: { enabled: true } }, cause: 'needs-content' },
       'nothing-of-this-kind (no requirements)': { files: BASE, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (no source)': { files: { 'package.json': PKG, ...SPEC }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (template placeholders only)': { files: { ...BASE, ...SPEC_TEMPLATE }, cause: 'nothing-of-this-kind' },
+      'layout-not-recognized (IDs of one digit)': { files: { ...BASE, ...SPEC_SHORT_IDS }, cause: 'layout-not-recognized' },
     },
     fix: { files: { ...BASE, ...SPEC, 'src/index.js': '// @implements demo.feature#FR-001\nexport const a = 1;\n' }, extra: { anchors: { enabled: true } } },
   },
@@ -148,17 +160,19 @@ export const FIXTURES = {
   },
   crossReference: {
     empties: {
-      'layout-not-recognized': { files: { ...BASE, 'docs/GUIDE.md': '# Guide\n\nSee [the setup](./SETUP.md).\n', 'docs/SETUP.md': '# Setup\n' }, cause: 'layout-not-recognized' },
+      'layout-not-recognized': { files: { ...BASE, 'docs/ARCHITECTURE.md': '# Architecture\n\nSee [the setup](./SETUP.md).\n', 'docs/SETUP.md': '# Setup\n' }, cause: 'layout-not-recognized' },
       'nothing-of-this-kind (no links)': { files: { ...BASE, 'README.md': '# Readme\n\nA small service.\n' }, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (no documents)': { files: BASE, cause: 'nothing-of-this-kind' },
     },
-    fix: { files: { ...BASE, 'docs-canonical/GUIDE.md': '# Guide\n\nSee [the setup](./SETUP.md).\n', 'docs-canonical/SETUP.md': '# Setup\n' } },
+    // The fix maps the document under docs.roles: it is read where it lives, and its relative links keep resolving.
+    fix: { files: { ...BASE, 'docs/ARCHITECTURE.md': '# Architecture\n\nSee [the setup](./SETUP.md).\n', 'docs/SETUP.md': '# Setup\n' }, extra: { docs: { roles: { architecture: 'docs/ARCHITECTURE.md' } } } },
   },
   generatedStaleness: {
     empties: {
       // The generator's own draft marker is `<!-- docguard:status draft -->`; a current doc carries no draft marker.
-      'layout-not-recognized': { files: { ...BASE, 'docs-canonical/ARCHITECTURE.md': '# Architecture\n\n<!-- docguard:section id=no-such-section source=code -->\nx\n<!-- /docguard:section -->\n' }, cause: 'layout-not-recognized' },
-      'nothing-of-this-kind': { files: { ...BASE, ...DOCS }, cause: 'nothing-of-this-kind' },
+      'needs-content (a marker names no generated section)': { files: { ...BASE, 'docs-canonical/ARCHITECTURE.md': '# Architecture\n\n<!-- docguard:section id=no-such-section source=code -->\nx\n<!-- /docguard:section -->\n' }, cause: 'needs-content' },
+      'layout-not-recognized (a marker in a document DocGuard does not generate)': { files: { ...BASE, 'README.md': '# Readme\n\n<!-- docguard:section id=x source=code -->\nx\n<!-- /docguard:section -->\n' }, cause: 'layout-not-recognized' },
+      'nothing-of-this-kind (front matter says final, the body quotes Draft)': { files: { ...BASE, 'docs-canonical/TEMPLATE.md': FINAL_TEMPLATE }, cause: 'nothing-of-this-kind' },
     },
     fix: {
       files: { ...BASE, 'docs-canonical/ARCHITECTURE.md': '<!-- docguard:status draft -->\n# Architecture\n\nA small service.\n' },
@@ -220,7 +234,7 @@ export const FIXTURES = {
   },
   metricsConsistency: {
     empties: {
-      'layout-not-recognized': { files: { ...BASE, 'README.md': '# Readme\n\nThe service has 16 extractors.\n' }, extra: { collections: { extractors: 'src/extractors/*.js' } }, cause: 'layout-not-recognized' },
+      'needs-content (a declared glob matches no file)': { files: { ...BASE, 'README.md': '# Readme\n\nThe service has 16 extractors.\n' }, extra: { collections: { extractors: 'src/extractors/*.js' } }, cause: 'needs-content' },
       'nothing-of-this-kind': { files: { ...BASE, 'README.md': '# Readme\n\nA small service.\n' }, cause: 'nothing-of-this-kind' },
     },
     fix: { files: { ...BASE, 'src/extractors/one.js': 'export const one = 1;\n', 'README.md': '# Readme\n\nThe service has 1 extractor.\n' }, extra: { collections: { extractors: 'src/extractors/*.js' } } },

@@ -196,7 +196,10 @@ export function validateSpecRegistry(projectDir, config = {}) {
       }
     }
   }
-  const compared = projection.registry.specs.length + projection.registry.tombstones.length;
+  // Every detected specification was examined, at least for its Spec ID: one that has none yields a finding
+  // (SPR002) and is not in the registry, so counting only the registry would report zero checks beside findings
+  // that a baseline or waiver can later remove, leaving an empty result with no cause.
+  const compared = Math.max(projection.registry.specs.length + projection.registry.tombstones.length, projection.detected);
   const checks = Math.max(1, compared);
   const result = {
     ...resultFromFindings(findings, {
@@ -208,7 +211,7 @@ export function validateSpecRegistry(projectDir, config = {}) {
     ...explainPaddedEmpty(contractFields({
       performed: compared,
       found: findings.length > 0,
-      ran: `${projection.registry.specs.length} specification(s) and ${projection.registry.tombstones.length} tombstone(s) compared with ${SPEC_REGISTRY_PATH}`,
+      ran: `${compared} specification(s) and tombstone(s) examined (${projection.registry.specs.length} compared with ${SPEC_REGISTRY_PATH})`,
       decide: () => applies(projectDir, config, projection),
       empty: d => ({
         emptyCause: 'needs-content',

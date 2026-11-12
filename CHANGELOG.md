@@ -147,6 +147,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Generated-Staleness read a draft status out of body text.** The draft pattern's
+  lazy front-matter match could run past the closing `---` into the body, so a
+  published template whose front matter says `status: final` and whose body quotes
+  "Status: Draft / Approved" was reported as a draft. The status is read only from
+  the front matter that opens the document or from a marker, and the evidence now
+  names the file it found (`docguard.strict-by-default` FR-006).
+- **Spec-Registry could report no check beside findings.** A specification with no
+  Spec ID was a finding but not a check, so a baselined or waived finding left an
+  empty result with no cause. Every detected specification now counts as examined.
+- **Requirement-Anchors and Doc-Dependency evidence.** A template row such as
+  "System MUST [capability]" no longer counts as a requirement; tooling
+  configuration (`*.config.*`, rc and setup files) is no longer offered as the
+  project's source code or as the `covers=` example; the fix says where a Spec ID is
+  declared; requirement IDs in a form the scanner does not read (`FR-1`) are
+  reported as `layout-not-recognized` with the `traceability.requirementPattern`
+  setting that reads them.
+- **Cross-Reference no longer tells a project to move its documents.** Where the
+  documents live outside what it reads, the text names what it reads and the
+  `docs.roles` mapping; a declared collection whose glob matches nothing is
+  `needs-content`, not a layout DocGuard fails to read.
+
 - **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
   for `<!-- status: draft -->` or `status: draft` front matter, while every
   generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
