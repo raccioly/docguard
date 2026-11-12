@@ -3,21 +3,21 @@
   "schemaVersion": 2,
   "review": {
     "status": "reviewed",
-    "reviewedAt": "2026-09-18",
+    "reviewedAt": "2026-11-12",
     "reviewer": "DocGuard maintainers",
-    "scope": "Thirteen exact defect/control pairs across eight synthetic and five pinned public repository groups. The architecture validator gains its first measured evidence: a three-layer Python package whose defect makes the route layer import the model layer directly, bypassing the declared service boundary. One Python architecture case is checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer’s own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence.",
-    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 Python layer-boundary pair added on 2026-09-18 was authored labels-first: the fixture and its expected/forbidden identities were committed before the corpus was run, and both cases matched their authored labels on the first run.",
+    "scope": "Fifteen exact defect/control pairs across ten synthetic and five pinned public repository groups. The architecture validator gains its first measured evidence: a three-layer Python package whose defect makes the route layer import the model layer directly, bypassing the declared service boundary. One Python architecture case is checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer’s own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence. PSR005 gains its first evidence (spec 094): a Spec Kit-installed skill edited after install (defect) or left intact beside an edited authored skill (control); the evaluation pair is a separate group (Codex integration, Copilot instructions).",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 Python layer-boundary pair added on 2026-09-18 was authored labels-first: the fixture and its expected/forbidden identities were committed before the corpus was run, and both cases matched their authored labels on the first run. The PSR005 pairs added on 2026-11-12 were authored labels-first. The development pair matched its labels on the first run. The evaluation pair first abstained (no-matches) because Path-Scoped-Rules returned before checking vendored copies when a project had no scoped instruction file; that early return was fixed and both evaluation cases then matched their unchanged labels.",
     "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001 is measured by a single defect/control pair in one repository group, so its point estimate is below the reporting floor and it backs off to the whole-corpus tier.",
     "measures": "benchmark-precision",
-    "caveat": "Benchmark precision on a deliberately balanced corpus of 13 defect and 13 clean-control cases across 13 repository groups and 13 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
+    "caveat": "Benchmark precision on a deliberately balanced corpus of 15 defect and 15 clean-control cases across 15 repository groups and 15 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
   "core": {
     "schemaVersion": 1,
-    "manifestDigest": "sha256:ac1b1677d3e570f5917ffa9c903a48a8ec5b88fbae5e99bd93b41836b282e6c7",
+    "manifestDigest": "sha256:3476ca6ca0e23373aa4c4697dbae1ffa8516271073655944774b62435e323f5f",
     "tool": {
-      "version": "0.41.7",
-      "revision": "ae9883c50a2ab432f220590fd6eb98b3d9a3def6",
-      "detectorsDigest": "sha256:ae4dfd496f07db366f4d30c04d991dfeb41cd217fa123f1a176652d8324a82ad"
+      "version": "0.47.0",
+      "revision": "48144fe9411b0d6e6626a4dcd14a9084115453c9",
+      "detectorsDigest": "sha256:833d46018328cf56b4c81282f85b19f5ff54c8e561447c1fa88ebf3b3774dcde"
     },
     "cases": [
       {
@@ -47,7 +47,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -87,7 +88,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -125,7 +127,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -165,7 +168,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -203,7 +207,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -243,7 +248,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -281,7 +287,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -321,7 +328,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -359,7 +367,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -399,7 +408,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -437,7 +447,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -477,13 +488,95 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
           "passed": 2,
           "total": 3,
           "quality": "LOW"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-vendored-instruction-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-agent-instructions",
+        "causalFamily": "vendored-instruction-drift",
+        "parserTier": "not-applicable",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:d7a1625a295e68e537c6a4b273539e06322a122d3215e95af17911932018db70",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "PSR005@.claude/skills/release-notes/SKILL.md",
+          "PSR005@.claude/skills/speckit-plan/SKILL.md"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 1,
+          "total": 1,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-vendored-instruction-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-agent-instructions",
+        "causalFamily": "vendored-instruction-drift",
+        "parserTier": "not-applicable",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:d7a1625a295e68e537c6a4b273539e06322a122d3215e95af17911932018db70",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR005"
+          ]
+        },
+        "expected": [
+          "PSR005@.claude/skills/speckit-plan/SKILL.md"
+        ],
+        "forbidden": [],
+        "actual": [
+          "PSR005@.claude/skills/speckit-plan/SKILL.md"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 0,
+          "total": 1,
+          "quality": "MEDIUM"
         },
         "commandStatus": "FAIL",
         "status": "PASS"
@@ -515,7 +608,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -555,7 +649,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -593,7 +688,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -633,7 +729,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -671,7 +768,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -711,7 +809,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -749,7 +848,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -789,7 +889,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -827,7 +928,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "warn",
@@ -867,7 +969,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -905,7 +1008,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "na",
@@ -945,7 +1049,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -981,7 +1086,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope"
+          "reason": "Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "na",
@@ -1019,7 +1125,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "pass",
@@ -1059,7 +1166,8 @@
         "abstained": false,
         "applicability": {
           "status": "checked",
-          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage."
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
         },
         "checkCoverage": {
           "status": "fail",
@@ -1069,24 +1177,105 @@
         },
         "commandStatus": "FAIL",
         "status": "PASS"
+      },
+      {
+        "id": "eval-vendored-instruction-control",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-agent-instructions-heldout",
+        "causalFamily": "installed-skill-local-edit",
+        "parserTier": "not-applicable",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:5885e693035ca932f7bafe5af0b7305e81c3268a4ce90a33e2be948206406daa",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR005"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "PSR005@.agents/skills/speckit-tasks/SKILL.md",
+          "PSR005@.agents/skills/triage/SKILL.md"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 1,
+          "total": 1,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "eval-vendored-instruction-defect",
+        "split": "evaluation",
+        "repositoryGroup": "synthetic-agent-instructions-heldout",
+        "causalFamily": "installed-skill-local-edit",
+        "parserTier": "not-applicable",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:5885e693035ca932f7bafe5af0b7305e81c3268a4ce90a33e2be948206406daa",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR005"
+          ]
+        },
+        "expected": [
+          "PSR005@.agents/skills/speckit-tasks/SKILL.md"
+        ],
+        "forbidden": [],
+        "actual": [
+          "PSR005@.agents/skills/speckit-tasks/SKILL.md"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 0,
+          "total": 1,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
       }
     ],
     "metrics": {
       "aggregate": {
-        "cases": 26,
-        "repositories": 13,
-        "truePositives": 13,
+        "cases": 30,
+        "repositories": 15,
+        "truePositives": 15,
         "falsePositives": 0,
         "falseNegatives": 0,
         "abstainedSupportedCases": 0,
         "unsupportedCases": 1,
-        "defectCases": 13,
-        "cleanControlCases": 13,
+        "defectCases": 15,
+        "cleanControlCases": 15,
         "cleanControlCasesWithFindings": 0,
         "repairs": {
           "accepted": 0,
           "rejected": 0,
-          "notEvaluated": 26
+          "notEvaluated": 30
         },
         "adjudicated": {
           "policyDisagreements": 0,
@@ -1096,21 +1285,21 @@
         "recall": 1,
         "falsePositivesPerRepository": 0,
         "abstentionRate": 0,
-        "unsupportedRate": 0.037037,
+        "unsupportedRate": 0.032258,
         "acceptedRepairRate": null,
         "confidence95": {
           "method": "Wilson score interval, z=1.96",
           "precision": {
-            "lower": 0.771898,
+            "lower": 0.796111,
             "upper": 1
           },
           "recall": {
-            "lower": 0.771898,
+            "lower": 0.796111,
             "upper": 1
           },
           "falsePositiveCaseRate": {
             "lower": 0,
-            "upper": 0.228102
+            "upper": 0.203889
           },
           "acceptedRepairRate": null
         }
@@ -1289,6 +1478,92 @@
           }
         },
         "github-pallets-flask": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-agent-instructions": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-agent-instructions-heldout": {
           "cases": 2,
           "repositories": 1,
           "truePositives": 1,
@@ -1754,6 +2029,49 @@
             "acceptedRepairRate": null
           }
         },
+        "pathScopedRules": {
+          "cases": 4,
+          "repositories": 2,
+          "truePositives": 2,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 2,
+          "cleanControlCases": 2,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 4
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.342372,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.657628
+            },
+            "acceptedRepairRate": null
+          }
+        },
         "security": {
           "cases": 20,
           "repositories": 10,
@@ -2015,20 +2333,20 @@
           }
         },
         "not-applicable": {
-          "cases": 2,
-          "repositories": 1,
-          "truePositives": 1,
+          "cases": 6,
+          "repositories": 3,
+          "truePositives": 3,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 0,
-          "defectCases": 1,
-          "cleanControlCases": 1,
+          "defectCases": 3,
+          "cleanControlCases": 3,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 2
+            "notEvaluated": 6
           },
           "adjudicated": {
             "policyDisagreements": 0,
@@ -2043,16 +2361,16 @@
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
             "precision": {
-              "lower": 0.206543,
+              "lower": 0.438494,
               "upper": 1
             },
             "recall": {
-              "lower": 0.206543,
+              "lower": 0.438494,
               "upper": 1
             },
             "falsePositiveCaseRate": {
               "lower": 0,
-              "upper": 0.793457
+              "upper": 0.561506
             },
             "acceptedRepairRate": null
           }
@@ -2148,145 +2466,165 @@
   },
   "observations": {
     "environment": {
-      "node": "v24.18.0",
+      "node": "v24.22.2",
       "platform": "darwin",
       "arch": "arm64"
     },
     "cases": [
       {
         "id": "dev-generated-security-control",
-        "coldMs": 173.141,
-        "warmMs": 154.57
+        "coldMs": 306.012,
+        "warmMs": 287.59
       },
       {
         "id": "dev-generated-security-defect",
-        "coldMs": 159.906,
-        "warmMs": 153.073
+        "coldMs": 301.441,
+        "warmMs": 292.086
       },
       {
         "id": "dev-go-todo-control",
-        "coldMs": 147.889,
-        "warmMs": 131.137
+        "coldMs": 282.499,
+        "warmMs": 279.243
       },
       {
         "id": "dev-go-todo-defect",
-        "coldMs": 134.937,
-        "warmMs": 131.901
+        "coldMs": 302.938,
+        "warmMs": 302.651
       },
       {
         "id": "dev-js-security-control",
-        "coldMs": 130.862,
-        "warmMs": 136.81
+        "coldMs": 285.677,
+        "warmMs": 283.707
       },
       {
         "id": "dev-js-security-defect",
-        "coldMs": 139.53,
-        "warmMs": 136.407
+        "coldMs": 281.145,
+        "warmMs": 301.096
       },
       {
         "id": "dev-monorepo-security-control",
-        "coldMs": 137.823,
-        "warmMs": 142.46
+        "coldMs": 289.061,
+        "warmMs": 309.368
       },
       {
         "id": "dev-monorepo-security-defect",
-        "coldMs": 148.954,
-        "warmMs": 154.96
+        "coldMs": 296.26,
+        "warmMs": 301.683
       },
       {
         "id": "dev-python-security-control",
-        "coldMs": 150.433,
-        "warmMs": 154.897
+        "coldMs": 311.722,
+        "warmMs": 358.851
       },
       {
         "id": "dev-python-security-defect",
-        "coldMs": 148.446,
-        "warmMs": 149.492
+        "coldMs": 303.096,
+        "warmMs": 282.47
       },
       {
         "id": "dev-sparse-doc-control",
-        "coldMs": 165.493,
-        "warmMs": 157.575
+        "coldMs": 300.394,
+        "warmMs": 294.565
       },
       {
         "id": "dev-sparse-doc-defect",
-        "coldMs": 152.774,
-        "warmMs": 149.465
+        "coldMs": 318.333,
+        "warmMs": 338.009
+      },
+      {
+        "id": "dev-vendored-instruction-control",
+        "coldMs": 288.532,
+        "warmMs": 288.576
+      },
+      {
+        "id": "dev-vendored-instruction-defect",
+        "coldMs": 297.033,
+        "warmMs": 327.581
       },
       {
         "id": "eval-changesets-aws-control",
-        "coldMs": 333.003,
-        "warmMs": 331.6
+        "coldMs": 548.642,
+        "warmMs": 579.698
       },
       {
         "id": "eval-changesets-aws-defect",
-        "coldMs": 347.069,
-        "warmMs": 338.808
+        "coldMs": 572.966,
+        "warmMs": 584.371
       },
       {
         "id": "eval-chi-aws-control",
-        "coldMs": 196.987,
-        "warmMs": 195.8
+        "coldMs": 424.214,
+        "warmMs": 410.828
       },
       {
         "id": "eval-chi-aws-defect",
-        "coldMs": 208.465,
-        "warmMs": 194.909
+        "coldMs": 424.781,
+        "warmMs": 415.104
       },
       {
         "id": "eval-express-aws-control",
-        "coldMs": 228.959,
-        "warmMs": 233.369
+        "coldMs": 434.449,
+        "warmMs": 422.532
       },
       {
         "id": "eval-express-aws-defect",
-        "coldMs": 220.138,
-        "warmMs": 222.007
+        "coldMs": 418.178,
+        "warmMs": 436.4
       },
       {
         "id": "eval-fastify-aws-control",
-        "coldMs": 288.077,
-        "warmMs": 321.602
+        "coldMs": 699.924,
+        "warmMs": 624.416
       },
       {
         "id": "eval-fastify-aws-defect",
-        "coldMs": 309.07,
-        "warmMs": 289.537
+        "coldMs": 639.451,
+        "warmMs": 632.123
       },
       {
         "id": "eval-flask-aws-control",
-        "coldMs": 188.224,
-        "warmMs": 185.752
+        "coldMs": 561.188,
+        "warmMs": 459.725
       },
       {
         "id": "eval-flask-aws-defect",
-        "coldMs": 185.488,
-        "warmMs": 180.476
+        "coldMs": 510.965,
+        "warmMs": 555.363
       },
       {
         "id": "eval-python-layers-control",
-        "coldMs": 340.508,
-        "warmMs": 338.91
+        "coldMs": 451.297,
+        "warmMs": 445.787
       },
       {
         "id": "eval-python-layers-defect",
-        "coldMs": 362.79,
-        "warmMs": 357.195
+        "coldMs": 530.404,
+        "warmMs": 534.635
       },
       {
         "id": "eval-python-unsupported",
-        "coldMs": 340.692,
-        "warmMs": 331.85
+        "coldMs": 574.632,
+        "warmMs": 596.269
       },
       {
         "id": "eval-ts-security-control",
-        "coldMs": 143.421,
-        "warmMs": 134.982
+        "coldMs": 540.291,
+        "warmMs": 472.961
       },
       {
         "id": "eval-ts-security-defect",
-        "coldMs": 137.895,
-        "warmMs": 135.734
+        "coldMs": 420.075,
+        "warmMs": 447.441
+      },
+      {
+        "id": "eval-vendored-instruction-control",
+        "coldMs": 453.843,
+        "warmMs": 440.132
+      },
+      {
+        "id": "eval-vendored-instruction-defect",
+        "coldMs": 529.415,
+        "warmMs": 448.018
       }
     ],
     "retainedRoot": null

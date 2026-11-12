@@ -33,6 +33,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
 
+- **One agent-instruction document role** (#628, spec 094). DocGuard decided which
+  files are agent instructions in twelve separate lists, and they disagreed: Freshness
+  read only `AGENTS.md` and `CLAUDE.md`, so a stale `GEMINI.md` or
+  `.github/copilot-instructions.md` was checked by nothing. One role now lists
+  them: the root files every session loads (`AGENTS.md`, `AGENTS.override.md`,
+  `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, configured
+  `requiredFiles.agentFile`), plus tracked nested instruction files and harness
+  rules and skills outside test and fixture paths. Every agent-file reader uses it
+  (`docguard.agent-instruction-role` FR-001 to FR-003).
+- **PSR005: an installed instruction copy was edited.** A skill that a Spec Kit
+  integration installed, listed with its sha256 in
+  `.specify/integrations/<integration>.manifest.json`, no longer matches what was
+  installed. The next install overwrites the edit (FR-007).
+- **Vendored instruction files are counted and listed.** Guard's summary line says how
+  many instruction files were treated as vendored and not reviewed, and JSON lists each
+  with its reason in `coverage.vendoredInstructions[]`. A root file such as `AGENTS.md`
+  is never vendored by a header alone, only by an install record with a hash (FR-011).
+
+### Changed
+
+- **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
+  "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
+  finding; Freshness records that it is reviewed through its target. Installed
+  Spec Kit and DocGuard skill copies are no longer reviewed for staleness, because
+  they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
+  Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
+  for them.
+
 ### Changed
 
 - **A validator that performed no check is `empty`, never `pass`.** The verdict
@@ -43,6 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   held the gate on `empty` (FR-004).
 
 ### Fixed
+
+- **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
+  had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
 
 - **Releases are now published to the official MCP registry.** The listing at
   `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because

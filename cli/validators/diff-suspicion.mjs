@@ -27,6 +27,7 @@ import { parseJsTs } from '../scanners/js-ast.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { namesToken } from '../scanners/doc-references.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
 
@@ -60,7 +61,7 @@ const GENERIC_TOKENS = new Set([
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 // Index canonical docs + root agent-instruction files → Map<name, {lines, tokens}>.
-function indexDocs(projectDir) {
+function indexDocs(projectDir, config = {}) {
   const docs = new Map();
   const add = (name, full) => {
     try {
@@ -72,10 +73,8 @@ function indexDocs(projectDir) {
   // Preserve paths: nested documents with identical basenames are distinct.
   for (const doc of listCanonicalDocs(projectDir)) add(doc.rel, doc.abs);
   // Agent-instruction files are documentation too — they routinely name code.
-  for (const agent of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
-    const p = resolve(projectDir, agent);
-    if (existsSync(p)) add(agent, p);
-  }
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  for (const agent of rootAgentDocs(projectDir, config)) add(agent, resolve(projectDir, agent));
   return docs;
 }
 
@@ -224,7 +223,7 @@ export function validateDiffSuspicion(projectDir, config = {}) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }
 
-  const docs = indexDocs(projectDir);
+  const docs = indexDocs(projectDir, config);
   if (docs.size === 0) {
     return resultFromFindings([], { passed: 0, total: 0, applicable: false });
   }

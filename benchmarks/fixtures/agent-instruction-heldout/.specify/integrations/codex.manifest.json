@@ -1,0 +1,7 @@
+{
+  "integration": "codex",
+  "version": "1.0.13",
+  "files": {
+    ".agents/skills/speckit-tasks/SKILL.md": "fc030a7bb9296d851c41319081e4e3e88d78fbe89aef2098a15ba0a2145e8cbc"
+  }
+}
