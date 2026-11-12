@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateEnvironment } from '../cli/validators/environment.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('validateEnvironment', () => {
   let tempDir;
@@ -24,7 +25,7 @@ describe('validateEnvironment', () => {
 
   it('returns base results if ENVIRONMENT.md is missing', () => {
     const results = validateEnvironment(tempDir, {});
-    assert.deepEqual(results, {
+    assert.deepEqual(legacyShape(results), {
       name: 'environment',
       errors: [],
       warnings: [],
