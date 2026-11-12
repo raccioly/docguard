@@ -164,13 +164,40 @@ describe('group A: defects the Stage A proof found', () => {
       assert.match(a.evidence, /0\.1\.0/);
     });
 
+    it('a published command-line tool whose README has install lines with no version does not apply', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'tool', version: '1.0.0', bin: { tool: 'cli.js' } }), 'README.md': '# tool\n\n```\nnpm install -g tool\nnpx tool init\n```\n' } });
+      assert.equal(a.applies, false);
+      assert.match(a.evidence, /1\.0\.0/);
+      assert.match(a.evidence, /no document states a version/);
+    });
+
+    it('a published workspace package whose documents state no version does not apply', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'root', private: true, workspaces: ['packages/*'] }), 'packages/lib/package.json': JSON.stringify({ name: 'lib', version: '3.1.0' }), 'README.md': '# root\n' } });
+      assert.equal(a.applies, false);
+      assert.match(a.evidence, /packages\/lib\/package\.json/);
+      assert.match(a.evidence, /no document states a version/);
+    });
+
+    it('a document that states the version makes it apply, and the evidence names the document', async () => {
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': PKG, 'README.md': 'npm install svc@2.0.0\n' } });
+      assert.equal(a.applies, true);
+      assert.match(a.evidence, /README\.md/);
+    });
+
+    it('no empty result of the validator asks the project to write the version into a document', () => {
+      for (const [name, fixture] of Object.entries(FIXTURES.metadataSync.empties)) {
+        const how = run('metadataSync', fixture).result.howToConfigure;
+        assert.doesNotMatch(how, /Name the version where readers copy|write the version/i, name);
+      }
+    });
+
     it('a package with no version does not apply', async () => {
       const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'app' }) } });
       assert.equal(a.applies, false);
     });
 
     it('a monorepo whose root has no version reads the one published workspace package, and names it', async () => {
-      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: rootNoVersion({ 'packages/lib/package.json': lib('lib'), 'packages/web/package.json': lib('web', { private: true }) }) });
+      const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: rootNoVersion({ 'packages/lib/package.json': lib('lib'), 'packages/web/package.json': lib('web', { private: true }), 'README.md': 'npm install lib@3.1.0\n' }) });
       assert.equal(a.applies, true);
       assert.match(a.evidence, /packages\/lib\/package\.json/);
       assert.match(a.evidence, /lib/);
@@ -211,6 +238,14 @@ describe('group A: defects the Stage A proof found', () => {
       const result = resultOf('testSpec', SPEC('We test things.\n'));
       assert.match(result.howToConfigure, /Source-to-Test Map/);
       assert.match(result.howToConfigure, /Service-to-Test Map/);
+    });
+
+    it('names both headings when the document is missing and when the table is empty', () => {
+      for (const fixture of [SPEC('x').files && { files: { 'package.json': PKG, 'tests/a.test.js': 't\n' } }, SPEC(table('## Source-to-Test Map', '')) ]) {
+        const how = resultOf('testSpec', fixture).howToConfigure;
+        assert.match(how, /Source-to-Test Map/);
+        assert.match(how, /Service-to-Test Map/);
+      }
     });
   });
 
@@ -254,6 +289,11 @@ describe('group A: defects the Stage A proof found', () => {
       assert.match(r.howToConfigure, /docs\.roles/);
       assert.match(r.howToConfigure, /docs\/design\/SYSTEM\.md/);
       assert.doesNotMatch(r.howToConfigure, /docs-canonical\/ARCHITECTURE\.md|docs-canonical\/TEST-SPEC\.md/);
+    });
+
+    it('Docs-Diff: the mapping is offered for the architecture document even when the test spec exists', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', 'docs-implementation/ARCHITECTURE.md': '# Architecture\n' } });
+      assert.match(r.howToConfigure, /"architecture": "docs-implementation\/ARCHITECTURE\.md"/);
     });
 
     it('Docs-Diff: an unmapped architecture document elsewhere is offered as a mapping', () => {

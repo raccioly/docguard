@@ -125,7 +125,12 @@ export const FIXTURES = {
   },
   metadataSync: {
     empties: {
-      'needs-content': { files: { 'package.json': PKG, 'README.md': '# svc\n\nA service.\n' }, cause: 'needs-content' },
+      // A consistency check applies only when both statements of the fact exist (spec 097 FR-006): a manifest
+      // version that no document states has nothing that can drift, so the project is not asked to write it down.
+      'nothing-of-this-kind (no document states a version)': { files: { 'package.json': PKG, 'README.md': '# svc\n\nInstall with `npm install svc`.\n' }, cause: 'nothing-of-this-kind' },
+      // Genuinely empty: a document states a version, in a form the comparison reads, but it is another major
+      // version, so the comparison (same major, older) found nothing to compare.
+      'needs-content (a document states another major version)': { files: { 'package.json': PKG, 'README.md': '# svc\n\nInstall with `npm install svc@2.0.0`.\n' }, cause: 'needs-content' },
       'layout-not-recognized': { files: { 'pyproject.toml': '[project]\nname = "svc"\nversion = "1.2.0"\n', 'README.md': '# svc\n' }, cause: 'layout-not-recognized' },
       'nothing-of-this-kind': { files: { 'src/index.js': 'export const x = 1;\n' }, cause: 'nothing-of-this-kind' },
       // A private application: a version, but nobody installs it.

@@ -45,10 +45,66 @@ function readPackageVersion(projectDir, config) {
 }
 
 /**
+ * The forms in which a document states the package's version, for the comparison and for the
+ * decision whether there is anything to compare: URLs with a version (`/v0.7.2/`, `/tags/v0.7.2`,
+ * `/releases/0.7.2`), YAML-style `version: 0.7.2`, and `<package>@0.7.2` install commands. The
+ * npm form is anchored to THIS package's name; a bare `@1.2.3` over-matched `node@18.2.0`,
+ * `@types/node@1.2.3` and prose.
+ */
+function actionableVersionPatterns(currentName) {
+  const patterns = [
+    /(?:archive|tags|releases|download)\/v?(\d+\.\d+\.\d+)/g,
+    /version:\s*["']?(\d+\.\d+\.\d+)["']?/g,
+  ];
+  if (currentName) {
+    const escaped = currentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    patterns.push(new RegExp(`${escaped}@v?(\\d+\\.\\d+\\.\\d+)`, 'g'));
+  }
+  return patterns;
+}
+
+/** The first document that states a version in a form the comparison reads, as { file, version }, or null. */
+function firstVersionStatement(projectDir, name) {
+  const isIgnored = loadIgnorePatterns(projectDir);
+  for (const extFile of findExtensionYmls(projectDir)) {
+    try {
+      const m = readFileSync(extFile, 'utf-8').match(/version:\s*["']?(\d+\.\d+\.\d+)["']?/);
+      if (m) return { file: relative(projectDir, extFile).split(sep).join('/'), version: m[1] };
+    } catch { /* unreadable */ }
+  }
+  for (const mdFile of findMarkdownFiles(projectDir)) {
+    const rel = relative(projectDir, mdFile);
+    const lower = rel.toLowerCase();
+    if (lower.includes('changelog') || lower.includes('drift-log') || isIgnored(rel)) continue;
+    let content;
+    try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
+    for (const pattern of actionableVersionPatterns(name)) {
+      pattern.lastIndex = 0;
+      const m = pattern.exec(content);
+      if (m) return { file: rel.split(sep).join('/'), version: m[1] };
+    }
+  }
+  return null;
+}
+
+/**
+ * A consistency check applies only when both statements of the fact exist (spec 097 FR-006): the
+ * manifest declares a version AND a document the comparison reads states one. Where no document states
+ * a version nothing can drift, so the validator does not apply and asks nothing of the project.
+ */
+function withStatement(projectDir, manifestEvidence, name) {
+  const statement = firstVersionStatement(projectDir, name || null);
+  return statement
+    ? { applies: true, evidence: `${manifestEvidence}, and ${statement.file} states a version (${statement.version})` }
+    : { applies: false, noStatement: true, evidence: `${manifestEvidence}, and no document states a version in a form Metadata-Sync compares (a URL with a version, a \`version:\` line or a \`<package>@x.y.z\` install command), so there is nothing that can drift` };
+}
+
+/**
  * Whether Metadata-Sync's kind of check belongs to the project: it applies to a
  * package somebody installs, whose version the documents quote. It does not apply
  * to a package marked `"private": true` (nobody installs it, so no document quotes
- * a version to keep current), nor to a project that declares no version.
+ * a version to keep current), nor to a project that declares no version, nor to one whose
+ * documents state no version (see `withStatement`).
  *
  * Which version it reads, and the evidence always names it:
  *   - the root package.json, when it declares a version;
@@ -68,7 +124,7 @@ export function applies(projectDir, config = {}) {
   if (root?.version) {
     return root.private === true
       ? { applies: false, evidence: `package.json declares version ${root.version} but is marked "private": true, so nobody installs it and no document quotes its version`, private: true }
-      : { applies: true, evidence: `package.json declares version ${root.version}` };
+      : withStatement(projectDir, `package.json declares version ${root.version}`, root.name);
   }
   const versioned = collectPackageJsons(projectDir, config)
     .filter(({ dir, pkg }) => resolve(dir) !== resolve(projectDir) && pkg.version)
@@ -77,7 +133,7 @@ export function applies(projectDir, config = {}) {
     const published = versioned.filter(({ pkg }) => pkg.private !== true);
     if (published.length === 1) {
       const { file, pkg } = published[0];
-      return { applies: true, evidence: `the root package.json declares no version; ${file} (${pkg.name || 'unnamed'}, version ${pkg.version}) is the only published workspace package, so its version is the project's` };
+      return withStatement(projectDir, `the root package.json declares no version; ${file} (${pkg.name || 'unnamed'}, version ${pkg.version}) is the only published workspace package, so its version is the project's`, pkg.name);
     }
     const listed = (published.length ? published : versioned).map(v => v.file).join(', ');
     return {
@@ -98,10 +154,11 @@ function metadataContract(projectDir, config, performed, found) {
     performed, found, ran: `compared ${performed} version reference(s) with the version package.json declares`,
     decide: () => applies(projectDir, config),
     empty: (decision) => {
+      if (!decision.applies && decision.noStatement) return { emptyCause: 'nothing-of-this-kind', note: `Metadata-Sync compared nothing because ${decision.evidence}.`, howToConfigure: 'Nothing to configure: with no document stating the version there is nothing to keep in step. If a document does state it (a URL with a version, a `version:` line, `<package>@x.y.z`), Metadata-Sync compares it with package.json from then on.' };
       if (!decision.applies && decision.private !== undefined) return { emptyCause: 'nothing-of-this-kind', note: `Metadata-Sync compared nothing because ${decision.evidence}.`, howToConfigure: 'Nothing to configure for a package nobody installs. If it is published, remove `"private": true` from the package.json that carries the version and Metadata-Sync keeps the documents that name it in step.' };
       if (!decision.applies) return { note: 'Metadata-Sync found no versioned manifest, so there is no version string to compare with the documents.', howToConfigure: 'Nothing to configure unless the project is versioned: then declare `version` in package.json and Metadata-Sync keeps the documents that name it in step.' };
       if (decision.otherManifest) return { emptyCause: 'layout-not-recognized', note: `Metadata-Sync reads the version from package.json only, and this project's version lives in ${decision.otherManifest}, so it compared no document with it.`, howToConfigure: `Metadata-Sync reads package.json and extension.yml versions, not ${decision.otherManifest}: that is a limit of DocGuard, and the project is not asked to add a package.json or change its manifest. Until DocGuard reads ${decision.otherManifest}, keep version references in the documents in step by hand; to have them checked, ask for ${decision.otherManifest} to be supported by opening an issue on the DocGuard repository.` };
-      return { emptyCause: 'needs-content', note: 'package.json declares a version but no Markdown file or extension.yml names it in a URL, a `version:` line or a `<package>@x.y.z` install command, so Metadata-Sync compared nothing.', howToConfigure: 'Name the version where readers copy it from, for example `npm install <name>@<version>` in README.md; Metadata-Sync then flags the reference when package.json moves on.' };
+      return { emptyCause: 'needs-content', note: `${decision.evidence}, but no reference was close enough to compare: Metadata-Sync flags a reference of the same major version that is older than package.json, so a newer or other-major version in a document was not compared.`, howToConfigure: 'Check the version a document states against package.json: a reference to another major version, or to a newer one, is not flagged. Make it match package.json, or remove it if it is not this package\'s version.' };
     },
   });
 }
@@ -180,19 +237,7 @@ export function validateMetadataSync(projectDir, config) {
     // - npm install / npx commands
     // - Badge URLs
     // NOT in prose text like "In v0.2.0 we added..." or roadmap discussions
-    const actionablePatterns = [
-      // URLs with version: /v0.7.2/, /tags/v0.7.2, /releases/0.7.2
-      /(?:archive|tags|releases|download)\/v?(\d+\.\d+\.\d+)/g,
-      // YAML-style: version: "0.7.2" or version: 0.7.2
-      /version:\s*["']?(\d+\.\d+\.\d+)["']?/g,
-    ];
-    // npm/npx refs to THIS package only (e.g. docguard-cli@0.7.2), anchored to
-    // the package name. A bare /@(\d+\.\d+\.\d+)/ used to over-match unrelated
-    // versions — node@18.2.0, @types/node@1.2.3, or "@1.2.3" in prose.
-    if (currentName) {
-      const escaped = currentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      actionablePatterns.push(new RegExp(`${escaped}@v?(\\d+\\.\\d+\\.\\d+)`, 'g'));
-    }
+    const actionablePatterns = actionableVersionPatterns(currentName);
 
     for (const pattern of actionablePatterns) {
       pattern.lastIndex = 0;
