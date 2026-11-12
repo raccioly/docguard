@@ -73,9 +73,13 @@ export function validateDocDependency(projectDir, config = {}) {
       suggestion: { kind: 'fix', text: 'Run `docguard review --prune`', command: 'docguard review --prune' },
     }));
   }
-  const total = Math.max(1, status.sections.length + status.orphans.length);
+  const compared = status.sections.length + status.orphans.length;
+  const total = Math.max(1, compared);
   const shown = findings.slice(0, MAX_FINDINGS);
-  const result = resultFromFindings(shown, { passed: Math.max(0, total - findings.length - unverifiable), total, applicable: true });
+  // `total` is padded to 1 so a lock with no covered section prints 1 check, not 0/0;
+  // that pad is not a check. `performed` is the sections and orphans compared, so a
+  // lock that covers nothing is `empty`, not `pass` (specs/097-strict-by-default FR-004).
+  const result = { ...resultFromFindings(shown, { passed: Math.max(0, total - findings.length - unverifiable), total, applicable: true }), performed: compared };
   return unverifiable
     ? { ...result, applicability: { status: 'partial', reason: `${unverifiable} covered section(s) could not be compared at their recorded fingerprint tier (a parser is unavailable here, or a different python3 serializes the code differently)` } }
     : result;

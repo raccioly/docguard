@@ -84,6 +84,44 @@ disabling a required validator in config is reported as REQ001, and an
 unknown key as REQ002. `docguard policy` shows which advisory codes this
 project's CI history shows are ready to promote with `findingSeverity`.
 
+### Enforcement mode
+
+`enforcement` selects how strictly guard judges the project (spec 097,
+`docguard.strict-by-default`). It is a string or an object, and it is separate
+from `profile`, which only says what kind of project this is:
+
+```json
+{ "enforcement": "strict" }
+{ "enforcement": { "mode": "standard", "asOf": "0.49" } }
+```
+
+- **`strict`**: every validator that applies to the project must examine
+  something. One that applies and examined nothing (verdict `empty`,
+  `inconclusive` or `blocked`) makes `guard` exit 4 and `ci` block
+  (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. A validator
+  that does not apply is `skipped`, with what it looked for as the reason.
+  When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
+  unexamined validator, `docguard guard --update-baseline`, the waiver form
+  with `owner:` and `expires:`, and the key that selects the lower mode.
+- **`standard`**: the behavior before this key existed. No exit code changes.
+- **Absent**: the default mode. In this release that is `standard`; a later
+  release makes it `strict`. Every run states the mode and where it came from
+  on the first line of its summary, and `--format json` carries
+  `enforcement: { mode, asOf, source }` (`source` is `default` or `config`).
+
+Under `strict`, `--format json` also carries
+`strict: { evaluated, unexamined[], blocking[], gating[], pending[], waived[], baselined }`.
+Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking }`.
+`cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`
+or `nothing-of-this-kind`, or `not-yet-classified` for a validator that has not
+yet been migrated to the result contract; such a validator is listed but never
+exits 4, so a project does not fail on a guess. `--changed-only` runs a subset
+of the validators, so it does not evaluate the rule and says so.
+
+`docguard upgrade` reports, read-only, what `strict` would change for the
+project. `asOf` is read and validated in this release and held for the stage
+that adds the release table.
+
 `requiredSections` adds sections a document must carry beyond the canonical
 ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the
 canonical document:

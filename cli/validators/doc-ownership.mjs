@@ -10,6 +10,7 @@
  *   OWN005  .devin/wiki.json breaks one of Devin's documented rules
  *   OWN006  a path named in .devin/wiki.json that does not exist
  *   OWN007  an unreadable ownership block or wiki file, or an unsafe pattern
+ *   OWN008  an entry whose written purpose is blank or a `<placeholder>`
  *
  * Not applicable without an `ownership` block and without `.devin/wiki.json`,
  * so such projects' guard output is unchanged (FR-007).
@@ -33,6 +34,10 @@ export function validateDocOwnership(projectDir, config = {}) {
   }
   const findings = [];
   let total = 0;
+  // Presence of a block or a wiki file is not a check. `total` keeps counting it
+  // (counts and the badge are unchanged under `standard`); `performed` does not
+  // (specs/097-strict-by-default FR-004).
+  let presence = 0;
   const limitations = [];
   const push = (code, props) => {
     const already = findings.filter(f => f.code === code).length;
@@ -42,6 +47,7 @@ export function validateDocOwnership(projectDir, config = {}) {
 
   if (map.present) {
     total++;
+    presence++;
     if (map.error) {
       push('OWN007', {
         severity: 'error', disposition: 'act', message: map.error, location: '.docguard.json',
@@ -86,6 +92,12 @@ export function validateDocOwnership(projectDir, config = {}) {
             suggestion: { kind: 'fix', text: 'Point the pattern at where the code lives now, or remove it' },
           });
         }
+        if (entry.placeholderPurpose) {
+          push('OWN008', {
+            severity: 'warn', disposition: 'act', message: `ownership entry ${entry.key}: purpose is ${entry.purpose ? JSON.stringify(entry.purpose) : 'empty'}, a placeholder, so the entry documents nothing`, location: '.docguard.json',
+            suggestion: { kind: 'fix', text: 'Write one sentence saying what this doc section is responsible for, or remove the purpose' },
+          });
+        }
         const problem = entryTargetProblem(projectDir, entry);
         if (problem) {
           push('OWN004', {
@@ -99,6 +111,7 @@ export function validateDocOwnership(projectDir, config = {}) {
 
   if (wiki.present) {
     total++;
+    presence++;
     if (wiki.error) {
       push('OWN007', {
         severity: 'error', disposition: 'act', message: wiki.error, location: DEVIN_WIKI.path,
@@ -130,7 +143,7 @@ export function validateDocOwnership(projectDir, config = {}) {
     }
   }
 
-  const result = resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total });
+  const result = { ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total }), performed: Math.max(0, total - presence) };
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   return result;
 }

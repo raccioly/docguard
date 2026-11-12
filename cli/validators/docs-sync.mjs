@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
+import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs, isNonProductPath } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
 import { namesModule, namesDirectory, createUrlPathMatcher, treePaths } from '../scanners/doc-references.mjs';
@@ -205,6 +205,112 @@ function expandDirs(projectDir, config, subPaths) {
   return out;
 }
 
+const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'];
+const ROUTE_SUBPATHS = ['src/routes', 'src/app/api', 'routes', 'app/api'];
+const SERVICE_SUBPATHS = ['src/services', 'services', 'src/lib'];
+
+/**
+ * The route and service files Docs-Sync checks, before any --changed-only
+ * scoping: source files under the route and service directories it reads.
+ */
+function selectSourceFiles(projectDir, config) {
+  const selected = [];
+
+  // Find route/API files (monorepo-aware) and check they're mentioned in docs.
+  // Note: bare 'api' is intentionally excluded — it collides with frontend
+  // API client conventions (src/api/client.ts). Backend routes use
+  // src/routes/ or routes/ (Express). Next.js App Router uses src/app/api/
+  // or app/api/ with strict route.{ts,js} filename matching applied below.
+  for (const routeDir of expandDirs(projectDir, config, ROUTE_SUBPATHS)) {
+    for (const file of getFilesRecursive(routeDir)) {
+      if (!SOURCE_EXTENSIONS.includes(extname(file))) continue;
+      const relPath = relPosix(projectDir, file);
+      if (isTestFile(relPath)) continue;
+      if (!isValidRouteFile(relPath)) continue;
+      selected.push({ relPath, code: 'DSY001', kind: 'route', message: `route ${relPath} not referenced in any canonical doc` });
+    }
+  }
+
+  // Find service files (monorepo-aware) and check they're documented.
+  for (const serviceDir of expandDirs(projectDir, config, SERVICE_SUBPATHS)) {
+    for (const file of getFilesRecursive(serviceDir)) {
+      if (!SOURCE_EXTENSIONS.includes(extname(file))) continue;
+      const relPath = relPosix(projectDir, file);
+      if (isTestFile(relPath)) continue;
+      if (!isServiceCandidate(file, serviceDir)) continue;
+      selected.push({ relPath, code: 'DSY002', kind: 'service', message: `Service ${relPath} not referenced in any canonical doc` });
+    }
+  }
+  return selected;
+}
+
+// Directory names that hold routes or services under another layout.
+const LOOSE_LAYOUT_DIRS = new Set(['routes', 'controllers', 'handlers', 'services', 'api']);
+
+/**
+ * Does Docs-Sync apply to this project? Decided from the project's files, not
+ * from this validator's configuration (specs/097-strict-by-default FR-006):
+ *   - route or service files under the directories it reads: applies;
+ *   - none there, but source files under a directory named routes, controllers,
+ *     handlers, services or api elsewhere in the tree: applies, in a layout it
+ *     does not read (`layout-not-recognized`);
+ *   - neither: nothing of this kind.
+ *
+ * @returns {{ applies: boolean, evidence: string, kind: 'recognized'|'unrecognized-layout'|'none', files?: number, dirs?: string[] }}
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config, selected = selectSourceFiles(projectDir, config)) {
+  if (selected.length > 0) {
+    const routes = selected.filter(e => e.kind === 'route').length;
+    return { applies: true, kind: 'recognized', files: selected.length, evidence: `${routes} route file(s) and ${selected.length - routes} service file(s) under the directories Docs-Sync reads` };
+  }
+  const read = new Set([...expandDirs(projectDir, config, ROUTE_SUBPATHS), ...expandDirs(projectDir, config, SERVICE_SUBPATHS)]);
+  const dirs = new Set();
+  sharedWalkFiles(resolve(projectDir), (fullPath) => {
+    if (!SOURCE_EXTENSIONS.includes(extname(fullPath))) return;
+    const rel = relPosix(projectDir, fullPath);
+    // Test, fixture, example and benchmark paths are not the project's own layout.
+    if (isTestFile(rel) || isNonProductPath(rel, config)) return;
+    const parts = rel.split('/');
+    parts.pop();
+    if (!parts.some(seg => LOOSE_LAYOUT_DIRS.has(seg.toLowerCase()))) return;
+    dirs.add(parts.join('/'));
+  }, { ignoreDirs: IGNORE_DIRS });
+  const loose = [...dirs].filter(d => !read.has(resolve(projectDir, d))).sort();
+  if (loose.length > 0) {
+    return { applies: true, kind: 'unrecognized-layout', dirs: loose.slice(0, 5), evidence: `source files sit under ${loose.slice(0, 3).join(', ')}${loose.length > 3 ? ` and ${loose.length - 3} more` : ''}, a layout Docs-Sync does not read` };
+  }
+  return { applies: false, kind: 'none', evidence: `no source file under ${[...ROUTE_SUBPATHS, ...SERVICE_SUBPATHS].join(', ')} and none under a directory named ${[...LOOSE_LAYOUT_DIRS].join(', ')}` };
+}
+
+/** Result-contract fields of a Docs-Sync result that performed no check. */
+function docsSyncContract(projectDir, config, { performed, selected }) {
+  if (performed > 0) return { performed, applies: { applies: true, evidence: `checked ${performed} route/service file(s) against the canonical docs` } };
+  const a = applies(projectDir, config, selected);
+  const applied = { applies: a.applies, evidence: a.evidence };
+  const read = `${ROUTE_SUBPATHS.join(', ')} (routes) and ${SERVICE_SUBPATHS.join(', ')} (services), under the project root and each source root`;
+  if (!a.applies) {
+    return {
+      performed, applies: applied, emptyCause: 'nothing-of-this-kind',
+      note: `Docs-Sync found no route or service files to check: ${a.evidence}.`,
+      howToConfigure: `Nothing to configure unless the project has routes or services: Docs-Sync reads ${read}.`,
+    };
+  }
+  if (a.kind === 'unrecognized-layout') {
+    return {
+      performed, applies: applied, emptyCause: 'layout-not-recognized',
+      note: `Docs-Sync found no route or service file where it looks (${read}) but ${a.evidence}.`,
+      howToConfigure: `Docs-Sync reads ${read}. Found: ${a.dirs.join(', ')}. Move them under one of those directories, or set sourceRoot in .docguard.json to the directory that contains src/routes or src/services.`,
+    };
+  }
+  // Route or service files exist; nothing was checked because there is nothing to check them against.
+  return {
+    performed, applies: applied, emptyCause: 'needs-declaration',
+    note: `Docs-Sync found ${a.files} route/service file(s) (${a.evidence}) but no canonical document to check them against.`,
+    howToConfigure: `Create docs-canonical/ARCHITECTURE.md and name each route and service in it, by file path or by module name; \`docguard generate\` drafts the document.`,
+  };
+}
+
 export function validateDocsSync(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -224,7 +330,7 @@ export function validateDocsSync(projectDir, config) {
 
   if (!contents.length) {
     // No canonical docs to check against
-    return { name: 'docs-sync', ...resultFromFindings([], { passed: 0, total: 0 }) };
+    return { name: 'docs-sync', ...resultFromFindings([], { passed: 0, total: 0 }), ...(Array.isArray(config?.changedFiles) ? {} : docsSyncContract(projectDir, config, { performed: 0 })) };
   }
   // Read on first use: a project with no route or service file pays nothing.
   let evidence = null;
@@ -243,41 +349,7 @@ export function validateDocsSync(projectDir, config) {
   // Every route and service file is selected before scoping: whether a name is
   // shared by another file must not depend on which files changed
   // (docguard.docs-sync-specific-evidence#FR-006).
-  const selected = [];
-
-  // Find route/API files (monorepo-aware) and check they're mentioned in docs.
-  // Note: bare 'api' is intentionally excluded — it collides with frontend
-  // API client conventions (src/api/client.ts). Backend routes use
-  // src/routes/ or routes/ (Express). Next.js App Router uses src/app/api/
-  // or app/api/ with strict route.{ts,js} filename matching applied below.
-  const routeDirs = expandDirs(projectDir, config, ['src/routes', 'src/app/api', 'routes', 'app/api']);
-  for (const routeDir of routeDirs) {
-    const files = getFilesRecursive(routeDir);
-    for (const file of files) {
-      const ext = extname(file);
-      if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
-
-      const relPath = relPosix(projectDir, file);
-      if (isTestFile(relPath)) continue;
-      if (!isValidRouteFile(relPath)) continue;
-      selected.push({ relPath, code: 'DSY001', kind: 'route', message: `route ${relPath} not referenced in any canonical doc` });
-    }
-  }
-
-  // Find service files (monorepo-aware) and check they're documented.
-  const serviceDirs = expandDirs(projectDir, config, ['src/services', 'services', 'src/lib']);
-  for (const serviceDir of serviceDirs) {
-    const files = getFilesRecursive(serviceDir);
-    for (const file of files) {
-      const ext = extname(file);
-      if (!['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'].includes(ext)) continue;
-
-      const relPath = relPosix(projectDir, file);
-      if (isTestFile(relPath)) continue;
-      if (!isServiceCandidate(file, serviceDir)) continue;
-      selected.push({ relPath, code: 'DSY002', kind: 'service', message: `Service ${relPath} not referenced in any canonical doc` });
-    }
-  }
+  const selected = selectSourceFiles(projectDir, config);
 
   const named = identities(selected.map(entry => entry.relPath));
   for (const { relPath, code, kind, message } of selected) {
@@ -377,7 +449,9 @@ export function validateDocsSync(projectDir, config) {
     }
   }
 
-  return { name: 'docs-sync', ...resultFromFindings(findings, { passed, total }) };
+  // --changed-only scopes `total` to the changed files, so a zero there says nothing about the project.
+  const scoped = Array.isArray(config?.changedFiles) && config.changedFiles.length > 0;
+  return { name: 'docs-sync', ...resultFromFindings(findings, { passed, total }), ...(scoped ? {} : docsSyncContract(projectDir, config, { performed: total, selected })) };
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker;

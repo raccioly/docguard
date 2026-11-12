@@ -23,6 +23,8 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
   const inconclusiveBlocksCI = Boolean(options.failOnInconclusive) && undecided.length > 0;
   // docguard.enforcement-ladder#FR-004: a required check that did not decide always blocks.
   const requiredUndecided = guardData?.requiredChecks?.undecided || [];
+  // specs/097 FR-007: under strict, an applicable validator that examined nothing blocks like a required check.
+  const strictUnexamined = guardData?.strict?.blocking || [];
 
   const reasons = [];
   if (guardStatus === 'FAIL') reasons.push('GUARD_FAILED');
@@ -32,9 +34,10 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
   else if (guardStatus === 'WARN') reasons.push('GUARD_WARNINGS');
   if (inconclusiveBlocksCI) reasons.push('CI_INCONCLUSIVE_BLOCKED');
   if (requiredUndecided.length > 0) reasons.push('CI_REQUIRED_CHECK_UNDECIDED');
+  if (strictUnexamined.length > 0) reasons.push('CI_STRICT_UNEXAMINED');
 
   let status;
-  if (guardStatus === 'FAIL' || guardStatus === 'UNKNOWN' || !thresholdMet || warningsBlockCI || inconclusiveBlocksCI || requiredUndecided.length > 0) status = 'BLOCKED';
+  if (guardStatus === 'FAIL' || guardStatus === 'UNKNOWN' || !thresholdMet || warningsBlockCI || inconclusiveBlocksCI || requiredUndecided.length > 0 || strictUnexamined.length > 0) status = 'BLOCKED';
   else if (guardStatus === 'WARN') status = 'ATTENTION';
   else status = 'READY';
 
@@ -45,6 +48,7 @@ export function buildReadinessAssessment(guardData, scoreData, options = {}) {
     blockingFindings,
     advisoryFindings,
     ...(requiredUndecided.length > 0 ? { requiredUndecided: requiredUndecided.map(u => ({ key: u.key, verdict: u.verdict, reason: u.reason })) } : {}),
+    ...(strictUnexamined.length > 0 ? { strictUnexamined } : {}),
     ...(inconclusiveBlocksCI ? { undecidedChecks: undecided.map(v => ({ key: v.key, verdict: v.verdict, reason: v.applicability?.reason || null })) } : {}),
     structuralMaturity: {
       score: scoreData.score,
@@ -91,6 +95,10 @@ function summarizeAssessment(assessment) {
 
   if (assessment.reasons.includes('CI_REQUIRED_CHECK_UNDECIDED')) {
     clauses.push(`required ${formatCount(assessment.requiredUndecided.length, 'check')} did not decide (${assessment.requiredUndecided.map(c => c.key).join(', ')})`);
+  }
+
+  if (assessment.reasons.includes('CI_STRICT_UNEXAMINED')) {
+    clauses.push(`${formatCount(assessment.strictUnexamined.length, 'validator')} apply${assessment.strictUnexamined.length === 1 ? 'es' : ''} here and examined nothing (${assessment.strictUnexamined.join(', ')}), enforcement strict`);
   }
 
   if (assessment.reasons.includes('CI_INCONCLUSIVE_BLOCKED')) {

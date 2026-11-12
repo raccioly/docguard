@@ -1973,12 +1973,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 715
+            "line": 734
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 742
+            "line": 761
           },
           {
             "requirementId": "FR-021",
@@ -3949,7 +3949,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/doc-ownership.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-004",
@@ -3964,7 +3964,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/doc-ownership.mjs",
-            "line": 18
+            "line": 19
           }
         ],
         "testEvidence": [
@@ -6168,7 +6168,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 7
+            "line": 9
           },
           {
             "requirementId": "FR-010",
@@ -7045,7 +7045,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1104
+            "line": 1110
           },
           {
             "requirementId": "FR-008",
@@ -7744,7 +7744,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/upgrade.mjs",
-            "line": 253
+            "line": 254
           }
         ],
         "testEvidence": [
@@ -8071,12 +8071,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1361
+            "line": 1367
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1371
+            "line": 1377
           },
           {
             "requirementId": "FR-006",
@@ -11031,7 +11031,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 8
+            "line": 10
           },
           {
             "requirementId": "FR-002",
@@ -11076,7 +11076,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 9
+            "line": 11
           },
           {
             "requirementId": "FR-009",
@@ -11091,12 +11091,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/doc-ownership.mjs",
-            "line": 158
+            "line": 162
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/doc-ownership.mjs",
-            "line": 159
+            "line": 163
           },
           {
             "requirementId": "FR-010",
@@ -11136,7 +11136,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 197
+            "line": 208
           },
           {
             "requirementId": "FR-016",
@@ -12397,7 +12397,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 196
+            "line": 207
           },
           {
             "requirementId": "FR-011",
@@ -15405,7 +15405,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 492
+            "line": 536
           },
           {
             "requirementId": "FR-004",
@@ -15990,8 +15990,140 @@
           "checked": 0,
           "total": 31
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/enforcement.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validator-coverage.mjs",
+            "line": 96
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validator-coverage.mjs",
+            "line": 155
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validator-coverage.mjs",
+            "line": 97
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validator-coverage.mjs",
+            "line": 98
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validator-coverage.mjs",
+            "line": 156
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 363
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/docs-sync.mjs",
+            "line": 260
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/validators/surface-sync.mjs",
+            "line": 373
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/enforcement.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/enforcement.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/enforcement.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/enforcement.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/commands/upgrade.mjs",
+            "line": 310
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 22
+          }
+        ]
       }
     },
     {
@@ -18261,7 +18393,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validator-coverage.mjs",
-            "line": 67
+            "line": 152
           },
           {
             "requirementId": "FR-002",
@@ -18276,7 +18408,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validator-coverage.mjs",
-            "line": 68
+            "line": 153
           },
           {
             "requirementId": "FR-004",
@@ -18311,12 +18443,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/validator-coverage.mjs",
-            "line": 69
+            "line": 154
           },
           {
             "requirementId": "FR-012",
             "file": "cli/validator-coverage.mjs",
-            "line": 84
+            "line": 174
           },
           {
             "requirementId": "FR-013",
