@@ -29,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cli/validator-coverage.mjs`; the other validators move onto it next, and
   under strict a validator that is empty without a cause is listed as "cause
   not yet classified" and never fails the run (FR-005, FR-006).
+- **Seventeen more validators report whether they apply, what they performed,
+  and why they are empty.** Structure, Doc-Sections, Drift, Changelog, Test-Spec,
+  Environment, Architecture, Freshness, Traceability, Docs-Diff, Metadata-Sync,
+  Docs-Coverage, Doc-Quality, TODO-Tracking, Schema-Sync, Spec-Kit and
+  Document-Lifecycle each decide from the project's files whether their kind of
+  check belongs to it (never because their own document or configuration is
+  missing), count the checks they genuinely made apart from the legacy `total`,
+  and on an empty result carry a cause and the exact file, key or command that
+  makes them examine something. Counts, badges, findings, levels and exit codes
+  under `standard` do not change; an Architecture run over a clean import graph
+  now counts the cycle check it made (`performed` 1, `total` unchanged)
+  (`docguard.strict-by-default` FR-004 to FR-006, group A of stage A).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
