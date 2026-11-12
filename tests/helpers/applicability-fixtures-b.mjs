@@ -89,6 +89,13 @@ export const SPEC_SHORT_IDS = { 'specs/001-short/spec.md': '# Feature: Short\n\n
 // Tooling configuration is not product source: it sorts before src/ in a repository listing.
 export const CONFIG_FILES = { 'eslint.config.js': 'export default [];\n', 'playwright.config.ts': 'export default {};\n', 'drizzle.config.ts': 'export default {};\n' };
 
+// A project whose only IDs are decision, open-item, task and design-element identifiers: none is a requirement.
+export const NON_REQUIREMENT_IDS = {
+  'docs-canonical/adr/0001-queue.md': '# 0001 Use a queue\n\n**Status**: accepted\n\n- **REQ-001**: We chose a queue over cron.\n',
+  'docs-canonical/OPEN-ITEMS.md': '# Open items\n\n- **FR-020**: Who owns the retries?\n',
+  'docs-canonical/PLAN.md': '# Plan\n\n- [ ] T001 Set up the queue\n- [ ] T002 Write the worker\n\n- **ARCH-001**: The worker component\n- **MOD-002**: The queue module\n',
+};
+
 export const FIXTURES = {
   // A project with specs is never empty here: a spec without registry evidence is a finding (SPR001), not silence.
   specRegistry: {
@@ -112,6 +119,7 @@ export const FIXTURES = {
       'nothing-of-this-kind (no requirements)': { files: BASE, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (no source)': { files: { 'package.json': PKG, ...SPEC }, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (template placeholders only)': { files: { ...BASE, ...SPEC_TEMPLATE }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (only decision, open-item, task and design IDs)': { files: { ...BASE, ...NON_REQUIREMENT_IDS }, cause: 'nothing-of-this-kind' },
       'layout-not-recognized (IDs of one digit)': { files: { ...BASE, ...SPEC_SHORT_IDS }, cause: 'layout-not-recognized' },
     },
     fix: { files: { ...BASE, ...SPEC, 'src/index.js': '// @implements demo.feature#FR-001\nexport const a = 1;\n' }, extra: { anchors: { enabled: true } } },

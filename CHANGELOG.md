@@ -174,6 +174,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Requirement-Anchors counted identifiers that are not requirements.** Whether
+  the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
+  spec and requirement documents, not decision records, open-item or question lists,
+  task lists, task IDs (T001), design elements (ARCH, MOD, SYS) or story, use-case
+  and acceptance IDs (US, STORY, UC, AC); a configured
+  `traceability.requirementPattern` is the definition. The evidence names the kind of
+  identifier it counted and the kinds it did not. A task checkbox (`[ ]`) is no longer
+  mistaken for a template placeholder. The anchors the scanner reads are unchanged.
+
 - **Generated-Staleness read a draft status out of body text.** The draft pattern's
   lazy front-matter match could run past the closing `---` into the body, so a
   published template whose front matter says `status: final` and whose body quotes

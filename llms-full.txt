@@ -2169,6 +2169,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Requirement-Anchors counted identifiers that are not requirements.** Whether
+  the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
+  spec and requirement documents, not decision records, open-item or question lists,
+  task lists, task IDs (T001), design elements (ARCH, MOD, SYS) or story, use-case
+  and acceptance IDs (US, STORY, UC, AC); a configured
+  `traceability.requirementPattern` is the definition. The evidence names the kind of
+  identifier it counted and the kinds it did not. A task checkbox (`[ ]`) is no longer
+  mistaken for a template placeholder. The anchors the scanner reads are unchanged.
+
 - **Generated-Staleness read a draft status out of body text.** The draft pattern's
   lazy front-matter match could run past the closing `---` into the body, so a
   published template whose front matter says `status: final` and whose body quotes
@@ -2384,17 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
 - **Decision records are checked** (`docguard.decision-records`, spec 086). A
   new advisory Decision-Records validator reads ADRs (one file with
   `## ADR-NNN` sections, or one file per decision) and reports a missing or
-  unknown status (DEC001), a link or index row naming no record (DEC002),
-  one-way supersession (DEC003), a superseded status without a successor or
-  the reverse (DEC004), an index that disagrees with its record (DEC005), and
-  Spec Kit clarifications or AI-DLC `[Answer]:` tags left unanswered (DEC006).
-  Disable with `"validators": { "decisionRecords": false }`.
-- **The Spec Kit chain is checked end to end** (`docguard.upstream-coverage`,
-  spec 085). For each feature, the Spec-Kit validator reports requirements no
-  task or plan cites (SPK013), cited IDs the spec does not define (SPK014), a
-  plan or task list that names no upstream (SPK015), and user stories with no
 
-<!-- truncated: 6386 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6395 more lines — read CHANGELOG.md directly -->
 
 ---
 

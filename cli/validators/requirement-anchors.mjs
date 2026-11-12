@@ -67,7 +67,8 @@ function suggestionFor(projectDir, p) {
 }
 
 // A requirement line whose text is a bracketed placeholder ("System MUST [capability]") is a template row, not a requirement.
-const PLACEHOLDER_TEXT = /\[[^\]\n]+\](?!\()/;
+// (a task checkbox, `[ ]` or `[x]`, is not a placeholder: the bracket must hold a word)
+const PLACEHOLDER_TEXT = /\[[^\]\n]*[A-Za-z][^\]\n]*\](?!\()/;
 const isPlaceholder = def => PLACEHOLDER_TEXT.test(String(def.text || '').replace(def.id, '').replace(/[*_`]/g, ''));
 // A declaration-shaped line that opens with an ID the default patterns do not read (FR-1: one digit, R-12: one letter).
 const LOOSE_ID = /^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*([A-Z]{1,6}-\d{1,5})\b/;
@@ -91,22 +92,62 @@ function unreadIds(projectDir, config, patterns) {
   return found;
 }
 
+// What counts as a requirement ID when the project has not configured its own pattern. The scanner reads more
+// shapes (it is also a navigation aid), but "this project has requirements to anchor" is a narrower question.
+// Counted: FR, NFR, SC and REQ, the prefixes of a requirement list (`- **FR-001**: The system MUST ...`).
+// Not counted: T (a task ID), ARCH, MOD and SYS (design elements), US, STORY, UC and AC (stories, use cases and
+// acceptance checks, which describe or test a requirement rather than state one).
+const REQUIREMENT_PREFIXES = new Set(['FR', 'NFR', 'SC', 'REQ']);
+const KIND_OF_PREFIX = { T: 'task', ARCH: 'design-element', MOD: 'design-element', SYS: 'design-element', US: 'story', STORY: 'story', UC: 'use-case', AC: 'acceptance-check' };
+// Where an ID is not a requirement whatever its prefix: a decision record, an open-item or question list, a task list.
+const DECISION_DOC = /(?:^|\/)(?:adrs?|decisions?)\/|(?:^|\/)[^/]*(?:adr|decision)[^/]*\.md$/i;
+const OPEN_ITEM_DOC = /(?:^|\/)[^/]*(?:open[-_ ]?(?:items?|questions?|issues?)|questions|clarifications?)[^/]*\.md$/i;
+const TASK_DOC = /(?:^|\/)[^/]*(?:tasks?|todo|plan)[^/]*\.md$/i;
+
+/** Why a declared ID is not a requirement, or null when it is one (or the project's own pattern says it is). */
+function nonRequirementKind(def, custom) {
+  if (custom) return null;
+  const file = String(def.file || '');
+  if (DECISION_DOC.test(file)) return 'decision';
+  if (OPEN_ITEM_DOC.test(file)) return 'open-item';
+  if (TASK_DOC.test(file)) return KIND_OF_PREFIX[def.id.split('-')[0]] || 'task-list';
+  const prefix = def.id.split('-')[0];
+  if (!REQUIREMENT_PREFIXES.has(prefix)) return KIND_OF_PREFIX[prefix] || 'other';
+  return null;
+}
+
 /**
  * Does this kind of check belong to the project? It does when the project
- * declares requirement IDs (a spec or requirement document; a template row such
- * as "System MUST [capability]" declares none) and has product source code to
- * tag (a lint, test-runner or ORM configuration file is not product source).
+ * declares requirement IDs and has product source code to tag.
+ *
+ * A requirement ID is an FR, NFR, SC or REQ identifier declared in a spec or
+ * requirement document (specs/<feature>/spec.md, docs-canonical/, REQUIREMENTS.md,
+ * the documents named by traceability.requirementDocs), and not in a decision
+ * record, an open-item or question list or a task list. Task IDs (T001),
+ * design-element IDs (ARCH, MOD, SYS) and story, use-case and acceptance IDs (US,
+ * STORY, UC, AC) are not counted. When the project configures its own
+ * `traceability.requirementPattern`, that pattern is the definition and every ID it
+ * reads counts. A template row such as "System MUST [capability]" declares none,
+ * and a lint, test-runner or ORM configuration file is not product source.
  * Requirement-like IDs in a form the scanner does not read are a layout it does
- * not recognize, not "nothing to anchor". Writing the tags, and opting in, is the
- * declaration the validator then asks for (specs/097-strict-by-default FR-006).
+ * not recognize. Writing the tags, and opting in, is the declaration the validator
+ * then asks for (specs/097-strict-by-default FR-006).
  *
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
   const patterns = requirementPatterns(config);
+  const custom = Boolean(config.traceability?.requirementPattern);
   const all = [...collectRequirementIds(projectDir, config, patterns).values()];
-  const real = all.filter(d => !isPlaceholder(d));
-  const placeholders = all.length - real.length;
+  const declared = all.filter(d => !isPlaceholder(d));
+  const placeholders = all.length - declared.length;
+  const skipped = new Map();
+  const real = declared.filter(d => {
+    const kind = nonRequirementKind(d, custom);
+    if (kind) skipped.set(kind, (skipped.get(kind) || 0) + 1);
+    return !kind;
+  });
+  const skippedText = [...skipped].map(([k, n]) => `${n} ${k}`).join(', ');
   const source = firstProductSource(projectDir, config);
   if (real.length === 0) {
     const loose = source ? unreadIds(projectDir, config, patterns) : new Map();
@@ -116,12 +157,15 @@ export function applies(projectDir, config = {}) {
     }
     return { applies: false, evidence: placeholders
       ? `${placeholders} requirement line(s) are template placeholders (such as "System MUST [capability]"), so no requirement is declared yet`
-      : 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
+      : skipped.size
+        ? `the IDs found are not requirements (${skippedText} identifier(s): decision records, open-item lists, task lists, design elements, stories and acceptance checks); a requirement is an FR, NFR, SC or REQ ID in a spec or requirement document, or an ID read by traceability.requirementPattern`
+        : 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
   }
   const ids = sample(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id));
-  if (!source) return { applies: false, evidence: `${real.length} requirement ID(s) are declared (${ids}) but the project has no product source file to tag (configuration files do not count)` };
+  const counted = custom ? 'ID(s) read by traceability.requirementPattern' : 'FR/NFR/SC/REQ requirement ID(s)';
+  if (!source) return { applies: false, evidence: `${real.length} ${counted} are declared (${ids}) but the project has no product source file to tag (configuration files do not count)` };
   const withSpec = real.find(d => d.specId);
-  return { applies: true, kind: 'recognized', example: withSpec ? `${withSpec.specId}#${withSpec.id}` : null, evidence: `${real.length} requirement ID(s) are declared (${ids}) and the project has source code (${source}), so code can cite them` };
+  return { applies: true, kind: 'recognized', example: withSpec ? `${withSpec.specId}#${withSpec.id}` : null, evidence: `${real.length} ${counted} are declared (${ids}${skipped.size ? `; not counted: ${skippedText} identifier(s)` : ''}) and the project has source code (${source}), so code can cite them` };
 }
 
 const SPEC_ID_HOW = d => `Qualify each tag with the Spec ID of the spec that declares the requirement${d.example ? `, such as \`// @implements ${d.example}\`` : ', such as `// @implements <spec-id>#FR-001`'}. A Spec ID is declared in the spec itself: a \`**Spec ID**: <unique-id>\` line under the title of specs/<feature>/spec.md (or \`<!-- docguard:spec-id <unique-id> -->\`), and \`docguard specs --write\` records it; a spec that has none needs one added, because a bare FR-001 collides (ANC007) as soon as two specs declare it.`;
