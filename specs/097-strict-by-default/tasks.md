@@ -47,7 +47,7 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 - [x] T018d Fix texts: no text tells a project to move code or documents; Test-Spec accepts the older "Service-to-Test Map" heading; Requirement-Anchors says where a Spec ID comes from; Doc-Dependency and Requirement-Anchors examples name a product source file, not a configuration file; Metadata-Sync names the workspace package it read.
 - [x] T018e Run the proof again (T016, T017) and update `verification.md`.
 
-- [ ] T018f From the second proof run: Metadata-Sync applies only when a document states a version (a consistency check does not ask for something to compare); Requirement-Anchors does not count decision, open-item or task IDs as requirement IDs; the Docs-Diff fix text offers the `docs.roles` mapping for the architecture document; the Test-Spec fix text names both map headings. Then re-check only the affected rows.
+- [x] T018f From the second proof run: Metadata-Sync applies only when a document states a version (a consistency check does not ask for something to compare); Requirement-Anchors does not count decision, open-item or task IDs as requirement IDs; the Docs-Diff fix text offers the `docs.roles` mapping for the architecture document; the Test-Spec fix text names both map headings. Then re-check only the affected rows.
 
 ## Stage B — the default changes
 
