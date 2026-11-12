@@ -153,7 +153,9 @@ export function documentReferences(projectDir, doc, content, { tracked, vendored
     let reason = null;
     if (vendored.has(path)) reason = 'vendored copy';
     else if (DATA_LIKE.some(re => re.test(path))) reason = 'changelog, lockfile or claims/evidence data';
-    else if (/\.json$/i.test(path) && isNonProductPath(path, config)) reason = 'test or fixture data';
+    else if (isNonProductPath(path, config)) reason = 'test, fixture or example path';
+    else if (/\.(md|mdx|markdown|rst|adoc|txt)$/i.test(path)) reason = 'another document (reviewed on its own)';
+    else if (/(^|\/)\.docguard[^/]*$/.test(path)) reason = 'DocGuard state file';
     else if (generated.has(path)) reason = 'linguist-generated';
     else {
       let text = '';

@@ -35,7 +35,7 @@
               }
             }
           },
-          "excluded": { "type": "object", "description": "Referenced paths not measured, with the reason (directory, vendored copy, changelog/lockfile/claims data, test or fixture data, linguist-generated, generated-by header, under 20 lines).", "additionalProperties": { "type": "string" } },
+          "excluded": { "type": "object", "description": "Referenced paths not measured, with the reason (directory, vendored copy, changelog/lockfile/claims data, test, fixture or example path, linguist-generated, generated-by header, under 20 lines).", "additionalProperties": { "type": "string" } },
           "extensions": { "type": "object" }
         }
       }
