@@ -271,15 +271,23 @@ reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
 them:
 
 ```bash
-npx testguard-cli@0.15.0 probe --confirm 3 --serial \
+# the claims a change can affect (CI-sized: faults probed in parallel, a few minutes)
+npx testguard-cli@0.22.1 probe --changed origin/main --confirm 3 --fault-workers 4 \
+  --node-modules "$PWD/node_modules" \
+  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+
+# everything (nightly or before a release): the same without --changed, never --serial
+npx testguard-cli@0.22.1 probe --confirm 3 --fault-workers 4 \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 ```
 
+An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
+
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
-`npx testguard-cli@0.15.0 gate --changed origin/main` reports changed source files
+`npx testguard-cli@0.22.1 gate --changed origin/main` reports changed source files
 that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them. A file the probe cannot
 observe (for example, one that only runs as a subprocess) is excused in
