@@ -15,8 +15,8 @@
         "required": ["kind", "pattern", "reason"],
         "properties": {
           "kind": {
-            "description": "`path` = glob over repo paths; `claim` = claim id; `fault` = `<claimId>/<faultId>`; `fingerprint` = an evidence fingerprint.",
-            "enum": ["path", "claim", "fault", "fingerprint"]
+            "description": "`path` = glob over repo paths: excuses a changed source file from the change gate. `claim` = claim id: excuses the removal of that claim and of its faults. `fault` = `<claimId>/<faultId>`: excuses the removal of that one fault. No kind removes anything from a probe or changes a verdict; a known finding is accepted in a baseline, never here.",
+            "enum": ["path", "claim", "fault"]
           },
           "pattern": { "type": "string", "minLength": 1, "maxLength": 512 },
           "reason": { "type": "string", "minLength": 8, "maxLength": 2000 },

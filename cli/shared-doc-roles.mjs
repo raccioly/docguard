@@ -1,6 +1,6 @@
 /** Explicit document roles let existing repository layouts serve as canonical input. */
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, isAbsolute, join, basename } from 'node:path';
+import { resolve, isAbsolute, join, basename, relative, sep } from 'node:path';
 export const DOC_ROLES = Object.freeze({
   architecture: 'docs-canonical/ARCHITECTURE.md', dataModel: 'docs-canonical/DATA-MODEL.md',
   security: 'docs-canonical/SECURITY.md', testSpec: 'docs-canonical/TEST-SPEC.md',
@@ -62,6 +62,25 @@ export function applyDocRoles(projectDir, config) {
 export function remapDocPath(config, path) {
   const role = Object.keys(DOC_ROLES).find(key => DOC_ROLES[key] === path);
   return role ? docRolePath(config, role) : path;
+}
+
+/**
+ * The project-relative path a default role path is read from: the path
+ * `resolveDocRole` finds (an explicit mapping, the default, or the one
+ * same-named document in `requiredFiles.canonical` or the canonical tree).
+ * A path that is no role's default is returned unchanged. `remapDocPath`
+ * stays the pure, filesystem-free mapping.
+ *
+ * @implements docguard.configured-canonical-paths#FR-001
+ * @implements docguard.configured-canonical-paths#FR-002
+ */
+export function resolveDocPath(projectDir, config, path) {
+  const role = Object.keys(DOC_ROLES).find(key => DOC_ROLES[key] === path);
+  if (!role) return path;
+  let abs;
+  // A rejected mapping (a symlinked path) keeps the pure mapping these callers read before.
+  try { abs = resolveDocRole(projectDir, config, role); } catch { return docRolePath(config, role); }
+  return relative(resolve(projectDir), abs).split(sep).join('/');
 }
 
 export function mappedRolesForPath(config = {}, path) {

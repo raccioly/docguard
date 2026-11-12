@@ -29,6 +29,23 @@
       },
       "additionalProperties": false
     },
+    "assertionPolicy": {
+      "description": "An explicitly selected policy (`--require-assertion-kill`): every `killed` record must have been killed by at least one assertion-classified failure in some run. `failed` lists the killed faults whose kill was by exception only (or carries no recorded kind). The verdicts themselves are unchanged.",
+      "type": "object",
+      "required": ["state", "exceptionOnlyKills"],
+      "properties": {
+        "state": { "enum": ["passed", "failed"] },
+        "exceptionOnlyKills": {
+          "type": "array", "uniqueItems": true,
+          "items": {
+            "type": "object", "required": ["claimId", "faultId"],
+            "properties": { "claimId": { "$ref": "#/$defs/identifier" }, "faultId": { "$ref": "#/$defs/identifier" }, "reason": { "enum": ["kind-not-reported-by-runner"] } },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "originCount": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
     "originCounts": {
       "type": "object",
@@ -77,6 +94,22 @@
       "description": "Declared origin of claim intent, not authenticated independence or an evidence-strength order. References remain opaque; producer provenance and measured test independence are separate.",
       "enum": ["spec", "adr", "annotation", "comment", "manual", "doc", "bug", "incident", "review", "inferred"]
     },
+    "claimSource": {
+      "description": "Declared origin of claim intent. A source label or reference does not authenticate independence, chronology or correctness. Producer provenance and measured test independence are separate. `ref` is opaque, except that the `req:` prefix is reserved for a structured requirement reference, `req:<spec-id>#<requirement-id>`, which must be declared with kind `spec`. Neither form is ever resolved or fetched.",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/claimSourceKind" },
+        "ref": {
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^(?!req:)[\\s\\S]*$|^req:[A-Za-z0-9][A-Za-z0-9._-]{0,127}#[A-Za-z][A-Za-z0-9._-]{0,63}$"
+        }
+      },
+      "additionalProperties": false,
+      "if": { "type": "object", "required": ["ref"], "properties": { "ref": { "type": "string", "pattern": "^req:" } } },
+      "then": { "properties": { "kind": { "const": "spec" } } }
+    },
     "nestedProject": {
       "description": "Changed files delegated to a separately validated descendant TestGuard project. This is not coverage or evidence; run that project's gate separately.",
       "type": "object",
@@ -90,6 +123,16 @@
     "sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "claimsSource": {
+      "description": "A claims file that lives outside the project under probe, named by content and never by path: the path is the caller's and often a private one. Present only for an external file; the project's own claims file is already named by the repository.",
+      "type": "object",
+      "required": ["external", "sha256"],
+      "properties": {
+        "external": { "const": true },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
     },
     "gitSha": {
       "type": "string",

@@ -248,7 +248,7 @@ A canonical doc (or agent-instruction file) references a code file AND, in the s
 
 ### STR003: Missing required doc section
 
-A canonical doc exists but lacks a section its document type requires. Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.
+A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.
 
 Marker:
 

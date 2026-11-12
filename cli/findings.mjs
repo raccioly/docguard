@@ -152,7 +152,7 @@ export const CODES = {
   STR003: {
     validator: 'docSections',
     title: 'Missing required doc section',
-    help: 'A canonical doc exists but lacks a section its document type requires. Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.',
+    help: 'A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
   STR004: {

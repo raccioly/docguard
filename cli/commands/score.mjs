@@ -1,4 +1,4 @@
-import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { applyDocRoles, resolveDocPath, resolveDocRole } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-012
  * Score Command — Calculate CDD maturity score (0-100)
@@ -6,7 +6,7 @@ import { applyDocRoles, remapDocPath, resolveDocRole } from '../shared-doc-roles
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, resolve, join, extname } from 'node:path';
+import { basename, resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c, docHasSection } from '../shared.mjs';
 import { isUneditedScaffold } from '../shared-scaffold.mjs';
@@ -489,6 +489,28 @@ export function buildScoreAssurance(projectDir, config) {
  * Exported for `docguard report` — the evidence bundle embeds the same
  * ALCOA+ table the score display renders, from one computation.
  */
+/**
+ * The canonical documents ALCOA+ reads: the canonical tree (with explicit
+ * `docs.roles`) plus every existing Markdown entry of
+ * `requiredFiles.canonical`, so a project that keeps them elsewhere is not
+ * scored against an empty set (issue 625).
+ *
+ * @implements docguard.configured-canonical-paths#FR-003
+ */
+function alcoaCanonicalDocs(projectDir, config = {}) {
+  const docs = listCanonicalDocs(projectDir);
+  const seen = new Set(docs.map(d => d.abs));
+  for (const rel of config?.requiredFiles?.canonical || []) {
+    if (typeof rel !== 'string' || !rel.toLowerCase().endsWith('.md')) continue;
+    const abs = resolve(projectDir, rel);
+    if (seen.has(abs) || !abs.startsWith(resolve(projectDir) + sep)) continue;
+    try { if (!statSync(abs).isFile()) continue; } catch { continue; }
+    seen.add(abs);
+    docs.push({ abs, rel: rel.replace(/\\/g, '/') });
+  }
+  return docs;
+}
+
 export function computeAlcoaCompliance(projectDir, config, scores) {
   const attributes = [];
 
@@ -497,7 +519,7 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
   const docsDir = resolve(projectDir, 'docs-canonical');
   // Recursive — a nested canonical tree is still the canonical tree. A flat
   // read scored ALCOA against an empty doc set on those projects.
-  const canonicalDocs = listCanonicalDocs(projectDir);
+  const canonicalDocs = alcoaCanonicalDocs(projectDir, config);
   let hasReviewedMeta = false;
   for (const doc of canonicalDocs) {
     try {
@@ -547,12 +569,14 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
   });
 
   // 4. Original — Are docs stored as originals (not copies)?
-  const hasCanonicalDir = existsSync(docsDir);
+  // docguard.configured-canonical-paths#FR-003: canonical documents kept
+  // outside docs-canonical/ and listed in requiredFiles.canonical count.
+  const hasCanonicalDir = existsSync(docsDir) || canonicalDocs.length > 0;
   attributes.push({
     name: 'Original',
     met: hasCanonicalDir,
     evidence: hasCanonicalDir ? 'Canonical docs present as markdown originals' : null,
-    gap: !hasCanonicalDir ? 'No docs-canonical/ directory found' : null,
+    gap: !hasCanonicalDir ? 'No canonical documents found (docs-canonical/ or requiredFiles.canonical)' : null,
     fix: !hasCanonicalDir ? 'Run docguard init to create canonical documentation' : null,
   });
 
@@ -642,7 +666,7 @@ export function computeAlcoaCompliance(projectDir, config, scores) {
     name: 'Available',
     met: available,
     evidence: available ? 'Docs in plain markdown — no vendor lock-in, universally accessible' : null,
-    gap: !available ? 'No docs directory found' : null,
+    gap: !available ? 'No canonical documents found' : null,
     fix: !available ? 'Run docguard init to create accessible documentation' : null,
   });
 
@@ -724,7 +748,9 @@ function calcDocQualityScore(dir, config) {
   const failures = []; // Track specific failures for actionable suggestions
 
   for (const [defaultFile, sections] of Object.entries(checks)) {
-    const file = remapDocPath(config, defaultFile);
+    // docguard.configured-canonical-paths#FR-001: the document the role reads,
+    // including a same-named entry of requiredFiles.canonical (issue 625).
+    const file = resolveDocPath(dir, config, defaultFile);
     const fullPath = resolve(dir, file);
     if (!existsSync(fullPath)) {
       failures.push({ file, issue: 'file missing' });
@@ -732,7 +758,7 @@ function calcDocQualityScore(dir, config) {
     }
 
     const content = readFileSync(fullPath, 'utf-8');
-    const docName = file.replace('docs-canonical/', '').replace('.md', '').toLowerCase();
+    const docName = basename(defaultFile, '.md').toLowerCase();
 
     // An unedited scaffold has no sections or content to count: every one of
     // its checks fails, so a blank template is not scored as readable
@@ -1130,7 +1156,7 @@ function getSuggestion(category, score, details) {
   if (category === 'docQuality' && failures?.length > 0) {
     const byDoc = {};
     for (const f of failures) {
-      const doc = (f.file || '').replace('docs-canonical/', '') || 'docs';
+      const doc = f.file ? basename(f.file) : 'docs';
       if (!byDoc[doc]) byDoc[doc] = [];
       byDoc[doc].push(f.issue);
     }
