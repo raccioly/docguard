@@ -169,3 +169,28 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
 - **Emitting FRS006 for canonical documents.** It is widened only per role, and only with benchmark support (orchestrator decision 1).
 - **Quantities in instruction documents** (issue 629).
 - **Ranking and capping FRS002, the empty-validator list, and `agent --task` annotations** (spec 096).
+
+## Verification Notes
+
+Verified 2026-11-12 on the branch head. Private projects are not named.
+
+- **SC-001**: `tests/recorded-document-reviews.test.mjs` (16 cases) and `tests/history-replay.test.mjs` (3) pass. They fail on the base, where the modules do not exist and the codes are unknown.
+- **SC-002, TestGuard at f89ca46** (`node cli/docguard.mjs guard` in a clone):
+  1. **Legacy marker 2026-09-22:**
+     - `⚠ Agents are being served stale instructions: AGENTS.md (FRS006, FRS007)`
+     - `[FRS006] AGENTS.md names 1 file(s) most of whose lines were added since its 2026-09-22 review: L35 src/probe/probe.mjs 74% (+1066/−190)`
+     - `[FRS007] AGENTS.md never mentions package script(s) \`corpus\` or top-level directory \`corpus/\`, added since its 2026-09-22 review`
+  2. **After `review --accept AGENTS.md` at f89ca46**, committed: no FRS006 and no FRS007. Recorded: 15 referenced files fingerprinted, 9 excluded.
+  3. **Then a commit that adds 401 lines to `src/probe/rank.mjs`:** `[FRS006] AGENTS.md names 1 file(s) … since its 2026-11-12 review (recorded; fingerprint changed): L34 src/probe/rank.mjs 63% (+401/−0)`. That file only.
+  4. **Before the FR-004 exclusions were extended**, step 1 also named `src/init/templates/SKILL.md` (57%). It is a document, now excluded.
+- **SC-003, history replay** (`benchmarks/history-replay/run.mjs`): 519 review points in 16 repositories, 2 public and 14 private. Labels are a proxy: a hit is true when the document later rewrote the line naming the file. The proxy undercounts, because the failure #628 describes is a stale line that nobody fixes.
+  - **Agent-instruction role:** too few labeled hits to measure. Before the exclusion fix there were 2 labeled hits at ≥0.5, both false: a test file named as "where tests go", and another document. Both are now excluded. After the fix, no labeled agent-instruction hit remains at ≥0.5. TestGuard's `probe.mjs` hit is in the data but unlabeled, because its 8-week window is still open.
+  - **Canonical role, at 0.5:** proxy precision 2/11 at +14 days (Wilson 0.05–0.48) and 1/5 at +56 days (0.04–0.62). That is evidence against widening FRS006 to canonical documents.
+  - **FRS007:** 1/3 true at +28 and +56 days.
+  - **Committed results:** `benchmarks/history-replay/results-public.json` holds the public repositories only.
+- **SC-004, A/B** of main against the branch, 28 local projects, guard JSON, serial:
+  - **Exit codes:** none changed.
+  - **FRS006:** 2 findings, TestGuard and its pinned copy; both true.
+  - **FRS007:** 5 findings in 4 projects. True: TestGuard's `corpus`. Lean true: one project's nine new scripts. Unclear: DocGuard's own `fuzz` dev script, reported in AGENTS.md and CLAUDE.md.
+  - **FRS008:** 60 findings in 22 projects. Root AGENTS.md 18, CLAUDE.md 6, GEMINI.md 1, authored skills 18, rules 10 (7 of them OpenWolf's generated rule), nested instruction files 6, Copilot instructions 1.
+  - **FRS009, FRS010, PSR005:** 0.
