@@ -95,3 +95,16 @@
 
 - Changing `listCanonicalDocs`, which many validators share. ALCOA+ adds the configured entries locally.
 - Validating TestGuard evidence documents against the vendored evidence schema.
+
+## Verification Notes
+
+Verified 2026-11-11 on the branch head.
+
+- **SC-001**: `tests/configured-canonical-paths.test.mjs` failed 6 of 11 cases on 0.47.0, and every control passed there. All 15 cases, including the four FR-006 checks, pass here.
+- **Suite**: `npm test` ran 4,356 tests: 4,353 pass, 1 skipped, and 2 failed. One was the stale `llms-full.txt`, regenerated in this branch. The other was the fixed-seed fuzz run's 5-second wall-clock limit (SC-003 of spec 088), which failed at a machine load average near 55 and passes when rerun alone. `guard` passes on this repository, and `npm run budget` passes against main.
+- **SC-002**: A/B of 0.47.0 against the branch, with one fresh `git clone --local` per project per CLI, `guard` and `score`, run serially. 51 local repositories, 0 errors, 0 findings removed, 3 findings added. Three projects changed, all keeping their canonical documents in a nested `docs-canonical/03-architecture/` folder, which `resolveDocRole` already resolved for the other score categories:
+  - Project A: docQuality 0 → 75 (total 23 → 38), plus one STR003 for a SECURITY document with no Secrets Management heading.
+  - Project B: docQuality 0 → 50 (total 16 → 26), plus one STR003 for a DATA-MODEL document with a Tables section and no Entities heading.
+  - Project C: docQuality 0 → 80 (total 59 → 75), plus one STR003 for a SECURITY document with no Secrets Management heading.
+  - Each new STR003 was checked against the document's headings by hand. Each section is genuinely absent, and the same document would get the same warning at its default path.
+- **SC-003**: The #625 reproduction (five documents under `docs/canonical/`) scores docQuality above 0 with no "file missing", and ALCOA+ Original and Available are met.

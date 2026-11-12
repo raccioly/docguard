@@ -28,6 +28,6 @@ Tests come first. Every reproduction must fail on 0.47.0 before its fix lands (S
 
 ## Phase 4 — Proof (SC-002, SC-003)
 
-- [ ] T014 `npm test`, guard on this repository, and `npm run budget`.
-- [ ] T015 Clone A/B of guard and score on this repository and every other local project: 0.47.0 against the branch, one fresh clone per CLI, run serially.
-- [ ] T016 Review every changed finding and score by hand, then record the outcome.
+- [x] T014 `npm test`, guard on this repository, and `npm run budget`.
+- [x] T015 Clone A/B of guard and score on this repository and every other local project: 0.47.0 against the branch, one fresh clone per CLI, run serially.
+- [x] T016 Review every changed finding and score by hand, then record the outcome.
