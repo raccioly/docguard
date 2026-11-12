@@ -19,7 +19,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join, extname, relative } from 'node:path';
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-import { resolveDocRole } from '../shared-doc-roles.mjs';
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { summarizeTiers } from '../shared-source.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
@@ -77,7 +77,7 @@ export function validateArchitecture(projectDir, config = {}) {
           if (!decision.applies) return { note: 'Architecture found no import between the project\'s own JS/TS/Python modules and no layers in .docguard.json, so there is no dependency structure to check.', howToConfigure: 'Nothing to configure unless the project is built from modules that import one another: then Architecture checks cycles, and layer rules written in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md or in `layers` of .docguard.json.' };
           const declared = Object.entries(config.layers || {}).filter(([, l]) => l?.dir).map(([name, l]) => `${name}: ${l.dir}`);
           return declared.length > 0
-            ? { emptyCause: 'layout-not-recognized', note: `The layers in .docguard.json name no directory that exists in the project (${declared.slice(0, 3).join(', ')}), so Architecture checked no file against them.`, howToConfigure: `Point each \`layers.<name>.dir\` in .docguard.json at a directory that holds the layer's source files (declared: ${declared.join(', ')}), or remove \`layers\` and declare the boundaries in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md.` }
+            ? { emptyCause: 'needs-declaration', note: `The layers in .docguard.json name no directory that exists in the project (${declared.slice(0, 3).join(', ')}), so Architecture checked no file against them.`, howToConfigure: `Point each \`layers.<name>.dir\` in .docguard.json at a directory that holds the layer's source files (declared: ${declared.join(', ')}), or remove \`layers\` and declare the boundaries in the "Layer Boundaries" table of ${docRolePath(config, 'architecture')}.` }
             : { emptyCause: 'needs-content', note: 'Architecture found an import graph with nothing in it to check: no cycle detection ran and no layer was declared.', howToConfigure: 'Declare layers in `layers` of .docguard.json or in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md; Architecture then checks every import against them.' };
         },
       })),
@@ -95,7 +95,9 @@ export function validateArchitecture(projectDir, config = {}) {
   if (importGraph.limitations.length > 0) {
     applicability = {
       status: importGraph.files.length > 0 ? 'partial' : 'unsupported',
-      reason: `Static import findings are retained; incomplete evidence: ${summarizeLimitations(importGraph.limitations)}`,
+      reason: importGraph.edges.length > 0
+        ? `Architecture followed ${importGraph.edges.length} import(s) among ${importGraph.files.length} source file(s) and could not follow these completely: ${explainLimitations(importGraph.limitations)}. An import it could not follow is not in the cycle check or the layer rules; the ones it followed are.`
+        : `Architecture could not follow these: ${explainLimitations(importGraph.limitations)}. No import was followed, so the cycle check and the layer rules had nothing to examine.`,
     };
   } else if (importGraph.files.length === 0) {
     applicability = { status: 'not-applicable', reason: 'No supported JS/TS or Python source files found for import graph analysis' };
@@ -209,21 +211,32 @@ function validateConfigLayers(projectDir, config, layers, acc) {
   return scanned;
 }
 
-function summarizeLimitations(limitations) {
-  const labels = {
-    'python-interpreter-unavailable': 'Python interpreter unavailable',
-    'python-parse-failed': 'Python parse failure',
-    'python-dynamic-import': 'dynamic Python import',
-    'python-path-mutation': 'runtime sys.path mutation',
-    'python-relative-outside-package': 'relative import outside a resolvable package',
-    'python-ambiguous-module': 'ambiguous Python module across import roots',
-    'source-unreadable': 'unreadable source file',
-    'js-parser-unavailable': 'JS/TS parser unavailable, imports read by the pattern fallback',
-    'js-parse-failed': 'JS/TS file read by the pattern fallback after a parse failure',
-  };
+// What each limitation means for the import graph, in plain words: what was not followed.
+const LIMITATIONS = {
+  'python-interpreter-unavailable': ['Python interpreter unavailable', 'no Python interpreter was available, so Python imports were not read'],
+  'python-parse-failed': ['Python parse failure', 'a Python file failed to parse, so its imports were not read'],
+  'python-dynamic-import': ['dynamic Python import', 'imports made at run time with importlib or __import__ name a module that is only known while the program runs'],
+  'python-path-mutation': ['runtime sys.path mutation', 'the program edits sys.path while it runs, so where imports that depend on it point is only known at run time'],
+  'python-relative-outside-package': ['relative import outside a resolvable package', 'a relative import points outside any package it can resolve'],
+  'python-ambiguous-module': ['ambiguous Python module across import roots', 'two import roots both provide the module, so it cannot tell which one is meant'],
+  'source-unreadable': ['unreadable source file', 'the file could not be read'],
+  'js-parser-unavailable': ['JS/TS parser unavailable, imports read by the pattern fallback', 'a pattern match read the imports, which can miss some'],
+  'js-parse-failed': ['JS/TS file read by the pattern fallback after a parse failure', 'a pattern match read the imports of a file that failed to parse'],
+};
+
+function limitationCounts(limitations) {
   const counts = new Map();
   for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
-  return [...counts].map(([code, count]) => `${labels[code] || code}${count > 1 ? ` (${count})` : ''}`).join('; ');
+  return counts;
+}
+
+function summarizeLimitations(limitations) {
+  return [...limitationCounts(limitations)].map(([code, count]) => `${LIMITATIONS[code]?.[0] || code}${count > 1 ? ` (${count})` : ''}`).join('; ');
+}
+
+/** The limitations with what each one means, for a reason that says plainly what was not followed. */
+function explainLimitations(limitations) {
+  return [...limitationCounts(limitations)].map(([code, count]) => `${LIMITATIONS[code]?.[0] || code}${count > 1 ? ` (${count})` : ''}: ${LIMITATIONS[code]?.[1] || 'it could not be followed'}`).join('; ');
 }
 
 function validatePythonConfigLayers(graph, layers, acc) {

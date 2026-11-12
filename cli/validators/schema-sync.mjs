@@ -62,6 +62,14 @@ const UNREAD_DATABASE_DEPENDENCIES = [
   '@mikro-orm/core', '@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', 'dynamoose', 'slonik', '@libsql/client',
 ];
 
+// What the project's data layer is called in the fix text, by the dependency that shows it.
+const UNREAD_DATABASE_LABELS = {
+  '@aws-sdk/client-dynamodb': 'DynamoDB', '@aws-sdk/lib-dynamodb': 'DynamoDB', dynamoose: 'DynamoDB',
+  pg: 'PostgreSQL', postgres: 'PostgreSQL', slonik: 'PostgreSQL', mysql: 'MySQL', mysql2: 'MySQL',
+  sqlite3: 'SQLite', 'better-sqlite3': 'SQLite', '@libsql/client': 'SQLite', mongodb: 'MongoDB without Mongoose',
+  kysely: 'a Kysely schema', objection: 'Objection models', bookshelf: 'Bookshelf models', '@mikro-orm/core': 'MikroORM entities',
+};
+
 /** Evidence of a database whose schema lives where Schema-Sync does not read: a SQL file or a database dependency. */
 function unreadSchemaEvidence(projectDir, config) {
   let sql = null;
@@ -75,7 +83,7 @@ function unreadSchemaEvidence(projectDir, config) {
   for (const { pkg } of collectPackageJsons(projectDir, config)) {
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     const lib = UNREAD_DATABASE_DEPENDENCIES.find(name => deps[name]);
-    if (lib) return `package.json depends on the database library ${lib}`;
+    if (lib) return `package.json depends on the database library ${lib} (${UNREAD_DATABASE_LABELS[lib] || 'a database'})`;
   }
   return null;
 }
@@ -102,7 +110,7 @@ function schemaContract(projectDir, config, performed, found, models) {
     performed, found, ran: `compared ${performed} database model(s) with ${doc}`,
     decide: () => applies(projectDir, config, models),
     empty: (decision) => decision.applies
-      ? { emptyCause: 'layout-not-recognized', note: `Schema-Sync found ${decision.evidence}, but no model in a form it reads, so it compared no table with ${doc}.`, howToConfigure: `Schema-Sync reads Prisma, Drizzle, Mongoose, TypeORM and Sequelize models, Python (Django, SQLAlchemy, SQLModel) models, Knex migrations under migrations/ or db/migrations/ and Rails migrations under db/migrate/. It has no setting for another location or format: keep the schema in one of those forms (for example a Knex migration with createTable) and list each table in ${doc}.` }
+      ? { emptyCause: 'layout-not-recognized', note: `Schema-Sync found ${decision.evidence}, but no model in a form it reads, so it compared no table with ${doc}.`, howToConfigure: `Schema-Sync reads Prisma, Drizzle, Mongoose, TypeORM and Sequelize models, Python (Django, SQLAlchemy, SQLModel) models, Knex migrations under migrations/ or db/migrations/ and Rails migrations under db/migrate/. This project's data layer (${decision.evidence}) is not one of them: that is a limit of DocGuard, not a gap in the project, and the project is not asked to write a model file it does not use. Describe the tables in ${doc} for readers; to have Schema-Sync compare them, ask for this data layer to be supported by opening an issue on the DocGuard repository.` }
       : { note: 'Schema-Sync found no database model, no SQL file that creates tables and no database library dependency, so there is no data model to document.', howToConfigure: `Nothing to configure unless the project stores data: then define the models in a form Schema-Sync reads and describe them in ${doc}.` },
   });
 }

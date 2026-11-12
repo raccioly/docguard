@@ -1,4 +1,5 @@
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 /**
  * Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules
  * Now respects projectTypeConfig (e.g., skip E2E for CLI tools)
@@ -73,13 +74,37 @@ function testSpecContract(projectDir, config, { performed, found, mapped }) {
     empty: (decision) => {
       if (!decision.applies) return { note: `Test-Spec found no tests and no ${specDoc}, so there is no test mapping to check.`, howToConfigure: `Nothing to configure unless the project has tests: then map them in ${specDoc}.` };
       if (!existsSync(resolveDocRole(projectDir, config, 'testSpec'))) {
-        return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: `Create ${specDoc} with a "## Source-to-Test Map" table, \`| Source File | Unit Test | Status |\`, one row per source file and its test file (\`docguard generate\` drafts the document).` };
+        const role = roleDocument(projectDir, config, 'testSpec');
+        const table = '"## Source-to-Test Map" table (the older "## Service-to-Test Map" heading is read too), `| Source File | Unit Test | Status |`, one row per source file and its test file';
+        return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).` };
       }
       return mapped
         ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
-        : { emptyCause: 'needs-declaration', note: `${specDoc} declares no service-to-test mappings, so Test-Spec checked no source or test file.`, howToConfigure: `Add a "## Source-to-Test Map" table to ${specDoc}: column 1 the source, column 2 the test file, the last column the status (\`| Source File | Unit Test | Status |\`); \`docguard explain testSpec\` describes the shapes it reads.` };
+        : { emptyCause: 'needs-declaration', note: `${specDoc} declares no service-to-test mappings, so Test-Spec checked no source or test file.`, howToConfigure: `Add a "## Source-to-Test Map" table (or the older "## Service-to-Test Map") to ${specDoc}: column 1 the source, column 2 the test file, the last column the status (\`| Source File | Unit Test | Status |\`); \`docguard explain testSpec\` describes the shapes it reads.` };
     },
   });
+}
+
+/**
+ * The sections of a test spec that map sources to tests: a heading of level 2 to 4, optionally numbered
+ * ("### 2. Service-to-Test Map"), named "Source-to-Test Map" or the older "Service-to-Test Map", up to the
+ * next heading of the same or a higher level.
+ */
+function findMapSections(content) {
+  const lines = content.split('\n');
+  const sections = [];
+  for (let i = 0; i < lines.length; i++) {
+    const heading = /^(#{2,4})[ \t]+(?:\d+[.)]?[ \t]+)?(?:Service|Source)[- ]to[- ]Test Map\b/i.exec(lines[i]);
+    if (!heading) continue;
+    let end = lines.length;
+    for (let j = i + 1; j < lines.length; j++) {
+      const next = /^(#{1,6})[ \t]/.exec(lines[j]);
+      if (next && next[1].length <= heading[1].length) { end = j; break; }
+    }
+    sections.push(lines.slice(i, end).join('\n'));
+    i = end - 1;
+  }
+  return sections;
 }
 
 export function validateTestSpec(projectDir, config) {
@@ -109,15 +134,18 @@ export function validateTestSpec(projectDir, config) {
   // the 2nd column, so the generated 4-column table's Integration Test was
   // never verified (#9). Splitting on the outer pipes and trimming preserves
   // column alignment so a blank cell stays an empty string in its own slot.
-  const mapSection = content.match(/## (?:Service-to-Test Map|Source-to-Test Map)[\s\S]*?(?=\n## |$)/);
-  if (mapSection) {
+  // Every section of that name is read, each with its own header row: a project that kept the old heading and
+  // appended a new one has both, and the first one no longer hides the second.
+  const mapSections = findMapSections(content);
+  const mapSection = mapSections.length > 0;
+  for (const sectionText of mapSections) {
     const splitRow = (line) => {
       const parts = line.split('|');
       parts.shift();   // text before the first pipe
       parts.pop();     // text after the last pipe
       return parts.map(s => s.trim());
     };
-    const pipeRows = mapSection[0]
+    const pipeRows = sectionText
       .split('\n')
       .filter(l => l.trim().startsWith('|') && !/^\s*\|[\s|:-]+\|\s*$/.test(l)); // drop the `---` separator
     const headerCells = pipeRows.length ? splitRow(pipeRows[0]) : [];
