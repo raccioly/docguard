@@ -121,6 +121,11 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     return !now.ok || now.fingerprint !== rec.fingerprint;
   };
 
+  // One run, one HEAD: cache what several documents share (a review date, a commit's time).
+  const eod = new Map();
+  const times = new Map();
+  const endOfDay = date => { if (!eod.has(date)) eod.set(date, commitAtEndOfDay(dir, date)); return eod.get(date); };
+  const timeOf = rev => { if (!times.has(rev)) times.set(rev, commitTime(dir, rev)); return times.get(rev); };
   const reviewPointOf = (doc, content) => {
     const entry = recorded[doc];
     if (entry?.reviewedRevision) {
@@ -129,7 +134,7 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     }
     const marker = markerDate(content);
     if (marker) {
-      const revision = commitAtEndOfDay(dir, marker);
+      const revision = endOfDay(marker);
       if (!revision) return { unavailable: `${doc}: no commit on or before its ${marker} review marker` };
       return { revision, date: marker, source: 'marker' };
     }
@@ -138,7 +143,7 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
 
   const evidenceFor = (doc, content, point) => {
     const { references } = documentReferences(dir, doc, content, { tracked, vendored, config });
-    const { references: measured, measured: complete } = measureReferences(dir, doc, references, { revision: point.revision, time: commitTime(dir, point.revision) }, { threshold, cache });
+    const { references: measured, measured: complete } = measureReferences(dir, doc, references, { revision: point.revision, time: timeOf(point.revision) }, { threshold, cache });
     const crossing = measured.filter(r => r.share >= threshold && (point.source !== 'recorded' || fpChanged(r.path, point.entry.references?.[r.path])));
     return { measured, crossing, complete };
   };
