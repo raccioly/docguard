@@ -5,6 +5,7 @@
  */
 
 import { existsSync, mkdirSync, chmodSync, readFileSync, unlinkSync } from 'node:fs';
+import { ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
 
 // v0.16-P3: managed-block markers. Letting users extend the hook with their
 // own commands (data-file guards, lint checks, etc.) without us clobbering
@@ -562,7 +563,8 @@ const NUDGE_HOOK_COMMAND = 'docguard nudge-hook';
 const NUDGE_THROTTLE_MS = 30 * 60 * 1000; // one nudge per file per 30 min
 const NUDGE_STATE_PATH = '.docguard/nudge-state.json';
 const NUDGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift)$/;
-const NUDGE_AGENT_FILES = new Set(['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']);
+// docguard.agent-instruction-role#FR-002: the role owns the root-level list.
+const NUDGE_AGENT_FILES = ROOT_AGENT_FILES;
 
 function isOurNudgeGroup(group) {
   return Array.isArray(group?.hooks) &&
@@ -643,7 +645,7 @@ export function runNudgeHook(projectDir) {
     const base = basename(rel);
     const isCanonicalDoc =
       (rel.startsWith('docs-canonical/') && rel.endsWith('.md')) ||
-      (NUDGE_AGENT_FILES.has(base) && !rel.includes('/'));
+      NUDGE_AGENT_FILES.includes(rel);
 
     if (isCanonicalDoc) {
       reason = `DocGuard: you edited ${rel} — a canonical/agent doc that gates this repo. ` +

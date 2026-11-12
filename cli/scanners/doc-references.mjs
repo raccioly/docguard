@@ -31,12 +31,14 @@ import { inspectSections } from '../writers/sections.mjs';
 import { createEvidenceReader } from './semantic-claims.mjs';
 import { coveredSections, docLockStatus } from './doc-deps.mjs';
 import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './instruction-scopes.mjs';
+import { ROOT_AGENT_FILES, rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
 import { normalizePath } from './api-doc.mjs';
 import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
 import { currentFileCodes } from '../sensor-cache.mjs';
 
-export const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
+// docguard.agent-instruction-role#FR-002: the role owns the root-level list.
+export { ROOT_AGENT_FILES as AGENT_FILES };
 export const READ_DEFAULT_BYTES = 8 * 1024;
 export const READ_MAX_BYTES = 32 * 1024;
 const LIST_CAP = 50;
@@ -287,7 +289,7 @@ export function docsForPath(projectDir, config, path) {
   const agentInstructions = [];
   const tracked = listTrackedFiles(projectDir) || [];
   const instructionFiles = [...new Set([
-    ...AGENT_FILES,
+    ...rootAgentDocs(projectDir, config),
     ...tracked.filter(f => instructionKind(f)),
     ...instructionFilesOnDisk(projectDir).files,
   ])].sort();

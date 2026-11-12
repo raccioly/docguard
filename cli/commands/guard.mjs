@@ -1,4 +1,5 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
+import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
@@ -317,7 +318,14 @@ function computeDocCoverage(projectDir, config) {
     if (inHome || atRoot || known.has(rel)) { tracked++; continue; }
     unclassified.push(rel);
   }
-  return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified };
+  // docguard.agent-instruction-role#FR-011: an exemption is visible — every
+  // instruction file treated as vendored is counted and listed with its reason.
+  let vendoredInstructions = [];
+  try {
+    vendoredInstructions = agentInstructionDocs(projectDir, config).docs.filter(d => d.vendored)
+      .map(d => ({ path: d.path, source: d.vendored.source, reason: d.vendored.reason }));
+  } catch { vendoredInstructions = []; }
+  return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified, vendoredInstructions };
 }
 
 export function runGuardInternal(projectDir, config) {
@@ -1158,7 +1166,8 @@ export function runGuard(projectDir, config, flags) {
     const cov = data.coverage;
     const unclassN = cov.unclassified.length;
     const tierLine = `${cov.canonical} canonical · ${cov.specKit ? `${cov.specKit} spec-kit · ` : ''}${cov.tracked} tracked · ${cov.ignored} ignored`
-      + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '');
+      + (unclassN ? ` · ${c.yellow}${unclassN} outside any tier${c.reset}${c.dim}` : '')
+      + (cov.vendoredInstructions?.length ? ` · ${cov.vendoredInstructions.length} vendored instruction file(s), not reviewed for staleness` : '');
     console.log(`\n  ${c.dim}📑 Docs: ${tierLine} ${c.reset}${c.dim}(${cov.discovered} Markdown files)${c.reset}`);
     if (unclassN > 0) {
       // Calm by default — surface the COUNT every run (so non-coverage is never

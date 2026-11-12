@@ -738,6 +738,171 @@
       }
     },
     {
+      "specId": "docguard.agent-instruction-role",
+      "path": "specs/094-agent-instruction-role/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.agent-instruction-role#FR-001",
+          "docguard.agent-instruction-role#FR-002",
+          "docguard.agent-instruction-role#FR-003",
+          "docguard.agent-instruction-role#FR-004",
+          "docguard.agent-instruction-role#FR-005",
+          "docguard.agent-instruction-role#FR-006",
+          "docguard.agent-instruction-role#FR-007",
+          "docguard.agent-instruction-role#FR-008",
+          "docguard.agent-instruction-role#FR-009",
+          "docguard.agent-instruction-role#FR-010",
+          "docguard.agent-instruction-role#FR-011",
+          "docguard.agent-instruction-role#SC-001",
+          "docguard.agent-instruction-role#SC-002",
+          "docguard.agent-instruction-role#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/094-agent-instruction-role/spec.md",
+            "digest": "sha256:17873cacee9e96b9bcad86f62433ed8c849eb582ee6f78797a3c4cba60eb800a"
+          },
+          {
+            "path": "specs/094-agent-instruction-role/plan.md",
+            "digest": "sha256:f574536473bdb0eefc4b08cdfaa3425db6eeca89c5b1d387b84f3bc2ae389343"
+          },
+          {
+            "path": "specs/094-agent-instruction-role/tasks.md",
+            "digest": "sha256:95c860b0948604ef18a86a8495aa41aa13a482b4d32bcfe33f2b20ef64755e87"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 16,
+          "total": 16
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-agent-instructions.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-agent-instructions.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/freshness.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-agent-instructions.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/freshness.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-agent-instructions.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 20
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/agent-instruction-role.test.mjs",
+            "line": 15
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.aidlc-plugin",
       "path": "specs/090-aidlc-plugin/spec.md",
       "reviewed": {
@@ -1973,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 715
+            "line": 723
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 742
+            "line": 750
           },
           {
             "requirementId": "FR-021",
@@ -3101,7 +3266,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 141
+            "line": 140
           }
         ],
         "testEvidence": [
@@ -4392,7 +4557,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 164
+            "line": 166
           },
           {
             "requirementId": "FR-003",
@@ -4412,7 +4577,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 96
+            "line": 98
           },
           {
             "requirementId": "FR-005",
@@ -4422,7 +4587,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 116
+            "line": 118
           },
           {
             "requirementId": "FR-008",
@@ -6168,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 7
+            "line": 8
           },
           {
             "requirementId": "FR-010",
@@ -6863,7 +7028,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/hooks.mjs",
-            "line": 37
+            "line": 38
           }
         ],
         "testEvidence": [
@@ -7045,7 +7210,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1104
+            "line": 1110
           },
           {
             "requirementId": "FR-008",
@@ -7724,7 +7889,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/hooks.mjs",
-            "line": 344
+            "line": 345
           },
           {
             "requirementId": "FR-001",
@@ -8071,12 +8236,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1361
+            "line": 1367
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1371
+            "line": 1377
           },
           {
             "requirementId": "FR-006",
@@ -11031,7 +11196,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-002",
@@ -11076,7 +11241,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 9
+            "line": 10
           },
           {
             "requirementId": "FR-009",
@@ -11111,7 +11276,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-012",
@@ -11121,12 +11286,12 @@
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 160
+            "line": 163
           },
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/doc-deps.mjs",
-            "line": 162
+            "line": 165
           },
           {
             "requirementId": "FR-014",
@@ -11141,7 +11306,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/validators/reference-existence.mjs",
-            "line": 189
+            "line": 188
           }
         ],
         "testEvidence": [
@@ -11378,17 +11543,17 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/instruction-audit.mjs",
-            "line": 342
+            "line": 343
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 16
+            "line": 17
           },
           {
             "requirementId": "FR-005",
@@ -11403,7 +11568,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-008",
@@ -14479,7 +14644,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/semantic-claims.mjs",
-            "line": 77
+            "line": 78
           },
           {
             "requirementId": "FR-033",
@@ -15420,7 +15585,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diagnose.mjs",
-            "line": 192
+            "line": 193
           },
           {
             "requirementId": "FR-006",
@@ -18748,22 +18913,22 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 72
+            "line": 74
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 188
+            "line": 190
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 189
+            "line": 191
           },
           {
             "requirementId": "FR-004",
             "file": "cli/commands/impact.mjs",
-            "line": 72
+            "line": 71
           }
         ],
         "testEvidence": [
@@ -18894,12 +19059,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/hooks.mjs",
-            "line": 682
+            "line": 684
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 84
+            "line": 86
           },
           {
             "requirementId": "FR-003",
@@ -18909,7 +19074,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/diff-suspicion.mjs",
-            "line": 90
+            "line": 89
           }
         ],
         "testEvidence": [
