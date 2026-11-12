@@ -20,6 +20,7 @@ import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 /** @implements docguard.adoption-workflow-integrity#FR-006 */
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
 import {
@@ -125,6 +126,31 @@ const IGNORE_DIRS = new Set([
  * errors/warnings arrays from the same findings array.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
+/**
+ * Whether Traceability's kind of check belongs to the project: it applies when
+ * the project has a `docs-canonical/` directory (the documents it traces to
+ * code) or documents that define requirement IDs (feature specs). A project
+ * with neither has no document to link to code and no requirement to trace to
+ * a test.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  if (existsSync(resolve(projectDir, 'docs-canonical'))) return { applies: true, evidence: 'the project has a docs-canonical/ directory' };
+  const requirementDocs = getRequirementDocPaths(projectDir, config);
+  if (requirementDocs.length > 0) return { applies: true, evidence: `${requirementDocs.length} document(s) define requirement IDs` };
+  return { applies: false, evidence: 'no docs-canonical/ directory and no document that defines requirement IDs' };
+}
+
+function traceabilityContract(projectDir, config, performed, found) {
+  return contractFields({
+    performed, found, ran: `traced ${performed} document(s) and requirement(s) to source code and tests`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => decision.applies
+      ? { emptyCause: 'needs-declaration', note: 'Traceability found documents but none it traces to source code (ARCHITECTURE.md, DATA-MODEL.md, TEST-SPEC.md, SECURITY.md, ENVIRONMENT.md, API-REFERENCE.md in requiredFiles.canonical) and no requirement ID to trace to a test.', howToConfigure: 'List the documents to trace under `requiredFiles.canonical` in .docguard.json (for example "docs-canonical/ARCHITECTURE.md"), or define requirement IDs such as FR-001 in a spec and reference each from a test with `@req <spec-id>#FR-001`.' }
+      : { note: 'Traceability found no docs-canonical/ directory and no requirement ID, so there is nothing to link to source code or tests.', howToConfigure: 'Nothing to configure unless the project documents itself: then keep its canonical documents in docs-canonical/ and Traceability links each to the code it describes.' },
+  });
+}
+
 export function validateTraceability(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -133,7 +159,7 @@ export function validateTraceability(projectDir, config) {
   const docsDir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(docsDir) && getRequirementDocPaths(projectDir, config).length === 0) {
     // No docs-canonical dir at all — structure validator handles this
-    return resultFromFindings([], { passed: 0, total: 0 });
+    return { ...resultFromFindings([], { passed: 0, total: 0 }), ...traceabilityContract(projectDir, config, 0, false) };
   }
 
   // Build set of required doc basenames from config
@@ -270,7 +296,7 @@ export function validateTraceability(projectDir, config) {
   passed += reqResult.passed;
   total += reqResult.total;
 
-  const result = resultFromFindings(findings, { passed, total });
+  const result = { ...resultFromFindings(findings, { passed, total }), ...traceabilityContract(projectDir, config, total, findings.length > 0) };
   result.requirementCoverage = reqResult.requirementCoverage;
   return result;
 }

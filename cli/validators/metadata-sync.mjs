@@ -15,11 +15,62 @@ import { loadIgnorePatterns } from '../shared.mjs';
 import { collectPackageJsons } from '../shared-source.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
   '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
 ]);
+
+const OTHER_VERSIONED_MANIFESTS = ['pyproject.toml', 'setup.py', 'setup.cfg', 'Cargo.toml', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'composer.json', 'mix.exs', 'pubspec.yaml', 'Gemfile'];
+
+/** The version package.json (root, or a workspace package) declares, and its name. */
+function readPackageVersion(projectDir, config) {
+  let version = null;
+  let name = null;
+  const pkgPath = resolve(projectDir, 'package.json');
+  if (existsSync(pkgPath)) {
+    try {
+      const pj = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+      version = pj.version || null;
+      name = pj.name || null;
+    } catch { /* ignore */ }
+  }
+  if (!version) {
+    for (const { pkg } of collectPackageJsons(projectDir, config)) {
+      if (pkg.version) { version = pkg.version; name = name || pkg.name || null; break; }
+    }
+  }
+  return { version, name };
+}
+
+/**
+ * Whether Metadata-Sync's kind of check belongs to the project: it applies to a
+ * project that declares a version, in package.json (the one it reads) or in
+ * another ecosystem's manifest (which it does not read, see the cause). A
+ * project that declares no version has no version string to keep in step with
+ * its documents.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const { version } = readPackageVersion(projectDir, config);
+  if (version) return { applies: true, evidence: `package.json declares version ${version}` };
+  const other = OTHER_VERSIONED_MANIFESTS.find(f => existsSync(resolve(projectDir, f)));
+  if (other) return { applies: true, evidence: `${other} exists, a manifest that carries a version Metadata-Sync does not read`, otherManifest: other };
+  return { applies: false, evidence: 'no package.json with a version field, and no other versioned manifest (pyproject.toml, Cargo.toml, pom.xml and similar)' };
+}
+
+function metadataContract(projectDir, config, performed, found) {
+  return contractFields({
+    performed, found, ran: `compared ${performed} version reference(s) with the version package.json declares`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => {
+      if (!decision.applies) return { note: 'Metadata-Sync found no versioned manifest, so there is no version string to compare with the documents.', howToConfigure: 'Nothing to configure unless the project is versioned: then declare `version` in package.json and Metadata-Sync keeps the documents that name it in step.' };
+      if (decision.otherManifest) return { emptyCause: 'layout-not-recognized', note: `Metadata-Sync reads the version from package.json only, and this project's version lives in ${decision.otherManifest}, so it compared no document with it.`, howToConfigure: `Metadata-Sync cannot read ${decision.otherManifest}. Declare the same version in a package.json "version" field next to it and keep it in step with ${decision.otherManifest}, or keep version references out of the documents.` };
+      return { emptyCause: 'needs-content', note: 'package.json declares a version but no Markdown file or extension.yml names it in a URL, a `version:` line or a `<package>@x.y.z` install command, so Metadata-Sync compared nothing.', howToConfigure: 'Name the version where readers copy it from, for example `npm install <name>@<version>` in README.md; Metadata-Sync then flags the reference when package.json moves on.' };
+    },
+  });
+}
 
 /**
  * Validate version/metadata consistency across project files.
@@ -36,23 +87,9 @@ export function validateMetadataSync(projectDir, config) {
   // ── Get source of truth: package.json version ──
   // Prefer the root package version; in a monorepo where the root is just a
   // workspace manifest with no version, fall back to a source-root package.
-  const pkgPath = resolve(projectDir, 'package.json');
-  let currentVersion = null;
-  let currentName = null;
-  if (existsSync(pkgPath)) {
-    try {
-      const pj = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-      currentVersion = pj.version || null;
-      currentName = pj.name || null;
-    } catch { /* ignore */ }
-  }
-  if (!currentVersion) {
-    for (const { pkg } of collectPackageJsons(projectDir, config)) {
-      if (pkg.version) { currentVersion = pkg.version; currentName = currentName || pkg.name || null; break; }
-    }
-  }
-  // Literal legacy shape (no findings/fixes keys) — tests deepEqual this object.
-  if (!currentVersion) return { errors: [], warnings: [], passed: 0, total: 0 };
+  const { version: currentVersion, name: currentName } = readPackageVersion(projectDir, config);
+  // Literal legacy shape (no findings/fixes keys) plus the contract fields.
+  if (!currentVersion) return { errors: [], warnings: [], passed: 0, total: 0, ...metadataContract(projectDir, config, 0, false) };
 
   // Parse into components for smart comparison. `|| 0` guards two-part versions
   // (e.g. "1.2"): without it vParts[2] is undefined → parseInt → NaN, and every
@@ -160,7 +197,7 @@ export function validateMetadataSync(projectDir, config) {
     }
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), fixes };
+  return { ...resultFromFindings(findings, { passed, total }), fixes, ...metadataContract(projectDir, config, total, findings.length > 0) };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

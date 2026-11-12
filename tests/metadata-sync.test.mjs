@@ -4,13 +4,14 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateMetadataSync } from '../cli/validators/metadata-sync.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('Metadata Sync Validator', () => {
   it('returns empty results if package.json is missing', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -21,7 +22,7 @@ describe('Metadata Sync Validator', () => {
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{ malformed json');
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -32,7 +33,7 @@ describe('Metadata Sync Validator', () => {
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "test" }));
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
