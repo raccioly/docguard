@@ -52,6 +52,18 @@ describe('history replay', () => {
     assert.ok(row.confidence95.lower < 0.5 && row.confidence95.upper > 0.5);
   });
 
+  it('an unconfirmed override is reported apart and never counted in precision', t => {
+    const dir = history(t);
+    const first = replayRepository(dir, { name: 'fixture' }).hits.find(h => h.subject === 'src/util.mjs' && h.horizonDays === 14);
+    const { hits } = replayRepository(dir, { name: 'fixture', labels: { [first.key]: { label: true, confirmed: false, by: 'a reviewer' } } });
+    const hit = hits.find(h => h.key === first.key);
+    assert.equal(hit.labelSource, 'override-unconfirmed');
+    assert.equal(hit.labeledBy, 'a reviewer');
+    const row = summarize(hits).find(r => r.code === 'FRS006' && r.role === 'agent-instruction' && r.horizonDays === 14 && r.threshold === 0.5);
+    assert.equal(row.n, 1, 'only the confirmed engine label counts');
+    assert.deepEqual(row.unconfirmed, { n: 1, tp: 1 });
+  });
+
   it('a reviewed label overrides the proxy', t => {
     const dir = history(t);
     const first = replayRepository(dir, { name: 'fixture' }).hits.find(h => h.subject === 'src/util.mjs' && h.horizonDays === 14);

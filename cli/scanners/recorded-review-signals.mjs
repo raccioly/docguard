@@ -85,18 +85,12 @@ function markerOnlyCommit(dir, doc, content) {
 }
 
 /**
- * @returns {object[]} freshness result entries ({ status, code, doc, message, … })
+ * Everything the review checks share for one run: the role, the tracked
+ * files, the recorded reviews and caches. `statusFor(doc)` is the single
+ * place the FRS006 rule is evaluated (docguard.recorded-document-reviews#FR-006).
  */
-export function recordedReviewSignals(dir, config, { ignored, docFiles, results }) {
-  const out = [];
+function reviewContext(dir, config, ignored = () => false) {
   const read = reviewsFor(dir);
-  if (read.error) {
-    out.push({
-      status: 'fail', code: 'FRS010', doc: DOC_REVIEWS_PATH, confidence: 'high', disposition: 'act',
-      message: `${read.error}; every recorded document review is unusable, so review evidence falls back to markers`,
-      suggestion: { kind: 'fix', text: `Restore ${DOC_REVIEWS_PATH} from git (git checkout -- ${DOC_REVIEWS_PATH}), or delete it and record reviews again with docguard review --accept <doc> --reason "…". Put a new field under "extensions".` },
-    });
-  }
   const recorded = read.reviews?.documents || {};
   const threshold = referenceShare(config);
   const role = agentInstructionDocs(dir, config).docs;
@@ -107,9 +101,7 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     try { pointerText.set(d.pointer.target, `${pointerText.get(d.pointer.target) || ''}\n${readFileSync(resolve(dir, d.path), 'utf8')}`); } catch { /* unreadable pointer */ }
   }
   const tracked = listTrackedFiles(dir);
-  if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
   const roleSet = new Set(authored.map(d => d.path));
-  const canonical = docFiles.filter(f => !roleSet.has(f) && !vendored.has(f));
   const cache = new Map();
   let fpCtx = null;
   const fpChanged = (path, rec) => {
@@ -145,18 +137,46 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     const crossing = measured.filter(r => r.share >= threshold && (point.source !== 'recorded' || fpChanged(r.path, point.entry.references?.[r.path])));
     return { measured, crossing, complete };
   };
+  const statusFor = doc => {
+    let content;
+    try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { return null; }
+    const point = reviewPointOf(doc.path, content);
+    if (!point || point.unavailable || tracked === null) return { path: doc.path, content, point, measured: null };
+    const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
+    return { path: doc.path, content, point, crossing, measured, complete };
+  };
+  return { read, recorded, threshold, role, authored, vendored, pointerText, tracked, roleSet, canonical: docFiles => docFiles.filter(f => !roleSet.has(f) && !vendored.has(f)), reviewPointOf, evidenceFor, statusFor };
+}
+
+/**
+ * @returns {object[]} freshness result entries ({ status, code, doc, message, … })
+ */
+export function recordedReviewSignals(dir, config, { ignored, docFiles, results }) {
+  const out = [];
+  const read = reviewsFor(dir);
+  if (read.error) {
+    out.push({
+      status: 'fail', code: 'FRS010', doc: DOC_REVIEWS_PATH, confidence: 'high', disposition: 'act',
+      message: `${read.error}; every recorded document review is unusable, so review evidence falls back to markers`,
+      suggestion: { kind: 'fix', text: `Restore ${DOC_REVIEWS_PATH} from git (git checkout -- ${DOC_REVIEWS_PATH}), or delete it and record reviews again with docguard review --accept <doc> --reason "…". Put a new field under "extensions".` },
+    });
+  }
+  const ctx = reviewContext(dir, config, ignored);
+  const { threshold, role, authored, pointerText, tracked, roleSet, reviewPointOf, evidenceFor } = ctx;
+  if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
+  const canonical = ctx.canonical(docFiles);
   const describe = r => `L${r.line} ${r.path} ${pct(r.share)}${r.newSinceBase ? ' (did not exist then)' : ` (+${r.added}/−${r.deleted})`}`;
 
   for (const doc of authored) {
-    let content;
-    try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { continue; }
-    const point = reviewPointOf(doc.path, content);
+    const status = ctx.statusFor(doc);
+    if (!status) continue;
+    const { content, point } = status;
     if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
     // No review point: spec 097 reports this as Freshness applying and
     // examining nothing (`empty`, cause `needs-declaration`), through
     // agentInstructionDocsWithoutReviewPoint below, not as a finding.
     if (!point) continue;
-    const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
+    const { crossing, measured, complete } = status;
     if (!complete) out.push({ status: 'skip', doc: doc.path, message: `${doc.path}: some references could not be measured against ${point.revision.slice(0, 12)}` });
     if (crossing.length) {
       const top = crossing.slice(0, 3).map(describe).join('; ');
@@ -241,6 +261,30 @@ export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
     try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { continue; }
     if (markerDate(content)) continue;
     out.push({ path: doc.path, howToConfigure: `Read ${doc.path} against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` });
+  }
+  return out;
+}
+
+/**
+ * Every reviewed agent-instruction document (authored, non-pointer, with a
+ * recorded review or a marker) and whether its review is suspect by the FRS006
+ * rule: at least one referenced file over `freshness.referenceShare` since the
+ * review (and, for a recorded review, with a changed fingerprint). FRS006 is
+ * built on the same evaluation, so the two cannot disagree. Spec 097 Stage B
+ * treats a suspect review as no longer covering its document.
+ *
+ * @implements docguard.recorded-document-reviews#FR-006
+ * @returns {{ path, suspect: boolean, reviewPoint: { date, revision, source }, threshold: number, references: object[], complete: boolean }[]}
+ */
+export function agentInstructionReviewStatus(dir, config = {}) {
+  const ctx = reviewContext(dir, config);
+  if (ctx.tracked === null) return [];
+  const out = [];
+  for (const doc of ctx.authored) {
+    const status = ctx.statusFor(doc);
+    if (!status?.point || status.point.unavailable || !status.measured) continue;
+    const { date, revision, source } = status.point;
+    out.push({ path: doc.path, suspect: status.crossing.length > 0, reviewPoint: { date, revision, source }, threshold: ctx.threshold, references: status.crossing, complete: status.complete });
   }
   return out;
 }

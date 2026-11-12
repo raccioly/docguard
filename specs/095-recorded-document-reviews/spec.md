@@ -214,3 +214,9 @@ Verified 2026-11-12 on the branch head. Private projects are not named.
   - At that rate, 30 labeled FRS006 hits need about 1,400 agent-instruction review points with an observed 8-week window.
   - This history does not exist yet. It needs either recorded reviews accumulating in adopters, or a wider replay source (for example, public repositories with long `AGENTS.md` histories, taking each content edit as a review point). The second is a change of method that needs the coordinating session's decision.
 - **Gates on the merged branch:** `npm test` exit 0 (4,401 tests, 4,400 pass, 1 skipped). `npm run budget -- --base <origin/main worktree>` exit 0 (guard on DocGuard 30,909 → 27,066 ms, no new errors). The fuzz test alone took 538 ms.
+
+### Update 2026-11-12, for spec 097 Stage B
+
+- **`agentInstructionReviewStatus(dir, config)`** returns, for each reviewed agent-instruction document, `{ path, suspect, reviewPoint: { date, revision, source }, threshold, references, complete }`. A review is suspect by the FRS006 rule. FRS006 is built on the same `statusFor` evaluation, so the two cannot disagree; a test asserts they report the same references and revision. Stage B uses it to treat a suspect review as no longer covering its document.
+- **Replay labels** gained an unconfirmed form, `{ label, confirmed: false, by }`. Unconfirmed overrides are counted in `summary[].unconfirmed`, never in `n` or precision; a plain boolean still means a confirmed label. Every label in `labels-public.json` is unconfirmed.
+- **The path to 30 does not go through history.** Spec 097 Stage B gates on the suspect review, a re-review request, not on FRS006's precision (coordinating session's decision). The labeled set is not being widened.

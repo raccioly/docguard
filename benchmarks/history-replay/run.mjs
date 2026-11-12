@@ -86,6 +86,19 @@ function addedLines(repo, from, to, doc) {
   return diff.split('\n').filter(l => /^\+/.test(l) && !/^\+\+\+/.test(l)).map(l => l.slice(1)).join('\n');
 }
 
+/**
+ * A label override: `true`/`false` (confirmed, the original form) or
+ * `{ label, confirmed, by }`. An unconfirmed override is reported apart and
+ * never counted in precision (spec 095 FR-012).
+ */
+export function readOverride(labels, key) {
+  if (!Object.hasOwn(labels, key)) return null;
+  const v = labels[key];
+  if (typeof v === 'boolean') return { label: v, source: 'override' };
+  if (v && typeof v === 'object' && typeof v.label === 'boolean') return { label: v.label, source: v.confirmed === false ? 'override-unconfirmed' : 'override', ...(typeof v.by === 'string' ? { by: v.by } : {}) };
+  throw new Error(`label ${key} must be true, false or { label, confirmed, by }`);
+}
+
 export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {} } = {}) {
   const chain = firstParent(repo, until);
   const head = chain[chain.length - 1];
@@ -127,7 +140,8 @@ export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {
           for (const r of measured.filter(x => x.share >= Math.min(...THRESHOLDS))) {
             const key = `${name}|${doc}|${point.marker}|+${days}d|FRS006|${r.path}`;
             const proxy = censored ? null : rewritten.some(l => l.includes(r.path));
-            hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS006', subject: r.path, line: r.line, share: Number(r.share.toFixed(4)), label: Object.hasOwn(labels, key) ? labels[key] : proxy, labelSource: Object.hasOwn(labels, key) ? 'override' : 'proxy' });
+            const o = readOverride(labels, key);
+            hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS006', subject: r.path, line: r.line, share: Number(r.share.toFixed(4)), label: o ? o.label : proxy, labelSource: o ? o.source : 'proxy', ...(o?.by ? { labeledBy: o.by } : {}) });
           }
           if (docRole === 'agent-instruction') {
             const then = surfaceAt(dir, reviewCommit.sha);
@@ -139,7 +153,8 @@ export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {
             ];
             for (const m of missing) {
               const key = `${name}|${doc}|${point.marker}|+${days}d|FRS007|${m.s}`;
-              hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS007', subject: m.s, share: null, label: Object.hasOwn(labels, key) ? labels[key] : censored ? null : m.mentioned, labelSource: Object.hasOwn(labels, key) ? 'override' : 'proxy' });
+              const o = readOverride(labels, key);
+              hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS007', subject: m.s, share: null, label: o ? o.label : censored ? null : m.mentioned, labelSource: o ? o.source : 'proxy', ...(o?.by ? { labeledBy: o.by } : {}) });
             }
           }
         }
@@ -161,9 +176,10 @@ export function summarize(hits) {
     const thresholds = h.code === 'FRS006' ? THRESHOLDS.filter(t => h.share >= t) : [null];
     for (const t of thresholds) {
       const k = `${h.code}|${h.role}|${h.horizonDays}|${t}`;
-      if (!groups.has(k)) groups.set(k, { code: h.code, role: h.role, horizonDays: h.horizonDays, threshold: t, n: 0, tp: 0, fp: 0, unlabeled: 0 });
+      if (!groups.has(k)) groups.set(k, { code: h.code, role: h.role, horizonDays: h.horizonDays, threshold: t, n: 0, tp: 0, fp: 0, unlabeled: 0, unconfirmed: { n: 0, tp: 0 } });
       const g = groups.get(k);
       if (h.label === null || h.label === undefined) g.unlabeled++;
+      else if (h.labelSource === 'override-unconfirmed') { g.unconfirmed.n++; if (h.label) g.unconfirmed.tp++; }
       else { g.n++; if (h.label) g.tp++; else g.fp++; }
     }
   }
@@ -191,7 +207,7 @@ function main(argv) {
   const report = {
     method: 'history replay (spec 095 FR-012)',
     horizonsDays: HORIZON_DAYS, thresholds: THRESHOLDS, labelWindowDays: LABEL_WINDOW_DAYS,
-    label: 'proxy: TRUE when the document later rewrote a line naming the file (FRS006) or added a mention (FRS007) within the window; human overrides via --labels',
+    label: 'proxy: TRUE when the document later rewrote a line naming the file (FRS006) or added a mention (FRS007) within the window; overrides via --labels; unconfirmed overrides are reported apart (summary[].unconfirmed) and never counted in n or precision',
     repositories: results.map(r => ({ repo: r.repo, head: r.head, reviewPoints: r.reviewPoints, hits: r.hits.length })),
     summary: summarize(hits),
     hits,

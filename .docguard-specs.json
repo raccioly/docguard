@@ -13281,7 +13281,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:1d50270fa59a7e63e909afa9b7a3547ffa337495a67e59cd0492049f744af0ad"
+            "digest": "sha256:4e6b3db1ffeab6bffc4a1d52fa11921d0d92ec8dd321d668e5f0b93136c55e6b"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
@@ -13334,6 +13334,11 @@
           },
           {
             "requirementId": "FR-006",
+            "file": "cli/scanners/recorded-review-signals.mjs",
+            "line": 276
+          },
+          {
+            "requirementId": "FR-006",
             "file": "cli/validators/freshness.mjs",
             "line": 11
           },
@@ -13355,7 +13360,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 228
+            "line": 248
           }
         ],
         "testEvidence": [

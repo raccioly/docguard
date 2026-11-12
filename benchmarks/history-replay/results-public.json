@@ -11,7 +11,7 @@
     0.75
   ],
   "labelWindowDays": 56,
-  "label": "proxy: TRUE when the document later rewrote a line naming the file (FRS006) or added a mention (FRS007) within the window; human overrides via --labels",
+  "label": "proxy: TRUE when the document later rewrote a line naming the file (FRS006) or added a mention (FRS007) within the window; overrides via --labels; unconfirmed overrides are reported apart (summary[].unconfirmed) and never counted in n or precision",
   "repositories": [
     {
       "repo": "docguard",
@@ -32,60 +32,64 @@
       "role": "agent-instruction",
       "horizonDays": 14,
       "threshold": 0.25,
-      "n": 1,
-      "tp": 1,
+      "n": 0,
+      "tp": 0,
       "fp": 0,
       "unlabeled": 0,
-      "precision": 1,
-      "confidence95": {
-        "lower": 0.206543,
-        "upper": 1
-      }
+      "unconfirmed": {
+        "n": 1,
+        "tp": 1
+      },
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 28,
       "threshold": 0.25,
-      "n": 1,
-      "tp": 1,
+      "n": 0,
+      "tp": 0,
       "fp": 0,
       "unlabeled": 0,
-      "precision": 1,
-      "confidence95": {
-        "lower": 0.206543,
-        "upper": 1
-      }
+      "unconfirmed": {
+        "n": 1,
+        "tp": 1
+      },
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": 0.25,
-      "n": 1,
-      "tp": 1,
+      "n": 0,
+      "tp": 0,
       "fp": 0,
       "unlabeled": 3,
-      "precision": 1,
-      "confidence95": {
-        "lower": 0.206543,
-        "upper": 1
-      }
+      "unconfirmed": {
+        "n": 1,
+        "tp": 1
+      },
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": 0.5,
-      "n": 1,
-      "tp": 1,
+      "n": 0,
+      "tp": 0,
       "fp": 0,
       "unlabeled": 0,
-      "precision": 1,
-      "confidence95": {
-        "lower": 0.206543,
-        "upper": 1
-      }
+      "unconfirmed": {
+        "n": 1,
+        "tp": 1
+      },
+      "precision": null,
+      "confidence95": null
     },
     {
       "code": "FRS006",
@@ -96,6 +100,10 @@
       "tp": 0,
       "fp": 8,
       "unlabeled": 15,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": 0,
       "confidence95": {
         "lower": 0,
@@ -111,6 +119,10 @@
       "tp": 0,
       "fp": 8,
       "unlabeled": 19,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": 0,
       "confidence95": {
         "lower": 0,
@@ -126,6 +138,10 @@
       "tp": 2,
       "fp": 3,
       "unlabeled": 39,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": 0.4,
       "confidence95": {
         "lower": 0.117618,
@@ -141,6 +157,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 3,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -153,6 +173,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 4,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -165,6 +189,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 17,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -177,6 +205,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 1,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -189,6 +221,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 1,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -201,6 +237,10 @@
       "tp": 0,
       "fp": 0,
       "unlabeled": 1,
+      "unconfirmed": {
+        "n": 0,
+        "tp": 0
+      },
       "precision": null,
       "confidence95": null
     },
@@ -209,14 +249,18 @@
       "role": "agent-instruction",
       "horizonDays": 14,
       "threshold": null,
-      "n": 3,
-      "tp": 1,
-      "fp": 2,
+      "n": 1,
+      "tp": 0,
+      "fp": 1,
       "unlabeled": 0,
-      "precision": 0.3333,
+      "unconfirmed": {
+        "n": 2,
+        "tp": 1
+      },
+      "precision": 0,
       "confidence95": {
-        "lower": 0.06149,
-        "upper": 0.792345
+        "lower": 0,
+        "upper": 0.793457
       }
     },
     {
@@ -224,14 +268,18 @@
       "role": "agent-instruction",
       "horizonDays": 28,
       "threshold": null,
-      "n": 3,
-      "tp": 1,
-      "fp": 2,
+      "n": 1,
+      "tp": 0,
+      "fp": 1,
       "unlabeled": 0,
-      "precision": 0.3333,
+      "unconfirmed": {
+        "n": 2,
+        "tp": 1
+      },
+      "precision": 0,
       "confidence95": {
-        "lower": 0.06149,
-        "upper": 0.792345
+        "lower": 0,
+        "upper": 0.793457
       }
     },
     {
@@ -239,14 +287,18 @@
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": null,
-      "n": 5,
-      "tp": 3,
-      "fp": 2,
+      "n": 1,
+      "tp": 0,
+      "fp": 1,
       "unlabeled": 0,
-      "precision": 0.6,
+      "unconfirmed": {
+        "n": 4,
+        "tp": 3
+      },
+      "precision": 0,
       "confidence95": {
-        "lower": 0.23072,
-        "upper": 0.882382
+        "lower": 0,
+        "upper": 0.793457
       }
     }
   ],
@@ -301,7 +353,8 @@
       "subject": "fuzz",
       "share": null,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|AGENTS.md|2026-11-03|+28d|FRS007|fuzz",
@@ -314,7 +367,8 @@
       "subject": "fuzz",
       "share": null,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|AGENTS.md|2026-11-03|+56d|FRS007|fuzz",
@@ -327,7 +381,8 @@
       "subject": "fuzz",
       "share": null,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+14d|FRS007|fuzz",
@@ -340,7 +395,8 @@
       "subject": "fuzz",
       "share": null,
       "label": false,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+28d|FRS007|fuzz",
@@ -353,7 +409,8 @@
       "subject": "fuzz",
       "share": null,
       "label": false,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+56d|FRS007|fuzz",
@@ -366,7 +423,8 @@
       "subject": "fuzz",
       "share": null,
       "label": false,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-05-31|+14d|FRS006|cli/docguard.mjs",
@@ -772,7 +830,8 @@
       "line": 34,
       "share": 0.2965,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+28d|FRS006|src/probe/probe.mjs",
@@ -786,7 +845,8 @@
       "line": 34,
       "share": 0.3229,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/probe/probe.mjs",
@@ -800,7 +860,8 @@
       "line": 35,
       "share": 0.7444,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/status/status.mjs",
@@ -855,7 +916,8 @@
       "subject": "corpus",
       "share": null,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS007|corpus/",
@@ -868,7 +930,8 @@
       "subject": "corpus/",
       "share": null,
       "label": true,
-      "labelSource": "override"
+      "labelSource": "override-unconfirmed",
+      "labeledBy": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
     },
     {
       "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+14d|FRS006|src/probe/discover.mjs",

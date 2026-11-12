@@ -25,7 +25,7 @@ import { fixtureGit } from './helpers/git.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { documentReferences, readDocReviews, DOC_REVIEWS_PATH } from '../cli/scanners/doc-reviews.mjs';
 import { resolveFindingEnforcement } from '../cli/shared.mjs';
-import { agentInstructionDocsWithoutReviewPoint } from '../cli/scanners/recorded-review-signals.mjs';
+import { agentInstructionDocsWithoutReviewPoint, agentInstructionReviewStatus } from '../cli/scanners/recorded-review-signals.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const write = (dir, path, body) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), body); };
@@ -161,6 +161,38 @@ describe('US2 — FRS006 names the file that changed since the review', () => {
     assert.ok(due, 'FRS002 expected');
     assert.equal(due.documentRole, 'canonical');
     assert.equal(due.staleness.references[0].path, 'src/engine.mjs');
+  });
+});
+
+describe('Spec 097 Stage B — a review is suspect by the FRS006 rule', () => {
+  it('reports suspect with the crossing references, the review date and revision, and agrees with FRS006', t => {
+    const dir = project(t, { surface: false });
+    const [status] = agentInstructionReviewStatus(dir, {});
+    assert.equal(status.path, 'AGENTS.md');
+    assert.equal(status.suspect, true);
+    assert.equal(status.reviewPoint.date, '2025-03-01');
+    assert.equal(status.reviewPoint.source, 'marker');
+    assert.match(status.reviewPoint.revision, /^[0-9a-f]{40}$/);
+    assert.deepEqual(status.references.map(r => r.path), ['src/engine.mjs']);
+    const frs006 = validateFreshness(dir, {}).filter(r => r.code === 'FRS006');
+    assert.equal(frs006.length, 1);
+    assert.deepEqual(frs006[0].staleness.references.map(r => r.path), status.references.map(r => r.path));
+    assert.equal(frs006[0].staleness.reviewPoint.revision, status.reviewPoint.revision);
+  });
+
+  it('a fresh recorded review is not suspect, and FRS006 is silent with it', t => {
+    const dir = project(t, { surface: false });
+    assert.equal(run(dir, ['review', '--accept', 'AGENTS.md', '--reason', 'reviewed against the grown engine']).status, 0);
+    const [status] = agentInstructionReviewStatus(dir, {});
+    assert.equal(status.suspect, false);
+    assert.equal(status.reviewPoint.source, 'recorded');
+    assert.deepEqual(status.references, []);
+    assert.equal(validateFreshness(dir, {}).filter(r => r.code === 'FRS006').length, 0);
+  });
+
+  it('a document with no review point is not listed (that is agentInstructionDocsWithoutReviewPoint)', t => {
+    const dir = project(t, { marker: false, surface: false });
+    assert.deepEqual(agentInstructionReviewStatus(dir, {}), []);
   });
 });
 
