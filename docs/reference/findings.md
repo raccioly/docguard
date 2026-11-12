@@ -682,7 +682,7 @@ A model/table found in a schema file does not appear anywhere in DATA-MODEL.md (
 
 ### SEC001: Hardcoded password
 
-A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). A password label is skipped: a capitalised word for "password" in a common language (`Password`, `Contraseña`, `Mot de passe`, `パスワード`), a short letter-only phrase containing one (`Confirm Password`), or the key's own words, unless the key is an all-caps constant such as `DB_PASSWORD`. Other natural-language UI copy or validation messages are flagged low-confidence; suppress inline if the value is not a credential.
+A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). A password label is skipped: a capitalised word for "password" in a common language (`Password`, `Contraseña`, `Mot de passe`, `パスワード`), a short letter-only phrase containing one (`Confirm Password`), or the key's own words, unless the key is an all-caps constant such as `DB_PASSWORD`. Other natural-language UI copy or validation messages are flagged low-confidence; suppress inline if the value is not a credential. A value that names itself a placeholder (`placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme`, `change-me`, or one repeated character) is not reported. Every SEC001-SEC004 finding carries `context: product` or `test-path`; the level is the same either way, but a `test-path` finding can never be a gating finding.
 
 Marker:
 

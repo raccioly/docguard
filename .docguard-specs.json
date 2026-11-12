@@ -2128,7 +2128,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/precision-evidence.mjs",
-            "line": 37
+            "line": 79
           },
           {
             "requirementId": "FR-017",
@@ -5633,7 +5633,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/security.mjs",
-            "line": 119
+            "line": 170
           },
           {
             "requirementId": "FR-006",
@@ -7210,7 +7210,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1116
+            "line": 1117
           },
           {
             "requirementId": "FR-008",
@@ -8236,12 +8236,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1373
+            "line": 1389
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1383
+            "line": 1399
           },
           {
             "requirementId": "FR-006",
@@ -16205,6 +16205,11 @@
             "requirementId": "FR-007",
             "file": "cli/enforcement.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validators/security.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-014",

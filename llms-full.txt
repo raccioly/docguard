@@ -1140,7 +1140,7 @@ first instant after the stated day. The schemas are vendored byte-identical in
 |---|---|---|
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
 
-<!-- truncated: 282 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 285 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -2055,15 +2055,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
   Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
   for them.
-
-### Changed
-
 - **A validator that performed no check is `empty`, never `pass`.** The verdict
   now requires at least one performed check. Requirement-Anchors enabled with
   zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
   where they were `pass`. No exit code changes under `standard`: `empty` does not
   affect one, except for a validator named in `requiredChecks`, which already
   held the gate on `empty` (FR-004).
+
+- **Security classifies where a literal sits and drops provably synthetic values**
+  (spec 097 FR-010, stage A). Two changes. (1) Every SEC001–SEC004 finding now
+  carries `context: "product"` or `"test-path"` (`--format json`, SARIF
+  `properties.context`, and the JUnit body). `test-path` is a test, fixture,
+  example or mock path. The level does not change: a real secret pasted into a
+  test file is still a leaked secret, and the message text is unchanged so
+  baseline fingerprints do not move. `isGatingEligible(finding)` is false for
+  `test-path`, so a later release can never make such a finding fail a build
+  under strict. (2) A SEC001–SEC004 value that is synthetic by its own text
+  (`placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme`,
+  `change-me`, or one repeated character) is no longer reported, in every mode,
+  alongside the existing `EXAMPLE` and `password123` exemptions. The word must
+  be a whole segment or open the value; one buried in a high-entropy run does not
+  count. `xxx` and `your-` values are still reported. Provider-signature keys
+  (AWS, `sk-`) are unaffected.
 
 ### Fixed
 
@@ -2380,21 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
   receipt, so its absence from the feature's history proves nothing. A
   tracked file is still reported, even under an ignore rule.
 - **DSP001 reads the overlap where the document names the file** (#598).
-  The removed-token overlap was computed over the whole document. A test file
-  named once in an inventory table was therefore paired with common words
-  from unrelated sections, and from other rows of the same table, which
-  blocked `guard --fail-on-warning`. It is now counted in the smallest
-  section holding the reference, without the table rows that name other
-  files.
-- **Auth middleware behind a path the router reader cannot read no longer
-  marks every route as protected** (#595, found by the Jules bug-hunt
-  routine). `router.use(API_PREFIX, requireAuth)` covers an unknown scope, so
-  it is now recorded in `scan.unresolved`. A `use()` whose middleware is not
-  auth records nothing.
-- **The anchor-cache tests pass on CI** (#599). They asserted an enabled
-  cache, but the cache turns itself off whenever `CI` is set.
 
-<!-- truncated: 6255 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6268 more lines — read CHANGELOG.md directly -->
 
 ---
 
