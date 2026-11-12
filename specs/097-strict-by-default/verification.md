@@ -112,3 +112,122 @@ Verdicts are pass / fail / empty / inconclusive / skipped.
 - Mutation checks were not run for Cross-Reference, Docs-Sync, the generated documents, or Requirement-Anchors on three projects; for those "real" rests on the check having performed.
 - One public repository in the corpus showed a changed `git status` (one modified file to clean) between the before and after snapshots at the same HEAD. No write command was run in it by this proof; another session or the maintainer changed it. Every other original is unchanged in HEAD, status and stash count. Stash contents were only counted before the runs.
 - `docguard-self` unexamined is 0 because its configuration already waives or disables the rest; that is T015's result, not this proof's.
+
+---
+
+# Second run (T018e): after the fixes from the first run
+
+**Measured**: 2026-11-12 on `spec/097-strict-by-default` at the merge of PR 652, same corpus (R1 to R8), same method. Bases: the v0.47.0 tag, `main`, and the tip. The first run above stays as the record; numbers compare.
+
+Added to the method: before and after the runs, HEAD, a hash of the full `git status --short`, a hash of `git stash list` and a hash of `git stash show -p` of every entry were recorded for the eight originals and the shared DocGuard checkout. All are identical before and after. 48 guard runs (`main` and tip under `standard`, tip under `strict`, twice each) showed no run-to-run difference. The three Requirement-Anchors mutation scripts first ran without their helper library; they were fixed and rerun, and the numbers below are from the rerun.
+
+## Part 1: `standard` (SC-003)
+
+Exit code 2 under v0.47.0, `main` and the tip on all eight.
+
+| Difference tip vs `main` | Where | Attribution |
+|---|---|---|
+| GST001 on two documents carrying the generator's draft marker, Generated-Staleness `empty` to `fail` | R3 | The draft-marker fix; accepted by the amended FR-019 |
+| Cross-Reference `pass` to `empty` | R5 | FR-004 |
+| Spec-Registry `empty` to `pass` (six specifications now counted as performed checks) | R7 | **Verdict only, no finding or exit change; not on FR-019's list.** Recommend adding "verdicts that become `pass` because a validator now counts what it compared" |
+
+Nothing else against `main`. Against the v0.47.0 tag, the first run's explained differences remain (spec 094 on Freshness, spec 093 on Doc-Sections); both are on `main`, so they no longer show against it. The R8 target changed with the new tip; against `main` it shows no finding difference.
+
+**SC-003 is met**, with the one verdict-only change above to be added to FR-019.
+
+## Part 2: strict
+
+Exit code 4 on R1 to R7 and 2 on R8 (nothing blocking). **25 validators block** (R1 4, R2 2, R3 5, R4 3, R5 3, R6 5, R7 3) and **8 are "could not read"** (R2 3, R3 1, R4 1, R5 2, R6 1) and do not change the exit code.
+
+### (a) What makes the run exit 4
+
+| Result | Count |
+|---|---|
+| Judged applicable | 24 |
+| Judged unsure | 1 |
+| Judged not applicable | 0 |
+| Fix produced a real check (mutation caught where run) | 20 |
+| Fix is a document `docguard generate` drafted from the code it is compared with (a real fix under the amended SC-001) | 5 (R6 environment, docs-diff and API-surface; R3 and R4 API-surface, which then leave the list because some routes cannot be read) |
+| Fix could not be applied | 0 |
+
+Applying every blocking fix in one copy per repository gives exit 2 on all seven, with 0 blocking and no error-level finding. Fixes were applied as the text says: Requirement-Anchors with a Spec ID declared in the spec and a qualified tag; Test-Spec, API-Surface and Docs-Diff through `docs.roles` where the project already keeps the document (R6), otherwise `docguard generate`; Doc-Dependency with `covers=` added to the section marker the document already had.
+
+- **Unsure (the one row that stops SC-001):** Metadata-Sync on R3, a worker application at 1.0.0 that is not marked private and not published. DocGuard cannot tell whether anyone installs it, and the fix writes a version line for a package nobody quotes.
+- **R6 API-Surface through `docs.roles`:** the existing reference is a prose overview with no endpoint rows, so the validator stays blocking with a new, accurate text ("list every endpoint as `METHOD /path`"; 164 routes). The text's other branch (`docguard generate`) clears it but duplicates a document the project already has.
+- **Docs-Diff on R6:** the text maps only the test document through `docs.roles`; the project's architecture document sits in a subfolder and is not offered.
+
+### (b) "Could not read" (8)
+
+| Kind | Item | Belongs? |
+|---|---|---|
+| R2 Python service | Docs-Sync: Python files under the API folders not read | Yes, a layout DocGuard does not read; the text lists what it reads and asks for no move |
+| R2 | Architecture: 419 import edges followed, a runtime path mutation not resolved | Yes, partial |
+| R2 | API-Surface: 37 endpoints compared, one serverless route unreadable | Yes, partial |
+| R3 serverless API | Docs-Sync: handlers folder unread | Yes, layout |
+| R4 monorepo | Cross-Reference: two documents outside `docs-canonical/` link each other | Yes, layout; the text says the documents stay and their links keep resolving |
+| R5 Next.js on AWS | Schema-Sync: DynamoDB through the SDK | Yes, a limit of DocGuard; the text asks for no model file |
+| R5 | Cross-Reference: same layout as R4 | Yes |
+| R6 large Next.js | Requirement-Anchors: 37 "requirement-like IDs" (decision, open-item and task IDs) in a form the scanner does not read | **No: should not apply.** They are not requirements; the project declares none. It was skipped in the first run; the `requirementPattern` fix text would make DocGuard read decision IDs as requirements. Non-blocking, so SC-001 is not affected |
+
+## Where the first run's 39 landed
+
+| Kind | Validator | Now |
+|---|---|---|
+| R1 CLI | Metadata-Sync, Doc-Dependency, Requirement-Anchors, Surface-Sync | Still blocking (all four) |
+| R2 Python service | Docs-Sync, Architecture, API-Surface | Could not read |
+| R2 | Doc-Dependency, Requirement-Anchors | Still blocking |
+| R3 serverless API | Docs-Sync | Could not read |
+| R3 | Test-Spec, API-Surface, Metadata-Sync, Doc-Dependency, Requirement-Anchors | Still blocking |
+| R4 monorepo | Cross-Reference | Could not read |
+| R4 | Metadata-Sync | Not applicable (skipped: every versioned workspace package is private) |
+| R4 | API-Surface, Doc-Dependency, Requirement-Anchors | Still blocking |
+| R5 Next.js on AWS | Schema-Sync, Cross-Reference | Could not read |
+| R5 | Metadata-Sync | Not applicable (private, unpublished) |
+| R5 | Test-Spec, Doc-Dependency, Requirement-Anchors | Still blocking |
+| R6 large Next.js | Metadata-Sync | Not applicable (private) |
+| R6 | Generated-Staleness | Not applicable (skipped: no draft document exists) |
+| R6 | Test-Spec, Environment, Docs-Diff, API-Surface, Doc-Dependency | Still blocking |
+| R7 game | Metadata-Sync, API-Surface | Not applicable (private; UI framework with no route) |
+| R7 | Spec-Registry | Gone (`pass`, 16 examined) |
+| R7 | Test-Spec, Doc-Dependency, Requirement-Anchors | Still blocking |
+
+Totals: 25 still blocking, 7 could not read, 7 not applicable or gone. New in the list: R6 Requirement-Anchors (could not read, judged should not apply).
+
+## Checks on the fix texts
+
+- **Never tells the project to move code or documents:** true for every blocking and could-not-read text (the one textual hit is "when package.json moves on").
+- **Says where a required identifier or mapping comes from:** Requirement-Anchors says a Spec ID is declared in the spec (`**Spec ID**:` line or comment, `docguard specs --write`); API-Surface, Test-Spec and Docs-Diff name `docs.roles` with the existing file when one looks right.
+- **Residual:** the Docs-Diff text omits the architecture mapping; the R3 Test-Spec text names only the newer map heading although the older is accepted; the Doc-Dependency example for R7 names a generated platform shell file.
+
+## Mutation checks that were missing in the first run
+
+All caught: Cross-Reference (a broken link where it reads, R7), Docs-Sync (a new service file, R5), generated Environment (an undocumented variable, R6), generated API reference (an undocumented route, R6), Requirement-Anchors on three projects (a change inside the tagged function). The first run's Cross-Reference and Docs-Sync fixes no longer exist; the checks ran on repositories where those validators already perform.
+
+## Parts 3 and 4
+
+No error-level finding on any repository, in the plain strict runs or the combined-fix runs: SC-002 still cannot be measured at Stage A (T027). Verdicts are pass / fail / empty / inconclusive / skipped.
+
+| | v0.47.0 exit | `main` exit | tip `standard` exit | tip `strict` exit | v0.47.0 | tip `standard` | tip `strict` | Blocking | Could not read |
+|---|---|---|---|---|---|---|---|---|---|
+| R1 | 2 | 2 | 2 | 4 | 17/4/15/1/0 | 17/4/15/1/0 | 17/4/4/0/12 | 4 | 0 |
+| R2 | 2 | 2 | 2 | 4 | 14/5/16/2/0 | 13/6/16/2/0 | 13/6/3/2/13 | 2 | 3 |
+| R3 | 2 | 2 | 2 | 4 | 8/11/17/1/0 | 8/12/16/1/0 | 8/12/5/1/11 | 5 | 1 |
+| R4 | 2 | 2 | 2 | 4 | 16/5/15/1/0 | 16/5/15/1/0 | 16/5/3/1/12 | 3 | 1 |
+| R5 | 2 | 2 | 2 | 4 | 9/11/15/0/2 | 8/11/16/0/2 | 8/11/5/0/13 | 3 | 2 |
+| R6 | 2 | 2 | 2 | 4 | 8/9/15/3/2 | 8/10/14/3/2 | 8/10/3/3/13 | 5 | 1 |
+| R7 | 2 | 2 | 2 | 4 | 13/5/16/1/2 | 13/6/15/1/2 | 13/6/3/0/15 | 3 | 0 |
+| R8 | 2 | 2 | 2 | 2 | 26/3/7/0/1 | 25/4/0/0/8 | 25/4/0/0/8 | 0 | 0 |
+
+R8 exits 2 under `strict` with nothing blocking, nothing could-not-read and eight validators `skipped` with evidence; one is waived with a reason. In all eight, no validator that is `empty`, `inconclusive` or `blocked` is missing from both lists: nothing is unexamined and silent. Security and Architecture are still `skipped` by the profile on R5, R6 and R7 (Stage B, FR-003).
+
+## Criteria
+
+- **SC-003: met** (see Part 1).
+- **SC-001: not met by the letter.** 24 of 25 blocking validators are judged applicable and all 25 have a fix that works, but one is unsure: Metadata-Sync on R3 (above). It would be met if that validator treated an unpublished, unmarked worker application as not applicable, or if the project's own declaration were accepted as the answer.
+
+## Not verified
+
+- One fix per copy was run once (48 baseline runs showed no instability).
+- Mutation checks were not run for the five generated documents' Docs-Diff or for the Surface-Sync and Metadata-Sync fixes beyond the ones listed; Metadata-Sync and Surface-Sync were mutated in the first run.
+- The public CLI repository was clean at the start of this run at the same HEAD; the modified file seen at the start of the first run was gone. Its reflog shows no HEAD movement after a fast-forward before the first run, and other sessions had the folder open. The change itself cannot be determined from git state.
+- Stage B (FR-003: every validator runs regardless of profile) is not exercised by this run.
