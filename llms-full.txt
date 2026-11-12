@@ -2118,6 +2118,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docguard.configured-canonical-paths` FR-006).
 
 
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
+
 ### Fixed
 
 - **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
@@ -2385,16 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   476 on one project), every absence claim (a missing pointer, symbol, test,
   link, source, revision or implementation evidence) is withheld while any
   gap stands, and the checks it affected report `inconclusive`. Private git
-  calls in Document-Lifecycle, Spec-Registry, revision anchors, doc locks and
-  task evidence now record gaps too; Document-Lifecycle reports a gap as
-  `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
-  with a gap, so withheld findings cannot drop out of the baseline.
 
-### Budgets
-
-The `docguard_docs_for_path` MCP response is 612 bytes larger than in 0.45.2,
-
-<!-- truncated: 6316 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6324 more lines — read CHANGELOG.md directly -->
 
 ---
 
