@@ -15913,6 +15913,88 @@
       }
     },
     {
+      "specId": "docguard.strict-by-default",
+      "path": "specs/097-strict-by-default/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.strict-by-default#FR-001",
+          "docguard.strict-by-default#FR-002",
+          "docguard.strict-by-default#FR-003",
+          "docguard.strict-by-default#FR-004",
+          "docguard.strict-by-default#FR-005",
+          "docguard.strict-by-default#FR-006",
+          "docguard.strict-by-default#FR-007",
+          "docguard.strict-by-default#FR-008",
+          "docguard.strict-by-default#FR-009",
+          "docguard.strict-by-default#FR-010",
+          "docguard.strict-by-default#FR-011",
+          "docguard.strict-by-default#FR-012",
+          "docguard.strict-by-default#FR-013",
+          "docguard.strict-by-default#FR-014",
+          "docguard.strict-by-default#FR-015",
+          "docguard.strict-by-default#FR-016",
+          "docguard.strict-by-default#FR-017",
+          "docguard.strict-by-default#FR-018",
+          "docguard.strict-by-default#FR-019",
+          "docguard.strict-by-default#FR-020",
+          "docguard.strict-by-default#FR-021",
+          "docguard.strict-by-default#FR-022",
+          "docguard.strict-by-default#SC-001",
+          "docguard.strict-by-default#SC-002",
+          "docguard.strict-by-default#SC-003",
+          "docguard.strict-by-default#SC-004",
+          "docguard.strict-by-default#SC-005",
+          "docguard.strict-by-default#SC-006"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/097-strict-by-default/spec.md",
+            "digest": "sha256:c463938ff145baf56149e852ffcb43a52284ad3e45ae08bcd9d99bc6b7820a96"
+          },
+          {
+            "path": "specs/097-strict-by-default/plan.md",
+            "digest": "sha256:defbe2055efca5999f6d84c7ce4723110f2b506f79737933922ca3b47a9be80c"
+          },
+          {
+            "path": "specs/097-strict-by-default/tasks.md",
+            "digest": "sha256:b0dfa6bc8733a938f34a33c63f3df3a5409a27131c984b1ce39b3329800863fb"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 31
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.symbol-map",
       "path": "specs/036-symbol-map/spec.md",
       "reviewed": {
