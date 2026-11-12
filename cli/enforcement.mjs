@@ -68,12 +68,11 @@ export function modeLine(enforcement) {
  * `unexamined` lists every validator that applies and did not examine
  * anything: verdict `empty`, `inconclusive` or `blocked`. Only an entry with
  * `blocking: true` makes the run exit 4:
- *   - `inconclusive` and `blocked` always block (today's `--fail-on-inconclusive`);
- *   - `empty` blocks only when the validator has been migrated to the result
- *     contract (it returned a cause, and the cause says it applies). A not yet
- *     migrated validator that is `empty` is listed as `not-yet-classified` and
- *     does NOT block: Stage A must not fail a project on a guess about
- *     applicability.
+ *   - `inconclusive`, `blocked` and `empty` always block (today's
+ *     `--fail-on-inconclusive`, and the `requiredChecks` rule of spec 083 applied
+ *     to every applicable validator). Every validator returns the result
+ *     contract, so an `empty` one carries a cause and a fix; the registry test
+ *     fails when one does not.
  *
  * `gating` is the findings that fail the build, by code (Stage A: exactly the
  * findings that resolve to error today; FR-008/FR-009 narrow it in Stage B).
@@ -101,16 +100,15 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
     }
     if (r.key === 'requiredChecks') continue;
     if (r.verdict !== 'empty' && r.verdict !== 'inconclusive' && r.verdict !== 'blocked') continue;
-    const classified = r.verdict === 'empty' ? EMPTY_CAUSES.includes(r.emptyCause) && r.applies?.applies === true : true;
     unexamined.push({
       validator: r.key,
       name: r.name || r.key,
       verdict: r.verdict,
-      cause: EMPTY_CAUSES.includes(r.emptyCause) ? r.emptyCause : (r.verdict === 'empty' ? 'not-yet-classified' : null),
+      cause: EMPTY_CAUSES.includes(r.emptyCause) ? r.emptyCause : null,
       reason: r.applicability?.reason || null,
       howToConfigure: typeof r.howToConfigure === 'string' && r.howToConfigure ? r.howToConfigure : null,
       newIn: null,
-      blocking: !lite && classified,
+      blocking: !lite,
     });
   }
   return {
@@ -138,12 +136,6 @@ export function adoptLines(strict) {
     lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
     const fix = u.howToConfigure || u.reason;
     if (fix) lines.push(`      ${fix}`);
-  }
-  // A validator that has not been migrated to the result contract cannot say whether it
-  // applies, so it is named once, in one line, and never fails the run.
-  const unclassified = strict.unexamined.filter(u => u.cause === 'not-yet-classified');
-  if (unclassified.length > 0) {
-    lines.push(`  • ${unclassified.length} validator(s) examined nothing and their cause is not yet classified; they do not fail this run: ${unclassified.map(u => u.validator).join(', ')}`);
   }
   const gatingTotal = strict.gating.reduce((n, g) => n + g.count, 0);
   if (gatingTotal > 0) {

@@ -316,13 +316,12 @@ export async function strictUpgradeLines(projectDir, config) {
   const data = runGuardInternal(projectDir, { ...config, enforcement: 'strict' });
   const strict = data.strict;
   const lines = [modeLine(current)];
-  const unclassified = strict.unexamined.filter(u => u.cause === 'not-yet-classified').length;
   const gating = strict.gating.reduce((n, g) => n + g.count, 0);
-  if (strict.blocking.length === 0 && gating === 0 && unclassified === 0) {
+  if (strict.blocking.length === 0 && gating === 0) {
     lines.push('Strict would change nothing for this project: every validator that applies examined something, and no finding is newly blocking.');
     return lines;
   }
-  lines.push(`Under strict this project would report ${strict.blocking.length} validator(s) that apply and examined nothing${unclassified ? ` (plus ${unclassified} whose cause is not yet classified)` : ''} and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
+  lines.push(`Under strict this project would report ${strict.blocking.length} validator(s) that apply and examined nothing and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
   lines.push(...adoptLines(strict).slice(1));
   lines.push('Nothing was written.');
   return lines;

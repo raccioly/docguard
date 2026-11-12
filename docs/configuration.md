@@ -113,9 +113,8 @@ Under `strict`, `--format json` also carries
 `strict: { evaluated, unexamined[], blocking[], gating[], pending[], waived[], baselined }`.
 Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking }`.
 `cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`
-or `nothing-of-this-kind`, or `not-yet-classified` for a validator that has not
-yet been migrated to the result contract; such a validator is listed but never
-exits 4, so a project does not fail on a guess. `--changed-only` runs a subset
+or `nothing-of-this-kind`, or `null` when the validator could not observe its
+input (it is `inconclusive`, and `reason` is the gap). `--changed-only` runs a subset
 of the validators, so it does not evaluate the rule and says so.
 
 `docguard upgrade` reports, read-only, what `strict` would change for the

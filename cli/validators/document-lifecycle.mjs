@@ -17,7 +17,10 @@ export function applies(projectDir, config = {}) {
     : { applies: false, evidence: 'Git tracks no Markdown file whose lifecycle status could be read' };
 }
 
-function lifecycleContract(projectDir, config, performed, found) {
+function lifecycleContract(projectDir, config, performed, found, gap = false) {
+  // Git could not list the tracked files: an observation gap, `inconclusive` with the gap as its reason, so no
+  // cause and no fix (spec 097 FR-005).
+  if (gap && performed === 0 && !found) return { performed, applies: applies(projectDir, config) };
   return contractFields({
     performed, found, ran: `reviewed the lifecycle of ${performed} tracked Markdown file(s)`,
     decide: () => applies(projectDir, config),
@@ -55,7 +58,7 @@ export function validateDocumentLifecycle(projectDir, config = {}) {
   }));
   if (coverage.gap) {
     // docguard.verdict-contract#FR-004: a recorded gap, not a finding.
-    return { ...resultFromFindings(findings, { passed: Math.max(0, scanned - candidates.length), total: scanned }), applicability: { status: 'partial', reason: `Document lifecycle could not list tracked files: ${coverage.error}` }, ...lifecycleContract(projectDir, config, scanned, findings.length > 0) };
+    return { ...resultFromFindings(findings, { passed: Math.max(0, scanned - candidates.length), total: scanned }), applicability: { status: 'partial', reason: `Document lifecycle could not list tracked files: ${coverage.error}` }, ...lifecycleContract(projectDir, config, scanned, findings.length > 0, true) };
   }
   if (coverage.status !== 'complete') {
     findings.push(mkFinding({

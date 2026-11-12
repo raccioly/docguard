@@ -62,11 +62,14 @@ export function validateArchitecture(projectDir, config = {}) {
   let layerFilesScanned = 0;
   const compose = () => {
     const performed = acc.total + (edges > 0 ? 1 : 0) + (layerFilesScanned > 0 ? 1 : 0);
+    // An import graph that could not be read completely is an observation gap: `inconclusive`, its reason is
+    // the gap (the applicability above), so the result carries no cause and no fix (spec 097 FR-005).
+    const gapped = performed === 0 && acc.findings.length === 0 && ['partial', 'unsupported'].includes(applicability.status);
     return {
       name: 'architecture',
       applicability,
       ...resultFromFindings(acc.findings, { passed: acc.passed, total: acc.total }),
-      ...contractFields({
+      ...(gapped ? { performed, applies: applies(projectDir, config) } : contractFields({
         performed, found: acc.findings.length > 0,
         ran: `checked ${edges} import edge(s) for cycles${layerFilesScanned ? ` and ${layerFilesScanned} file(s) against the declared layers` : ''}`,
         decide: () => applies(projectDir, config),
@@ -75,9 +78,9 @@ export function validateArchitecture(projectDir, config = {}) {
           const declared = Object.entries(config.layers || {}).filter(([, l]) => l?.dir).map(([name, l]) => `${name}: ${l.dir}`);
           return declared.length > 0
             ? { emptyCause: 'layout-not-recognized', note: `The layers in .docguard.json name no directory that exists in the project (${declared.slice(0, 3).join(', ')}), so Architecture checked no file against them.`, howToConfigure: `Point each \`layers.<name>.dir\` in .docguard.json at a directory that holds the layer's source files (declared: ${declared.join(', ')}), or remove \`layers\` and declare the boundaries in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md.` }
-            : { emptyCause: 'needs-content', note: `Architecture could not read the import graph (${decision.evidence}), so it checked no cycle.`, howToConfigure: 'Install the interpreter or parser named above, or restore the unreadable files, then rerun `docguard guard`; the same limitation is reported under the validator\'s applicability.' };
+            : { emptyCause: 'needs-content', note: 'Architecture found an import graph with nothing in it to check: no cycle detection ran and no layer was declared.', howToConfigure: 'Declare layers in `layers` of .docguard.json or in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md; Architecture then checks every import against them.' };
         },
-      }),
+      })),
     };
   };
 

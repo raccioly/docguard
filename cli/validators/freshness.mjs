@@ -501,12 +501,16 @@ export function applies(dir, config = {}) {
  * @param {{ performed: number, found: boolean, skipped?: Array<{ message: string }> }} outcome
  */
 export function freshnessContract(dir, config, { performed, found, skipped = [] }) {
+  // Unreadable Git metadata is an observation gap: the result is `inconclusive` and its reason is the gap
+  // (the adapter sets the applicability), so it carries no cause and no fix (spec 097 FR-005).
+  if (performed === 0 && !found && gitMetadataStatus(dir).status === 'unreadable') {
+    return { performed, applies: applies(dir, config) };
+  }
   return contractFields({
     performed, found, ran: `compared ${performed} document(s) with the code history`,
     decide: () => applies(dir, config),
     empty: (decision) => {
       if (!decision.applies) return { note: 'Freshness found no Git repository, so it compared no document with a commit history.', howToConfigure: 'Nothing to configure unless the project is under version control: run `git init` and commit the documents, and Freshness compares them with the code history.' };
-      if (gitMetadataStatus(dir).status === 'unreadable') return { emptyCause: 'needs-content', note: 'Freshness could not read the Git metadata, so it compared no document with the code history.', howToConfigure: 'Restore read access to the repository\'s .git directory (or the `safe.directory` entry Git asks for), then rerun `docguard guard`.' };
       const commits = getTotalCommits(dir);
       if (commits < 3) return { emptyCause: 'needs-content', note: `Freshness found ${commits} commit(s) and needs at least 3 to compare documents with the code history.`, howToConfigure: 'Commit the project\'s work (`git commit`); in CI, fetch the full history (for GitHub Actions, `fetch-depth: 0` on actions/checkout), because a shallow clone has too few commits.' };
       const docs = collectDocs(dir, config, pathFilter(dir, config));

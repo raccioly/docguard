@@ -30,6 +30,8 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
+import { FIXTURES as FIXTURES_A, run as runA } from './helpers/applicability-fixtures-a.mjs';
+import { FIXTURES as FIXTURES_B, run as runB } from './helpers/applicability-fixtures-b.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
@@ -236,17 +238,6 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
     assert.equal(status, 0);
     assert.deepEqual(json.strict.unexamined, []);
     assert.deepEqual(json.strict.waived.map(w => w.validator), ['apiSurface']);
-  });
-
-  it('a validator that is empty but not yet migrated is listed as not-yet-classified and does NOT exit 4', () => {
-    // Schema-Sync is not migrated yet: it returns empty with no cause.
-    const dir = project(NO_API, cfg(only('schemaSync'), { enforcement: 'strict' }));
-    const { status, json } = guardJson(dir);
-    assert.equal(verdictOf(json, 'schemaSync').verdict, 'empty');
-    const u = json.strict.unexamined.find(x => x.validator === 'schemaSync');
-    assert.equal(u.cause, 'not-yet-classified');
-    assert.equal(u.blocking, false);
-    assert.equal(status, 0);
   });
 
   it('--changed-only does not evaluate the unexamined rule and says so', () => {
@@ -461,12 +452,8 @@ const EMPTY_CAUSES = () => coverage.EMPTY_CAUSES;
 const validateResultContract = (r) => coverage.validateResultContract(r);
 
 /**
- * Validators that have not been migrated to the result contract. The NEXT
- * session shrinks this array and nothing else: a validator that returns the
- * contract must leave it (the test below fails if it does not), and a
- * validator that does not must be in it. Until a validator is migrated and
- * leaves this list, an `empty` result of it is reported under strict as
- * "cause not yet classified" and never exits 4.
+ * Validators that have not been migrated to the result contract. Empty: every registered validator returns it,
+ * and the registry tests below fail if one stops.
  */
 const NOT_YET_MIGRATED = [
 ];
@@ -603,6 +590,37 @@ describe('the registry', () => {
         seen.set(reason, `${key}/${cause}`);
       }
     }
+  });
+
+  it('across every fixture table, every validator is covered, none shares an empty reason and none is empty without a cause (SC-006)', () => {
+    // Core fixtures are { cause: fixture }; group A and B tables are { empties: { name: fixture } }.
+    const tables = [
+      [FIXTURES, (key, fixture) => run(key, fixture), (entry) => Object.entries(entry).filter(([name]) => name !== 'fix')],
+      [FIXTURES_A, (key, fixture) => runA(key, fixture), (entry) => Object.entries(entry.empties)],
+      [FIXTURES_B, (key, fixture) => runB(key, fixture), (entry) => Object.entries(entry.empties)],
+    ];
+    // Security never ends empty: a run that scanned nothing already carries the SEC011 warning, so its cause is in
+    // its evidence (tests/validator-applicability-security.test.mjs).
+    const covered = new Set(['security']);
+    const seen = new Map();
+    for (const [table, runOne, empties] of tables) {
+      for (const [key, entry] of Object.entries(table)) {
+        covered.add(key);
+        for (const [name, fixture] of empties(entry)) {
+          const result = runOne(key, fixture).result;
+          const label = `${key}/${name}`;
+          if (result.verdict === 'empty' || result.performed === 0) {
+            assert.ok(EMPTY_CAUSES().includes(result.emptyCause), `${label} is empty without a cause`);
+            assert.ok(result.howToConfigure, `${label} is empty without a fix`);
+          }
+          const reason = result.applicability?.reason;
+          assert.ok(reason, `${label} has a reason`);
+          if (seen.has(reason)) assert.fail(`${label} shares its reason with ${seen.get(reason)}: ${reason}`);
+          seen.set(reason, label);
+        }
+      }
+    }
+    for (const k of keys) assert.ok(covered.has(k), `${k} has no fixture in any table`);
   });
 
   it('under strict, a migrated empty validator blocks and a skipped one does not', () => {

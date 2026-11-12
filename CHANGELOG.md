@@ -115,6 +115,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be a whole segment or open the value; one buried in a high-entropy run does not
   count. `xxx` and `your-` values are still reported. Provider-signature keys
   (AWS, `sk-`) are unaffected.
+- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
+  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
+  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
+  match the released schema. The `ignore` schema no longer lists the
+  `fingerprint` kind, which DocGuard never exported (#619;
+  `docguard.configured-canonical-paths` FR-006).
+
 
 ### Fixed
 
@@ -151,15 +158,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   canonical document that was not at its default path, so a relocated document
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
-
-### Changed
-
-- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
-  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
-  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
-  match the released schema. The `ignore` schema no longer lists the
-  `fingerprint` kind, which DocGuard never exported (#619;
-  `docguard.configured-canonical-paths` FR-006).
 
 ### Budgets
 

@@ -15570,7 +15570,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 536
+            "line": 535
           },
           {
             "requirementId": "FR-004",
