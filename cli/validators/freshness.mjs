@@ -18,6 +18,7 @@ import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } 
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -473,4 +474,44 @@ export function validateFreshness(dir, config) {
     disposition: 'escalate',
     suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
   } : result);
+}
+
+// ── Result contract (specs/097-strict-by-default FR-004 to FR-006) ───────────
+// Kept apart from the checks above: it reads their outcome and adds the fields,
+// and decides nothing about a finding. An agent-instruction document that has no
+// review point yet is not counted as "applies, examined nothing" here; the
+// `empty` branch below is where that cause belongs when it is.
+
+/**
+ * Whether Freshness's kind of check belongs to the project: it compares
+ * documents with the repository's commit history, so it applies to a project
+ * that has one. A directory outside a Git repository has no history to compare
+ * with; unreadable Git metadata is undecided and counts as applying.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(dir, config = {}) {
+  const git = gitMetadataStatus(dir);
+  if (git.status === 'unreadable') return { applies: true, evidence: 'the Git metadata is unreadable, so whether the project has history is undecided' };
+  if (git.status !== 'ok') return { applies: false, evidence: 'not a git repository, so there is no commit history to compare documents with' };
+  return { applies: true, evidence: `a git repository with ${getTotalCommits(dir)} commit(s)` };
+}
+
+/**
+ * The contract fields of a Freshness result.
+ * @param {{ performed: number, found: boolean, skipped?: Array<{ message: string }> }} outcome
+ */
+export function freshnessContract(dir, config, { performed, found, skipped = [] }) {
+  return contractFields({
+    performed, found, ran: `compared ${performed} document(s) with the code history`,
+    decide: () => applies(dir, config),
+    empty: (decision) => {
+      if (!decision.applies) return { note: 'Freshness found no Git repository, so it compared no document with a commit history.', howToConfigure: 'Nothing to configure unless the project is under version control: run `git init` and commit the documents, and Freshness compares them with the code history.' };
+      if (gitMetadataStatus(dir).status === 'unreadable') return { emptyCause: 'needs-content', note: 'Freshness could not read the Git metadata, so it compared no document with the code history.', howToConfigure: 'Restore read access to the repository\'s .git directory (or the `safe.directory` entry Git asks for), then rerun `docguard guard`.' };
+      const commits = getTotalCommits(dir);
+      if (commits < 3) return { emptyCause: 'needs-content', note: `Freshness found ${commits} commit(s) and needs at least 3 to compare documents with the code history.`, howToConfigure: 'Commit the project\'s work (`git commit`); in CI, fetch the full history (for GitHub Actions, `fetch-depth: 0` on actions/checkout), because a shallow clone has too few commits.' };
+      const docs = collectDocs(dir, config, pathFilter(dir, config));
+      if (docs.length === 0) return { emptyCause: 'needs-declaration', note: 'Freshness found no canonical document, agent-instruction file or changelog to compare with the code history.', howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md (`docguard generate` drafts it), commit it, and Freshness reports when it falls behind the code.' };
+      return { emptyCause: 'needs-content', note: skipped.length ? `Freshness reviewed none of ${docs.length} document(s): ${skipped.map(r => r.message).join('; ')}` : `Freshness found ${docs.length} document(s) but reviewed none of them.`, howToConfigure: 'Review the documents named above, or stamp them with `<!-- docguard:last-reviewed YYYY-MM-DD -->` after reading them; a document that is staged, historical, superseded or a pointer is not reviewed in this run.' };
+    },
+  });
 }

@@ -148,7 +148,7 @@ import { validateEnvironment } from '../validators/environment.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { validateDocsSync } from '../validators/docs-sync.mjs';
 import { validateArchitecture } from '../validators/architecture.mjs';
-import { validateFreshness } from '../validators/freshness.mjs';
+import { validateFreshness, freshnessContract } from '../validators/freshness.mjs';
 import { validateTraceability } from '../validators/traceability.mjs';
 import { validateDocsDiff } from '../validators/docs-diff.mjs';
 import { validateApiSurface } from '../validators/api-surface.mjs';
@@ -375,8 +375,9 @@ export function runGuardInternal(projectDir, config) {
       }
       const skipped = freshnessResults.filter(r => r.status === 'skip');
       const prerequisite = skipped.find(r => r.prerequisite)?.prerequisite;
-      if (prerequisite) return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), applicability: prerequisite };
-      return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}) };
+      const contract = freshnessContract(projectDir, config, { performed: passed + findings.length, found: findings.length > 0, skipped });
+      if (prerequisite) return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), applicability: prerequisite, ...contract };
+      return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}), ...contract };
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
