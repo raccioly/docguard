@@ -127,7 +127,7 @@ export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {
           for (const r of measured.filter(x => x.share >= Math.min(...THRESHOLDS))) {
             const key = `${name}|${doc}|${point.marker}|+${days}d|FRS006|${r.path}`;
             const proxy = censored ? null : rewritten.some(l => l.includes(r.path));
-            hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS006', subject: r.path, line: r.line, share: Number(r.share.toFixed(4)), label: Object.hasOwn(labels, key) ? labels[key] : proxy, labelSource: Object.hasOwn(labels, key) ? 'human' : 'proxy' });
+            hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS006', subject: r.path, line: r.line, share: Number(r.share.toFixed(4)), label: Object.hasOwn(labels, key) ? labels[key] : proxy, labelSource: Object.hasOwn(labels, key) ? 'override' : 'proxy' });
           }
           if (docRole === 'agent-instruction') {
             const then = surfaceAt(dir, reviewCommit.sha);
@@ -139,7 +139,7 @@ export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {
             ];
             for (const m of missing) {
               const key = `${name}|${doc}|${point.marker}|+${days}d|FRS007|${m.s}`;
-              hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS007', subject: m.s, share: null, label: Object.hasOwn(labels, key) ? labels[key] : censored ? null : m.mentioned, labelSource: Object.hasOwn(labels, key) ? 'human' : 'proxy' });
+              hits.push({ key, repo: name, doc, role: docRole, review: point.marker, horizonDays: days, code: 'FRS007', subject: m.s, share: null, label: Object.hasOwn(labels, key) ? labels[key] : censored ? null : m.mentioned, labelSource: Object.hasOwn(labels, key) ? 'override' : 'proxy' });
             }
           }
         }

@@ -11,8 +11,14 @@ hit gets a proxy label from what the project did next:
 - **false** when that 56-day window was fully observed and it did not;
 - **unlabeled** when the window runs past the repository's head.
 
-Labels are a proxy, and `--labels` takes a JSON object of hit key to `true`/`false` for human
-overrides.
+Labels are a proxy, and `--labels` takes a JSON object of hit key to `true`/`false` that overrides
+it (`labelSource: "override"`). `labels-public.json` holds the overrides for the public repositories.
+They were set on 2026-11-12 by the session that implemented spec 095, from reading each referenced
+file against the document, and a maintainer should confirm them:
+- TestGuard `AGENTS.md` / `src/probe/probe.mjs` (FRS006): true. This is the #628 case.
+- TestGuard `corpus` and `corpus/` (FRS007): true.
+- DocGuard `AGENTS.md` / `fuzz` (FRS007): true. AGENTS.md now mentions `npm run fuzz`.
+- DocGuard `CLAUDE.md` / `fuzz` (FRS007): false. CLAUDE.md follows AGENTS.md and now inherits its mentions.
 
 `results-public.json` holds the run on DocGuard (020fa51) and TestGuard (f89ca46), the only
 public repositories with review markers. Results from private projects are never committed.

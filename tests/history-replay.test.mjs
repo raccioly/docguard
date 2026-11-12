@@ -52,11 +52,11 @@ describe('history replay', () => {
     assert.ok(row.confidence95.lower < 0.5 && row.confidence95.upper > 0.5);
   });
 
-  it('a human label overrides the proxy', t => {
+  it('a reviewed label overrides the proxy', t => {
     const dir = history(t);
     const first = replayRepository(dir, { name: 'fixture' }).hits.find(h => h.subject === 'src/util.mjs' && h.horizonDays === 14);
     const again = replayRepository(dir, { name: 'fixture', labels: { [first.key]: true } }).hits.find(h => h.key === first.key);
     assert.equal(again.label, true);
-    assert.equal(again.labelSource, 'human');
+    assert.equal(again.labelSource, 'override');
   });
 });

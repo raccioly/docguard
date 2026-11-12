@@ -32,48 +32,60 @@
       "role": "agent-instruction",
       "horizonDays": 14,
       "threshold": 0.25,
-      "n": 0,
-      "tp": 0,
+      "n": 1,
+      "tp": 1,
       "fp": 0,
-      "unlabeled": 1,
-      "precision": null,
-      "confidence95": null
+      "unlabeled": 0,
+      "precision": 1,
+      "confidence95": {
+        "lower": 0.206543,
+        "upper": 1
+      }
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 28,
       "threshold": 0.25,
-      "n": 0,
-      "tp": 0,
+      "n": 1,
+      "tp": 1,
       "fp": 0,
-      "unlabeled": 1,
-      "precision": null,
-      "confidence95": null
+      "unlabeled": 0,
+      "precision": 1,
+      "confidence95": {
+        "lower": 0.206543,
+        "upper": 1
+      }
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": 0.25,
-      "n": 0,
-      "tp": 0,
+      "n": 1,
+      "tp": 1,
       "fp": 0,
-      "unlabeled": 4,
-      "precision": null,
-      "confidence95": null
+      "unlabeled": 3,
+      "precision": 1,
+      "confidence95": {
+        "lower": 0.206543,
+        "upper": 1
+      }
     },
     {
       "code": "FRS006",
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": 0.5,
-      "n": 0,
-      "tp": 0,
+      "n": 1,
+      "tp": 1,
       "fp": 0,
-      "unlabeled": 1,
-      "precision": null,
-      "confidence95": null
+      "unlabeled": 0,
+      "precision": 1,
+      "confidence95": {
+        "lower": 0.206543,
+        "upper": 1
+      }
     },
     {
       "code": "FRS006",
@@ -197,14 +209,14 @@
       "role": "agent-instruction",
       "horizonDays": 14,
       "threshold": null,
-      "n": 1,
-      "tp": 0,
-      "fp": 1,
-      "unlabeled": 2,
-      "precision": 0,
+      "n": 3,
+      "tp": 1,
+      "fp": 2,
+      "unlabeled": 0,
+      "precision": 0.3333,
       "confidence95": {
-        "lower": 0,
-        "upper": 0.793457
+        "lower": 0.06149,
+        "upper": 0.792345
       }
     },
     {
@@ -212,14 +224,14 @@
       "role": "agent-instruction",
       "horizonDays": 28,
       "threshold": null,
-      "n": 1,
-      "tp": 0,
-      "fp": 1,
-      "unlabeled": 2,
-      "precision": 0,
+      "n": 3,
+      "tp": 1,
+      "fp": 2,
+      "unlabeled": 0,
+      "precision": 0.3333,
       "confidence95": {
-        "lower": 0,
-        "upper": 0.793457
+        "lower": 0.06149,
+        "upper": 0.792345
       }
     },
     {
@@ -227,14 +239,14 @@
       "role": "agent-instruction",
       "horizonDays": 56,
       "threshold": null,
-      "n": 1,
-      "tp": 0,
-      "fp": 1,
-      "unlabeled": 4,
-      "precision": 0,
+      "n": 5,
+      "tp": 3,
+      "fp": 2,
+      "unlabeled": 0,
+      "precision": 0.6,
       "confidence95": {
-        "lower": 0,
-        "upper": 0.793457
+        "lower": 0.23072,
+        "upper": 0.882382
       }
     }
   ],
@@ -288,8 +300,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "docguard|AGENTS.md|2026-11-03|+28d|FRS007|fuzz",
@@ -301,8 +313,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "docguard|AGENTS.md|2026-11-03|+56d|FRS007|fuzz",
@@ -314,8 +326,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+14d|FRS007|fuzz",
@@ -327,8 +339,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": false,
+      "labelSource": "override"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+28d|FRS007|fuzz",
@@ -340,8 +352,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": false,
+      "labelSource": "override"
     },
     {
       "key": "docguard|CLAUDE.md|2026-11-03|+56d|FRS007|fuzz",
@@ -353,8 +365,8 @@
       "code": "FRS007",
       "subject": "fuzz",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": false,
+      "labelSource": "override"
     },
     {
       "key": "docguard|docs-canonical/ARCHITECTURE.md|2026-05-31|+14d|FRS006|cli/docguard.mjs",
@@ -759,8 +771,8 @@
       "subject": "src/probe/probe.mjs",
       "line": 34,
       "share": 0.2965,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+28d|FRS006|src/probe/probe.mjs",
@@ -773,8 +785,8 @@
       "subject": "src/probe/probe.mjs",
       "line": 34,
       "share": 0.3229,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/probe/probe.mjs",
@@ -787,8 +799,8 @@
       "subject": "src/probe/probe.mjs",
       "line": 35,
       "share": 0.7444,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/status/status.mjs",
@@ -842,8 +854,8 @@
       "code": "FRS007",
       "subject": "corpus",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "testguard|AGENTS.md|2026-09-22|+56d|FRS007|corpus/",
@@ -855,8 +867,8 @@
       "code": "FRS007",
       "subject": "corpus/",
       "share": null,
-      "label": null,
-      "labelSource": "proxy"
+      "label": true,
+      "labelSource": "override"
     },
     {
       "key": "testguard|docs-canonical/ARCHITECTURE.md|2026-09-19|+14d|FRS006|src/probe/discover.mjs",
