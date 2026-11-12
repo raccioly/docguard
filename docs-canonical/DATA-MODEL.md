@@ -657,6 +657,8 @@ This also removes an accidental platform dependency: literal-path probing was
 case-insensitive only on case-insensitive filesystems, so the same repository
 was judged differently on macOS and Linux.
 
+Without docs.roles, a role whose default `docs-canonical/` file is missing reads the one same-named entry of requiredFiles.canonical, or the one same-named file in the canonical tree; two candidates keep the default. Section checks (STR003, STR007), docQuality and the other score categories read that same file, and ALCOA+ counts every existing Markdown entry of requiredFiles.canonical as a canonical document (spec 093).
+
 Optional docs.roles maps canonical roles to safe project-relative Markdown paths. Configuration normalization replaces each mapped default in requiredFiles.canonical and documentTypes. A mapped write is authorized either for a unique `source=code` section in an existing human file or for a missing/explicitly generated single-role whole document. Marker shape, role cardinality, and ownership are validated before mutation; `--force` does not alter that model. The configuration schema and docs/configuration.md define the role names and operation-specific contract.
 
 Repository-root guidance is an ephemeral diagnostic and is never persisted in

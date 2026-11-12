@@ -1,5 +1,5 @@
 import { isExpired, splitWaiverMetadata } from '../waiver-metadata.mjs';
-import { remapDocPath } from '../shared-doc-roles.mjs';
+import { resolveDocPath } from '../shared-doc-roles.mjs';
 /**
  * Structure Validator — Checks that all required CDD files exist
  *
@@ -155,7 +155,7 @@ export function validateDocSections(projectDir, config) {
   const requiredSections = requiredSectionMap(ptc);
 
   for (const [defaultFile, sections] of Object.entries(requiredSections)) {
-    const file = remapDocPath(config, defaultFile);
+    const file = resolveDocPath(projectDir, config, defaultFile);
     const fullPath = resolve(projectDir, file);
     if (!existsSync(fullPath)) continue;
 
@@ -240,7 +240,7 @@ export function validateDocSections(projectDir, config) {
   // enterprise-ai profile's Risk Assessment and Threat Model). Advisory, and kept
   // out of passed/total so a project's counts do not move until it promotes STR007.
   for (const [defaultFile, headings] of Object.entries(profileSections(config))) {
-    const file = remapDocPath(config, defaultFile);
+    const file = resolveDocPath(projectDir, config, defaultFile);
     const fullPath = resolve(projectDir, file);
     if (!existsSync(fullPath)) continue;
     const content = readFileSync(fullPath, 'utf-8');

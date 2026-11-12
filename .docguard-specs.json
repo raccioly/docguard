@@ -2890,6 +2890,117 @@
       }
     },
     {
+      "specId": "docguard.configured-canonical-paths",
+      "path": "specs/093-configured-canonical-paths/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.configured-canonical-paths#FR-001",
+          "docguard.configured-canonical-paths#FR-002",
+          "docguard.configured-canonical-paths#FR-003",
+          "docguard.configured-canonical-paths#FR-004",
+          "docguard.configured-canonical-paths#FR-005",
+          "docguard.configured-canonical-paths#FR-006",
+          "docguard.configured-canonical-paths#FR-007",
+          "docguard.configured-canonical-paths#SC-001",
+          "docguard.configured-canonical-paths#SC-002",
+          "docguard.configured-canonical-paths#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/093-configured-canonical-paths/spec.md",
+            "digest": "sha256:8ae7dbf680c051b9835c57e699ffc78c77cf50fadd352abc0cff9179b0899f32"
+          },
+          {
+            "path": "specs/093-configured-canonical-paths/plan.md",
+            "digest": "sha256:5cb719f7cd3ab7c20473396bec3b5daff0ce597cc06cc78085089d77b5dd124f"
+          },
+          {
+            "path": "specs/093-configured-canonical-paths/tasks.md",
+            "digest": "sha256:9672d534bda1e4068e3d4daf79ea9173fd88b9c20e02529f24c28fe81e029595"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 13,
+          "total": 16
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 74
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-doc-roles.mjs",
+            "line": 75
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/score.mjs",
+            "line": 498
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 17
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.consumer-report-precision",
       "path": "specs/080-consumer-report-precision/spec.md",
       "reviewed": {
@@ -4075,7 +4186,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 740
+            "line": 766
           },
           {
             "requirementId": "FR-009",
@@ -9560,7 +9671,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 83
+            "line": 102
           },
           {
             "requirementId": "FR-010",
@@ -9585,7 +9696,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 84
+            "line": 103
           },
           {
             "requirementId": "FR-011",

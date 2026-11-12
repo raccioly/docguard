@@ -17,6 +17,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version is behind the released one, so v0.47.0 is listed by the first sweep
   after this lands. An unreadable registry publishes nothing
   (`docguard.release-readiness` FR-007).
+- **`score` reads canonical documents kept outside `docs-canonical/`** (#625).
+  A project that lists its documents in `requiredFiles.canonical` (for example
+  under `docs/canonical/`) passed Structure, but docQuality reported every
+  document as "file missing" and scored 0%, and ALCOA+ Original and Available
+  said no canonical directory exists. docQuality now reads the same file the
+  other categories read: a `docs.roles` mapping, the default path, or the one
+  same-named entry of `requiredFiles.canonical`. ALCOA+ counts those documents,
+  so Contemporaneous also checks their age. The suggestion's `fix --doc` names
+  the role (`architecture`), not a path (`docguard.configured-canonical-paths`
+  FR-001, FR-003, FR-004).
+- **Guard checks the sections of those documents.** STR003 and STR007 skipped a
+  canonical document that was not at its default path, so a relocated document
+  missing a required section passed silently. Projects with this layout may see
+  new STR003 warnings for sections that were never checked (FR-002).
+
+### Changed
+
+- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
+  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
+  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
+  match the released schema. The `ignore` schema no longer lists the
+  `fingerprint` kind, which DocGuard never exported (#619;
+  `docguard.configured-canonical-paths` FR-006).
 
 ## [0.47.0] - 2026-11-10
 

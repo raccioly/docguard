@@ -23,12 +23,12 @@ import { readFileSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 
 export const CLAIMSPEC_VENDOR = Object.freeze({
-  source: 'https://github.com/raccioly/testguard/tree/379fb6a700168cf8a574da290ce5a807811f89e1/spec/schemas',
-  revision: '379fb6a700168cf8a574da290ce5a807811f89e1',
-  release: 'v0.18.3',
+  source: 'https://github.com/raccioly/testguard/tree/9cdac558743d91fe1bd892499fbcacadf0680330/spec/schemas',
+  revision: '9cdac558743d91fe1bd892499fbcacadf0680330',
+  release: 'v0.22.1',
   sha256: Object.freeze({
-    'ignore.schema.json': '47e0d260f0bdf1ddbf9e71e35eae9d4b398caac48631eb255efd6adbbce0d669',
-    'common.schema.json': '73f737f5f3f6f16611c1e9963e3b8c761e7bc01b3cdf4f7774cf3c960a1849cb',
+    'ignore.schema.json': 'e35e85b3dced80a264691477e651db9811b778e79eb58e64a9a9550de554af3e',
+    'common.schema.json': '1c4325c0f68a12bd4ff53c32e0de3dfe1e6104c02a2768c78ab7b9521ed53b3a',
   }),
 });
 
