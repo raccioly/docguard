@@ -239,11 +239,11 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
   });
 
   it('a validator that is empty but not yet migrated is listed as not-yet-classified and does NOT exit 4', () => {
-    // Doc-Dependency is not migrated in Stage A: it returns empty with no cause.
-    const dir = project(NO_API, cfg(only('docDependency'), { enforcement: 'strict' }));
+    // Schema-Sync is not migrated yet: it returns empty with no cause.
+    const dir = project(NO_API, cfg(only('schemaSync'), { enforcement: 'strict' }));
     const { status, json } = guardJson(dir);
-    assert.equal(verdictOf(json, 'docDependency').verdict, 'empty');
-    const u = json.strict.unexamined.find(x => x.validator === 'docDependency');
+    assert.equal(verdictOf(json, 'schemaSync').verdict, 'empty');
+    const u = json.strict.unexamined.find(x => x.validator === 'schemaSync');
     assert.equal(u.cause, 'not-yet-classified');
     assert.equal(u.blocking, false);
     assert.equal(status, 0);
@@ -471,11 +471,19 @@ const validateResultContract = (r) => coverage.validateResultContract(r);
 const NOT_YET_MIGRATED = [
   'structure', 'docSections', 'drift', 'changelog', 'testSpec', 'environment', 'security', 'architecture',
   'freshness', 'traceability', 'docsDiff', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
-  'schemaSync', 'specKit', 'documentLifecycle', 'specRegistry', 'docDependency', 'requirementAnchors',
-  'pathScopedRules', 'docOwnership', 'evidence', 'crossReference', 'generatedStaleness', 'suppressions',
-  'diffSuspicion', 'referenceExistence', 'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
+  'schemaSync', 'specKit', 'documentLifecycle',
 ];
-const MIGRATED = ['apiSurface', 'docsSync', 'surfaceSync'];
+// Group B (tests/validator-applicability-b.test.mjs holds its fixtures) migrated:
+//   specRegistry, docDependency, requirementAnchors, pathScopedRules, docOwnership, evidence, crossReference,
+//   generatedStaleness, suppressions, diffSuspicion, referenceExistence, apiDocSmells, decisionRecords, aidlc,
+//   canonicalSync, metricsConsistency.
+const MIGRATED = [
+  'apiSurface', 'docsSync', 'surfaceSync',
+  'specRegistry', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'evidence',
+  'crossReference', 'generatedStaleness', 'suppressions', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
+  'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
+];
+
 
 /** Fixtures per migrated validator: where it applies and is empty, where it does not apply, and the fix applied. */
 const API_ROUTES = { ...ROUTES };
@@ -500,6 +508,8 @@ const FIXTURES = {
     fix: { files: { 'cli/commands/a.mjs': '', 'cli/commands/b.mjs': '', 'cli/commands/c.mjs': '', 'README.md': '# R\n\n| Command |\n|---|\n| `a` |\n| `b` |\n| `c` |\n' }, extra: { surfaceSync: { surfaces: [{ name: 'commands', glob: 'cli/commands/*.mjs', docs: ['README.md'] }] } } },
   },
 };
+// The fixtures of the other migrated validators live in their own file; the loops below read only these.
+const FIXTURED = MIGRATED.filter(key => FIXTURES[key]);
 // The documents of the `docs-missing` case: a declared surface whose document does not exist.
 FIXTURES.surfaceSync['docs-missing'] = { files: { 'cli/commands/a.mjs': '', 'cli/commands/b.mjs': '', 'cli/commands/c.mjs': '' }, extra: { surfaceSync: { surfaces: [{ name: 'commands', glob: 'cli/commands/*.mjs', docs: ['docs/COMMANDS.md'] }] } }, cause: 'needs-declaration' };
 
@@ -513,7 +523,7 @@ let awaitedConfig;
 before(async () => { awaitedConfig = await import('../cli/config.mjs'); });
 
 describe('the result contract, per migrated validator', () => {
-  for (const key of MIGRATED) {
+  for (const key of FIXTURED) {
     describe(key, () => {
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
@@ -575,7 +585,7 @@ describe('the registry', () => {
   });
 
   it('no migrated validator can be empty without a cause and a fix (SC-006)', () => {
-    for (const key of MIGRATED) {
+    for (const key of FIXTURED) {
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
         const { result } = run(key, fixture);
@@ -589,7 +599,7 @@ describe('the registry', () => {
 
   it('no two validators share an empty reason sentence (SC-006)', () => {
     const seen = new Map();
-    for (const key of MIGRATED) {
+    for (const key of FIXTURED) {
       for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
         if (cause === 'fix') continue;
         const { result } = run(key, fixture);
