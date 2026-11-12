@@ -126,6 +126,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `fingerprint` kind, which DocGuard never exported (#619;
   `docguard.configured-canonical-paths` FR-006).
 
+### Budgets
+
+`bytes:mcp:docguard_read_section` grew by 439 bytes on the `finding-channels`
+section of DATA-MODEL, 107 over its 332-byte allowance. The section now
+documents the `context` field that Security findings carry and the rule that a
+`test-path` finding never counts toward failing a build (spec 097 FR-010).
+
+Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section documents the new Security `context` field (spec 097 FR-010)
+
 ## [0.47.0] - 2026-11-10
 
 ### Added
