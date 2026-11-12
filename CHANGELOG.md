@@ -29,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cli/validator-coverage.mjs`; the other validators move onto it next, and
   under strict a validator that is empty without a cause is listed as "cause
   not yet classified" and never fails the run (FR-005, FR-006).
+- **Seventeen more validators report whether they apply, what they performed,
+  and why they are empty.** Structure, Doc-Sections, Drift, Changelog, Test-Spec,
+  Environment, Architecture, Freshness, Traceability, Docs-Diff, Metadata-Sync,
+  Docs-Coverage, Doc-Quality, TODO-Tracking, Schema-Sync, Spec-Kit and
+  Document-Lifecycle each decide from the project's files whether their kind of
+  check belongs to it (never because their own document or configuration is
+  missing), count the checks they genuinely made apart from the legacy `total`,
+  and on an empty result carry a cause and the exact file, key or command that
+  makes them examine something. Counts, badges, findings, levels and exit codes
+  under `standard` do not change; an Architecture run over a clean import graph
+  now counts the cycle check it made (`performed` 1, `total` unchanged)
+  (`docguard.strict-by-default` FR-004 to FR-006, group A of stage A).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
@@ -103,6 +115,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be a whole segment or open the value; one buried in a high-entropy run does not
   count. `xxx` and `your-` values are still reported. Provider-signature keys
   (AWS, `sk-`) are unaffected.
+- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
+  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
+  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
+  match the released schema. The `ignore` schema no longer lists the
+  `fingerprint` kind, which DocGuard never exported (#619;
+  `docguard.configured-canonical-paths` FR-006).
+
+
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
 
 ### Fixed
 
@@ -139,23 +166,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   canonical document that was not at its default path, so a relocated document
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
-
-- **The READMEs say which labels must stay in English** (#644). A team
-  writing its documentation in another language can now read, in `README.md`,
-  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
-  ids in any language) and which labels are matched in English only: the
-  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
-  decision-record status words, and that the text-quality numbers assume
-  English. Documentation only; support for other languages stays open in #644.
-
-### Changed
-
-- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
-  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
-  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
-  match the released schema. The `ignore` schema no longer lists the
-  `fingerprint` kind, which DocGuard never exported (#619;
-  `docguard.configured-canonical-paths` FR-006).
 
 ### Budgets
 

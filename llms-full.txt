@@ -62,7 +62,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
 | **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
 | **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
-| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies and examined nothing, whose result carries a cause and fix, exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`. A validator not yet on the contract is listed as "cause not yet classified" and never exits 4. An absent key resolves to `standard` until the stage that changes the default | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
+| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies and examined nothing, whose result carries a cause and fix, exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`.  Every validator returns the contract; an observation gap is `inconclusive` and carries no cause. An absent key resolves to `standard` until the stage that changes the default | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -2024,6 +2024,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cli/validator-coverage.mjs`; the other validators move onto it next, and
   under strict a validator that is empty without a cause is listed as "cause
   not yet classified" and never fails the run (FR-005, FR-006).
+- **Seventeen more validators report whether they apply, what they performed,
+  and why they are empty.** Structure, Doc-Sections, Drift, Changelog, Test-Spec,
+  Environment, Architecture, Freshness, Traceability, Docs-Diff, Metadata-Sync,
+  Docs-Coverage, Doc-Quality, TODO-Tracking, Schema-Sync, Spec-Kit and
+  Document-Lifecycle each decide from the project's files whether their kind of
+  check belongs to it (never because their own document or configuration is
+  missing), count the checks they genuinely made apart from the legacy `total`,
+  and on an empty result carry a cause and the exact file, key or command that
+  makes them examine something. Counts, badges, findings, levels and exit codes
+  under `standard` do not change; an Architecture run over a clean import graph
+  now counts the cycle check it made (`performed` 1, `total` unchanged)
+  (`docguard.strict-by-default` FR-004 to FR-006, group A of stage A).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
@@ -2098,6 +2110,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be a whole segment or open the value; one buried in a high-entropy run does not
   count. `xxx` and `your-` values are still reported. Provider-signature keys
   (AWS, `sk-`) are unaffected.
+- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
+  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
+  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
+  match the released schema. The `ignore` schema no longer lists the
+  `fingerprint` kind, which DocGuard never exported (#619;
+  `docguard.configured-canonical-paths` FR-006).
+
+
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
 
 ### Fixed
 
@@ -2134,23 +2161,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   canonical document that was not at its default path, so a relocated document
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
-
-- **The READMEs say which labels must stay in English** (#644). A team
-  writing its documentation in another language can now read, in `README.md`,
-  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
-  ids in any language) and which labels are matched in English only: the
-  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
-  decision-record status words, and that the text-quality numbers assume
-  English. Documentation only; support for other languages stays open in #644.
-
-### Changed
-
-- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
-  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
-  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
-  match the released schema. The `ignore` schema no longer lists the
-  `fingerprint` kind, which DocGuard never exported (#619;
-  `docguard.configured-canonical-paths` FR-006).
 
 ### Budgets
 
@@ -2383,18 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   476 on one project), every absence claim (a missing pointer, symbol, test,
   link, source, revision or implementation evidence) is withheld while any
   gap stands, and the checks it affected report `inconclusive`. Private git
-  calls in Document-Lifecycle, Spec-Registry, revision anchors, doc locks and
-  task evidence now record gaps too; Document-Lifecycle reports a gap as
-  `partial` instead of DLC003. `--update-baseline` refuses to freeze a run
-  with a gap, so withheld findings cannot drop out of the baseline.
 
-### Budgets
-
-The `docguard_docs_for_path` MCP response is 612 bytes larger than in 0.45.2,
-over its 489-byte allowance. 36 bytes are the new `docs` map (spec 092); the
-rest is reference text the tool returns, because TEST-SPEC names
-
-<!-- truncated: 6314 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6324 more lines — read CHANGELOG.md directly -->
 
 ---
 

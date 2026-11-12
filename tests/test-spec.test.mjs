@@ -4,13 +4,14 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateTestSpec } from '../cli/validators/test-spec.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('validateTestSpec', () => {
   it('should return empty results if TEST-SPEC.md does not exist', () => {
     const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
     const config = {};
     const results = validateTestSpec(tempDir, config);
-    assert.deepEqual(results, { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 });
+    assert.deepEqual(legacyShape(results), { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 });
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
