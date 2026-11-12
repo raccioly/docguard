@@ -8,6 +8,7 @@
  * @implements docguard.calibrated-finding-channels#FR-022
  * @implements docguard.agent-instruction-role#FR-003
  * @implements docguard.agent-instruction-role#FR-005
+ * @implements docguard.recorded-document-reviews#FR-006
  */
 
 import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
@@ -18,6 +19,7 @@ import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } 
 import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
+import { recordedReviewSignals, recordedReviewDate, laterDate } from './freshness-reviews.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -258,7 +260,11 @@ export function validateFreshness(dir, config) {
       status: 'skip',
       message: `Only ${totalCommits} commits — freshness check needs ≥3 commits`,
     });
-    return results;
+    // Spec 095's signals are facts (no review record, an unreadable reviews
+    // file, a reference measured against a review point), not history
+    // heuristics, so a young repository still gets them.
+    results.push(...recordedReviewSignals(dir, config, { ignored: pathFilter(dir, config), docFiles: [], results }));
+    return withDispositions(results);
   }
 
   // ── 1. Check each canonical doc's last update vs latest code commit ──
@@ -317,7 +323,8 @@ export function validateFreshness(dir, config) {
     // doc as stale despite the explicit review. Fall back to git log only when
     // the header is absent. Symmetric with the ALCOA+ "review metadata present"
     // check in score.mjs, which reads the same header.
-    const reviewedDate = readLastReviewedDate(docPath);
+    // A recorded review (spec 095) is a review too: the later of it and the marker.
+    const reviewedDate = laterDate(readLastReviewedDate(docPath), recordedReviewDate(dir, docFile));
     const docDate = reviewedDate || getLastGitDate(docFile, dir);
     if (!docDate) {
       // File exists but has no freshness signal (not in git, no last-reviewed).
@@ -451,6 +458,9 @@ export function validateFreshness(dir, config) {
     } catch { /* skip */ }
   }
 
+  // ── 4. Recorded reviews and per-reference staleness (spec 095) ──
+  results.push(...recordedReviewSignals(dir, config, { ignored, docFiles, results }));
+
   // Every warning here is an ESCALATION: a history signal whose judgement
   // belongs to the reader. That is a separate question from how sure the
   // detector is of what it counted.
@@ -467,10 +477,14 @@ export function validateFreshness(dir, config) {
   // FRS001 is the exception: it fires on the ABSENCE of any dated signal,
   // which an uncommitted file or a shallow clone can produce, so the
   // observation itself is uncertain and stays 'low'.
+  return withDispositions(results);
+}
+
+function withDispositions(results) {
   return results.map(result => result.status === 'warn' ? {
     ...result,
-    confidence: result.code === 'FRS001' ? 'low' : 'high',
-    disposition: 'escalate',
-    suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
+    confidence: result.confidence || (result.code === 'FRS001' ? 'low' : 'high'),
+    disposition: result.disposition || 'escalate',
+    suggestion: result.suggestion || { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
   } : result);
 }
