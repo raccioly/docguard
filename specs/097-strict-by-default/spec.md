@@ -74,13 +74,13 @@ As an adopter, a finding makes my build fail only if its code is one that alread
 
 **Why this priority**: The maintainer accepted a red default on the condition that a red is true.
 
-**Independent Test**: A fixture with a hardcoded credential in a test file and one in a source file. Under strict the source finding fails the build only once SEC001 is a gating code; the test-file finding never does.
+**Independent Test**: A fixture with a hardcoded credential in a test file and one in a source file. Under strict the source finding fails the build only once SEC001 is a gating code; the test-file finding never fails it through gating.
 
 **Acceptance Scenarios**:
 
 1. **Given** a code with no precision evidence that was not an error under the 0.47.0 defaults, **When** it fires under strict, **Then** it is a warning.
 2. **Given** a code whose evidence clears the bar, **When** it fires under strict, **Then** it is an error, unless `findingSeverity` sets it otherwise.
-3. **Given** a secret-shaped literal in a test path or with a placeholder value, **When** security runs, **Then** the finding is a warning with a reason and can never be a gating finding.
+3. **Given** a secret-shaped literal in a test path, **When** security runs, **Then** the finding keeps its level, carries `context: test-path`, and can never be a gating finding. **Given** a value that is provably synthetic by its own text, **Then** there is no finding.
 
 ---
 
@@ -173,7 +173,10 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 
   A finding whose `findingSeverity` says `medium` or `low` keeps that level. An intrinsic error of a validator that the 0.47.0 defaults left off (Security, Architecture) is a warning until its code is gating.
 - **FR-009**: A code is gating when its committed precision evidence shows at least 30 labeled findings and a 95% Wilson lower bound of at least 0.85, measured on a DocGuard version no more than two minor versions behind the release that promotes it. The gating set MUST be derived from the evidence file, never listed by hand. A test MUST fail when a code is gating without evidence that meets the bar.
-- **FR-010**: Security MUST classify a secret-shaped literal as `test-or-placeholder` when the file is a test, fixture, example or mock path (`isNonProductPath`), or the value matches the placeholder patterns (the list is recorded in the plan and includes values containing `placeholder`, `example`, `dummy`, `synthetic`, `not-a-real`, `changeme`, `xxx`). Such a finding is a warning with that reason, is excluded from the code's gating status, and is measured as its own row in the precision evidence.
+- **FR-010** *(amended 2026-11-12 during the build)*: Security MUST record on each SEC001 to SEC004 finding a `context` of `product` or `test-path` (`isNonProductPath`), in every output format.
+  - The context MUST NOT change the finding's level. A real secret pasted into a test file is still a leaked secret, and the earlier rule stands: a test path alone does not make a literal safe (`docguard.precision-evidence-loop` FR-003).
+  - A `test-path` finding MUST NOT count as a gating finding under FR-008, so under `strict` it never fails a build through gating. Precision evidence is kept per context.
+  - A value that is provably synthetic by its own text (it contains `placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme` or `change-me`, or is one repeated character) is a safe placeholder and produces no finding, through the existing placeholder rule. This changes findings in both modes and is an exception to FR-019.
 - **FR-011**: The baseline MUST keep working as it does: a finding whose fingerprint is in `.docguard.baseline.json` does not fail the run. Under `strict` every run MUST print the number of baselined findings, and JSON MUST carry it. The baseline does not cover an unexamined validator; only a fix or a waiver does.
 
 #### Rolling default
@@ -194,7 +197,7 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 
 #### Compatibility and proof
 
-- **FR-019**: Under `"enforcement": "standard"`, on the audit corpus and on DocGuard itself, findings and exit codes MUST equal v0.47.0, except verdicts corrected by FR-004 and the mode line.
+- **FR-019**: Under `"enforcement": "standard"`, on the audit corpus and on DocGuard itself, findings and exit codes MUST equal v0.47.0, except verdicts corrected by FR-004, findings removed by the placeholder vocabulary of FR-010, and the mode line.
 - **FR-020**: The DocGuard repository MUST run on the strict default and pass without `"enforcement": "standard"`. Each validator it does not examine MUST be fixed or waived with a reason, an owner and an expiry.
 - **FR-021**: Spec 095's codes MUST follow FR-008 and FR-009. Its role-scoped `findingSeverity` form stays as an override. Spec 096's requirements are FR-005, FR-014 and FR-015 here.
 - **FR-022**: `README.md` (quick start), `docs/configuration.md`, `docs/commands.md`, `docs-canonical/ARCHITECTURE.md` (exit codes and the mode), `docs-canonical/DATA-MODEL.md` (`enforcement`, the `strict` JSON block, the release table), `docs-canonical/CI-RECIPES.md`, `action.yml`, the Spec Kit extension's guard command, `schemas/docguard-config.schema.json`, a migration page "Upgrading to the strict default", and `CHANGELOG.md` with a breaking-change entry MUST describe the change.
@@ -230,4 +233,4 @@ As someone setting a project up, `docguard init` tells me the default is strict 
 - Inferring configuration for a validator automatically. The audit's two trials produced vacuous passes. `howToConfigure` tells a person or an agent what to write.
 - A third, advisory-only mode.
 - Changing what the generated Git hook does with each exit code.
-- New finding codes, other than the classification of FR-010 and the placeholder-purpose finding of FR-004.
+- New finding codes, other than the placeholder-purpose finding of FR-004.

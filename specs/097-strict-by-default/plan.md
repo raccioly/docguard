@@ -20,6 +20,8 @@ The default changes when the proof passes (SC-001 to SC-003), not on a date.
 
 ## Research decisions
 
+0. **Amended during the build (2026-11-12): a test path does not lower a Security finding.** The first draft of FR-010 demoted any secret-shaped literal in a test path to a warning. The build found 23 existing tests that encode the opposite rule, decided earlier from field evidence: a real secret pasted into a test file is still a leaked secret. Demoting by path would also have changed levels under `standard`, against FR-019. The path now only classifies the finding and bars it from gating; only a value that is synthetic by its own text is exempt.
+
 1. **A new key, not a new profile.** `profile` stores what `init` wrote, and for most adopters that is `standard`. Reading it as a choice would exempt every existing project, which is the outcome the maintainer rejected. A separate `enforcement` key that is absent everywhere today makes every project strict on upgrade without reinterpreting a stored value. `profile` goes back to meaning the shape of the project.
 2. **Two modes.** `standard` is exactly the 0.47.0 behavior, which makes the opt-out provable by A/B (SC-003). A third advisory mode would need its own definition and proof, and nobody has asked for it.
 3. **Exit 4 for an unexamined validator.** Spec 081 gave 4 the meaning "a check that had to decide did not". Strict widens who has to decide. A new exit code would force every CI recipe and the action to learn it.
@@ -33,7 +35,7 @@ The default changes when the proof passes (SC-001 to SC-003), not on a date.
 ## Closed lists
 
 - **Codes that can exit 1 under the 0.47.0 defaults** (from the audit, to be confirmed by the T004 test against the v0.47.0 tag): STR001, STR002, DRF001, DRF002, API004 (contract mode), DLK005, ANC005, ANC001 and ANC003 under `reviewed-exact`, OWN007, EVD001, EVD002, REQ001.
-- **Placeholder value patterns for FR-010**, case-insensitive: contains `placeholder`, `example`, `dummy`, `synthetic`, `not-a-real`, `notreal`, `changeme`, `change-me`, `your-`, `xxx`, `<` with `>`, or is a single repeated character.
+- **Provably synthetic values for FR-010**, case-insensitive, added to the existing placeholder rule: contains `placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme` or `change-me`, or is a single repeated character. `example`, `xxx` and `your-` are left as the existing rule has them.
 - **Empty causes**: `needs-declaration`, `needs-content`, `layout-not-recognized`, `nothing-of-this-kind`.
 
 ## Project Structure
@@ -58,7 +60,7 @@ docs/upgrading-to-strict.md         new
 
 ## Stages
 
-- **Stage A — truthful and explainable, mode selectable.** FR-001, FR-002, FR-004, FR-005, FR-006, FR-010, FR-014 to FR-016, FR-018. The default is still `standard` in this stage. A project can write `"enforcement": "strict"`. DocGuard's own repository does (FR-020), which is the dogfood. Three build sessions can work in parallel on disjoint files: (A1) the mode, exit code, output and `upgrade`; (A2) performed-check counts, causes and `applies` across the validators; (A3) Security classification. A2 is the largest and is split by validator family if needed.
+- **Stage A — truthful and explainable, mode selectable.** FR-001, FR-002, FR-004, FR-005, FR-006, FR-010, FR-014 to FR-016, FR-018. The default is still `standard` in this stage. A project can write `"enforcement": "strict"`. DocGuard's own repository does (FR-020), which is the dogfood. Three build sessions can work in parallel on disjoint files: (A1) the mode, exit code, output and `upgrade`; (A2) performed-check counts, causes and `applies` across the validators; (A3) Security context and placeholder vocabulary. A2 is the largest and is split by validator family if needed.
 - **Stage B — the default changes.** FR-003, FR-007 as default, FR-008, FR-011 to FR-013, FR-017, FR-019, FR-022. One build session, after the Stage A proof.
 - **Stage C — evidence.** FR-009 corpus growth and FR-021. The history-replay benchmark of spec 095 is its first input. Continues after the default changes.
 

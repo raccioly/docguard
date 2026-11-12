@@ -15975,15 +15975,15 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:c463938ff145baf56149e852ffcb43a52284ad3e45ae08bcd9d99bc6b7820a96"
+            "digest": "sha256:af0025a9b452ec3e39c9194c10e558cb29fabc26d258020626b3ae81db308753"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
-            "digest": "sha256:defbe2055efca5999f6d84c7ce4723110f2b506f79737933922ca3b47a9be80c"
+            "digest": "sha256:71aa89ecdae911cb67e0df15c95a43373820a31b763f3f270a11269ba4b0c40a"
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:b0dfa6bc8733a938f34a33c63f3df3a5409a27131c984b1ce39b3329800863fb"
+            "digest": "sha256:d82465e475573f517c622165d1781f5159a5792f312fc6dfceae1ec579d5eb49"
           }
         ],
         "taskCompletion": {
