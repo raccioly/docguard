@@ -16148,11 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:ebac775fc48ee107066714c6b7bab79c74e700e905726ff6e91fe50ee1c18597"
+            "digest": "sha256:2287a1ed1dc9c54bce95ed99adc2bb8e3c618247e31bc6cf310195f335a55827"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 15,
           "total": 32
         },
         "implementationEvidence": [
@@ -16504,9 +16504,19 @@
             "line": 21
           },
           {
-            "requirementId": "SC-006",
+            "requirementId": "FR-020",
             "file": "tests/strict-by-default.test.mjs",
             "line": 22
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/strict-by-default.test.mjs",
+            "line": 24
           },
           {
             "requirementId": "SC-006",
