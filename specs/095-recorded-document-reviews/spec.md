@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-12
 
-**Status**: Draft
+**Status**: Implemented
 
 **Spec ID**: `docguard.recorded-document-reviews`
 
@@ -69,14 +69,14 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
 
 **Acceptance Scenarios**:
 
-1. **Given** a `GEMINI.md` with no marker and no recorded review, **Then** FRS008 says it has no review record and gives the exact command: `docguard review --accept GEMINI.md --reason "<what you checked>"`. Its default level is `info`.
+1. **Given** a `GEMINI.md` with no marker and no recorded review, **Then** FRS008 says it has no review record and gives the exact command: `docguard review --accept GEMINI.md --reason "<what you checked>"`. It is a warning (orchestrator decision 2: complete by default; both conditions are facts).
 2. **Given** a root `AGENTS.md` committed 2 days ago with no marker, **Then** FRS008 is still reported. A commit is not a review.
 
 ### User Story 5 - A marker advanced without a recorded review is visible (Priority: P2)
 
 **Acceptance Scenarios**:
 
-1. **Given** a recorded review at 2026-09-22 and a later commit that changes only the marker line to 2026-11-12, **Then** FRS009 reports it. FRS006 keeps measuring from the recorded review. Default level `info`.
+1. **Given** a recorded review at 2026-09-22 and a later commit that changes only the marker line to 2026-11-12, **Then** FRS009 reports it as a warning. FRS006 keeps measuring from the recorded review.
 2. **Given** a document with a legacy marker and no recorded review, **Then** the marker is honored as the review point and FRS009 does not fire.
 
 ### User Story 6 - Agents are told when they are served stale instructions (Priority: P2)
@@ -90,7 +90,7 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
 - **A referenced file deleted after the review**: PSR002 or REF reports it. FRS006 does not.
 - **A referenced file renamed**: `git diff --numstat -M` follows the rename. The fingerprint check reports it as changed, naming both paths.
 - **A shallow clone where the review commit is missing**: FRS006 cannot measure. The validator reports partial coverage naming the document and is never silent. The fingerprint comparison still works, because it needs no history.
-- **The doc-reviews file is malformed**: every recorded review is unusable. The run reports one error-level finding (a corrupt lock is a defect, as DLK003 is for the doc lock) and falls back to markers.
+- **The doc-reviews file is malformed**: every recorded review is unusable. The run reports FRS010, an error that fails the build, and falls back to markers.
 - **Several references on one line**: each is measured. The finding lists them in share order.
 
 ## Requirements *(mandatory)*
@@ -134,11 +134,12 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
   - top-level tracked directories (not dot-directories).
 
   A script is mentioned as `npm|pnpm|yarn|bun run <name>`, `npm <name>` for lifecycle names, or `` `<name>` ``. A directory is mentioned as a whole token, with or without a trailing slash. Severity `warn`, disposition `escalate`, confidence `high`.
-- **FR-009**: New codes, both informational by default (`defaultLevel: 'info'`):
+- **FR-009**: New codes, both warnings by default (orchestrator decision 2; whether they fail the build is decided by the separate defaults audit):
   - **FRS008**: an agent-instruction document (non-pointer, non-vendored) with no marker and no recorded review. Its suggestion is the exact `docguard review --accept <path> --reason "<what you checked>"` command.
   - **FRS009**: a document whose marker date is later than its recorded review's `reviewedAt`, set by a commit that changed no other line of the document. It names that commit. FRS006 keeps measuring from the recorded review.
 - **FR-010**: `findingSeverity` MUST accept a role-scoped value, `{ "FRS006": { "agent-instruction": "high" } }`. The level applies to findings whose document is in that role; other findings of the code keep the default. This is the only new configuration shape. The JSON schema and DATA-MODEL document it.
-- **FR-011**: When any agent-instruction document has FRS006 or FRS007, guard's human output MUST print one line before the validator list, whatever the severity, and JSON MUST carry `staleInstructions: [{ doc, codes }]`.
+- **FR-011**: When any agent-instruction document has FRS006 or FRS007, guard's human output MUST print one line before the validator list, whatever the severity, on the default output and with `--quiet`, and JSON MUST carry `staleInstructions: [{ doc, codes }]`.
+- **FR-014**: New code **FRS010**, Freshness, severity `error`: the reviews file cannot be read (not JSON, an unsupported `schemaVersion`, or an unknown field outside `extensions`). It never reads as "no reviews". The reviews file's compatibility rule is part of its schema: a future field goes under `extensions` (top level, per document or per reference), which readers ignore.
 - **FR-012**: A history-replay benchmark (`benchmarks/history-replay/`) MUST measure FRS006 and FRS007 precision.
   - **Method**: walk review points (marker commits) in the public repositories DocGuard and TestGuard, and in pinned public repositories with agent-instruction files. Evaluate at review + 2, 4 and 8 weeks.
   - **Labels**: a hit is labeled true when the referencing line, or a sentence naming that file or surface, was rewritten in the document within the next 8 weeks. Otherwise it is labeled false, unless a human label overrides it.
@@ -154,7 +155,7 @@ The Stage 1 prototype measured precision. For documents with a review marker, fi
   - After one referenced file is changed in that copy, FRS006 fires for that file only.
   - All three are shown in the pull request with the commands and output.
 - **SC-003**: The history-replay benchmark reports FRS006 precision at the 0.5 threshold for the agent-instruction role, with n and the Wilson interval, in the pull request.
-- **SC-004**: An A/B on the local projects changes only findings FR-006 to FR-011 explain, each reviewed by hand. Guard wall time on DocGuard stays within the budget job's ×1.15.
+- **SC-004**: An A/B on the local projects changes only findings FR-006 to FR-011 and FR-014 explain, each reviewed by hand. Guard wall time on DocGuard stays within the budget job's ×1.15.
 
 ## Assumptions
 

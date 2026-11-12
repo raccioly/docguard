@@ -53,7 +53,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `retire` (remove reviewed docs from active context),
 `specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
-`review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
+`review` (doc sections whose covered code changed; `--accept <doc>` records a document review with a fingerprint per referenced file, `--accept <doc>#<id>` a section review; `--prune`, `--suggest`),
 `anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
 `explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `policy` (which advisory codes CI history shows are ready to promote), `memory` (what DocGuard
