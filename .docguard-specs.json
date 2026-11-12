@@ -16294,7 +16294,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/drift.mjs",
-            "line": 26
+            "line": 28
           },
           {
             "requirementId": "FR-006",
@@ -16309,7 +16309,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/freshness.mjs",
-            "line": 490
+            "line": 495
           },
           {
             "requirementId": "FR-006",

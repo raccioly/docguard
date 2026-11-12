@@ -240,6 +240,7 @@ export function validateFreshness(dir, config) {
   const results = [];
 
   const git = gitMetadataStatus(dir);
+  results.facts = { git }; // read by freshnessContract, so it asks Git nothing a second time
   if (git.status === 'unreadable') {
     // docguard.unreadable-git-metadata#FR-002: could not run, not "no matches".
     results.push({ status: 'skip', prerequisite: unreadableGitApplicability(git), message: unreadableGitApplicability(git).reason });
@@ -254,6 +255,7 @@ export function validateFreshness(dir, config) {
   }
 
   const totalCommits = getTotalCommits(dir);
+  results.facts.commits = totalCommits;
   if (totalCommits < 3) {
     results.push({
       status: 'skip',
@@ -265,6 +267,7 @@ export function validateFreshness(dir, config) {
   // ── 1. Check each canonical doc's last update vs latest code commit ──
   const ignored = pathFilter(dir, config);
   const docFiles = collectDocs(dir, config, ignored);
+  results.facts.docs = docFiles.length;
   let history;
   try { history = getCodeHistory(dir, ignored); } catch {
     return [{ status: 'skip', message: 'Code history unavailable — freshness check skipped' }];
@@ -468,12 +471,14 @@ export function validateFreshness(dir, config) {
   // FRS001 is the exception: it fires on the ABSENCE of any dated signal,
   // which an uncommitted file or a shallow clone can produce, so the
   // observation itself is uncertain and stays 'low'.
-  return results.map(result => result.status === 'warn' ? {
+  const reported = results.map(result => result.status === 'warn' ? {
     ...result,
     confidence: result.code === 'FRS001' ? 'low' : 'high',
     disposition: 'escalate',
     suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
   } : result);
+  reported.facts = results.facts; // what the run asked Git, for freshnessContract
+  return reported;
 }
 
 // ── Result contract (specs/097-strict-by-default FR-004 to FR-006) ───────────
@@ -489,33 +494,35 @@ export function validateFreshness(dir, config) {
  * with; unreadable Git metadata is undecided and counts as applying.
  * @implements docguard.strict-by-default#FR-006
  */
-export function applies(dir, config = {}) {
-  const git = gitMetadataStatus(dir);
+export function applies(dir, config = {}, facts = {}) {
+  // `facts` is what the run already asked Git (validateFreshness leaves it on its result); what is missing is asked
+  // once and kept in it.
+  const git = (facts.git ??= gitMetadataStatus(dir));
   if (git.status === 'unreadable') return { applies: true, evidence: 'the Git metadata is unreadable, so whether the project has history is undecided' };
   if (git.status !== 'ok') return { applies: false, evidence: 'not a git repository, so there is no commit history to compare documents with' };
-  return { applies: true, evidence: `a git repository with ${getTotalCommits(dir)} commit(s)` };
+  return { applies: true, evidence: `a git repository with ${(facts.commits ??= getTotalCommits(dir))} commit(s)` };
 }
 
 /**
  * The contract fields of a Freshness result.
- * @param {{ performed: number, found: boolean, skipped?: Array<{ message: string }> }} outcome
+ * @param {{ performed: number, found: boolean, skipped?: Array<{ message: string }>, facts?: object }} outcome
  */
-export function freshnessContract(dir, config, { performed, found, skipped = [] }) {
+export function freshnessContract(dir, config, { performed, found, skipped = [], facts = {} }) {
   // Unreadable Git metadata is an observation gap: the result is `inconclusive` and its reason is the gap
   // (the adapter sets the applicability), so it carries no cause and no fix (spec 097 FR-005).
-  if (performed === 0 && !found && gitMetadataStatus(dir).status === 'unreadable') {
-    return { performed, applies: applies(dir, config) };
+  if (performed === 0 && !found && (facts.git ??= gitMetadataStatus(dir)).status === 'unreadable') {
+    return { performed, applies: applies(dir, config, facts) };
   }
   return contractFields({
     performed, found, ran: `compared ${performed} document(s) with the code history`,
-    decide: () => applies(dir, config),
+    decide: () => applies(dir, config, facts),
     empty: (decision) => {
       if (!decision.applies) return { note: 'Freshness found no Git repository, so it compared no document with a commit history.', howToConfigure: 'Nothing to configure unless the project is under version control: run `git init` and commit the documents, and Freshness compares them with the code history.' };
-      const commits = getTotalCommits(dir);
+      const commits = (facts.commits ??= getTotalCommits(dir));
       if (commits < 3) return { emptyCause: 'needs-content', note: `Freshness found ${commits} commit(s) and needs at least 3 to compare documents with the code history.`, howToConfigure: 'Commit the project\'s work (`git commit`); in CI, fetch the full history (for GitHub Actions, `fetch-depth: 0` on actions/checkout), because a shallow clone has too few commits.' };
-      const docs = collectDocs(dir, config, pathFilter(dir, config));
-      if (docs.length === 0) return { emptyCause: 'needs-declaration', note: 'Freshness found no canonical document, agent-instruction file or changelog to compare with the code history.', howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md (`docguard generate` drafts it), commit it, and Freshness reports when it falls behind the code.' };
-      return { emptyCause: 'needs-content', note: skipped.length ? `Freshness reviewed none of ${docs.length} document(s): ${skipped.map(r => r.message).join('; ')}` : `Freshness found ${docs.length} document(s) but reviewed none of them.`, howToConfigure: 'Review the documents named above, or stamp them with `<!-- docguard:last-reviewed YYYY-MM-DD -->` after reading them; a document that is staged, historical, superseded or a pointer is not reviewed in this run.' };
+      const docCount = facts.docs ?? collectDocs(dir, config, pathFilter(dir, config)).length;
+      if (docCount === 0) return { emptyCause: 'needs-declaration', note: 'Freshness found no canonical document, agent-instruction file or changelog to compare with the code history.', howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md (`docguard generate` drafts it), commit it, and Freshness reports when it falls behind the code.' };
+      return { emptyCause: 'needs-content', note: skipped.length ? `Freshness reviewed none of ${docCount} document(s): ${skipped.map(r => r.message).join('; ')}` : `Freshness found ${docCount} document(s) but reviewed none of them.`, howToConfigure: 'Review the documents named above, or stamp them with `<!-- docguard:last-reviewed YYYY-MM-DD -->` after reading them; a document that is staged, historical, superseded or a pointer is not reviewed in this run.' };
     },
   });
 }

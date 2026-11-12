@@ -375,7 +375,7 @@ export function runGuardInternal(projectDir, config) {
       }
       const skipped = freshnessResults.filter(r => r.status === 'skip');
       const prerequisite = skipped.find(r => r.prerequisite)?.prerequisite;
-      const contract = freshnessContract(projectDir, config, { performed: passed + findings.length, found: findings.length > 0, skipped });
+      const contract = freshnessContract(projectDir, config, { performed: passed + findings.length, found: findings.length > 0, skipped, facts: freshnessResults.facts });
       if (prerequisite) return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), applicability: prerequisite, ...contract };
       return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}), ...contract };
     }},
