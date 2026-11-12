@@ -21,7 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the fix for each one, the baseline command, the waiver form and the key for
   the lower mode. `--format json` carries `enforcement` and `strict`; SARIF and
   JUnit render an unexamined validator as they render an `inconclusive` one;
-  `ci` blocks (`CI_STRICT_UNEXAMINED`). `docguard upgrade` reports, read-only,
+  `ci` blocks (`CI_STRICT_UNEXAMINED`). Only what a project can resolve blocks:
+  a validator that performed zero checks and has cause `needs-declaration` or
+  `needs-content`, or could not observe at all. A partial result (some routes
+  unreadable, an optional parser absent) and a layout DocGuard does not read are
+  listed after the Adopt block under "DocGuard could not read" and in
+  `strict.couldNotRead[]`, and leave the exit code alone. `docguard upgrade` reports, read-only,
   what strict would change for the project. The default is unchanged in this
   release: an absent key is `standard`, and the first line of the summary says
   so (`docguard.strict-by-default` FR-001, FR-007, FR-014 to FR-016, FR-018;

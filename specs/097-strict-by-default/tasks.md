@@ -41,7 +41,7 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 
 ### A5 — Fixes from the Stage A proof (`verification.md`)
 
-- [ ] T018a FR-007 as amended: only a validator with zero checks and cause `needs-declaration` or `needs-content` (or one that could not observe at all) exits 4; partial results and `layout-not-recognized` go to a "could not read" list in text and JSON. Failing tests first.
+- [x] T018a FR-007 as amended: only a validator with zero checks and cause `needs-declaration` or `needs-content` (or one that could not observe at all) exits 4; partial results and `layout-not-recognized` go to a "could not read" list in text and JSON. Failing tests first.
 - [ ] T018b `applies` defects: Metadata-Sync on a package marked private or never published; API-Surface on a project with a UI framework and no route; Generated-Staleness reading a draft status out of body text; Spec-Registry returning `empty` with no cause after comparing specs; Requirement-Anchors counting template placeholder rows as requirement IDs.
 - [ ] T018c Documents kept outside `docs-canonical/`: a validator whose document the project maps through `docs.roles` (spec 093) reads it there, and its fix text names the mapping before it suggests creating a file.
 - [ ] T018d Fix texts: no text tells a project to move code or documents; Test-Spec accepts the older "Service-to-Test Map" heading; Requirement-Anchors says where a Spec ID comes from; Doc-Dependency and Requirement-Anchors examples name a product source file, not a configuration file; Metadata-Sync names the workspace package it read.

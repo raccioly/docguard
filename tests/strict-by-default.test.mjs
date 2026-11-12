@@ -692,7 +692,7 @@ describe('strict output', () => {
   it('JSON carries enforcement and the strict block', () => {
     const { json } = guardJson(failing());
     assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'config' });
-    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
+    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
     assert.deepEqual(Object.keys(json.strict.unexamined[0]).sort(), ['blocking', 'cause', 'howToConfigure', 'name', 'newIn', 'reason', 'validator', 'verdict']);
     assert.equal(json.strict.baselined, 0);
   });

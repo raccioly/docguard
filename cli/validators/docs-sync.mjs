@@ -17,6 +17,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { roleMappingFix } from '../shared-doc-roles.mjs';
 import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs, isNonProductPath } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
@@ -248,6 +249,34 @@ function selectSourceFiles(projectDir, config) {
 const LOOSE_LAYOUT_DIRS = new Set(['routes', 'controllers', 'handlers', 'services', 'api']);
 
 /**
+ * What Docs-Sync reads, stated exactly (and shown to a project as the layouts it
+ * reads): the directories, what it takes from each, and where they may sit.
+ */
+export const LAYOUTS_READ = Object.freeze([
+  `src/routes, routes: any ${SOURCE_EXTENSIONS.join(' ')} file`,
+  `src/services, services: any ${SOURCE_EXTENSIONS.join(' ')} file`,
+  'src/lib: files named like a service (auth-service.ts, UserService.ts)',
+  'src/app/api, app/api: only Next.js route files (route.ts, route.tsx, route.js, route.jsx, route.mjs)',
+  'each directly under the project root or a source root (sourceRoot in .docguard.json, workspace packages, and src, app, lib, server, api, functions, backend)',
+]);
+const ISSUES = 'https://github.com/raccioly/docguard/issues';
+
+/**
+ * The directory that, set as `sourceRoot`, would make Docs-Sync read this file:
+ * the part of the path before a route or service directory it reads. Null when
+ * the file is not under one, or is under app/api and is not a Next.js route file.
+ */
+function sourceRootFor(rel) {
+  for (const sub of [...ROUTE_SUBPATHS, ...SERVICE_SUBPATHS.filter(s => s !== 'src/lib')]) {
+    const at = rel.indexOf(`/${sub}/`);
+    if (at <= 0) continue;
+    if (NEXTJS_API_DIR_RE.test(rel) && !NEXTJS_ROUTE_FILE_RE.test(rel)) continue;
+    return rel.slice(0, at);
+  }
+  return null;
+}
+
+/**
  * Does Docs-Sync apply to this project? Decided from the project's files, not
  * from this validator's configuration (specs/097-strict-by-default FR-006):
  *   - route or service files under the directories it reads: applies;
@@ -264,8 +293,10 @@ export function applies(projectDir, config, selected = selectSourceFiles(project
     const routes = selected.filter(e => e.kind === 'route').length;
     return { applies: true, kind: 'recognized', files: selected.length, evidence: `${routes} route file(s) and ${selected.length - routes} service file(s) under the directories Docs-Sync reads` };
   }
-  const read = new Set([...expandDirs(projectDir, config, ROUTE_SUBPATHS), ...expandDirs(projectDir, config, SERVICE_SUBPATHS)]);
+  // `selected` is empty, so no file under a directory Docs-Sync reads was a route or a service: a Python file in
+  // app/api is as unread as one in handlers/. Every source file under a layout-named directory counts.
   const dirs = new Set();
+  const roots = new Set();
   sharedWalkFiles(resolve(projectDir), (fullPath) => {
     if (!SOURCE_EXTENSIONS.includes(extname(fullPath))) return;
     const rel = relPosix(projectDir, fullPath);
@@ -275,10 +306,12 @@ export function applies(projectDir, config, selected = selectSourceFiles(project
     parts.pop();
     if (!parts.some(seg => LOOSE_LAYOUT_DIRS.has(seg.toLowerCase()))) return;
     dirs.add(parts.join('/'));
+    const root = sourceRootFor(rel);
+    if (root) roots.add(root);
   }, { ignoreDirs: IGNORE_DIRS });
-  const loose = [...dirs].filter(d => !read.has(resolve(projectDir, d))).sort();
+  const loose = [...dirs].sort();
   if (loose.length > 0) {
-    return { applies: true, kind: 'unrecognized-layout', dirs: loose.slice(0, 5), evidence: `source files sit under ${loose.slice(0, 3).join(', ')}${loose.length > 3 ? ` and ${loose.length - 3} more` : ''}, a layout Docs-Sync does not read` };
+    return { applies: true, kind: 'unrecognized-layout', dirs: loose.slice(0, 5), sourceRoots: [...roots].sort().slice(0, 3), evidence: `source files sit under ${loose.slice(0, 3).join(', ')}${loose.length > 3 ? ` and ${loose.length - 3} more` : ''}, a layout Docs-Sync does not read` };
   }
   return { applies: false, kind: 'none', evidence: `no source file under ${[...ROUTE_SUBPATHS, ...SERVICE_SUBPATHS].join(', ')} and none under a directory named ${[...LOOSE_LAYOUT_DIRS].join(', ')}` };
 }
@@ -288,26 +321,29 @@ function docsSyncContract(projectDir, config, { performed, selected }) {
   if (performed > 0) return { performed, applies: { applies: true, evidence: `checked ${performed} route/service file(s) against the canonical docs` } };
   const a = applies(projectDir, config, selected);
   const applied = { applies: a.applies, evidence: a.evidence };
-  const read = `${ROUTE_SUBPATHS.join(', ')} (routes) and ${SERVICE_SUBPATHS.join(', ')} (services), under the project root and each source root`;
   if (!a.applies) {
     return {
       performed, applies: applied, emptyCause: 'nothing-of-this-kind',
       note: `Docs-Sync found no route or service files to check: ${a.evidence}.`,
-      howToConfigure: `Nothing to configure unless the project has routes or services: Docs-Sync reads ${read}.`,
+      howToConfigure: `Nothing to configure unless the project has routes or services: Docs-Sync reads ${LAYOUTS_READ.join('; ')}.`,
     };
   }
   if (a.kind === 'unrecognized-layout') {
+    const found = a.dirs.join(', ');
+    const advice = a.sourceRoots?.length
+      ? `Setting "sourceRoot": ${JSON.stringify(a.sourceRoots.length === 1 ? a.sourceRoots[0] : a.sourceRoots)} in .docguard.json makes it read the route and service directories under ${a.sourceRoots.join(', ')}.`
+      : `No setting makes Docs-Sync read ${found}, and nothing in the project needs to change. If this layout is common, report it so DocGuard can read it: ${ISSUES}`;
     return {
-      performed, applies: applied, emptyCause: 'layout-not-recognized',
-      note: `Docs-Sync found no route or service file where it looks (${read}) but ${a.evidence}.`,
-      howToConfigure: `Docs-Sync reads ${read}. Found: ${a.dirs.join(', ')}. Move them under one of those directories, or set sourceRoot in .docguard.json to the directory that contains src/routes or src/services.`,
+      performed, applies: applied, emptyCause: 'layout-not-recognized', layouts: LAYOUTS_READ,
+      note: `Docs-Sync found no route or service file where it looks but ${a.evidence}.`,
+      howToConfigure: `Docs-Sync did not read ${found}. It reads ${LAYOUTS_READ.join('; ')}. ${advice}`,
     };
   }
   // Route or service files exist; nothing was checked because there is nothing to check them against.
   return {
     performed, applies: applied, emptyCause: 'needs-declaration',
     note: `Docs-Sync found ${a.files} route/service file(s) (${a.evidence}) but no canonical document to check them against.`,
-    howToConfigure: `Create docs-canonical/ARCHITECTURE.md and name each route and service in it, by file path or by module name; \`docguard generate\` drafts the document.`,
+    howToConfigure: roleMappingFix(config, 'architecture', 'the architecture document', 'and name each route and service in it, by file path or by module name; `docguard generate` drafts the document'),
   };
 }
 

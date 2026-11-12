@@ -1,4 +1,4 @@
-import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { docRolePath, resolveDocRole, roleMappingFix } from '../shared-doc-roles.mjs';
 /**
  * API-Surface Validator — Detects drift between the documented API surface
  * (docs-canonical/API-REFERENCE.md) and the project's actual API surface.
@@ -115,26 +115,48 @@ export function detectSpecDivergence(projectDir, config) {
  * package.json read stays as the fallback for a JS project whose manifest sits
  * outside the ecosystem walk (a workspace member reached through config).
  */
-function detectFramework(projectDir, config) {
+function frameworkNames(projectDir, config) {
   const names = [];
   try {
     for (const eco of detectEcosystems(projectDir, config)) {
       if (eco.framework) names.push(eco.framework);
     }
   } catch { /* fall through to the package.json read */ }
-  if (names.length > 0) return [...new Set(names)].join(' ');
+  if (names.length > 0) return [...new Set(names)];
 
   const deps = {};
   for (const { pkg } of collectPackageJsons(projectDir, config)) {
     Object.assign(deps, pkg.dependencies || {}, pkg.devDependencies || {});
   }
-  if (deps.next) return 'Next.js';
-  if (deps['@nestjs/core']) return 'NestJS'; // docguard.js-framework-routes#FR-007
-  if (deps.express) return 'Express';
-  if (deps.fastify) return 'Fastify';
-  if (deps.hono) return 'Hono';
-  if (deps.koa) return 'Koa';
-  return '';
+  if (deps.next) return ['Next.js'];
+  if (deps['@nestjs/core']) return ['NestJS']; // docguard.js-framework-routes#FR-007
+  if (deps.express) return ['Express'];
+  if (deps.fastify) return ['Fastify'];
+  if (deps.hono) return ['Hono'];
+  if (deps.koa) return ['Koa'];
+  return [];
+}
+
+function detectFramework(projectDir, config) {
+  return frameworkNames(projectDir, config).join(' ');
+}
+
+/**
+ * Frameworks that render a user interface and register no HTTP route of their
+ * own. `detectEcosystems` names a package `React`, `Vue` or `Frontend` (Angular,
+ * Svelte, SvelteKit, Nuxt) from its dependencies; a project that declares only
+ * these, and whose route scan read no route, has no API to compare.
+ */
+const UI_FRAMEWORKS = new Set(['React', 'Vue', 'Frontend']);
+const SERVER_DEPENDENCIES = ['express', 'fastify', 'hono', 'koa', '@nestjs/core', 'next'];
+
+/** True when a manifest declares a server framework next to the UI one (a React and Express monorepo root). */
+function declaresServerFramework(projectDir, config) {
+  for (const { pkg } of collectPackageJsons(projectDir, config)) {
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    if (SERVER_DEPENDENCIES.some(name => deps[name])) return true;
+  }
+  return false;
 }
 
 /**
@@ -371,9 +393,14 @@ export function applies(projectDir, config) {
   if (surface.confidence === 'code') {
     return { applies: true, kind: 'code', evidence: `the route scan read ${surface.endpoints.length} route(s)` };
   }
-  const framework = detectFramework(projectDir, config);
-  if (framework) {
-    return { applies: true, kind: 'framework', evidence: `${framework} is declared in a manifest, but the route scan read no route` };
+  const names = frameworkNames(projectDir, config);
+  if (names.length > 0) {
+    // A UI framework declares no HTTP route, so a project that has only that, and whose scan read none, has
+    // no API to compare (a client-side application). Any server framework in a manifest keeps the validator on.
+    if (names.every(n => UI_FRAMEWORKS.has(n)) && !declaresServerFramework(projectDir, config)) {
+      return { applies: false, kind: 'none', evidence: `${names.join(' and ')} is a UI framework and the route scan read no HTTP route` };
+    }
+    return { applies: true, kind: 'framework', evidence: `${names.join(' ')} is declared in a manifest, but the route scan read no route` };
   }
   return { applies: false, kind: 'none', evidence: 'no OpenAPI/Swagger spec with endpoints, no route registration the scan reads, and no route framework in a manifest' };
 }
@@ -401,7 +428,7 @@ function apiContract(projectDir, config, { performed, apiDocPath, API_DOC, docum
     return {
       performed, applies: applied, emptyCause: 'needs-declaration',
       note: `API-Surface applies (${a.evidence}) but ${API_DOC} does not exist, so no endpoint was compared.`,
-      howToConfigure: `Create ${API_DOC} with one table row per endpoint (\`GET /path\`); \`docguard generate\` drafts it from the routes it reads.`,
+      howToConfigure: roleMappingFix(config, 'apiReference', 'the API reference', `with one table row per endpoint (\`GET /path\`); \`docguard generate\` drafts it from the routes it reads`),
     };
   }
   if (documentedCount === 0) {

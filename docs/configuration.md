@@ -96,10 +96,19 @@ from `profile`, which only says what kind of project this is:
 ```
 
 - **`strict`**: every validator that applies to the project must examine
-  something. One that applies and examined nothing (verdict `empty`,
-  `inconclusive` or `blocked`) makes `guard` exit 4 and `ci` block
-  (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. A validator
-  that does not apply is `skipped`, with what it looked for as the reason.
+  something. One that applies, performed no check, and whose cause is
+  `needs-declaration` or `needs-content` (a declaration or a document the
+  project can write) makes `guard` exit 4 and `ci` block
+  (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. So does one that
+  could not observe at all (`blocked`, or `inconclusive` with zero checks). A
+  validator that does not apply is `skipped`, with what it looked for as the
+  reason.
+  A validator that performed at least one check and could not read the rest
+  (some routes unreadable, an optional parser absent) is `inconclusive`, and one
+  whose cause is `layout-not-recognized` is a limit of DocGuard. Neither changes
+  the exit code: both are listed after the Adopt block under "DocGuard could not
+  read", with what was missed and, for a layout, the layouts the validator does
+  read. `--fail-on-inconclusive` still makes a project that asks for it exit 4.
   When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
   unexamined validator, `docguard guard --update-baseline`, the waiver form
   with `owner:` and `expires:`, and the key that selects the lower mode.
@@ -110,11 +119,14 @@ from `profile`, which only says what kind of project this is:
   `enforcement: { mode, asOf, source }` (`source` is `default` or `config`).
 
 Under `strict`, `--format json` also carries
-`strict: { evaluated, unexamined[], blocking[], gating[], pending[], waived[], baselined }`.
+`strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], baselined }`.
 Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking }`.
+Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts? }`: `reason` is what the validator
+could not read, and `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
 `cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`
 or `nothing-of-this-kind`, or `null` when the validator could not observe its
-input (it is `inconclusive`, and `reason` is the gap). `--changed-only` runs a subset
+input (it is `inconclusive`, and `reason` is the gap). Only the first two,
+and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset
 of the validators, so it does not evaluate the rule and says so.
 
 `docguard upgrade` reports, read-only, what `strict` would change for the

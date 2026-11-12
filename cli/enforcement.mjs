@@ -16,7 +16,7 @@
  * @implements docguard.strict-by-default#FR-015
  * @implements docguard.strict-by-default#FR-016
  */
-import { EMPTY_CAUSES } from './validator-coverage.mjs';
+import { EMPTY_CAUSES, performedChecks } from './validator-coverage.mjs';
 
 export const ENFORCEMENT_MODES = Object.freeze(['strict', 'standard']);
 
@@ -65,14 +65,17 @@ export function modeLine(enforcement) {
  * What strict mode reports for one run, from the validator results after
  * verdicts, the baseline and finding severities are final.
  *
- * `unexamined` lists every validator that applies and did not examine
- * anything: verdict `empty`, `inconclusive` or `blocked`. Only an entry with
- * `blocking: true` makes the run exit 4:
- *   - `inconclusive`, `blocked` and `empty` always block (today's
- *     `--fail-on-inconclusive`, and the `requiredChecks` rule of spec 083 applied
- *     to every applicable validator). Every validator returns the result
- *     contract, so an `empty` one carries a cause and a fix; the registry test
- *     fails when one does not.
+ * A validator that applies and did not examine everything is sorted by what the
+ * project can do about it (FR-007 as amended):
+ *   - `unexamined`, which makes the run exit 4: it performed zero checks and its
+ *     cause is `needs-declaration` or `needs-content` (a declaration or a document
+ *     the project can write), or it could not observe at all (`blocked`, or
+ *     `inconclusive` with zero checks).
+ *   - `couldNotRead`, which never changes the exit code: it performed at least one
+ *     check and could not observe the rest (a partial `inconclusive`: unreadable
+ *     routes, an optional parser that is absent), or its cause is
+ *     `layout-not-recognized`, a limit of DocGuard and not a gap in the project.
+ *     `--fail-on-inconclusive` and `requiredChecks` keep their own rules.
  *
  * `gating` is the findings that fail the build, by code (Stage A: exactly the
  * findings that resolve to error today; FR-008/FR-009 narrow it in Stage B).
@@ -87,6 +90,7 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
   // unreadable marker declares nothing, so it never made a result `declared N/A`.
   const markerFor = key => markers.find(m => m.key === key && m.known && !m.metadataProblem && !(m.expires && m.expires < new Date().toISOString().slice(0, 10)));
   const unexamined = [];
+  const couldNotRead = [];
   const waived = [];
   const gatingByCode = new Map();
   for (const r of results) {
@@ -100,12 +104,26 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
     }
     if (r.key === 'requiredChecks') continue;
     if (r.verdict !== 'empty' && r.verdict !== 'inconclusive' && r.verdict !== 'blocked') continue;
+    const cause = EMPTY_CAUSES.includes(r.emptyCause) ? r.emptyCause : null;
+    const reason = r.applicability?.reason || null;
+    // What a project can resolve blocks; what only DocGuard can resolve (a layout it does not read) and what
+    // was partly examined (at least one check ran) is reported and leaves the exit code alone.
+    const partial = r.verdict === 'inconclusive' && performedChecks(r) >= 1;
+    const unreadLayout = r.verdict === 'empty' && cause === 'layout-not-recognized';
+    const unclassified = r.verdict === 'empty' && cause !== 'needs-declaration' && cause !== 'needs-content';
+    if (partial || unreadLayout || unclassified) {
+      couldNotRead.push({
+        validator: r.key, name: r.name || r.key, verdict: r.verdict, cause, reason,
+        ...(Array.isArray(r.layouts) && r.layouts.length ? { layouts: r.layouts } : {}),
+      });
+      continue;
+    }
     unexamined.push({
       validator: r.key,
       name: r.name || r.key,
       verdict: r.verdict,
-      cause: EMPTY_CAUSES.includes(r.emptyCause) ? r.emptyCause : null,
-      reason: r.applicability?.reason || null,
+      cause,
+      reason,
       howToConfigure: typeof r.howToConfigure === 'string' && r.howToConfigure ? r.howToConfigure : null,
       newIn: null,
       blocking: !lite,
@@ -114,6 +132,7 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
   return {
     evaluated: !lite,
     unexamined,
+    couldNotRead,
     blocking: unexamined.filter(u => u.blocking).map(u => u.validator),
     gating: [...gatingByCode].map(([code, count]) => ({ code, count })).sort((a, b) => a.code.localeCompare(b.code)),
     pending: [],
@@ -146,6 +165,23 @@ export function adoptLines(strict) {
   lines.push(`      ${WAIVER_FORM}`);
   lines.push('  Choose the lower mode on purpose:');
   lines.push('      "enforcement": "standard"   (in .docguard.json)');
+  return lines;
+}
+
+/**
+ * The "could not read" block that follows the Adopt block: each validator that
+ * applies and could not look at everything, with what it missed and, for an
+ * unread layout, the layouts it does read. Empty when there is nothing to say.
+ */
+export function couldNotReadLines(strict) {
+  const items = strict?.couldNotRead || [];
+  if (items.length === 0) return [];
+  const lines = ['DocGuard could not read: (reported only; this does not change the exit code)'];
+  for (const u of items) {
+    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}`);
+    if (u.reason) lines.push(`      ${u.reason}`);
+    if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
+  }
   return lines;
 }
 
