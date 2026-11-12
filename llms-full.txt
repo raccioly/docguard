@@ -62,7 +62,6 @@ It targets development teams and AI coding agents that need to maintain document
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
 | **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
 | **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
-| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies and examined nothing, whose result carries a cause and fix, exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`. A validator not yet on the contract is listed as "cause not yet classified" and never exits 4. An absent key resolves to `standard` until the stage that changes the default | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -83,6 +82,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Repository-root guidance** | Detects a likely governing ancestor without changing the selected scan directory | `cli/repository-root.mjs`, `cli/docguard.mjs` | Requires ancestor DocGuard configuration or npm/pnpm membership, respects nested Git boundaries, and uses typed stderr diagnostics for machine modes |
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
+| **Agent-instruction role** | One list of the project's agent instructions: root `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and `requiredFiles.agentFile` (root-level, loaded every session), plus tracked nested AGENTS/CLAUDE/GEMINI files and harness rules and skills outside test, fixture and example paths. Each entry says whether it is a pointer (a short body that imports a file or names another role document; reviewed through its target) and whether it is vendored (listed in a Spec Kit integration manifest, or a skill DocGuard ships) | `cli/shared-agent-instructions.mjs` | Every reader of agent files asks it: Freshness, Reference-Existence, Diff-Suspicion, Canonical-Sync, Doc-Dependency candidates, semantic claims, the instruction audit, `diff --since`, `diff`/MCP references, `diagnose`, the hook nudge and `score --dora`. Path-Scoped-Rules reports PSR005 for a manifest copy whose sha256 changed (spec 094) |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
@@ -231,7 +231,7 @@ guard.mjs
   │
   ▼
 Output (text | json)
-  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn) | 3 (errors, but project not initialised)
+  └── Exit code: 0 (pass) | 1 (fail) | 2 (warn) | 3 (errors, but project not initialised) | 4 (a check that had to decide did not: --fail-on-inconclusive, requiredChecks)
 ```
 
 ### AI Fix Flow: `docguard fix --doc architecture`
@@ -261,7 +261,7 @@ docguard guard → validates the newly written document
 | **Config-driven validation** | `.docguard.json` lets projects customize which validators run. A CLI project can skip database docs. |
 | **Validators are independent** | Each validator is a self-contained module. Adding a validator keeps existing ones stable. |
 | **AI as author, CLI as orchestrator** | The CLI detects problems and generates structured prompts. Documentation writing is the AI's responsibility. |
-| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn), `3` (errors in a project with no `.docguard.json`) enables `docguard ci` to gate deployments. `3` stays non-zero so an any-non-zero gate is unchanged, but it lets the generated Git hook distinguish "never adopted DocGuard" from "failed its checks". |
+| **Exit codes for CI** | `0` (pass), `1` (fail), `2` (warn), `3` (errors in a project with no `.docguard.json`), `4` (a validator that had to decide did not: inconclusive or blocked under `--fail-on-inconclusive`, or an undecided `requiredChecks` entry) enables `docguard ci` to gate deployments. `3` stays non-zero so an any-non-zero gate is unchanged, but it lets the generated Git hook distinguish "never adopted DocGuard" from "failed its checks". |
 | **Scoped factual evidence** | `.docguard-evidence.json` declares narrow, typed source-to-statement predicates. Contradictions fail guard; stale, inconclusive, and unsupported evidence stays visible. A verified statement never exempts its document from freshness or semantic review. |
 | **Evidence before context volume** | `agent --task` returns a bounded retrieval packet only after the frozen evaluation showed equal hidden-test safety and lower steps/latency. It remains opt-in because uncached token use increased and the synthetic protocol does not establish universal benefit. |
 
@@ -769,7 +769,7 @@ The primary data structure. Controls all CLI behavior.
 | `version` | `string` | No | `"0.1"` | Config schema version |
 | `projectType` | `string` | No | Auto-detected | One of: `cli`, `webapp`, `api`, `library`, `monorepo` |
 | `requiredFiles.canonical` | `string[]` | No | 5 docs-canonical files | Paths to required CDD documents |
-| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list |
+| `requiredFiles.agentFile` | `string[]` \| `string` | No | `["AGENTS.md", "CLAUDE.md"]` | AI agent config file options; any one suffices. A single string is read as a one-element list. Each entry that exists is also a root-level document of the agent-instruction role (spec 094), which every agent-file reader uses; the role also finds `GEMINI.md`, `.github/copilot-instructions.md`, nested instruction files and harness rules and skills without configuration |
 | `requiredFiles.changelog` | `string` | No | `"CHANGELOG.md"` | Changelog file path |
 | `requiredFiles.driftLog` | `string` | No | `"DRIFT-LOG.md"` | Drift log file path |
 
@@ -811,7 +811,6 @@ The primary data structure. Controls all CLI behavior.
 | `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
 | `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
 | `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
-| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode (`standard` until the release that makes `strict` the default); `profile` never selects it. `asOf` is `major.minor`. A malformed value is a configuration error |
 | `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration
@@ -1138,8 +1137,9 @@ first instant after the stated day. The schemas are vendored byte-identical in
 | File | Written by | Shape |
 |---|---|---|
 | `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
+| `.docguard/anchors.cache.json` | `docguard anchors` and the Requirement-Anchors validator, never in CI or with `--no-cache` | `{ v, identity, files }`: `v` is `1`, `identity` names the extractor (algorithm and tier versions), and `files` maps a path to `{ sha, value }`, where `sha` is the sha256 of the working-tree bytes. Another version or identity, or a different `sha`, is a miss. Ignored and reported (ANC010) while git tracks any file under `.docguard/` |
 
-<!-- truncated: 282 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 281 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1709,6 +1709,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/validators/structure.mjs` | `tests/commands.test.mjs` | ✅ |
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
+| `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
@@ -1838,7 +1839,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 `tests/score-assurance.test.mjs` checks that structural grades never claim factual verification and that CI, diagnose, and reports retain this boundary. `tests/feedback-contributions.test.mjs` checks confident-finding selection, preview behavior, and outbound metadata privacy. Cache tests must change source contents without changing a manifest or Git HEAD, including repeated edits and fresh-process reads. Hook tests execute generated scripts against controlled runtimes rather than merely matching shell text. Traceability tests pair synthetic fixture IDs with genuine requirement annotations.
 
-A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 26 measured cases across 13 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
+A detector fix should include a clean near-miss and a real defect. Held-out neighboring cases are required to evaluate generalization. `benchmarks/baseline.json` is the reviewed reference: 30 measured cases across 15 repository groups plus one explicit unsupported case. Its observed perfect point estimates retain Wilson confidence limits and do not establish exhaustive correctness. The envelope's `review.measures` is `benchmark-precision` and its `review.caveat` must accompany any quoted number; tests assert the committed metrics and caveat are recomputable from the committed cases, and that a hand-edited ratio, stale caveat, or pre-provenance envelope is rejected.
 
 The finding shape is itself a contract, because findings are copied verbatim into shareable feedback records. `tests/precision-evidence.test.mjs` pins the exact key set a guard run emits, so a field added without a specification fails the suite; it also asserts that `location` is a string or null and that `disposition` and `evidence.status` hold values from their declared vocabularies. `tests/findings-channels.test.mjs` pins the derivation rules for the three channels: `disposition` from `suggestion.kind` with `escalate` as the fail-closed default, `evidence` projected per code and always standing alone, and `reportable` true for an unmeasured code even at high confidence. A malformed `suggestion.kind` must omit the suggestion, so a typo stays visible as a missing suggestion instead of reclassifying a fix as a review.
 
@@ -2002,40 +2003,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **An enforcement mode, `strict` or `standard`, that a project can select
-  today.** `"enforcement": "strict"` (or `{ "mode": "strict", "asOf": "0.49" }`)
-  in `.docguard.json` makes guard exit 4 when a validator that applies to the
-  project examined nothing, and `docguard guard` prints an **Adopt** block with
-  the fix for each one, the baseline command, the waiver form and the key for
-  the lower mode. `--format json` carries `enforcement` and `strict`; SARIF and
-  JUnit render an unexamined validator as they render an `inconclusive` one;
-  `ci` blocks (`CI_STRICT_UNEXAMINED`). `docguard upgrade` reports, read-only,
-  what strict would change for the project. The default is unchanged in this
-  release: an absent key is `standard`, and the first line of the summary says
-  so (`docguard.strict-by-default` FR-001, FR-007, FR-014 to FR-016, FR-018;
-  stage A of specs/097-strict-by-default).
-- **A cause and a fix on an empty result.** API-Surface, Docs-Sync and
-  Surface-Sync now report whether they apply to the project, how many checks
-  they performed, and, when they examined nothing, a cause (`needs-declaration`,
-  `needs-content`, `layout-not-recognized` or `nothing-of-this-kind`) with the
-  text that makes them examine something. The contract is defined in
-  `cli/validator-coverage.mjs`; the other validators move onto it next, and
-  under strict a validator that is empty without a cause is listed as "cause
-  not yet classified" and never fails the run (FR-005, FR-006).
-- **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
-  blank or a `<placeholder>` is reported, so a drafted block applied unedited no
-  longer passes. An entry that omits `purpose` is unaffected (FR-004).
+- **One agent-instruction document role** (#628, spec 094). DocGuard decided which
+  files are agent instructions in twelve separate lists, and they disagreed: Freshness
+  read only `AGENTS.md` and `CLAUDE.md`, so a stale `GEMINI.md` or
+  `.github/copilot-instructions.md` was checked by nothing. One role now lists
+  them: the root files every session loads (`AGENTS.md`, `AGENTS.override.md`,
+  `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, configured
+  `requiredFiles.agentFile`), plus tracked nested instruction files and harness
+  rules and skills outside test and fixture paths. Every agent-file reader uses it
+  (`docguard.agent-instruction-role` FR-001 to FR-003).
+- **PSR005: an installed instruction copy was edited.** A skill that a Spec Kit
+  integration installed, listed with its sha256 in
+  `.specify/integrations/<integration>.manifest.json`, no longer matches what was
+  installed. The next install overwrites the edit (FR-007).
+- **Vendored instruction files are counted and listed.** Guard's summary line says how
+  many instruction files were treated as vendored and not reviewed, and JSON lists each
+  with its reason in `coverage.vendoredInstructions[]`. A root file such as `AGENTS.md`
+  is never vendored by a header alone, only by an install record with a hash (FR-011).
 
 ### Changed
 
-- **A validator that performed no check is `empty`, never `pass`.** The verdict
-  now requires at least one performed check. Requirement-Anchors enabled with
-  zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
-  where they were `pass`. No exit code changes under `standard`: `empty` does not
-  affect one, except for a validator named in `requiredChecks`, which already
-  held the gate on `empty` (FR-004).
+- **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
+  "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
+  finding; Freshness records that it is reviewed through its target. Installed
+  Spec Kit and DocGuard skill copies are no longer reviewed for staleness, because
+  they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
+  Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
+  for them.
 
 ### Fixed
+
+- **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
+  had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
 
 - **Releases are now published to the official MCP registry.** The listing at
   `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because
@@ -2391,8 +2390,10 @@ Budget-Exempt: bytes:mcp:docguard_docs_for_path — 36 bytes are spec 092's docs
     against `tools/suite-runtime-reference.json`, and fails any test over
     `TEST_CEILING_MS` (100 seconds at reference speed).
   - **Measured.** It passes all 445 recorded jobs: the slowest normal test is
+    56.9 seconds at reference speed, 1.76× below the ceiling. It catches a
+    165-second runaway in one test in all 445, whether the runaway scales with
 
-<!-- truncated: 6224 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6222 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -3016,6 +3017,8 @@ npx testguard-cli@0.24.0 probe --confirm 3 \
 ```
 
 An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
+
+On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.24.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.24.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
 
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.

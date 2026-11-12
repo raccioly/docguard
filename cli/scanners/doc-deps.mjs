@@ -34,6 +34,7 @@ import { inspectSections } from '../writers/sections.mjs';
 import { findJsSymbol, normalizeJsV0, sha256 } from './fingerprint.mjs';
 import { parseJsTs } from './js-ast.mjs';
 import { pythonBatch, pythonVersion } from './py-anchors.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 
 export const DOC_LOCK_PATH = '.docguard-doc-lock.json';
 export const DOC_LOCK_SCHEMA_VERSION = 1;
@@ -73,7 +74,9 @@ export function coveredSections(content) {
 export function candidateDocs(projectDir, config = {}) {
   const out = new Map();
   for (const { rel } of listCanonicalDocs(projectDir, { config })) out.set(rel, true);
-  for (const rel of ['README.md', 'AGENTS.md']) if (existsSync(resolve(projectDir, rel))) out.set(rel, true);
+  if (existsSync(resolve(projectDir, 'README.md'))) out.set('README.md', true);
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  for (const rel of rootAgentDocs(projectDir, config)) out.set(rel, true);
   return [...out.keys()].sort();
 }
 

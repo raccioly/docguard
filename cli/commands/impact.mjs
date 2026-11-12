@@ -49,6 +49,7 @@ import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
 import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from '../scanners/import-graph.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { findReferences, namesToken } from '../scanners/doc-references.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 
 /**
  * File extensions we consider "code" for the purposes of impact analysis.
@@ -56,8 +57,6 @@ import { findReferences, namesToken } from '../scanners/doc-references.mjs';
  */
 const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift)$/;
 
-// Root agent-instruction files — documentation that names code and other docs.
-const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -226,7 +225,8 @@ export function runImpact(projectDir, config, flags) {
       docsIndex.set(basename(doc.rel), content.split('\n'));
     } catch { /* skip unreadable */ }
   }
-  for (const a of AGENT_FILES) {
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  for (const a of rootAgentDocs(projectDir, config)) {
     const p = resolve(projectDir, a);
     if (!existsSync(p)) continue;
     try { docsIndex.set(a, readFileSync(p, 'utf-8').split('\n')); agentDocs.add(a); } catch { /* skip */ }

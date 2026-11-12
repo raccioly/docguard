@@ -13,6 +13,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { listTrackedFiles, runGit } from '../shared-git.mjs';
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { docLockStatus } from '../scanners/doc-deps.mjs';
 import { loadOwnership } from '../scanners/doc-ownership.mjs';
 import { parseLifecycleStatus, RETIRED_STATUSES } from '../scanners/lifecycle-status.mjs';
@@ -31,7 +32,6 @@ const LARGE_COMMIT_FILES = 20;
 const MIN_COMMITS = 5;
 const INCIDENT_DOC = /runbook|troubleshoot|incident|playbook|on-?call|disaster[-_ ]?recovery/i;
 const MCP_CONFIGS = ['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json'];
-const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md'];
 
 const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : null);
 const mean = xs => { const v = xs.filter(x => typeof x === 'number'); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
@@ -135,13 +135,14 @@ function documentationItems(projectDir, config, { scores, agentRead, domains, tr
 }
 
 /** Agent instruction lines that point at retired or superseded docs. */
-function stalePointers(projectDir, tracked) {
+function stalePointers(projectDir, tracked, config = {}) {
   const retired = tracked.filter(p => /\.md$/i.test(p)).filter(p => {
     const status = parseLifecycleStatus(read(projectDir, p) || '')?.toLowerCase();
     return status && RETIRED_STATUSES.has(status);
   });
   const hits = [];
-  for (const agent of AGENT_FILES) {
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  for (const agent of rootAgentDocs(projectDir, config)) {
     const content = read(projectDir, agent);
     if (!content) continue;
     for (const doc of retired) if (content.includes(doc)) hits.push(`${agent} points at ${doc}, which is ${parseLifecycleStatus(read(projectDir, doc)).toLowerCase()}`);
@@ -192,8 +193,8 @@ function versionControl(tracked) {
   };
 }
 
-function aiStance(projectDir) {
-  const file = AGENT_FILES.find(f => existsSync(resolve(projectDir, f)));
+function aiStance(projectDir, config = {}) {
+  const file = rootAgentDocs(projectDir, config)[0];
   if (!file) return { score: 0, evidence: ['no AGENTS.md or CLAUDE.md'] };
   const content = read(projectDir, file) || '';
   const rules = /\b(must not|never|do not|don't|must|always)\b/i.test(content);
@@ -204,14 +205,14 @@ function aiStance(projectDir) {
   };
 }
 
-function aiItems(projectDir, { agentRead, documentation, tracked }) {
+function aiItems(projectDir, { agentRead, documentation, tracked, config = {} }) {
   const reliable = documentation.find(i => i.id === 'reliable').score;
   const mcp = MCP_CONFIGS.filter(f => /docguard/i.test(read(projectDir, f) || ''));
-  const stale = tracked ? stalePointers(projectDir, tracked) : [];
+  const stale = tracked ? stalePointers(projectDir, tracked, config) : [];
   const base = mean([agentRead.score, reliable]);
   const batches = tracked ? smallBatches(projectDir) : { score: null, reason: 'not a git repository', evidence: [] };
   const vc = tracked ? versionControl(tracked) : { score: null, evidence: [] };
-  const stance = aiStance(projectDir);
+  const stance = aiStance(projectDir, config);
   const survey = (id, label, where) => item(id, label, 'survey-only', null, [where], null, 'not observable in a repository');
   return [
     item('ai-stance', 'Clear AI stance', 'proxy', stance.score, stance.evidence,
@@ -241,7 +242,7 @@ export function computeDoraEvidence(projectDir, config, { scores, agentRead }) {
   const tracked = listTrackedFiles(projectDir);
   const domains = memoryDomains(projectDir, config);
   const documentation = documentationItems(projectDir, config, { scores, agentRead, domains, tracked });
-  const ai = aiItems(projectDir, { agentRead, documentation, tracked });
+  const ai = aiItems(projectDir, { agentRead, documentation, tracked, config });
   const scored = documentation.filter(i => i.score !== null);
   return {
     schemaVersion: 1,

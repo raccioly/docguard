@@ -1,3 +1,4 @@
+import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Diagnose Command — The AI Orchestrator
@@ -755,7 +756,8 @@ function detectAgentTier(projectDir) {
   }
 
   // Check AGENTS.md for known agent names
-  const agentFiles = ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'];
+  // docguard.agent-instruction-role#FR-002: the role's root-level documents.
+  const agentFiles = rootAgentDocs(projectDir);
   for (const file of agentFiles) {
     const agentPath = resolve(projectDir, file);
     if (existsSync(agentPath)) {

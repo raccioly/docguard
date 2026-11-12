@@ -6,6 +6,7 @@
  *   PSR002  a path an instruction file points at does not exist
  *   PSR003  the instructions one harness loads for some path exceed the budget
  *   PSR004  a scope DocGuard or the harness cannot read
+ *   PSR005  a vendored instruction copy differs from what its installer recorded
  *
  * Guard evaluates tracked files, so a laptop with untracked or ignored files
  * gets the same answer as CI. Instruction files under test, fixture and
@@ -16,6 +17,7 @@
  * @implements docguard.path-scoped-rules#FR-004
  * @implements docguard.path-scoped-rules#FR-007
  * @implements docguard.output-ux#FR-011
+ * @implements docguard.agent-instruction-role#FR-007
  */
 
 import { posix } from 'node:path';
@@ -28,6 +30,7 @@ import { readFrontmatter } from '../scanners/frontmatter.mjs';
 import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
+import { agentInstructionDocs, fileSha256 } from '../shared-agent-instructions.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 const MAX_POINTER_FINDINGS = 50;
@@ -47,7 +50,8 @@ export function validatePathScopedRules(projectDir, config = {}) {
 
   const { entries: all, files: instructionFiles, skipped } = instructionScopes(projectDir, projectFiles);
   const entries = all.filter(e => !isNonProductPath(e.file, config));
-  if (entries.length === 0) {
+  const role = agentInstructionDocs(projectDir, config);
+  if (entries.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
     return { ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files' };
   }
 
@@ -177,6 +181,25 @@ export function validatePathScopedRules(projectDir, config = {}) {
         suggestion: { kind: 'review', text: `Narrow the rules' scopes, move procedures into linked docs, or record agentInstructions.allowances["${harness}:${example}"] so further growth is a reviewed change` },
       }));
     }
+  }
+
+  // ── PSR005: a vendored copy no longer matches what was installed ──
+  // docguard.agent-instruction-role#FR-007: only Spec Kit manifest copies,
+  // whose sha256 is the record of what was written. DocGuard's own copies
+  // are compared with the running package by `upgrade` instead.
+  limitations.push(...role.limitations.filter(l => /manifest\.json/.test(l)));
+  for (const doc of role.docs) {
+    if (!doc.vendored?.hashes?.length) continue;
+    total++;
+    const actual = fileSha256(projectDir, doc.path);
+    if (actual === null || doc.vendored.hashes.includes(actual)) continue;
+    const { integration, version } = doc.vendored;
+    findings.push(mkFinding({
+      code: 'PSR005', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
+      message: `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}); reinstall it or move the change to an authored file`,
+      location: { file: doc.path },
+      suggestion: { kind: 'review', text: `Reinstall the ${integration} integration (specify integration install ${integration}) to restore the installed copy, or keep the change in a file the project owns: an edit here is lost on the next install` },
+    }));
   }
 
   const passed = Math.max(0, total - findings.length);
