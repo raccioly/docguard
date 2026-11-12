@@ -1973,12 +1973,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 730
+            "line": 734
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 757
+            "line": 761
           },
           {
             "requirementId": "FR-021",
@@ -6168,7 +6168,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 8
+            "line": 9
           },
           {
             "requirementId": "FR-010",
@@ -11031,7 +11031,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 9
+            "line": 10
           },
           {
             "requirementId": "FR-002",
@@ -11076,7 +11076,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 10
+            "line": 11
           },
           {
             "requirementId": "FR-009",

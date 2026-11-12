@@ -202,6 +202,35 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
     assert.deepEqual(json.strict.unexamined, []);
   });
 
+  it('spec 081 FR-003: under strict every skipped verdict has a not-applicable class, and the writers and coverage agree', () => {
+    const dir = project({ ...NO_API, 'README.md': '# r\n\n<!-- docguard:validator docsSync n/a — nothing here owner:@maintainers expires:2099-12-31 -->\n' }, cfg(only('apiSurface', 'docsSync', 'surfaceSync', 'structure'), { enforcement: 'strict' }));
+    const { json } = guardJson(dir);
+    const skipped = json.validators.filter(v => v.verdict === 'skipped' && v.status !== 'skipped');
+    assert.ok(skipped.length >= 2, 'a not-applicable remap and a waiver');
+    for (const v of json.validators.filter(v => v.verdict === 'skipped')) {
+      if (v.status === 'skipped') continue; // disabled by configuration: class not-applicable by its own path
+      assert.equal(v.applicability.class, 'not-applicable', v.key);
+    }
+    const remapped = verdictOf(json, 'apiSurface');
+    assert.equal(remapped.applicability.status, 'not-applicable');
+    assert.ok(remapped.applicability.before.status, 'the original status is kept');
+    assert.match(remapped.applicability.reason, /no OpenAPI/);
+    const counts = json.checkCoverage.counts;
+    assert.equal(counts['not-applicable'], json.validators.filter(v => v.applicability?.status === 'not-applicable').length);
+    assert.ok(JSON.stringify(json.checkCoverage.limitations).includes('apiSurface'));
+    const junit = guard(dir, ['--format', 'junit']).out;
+    assert.match(junit, /name="API-Surface"[^>]*><skipped\/>/);
+    const sarif = JSON.parse(guard(dir, ['--format', 'sarif']).out).runs[0].invocations[0].toolExecutionNotifications;
+    assert.equal(sarif.some(n => n.descriptor.id === 'apiSurface'), false, 'a skipped validator is not a notification');
+  });
+
+  it('a waiver carries its owner and expiry into strict.waived', () => {
+    const dir = project({ ...ROUTES, 'README.md': '# svc\n\n<!-- docguard:validator apiSurface n/a — internal service owner:@maintainers expires:2099-12-31 -->\n' }, strictCfg());
+    const w = guardJson(dir).json.strict.waived.find(x => x.validator === 'apiSurface');
+    assert.equal(w.owner, '@maintainers');
+    assert.equal(w.expires, '2099-12-31');
+  });
+
   it('a reasoned waiver removes it from the list and counts it as waived', () => {
     const dir = project({ ...ROUTES, 'README.md': '# svc\n\n<!-- docguard:validator apiSurface n/a — internal service, no public API owner:@maintainers expires:2099-12-31 -->\n' }, strictCfg());
     const { status, json } = guardJson(dir);

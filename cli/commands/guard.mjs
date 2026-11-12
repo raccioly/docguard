@@ -2,6 +2,7 @@ import { compactGuardResult } from '../shared-guard-json.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
+import { listValidatorMarkers } from '../validator-markers.mjs';
 import { resolveEnforcement, buildStrictReport, adoptLines, modeLine, strictBlocks } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
@@ -575,10 +576,13 @@ export function runGuardInternal(projectDir, config) {
     }
     result.applicability = describeCheckCoverage(projectDir, config, result);
     result.verdict = deriveVerdict(result, { strict });
-    // specs/097 FR-006: a validator that decided it does not apply is skipped, and
-    // its reason is what it looked for, not a prerequisite it never needed.
+    // specs/097 FR-006: a validator that decided it does not apply is skipped. Spec 081 FR-003
+    // lets only a `not-applicable` result be skipped, so the applicability becomes
+    // not-applicable with the validator's evidence as its reason; what it was is kept in
+    // `before`, so nothing is lost.
     if (strict && result.verdict === 'skipped' && result.applies?.applies === false && result.applicability.class !== 'not-applicable') {
-      result.applicability = { ...result.applicability, reason: result.applies.evidence };
+      const { status, reason } = result.applicability;
+      result.applicability = { status: 'not-applicable', reason: result.applies.evidence, class: 'not-applicable', before: { status, reason } };
     }
   }
   // docguard.enforcement-ladder#FR-001–FR-003: composed from the verdicts above,
@@ -639,7 +643,7 @@ export function runGuardInternal(projectDir, config) {
   // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
   // the full validator set, so it never evaluates the unexamined rule (the report
   // says so with `evaluated: false`).
-  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite: Array.isArray(config.changedFiles) }) : null;
+  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite: Array.isArray(config.changedFiles), markers: listValidatorMarkers(projectDir, allValidatorKeys) }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).

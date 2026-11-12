@@ -83,13 +83,18 @@ export function modeLine(enforcement) {
  * @param {object[]} results validator results carrying `verdict`
  * @param {{ baselineSuppressed?: number, lite?: boolean }} [extra]
  */
-export function buildStrictReport(results, { baselineSuppressed = 0, lite = false } = {}) {
+export function buildStrictReport(results, { baselineSuppressed = 0, lite = false, markers = [] } = {}) {
+  // The N/A marker reader already parses owner and expires (spec 084); an expired or
+  // unreadable marker declares nothing, so it never made a result `declared N/A`.
+  const markerFor = key => markers.find(m => m.key === key && m.known && !m.metadataProblem && !(m.expires && m.expires < new Date().toISOString().slice(0, 10)));
   const unexamined = [];
   const waived = [];
   const gatingByCode = new Map();
   for (const r of results) {
     if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) {
-      waived.push({ validator: r.key, reason: r.note.replace(/^declared N\/A:?\s*/, '') || null });
+      // The result carries only the note string; owner and expires come from the marker reader.
+      const m = markerFor(r.key);
+      waived.push({ validator: r.key, reason: r.note.replace(/^declared N\/A:?\s*/, '') || null, owner: m?.owner ?? null, expires: m?.expires ?? null });
     }
     for (const f of r.findings || []) {
       if (f.effectiveSeverity === 'error') gatingByCode.set(f.code, (gatingByCode.get(f.code) || 0) + 1);
