@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const CODE_EXT_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|php|cs|kt|swift)$/;
 
@@ -25,6 +26,29 @@ function getStagedFiles(projectDir) {
   }
 }
 
+/**
+ * Whether Changelog's kind of check belongs to the project. It always does:
+ * every project has a release history, and a project that keeps none yet is
+ * told to start one, not excused.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies() {
+  return { applies: true, evidence: 'every project has a release history that a changelog records' };
+}
+
+function changelogContract(config, performed, found) {
+  const path = config.requiredFiles?.changelog || 'CHANGELOG.md';
+  return contractFields({
+    performed, found, ran: `checked the structure of ${path}${performed > 2 ? ' and the staged changes' : ''}`,
+    decide: applies,
+    empty: () => ({
+      emptyCause: 'needs-declaration',
+      note: `Changelog found no ${path}, so it checked no [Unreleased] section and no version heading.`,
+      howToConfigure: `Create ${path} with a "## [Unreleased]" section and one "## [x.y.z] - YYYY-MM-DD" heading per release (Keep a Changelog); \`docguard init\` writes the file, and \`requiredFiles.changelog\` in .docguard.json names a different path.`,
+    }),
+  });
+}
+
 // v0.29: migrated to structured findings (CHG001–CHG003). Messages are
 // byte-identical to the legacy strings; the `fixes` array is preserved for
 // the fix applier.
@@ -37,7 +61,7 @@ export function validateChangelog(projectDir, config) {
   const changelogPath = resolve(projectDir, config.requiredFiles.changelog);
   if (!existsSync(changelogPath)) {
     // Structure validator catches missing files
-    return { name: 'changelog', ...resultFromFindings([], { passed: 0, total: 0 }), fixes };
+    return { name: 'changelog', ...resultFromFindings([], { passed: 0, total: 0 }), fixes, ...changelogContract(config, 0, false) };
   }
 
   const content = readFileSync(changelogPath, 'utf-8');
@@ -100,5 +124,5 @@ export function validateChangelog(projectDir, config) {
     }
   }
 
-  return { name: 'changelog', ...resultFromFindings(findings, { passed, total }), fixes };
+  return { name: 'changelog', ...resultFromFindings(findings, { passed, total }), fixes, ...changelogContract(config, total, findings.length > 0) };
 }
