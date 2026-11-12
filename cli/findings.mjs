@@ -34,6 +34,7 @@
  *
  * @typedef {Object} Finding
  * @property {string}      code          Stable code, e.g. 'SEC001' (see CODES).
+ * @property {'product'|'test-path'} [context]  Where the evidence sits; set by Security for SEC001-SEC004 only.
  * @property {string}      validator     Owning validator key.
  * @property {'error'|'warn'} severity    Does CI block? (intrinsic; policy may reweight)
  * @property {'high'|'low'} confidence   How sure the detector is of its OBSERVATION.
@@ -91,7 +92,7 @@ export const CODES = {
   SEC001: {
     validator: 'security',
     title: 'Hardcoded password',
-    help: 'A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). A password label is skipped: a capitalised word for "password" in a common language (`Password`, `Contraseña`, `Mot de passe`, `パスワード`), a short letter-only phrase containing one (`Confirm Password`), or the key\'s own words, unless the key is an all-caps constant such as `DB_PASSWORD`. Other natural-language UI copy or validation messages are flagged low-confidence; suppress inline if the value is not a credential.',
+    help: 'A `password`/`passwd`/`pwd` assignment with a quoted literal value (8+ chars). A password label is skipped: a capitalised word for "password" in a common language (`Password`, `Contraseña`, `Mot de passe`, `パスワード`), a short letter-only phrase containing one (`Confirm Password`), or the key\'s own words, unless the key is an all-caps constant such as `DB_PASSWORD`. Other natural-language UI copy or validation messages are flagged low-confidence; suppress inline if the value is not a credential. A value that names itself a placeholder (`placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme`, `change-me`, or one repeated character) is not reported. Every SEC001-SEC004 finding carries `context: product` or `test-path`; the level is the same either way, but a `test-path` finding can never be a gating finding.',
     suppress: '// docguard:ignore SEC001 — UI copy, not a credential',
   },
   SEC002: {
@@ -1298,7 +1299,22 @@ export function mkFinding(f) {
     suggestion,
     reportable: f.reportable === true || confidence === 'low' || evidence.status === 'not-measured',
     redactedContext: f.redactedContext || null,
+    // Present only when a detector classifies where the evidence sits (Security
+    // SEC001-SEC004: 'product' | 'test-path', spec 097 FR-010). Findings without
+    // one are byte-identical to before. It never changes the level.
+    ...(f.context === 'product' || f.context === 'test-path' ? { context: f.context } : {}),
   };
+}
+
+/**
+ * May this finding ever count toward failing a build under `strict`?
+ * False for a finding whose evidence sits in a test, fixture, example or mock
+ * path (`context: 'test-path'`): a literal there can be reported but can never
+ * be a gating finding (spec 097 FR-010).
+ * @param {{context?: string}} finding
+ */
+export function isGatingEligible(finding) {
+  return finding?.context !== 'test-path';
 }
 
 /**

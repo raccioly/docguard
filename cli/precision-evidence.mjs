@@ -22,6 +22,48 @@ const NOT_MEASURED = Object.freeze({
   adjudicated: Object.freeze({ policyDisagreements: 0, ambiguous: 0 }),
 });
 
+/**
+ * Evidence rows for a finding code split by `context` (spec 097 FR-010).
+ *
+ * Security labels SEC001-SEC004 findings `product` or `test-path`. Each context
+ * is its own row because they are different populations: precision measured on
+ * product-source literals says nothing about test-path literals, and a
+ * test-path finding is never gating-eligible (`isGatingEligible`), so its row
+ * can never feed a code's gating status.
+ *
+ * SHAPE ONLY. The reviewed benchmark corpus has no case labeled by context, so
+ * every row is `not-measured` and carries no number; the fixtures below are the
+ * cases a later corpus run must label. A row never inherits the code's own
+ * evidence (`evidenceForCode`), consistent with the rule at the top of this file.
+ */
+const SECURITY_CONTEXT_FIXTURES = Object.freeze({
+  product: Object.freeze([
+    'tests/security-test-or-placeholder.test.mjs: controls: setup script',
+    'tests/security-test-or-placeholder.test.mjs: controls: login page prefill',
+    'tests/security-test-or-placeholder.test.mjs: controls: a real-looking key in a source file',
+  ]),
+  'test-path': Object.freeze([
+    'tests/security-test-or-placeholder.test.mjs: path half: <seven test, fixture, example and mock paths>',
+    'tests/field-context-precision.test.mjs: mock-expectation and fixture-password cases',
+  ]),
+});
+
+export const CONTEXT_EVIDENCE = Object.freeze(Object.fromEntries(
+  ['SEC001', 'SEC002', 'SEC003', 'SEC004'].flatMap(code =>
+    Object.entries(SECURITY_CONTEXT_FIXTURES).map(([context, cases]) => [`${code}:${context}`, Object.freeze({
+      code,
+      context,
+      status: 'not-measured',
+      gatingEligible: context !== 'test-path',
+      reason: 'No benchmark case is labeled by context, so DocGuard has measured no precision for this row.',
+      cases,
+    })]))));
+
+/** The evidence row for a code in one context, or null when the code has no context split. */
+export function evidenceForContext(code, context) {
+  return CONTEXT_EVIDENCE[`${code}:${context}`] || null;
+}
+
 /** Adjudicated disagreements on record for a code; zeros when there are none. */
 export function adjudicatedForCode(code) {
   const entry = evidenceForCode(code);

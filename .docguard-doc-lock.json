@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:9dd2ff5c173907b8014e19fd5e276b06e8e82ac02da9947753e58b9d9c580dc7",
+          "fingerprint": "sha256:6f038ce398477de1c6c6d87c6ebe1598ee2f4aa03612f9abb92a5c11ed4ff6a8",
           "tier": "ast"
         }
       },
-      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
-      "reviewedAt": "2026-09-30",
-      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+      "reason": "Added the optional context field and isGatingEligible note; checked against mkFinding",
+      "reviewedAt": "2026-11-12",
+      "reviewedRevision": "d7319558ae87d32c9b12e169fa67253017cbc230"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
