@@ -317,6 +317,10 @@ export function rootAgentDocs(projectDir, config = {}) {
 }
 
 /** sha256 of a file's bytes, or null when it cannot be read. */
-export function fileSha256(projectDir, path) {
-  try { return createHash('sha256').update(readFileSync(resolve(projectDir, path))).digest('hex'); } catch { return null; }
+export function fileSha256(projectDir, path, { normalizeLineEndings = false } = {}) {
+  try {
+    let bytes = readFileSync(resolve(projectDir, path));
+    if (normalizeLineEndings) bytes = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+    return createHash('sha256').update(bytes).digest('hex');
+  } catch { return null; }
 }

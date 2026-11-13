@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:9dd2ff5c173907b8014e19fd5e276b06e8e82ac02da9947753e58b9d9c580dc7",
+          "fingerprint": "sha256:7c7a31069ae89304d12576101c5b1cfba54f1a74984e5ecdebbb3f4427e3495c",
           "tier": "ast"
         }
       },
-      "reason": "Verified against the code in the 2026-09-29 freshness review of specs 014-029",
-      "reviewedAt": "2026-09-30",
-      "reviewedRevision": "6b3c1586023aeaf1738951c2d04c886caf512125"
+      "reason": "mkFinding now carries both the Security context field (097) and the freshness documentRole/staleness/surface fields (095); prose states both",
+      "reviewedAt": "2026-11-13",
+      "reviewedRevision": "5d6342b2dbd0b1517d38129a5f30407fff87830d"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

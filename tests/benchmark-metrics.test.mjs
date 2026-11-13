@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
  * @req docguard.precision-evidence-loop#FR-007
  * @req docguard.precision-evidence-loop#FR-009
  * @req docguard.precision-evidence-loop#FR-010
+ * @req docguard.release-trend-gate#FR-006
  */
 
 import { calculateMetrics, wilsonInterval } from '../benchmarks/lib/metrics.mjs';
-import { compareBenchmarkCores, compareRuntimeObservations } from '../benchmarks/lib/compare.mjs';
+import { acknowledgeRebaselinedCases, compareBenchmarkCores, compareRuntimeObservations } from '../benchmarks/lib/compare.mjs';
 
 const result = (overrides = {}) => ({
   id: 'case', repositoryGroup: 'repo', parserTier: 'js-ast',
@@ -122,5 +123,68 @@ describe('benchmark comparison', () => {
       { ...baseline, comparisonProtocol },
       { environment, comparisonProtocol: { ...comparisonProtocol, sessionId: 'other-run' }, cases: [] },
     ).comparable, false);
+  });
+});
+
+describe('release rebaseline acknowledgment', () => {
+  const changed = () => compareBenchmarkCores(
+    { schemaVersion: 1, cases: [result({ id: 'a' }), result({ id: 'b' })] },
+    { schemaVersion: 1, cases: [result({ id: 'a', sourceRevision: 'sha256:source-2' }), result({ id: 'b' })] },
+  );
+
+  it('moves an acknowledged evidence change out of the regressions and lists it', () => {
+    const before = changed();
+    assert.equal(before.status, 'FAIL');
+    const after = acknowledgeRebaselinedCases(before, 'Benchmark-Rebaselined: a \u2014 the literal was replaced, no metric moved\n');
+    assert.equal(after.status, 'PASS');
+    assert.deepEqual(after.regressions, []);
+    assert.deepEqual(after.rebaselined, [{ id: 'a', fields: ['sourceRevision'], reason: 'the literal was replaced, no metric moved' }]);
+    assert.equal(before.status, 'FAIL', 'the input comparison is not mutated');
+    for (const separator of ['\u2013', '-', '--']) {
+      assert.equal(acknowledgeRebaselinedCases(changed(), `Benchmark-Rebaselined: a ${separator} reason\n`).status, 'PASS');
+    }
+  });
+
+  it('never hides an outcome change for an acknowledged case', () => {
+    const comparison = compareBenchmarkCores(
+      { schemaVersion: 1, cases: [result({ id: 'a' })] },
+      { schemaVersion: 1, cases: [result({ id: 'a', sourceRevision: 'sha256:source-2', actual: ['SEC001@a.js', 'SEC001@x.js'], unexpected: ['SEC001@x.js'] })] },
+    );
+    const after = acknowledgeRebaselinedCases(comparison, 'Benchmark-Rebaselined: a \u2014 fixture corrected\n');
+    assert.equal(after.status, 'FAIL');
+    assert.deepEqual(after.regressions.map(item => item.kind), ['new-false-positive']);
+    assert.deepEqual(after.rebaselined.map(item => item.id), ['a']);
+  });
+
+  it('fails a declaration that names a case with no evidence change', () => {
+    const after = acknowledgeRebaselinedCases(changed(), 'Benchmark-Rebaselined: a \u2014 ok\nBenchmark-Rebaselined: b \u2014 leftover\nBenchmark-Rebaselined: ghost \u2014 leftover\n');
+    assert.equal(after.status, 'FAIL');
+    assert.deepEqual(after.regressions.map(item => `${item.id}:${item.kind}`), ['b:stale-rebaseline-declaration', 'ghost:stale-rebaseline-declaration']);
+    assert.ok(after.regressions.every(item => item.detail));
+  });
+
+  it('fails a declaration without a reason and does not acknowledge the change', () => {
+    for (const line of ['Benchmark-Rebaselined: a', 'Benchmark-Rebaselined: a \u2014', 'Benchmark-Rebaselined: a \u2014   ', 'Benchmark-Rebaselined: a reason without separator']) {
+      const after = acknowledgeRebaselinedCases(changed(), `${line}\n`);
+      assert.equal(after.status, 'FAIL', line);
+      assert.deepEqual(after.regressions.map(item => item.kind).sort(), ['case-evidence-changed', 'rebaseline-declaration-without-reason'], line);
+      assert.deepEqual(after.rebaselined, []);
+    }
+  });
+
+  it('leaves the comparison deeply equal when the text has no declaration', () => {
+    const before = changed();
+    for (const text of ['', undefined, 'Budget-Exempt: bytes:x \u2014 a reason here\nplain notes\n']) {
+      assert.deepEqual(acknowledgeRebaselinedCases(before, text), before);
+    }
+  });
+
+  it('keeps the regression order deterministic', () => {
+    const comparison = compareBenchmarkCores(
+      { schemaVersion: 1, cases: [result({ id: 'a' }), result({ id: 'b' }), result({ id: 'c' })] },
+      { schemaVersion: 1, cases: [result({ id: 'a', scope: { validatorKey: 'security', codes: ['SEC002'] } }), result({ id: 'b' }), result({ id: 'c', classification: 'clean_control' })] },
+    );
+    const after = acknowledgeRebaselinedCases(comparison, 'Benchmark-Rebaselined: c \u2014 one\nBenchmark-Rebaselined: zz \u2014 two\n');
+    assert.deepEqual(after.regressions.map(item => item.id), ['a', 'zz']);
   });
 });

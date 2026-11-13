@@ -15,6 +15,10 @@ node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 
 The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
 
+**Exit 4 under the strict default.** `guard` exits 4 when a validator that applies to the project examined nothing for a reason the project can resolve (or could not observe at all), and `ci` blocks with `CI_STRICT_UNEXAMINED`. A pipeline that fails on any non-zero exit fails on 4, which is the point: the job log carries the Adopt block, with each validator's cause and fix, and the "DocGuard could not read" block, which never changes the exit code. The Action turns 4 into a failed step with a message that says so; the GitLab component and `templates/ci/github-actions.yml` pass the exit code through.
+
+For a staged rollout, either pin the release line the project already passes with `"enforcement": { "mode": "strict", "asOf": "0.47" }` in `.docguard.json` (checks added to strict later are reported as pending and do not change the exit code), or stay on the earlier behavior with `"enforcement": "standard"`. A `"validators": { "<key>": false }` entry in `.docguard.json` does not switch a check off under strict (guard names the entries it did not honor); a reasoned waiver or `"enforcement": "standard"` does. Do not make the pipeline swallow exit 4 with `|| true`: the run then reads green for a check that examined nothing. `docguard upgrade` prints what the default changes for a project, read-only, and `docs/upgrading-to-strict.md` walks through the ways forward.
+
 To adopt the gate on a repository that already has findings, run `guard --update-baseline` once and commit `.docguard.baseline.json`. Guard and `ci` then suppress up to the frozen number of each finding, report how many they suppressed, and gate everything new; `--no-baseline` shows everything for one run. A finding is matched by its code, file path without line number, and message with numbers masked. TRC004's trailing IR soft-match hint is left out, so adding an unrelated test file does not bring a frozen finding back. A baseline written by an earlier release still matches, and `--update-baseline` rewrites it in the current form (`specs/052-baseline-stable-fingerprint`).
 
 When `.docguard-evidence.json` exists, guard also evaluates its declarations.
@@ -268,7 +272,9 @@ candidate with the previous release tag before anything is tagged or published
    benchmark are re-run with the previous release as the base. The release's
    CHANGELOG section is the message file, so a plain
    `Budget-Exempt: <metric> — <reason>` line there waives one metric, as it
-   does in a PR body.
+   does in a PR body, and a `Benchmark-Rebaselined: <case id> — <reason>` line
+   acknowledges a fixture corrected on purpose (the case's other regressions
+   still fail; a line with nothing to acknowledge fails as stale).
 
 With no previous tag the job prints a notice and skips. To run it locally:
 `git archive v0.45.2 | tar -x -C ../prev && ln -s "$PWD/node_modules" ../prev/ && node tools/release-ab.mjs --base ../prev --head .`.

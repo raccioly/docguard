@@ -213,7 +213,8 @@ being released names each finding code whose findings changed. When your change
 adds, removes or rewords findings, name the code in your `[Unreleased]` entry and
 say why it changed. If it changes an exit code, add a line starting `Exit codes:`
 that says which runs now exit differently. For a release that grows a budget on
-purpose, add `Budget-Exempt: <metric> — <reason>` as a plain line in that section.
+purpose, add `Budget-Exempt: <metric> — <reason>` as a plain line in that section. For a benchmark
+fixture you corrected on purpose, add `Benchmark-Rebaselined: <case id> — <reason>` the same way.
 To preview the gate locally against the last release:
 
 ```bash

@@ -20,10 +20,31 @@ import { docHasSection } from '../shared.mjs';
 import { profileSections, requiredSectionMap } from '../authoring-contract.mjs';
 import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { measureInstructionChains, DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 
 // An allowance this far above the chain's size is slack in the ratchet.
 const ALLOWANCE_SLACK_BYTES = 1024;
+
+/**
+ * Whether Structure's kind of check belongs to the project. It always does:
+ * every project has the documents, agent-instruction file and logs that
+ * `requiredFiles` names, and the drift log is checked in every run.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies() {
+  return { applies: true, evidence: 'every project has the required documents, agent-instruction file and logs that Structure checks' };
+}
+
+/**
+ * Whether Doc-Sections' kind of check belongs to the project. It always does:
+ * every project has canonical documents to hold the sections they require, and
+ * a project that has not written them yet is told to, not excused.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function appliesDocSections() {
+  return { applies: true, evidence: 'every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks' };
+}
 
 export function validateStructure(projectDir, config) {
   const findings = [];
@@ -137,7 +158,11 @@ export function validateStructure(projectDir, config) {
     }
   }
 
-  return { name: 'structure', ...resultFromFindings(findings, { passed, total }) };
+  return { name: 'structure', ...resultFromFindings(findings, { passed, total }), ...contractFields({
+    performed: total, found: findings.length > 0, ran: `checked ${total} required file(s) and instruction chain(s)`,
+    decide: applies,
+    empty: () => ({ note: 'Structure checked no required file or instruction chain, although every project has them.', howToConfigure: 'Structure checks the files named in requiredFiles of .docguard.json and the drift log; run `docguard init` to write the file set.' }),
+  }) };
 }
 
 /**
@@ -259,5 +284,13 @@ export function validateDocSections(projectDir, config) {
     }
   }
 
-  return { name: 'doc-sections', ...resultFromFindings(findings, { passed, total }) };
+  return { name: 'doc-sections', ...resultFromFindings(findings, { passed, total }), ...contractFields({
+    performed: total, found: findings.length > 0, ran: `checked ${total} required section(s) of the canonical documents that exist`,
+    decide: appliesDocSections,
+    empty: () => ({
+      emptyCause: 'needs-declaration',
+      note: 'Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).',
+      howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists.',
+    }),
+  }) };
 }

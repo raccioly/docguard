@@ -44,6 +44,7 @@ As a maintainer cutting a release, I see every finding the candidate adds or rem
 **Acceptance Scenarios**:
 
 1. **Given** the candidate's benchmark run, **Then** it is compared with the baseline file as of the previous release tag. Any new false positive, new false negative or new supported-case abstention fails the gate, as spec 007 already defines against the committed baseline.
+2. **Given** a release whose CHANGELOG section carries `Benchmark-Rebaselined: <case id> — <reason>` for a case whose reviewed fixture changed on purpose, **Then** that case's evidence change is listed as rebaselined and does not fail the gate, while a new false positive, new false negative or new abstention on the same case still does; and **Given** a line naming a case that has no evidence change, or a line with no reason, **Then** the gate fails.
 
 ### Edge Cases
 
@@ -61,6 +62,7 @@ As a maintainer cutting a release, I see every finding the candidate adds or rem
 - **FR-003**: The release workflow MUST run `release-ab`, `budget.mjs ab` and the benchmark comparison against the previous release tag before publishing, and MUST block the publish on failure. The release's CHANGELOG section is `budget.mjs`'s message file, so a `Budget-Exempt:` line there waives one metric with a reason, as a PR body does.
 - **FR-004**: `release-gate.json` MUST list the corpus entries and `volatileCodes`, each with a reason. A corpus entry is a path, or `{ path, ignoreCodes }` for codes that directory cannot judge, each with a reason, and those are listed in the summary rather than hidden. The file MUST be validated by a test.
 - **FR-005**: `docs-canonical/CI-RECIPES.md`, `TEST-SPEC.md`, `docs/contributing` (or CONTRIBUTING.md) and `CHANGELOG.md` MUST describe the gate and how to explain a change.
+- **FR-006** (added 2026-11-13): The release workflow MUST pass the release's CHANGELOG section to the benchmark comparison, and a `Benchmark-Rebaselined: <case id> — <reason>` line there (separator `—`, `–` or `-`; a non-empty reason is required) MUST move that case's `case-evidence-changed` regression into a `rebaselined` list, because the gate compares with the baseline as released and a deliberately corrected fixture could otherwise never pass. Acknowledgment MUST NOT hide an outcome change: every other regression kind for the same case MUST still fail. A line naming a case with no `case-evidence-changed` regression MUST fail as `stale-rebaseline-declaration`, and a line with no reason MUST fail as `rebaseline-declaration-without-reason`. Without such a line the comparison MUST be unchanged.
 
 ## Success Criteria *(mandatory)*
 

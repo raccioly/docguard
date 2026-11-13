@@ -27,8 +27,10 @@ import { shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } fr
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { scanCodeTechnologies, TECH_PATTERNS } from '../scanners/tech-stack.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
@@ -68,6 +70,47 @@ const DRIFT_FINDINGS = {
  * Validate doc-code alignment — compares canonical docs vs source code.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
+/**
+ * Whether Docs-Diff's kind of check belongs to the project: it compares the
+ * technologies a package manifest declares with ARCHITECTURE.md and the test
+ * files on disk with TEST-SPEC.md, so it applies to a project that has a
+ * manifest or test files. A missing ARCHITECTURE.md or TEST-SPEC.md is not the
+ * reason it would not apply.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const scan = scanCodeTechnologies(projectDir, config);
+  if (scan.hasManifest) return { applies: true, evidence: `the project has a package manifest (${scan.evidence.length} technology signal(s))` };
+  const tests = collectCodeTests(projectDir, config);
+  if (tests.size > 0) return { applies: true, evidence: `${tests.size} test file(s) on disk, for example ${[...tests][0]}` };
+  return { applies: false, evidence: 'no package manifest that declares technologies and no test file on disk' };
+}
+
+function docsDiffContract(projectDir, config, performed, found) {
+  const arch = docRolePath(config, 'architecture');
+  const testSpec = docRolePath(config, 'testSpec');
+  return contractFields({
+    performed, found, ran: `compared ${performed} of the tech stack and the test files with their documents`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => {
+      if (!decision.applies) return { note: `Docs-Diff found no package manifest and no test file, so it compared no technology with ${arch} and no test with ${testSpec}.`, howToConfigure: `Nothing to configure unless the project has a package manifest or tests: then Docs-Diff compares them with ${arch} and ${testSpec}.` };
+      const noDocs = !existsSync(resolveDocRole(projectDir, config, 'architecture')) && !existsSync(resolveDocRole(projectDir, config, 'testSpec'));
+      const a = roleDocument(projectDir, config, 'architecture');
+      const t = roleDocument(projectDir, config, 'testSpec');
+      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `${a.lead}${t.lead}Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.${a.parts && t.parts ? ` If the project already keeps these documents under another name or in another folder, map each instead of creating a second one, in .docguard.json (\`docs.roles\`): ${a.parts.snippet} and ${t.parts.snippet}.${a.parts.looked}${t.parts.looked}` : `${a.tail}${t.tail}`}` };
+      const archNeeds = 'the technologies the project uses (for example "Express" for an express dependency)';
+      const testNeeds = 'the test files listed in backticks (`tests/a.test.js`)';
+      const howToConfigure = [
+        a.lead ? `${a.lead}It needs ${archNeeds} named.` : `Create ${arch} naming ${archNeeds}.`,
+        t.lead ? `${t.lead}It needs ${testNeeds}.` : `Create ${testSpec} listing the test files in backticks (\`tests/a.test.js\`).`,
+        !a.lead && !t.lead ? '`docguard generate` drafts both.' : '',
+        a.parts && t.parts ? `If the project already keeps these documents under another name or in another folder, map each instead of creating a second one, in .docguard.json (\`docs.roles\`): ${a.parts.snippet} and ${t.parts.snippet}.${a.parts.looked}${t.parts.looked}` : `${a.tail}${t.tail}`.trim(),
+      ].filter(Boolean).join(' ');
+      return { emptyCause: 'needs-declaration', note: `Docs-Diff found ${decision.evidence}, but neither ${arch} nor ${testSpec}, so it compared nothing with a document.`, howToConfigure };
+    },
+  });
+}
+
 export function validateDocsDiff(projectDir, config = {}) {
   const findings = [];
   let passed = 0;
@@ -123,7 +166,7 @@ export function validateDocsDiff(projectDir, config = {}) {
     }
   }
 
-  return resultFromFindings(findings, { passed, total });
+  return { ...resultFromFindings(findings, { passed, total }), ...docsDiffContract(projectDir, config, total, findings.length > 0) };
 }
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────

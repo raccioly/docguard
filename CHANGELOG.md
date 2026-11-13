@@ -7,7 +7,190 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+- **Strict is now the default enforcement mode.** A project with no
+  `enforcement` key in `.docguard.json` runs under strict: `docguard guard`
+  exits 4 (and `ci` blocks) when a validator that applies to the project
+  examined nothing for a reason the project can resolve, and prints an **Adopt**
+  block with each validator's cause and fix. A partial result, a layout DocGuard
+  does not read and a finding that is not gating stay reported and do not change
+  the exit code. If your build turned red after upgrading, in this order: apply
+  the fix under each item, record existing findings with
+  `docguard guard --update-baseline`, waive a validator that does not apply with
+  `<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`,
+  or set `"enforcement": "standard"` to keep the earlier exit codes. `docguard
+  upgrade` previews all of this for your project and writes nothing; the page
+  [Upgrading to Strict](docs/upgrading-to-strict.md) shows real output.
+  `docguard init` writes no `enforcement` key unless you pass
+  `--enforcement strict|standard` or answer the setup question with the
+  non-default, and it no longer writes `"architecture": false` or
+  `"security": false` into a new `.docguard.json`. Under strict a
+  `"validators": { "<key>": false }` entry does not switch a check off (most
+  were written by `init`, not chosen); guard names the entries it did not honor,
+  and a validator is switched off on purpose with a reasoned waiver or
+  `"enforcement": "standard"`. The Action,
+  the GitLab component and the GitHub template fail on exit 4
+  (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
+- **Exit codes:** a project that exited 0 or 2 on 0.47.0 can exit 4 on this
+  release without changing a file, because the default mode changed. The two
+  cases the release comparison shows: a checkout with fewer than three commits
+  (a shallow clone in CI, or a fresh `git init`) exits 4 because Freshness
+  applies and has no history to read, and the fix it prints is to fetch the
+  full history (`fetch-depth: 0` on `actions/checkout`); a project with
+  documents and no test map, architecture section or other declaration a
+  validator needs exits 4 with the Adopt block. Exit 1 is unchanged: no finding
+  fails a build that did not on 0.47.0. `"enforcement": "standard"` restores the
+  0.47.0 exit codes.
+- **Security and Architecture run in every project.** They were off unless a
+  project turned them on, so their findings are new on upgrade, for example
+  SEC010 (no `.gitignore`) in a project that has none. Under strict their
+  errors are reported as warnings until a code's measured precision clears the
+  bar, so they do not change the exit code (FR-008, FR-009).
+
 ### Added
+
+- **A release can declare a deliberate fixture correction to the benchmark.**
+  The release gate compares the benchmark with the baseline as released, so a
+  fixture corrected on purpose could never pass. A line
+  `Benchmark-Rebaselined: <case id> — <reason>` in the release's CHANGELOG
+  section now moves that case's evidence change into a `rebaselined` list.
+  A new false positive, false negative or abstention on the same case still
+  fails, and a line that names a case with no evidence change, or has no reason,
+  fails too. `benchmarks/run.mjs` takes `--acknowledge-file <path>` for it
+  (specs/087-release-trend-gate FR-006).
+- **Sections handed to an agent say when their document may be stale.**
+  `docguard_read_section`, `docguard_task_context` and `docguard agent --task`
+  mark a section with `possiblyStale` when its agent-instruction document has a
+  review that no longer covers the files it names (`suspect-review`) or a
+  current guard run found it due for review (`review-due`), and give
+  `stalenessBasis` so an unmarked section is not read as fresh. Nothing runs
+  guard (specs/097-strict-by-default T028b, from spec 096).
+- **FRS002 ranked and capped in text.** Guard's text output shows the three
+  most stale FRS002 findings and one line for the rest; `--verbose` and JSON
+  keep every one, so exit codes, totals and baselines do not change (T028b).
+
+- **DocGuard's own repository runs strict.** Its `.docguard.json` sets
+  `"enforcement": "strict"`; in a full checkout no applicable validator is
+  empty, inconclusive or blocked, so guard still exits 2 (warnings only) and CI
+  needs no change. A test pins the key and the exit code (spec 097, FR-020).
+
+- **An enforcement mode, `strict` or `standard`, that a project can select
+  today.** `"enforcement": "strict"` (or `{ "mode": "strict", "asOf": "0.49" }`)
+  in `.docguard.json` makes guard exit 4 when a validator that applies to the
+  project examined nothing, and `docguard guard` prints an **Adopt** block with
+  the fix for each one, the baseline command, the waiver form and the key for
+  the lower mode. `--format json` carries `enforcement` and `strict`; SARIF and
+  JUnit render an unexamined validator as they render an `inconclusive` one;
+  `ci` blocks (`CI_STRICT_UNEXAMINED`). Only what a project can resolve blocks:
+  a validator that performed zero checks and has cause `needs-declaration` or
+  `needs-content`, or could not observe at all. A partial result (some routes
+  unreadable, an optional parser absent) and a layout DocGuard does not read are
+  listed after the Adopt block under "DocGuard could not read" and in
+  `strict.couldNotRead[]`, and leave the exit code alone. `docguard upgrade` reports, read-only,
+  what strict would change for the project. The default is unchanged in this
+  release: an absent key is `standard`, and the first line of the summary says
+  so (`docguard.strict-by-default` FR-001, FR-007, FR-014 to FR-016, FR-018;
+  stage A of specs/097-strict-by-default).
+- **A cause and a fix on an empty result.** API-Surface, Docs-Sync and
+  Surface-Sync now report whether they apply to the project, how many checks
+  they performed, and, when they examined nothing, a cause (`needs-declaration`,
+  `needs-content`, `layout-not-recognized` or `nothing-of-this-kind`) with the
+  text that makes them examine something. The contract is defined in
+  `cli/validator-coverage.mjs`; the other validators move onto it next, and
+  under strict a validator that is empty without a cause is listed as "cause
+  not yet classified" and never fails the run (FR-005, FR-006).
+- **Seventeen more validators report whether they apply, what they performed,
+  and why they are empty.** Structure, Doc-Sections, Drift, Changelog, Test-Spec,
+  Environment, Architecture, Freshness, Traceability, Docs-Diff, Metadata-Sync,
+  Docs-Coverage, Doc-Quality, TODO-Tracking, Schema-Sync, Spec-Kit and
+  Document-Lifecycle each decide from the project's files whether their kind of
+  check belongs to it (never because their own document or configuration is
+  missing), count the checks they genuinely made apart from the legacy `total`,
+  and on an empty result carry a cause and the exact file, key or command that
+  makes them examine something. Counts, badges, findings, levels and exit codes
+  under `standard` do not change; an Architecture run over a clean import graph
+  now counts the cycle check it made (`performed` 1, `total` unchanged)
+  (`docguard.strict-by-default` FR-004 to FR-006, group A of stage A).
+- **Group A answers to the Stage A proof.** Metadata-Sync does not apply to a
+  package marked `"private": true`, and in a monorepo whose root has no version
+  it reads the one published workspace package and names it (several published
+  packages, or none, is not a project version). Test-Spec reads the older
+  "Service-to-Test Map" heading at any level and every map section of a
+  document, not only the first. Test-Spec, Environment and Docs-Diff name a
+  `docs.roles` mapping, or a same-role document found elsewhere, before they
+  suggest creating the default file. Schema-Sync no longer asks a DynamoDB or
+  SQL project to write a model file it does not use, Architecture's partial
+  result says plainly which imports it did not follow, and an Architecture
+  `layers` entry that names a missing directory is `needs-declaration` (the
+  project's declaration) rather than `layout-not-recognized`. Findings, levels
+  and exit codes under `standard` do not change; reasons and fix texts do
+  (`docguard.strict-by-default` FR-007, T018b to T018d).
+- **Metadata-Sync asks for nothing to compare.** It applies only when the
+  manifest has a version and a document it reads states one (a URL with a
+  version, a `version:` line, `<package>@x.y.z`); where no document states a
+  version nothing can drift, so it is not applicable instead of asking the
+  project to write the version down. Docs-Diff offers the `docs.roles` mapping
+  for an architecture document kept elsewhere even when the test spec exists,
+  and Test-Spec names both accepted map headings in every fix text
+  (`docguard.strict-by-default` FR-006, T018f).
+- **Group A, third proof pass.** Metadata-Sync counts only a version stated for
+  this package (`<package>@x.y.z`, a URL that names the package, a `version:`
+  line that opens its line in a document that names the package); the
+  comparison and the applicability decision share that one selection, so
+  another tool's minimum version in a guide is neither compared nor counted.
+  Traceability's `performed` is the number of requirements it examined (`total`
+  is unchanged), a template row (`System MUST [capability]`) is no longer a
+  requirement and draws no TRC004, and a project that declares no requirement
+  is not applicable. The placeholder and requirement-ID definition moved to
+  `cli/shared-requirement-definition.mjs`, shared with Requirement-Anchors.
+  Docs-Diff, Test-Spec and Environment find an architecture, test or
+  environment document by a folder or file name that contains the role's word,
+  and otherwise give the exact `docs.roles` snippet with a placeholder path
+  (`docguard.strict-by-default` FR-006, T018g).
+- **The `docs.roles` mapping offer ranks its candidates.** A file whose own name
+  has the role's word ranks above one that only sits in a folder with that word;
+  within a folder match only an overview or index document (overview, index,
+  README, summary) is a candidate, and siblings are not listed. Nothing is cut
+  from the list before ranking. When the rule cannot tell which file is the
+  document it offers none by name, says which folder it looked in, and prints the
+  snippet with a placeholder path (`docguard.strict-by-default` FR-007, T018h).
+- **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
+  blank or a `<placeholder>` is reported, so a drafted block applied unedited no
+  longer passes. An entry that omits `purpose` is unaffected (FR-004).
+- **The cause-and-fix contract reaches sixteen more validators.** Spec-Registry,
+  Doc-Dependency, Requirement-Anchors, Path-Scoped-Rules, Doc-Ownership, Evidence,
+  Cross-Reference, Generated-Staleness, Suppressions, Diff-Suspicion,
+  Reference-Existence, API-Doc-Smells, Decision-Records, AI-DLC, Canonical-Sync and
+  Metrics-Consistency each report how many checks they performed, whether the kind
+  of check belongs to the project (decided from the project's files, never from the
+  validator's own missing configuration) and, on an empty result, a cause and the
+  exact file, key or snippet that makes them examine something. Requirement-Anchors and
+  Doc-Dependency need a declaration no tool can infer and apply to a project that
+  has the specs or documents and the code, saying what a person must write;
+  Doc-Ownership and Evidence apply only once a map or manifest is declared. A
+  validator that could not observe its input (unreadable git) is `inconclusive`
+  and needs no cause. The drafted ownership block is never offered as a fix without
+  saying it must be edited
+  (`docguard.strict-by-default` FR-004 to FR-006, stage A).
+- **Recorded document reviews** (#628, spec 095). `docguard review --accept <doc> --reason "…"`
+  now records a whole-document review in `.docguard-doc-reviews.json`: the commit, the reason
+  and a fingerprint of every file the document references. A `docguard:last-reviewed` date says
+  when; this says what was checked.
+- **FRS006: agent instructions name a file that changed since their review.** For AGENTS.md,
+  CLAUDE.md, GEMINI.md, Copilot instructions and authored skills and rules: a referenced file at
+  least half of whose current lines were added since the review (and, with a recorded review,
+  whose fingerprint changed). The message names the line, the file, the share and
+  `+added/−deleted`. On TestGuard at f89ca46 it reports `AGENTS.md:35 src/probe/probe.mjs 74%
+  (+1066/−190)`. Canonical documents carry the same evidence on their FRS002.
+- **FRS007: surface added since the review that the document never mentions** (package scripts,
+  top-level directories). **FRS009**: a review date moved past a recorded review by a commit
+  that changed nothing else. **FRS010**: an unreadable reviews file fails the run.
+- **Guard says first when agents are served stale instructions**, in text (also with `--quiet`)
+  and as `staleInstructions[]` in JSON.
+- **`findingSeverity` accepts a document role**: `{ "FRS006": { "agent-instruction": "high" } }`
+  fails the build for agent instructions only. `freshness.referenceShare` sets the FRS006
+  threshold (default 0.5).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
@@ -29,6 +212,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The compact guard response carries the result contract by exception.** The
+  MCP `docguard_guard` default and `guard --format json --compact` had grown by
+  27 KB on the fixture the budget measures once every validator reported
+  `performed`, `applies`, a cause and a fix. The compact form now drops
+  `performed`, `applies` and `applicability.before`, keeps `emptyCause` where a
+  validator examined nothing, keeps `howToConfigure` only where it applies and is
+  empty, states the sentence of every validator that has nothing to check once,
+  and refers to validators by key in `strict.unexamined`. The full form keeps
+  every field.
+- **Security reports how many files it scanned and why a run scanned none**
+  (spec 097, stage A). The result now carries `performed` (files scanned),
+  `applies` (a project applies when it has a source or configuration file with a
+  scanned extension) and its evidence. When `securityIgnore`, `ignore` or
+  `.docguardignore` excludes every candidate, the SEC011 suggestion names the
+  setting. No finding, level, count or exit code changes under `standard`.
 - **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
   "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
   finding; Freshness records that it is reviewed through its target. Installed
@@ -36,8 +234,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
   Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
   for them.
+- **A validator that performed no check is `empty`, never `pass`.** The verdict
+  now requires at least one performed check. Requirement-Anchors enabled with
+  zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
+  where they were `pass`. No exit code changes under `standard`: `empty` does not
+  affect one, except for a validator named in `requiredChecks`, which already
+  held the gate on `empty` (FR-004).
+
+- **Security classifies where a literal sits and drops provably synthetic values**
+  (spec 097 FR-010, stage A). Two changes. (1) Every SEC001–SEC004 finding now
+  carries `context: "product"` or `"test-path"` (`--format json`, SARIF
+  `properties.context`, and the JUnit body). `test-path` is a test, fixture,
+  example or mock path. The level does not change: a real secret pasted into a
+  test file is still a leaked secret, and the message text is unchanged so
+  baseline fingerprints do not move. `isGatingEligible(finding)` is false for
+  `test-path`, so a later release can never make such a finding fail a build
+  under strict. (2) A SEC001–SEC004 value that is synthetic by its own text
+  (`placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme`,
+  `change-me`, or one repeated character) is no longer reported, in every mode,
+  alongside the existing `EXAMPLE` and `password123` exemptions. The word must
+  be a whole segment or open the value; one buried in a high-entropy run does not
+  count. `xxx` and `your-` values are still reported. Provider-signature keys
+  (AWS, `sk-`) are unaffected.
+- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
+  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
+  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
+  match the released schema. The `ignore` schema no longer lists the
+  `fingerprint` kind, which DocGuard never exported (#619;
+  `docguard.configured-canonical-paths` FR-006).
+
+
+- **The READMEs say which labels must stay in English** (#644). A team
+  writing its documentation in another language can now read, in `README.md`,
+  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
+  ids in any language) and which labels are matched in English only: the
+  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
+  decision-record status words, and that the text-quality numbers assume
+  English. Documentation only; support for other languages stays open in #644.
 
 ### Fixed
+
+- **`review --accept` with several paths** recorded only the first and exited 0.
+  It now records every path in one transaction, or refuses all of them, writes
+  nothing, and names the path it could not accept (T028a).
+- **A strict row for unexamined documents said "Freshness is pass".** The
+  Adopt block, `docguard upgrade` and the could-not-read block now say
+  "Freshness did not examine N document(s) (cause)" (T028a).
+
+- **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
+  decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
+  requirement documents; not decision records, open-item or task lists, templates,
+  task, design-element, story or acceptance IDs) and what is a template row
+  (`[slot]`, `<slot>`, `{{slot}}`, `TBD`, or no text). Requirement-Anchors' branch for
+  IDs in a form the scanner does not read now uses it, so decision, open-item and task
+  IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
+  template documents are not requirements; the evidence lists each ID once.
+
+- **A template row is a row whose only content is the slot.** The slot rule dropped real
+  requirements whose text mentions `{file}`, `{name}`, `{count}` or `<region>` as part of a
+  sentence. A row is now a template row only when, with every slot removed, what is left is
+  the bare scaffold of a requirement sentence ("System MUST", "Users MUST be able to") or
+  nothing; a sentence that still states something is a requirement. A requirement whose text
+  sits on the lines under its ID is a requirement. Spec Kit's `[NEEDS CLARIFICATION]` example
+  rows and a filled default row with no slot are counted unless the document is a template.
+
+- **Requirement-Anchors counted identifiers that are not requirements.** Whether
+  the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
+  spec and requirement documents, not decision records, open-item or question lists,
+  task lists, task IDs (T001), design elements (ARCH, MOD, SYS) or story, use-case
+  and acceptance IDs (US, STORY, UC, AC); a configured
+  `traceability.requirementPattern` is the definition. The evidence names the kind of
+  identifier it counted and the kinds it did not. A task checkbox (`[ ]`) is no longer
+  mistaken for a template placeholder. The anchors the scanner reads are unchanged.
+
+- **Generated-Staleness read a draft status out of body text.** The draft pattern's
+  lazy front-matter match could run past the closing `---` into the body, so a
+  published template whose front matter says `status: final` and whose body quotes
+  "Status: Draft / Approved" was reported as a draft. The status is read only from
+  the front matter that opens the document or from a marker, and the evidence now
+  names the file it found (`docguard.strict-by-default` FR-006).
+- **Spec-Registry could report no check beside findings.** A specification with no
+  Spec ID was a finding but not a check, so a baselined or waived finding left an
+  empty result with no cause. Every detected specification now counts as examined.
+- **Requirement-Anchors and Doc-Dependency evidence.** A template row such as
+  "System MUST [capability]" no longer counts as a requirement; tooling
+  configuration (`*.config.*`, rc and setup files) is no longer offered as the
+  project's source code or as the `covers=` example; the fix says where a Spec ID is
+  declared; requirement IDs in a form the scanner does not read (`FR-1`) are
+  reported as `layout-not-recognized` with the `traceability.requirementPattern`
+  setting that reads them.
+- **Cross-Reference no longer tells a project to move its documents.** Where the
+  documents live outside what it reads, the text names what it reads and the
+  `docs.roles` mapping; a declared collection whose glob matches nothing is
+  `needs-content`, not a layout DocGuard fails to read.
+
+- **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
+  for `<!-- status: draft -->` or `status: draft` front matter, while every
+  generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
+  in draft was not flagged (GST001) and a project whose only generated documents
+  were drafts was reported as having none. Both spellings are read. Under
+  `standard` this adds GST001 findings for a draft left unchanged beyond the
+  staleness window (14 days by default).
 
 - **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
   had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
@@ -65,22 +362,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
-- **The READMEs say which labels must stay in English** (#644). A team
-  writing its documentation in another language can now read, in `README.md`,
-  `README.pt-BR.md` and `README.es.md`, what works today (prose and requirement
-  ids in any language) and which labels are matched in English only: the
-  required canonical headings, the Spec Kit section names, `[Unreleased]`, the
-  decision-record status words, and that the text-quality numbers assume
-  English. Documentation only; support for other languages stays open in #644.
+### Budgets
 
-### Changed
+`bytes:mcp:docguard_read_section` grew by 439 bytes on the `finding-channels`
+section of DATA-MODEL, 107 over its 332-byte allowance. The section now
+documents the `context` field that Security findings carry and the rule that a
+`test-path` finding never counts toward failing a build (spec 097 FR-010).
 
-- **The vendored claimspec schemas are re-pinned to TestGuard v0.22.1**
-  (`9cdac55`), the release that ships `inputs.dependencyHashes`,
-  `inputs.dependencyClosure` and `run.claimsSource`. The adapter's field names
-  match the released schema. The `ignore` schema no longer lists the
-  `fingerprint` kind, which DocGuard never exported (#619;
-  `docguard.configured-canonical-paths` FR-006).
+Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section documents the new Security `context` field (spec 097 FR-010)
+
+Benchmark-Rebaselined: dev-generated-security-control — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
+Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
 
 ## [0.47.0] - 2026-11-10
 

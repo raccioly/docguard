@@ -80,4 +80,8 @@ docguard guard --format json $ARGUMENTS
 
 - `--format json` — Output results as JSON
 - `--fail-on-inconclusive` — Exit 4 when any check could not decide (verdict `inconclusive` or `blocked`)
+
+## Exit 4 under the strict default
+
+A project with no `enforcement` key runs under strict: `guard` exits 4 when a validator that applies to the project examined nothing for a reason the project can resolve. The output has an **Adopt** block with each validator's cause and fix, and a "DocGuard could not read" block that never changes the exit code. Read the fix, apply it, and run guard again. Do not write `"enforcement": "standard"` to clear the exit; that is the project's decision, not a way to finish the task.
 - `--dir <path>` — Run on a different directory

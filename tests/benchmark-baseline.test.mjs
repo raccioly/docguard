@@ -179,4 +179,29 @@ describe('benchmark run provenance', () => {
     assert.deepEqual(comparison.core.outOfSelection, []);
     assert.equal(comparison.baseline.review.measures, BASELINE_MEASURES);
   });
+
+  it('--acknowledge-file moves a declared fixture correction out of the comparison and errors on an unreadable file', t => {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-baseline-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const baseline = committed();
+    const victim = baseline.core.cases.find(item => item.id === 'dev-generated-security-control');
+    assert.ok(victim, 'the committed baseline has the case this test rebaselines');
+    victim.sourceRevision = 'sha256:an-older-fixture';
+    const path = join(dir, 'older.json');
+    writeFileSync(path, JSON.stringify(baseline));
+    const notes = join(dir, 'notes.md');
+    writeFileSync(notes, 'Benchmark-Rebaselined: dev-generated-security-control \u2014 the fixture literal was replaced; no metric moved\n');
+    const options = { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 };
+    const plain = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path], options);
+    assert.equal(plain.status, 1);
+    assert.deepEqual(JSON.parse(plain.stdout).comparison.core.regressions.map(item => item.kind), ['case-evidence-changed']);
+    const acknowledged = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path, '--acknowledge-file', notes], options);
+    assert.equal(acknowledged.status, 0, acknowledged.stderr);
+    const core = JSON.parse(acknowledged.stdout).comparison.core;
+    assert.equal(core.status, 'PASS');
+    assert.deepEqual(core.rebaselined.map(item => item.id), ['dev-generated-security-control']);
+    const missing = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path, '--acknowledge-file', join(dir, 'absent.md')], options);
+    assert.equal(missing.status, 1);
+    assert.equal(JSON.parse(missing.stderr).status, 'ERROR');
+  });
 });

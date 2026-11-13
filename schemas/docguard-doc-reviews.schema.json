@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/raccioly/docguard/schemas/docguard-doc-reviews.schema.json",
+  "title": "DocGuard recorded document reviews",
+  "description": "What each document review checked (specs/095-recorded-document-reviews): the commit, the reason and a fingerprint of every file the document referenced. Written only by `docguard review --accept <doc>`. Forward compatibility: a future field goes under an `extensions` object (top level, per document or per reference), which every reader ignores; any other unknown field is an error, reported as FRS010, so an older reader never misreads a newer file silently.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "documents"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "extensions": { "type": "object", "description": "Reserved for future fields; ignored by readers of schemaVersion 1." },
+    "documents": {
+      "type": "object",
+      "description": "Keyed by the document's project-relative POSIX path.",
+      "propertyNames": { "not": { "pattern": "(^/|\\\\|(^|/)\\.\\.(/|$))" } },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reviewedAt", "reviewedRevision", "reason", "references"],
+        "properties": {
+          "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "reviewedRevision": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" }], "description": "HEAD when the review was recorded: the review point FRS006 and FRS007 measure from." },
+          "reason": { "type": "string", "minLength": 8, "maxLength": 500 },
+          "references": {
+            "type": "object",
+            "description": "Keyed by referenced file path.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tier", "fingerprint"],
+              "properties": {
+                "tier": { "enum": ["content", "ast", "python-ast"] },
+                "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+                "extensions": { "type": "object" }
+              }
+            }
+          },
+          "excluded": { "type": "object", "description": "Referenced paths not measured, with the reason (directory, vendored copy, changelog/lockfile/claims data, test, fixture or example path, linguist-generated, generated-by header, under 20 lines).", "additionalProperties": { "type": "string" } },
+          "extensions": { "type": "object" }
+        }
+      }
+    }
+  }
+}

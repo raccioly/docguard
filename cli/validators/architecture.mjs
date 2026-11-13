@@ -19,8 +19,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join, extname, relative } from 'node:path';
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
-import { resolveDocRole } from '../shared-doc-roles.mjs';
+import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { summarizeTiers } from '../shared-source.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 
 import { buildImportGraph, JS_EXTENSIONS, readImports, getFilesRecursive, posixPath } from '../scanners/import-graph.mjs';
@@ -31,19 +32,62 @@ export { buildImportGraph };
 // byte-identical to the legacy strings — resultFromFindings derives the
 // errors/warnings arrays from the same findings array (acc), which the
 // helpers below mutate in place.
+/**
+ * Whether Architecture's kind of check belongs to the project: it applies when
+ * the project declares layers in its configuration, or when its own JS/TS/Python
+ * modules import one another (an import graph with at least one edge), and when
+ * the graph could not be read completely. A project whose source files import
+ * nothing from each other has no dependency structure to check; a missing
+ * ARCHITECTURE.md is not the reason.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const layers = Object.keys(config.layers || {});
+  if (layers.length > 0) return { applies: true, evidence: `.docguard.json declares ${layers.length} layer(s): ${layers.slice(0, 4).join(', ')}` };
+  const graph = buildImportGraph(projectDir, config);
+  if (graph.edges.length > 0) return { applies: true, evidence: `${graph.edges.length} import edge(s) among ${graph.files.length} source file(s)` };
+  if (graph.limitations.length > 0) return { applies: true, evidence: `the import graph could not be read completely: ${summarizeLimitations(graph.limitations)}` };
+  return graph.files.length > 0
+    ? { applies: false, evidence: `${graph.files.length} JS/TS/Python source file(s) and no import between them` }
+    : { applies: false, evidence: 'no JS/TS or Python source file for an import graph, and no layers declared in .docguard.json' };
+}
+
 export function validateArchitecture(projectDir, config = {}) {
   const acc = { findings: [], passed: 0, total: 0 };
   let applicability = { status: 'checked', reason: 'Repository-local JS/TS and Python static import graphs inspected; runtime dependency resolution is outside scope' };
-  const compose = () => ({
-    name: 'architecture',
-    applicability,
-    ...resultFromFindings(acc.findings, { passed: acc.passed, total: acc.total }),
-  });
+  // Checks genuinely made, apart from the violations and passes `total` counts: cycle detection over a graph that
+  // has at least one edge, and the declared layers' directories when one exists. `total` counts only what a check
+  // found or what a declared rule covered, so a clean graph leaves it at 0 (specs/097 FR-004).
+  let edges = 0;
+  let layerFilesScanned = 0;
+  const compose = () => {
+    const performed = acc.total + (edges > 0 ? 1 : 0) + (layerFilesScanned > 0 ? 1 : 0);
+    // An import graph that could not be read completely is an observation gap: `inconclusive`, its reason is
+    // the gap (the applicability above), so the result carries no cause and no fix (spec 097 FR-005).
+    const gapped = performed === 0 && acc.findings.length === 0 && ['partial', 'unsupported'].includes(applicability.status);
+    return {
+      name: 'architecture',
+      applicability,
+      ...resultFromFindings(acc.findings, { passed: acc.passed, total: acc.total }),
+      ...(gapped ? { performed, applies: applies(projectDir, config) } : contractFields({
+        performed, found: acc.findings.length > 0,
+        ran: `checked ${edges} import edge(s) for cycles${layerFilesScanned ? ` and ${layerFilesScanned} file(s) against the declared layers` : ''}`,
+        decide: () => applies(projectDir, config),
+        empty: (decision) => {
+          if (!decision.applies) return { note: 'Architecture found no import between the project\'s own JS/TS/Python modules and no layers in .docguard.json, so there is no dependency structure to check.', howToConfigure: 'Nothing to configure unless the project is built from modules that import one another: then Architecture checks cycles, and layer rules written in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md or in `layers` of .docguard.json.' };
+          const declared = Object.entries(config.layers || {}).filter(([, l]) => l?.dir).map(([name, l]) => `${name}: ${l.dir}`);
+          return declared.length > 0
+            ? { emptyCause: 'needs-declaration', note: `The layers in .docguard.json name no directory that exists in the project (${declared.slice(0, 3).join(', ')}), so Architecture checked no file against them.`, howToConfigure: `Point each \`layers.<name>.dir\` in .docguard.json at a directory that holds the layer's source files (declared: ${declared.join(', ')}), or remove \`layers\` and declare the boundaries in the "Layer Boundaries" table of ${docRolePath(config, 'architecture')}.` }
+            : { emptyCause: 'needs-content', note: 'Architecture found an import graph with nothing in it to check: no cycle detection ran and no layer was declared.', howToConfigure: 'Declare layers in `layers` of .docguard.json or in the "Layer Boundaries" table of docs-canonical/ARCHITECTURE.md; Architecture then checks every import against them.' };
+        },
+      })),
+    };
+  };
 
   // ── 1. Config-driven layer validation ──
   const layers = config.layers;
   if (layers && Object.keys(layers).length > 0) {
-    validateConfigLayers(projectDir, config, layers, acc);
+    layerFilesScanned = validateConfigLayers(projectDir, config, layers, acc);
   }
 
   // ── 2. Auto-detect import graph ──
@@ -51,11 +95,14 @@ export function validateArchitecture(projectDir, config = {}) {
   if (importGraph.limitations.length > 0) {
     applicability = {
       status: importGraph.files.length > 0 ? 'partial' : 'unsupported',
-      reason: `Static import findings are retained; incomplete evidence: ${summarizeLimitations(importGraph.limitations)}`,
+      reason: importGraph.edges.length > 0
+        ? `Architecture followed ${importGraph.edges.length} import(s) among ${importGraph.files.length} source file(s) and could not follow these completely: ${explainLimitations(importGraph.limitations)}. An import it could not follow is not in the cycle check or the layer rules; the ones it followed are.`
+        : `Architecture could not follow these: ${explainLimitations(importGraph.limitations)}. No import was followed, so the cycle check and the layer rules had nothing to examine.`,
     };
   } else if (importGraph.files.length === 0) {
     applicability = { status: 'not-applicable', reason: 'No supported JS/TS or Python source files found for import graph analysis' };
   }
+  edges = importGraph.edges.length;
   if (importGraph.files.length === 0) return compose();
 
   if (layers && Object.keys(layers).length > 0) {
@@ -99,7 +146,7 @@ export function validateArchitecture(projectDir, config = {}) {
   // (Previously this returned a fake 1/1 pass, rendering a confident green ✅
   // for projects that declared no layer boundaries — it validated nothing.)
   const results = compose();
-  if (results.total === 0) {
+  if (results.total === 0 && results.note === undefined) {
     results.note = 'no layer boundaries declared in ARCHITECTURE.md';
   }
 
@@ -108,7 +155,9 @@ export function validateArchitecture(projectDir, config = {}) {
 
 // ── Config-driven validation (existing behavior) ────────────────────────────
 
+/** Checks each declared layer's files; returns how many files it read. */
 function validateConfigLayers(projectDir, config, layers, acc) {
+  let scanned = 0;
   const layerMap = {};
   for (const [layerName, layerConfig] of Object.entries(layers)) {
     if (layerConfig.dir && layerConfig.canImport) {
@@ -132,6 +181,7 @@ function validateConfigLayers(projectDir, config, layers, acc) {
       if (!JS_EXTENSIONS.has(extname(file))) continue;
 
       const content = readFileSync(file, 'utf-8');
+      scanned++;
       const relPath = relative(projectDir, file);
       const { imports, tier } = readImports(content, file);
 
@@ -158,23 +208,35 @@ function validateConfigLayers(projectDir, config, layers, acc) {
       }
     }
   }
+  return scanned;
+}
+
+// What each limitation means for the import graph, in plain words: what was not followed.
+const LIMITATIONS = {
+  'python-interpreter-unavailable': ['Python interpreter unavailable', 'no Python interpreter was available, so Python imports were not read'],
+  'python-parse-failed': ['Python parse failure', 'a Python file failed to parse, so its imports were not read'],
+  'python-dynamic-import': ['dynamic Python import', 'imports made at run time with importlib or __import__ name a module that is only known while the program runs'],
+  'python-path-mutation': ['runtime sys.path mutation', 'the program edits sys.path while it runs, so where imports that depend on it point is only known at run time'],
+  'python-relative-outside-package': ['relative import outside a resolvable package', 'a relative import points outside any package it can resolve'],
+  'python-ambiguous-module': ['ambiguous Python module across import roots', 'two import roots both provide the module, so it cannot tell which one is meant'],
+  'source-unreadable': ['unreadable source file', 'the file could not be read'],
+  'js-parser-unavailable': ['JS/TS parser unavailable, imports read by the pattern fallback', 'a pattern match read the imports, which can miss some'],
+  'js-parse-failed': ['JS/TS file read by the pattern fallback after a parse failure', 'a pattern match read the imports of a file that failed to parse'],
+};
+
+function limitationCounts(limitations) {
+  const counts = new Map();
+  for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
+  return counts;
 }
 
 function summarizeLimitations(limitations) {
-  const labels = {
-    'python-interpreter-unavailable': 'Python interpreter unavailable',
-    'python-parse-failed': 'Python parse failure',
-    'python-dynamic-import': 'dynamic Python import',
-    'python-path-mutation': 'runtime sys.path mutation',
-    'python-relative-outside-package': 'relative import outside a resolvable package',
-    'python-ambiguous-module': 'ambiguous Python module across import roots',
-    'source-unreadable': 'unreadable source file',
-    'js-parser-unavailable': 'JS/TS parser unavailable, imports read by the pattern fallback',
-    'js-parse-failed': 'JS/TS file read by the pattern fallback after a parse failure',
-  };
-  const counts = new Map();
-  for (const item of limitations) counts.set(item.code, (counts.get(item.code) || 0) + 1);
-  return [...counts].map(([code, count]) => `${labels[code] || code}${count > 1 ? ` (${count})` : ''}`).join('; ');
+  return [...limitationCounts(limitations)].map(([code, count]) => `${LIMITATIONS[code]?.[0] || code}${count > 1 ? ` (${count})` : ''}`).join('; ');
+}
+
+/** The limitations with what each one means, for a reason that says plainly what was not followed. */
+function explainLimitations(limitations) {
+  return [...limitationCounts(limitations)].map(([code, count]) => `${LIMITATIONS[code]?.[0] || code}${count > 1 ? ` (${count})` : ''}: ${LIMITATIONS[code]?.[1] || 'it could not be followed'}`).join('; ');
 }
 
 function validatePythonConfigLayers(graph, layers, acc) {

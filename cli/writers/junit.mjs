@@ -30,7 +30,8 @@ function esc(s) {
 function findingLine(f) {
   const code = f.code ? `[${f.code}] ` : '';
   const loc = f.location ? ` (${f.location})` : '';
-  return `${code}${f.message}${loc}`;
+  const ctx = f.context ? ` [context: ${f.context}]` : '';
+  return `${code}${f.message}${loc}${ctx}`;
 }
 
 /**
@@ -44,6 +45,7 @@ export function toJUnit(data) {
   const cases = [];
   let failures = 0, errorCount = 0, skipped = 0;
 
+  let extraCases = 0;
   for (const v of data.validators || []) {
     const vFindings = Array.isArray(v.findings)
       ? v.findings
@@ -54,7 +56,9 @@ export function toJUnit(data) {
 
     // docguard.verdict-contract#FR-014: the verdict decides first; a result
     // without one (older JSON piped in) falls through to the status branches.
-    const why = () => esc(`${v.verdict}: ${v.applicability?.reason || 'no reason recorded'}`);
+    // specs/097 FR-015: an unexamined validator under strict carries its cause and fix.
+    const u = (data.strict?.unexamined || []).find(x => x.validator === v.key);
+    const why = () => esc(`${v.verdict}${u?.cause ? ` (${u.cause})` : ''}: ${v.applicability?.reason || 'no reason recorded'}${u?.howToConfigure ? ` To fix: ${u.howToConfigure}` : ''}`);
     if (v.verdict === 'blocked') {
       errorCount++;
       const body = (v.errors || []).join('\n') || v.applicability?.reason || 'validator could not run';
@@ -98,9 +102,17 @@ export function toJUnit(data) {
     } else {
       cases.push(`    <testcase ${attrs}/>`);
     }
+    // specs/097 FR-021: documents a validator did not examine while it examined others are
+    // their own case, rendered the way an unexamined validator is (skipped, with cause and fix).
+    if (u?.documents?.length && u.blocking) {
+      skipped++;
+      extraCases++;
+      const docAttrs = `name="${esc(`${v.name}: unexamined documents`)}" classname="docguard.guard"`;
+      cases.push(`    <testcase ${docAttrs}><skipped message="${esc(`${u.cause ? `(${u.cause}) ` : ''}${u.reason}${u.howToConfigure ? ` To fix: ${u.howToConfigure}` : ''}`)}"/></testcase>`);
+    }
   }
 
-  const total = (data.validators || []).length;
+  const total = (data.validators || []).length + extraCases;
   const suiteAttrs =
     `name="docguard guard — ${esc(data.project || 'project')}" ` +
     `tests="${total}" failures="${failures}" errors="${errorCount}" skipped="${skipped}" ` +

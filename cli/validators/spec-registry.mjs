@@ -5,6 +5,19 @@ import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH } from '../sca
 import { checkAsBuiltSync, isPatternTier } from '../scanners/as-built.mjs';
 import { danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
 import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { explainPaddedEmpty } from '../shared-project-evidence.mjs';
+
+/**
+ * Does this kind of check belong to the project? It does when the project has
+ * specs (a Spec Kit `specs/<feature>/` directory) or already keeps a registry.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}, projection = projectSpecRegistry(projectDir, config)) {
+  if (projection.detected === 0 && !projection.exists) return { applies: false, evidence: `no specs/<feature>/ directory and no ${SPEC_REGISTRY_PATH}, so the project has no specification to register` };
+  return { applies: true, evidence: `${projection.detected} specification(s) detected${projection.exists ? ` and ${SPEC_REGISTRY_PATH} exists` : ''}` };
+}
 
 /**
  * @implements docguard.lifecycle-evidence-gaps#FR-001
@@ -15,7 +28,14 @@ import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   if (projection.detected === 0 && !projection.exists) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0, applicable: false }),
+      ...contractFields({
+        performed: 0,
+        decide: () => applies(projectDir, config, projection),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Spec-Registry found no specification to register: ${d.evidence}.`, howToConfigure: `Nothing to configure unless the project writes specifications: Spec-Registry reads specs/<feature>/spec.md and ${SPEC_REGISTRY_PATH}.` }),
+      }),
+    };
   }
   const findings = projection.issues.map(issue => mkFinding({
     code: issue.code,
@@ -176,12 +196,30 @@ export function validateSpecRegistry(projectDir, config = {}) {
       }
     }
   }
-  const checks = Math.max(1, projection.registry.specs.length + projection.registry.tombstones.length);
-  const result = resultFromFindings(findings, {
-    passed: Math.max(0, checks - findings.length),
-    total: checks,
-    applicable: true,
-  });
+  // Every detected specification was examined, at least for its Spec ID: one that has none yields a finding
+  // (SPR002) and is not in the registry, so counting only the registry would report zero checks beside findings
+  // that a baseline or waiver can later remove, leaving an empty result with no cause.
+  const compared = Math.max(projection.registry.specs.length + projection.registry.tombstones.length, projection.detected);
+  const checks = Math.max(1, compared);
+  const result = {
+    ...resultFromFindings(findings, {
+      passed: Math.max(0, checks - findings.length),
+      total: checks,
+      applicable: true,
+    }),
+    // `total` is padded to 1; `performed` is the specs and tombstones compared with the registry.
+    ...explainPaddedEmpty(contractFields({
+      performed: compared,
+      found: findings.length > 0,
+      ran: `${compared} specification(s) and tombstone(s) examined (${projection.registry.specs.length} compared with ${SPEC_REGISTRY_PATH})`,
+      decide: () => applies(projectDir, config, projection),
+      empty: d => ({
+        emptyCause: 'needs-content',
+        note: `Spec-Registry found ${projection.detected} specs/ entr(ies) but none has a spec.md to register: ${d.evidence}.`,
+        howToConfigure: 'Add a spec.md to each specs/<feature>/ directory (`/speckit.specify` writes one) with a `**Spec ID**: <unique-id>` line, then run `docguard specs --write`.',
+      }),
+    })),
+  };
   return partial ? { ...result, applicability: { status: 'partial', reason: partial } } : result;
 }
 

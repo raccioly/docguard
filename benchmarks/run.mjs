@@ -2,10 +2,10 @@
 
 /** @implements docguard.precision-evidence-loop#FR-006 */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { runBenchmark } from './lib/runner.mjs';
-import { compareBenchmarkCores, compareRuntimeObservations } from './lib/compare.mjs';
+import { acknowledgeRebaselinedCases, compareBenchmarkCores, compareRuntimeObservations } from './lib/compare.mjs';
 import { benchmarkProvenance, buildBaselineEnvelope, loadBaseline } from './lib/baseline.mjs';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
@@ -21,6 +21,11 @@ try {
   // Validate the reviewed baseline before spending minutes on a run it cannot be compared with.
   const baselinePath = valueAfter('--baseline');
   const baseline = baselinePath ? loadBaseline(baselinePath) : null;
+  // A release's CHANGELOG section may declare deliberate fixture corrections (Benchmark-Rebaselined:).
+  // A named file that cannot be read is an error, never a silent pass.
+  const acknowledgePath = valueAfter('--acknowledge-file');
+  if (acknowledgePath && !baseline) throw new Error('--acknowledge-file needs --baseline.');
+  const acknowledgement = acknowledgePath ? readFileSync(resolve(acknowledgePath), 'utf8') : null;
   const writeBaselinePath = valueAfter('--write-baseline');
   if (writeBaselinePath && existsSync(resolve(writeBaselinePath)) && !args.includes('--replace-baseline')) {
     throw new Error('Baseline already exists; pass --replace-baseline after review to replace it.');
@@ -36,7 +41,9 @@ try {
   if (baseline) {
     result.comparison = {
       baseline: { review: baseline.review, tool: baseline.core.tool },
-      core: compareBenchmarkCores(baseline.core, result.core, { selectedIds: result.selection.caseIds }),
+      core: acknowledgement === null
+        ? compareBenchmarkCores(baseline.core, result.core, { selectedIds: result.selection.caseIds })
+        : acknowledgeRebaselinedCases(compareBenchmarkCores(baseline.core, result.core, { selectedIds: result.selection.caseIds }), acknowledgement),
       runtime: compareRuntimeObservations(baseline.observations, result.observations),
     };
   }

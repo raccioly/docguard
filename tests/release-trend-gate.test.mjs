@@ -6,6 +6,7 @@
  * @req docguard.release-trend-gate#FR-002
  * @req docguard.release-trend-gate#FR-003
  * @req docguard.release-trend-gate#FR-004
+ * @req docguard.release-trend-gate#FR-006
  * @req docguard.release-trend-gate#SC-001
  */
 import { describe, it } from 'node:test';
@@ -136,6 +137,7 @@ describe('FR-003 — the release workflow runs the gate before publishing', () =
     assert.match(job, /node tools\/release-ab\.mjs --base "\$RUNNER_TEMP\/prev" --head \./);
     assert.match(job, /node tools\/budget\.mjs ab --base "\$RUNNER_TEMP\/prev" --head \./);
     assert.match(job, /node benchmarks\/run\.mjs --baseline "\$RUNNER_TEMP\/prev-baseline\.json"/);
+    assert.match(job, /node benchmarks\/run\.mjs --baseline "\$RUNNER_TEMP\/prev-baseline\.json" --acknowledge-file "\$RUNNER_TEMP\/release-notes\.md"/);
     assert.match(wf, /create-release:\n    needs: \[detect-version, test, release-gate\]/);
   });
 });

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { validateDocQuality } from '../cli/validators/doc-quality.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('Doc-Quality Validator', () => {
   let tmpDir;
@@ -19,7 +20,7 @@ describe('Doc-Quality Validator', () => {
 
   it('returns empty results when no docs exist', () => {
     const result = validateDocQuality(tmpDir, {});
-    assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+    assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
   });
 
   it('skips documents with insufficient prose', () => {
@@ -28,7 +29,7 @@ describe('Doc-Quality Validator', () => {
     writeFileSync(join(tmpDir, 'docs-canonical', 'REFERENCE.md'), '# API Reference\n| Method | Description |\n|---|---|\n| `foo()` | Does foo |');
 
     const result = validateDocQuality(tmpDir, {});
-    assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+    assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
   });
 
   it('reports warnings for poor quality documents', () => {

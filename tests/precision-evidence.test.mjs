@@ -133,11 +133,19 @@ describe('guard precision evidence block', () => {
       // shape is a contract: it may only grow, and only with a spec. The three
       // channels added by docguard.calibrated-finding-channels are listed here
       // so an accidental field can never slip in unreviewed.
-      assert.deepEqual(Object.keys(finding).sort(), [
+      const BASE = [
         'code', 'confidence', 'disposition', 'effectiveSeverity', 'enforcement',
         'evidence', 'location', 'message', 'parserTier', 'redactedContext',
         'reportable', 'severity', 'suggestion', 'validator',
-      ], 'findings are written verbatim into shareable feedback records; their shape changes only by spec');
+      ];
+      // docguard.recorded-document-reviews#FR-006–FR-008: Freshness findings
+      // about a role document may carry its role and the measured evidence.
+      const FRESHNESS_ONLY = ['documentRole', 'staleness', 'surface'];
+      const keys = Object.keys(finding).sort();
+      assert.deepEqual(BASE.filter(k => !keys.includes(k)), [], 'findings are written verbatim into shareable feedback records; their shape changes only by spec');
+      const extra = keys.filter(k => !BASE.includes(k));
+      assert.ok(extra.every(k => FRESHNESS_ONLY.includes(k)) && (!extra.length || finding.validator === 'freshness'),
+        `findings are written verbatim into shareable feedback records; their shape changes only by spec (unexpected: ${extra.join(', ')} on ${finding.code})`);
       assert.ok(['act', 'escalate'].includes(finding.disposition));
       assert.ok(['measured', 'not-measured'].includes(finding.evidence.status));
       assert.equal(finding.location === null || typeof finding.location === 'string', true,

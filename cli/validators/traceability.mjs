@@ -20,6 +20,7 @@ import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
 import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 /** @implements docguard.adoption-workflow-integrity#FR-006 */
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { tokenize } from '../shared-diff.mjs';
 import { rankBySimilarity } from '../shared-ir.mjs';
 import {
@@ -34,6 +35,8 @@ import {
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
 import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
+import { classifyRequirementIds, describeSkipped, hasPlaceholderSlot } from '../shared-requirement-ids.mjs';
+import { sample } from '../shared-project-evidence.mjs';
 
 export { collectRequirementIds };
 import { docAnnotationsIn } from '../scanners/doc-references.mjs';
@@ -125,6 +128,38 @@ const IGNORE_DIRS = new Set([
  * errors/warnings arrays from the same findings array.
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
+/**
+ * Whether Traceability's kind of check belongs to the project: it applies when the project declares a
+ * requirement, by the definition Requirement-Anchors uses (an FR, NFR, SC or REQ ID with real text in a spec
+ * or requirement document; never a template row, a decision, an open item, a task or a design element).
+ * With no requirement there is nothing to trace to a test, and a project is not asked to invent one.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const custom = Boolean(config.traceability?.requirementPattern);
+  const all = [...collectRequirementIds(projectDir, config, requirementPatterns(config)).values()];
+  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom });
+  const skippedText = describeSkipped(skipped);
+  if (real.length > 0) {
+    const counted = custom ? 'ID(s) read by traceability.requirementPattern' : 'FR/NFR/SC/REQ requirement ID(s)';
+    return { applies: true, evidence: `${real.length} ${counted} are declared (${sample(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id))})` };
+  }
+  const docs = existsSync(resolve(projectDir, 'docs-canonical')) ? ' (docs-canonical/ is there, but Traceability traces requirements, and a document alone has none)' : '';
+  if (placeholders) return { applies: false, evidence: `no requirement ID is declared: ${placeholders} requirement line(s) are template placeholders (such as "System MUST [capability]")${docs}` };
+  if (skipped.size) return { applies: false, evidence: `no requirement ID is declared: the IDs found are not requirements (${skippedText} identifier(s))${docs}` };
+  return { applies: false, evidence: `no requirement ID is declared in a spec or requirement document${docs}` };
+}
+
+function traceabilityContract(projectDir, config, performed, found) {
+  return contractFields({
+    performed, found, ran: `traced ${performed} requirement(s) to tests`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => decision.applies
+      ? { emptyCause: 'needs-content', note: 'Traceability found requirement IDs but traced none of them to a test.', howToConfigure: 'Reference each requirement from a test with `@req <spec-id>#FR-001`, or a requirement ID test label.' }
+      : { note: `Traceability compared nothing because ${decision.evidence}.`, howToConfigure: 'Nothing to configure unless the project declares requirements: then write them as `- **FR-001**: The system MUST …` in a spec, and reference each from a test with `@req <spec-id>#FR-001`.' },
+  });
+}
+
 export function validateTraceability(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -133,7 +168,7 @@ export function validateTraceability(projectDir, config) {
   const docsDir = resolve(projectDir, 'docs-canonical');
   if (!existsSync(docsDir) && getRequirementDocPaths(projectDir, config).length === 0) {
     // No docs-canonical dir at all — structure validator handles this
-    return resultFromFindings([], { passed: 0, total: 0 });
+    return { ...resultFromFindings([], { passed: 0, total: 0 }), ...traceabilityContract(projectDir, config, 0, false) };
   }
 
   // Build set of required doc basenames from config
@@ -270,7 +305,7 @@ export function validateTraceability(projectDir, config) {
   passed += reqResult.passed;
   total += reqResult.total;
 
-  const result = resultFromFindings(findings, { passed, total });
+  const result = { ...resultFromFindings(findings, { passed, total }), ...traceabilityContract(projectDir, config, reqResult.examined, findings.length > 0) };
   result.requirementCoverage = reqResult.requirementCoverage;
   return result;
 }
@@ -294,7 +329,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   const patterns = requirementPatterns(config);
 
   // ── Step 1: Collect requirement IDs from documentation ──
-  const reqIds = collectRequirementIds(projectDir, config, patterns);
+  // A template row ("System MUST [capability]") is not a requirement: it is neither traced nor reported. A bare ID with
+  // no text is still traced, as it always was.
+  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def)));
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
   const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
   const uncommittedPlannedIndex = uncommittedPlannedSpecLifecycleIndex(projectDir);
@@ -387,6 +424,8 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
 
   return {
     findings, passed, total,
+    // Requirements examined: each one traced to a test (or not), and each one a planned spec defers.
+    examined: applicableRequirements + deferred,
     requirementCoverage: {
       discovered: reqIds.size,
       applicable: applicableRequirements,

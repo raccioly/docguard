@@ -175,6 +175,35 @@
       "items": { "type": "string" },
       "uniqueItems": true
     },
+    "enforcement": {
+      "description": "How strictly guard judges the project (specs/097-strict-by-default). `strict`: every validator that applies must examine something, or guard exits 4. `standard`: the behavior before this key existed. Absent: strict, the default. `profile` never selects it. The object form adds `asOf`, a release line (`major.minor`) that holds checks added after it as pending.",
+      "oneOf": [
+        { "type": "string", "enum": ["strict", "standard"] },
+        {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["strict", "standard"] },
+            "asOf": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$", "description": "Release line, for example \"0.49\"." }
+          },
+          "required": ["mode"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "freshness": {
+      "type": "object",
+      "description": "Freshness settings (spec 095).",
+      "properties": {
+        "referenceShare": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 0.5,
+          "description": "FRS006 fires when at least this share of a referenced file's current lines was added since the document's review."
+        }
+      },
+      "additionalProperties": false
+    },
     "severity": {
       "type": "object",
       "description": "Per-validator severity overrides. Affects EXIT CODE only — display is unchanged. high = warnings fail CI (exit 1). low = warnings ignored. medium (default) = exit 2.",
@@ -185,11 +214,21 @@
     },
     "findingSeverity": {
       "type": "object",
-      "description": "Per-finding-code enforcement overrides. Exact codes take precedence over validator severity. high = blocking error, medium = warning, low = informational. Intrinsic errors can only be demoted with an explicit code entry.",
+      "description": "Per-finding-code enforcement overrides. Exact codes take precedence over validator severity. high = blocking error, medium = warning, low = informational. Intrinsic errors can only be demoted with an explicit code entry. A value may instead map document roles to levels ({\"FRS006\": {\"agent-instruction\": \"high\"}}): the level applies to findings about a document in that role, others keep the default (spec 095).",
       "patternProperties": {
         "^[A-Z]{3}[0-9]{3}$": {
-          "type": "string",
-          "enum": ["high", "medium", "low"]
+          "oneOf": [
+            { "type": "string", "enum": ["high", "medium", "low"] },
+            {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "agent-instruction": { "type": "string", "enum": ["high", "medium", "low"] },
+                "canonical": { "type": "string", "enum": ["high", "medium", "low"] }
+              },
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "additionalProperties": false

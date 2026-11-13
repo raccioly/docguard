@@ -30,6 +30,7 @@ import { c, CURRENT_SCHEMA_VERSION, compareVersions } from '../shared.mjs';
 import { installAgentAssets, staleAgentAssets } from '../ensure-skills.mjs';
 import { readAgentSurface } from '../agent-surface.mjs';
 import { packagedExtensionVersion, readRegistryEntry, refreshSpecKitExtension } from '../spec-kit-delegation.mjs';
+import { WAIVER_FORM, couldNotReadLines, modeLine, resolveEnforcement, strictRowLines } from '../enforcement.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -295,6 +296,53 @@ function rollbackUpgradePR(projectDir, { start, branch, priorConfig, pushed }, e
   return { ok: false, error: message };
 }
 
+/**
+ * Read-only: what the strict enforcement mode would change for this project
+ * (specs/097-strict-by-default FR-018). Runs guard in memory with the mode
+ * forced to strict and reports the unexamined validators with cause and fix,
+ * the findings that would fail the build by code, and the commands that
+ * record or waive them. It writes nothing; the only file it can touch is
+ * DocGuard's own self-ignoring `.docguard/` state directory, as `guard` does.
+ *
+ * @param {string} projectDir
+ * @param {object} config loaded configuration
+ * @returns {Promise<string[]>} plain lines, no color
+ * @implements docguard.strict-by-default#FR-018
+ */
+export async function strictUpgradeLines(projectDir, config) {
+  // Dynamic: guard.mjs imports this module for its schema nudge.
+  const { runGuardInternal } = await import('./guard.mjs');
+  const current = resolveEnforcement(config);
+  const data = runGuardInternal(projectDir, { ...config, enforcement: 'strict' });
+  const strict = data.strict;
+  const lines = [modeLine(current)];
+  const gating = strict.gating.reduce((n, g) => n + g.count, 0);
+  const noKey = current.source === 'default';
+  if (noKey) lines.push('This version makes strict the default, and this project has no "enforcement" key, so it now runs under strict: guard exits 4 when a validator that applies to it examined nothing.');
+  if (noKey) {
+    // `validators.<key>: false` in the project's own file switches nothing off under strict (FR-003): say which checks now run.
+    let offEntries = [];
+    try { offEntries = Object.entries(JSON.parse(readFileSync(resolve(projectDir, '.docguard.json'), 'utf-8')).validators || {}).filter(([, v]) => v === false).map(([k]) => k); } catch { /* unreadable: nothing to say */ }
+    if (offEntries.length) lines.push(`Your .docguard.json sets ${offEntries.length} validator(s) to false: ${offEntries.join(', ')}. Strict does not honor that, so they now run. To switch one off on purpose, use a reasoned waiver or "enforcement": "standard".`);
+  }
+  if (strict.blocking.length === 0 && gating === 0) {
+    lines.push('Strict would change nothing for this project: every validator that applies is examined or waived, and no finding is newly blocking.');
+    lines.push(...couldNotReadLines(strict).map((l, i) => (i === 0 ? 'Reported, and not failing the build: DocGuard could not read some items.' : l)));
+    return lines;
+  }
+  lines.push(`${noKey ? 'What now fails' : 'Under strict this project would report'}: ${strict.blocking.length} validator(s) that apply and examined nothing and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
+  for (const u of strict.unexamined.filter(x => x.blocking)) lines.push(...strictRowLines(u));
+  const unread = couldNotReadLines(strict);
+  if (unread.length) lines.push('Reported, and not failing the build:', ...unread.slice(1));
+  lines.push('Ways forward, in this order:');
+  lines.push('  1. Fix or declare: apply the fix under each item above' + (gating ? '; record the findings that already exist with `docguard guard --update-baseline` (new ones of the same code still fail).' : '.'));
+  lines.push('  2. Waive a validator that does not apply, with a reason, an owner and an expiry:');
+  lines.push(`       ${WAIVER_FORM}`);
+  lines.push('  3. Stay on the lower mode on purpose: add `"enforcement": "standard"` to .docguard.json.');
+  lines.push('Nothing was written.');
+  return lines;
+}
+
 export async function runUpgrade(projectDir, _config, flags) {
   const checkOnly = flags.checkOnly || flags['check-only'];
   const apply = flags.apply;
@@ -361,6 +409,17 @@ export async function runUpgrade(projectDir, _config, flags) {
     console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.yellow}${agentFiles.stale.length} out of date${extensionNote}${c.reset}`);
   } else {
     console.log(`  ${c.cyan}Agent${c.reset}  files:     ${c.green}current${c.reset}`);
+  }
+
+  // specs/097 FR-018: what the strict mode would change here. Read-only; skipped for
+  // a project that has not adopted DocGuard (no .docguard.json), which strict does not touch.
+  if (projectSchema !== null && _config) {
+    console.log(`\n  ${c.cyan}Strict${c.reset}  mode:      ${c.dim}what strict enforcement would change for this project (read-only)${c.reset}`);
+    try {
+      for (const line of await strictUpgradeLines(projectDir, _config)) console.log(`         ${c.dim}${line}${c.reset}`);
+    } catch (e) {
+      console.log(`         ${c.yellow}could not evaluate strict: ${e.message}${c.reset}`);
+    }
   }
 
   console.log();

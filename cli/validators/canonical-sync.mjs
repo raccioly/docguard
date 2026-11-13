@@ -43,6 +43,27 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { countValidatorModules } from '../shared-validator-surface.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { explainPaddedEmpty } from '../shared-project-evidence.mjs';
+
+/**
+ * Does this kind of check belong to the project? Only DocGuard's own repository
+ * has a surface for it to police: it applies when package.json names the
+ * DocGuard package itself.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir) {
+  const pkgPath = resolve(projectDir, 'package.json');
+  if (!existsSync(pkgPath)) return { applies: false, evidence: 'no package.json, so the project is not the docguard-cli package' };
+  let pkg;
+  try { pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')); } catch {
+    // An unreadable package.json cannot show the project is something else.
+    return { applies: true, evidence: 'package.json is unreadable, so it cannot be shown that the project is not the docguard-cli package' };
+  }
+  if (pkg.name !== 'docguard-cli') return { applies: false, evidence: `package.json names "${pkg.name ?? ''}", not the docguard-cli package whose own surface this validator polices` };
+  return { applies: true, evidence: 'package.json names the docguard-cli package, so its README and agent documents describe a surface to check' };
+}
 
 /**
  * Validate that README count claims about DocGuard's surface match code-truth.
@@ -62,8 +83,22 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   const fixes = [];
   let passed = 0;
   let total = 0;
+  // Claim kinds the surface documents actually state. `total` counts every check, claim or not,
+  // so `performed` is the count that matters: a check with no claim to compare made no comparison.
+  let claimed = 0;
   // Compose the legacy result shape (plus findings) at every return point.
-  const compose = (extra) => ({ ...resultFromFindings(findings, { passed, total }), fixes, ...extra });
+  const compose = (extra, why = {}) => ({
+    ...resultFromFindings(findings, { passed, total }), fixes, ...extra,
+    ...explainPaddedEmpty(contractFields({
+      performed: claimed,
+      found: findings.length > 0,
+      ran: `${claimed} surface claim kind(s) compared with the code`,
+      decide: () => applies(projectDir),
+      empty: d => (d.applies
+        ? { emptyCause: why.cause || 'needs-content', note: why.note || 'Canonical-Sync found no surface claim to compare in README.md or the agent-instruction documents.', howToConfigure: why.how || 'README.md and the root agent-instruction documents state none of the counts this validator compares. State one: "ships N commands" or "all N commands", "N validators", or the diagram labels `Commands (N)` and `Validators (N)`; the validator then compares each with the code.' }
+        : { emptyCause: 'nothing-of-this-kind', note: `Canonical-Sync checks only the docguard-cli package: ${d.evidence}.`, howToConfigure: 'Nothing to configure: Canonical-Sync polices the surface of the docguard-cli repository (its README claims against cli/commands and cli/validators) and applies to no other project.' }),
+    })),
+  });
 
   // ── Gate: only run in DocGuard's own repo ─────────────────────────────
   const pkgPath = resolve(projectDir, 'package.json');
@@ -75,7 +110,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   try {
     pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
   } catch {
-    return compose({ na: true, naReason: 'unreadable package.json' });
+    return compose({ na: true, naReason: 'unreadable package.json' }, { cause: 'layout-not-recognized', note: 'Canonical-Sync could not read package.json, so it could not tell whether this is the docguard-cli package.', how: 'package.json is not valid JSON. Fix it so that Canonical-Sync can read the package name.' });
   }
 
   if (pkg.name !== 'docguard-cli') {
@@ -91,7 +126,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   const validatorsDir = resolve(cliDir, 'validators');
 
   if (!existsSync(commandsDir) || !existsSync(validatorsDir)) {
-    return compose({ na: true, naReason: 'cli/commands or cli/validators not found' });
+    return compose({ na: true, naReason: 'cli/commands or cli/validators not found' }, { cause: 'layout-not-recognized', note: 'Canonical-Sync found the docguard-cli package but not its cli/commands and cli/validators directories.', how: 'Canonical-Sync counts cli/commands/*.mjs and cli/validators/*.mjs. Run it from the root of the docguard-cli repository, where both directories exist.' });
   }
 
   const commandFiles = readdirSync(commandsDir).filter(f => f.endsWith('.mjs'));
@@ -126,7 +161,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   // from structure.mjs), which are checks rather than shipped validators.
   const actualValidatorCount = countValidatorModules(validatorsDir);
   if (actualValidatorCount === null) {
-    return compose({ na: true, naReason: 'cli/validators could not be read' });
+    return compose({ na: true, naReason: 'cli/validators could not be read' }, { cause: 'layout-not-recognized', note: 'Canonical-Sync could not read cli/validators to count the shipped validator modules.', how: 'cli/validators exists but could not be read; check its permissions so the validator modules can be counted.' });
   }
 
   // ── Read surface docs (README.md + AGENTS.md) ──────────────────────
@@ -166,6 +201,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   total++;
   const cmdMatches = [...readme.matchAll(/\b(?:ships|covers(?:\s+all)?|supports(?:\s+all)?|all)\s+\*{0,2}(\d+)\s+(?:CLI\s+)?commands?\*{0,2}/gi)];
   if (cmdMatches.length > 0) {
+    claimed++;
     const wrong = [...new Set(cmdMatches.filter(m => Number(m[1]) !== actualCommandCount).map(m => m[0].replace(/\*/g, '')))];
     if (wrong.length === 0) {
       passed++;
@@ -194,6 +230,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   total++;
   const validatorMatches = [...readme.matchAll(/(?:all|the|with|across|ships?)\s+\*{0,2}(\d+)\s+validators?\*{0,2}/gi)];
   if (validatorMatches.length > 0) {
+    claimed++;
     const wrongClaims = validatorMatches
       .map(m => Number(m[1]))
       .filter(n => n !== actualValidatorCount);
@@ -225,6 +262,7 @@ export function validateCanonicalSync(projectDir, config, guardResults) {
   const archWrong = [];
   for (const { re, label, expected } of archMatches) {
     const m = readme.match(re);
+    if (m) claimed++;
     if (m && Number(m[1]) !== expected) {
       archWrong.push(`${label} (${m[1]}) → should be (${expected})`);
     }

@@ -36,6 +36,7 @@ import { listTrackedFiles } from '../shared-git.mjs';
 import { normalizePath } from './api-doc.mjs';
 import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
 import { currentFileCodes } from '../sensor-cache.mjs';
+import { excerptStaleness } from './recorded-review-signals.mjs';
 
 // docguard.agent-instruction-role#FR-002: the role owns the root-level list.
 export { ROOT_AGENT_FILES as AGENT_FILES };
@@ -448,8 +449,13 @@ export function readSection(projectDir, config, { doc, id, anchor, heading, line
   if (text.endsWith('\uFFFD')) text = text.slice(0, -1);
   const consumed = Buffer.byteLength(text);
   const truncated = start + consumed < body.length;
+  // T028b (from spec 096): a section of a document that is due for review, or whose review no longer covers
+  // it, says so; `stalenessBasis` says what was looked at, so an unmarked section is not read as fresh.
+  const staleness = excerptStaleness(projectDir, config, [doc]);
+  const mark = staleness.marks.get(doc);
   return {
     doc, matchedBy, startLine: range[0], endLine: range[1], totalBytes: body.length,
     offset: start, content: text, truncated, ...(truncated ? { nextOffset: start + consumed } : {}),
+    stalenessBasis: staleness.basis, ...(mark ? { possiblyStale: mark } : {}),
   };
 }

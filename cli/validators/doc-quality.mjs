@@ -23,6 +23,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, basename } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 
 // ──── Metric Thresholds ────
@@ -553,6 +554,29 @@ function analyzeDocument(doc) {
  * derives the errors/warnings arrays from the same findings, so counts, exit
  * codes, and existing tests are unaffected; guard just renders richer output.
  */
+/**
+ * Whether Doc-Quality's kind of check belongs to the project: it applies when the
+ * project has prose documents to score, a canonical document or a README.md. A
+ * project with neither has no writing to measure.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir) {
+  const docs = getCanonicalDocs(projectDir);
+  return docs.length > 0
+    ? { applies: true, evidence: `${docs.length} document(s) to score, for example ${docs[0].name}` }
+    : { applies: false, evidence: 'no canonical document and no README.md whose prose could be scored' };
+}
+
+function qualityContract(projectDir, performed, found) {
+  return contractFields({
+    performed, found, ran: `scored ${performed} readability and clarity measure(s) of the project's prose documents`,
+    decide: () => applies(projectDir),
+    empty: (decision) => decision.applies
+      ? { emptyCause: 'needs-content', note: `Doc-Quality found ${decision.evidence}, but none has ${MIN_PROSE_WORDS} words and 3 sentences of prose (tables, code and lists do not count), so it scored nothing.`, howToConfigure: `Write at least ${MIN_PROSE_WORDS} words in 3 or more sentences of plain paragraphs, for example an overview in README.md; Doc-Quality then scores the passive voice, pronouns, readability and sentence length of each document with enough prose.` }
+      : { note: 'Doc-Quality found no canonical document and no README.md, so it had no prose to score.', howToConfigure: 'Nothing to configure unless the project has documents: then Doc-Quality scores the prose of README.md and of the canonical documents.' },
+  });
+}
+
 export function validateDocQuality(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -560,8 +584,8 @@ export function validateDocQuality(projectDir, config) {
 
   const docs = getCanonicalDocs(projectDir);
   if (docs.length === 0) {
-    // Literal legacy shape (no findings key) — tests deepEqual this object.
-    return { errors: [], warnings: [], passed: 0, total: 0 };
+    // Literal legacy shape (no findings key) plus the contract fields.
+    return { errors: [], warnings: [], passed: 0, total: 0, ...qualityContract(projectDir, 0, false) };
   }
 
   for (const doc of docs) {
@@ -695,8 +719,8 @@ export function validateDocQuality(projectDir, config) {
   if (total === 0) {
     // Every doc was skipped (insufficient prose) — same literal legacy shape,
     // because tests deepEqual this exact object for the all-skipped case too.
-    return { errors: [], warnings: [], passed: 0, total: 0 };
+    return { errors: [], warnings: [], passed: 0, total: 0, ...qualityContract(projectDir, 0, false) };
   }
 
-  return resultFromFindings(findings, { passed, total });
+  return { ...resultFromFindings(findings, { passed, total }), ...qualityContract(projectDir, total, findings.length > 0) };
 }

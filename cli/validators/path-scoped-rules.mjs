@@ -31,10 +31,27 @@ import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
 import { agentInstructionDocs, fileSha256 } from '../shared-agent-instructions.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 const MAX_POINTER_FINDINGS = 50;
 const SKILL_DIRS_RE = /^(\.\/)?(scripts|references|assets)\//;
+
+const NOTHING_HOW = 'Nothing to configure unless an agent-instruction file carries something to check: a path scope (a `globs:`, `paths:` or `applyTo:` field), a path pointer (`docs/ARCHITECTURE.md`, `@docs/guide.md`), or a vendored Spec Kit copy. Path-Scoped-Rules reads AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions and the other files of the agent-instruction role.';
+
+/**
+ * Does this kind of check belong to the project? It does when an agent
+ * instruction file carries something for it to examine: a path scope, a path
+ * pointer, an `@` import or a vendored copy. A project whose instruction files
+ * are prose only, or that has none, has nothing of this kind (the validator
+ * would examine nothing, and no declaration makes it examine something).
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const run = validatePathScopedRules(projectDir, config);
+  return { applies: run.applies.applies, evidence: run.applies.evidence };
+}
 
 export function validatePathScopedRules(projectDir, config = {}) {
   const tracked = listTrackedFiles(projectDir);
@@ -52,7 +69,14 @@ export function validatePathScopedRules(projectDir, config = {}) {
   const entries = all.filter(e => !isNonProductPath(e.file, config));
   const role = agentInstructionDocs(projectDir, config);
   if (entries.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
-    return { ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files' };
+    return {
+      ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files',
+      ...contractFields({
+        performed: 0,
+        decide: () => ({ applies: false, evidence: 'the project has no agent-instruction file (AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions) outside test, fixture and example paths' }),
+        empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules found no agent instruction file to read: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
+      }),
+    };
   }
 
   const findings = [];
@@ -194,16 +218,30 @@ export function validatePathScopedRules(projectDir, config = {}) {
     const actual = fileSha256(projectDir, doc.path);
     if (actual === null || doc.vendored.hashes.includes(actual)) continue;
     const { integration, version } = doc.vendored;
+    // A Windows checkout with core.autocrlf rewrites LF as CRLF: say so rather
+    // than calling a byte-identical copy edited (coordinator review of #633).
+    const lineEndingsOnly = doc.vendored.hashes.includes(fileSha256(projectDir, doc.path, { normalizeLineEndings: true }));
     findings.push(mkFinding({
       code: 'PSR005', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
-      message: `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}); reinstall it or move the change to an authored file`,
+      message: lineEndingsOnly
+        ? `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}) only in line endings (CRLF): a checkout with core.autocrlf converted it; mark it \`text eol=lf\` in .gitattributes`
+        : `${doc.path} differs from the copy Spec Kit installed (${integration} integration${version ? ` ${version}` : ''}); reinstall it or move the change to an authored file`,
       location: { file: doc.path },
       suggestion: { kind: 'review', text: `Reinstall the ${integration} integration (specify integration install ${integration}) to restore the installed copy, or keep the change in a file the project owns: an edit here is lost on the next install` },
     }));
   }
 
   const passed = Math.max(0, total - findings.length);
-  const result = resultFromFindings(findings, { passed, total });
+  const result = {
+    ...resultFromFindings(findings, { passed, total }),
+    ...contractFields({
+      performed: total,
+      found: findings.length > 0,
+      ran: `${total} scope, pointer, import and vendored-copy check(s) over ${instructionFiles.length} instruction file(s)`,
+      decide: () => ({ applies: false, evidence: `${entries.length} agent-instruction file(s) but none carries a path scope, a path pointer, an @import or a vendored copy` }),
+      empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules read ${entries.length} instruction file(s) and found nothing to check: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
+    }),
+  };
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   result.instructionFiles = instructionFiles.length;
   return result;

@@ -201,10 +201,12 @@ jobs:
             --message-file "$RUNNER_TEMP/release-notes.md" \
             --summary "$GITHUB_STEP_SUMMARY" --out "$RUNNER_TEMP/budget.json"
 
+      # A release that corrects a fixture on purpose says so in its CHANGELOG section with
+      # a Benchmark-Rebaselined line; the file was written by the step above.
       - name: Precision benchmark against the released baseline
         if: steps.prev.outputs.tag != ''
         run: |
-          node benchmarks/run.mjs --baseline "$RUNNER_TEMP/prev-baseline.json" > "$RUNNER_TEMP/benchmark.json"
+          node benchmarks/run.mjs --baseline "$RUNNER_TEMP/prev-baseline.json" --acknowledge-file "$RUNNER_TEMP/release-notes.md" > "$RUNNER_TEMP/benchmark.json"
           node -e "const r=require(process.argv[1]); console.log('benchmark vs released baseline:', r.comparison.core.status); if (r.comparison.core.status !== 'PASS') process.exit(1)" "$RUNNER_TEMP/benchmark.json"
 
   # ── Step 3: Create git tag + GitHub Release ────────────────────────────

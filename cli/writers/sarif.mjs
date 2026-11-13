@@ -63,14 +63,26 @@ function parseLocation(location) {
  * A result without a verdict (older JSON piped in) adds nothing.
  * @implements docguard.verdict-contract#FR-013
  */
-function invocationFor(validators) {
+function invocationFor(validators, strict = null) {
   const toolExecutionNotifications = [];
+  // specs/097 FR-015: under strict a validator that applies and examined nothing
+  // (`empty`) is reported the way `inconclusive` is: a warning about the run,
+  // with its cause and fix, never a clean result and never a finding.
+  const unexamined = new Map((strict?.unexamined || []).map(u => [u.validator, u]));
   for (const v of validators) {
-    if (v.verdict !== 'blocked' && v.verdict !== 'inconclusive') continue;
+    const u = unexamined.get(v.key);
+    const strictEmpty = v.verdict === 'empty' && u;
+    // FR-021: documents left unexamined by a validator that examined others (its verdict is pass or fail).
+    const documents = u?.documents?.length && u.blocking && !strictEmpty && v.verdict !== 'blocked' && v.verdict !== 'inconclusive';
+    if (v.verdict !== 'blocked' && v.verdict !== 'inconclusive' && !strictEmpty && !documents) continue;
+    const fix = u?.howToConfigure ? ` To fix: ${u.howToConfigure}` : '';
+    const cause = u?.cause ? ` (${u.cause})` : '';
     toolExecutionNotifications.push({
       level: v.verdict === 'blocked' ? 'error' : 'warning',
       descriptor: { id: String(v.key || v.name || 'unknown') },
-      message: { text: `${v.name || v.key} is ${v.verdict}: ${v.applicability?.reason || 'no reason recorded'}` },
+      message: { text: documents
+        ? `${v.name || v.key} did not examine ${u.documents.length} document(s)${cause}: ${u.reason}${fix}`
+        : `${v.name || v.key} is ${v.verdict}${cause}: ${v.applicability?.reason || 'no reason recorded'}${fix}` },
     });
   }
   return { executionSuccessful: !validators.some(v => v.verdict === 'blocked'), toolExecutionNotifications };
@@ -152,6 +164,7 @@ export function toSarif(guardData, opts = {}) {
       evidence: f.evidence && f.evidence.status === 'measured' ? 'measured' : 'not-measured',
       parserTier: typeof f.parserTier === 'string' ? f.parserTier : 'not-applicable',
       reportable: !!f.reportable,
+      ...(f.context === 'product' || f.context === 'test-path' ? { context: f.context } : {}),
       ...(f.suggestion && f.suggestion.kind ? { suggestionKind: f.suggestion.kind } : {}),
     };
     return result;
@@ -167,7 +180,7 @@ export function toSarif(guardData, opts = {}) {
       },
     },
     results,
-    invocations: [invocationFor(guardData.validators || [])],
+    invocations: [invocationFor(guardData.validators || [], guardData.strict || null)],
   };
 
   if (opts.projectDir) {

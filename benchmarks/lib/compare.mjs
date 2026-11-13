@@ -3,6 +3,7 @@
  * for a newly missed defect, false positive, or supported-case abstention.
  * @implements docguard.precision-evidence-loop#FR-009
  * @implements docguard.precision-evidence-loop#FR-010
+ * @implements docguard.release-trend-gate#FR-006
  */
 
 function difference(current = [], baseline = []) {
@@ -64,9 +65,59 @@ export function compareBenchmarkCores(baseline, candidate, { selectedIds = null 
   }
   return {
     status: regressions.length ? 'FAIL' : 'PASS',
-    regressions: regressions.sort((a, b) => `${a.id}:${a.kind}:${a.identity || ''}`.localeCompare(`${b.id}:${b.kind}:${b.identity || ''}`)),
+    regressions: regressions.sort(byRegression),
     addedCases: [...current.keys()].filter(id => !previous.has(id)).sort(),
     outOfSelection: outOfSelection.sort(),
+  };
+}
+
+const byRegression = (a, b) => `${a.id}:${a.kind}:${a.identity || ''}`.localeCompare(`${b.id}:${b.kind}:${b.identity || ''}`);
+
+/** `Benchmark-Rebaselined: <case id> — <reason>` lines; the separator is an em dash, en dash or hyphen. */
+function parseRebaselineDeclarations(text = '') {
+  const declarations = new Map();
+  for (const match of String(text).matchAll(/^Benchmark-Rebaselined:[ \t]*(\S*)(.*)$/gm)) {
+    const rest = match[2].trim().match(/^[\u2014\u2013-]{1,2}\s*(.*)$/);
+    declarations.set(match[1], rest ? rest[1].trim() : '');
+  }
+  return declarations;
+}
+
+/**
+ * A release's CHANGELOG section may declare that a case's reviewed evidence was
+ * corrected on purpose. The declaration moves only that case's
+ * `case-evidence-changed` regression into `rebaselined`; an outcome change for the
+ * same case still fails, a declaration with nothing to acknowledge fails as stale,
+ * and one without a reason fails. Pure: the input comparison is not modified.
+ */
+export function acknowledgeRebaselinedCases(comparison, text = '') {
+  const declarations = parseRebaselineDeclarations(text);
+  if (!declarations.size) return comparison;
+  const regressions = [];
+  const rebaselined = [];
+  const used = new Set();
+  for (const regression of comparison.regressions) {
+    const reason = regression.kind === 'case-evidence-changed' ? declarations.get(regression.id) : undefined;
+    if (reason) {
+      used.add(regression.id);
+      rebaselined.push({ id: regression.id, fields: regression.fields, reason });
+    } else {
+      regressions.push(regression);
+    }
+  }
+  for (const [id, reason] of declarations) {
+    if (!reason) {
+      regressions.push({ id, kind: 'rebaseline-declaration-without-reason', detail: 'A Benchmark-Rebaselined line needs a reason after the case ID: "Benchmark-Rebaselined: <case id> \u2014 <reason>".' });
+    } else if (!used.has(id)) {
+      regressions.push({ id, kind: 'stale-rebaseline-declaration', detail: 'The release notes declare this case rebaselined, but it has no reviewed-evidence change against the baseline; remove the line.' });
+    }
+  }
+  regressions.sort(byRegression);
+  return {
+    ...comparison,
+    status: regressions.length ? 'FAIL' : 'PASS',
+    regressions,
+    rebaselined: rebaselined.sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
 

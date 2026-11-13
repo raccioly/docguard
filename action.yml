@@ -179,10 +179,12 @@ runs:
           npx docguard-cli guard $FLAGS $GUARD_FLAGS
           EXIT_CODE=$?
 
-          # Exit 4 = a check could not decide and fail-on-inconclusive is on.
+          # Exit 4 = a check that applies to this project examined nothing (strict enforcement, the default),
+          # or a check could not decide and fail-on-inconclusive is on. Either way the step fails: the guard
+          # output above lists each item with its cause and fix.
           if [ "$EXIT_CODE" = "4" ]; then
             echo ""
-            echo "::error::DocGuard guard: a check could not decide (fail-on-inconclusive is enabled)"
+            echo "::error::DocGuard guard exited 4: a check that applies to this project examined nothing (strict enforcement), or a check could not decide. The Adopt block above says what to fix; to stay on the earlier behavior set \"enforcement\": \"standard\" in .docguard.json."
             exit 1
           fi
 

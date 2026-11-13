@@ -24,6 +24,7 @@ import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const HEADING = /^(#{1,6})\s+(.*)$/;
 // A heading that documents an API/code unit — NOT a prose section heading.
@@ -90,14 +91,34 @@ function extractUnits(content) {
   return units;
 }
 
+/**
+ * Does this kind of check belong to the project? It does when a canonical
+ * document has a heading that documents an API unit: an HTTP endpoint, a
+ * function signature or a backticked symbol. A project with none has no API
+ * documentation to size, and never needs a declaration.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir) {
+  const docFiles = listCanonicalDocs(projectDir);
+  if (docFiles.length === 0) return { applies: false, evidence: 'the project has no canonical document (docs-canonical/), so no API reference to size' };
+  let units = 0;
+  for (const doc of docFiles) {
+    try { units += extractUnits(readFileSync(doc.abs, 'utf-8')).length; } catch { /* unreadable */ }
+  }
+  if (units === 0) return { applies: false, evidence: `${docFiles.length} canonical document(s) but no heading that is an HTTP endpoint (GET /path), a function signature (name(...)) or a backticked symbol` };
+  return { applies: true, evidence: `${units} API-shaped heading(s) in ${docFiles.length} canonical document(s)` };
+}
+
 export function validateApiDocSmells(projectDir, config = {}) {
   const cfg = config.apiDocSmells || {};
   const lazyMax = Number.isInteger(cfg.lazyMaxWords) ? cfg.lazyMaxWords : 6;
   const bloatedMin = Number.isInteger(cfg.bloatedMinWords) ? cfg.bloatedMinWords : 300;
 
   const docFiles = listCanonicalDocs(projectDir); // recursive
+  const nothing = d => ({ emptyCause: 'nothing-of-this-kind', note: `API-Doc-Smells found no API documentation unit to size: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the project documents an API: API-Doc-Smells sizes sections whose heading is an HTTP endpoint (`### GET /users`), a function signature (`### createUser(name)`) or a backticked symbol.' });
   if (docFiles.length === 0) {
-    return resultFromFindings([], { passed: 0, total: 0, applicable: false });
+    return { ...resultFromFindings([], { passed: 0, total: 0, applicable: false }), ...contractFields({ performed: 0, decide: () => applies(projectDir), empty: nothing }) };
   }
 
   const findings = [];
@@ -138,9 +159,12 @@ export function validateApiDocSmells(projectDir, config = {}) {
     }
   }
 
-  return resultFromFindings(findings, {
-    passed: unitCount - findings.length,
-    total: unitCount,
-    applicable: unitCount > 0,
-  });
+  return {
+    ...resultFromFindings(findings, {
+      passed: unitCount - findings.length,
+      total: unitCount,
+      applicable: unitCount > 0,
+    }),
+    ...contractFields({ performed: unitCount, found: findings.length > 0, ran: `${unitCount} API documentation unit(s) sized`, decide: () => applies(projectDir), empty: nothing }),
+  };
 }

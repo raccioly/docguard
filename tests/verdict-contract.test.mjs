@@ -57,7 +57,7 @@ const ALL_OFF = Object.fromEntries([
   'apiDocSmells', 'canonicalSync', 'metricsConsistency',
 ].map(k => [k, false]));
 const only = (...keys) => ({ ...ALL_OFF, ...Object.fromEntries(keys.map(k => [k, true])) });
-const config = (validators, extra = {}) => ({ projectName: 'verdicts', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
+const config = (validators, extra = {}) => ({ projectName: 'verdicts', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
 
 function write(dir, path, body) {
   mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -173,7 +173,7 @@ describe('US1 — a failed git call is a gap, not a finding', { skip: !POSIX }, 
 
   it('baseline: unseen fingerprints are not "safe to drop" and re-freezing is refused while a gap stands', t => {
     const dir = project(t, POINTERS);
-    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'baseline', requiredFiles: { canonical: [], agentFile: [] }, validators: only('pathScopedRules') }));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'baseline', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators: only('pathScopedRules') }));
     const run = (args, env = process.env) => spawnSync(process.execPath, [CLI, 'guard', ...args], { cwd: dir, encoding: 'utf8', env });
     assert.equal(run(['--update-baseline']).status, 0);
     const stub = stubGit(t, 'check-ignore');
@@ -303,7 +303,7 @@ describe('US2 — every validator result ends in one closed verdict', () => {
 
 describe('US3 — --fail-on-inconclusive', () => {
   const cli = (dir, ...args) => spawnSync(process.execPath, [CLI, 'guard', ...args], { cwd: dir, encoding: 'utf8' });
-  const cfg = (dir, validators) => writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'gate', requiredFiles: { canonical: [], agentFile: [] }, validators }));
+  const cfg = (dir, validators) => writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'gate', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators }));
 
   it('exits 4 and names each inconclusive validator; without the flag the exit code is unchanged', t => {
     const dir = project(t, { 'src/index.js': 'export const a = 1;\n' });
@@ -382,7 +382,7 @@ describe('US4 — formats', () => {
 
   it('human output prints the verdict summary and every inconclusive reason', t => {
     const dir = project(t, { 'src/index.js': 'export const a = 1;\n' });
-    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'human', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface', 'drift') }));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'human', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface', 'drift') }));
     const r = spawnSync(process.execPath, [CLI, 'guard'], { cwd: dir, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } });
     assert.match(r.stdout, /Verdicts: \d+ pass · \d+ fail · \d+ empty · 1 inconclusive · 0 blocked · \d+ skipped/);
     assert.match(r.stdout, /API-Surface[^\n]*No document available for role apiReference/);
@@ -390,7 +390,7 @@ describe('US4 — formats', () => {
 
   it('guard --format json carries verdict, class and the run summary', t => {
     const dir = project(t, { 'src/index.js': 'export const a = 1;\n' });
-    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'json', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface', 'drift') }));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'json', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface', 'drift') }));
     const r = spawnSync(process.execPath, [CLI, 'guard', '--format', 'json'], { cwd: dir, encoding: 'utf8' });
     const j = JSON.parse(r.stdout);
     assert.equal(j.validators.find(v => v.key === 'apiSurface').verdict, 'inconclusive');
@@ -411,6 +411,7 @@ describe('US4 — formats', () => {
  *   silent    no answer is a legitimate state here; the reason says why
  */
 const GIT_CALL_SITES = {
+  'cli/scanners/recorded-review-signals.mjs': { listTrackedFiles: 'silent: without git the reviews checks return no signal, as the history checks in Freshness already skip' },
   'cli/scanners/anchors.mjs': { listTrackedFiles: 'fallback', fileContentAtRev: 'silent: a path absent at the locked revision has no prior bytes to compare' },
   'cli/scanners/doc-deps.mjs': { listTrackedFiles: 'fallback', fileContentAtRev: 'silent: a dependency added after the revision has no prior text' },
   'cli/scanners/doc-ownership.mjs': { listTrackedFiles: 'fallback' },
@@ -440,6 +441,9 @@ const PRIVATE_GIT_CALLS = {
   'cli/scanners/spec-first.mjs': { args: 'silent: spec-first reports an unreadable range as inconclusive (exit 2), spec 015' },
   'cli/scanners/spec-registry.mjs': { runGit: 'gap', 'ls-files': 'silent: an asset path git cannot confirm tracked and clean is not attributed', diff: 'silent: an asset path git cannot confirm tracked and clean is not attributed' },
   'cli/scanners/speckit.mjs': { runGit: 'gap', args: 'silent: featureTouchedPaths returns null and SPK010 stays silent for the feature (spec 080 FR-004)', 'ls-files': 'silent: unobservablePaths returns null and SPK010 stays silent (spec 080 FR-004)' },
+  'cli/scanners/doc-reviews.mjs': { runGit: 'gap' },
+  'cli/scanners/recorded-review-signals.mjs': { runGit: 'gap' },
+  'cli/scanners/reference-staleness.mjs': { runGit: 'gap' },
   'cli/validators/aidlc.mjs': { runGit: 'gap' },
   'cli/validators/changelog.mjs': { diff: 'silent: no staged list means no staged-change reminder, never a finding' },
   'cli/validators/freshness.mjs': { log: 'silent: freshness signals are escalations; an unknown count raises none', diff: 'silent: freshness signals are escalations; an unknown staged list raises none', 'rev-list': 'silent: freshness signals are escalations; an unknown count raises none' },

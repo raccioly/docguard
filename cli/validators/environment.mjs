@@ -6,6 +6,7 @@
  * @implements docguard.fallback-language-coverage#FR-004
  */
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 /**
  * Environment Validator — Checks ENVIRONMENT.md docs and .env.example
  * Now respects projectTypeConfig (e.g., skip env checks for CLI tools)
@@ -22,6 +23,7 @@ import { describeLanguageCounts, grepEnvUsage, resolveSourceRoots, summarizeTier
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { docHasSection } from '../shared.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const ENV_TEMPLATE_NAMES = ['.env.example', '.env.template'];
 
@@ -82,6 +84,38 @@ function discoverEnvTemplates(projectDir, config) {
   return [...templates].sort();
 }
 
+/**
+ * Whether Environment's kind of check belongs to the project: it applies when
+ * the project has an environment document, a `.env.example` / `.env.template`,
+ * or source that reads environment variables. A project with none of the three
+ * has no environment to document; a missing ENVIRONMENT.md is not the reason.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const envDoc = docRolePath(config, 'environment');
+  if (existsSync(resolveDocRole(projectDir, config, 'environment'))) return { applies: true, evidence: `${envDoc} exists` };
+  const templates = discoverEnvTemplates(projectDir, config);
+  if (templates.length > 0) return { applies: true, evidence: `${relative(resolve(projectDir), templates[0]).split(sep).join('/')} lists environment variables` };
+  const used = grepEnvUsage(projectDir, config);
+  if (used.size > 0) return { applies: true, evidence: `source reads ${used.size} environment variable(s), for example ${[...used][0]}` };
+  return { applies: false, evidence: `no ${envDoc}, no .env.example or .env.template, and no source file that reads an environment variable` };
+}
+
+function environmentContract(projectDir, config, performed, found) {
+  const envDoc = docRolePath(config, 'environment');
+  return contractFields({
+    performed, found, ran: `checked the sections of ${envDoc} and the variables the code reads against it`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => decision.applies
+      ? (() => {
+        const role = roleDocument(projectDir, config, 'environment');
+        const content = 'a "## Setup Steps" section and a "## Environment Variables" section that lists every variable the code reads; `.env.example` entries count as documentation';
+        return { emptyCause: 'needs-declaration', note: `Environment found ${decision.evidence}, but no ${envDoc}, so it compared no variable with a document.`, howToConfigure: role.lead ? `${role.lead}The document needs ${content}.` : `Create ${envDoc} with ${content} (\`docguard generate\` drafts it from the code).${role.tail}` };
+      })()
+      : { note: `Environment found no ${envDoc}, no .env template and no source that reads an environment variable, so there is nothing to document.`, howToConfigure: `Nothing to configure unless the project reads environment variables: then document them in ${envDoc}.` },
+  });
+}
+
 export function validateEnvironment(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -94,7 +128,7 @@ export function validateEnvironment(projectDir, config) {
   if (!existsSync(envDocPath)) {
     // Structure validator catches missing files. Keep the exact legacy shape
     // here (no `findings` key) — tests deep-equal this early return.
-    return { name: 'environment', errors: [], warnings: [], passed: 0, total: 0 };
+    return { name: 'environment', errors: [], warnings: [], passed: 0, total: 0, ...environmentContract(projectDir, config, 0, false) };
   }
 
   const content = readFileSync(envDocPath, 'utf-8');
@@ -275,5 +309,5 @@ export function validateEnvironment(projectDir, config) {
     passed++;
   }
 
-  return { name: 'environment', ...(applicability ? { applicability } : {}), ...resultFromFindings(findings, { passed, total }) };
+  return { name: 'environment', ...(applicability ? { applicability } : {}), ...resultFromFindings(findings, { passed, total }), ...environmentContract(projectDir, config, total, findings.length > 0) };
 }

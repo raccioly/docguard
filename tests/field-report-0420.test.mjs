@@ -251,7 +251,7 @@ describe('field report §4 — a baseline must age', () => {
 
   it('separates findings still suppressed from entries that no longer occur', t => {
     const dir = fixture(t, {
-      '.docguard.json': JSON.stringify({ projectName: 'bl-fixture', profile: 'standard' }),
+      '.docguard.json': JSON.stringify({ projectName: 'bl-fixture', profile: 'standard', enforcement: 'standard' }),
       'docs-canonical/ARCHITECTURE.md': '# Architecture\n',
     });
     cli(dir, ['guard', '--update-baseline']);

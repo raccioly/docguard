@@ -16,8 +16,8 @@
     "manifestDigest": "sha256:3476ca6ca0e23373aa4c4697dbae1ffa8516271073655944774b62435e323f5f",
     "tool": {
       "version": "0.47.0",
-      "revision": "48144fe9411b0d6e6626a4dcd14a9084115453c9",
-      "detectorsDigest": "sha256:833d46018328cf56b4c81282f85b19f5ff54c8e561447c1fa88ebf3b3774dcde"
+      "revision": "354e3d63421ed79eae8d761400bfbb3946945bfa",
+      "detectorsDigest": "sha256:02ad4b5f158ddaa46370071b0b2e044a9986aa03515955563ddc5a348b5380b0"
     },
     "cases": [
       {
@@ -28,7 +28,7 @@
         "parserTier": "js-ast",
         "classification": "clean_control",
         "repairOutcome": "not_evaluated",
-        "sourceRevision": "sha256:09d16254c9bd0d0ae4c2be8f6b88a53f0f138d1029b433d02bcf76688b968fcb",
+        "sourceRevision": "sha256:65b0e1a3ba224702d4d3e2193c9d2fce9d2e35ca9a6a6e56c9b8d9505a25d950",
         "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
         "scope": {
           "validatorKey": "security",
@@ -67,7 +67,7 @@
         "parserTier": "js-ast",
         "classification": "defect",
         "repairOutcome": "not_evaluated",
-        "sourceRevision": "sha256:09d16254c9bd0d0ae4c2be8f6b88a53f0f138d1029b433d02bcf76688b968fcb",
+        "sourceRevision": "sha256:65b0e1a3ba224702d4d3e2193c9d2fce9d2e35ca9a6a6e56c9b8d9505a25d950",
         "configDigest": "sha256:09adbc023d8d015085e20316b9cff66f95f9069ed0b17c00ccd977ec0525c322",
         "scope": {
           "validatorKey": "security",
@@ -2473,158 +2473,158 @@
     "cases": [
       {
         "id": "dev-generated-security-control",
-        "coldMs": 306.012,
-        "warmMs": 287.59
+        "coldMs": 480.376,
+        "warmMs": 464.324
       },
       {
         "id": "dev-generated-security-defect",
-        "coldMs": 301.441,
-        "warmMs": 292.086
+        "coldMs": 440.121,
+        "warmMs": 424.835
       },
       {
         "id": "dev-go-todo-control",
-        "coldMs": 282.499,
-        "warmMs": 279.243
+        "coldMs": 421.462,
+        "warmMs": 402.456
       },
       {
         "id": "dev-go-todo-defect",
-        "coldMs": 302.938,
-        "warmMs": 302.651
+        "coldMs": 439.648,
+        "warmMs": 419.663
       },
       {
         "id": "dev-js-security-control",
-        "coldMs": 285.677,
-        "warmMs": 283.707
+        "coldMs": 440.096,
+        "warmMs": 421.581
       },
       {
         "id": "dev-js-security-defect",
-        "coldMs": 281.145,
-        "warmMs": 301.096
+        "coldMs": 414.146,
+        "warmMs": 365.63
       },
       {
         "id": "dev-monorepo-security-control",
-        "coldMs": 289.061,
-        "warmMs": 309.368
+        "coldMs": 370.478,
+        "warmMs": 407.334
       },
       {
         "id": "dev-monorepo-security-defect",
-        "coldMs": 296.26,
-        "warmMs": 301.683
+        "coldMs": 407.014,
+        "warmMs": 377.52
       },
       {
         "id": "dev-python-security-control",
-        "coldMs": 311.722,
-        "warmMs": 358.851
+        "coldMs": 345.677,
+        "warmMs": 316.23
       },
       {
         "id": "dev-python-security-defect",
-        "coldMs": 303.096,
-        "warmMs": 282.47
+        "coldMs": 329.383,
+        "warmMs": 354.428
       },
       {
         "id": "dev-sparse-doc-control",
-        "coldMs": 300.394,
-        "warmMs": 294.565
+        "coldMs": 357.972,
+        "warmMs": 350.462
       },
       {
         "id": "dev-sparse-doc-defect",
-        "coldMs": 318.333,
-        "warmMs": 338.009
+        "coldMs": 348.518,
+        "warmMs": 312.162
       },
       {
         "id": "dev-vendored-instruction-control",
-        "coldMs": 288.532,
-        "warmMs": 288.576
+        "coldMs": 340.283,
+        "warmMs": 312.534
       },
       {
         "id": "dev-vendored-instruction-defect",
-        "coldMs": 297.033,
-        "warmMs": 327.581
+        "coldMs": 345.402,
+        "warmMs": 338.264
       },
       {
         "id": "eval-changesets-aws-control",
-        "coldMs": 548.642,
-        "warmMs": 579.698
+        "coldMs": 574.401,
+        "warmMs": 533.511
       },
       {
         "id": "eval-changesets-aws-defect",
-        "coldMs": 572.966,
-        "warmMs": 584.371
+        "coldMs": 527.426,
+        "warmMs": 517.599
       },
       {
         "id": "eval-chi-aws-control",
-        "coldMs": 424.214,
-        "warmMs": 410.828
+        "coldMs": 418.605,
+        "warmMs": 443.784
       },
       {
         "id": "eval-chi-aws-defect",
-        "coldMs": 424.781,
-        "warmMs": 415.104
+        "coldMs": 447.507,
+        "warmMs": 424.731
       },
       {
         "id": "eval-express-aws-control",
-        "coldMs": 434.449,
-        "warmMs": 422.532
+        "coldMs": 555.467,
+        "warmMs": 535.398
       },
       {
         "id": "eval-express-aws-defect",
-        "coldMs": 418.178,
-        "warmMs": 436.4
+        "coldMs": 471.326,
+        "warmMs": 433.774
       },
       {
         "id": "eval-fastify-aws-control",
-        "coldMs": 699.924,
-        "warmMs": 624.416
+        "coldMs": 780.252,
+        "warmMs": 676.902
       },
       {
         "id": "eval-fastify-aws-defect",
-        "coldMs": 639.451,
-        "warmMs": 632.123
+        "coldMs": 682.701,
+        "warmMs": 705.635
       },
       {
         "id": "eval-flask-aws-control",
-        "coldMs": 561.188,
-        "warmMs": 459.725
+        "coldMs": 641.543,
+        "warmMs": 663.837
       },
       {
         "id": "eval-flask-aws-defect",
-        "coldMs": 510.965,
-        "warmMs": 555.363
+        "coldMs": 702.509,
+        "warmMs": 691.202
       },
       {
         "id": "eval-python-layers-control",
-        "coldMs": 451.297,
-        "warmMs": 445.787
+        "coldMs": 555.397,
+        "warmMs": 533.408
       },
       {
         "id": "eval-python-layers-defect",
-        "coldMs": 530.404,
-        "warmMs": 534.635
+        "coldMs": 540.128,
+        "warmMs": 564.221
       },
       {
         "id": "eval-python-unsupported",
-        "coldMs": 574.632,
-        "warmMs": 596.269
+        "coldMs": 553.336,
+        "warmMs": 528.696
       },
       {
         "id": "eval-ts-security-control",
-        "coldMs": 540.291,
-        "warmMs": 472.961
+        "coldMs": 432.247,
+        "warmMs": 447.399
       },
       {
         "id": "eval-ts-security-defect",
-        "coldMs": 420.075,
-        "warmMs": 447.441
+        "coldMs": 416.131,
+        "warmMs": 432.643
       },
       {
         "id": "eval-vendored-instruction-control",
-        "coldMs": 453.843,
-        "warmMs": 440.132
+        "coldMs": 462.178,
+        "warmMs": 435.552
       },
       {
         "id": "eval-vendored-instruction-defect",
-        "coldMs": 529.415,
-        "warmMs": 448.018
+        "coldMs": 456.492,
+        "warmMs": 432.006
       }
     ],
     "retainedRoot": null

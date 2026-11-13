@@ -1,4 +1,5 @@
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { roleDocument } from '../shared-doc-role-hint.mjs';
 /**
  * Test Spec Validator — Checks that tests exist per TEST-SPEC.md coverage rules
  * Now respects projectTypeConfig (e.g., skip E2E for CLI tools)
@@ -13,6 +14,98 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+
+/**
+ * The tests a project has, by the three signals Test-Spec uses: a top-level
+ * test directory, co-located test files under a source root, or a Vitest/Jest
+ * configuration. Returns what it found, or null when the project has none.
+ */
+function detectTests(projectDir, config) {
+  // 1. Check top-level test dirs
+  // Match by normalised name rather than exact spelling: `Tests/`, `testing/`,
+  // `e2e/` and `integration/` are the same signal as `tests/`, and probing for
+  // literal names was case-insensitive only by accident (it matched on macOS
+  // and not on Linux, so CI and a laptop disagreed).
+  const TEST_DIR_NAMES = new Set([
+    'tests', 'test', 'spec', 'specs', 'testing',
+    'e2e', 'integration', 'unit', 'acceptance',
+  ]);
+  const normaliseDir = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let testDir = null;
+  try {
+    testDir = readdirSync(projectDir, { withFileTypes: true })
+      .find(e => e.isDirectory() && TEST_DIR_NAMES.has(normaliseDir(e.name)))?.name || null;
+  } catch { /* unreadable root: fall through to the other signals */ }
+  if (testDir) return { evidence: `the test directory ${testDir}/` };
+
+  // 2. Check co-located tests (honors config.sourceRoot + workspaces)
+  for (const rootPath of resolveSourceRoots(projectDir, config)) {
+    if (hasTestFilesRecursive(rootPath)) return { evidence: 'co-located *.test.* / *.spec.* files under a source root' };
+  }
+
+  // 3. Check vitest/jest config for custom patterns
+  const configs = ['vitest.config.ts', 'vitest.config.js', 'jest.config.ts', 'jest.config.js'];
+  const found = configs.find(f => existsSync(resolve(projectDir, f)));
+  return found ? { evidence: `the test runner configuration ${found}` } : null;
+}
+
+/**
+ * Whether Test-Spec's kind of check belongs to the project: it applies when the
+ * project has tests to map (see `detectTests`), whether or not TEST-SPEC.md
+ * exists yet, and when a TEST-SPEC.md exists whatever the project holds. A
+ * project with no tests and no test spec has nothing to map.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const specPath = resolveDocRole(projectDir, config, 'testSpec');
+  if (existsSync(specPath)) return { applies: true, evidence: `${docRolePath(config, 'testSpec')} exists` };
+  const tests = detectTests(projectDir, config);
+  return tests
+    ? { applies: true, evidence: `the project has tests (${tests.evidence}) and no ${docRolePath(config, 'testSpec')}` }
+    : { applies: false, evidence: `no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no ${docRolePath(config, 'testSpec')}` };
+}
+
+function testSpecContract(projectDir, config, { performed, found, mapped }) {
+  const specDoc = docRolePath(config, 'testSpec');
+  return contractFields({
+    performed, found, ran: `checked ${performed} row(s) of the Source-to-Test Map and journeys of ${specDoc} against the files on disk`,
+    decide: () => applies(projectDir, config),
+    empty: (decision) => {
+      if (!decision.applies) return { note: `Test-Spec found no tests and no ${specDoc}, so there is no test mapping to check.`, howToConfigure: `Nothing to configure unless the project has tests: then map them in ${specDoc}.` };
+      if (!existsSync(resolveDocRole(projectDir, config, 'testSpec'))) {
+        const role = roleDocument(projectDir, config, 'testSpec');
+        const table = '"## Source-to-Test Map" table (the older "## Service-to-Test Map" heading is read too), `| Source File | Unit Test | Status |`, one row per source file and its test file';
+        return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).${role.tail}` };
+      }
+      return mapped
+        ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map (or the older Service-to-Test Map) in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
+        : { emptyCause: 'needs-declaration', note: `${specDoc} declares no service-to-test mappings, so Test-Spec checked no source or test file.`, howToConfigure: `Add a "## Source-to-Test Map" table (or the older "## Service-to-Test Map") to ${specDoc}: column 1 the source, column 2 the test file, the last column the status (\`| Source File | Unit Test | Status |\`); \`docguard explain testSpec\` describes the shapes it reads.` };
+    },
+  });
+}
+
+/**
+ * The sections of a test spec that map sources to tests: a heading of level 2 to 4, optionally numbered
+ * ("### 2. Service-to-Test Map"), named "Source-to-Test Map" or the older "Service-to-Test Map", up to the
+ * next heading of the same or a higher level.
+ */
+function findMapSections(content) {
+  const lines = content.split('\n');
+  const sections = [];
+  for (let i = 0; i < lines.length; i++) {
+    const heading = /^(#{2,4})[ \t]+(?:\d+[.)]?[ \t]+)?(?:Service|Source)[- ]to[- ]Test Map\b/i.exec(lines[i]);
+    if (!heading) continue;
+    let end = lines.length;
+    for (let j = i + 1; j < lines.length; j++) {
+      const next = /^(#{1,6})[ \t]/.exec(lines[j]);
+      if (next && next[1].length <= heading[1].length) { end = j; break; }
+    }
+    sections.push(lines.slice(i, end).join('\n'));
+    i = end - 1;
+  }
+  return sections;
+}
 
 export function validateTestSpec(projectDir, config) {
   const findings = [];
@@ -25,7 +118,7 @@ export function validateTestSpec(projectDir, config) {
   if (!existsSync(testSpecPath)) {
     // Structure validator catches this. Keep the exact legacy shape here
     // (no `findings` key) — tests deep-equal this early return.
-    return { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 };
+    return { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0, ...testSpecContract(projectDir, config, { performed: 0, found: false, mapped: false }) };
   }
 
   const content = readFileSync(testSpecPath, 'utf-8');
@@ -41,15 +134,18 @@ export function validateTestSpec(projectDir, config) {
   // the 2nd column, so the generated 4-column table's Integration Test was
   // never verified (#9). Splitting on the outer pipes and trimming preserves
   // column alignment so a blank cell stays an empty string in its own slot.
-  const mapSection = content.match(/## (?:Service-to-Test Map|Source-to-Test Map)[\s\S]*?(?=\n## |$)/);
-  if (mapSection) {
+  // Every section of that name is read, each with its own header row: a project that kept the old heading and
+  // appended a new one has both, and the first one no longer hides the second.
+  const mapSections = findMapSections(content);
+  const mapSection = mapSections.length > 0;
+  for (const sectionText of mapSections) {
     const splitRow = (line) => {
       const parts = line.split('|');
       parts.shift();   // text before the first pipe
       parts.pop();     // text after the last pipe
       return parts.map(s => s.trim());
     };
-    const pipeRows = mapSection[0]
+    const pipeRows = sectionText
       .split('\n')
       .filter(l => l.trim().startsWith('|') && !/^\s*\|[\s|:-]+\|\s*$/.test(l)); // drop the `---` separator
     const headerCells = pipeRows.length ? splitRow(pipeRows[0]) : [];
@@ -225,38 +321,8 @@ export function validateTestSpec(projectDir, config) {
   // verify against. Do NOT manufacture a 1/1 pass just because tests exist
   // somewhere — that rendered a confident green ✅ for a doc that mapped nothing.
   if (total === 0) {
-    // 1. Check top-level test dirs
-    // Match by normalised name rather than exact spelling: `Tests/`, `testing/`,
-    // `e2e/` and `integration/` are the same signal as `tests/`, and probing for
-    // literal names was case-insensitive only by accident (it matched on macOS
-    // and not on Linux, so CI and a laptop disagreed).
-    const TEST_DIR_NAMES = new Set([
-      'tests', 'test', 'spec', 'specs', 'testing',
-      'e2e', 'integration', 'unit', 'acceptance',
-    ]);
-    const normaliseDir = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    let hasTestDir = false;
-    try {
-      hasTestDir = readdirSync(projectDir, { withFileTypes: true })
-        .some(e => e.isDirectory() && TEST_DIR_NAMES.has(normaliseDir(e.name)));
-    } catch { /* unreadable root: fall through to the other signals */ }
-
-    // 2. Check co-located tests (honors config.sourceRoot + workspaces)
-    let hasColocated = false;
-    if (!hasTestDir) {
-      for (const rootPath of resolveSourceRoots(projectDir, config)) {
-        if (hasTestFilesRecursive(rootPath)) { hasColocated = true; break; }
-      }
-    }
-
-    // 3. Check vitest/jest config for custom patterns
-    let hasConfigTests = false;
-    if (!hasTestDir && !hasColocated) {
-      const configs = ['vitest.config.ts', 'vitest.config.js', 'jest.config.ts', 'jest.config.js'];
-      hasConfigTests = configs.some(f => existsSync(resolve(projectDir, f)));
-    }
-
-    if (hasTestDir || hasColocated || hasConfigTests) {
+    const detected = detectTests(projectDir, config);
+    if (detected) {
       // Tests exist but the spec maps none of them → not applicable, not a pass.
       // v0.24: the validator reads column 1 as source, column 2 as the test
       // file, and the last as status — so both the minimal 3-column shape and
@@ -276,8 +342,10 @@ export function validateTestSpec(projectDir, config) {
     }
   }
 
-  const res = { name: 'test-spec', ...resultFromFindings(findings, { passed, total }) };
-  if (note) res.note = note;
+  const res = { name: 'test-spec', ...resultFromFindings(findings, { passed, total }), ...testSpecContract(projectDir, config, { performed: total, found: findings.length > 0, mapped: Boolean(mapSection) }) };
+  // The legacy sentence stays for a project that has tests and a spec that maps none of them; the contract's own
+  // sentence replaces it only on an empty result, where the cause says the same with the exact fix.
+  if (note && res.note === undefined) res.note = note;
   return res;
 }
 

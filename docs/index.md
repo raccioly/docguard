@@ -25,6 +25,7 @@ The demo runs against a sample project and needs no install or setup.
 | Try it on a new project in five minutes | [Quick Start](quickstart.md) |
 | Install it as a CLI, Python package, Homebrew formula, container, Action or Spec Kit extension | [Installation](installation.md) |
 | Adopt it on a repository that already has code | [Existing Projects](guides/existing-projects.md) |
+| Fix a build that turned red when strict became the default | [Upgrading to Strict](upgrading-to-strict.md) |
 | Use it with GitHub Spec Kit | [Spec Kit](guides/spec-kit.md) |
 | Use it with AWS AI-DLC | [AWS AI-DLC](guides/aidlc.md) |
 | Gate pull requests | [Continuous Integration](guides/ci.md) |
@@ -40,6 +41,7 @@ The demo runs against a sample project and needs no install or setup.
 - [Continuous Integration](guides/ci.md): GitHub Actions and other CI systems.
 - [Monorepos](guides/monorepo.md): several packages in one repository.
 - [Upgrading](guides/upgrading.md): moving between versions safely.
+- [Upgrading to Strict](upgrading-to-strict.md): what a strict failure looks like and the three ways forward.
 - [Troubleshooting](guides/troubleshooting.md): exit codes, false positives and partial coverage.
 - [AI Integration](ai-integration.md) and [Compliance Profiles](profiles.md).
 

@@ -3,6 +3,8 @@ import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
+import { listValidatorMarkers } from '../validator-markers.mjs';
+import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, strictSummaryLines, strictFindingContext, modeLine, strictBlocks, OFF_BY_DEFAULT_VALIDATORS } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -29,7 +31,7 @@ import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
-import { precisionEvidenceBlock } from '../precision-evidence.mjs';
+import { precisionEvidenceBlock, deriveGatingSet } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
@@ -146,7 +148,7 @@ import { validateEnvironment } from '../validators/environment.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { validateDocsSync } from '../validators/docs-sync.mjs';
 import { validateArchitecture } from '../validators/architecture.mjs';
-import { validateFreshness } from '../validators/freshness.mjs';
+import { validateFreshness, freshnessContract } from '../validators/freshness.mjs';
 import { validateTraceability } from '../validators/traceability.mjs';
 import { validateDocsDiff } from '../validators/docs-diff.mjs';
 import { validateApiSurface } from '../validators/api-surface.mjs';
@@ -214,6 +216,22 @@ export function classifyResult(result) {
   return { status, quality };
 }
 
+/** How many FRS002 lines guard's text output shows per run (T028b); JSON keeps every one. */
+export const FRS002_SHOWN = 3;
+
+/**
+ * FRS002 findings, most stale first: measured staleness evidence (the largest
+ * share of a referenced file added since the review, spec 095) first, then the
+ * repository-wide commit count the message states, then the location.
+ * @implements docguard.strict-by-default#FR-014
+ */
+export function rankFrs002(items) {
+  const share = i => Math.max(0, ...((i.staleness?.references || []).map(r => Number(r.share) || 0)));
+  const commits = i => Number((String(i.message || '').match(/(\d+) code commits since/) || [])[1]) || 0;
+  const where = i => String(typeof i.location === 'string' ? i.location : i.location?.file || '');
+  return [...items].sort((a, b) => share(b) - share(a) || commits(b) - commits(a) || where(a).localeCompare(where(b)));
+}
+
 /**
  * v0.27: the list of issues to render for a validator. Prefers structured
  * findings (code + confidence + suggestion) when present; otherwise maps the
@@ -234,6 +252,8 @@ function renderableItems(v) {
       // nothing while the summary counts said escalations existed.
       disposition: f.disposition,
       suggestion: f.suggestion,
+      location: f.location,
+      staleness: f.staleness,
     }));
   }
   return [
@@ -290,6 +310,19 @@ function collectMarkdown(projectDir) {
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
  */
+/** Agent-instruction documents with FRS006 or FRS007, for the top line and JSON (spec 095 FR-011). */
+export function staleInstructionsOf(findings) {
+  const byDoc = new Map();
+  for (const f of findings || []) {
+    if (f.code !== 'FRS006' && f.code !== 'FRS007') continue;
+    const doc = String(f.location || '').replace(/:\d+$/, '');
+    if (!doc) continue;
+    if (!byDoc.has(doc)) byDoc.set(doc, new Set());
+    byDoc.get(doc).add(f.code);
+  }
+  return [...byDoc].map(([doc, codes]) => ({ doc, codes: [...codes].sort() })).sort((a, b) => a.doc.localeCompare(b.doc));
+}
+
 function computeDocCoverage(projectDir, config) {
   const fileIgnored = loadIgnorePatterns(projectDir);
   const configIgnored = buildIgnoreFilter(config.ignore || []);
@@ -330,7 +363,28 @@ function computeDocCoverage(projectDir, config) {
 
 export function runGuardInternal(projectDir, config) {
   config = applyDocRoles(projectDir, normalizeIgnoreConfig(config));
-  const validators = config.validators || {};
+  // specs/097-strict-by-default FR-001: the mode of this run and where it came from.
+  // A project with no .docguard.json has not adopted DocGuard: strict adds nothing there
+  // (US4 scenario 3), so it keeps the standard behavior and says to run `docguard init`.
+  const initialized = existsSync(resolvePath(projectDir, '.docguard.json')) || config?.enforcement !== undefined;
+  const enforcement = initialized ? resolveEnforcement(config) : { mode: 'standard', asOf: null, source: 'default' };
+  const strict = enforcement.mode === 'strict';
+  const lite = Array.isArray(config.changedFiles);
+  // FR-003 (as amended): under strict every registered validator runs. A `validators.<key>: false` entry,
+  // whether a profile or the project's own file wrote it, does not switch one off: `init` wrote most of them
+  // from a profile, so honoring them would exempt existing adopters. Each one not honored is reported on every
+  // run; a reasoned waiver or `"enforcement": "standard"` switches a validator off on purpose. The pre-commit
+  // subset keeps its own validator set.
+  let validators = config.validators || {};
+  const ignoredDisabled = [];
+  if (strict && !lite) {
+    validators = {};
+    for (const [key, value] of Object.entries(config.validators || {})) {
+      if (value === false) ignoredDisabled.push(key);
+      else validators[key] = value;
+    }
+  }
+  const gatingContext = strict ? strictFindingContext({ gating: deriveGatingSet(undefined, CLI_VERSION), enforcement, runningVersion: CLI_VERSION }) : null;
   const results = [];
 
   const validatorMap = [
@@ -366,12 +420,15 @@ export function runGuardInternal(projectDir, config) {
           message: r.message,
           location: r.doc || null,
           suggestion: r.suggestion || { kind: 'review', text: 'Review the document against its intended scope. A history signal does not establish which side should change.' },
+          // docguard.recorded-document-reviews#FR-006–FR-010: the evidence travels with the finding.
+          documentRole: r.documentRole, staleness: r.staleness, surface: r.surface,
         }));
       }
       const skipped = freshnessResults.filter(r => r.status === 'skip');
       const prerequisite = skipped.find(r => r.prerequisite)?.prerequisite;
-      if (prerequisite) return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), applicability: prerequisite };
-      return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}) };
+      const contract = freshnessContract(projectDir, config, { performed: passed + findings.length, found: findings.length > 0, skipped, facts: freshnessResults.facts });
+      if (prerequisite) return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), applicability: prerequisite, ...contract };
+      return { ...resultFromFindings(findings, { passed, total: passed + findings.length }), ...(passed + findings.length === 0 && skipped.length ? { applicability: { status: 'no-matches', reason: skipped.map(r => r.message).join('; ') } } : {}), ...contract };
     }},
     { key: 'traceability', name: 'Traceability', fn: () => validateTraceability(projectDir, config) },
     { key: 'docsDiff', name: 'Docs-Diff', fn: () => validateDocsDiff(projectDir, config) },
@@ -578,7 +635,15 @@ export function runGuardInternal(projectDir, config) {
       result.observations = result.observations.map((g, i) => (i === 0 ? { ...g, withheld } : g));
     }
     result.applicability = describeCheckCoverage(projectDir, config, result);
-    result.verdict = deriveVerdict(result);
+    result.verdict = deriveVerdict(result, { strict });
+    // specs/097 FR-006: a validator that decided it does not apply is skipped. Spec 081 FR-003
+    // lets only a `not-applicable` result be skipped, so the applicability becomes
+    // not-applicable with the validator's evidence as its reason; what it was is kept in
+    // `before`, so nothing is lost.
+    if (strict && result.verdict === 'skipped' && result.applies?.applies === false && result.applicability.class !== 'not-applicable') {
+      const { status, reason } = result.applicability;
+      result.applicability = { status: 'not-applicable', reason: result.applies.evidence, class: 'not-applicable', before: { status, reason } };
+    }
   }
   // docguard.enforcement-ladder#FR-001–FR-003: composed from the verdicts above,
   // present only when the project names required checks.
@@ -590,7 +655,7 @@ export function runGuardInternal(projectDir, config) {
     };
     Object.assign(reqResult, classifyResult(reqResult));
     reqResult.applicability = describeCheckCoverage(projectDir, config, reqResult);
-    reqResult.verdict = deriveVerdict(reqResult);
+    reqResult.verdict = deriveVerdict(reqResult, { strict });
     results.push(reqResult);
   }
   const checkCoverage = summarizeCheckCoverage(results);
@@ -614,17 +679,20 @@ export function runGuardInternal(projectDir, config) {
     let errors = 0, warnings = 0, infos = 0;
     if (Array.isArray(v.findings) && v.findings.length > 0) {
       for (const finding of v.findings) {
-        const enforcement = resolveFindingEnforcement(config, finding, policyKey(v.key));
-        finding.effectiveSeverity = enforcement.level;
-        finding.enforcement = enforcement;
-        if (enforcement.level === 'error') errors++;
-        else if (enforcement.level === 'warn') warnings++;
+        const level = resolveFindingEnforcement(config, finding, policyKey(v.key), gatingContext);
+        finding.effectiveSeverity = level.level;
+        finding.enforcement = level;
+        if (level.level === 'error') errors++;
+        else if (level.level === 'warn') warnings++;
         else infos++;
       }
     } else {
-      errors = v.errors.length;
+      // FR-008: a validator the 0.47.0 defaults left off reports its intrinsic errors as warnings under strict.
+      const demoted = strict && OFF_BY_DEFAULT_VALIDATORS.includes(v.key) ? v.errors.length : 0;
+      errors = v.errors.length - demoted;
+      warnings = demoted;
       if (v.severity === 'high') errors += v.warnings.length;
-      else if (v.severity === 'medium') warnings = v.warnings.length;
+      else if (v.severity === 'medium') warnings += v.warnings.length;
       else infos = v.warnings.length;
     }
     v.effectiveErrors = errors;
@@ -635,6 +703,10 @@ export function runGuardInternal(projectDir, config) {
   const effectiveErrors = activeResults.reduce((sum, v) => sum + v.effectiveErrors, 0);
   const effectiveWarnings = activeResults.reduce((sum, v) => sum + v.effectiveWarnings, 0);
   const effectiveInfos = activeResults.reduce((sum, v) => sum + v.effectiveInfos, 0);
+  // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
+  // the full validator set, so it never evaluates the unexamined rule (the report
+  // says so with `evaluated: false`).
+  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -657,7 +729,6 @@ export function runGuardInternal(projectDir, config) {
   // they never change errors/warnings/exit code. Skipped on the --changed-only
   // lite path, which trades coverage for sub-2s speed and shouldn't pay for a
   // repo-wide Markdown walk.
-  const lite = Array.isArray(config.changedFiles);
   let coverage = null;
   let semanticClaims = null;
   const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
@@ -698,9 +769,14 @@ export function runGuardInternal(projectDir, config) {
     coverage,
     checkCoverage,
     verdicts,
+    enforcement,
+    ...(strictReport ? { strict: strictReport } : {}),
     ...(required ? { requiredChecks: { required: required.required, undecided: required.undecided } } : {}),
     semanticClaims,
     evidence,
+    // docguard.recorded-document-reviews#FR-011: agents read these files every
+    // session, so their staleness is said first, whatever its severity.
+    staleInstructions: staleInstructionsOf(allFindings),
     // Benchmark evidence for the codes this run actually emitted. Codes the
     // corpus never exercised say so; none inherits another code's measurement.
     precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
@@ -845,7 +921,11 @@ export function runGuard(projectDir, config, flags) {
       : '';
     // docguard.output-ux#FR-001: in a machine format stdout is the artifact,
     // so the note explaining the reduced validator set goes to stderr.
-    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}\n`;
+    // specs/097: the lite set is not the full validator set, so strict's
+    // unexamined-validator rule is not evaluated here; say so in one line.
+    const strictNote = resolveEnforcement(config).mode === 'strict'
+      ? `\n${c.dim}   enforcement strict: the unexamined-validator rule needs the full validator set and is not evaluated under --changed-only${c.reset}` : '';
+    const note = `${c.cyan}⚡ docguard guard --changed-only${c.reset} ${c.dim}(${label})${c.reset}${escalatedNote}${strictNote}\n`;
     if (['json', 'sarif', 'junit'].includes(flags.format)) process.stderr.write(`${note}\n`);
     else console.log(note);
   }
@@ -900,7 +980,7 @@ export function runGuard(projectDir, config, flags) {
   const requiredUndecided = d => d.requiredChecks?.undecided || [];
   const exitFor = d => (d.effectiveErrors > 0
     ? (uninitialised ? 3 : 1)
-    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 ? 4
+    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 || strictBlocks(d) ? 4
     : d.effectiveWarnings > 0 ? 2 : 0);
 
   // ── SARIF output (2.1.0) ──
@@ -944,6 +1024,9 @@ export function runGuard(projectDir, config, flags) {
   // ── Text output ──
   console.log(`${c.bold}🛡️  DocGuard Guard — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  if (data.staleInstructions?.length) {
+    console.log(`  ${c.yellow}⚠ Agents are being served stale instructions: ${data.staleInstructions.map(s => `${s.doc} (${s.codes.join(', ')})`).join('; ')}${c.reset}\n`);
+  }
 
   for (const v of data.validators) {
     if (v.status === 'skipped') {
@@ -956,7 +1039,9 @@ export function runGuard(projectDir, config, flags) {
     // Not applicable — nothing to validate. Render neutrally (NOT a green pass)
     // so the reader can tell "checked and clean" apart from "nothing checked".
     if (v.status === 'na') {
-      const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status);
+      const showReason = flags.verbose || v.verdict === 'inconclusive' || ['unsupported', 'partial', 'missing-prerequisite', 'error'].includes(v.applicability.status)
+        || (data.enforcement?.mode === 'strict' && v.applies?.applies === false) // FR-006: say what was looked for
+        || (data.strict?.unexamined || []).some(u => u.validator === v.key && u.blocking);
       const reason = showReason ? ` ${c.dim}(${v.applicability.reason})${c.reset}` : '';
       console.log(`  ${c.dim}➖ ${v.name}${c.reset} ${c.dim}[${v.applicability.status}]${c.reset}${reason}`);
       continue;
@@ -996,7 +1081,17 @@ export function runGuard(projectDir, config, flags) {
     // v0.27: render from structured findings when the validator emits them
     // (each issue carries a code, confidence, and a `→ suggestion`); otherwise
     // fall back to the legacy error/warning strings. Identical gating.
-    for (const item of renderableItems(v)) {
+    // T028b: identical repository-wide FRS002 lines train a reader to skip them. Text shows the
+    // FRS002_SHOWN most stale and one line for the rest; --verbose and JSON keep every one, so the exit
+    // code, the totals and the baseline do not move.
+    let items = renderableItems(v);
+    let hiddenFrs002 = 0;
+    if (v.key === 'freshness' && !flags.verbose) {
+      const frs002 = rankFrs002(items.filter(i => i.code === 'FRS002'));
+      hiddenFrs002 = Math.max(0, frs002.length - FRS002_SHOWN);
+      items = [...items.filter(i => i.code !== 'FRS002'), ...frs002.slice(0, FRS002_SHOWN)];
+    }
+    for (const item of items) {
       if (item.severity === 'error' && !showErr) continue;
       if (item.severity === 'warn' && !showWarn) continue;
       const effective = item.effectiveSeverity || item.severity;
@@ -1020,6 +1115,9 @@ export function runGuard(projectDir, config, flags) {
         }
       }
     }
+    if (hiddenFrs002 > 0 && showWarn) {
+      console.log(`     ${c.yellow}⚠${c.reset} ${c.dim}[FRS002] and ${hiddenFrs002} more document(s) due for review by the repository-wide count — \`docguard guard --verbose\` lists them all${c.reset}`);
+    }
     // If a validator reports passed < total but has no errors/warnings, surface
     // the gap honestly so users aren't left wondering where the deficit went.
     if (v.status === 'pass' && v.total > v.passed && v.errors.length === 0 && v.warnings.length === 0) {
@@ -1030,6 +1128,12 @@ export function runGuard(projectDir, config, flags) {
 
   // Summary
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
+  // specs/097 FR-016: the first line of the summary states the mode and where it came from.
+  if (data.enforcement) {
+    console.log(`  ${c.dim}${uninitialised
+      ? 'Enforcement: standard — this project has no .docguard.json; run `docguard init` to adopt DocGuard (strict applies once it is initialized)'
+      : modeLine(data.enforcement)}${c.reset}`);
+  }
   if (data.verdicts) {
     const n = data.verdicts.counts;
     console.log(`  ${c.dim}Verdicts: ${n.pass} pass · ${n.fail} fail · ${n.empty} empty · ${n.inconclusive} inconclusive · ${n.blocked} blocked · ${n.skipped} skipped${c.reset}`);
@@ -1045,6 +1149,7 @@ export function runGuard(projectDir, config, flags) {
       }
     }
   }
+  for (const line of data.strict ? strictSummaryLines(data.strict) : []) console.log(`  ${c.dim}${line}${c.reset}`);
 
   if (data.status === 'PASS') {
     // PASS can still carry raw warnings if a validator was demoted to
@@ -1064,6 +1169,25 @@ export function runGuard(projectDir, config, flags) {
     // note below spells out any escalation/demotion.
     const warnSuffix = data.effectiveWarnings > 0 ? `, ${data.effectiveWarnings} warning(s)` : '';
     console.log(`  ${c.red}${c.bold}❌ FAIL${c.reset} ${c.red}— ${data.passed}/${data.total} passed, ${data.effectiveErrors} blocking issue(s)${warnSuffix}${c.reset}`);
+  }
+
+  // specs/097 FR-014: under strict, a run that exits 1 or 4 says what to do next,
+  // as one block: the fix per unexamined validator, the command that records the
+  // existing findings, the waiver form, and the key that selects the lower mode.
+  // It is printed with --quiet too: that flag removes banners, not instructions.
+  if (data.strict && [1, 4].includes(exitFor(data))) {
+    console.log('');
+    for (const line of adoptLines(data.strict)) console.log(`  ${line.startsWith('Adopt') ? c.bold + line : c.dim + line}${c.reset}`);
+    console.log('');
+  }
+
+  // specs/097 FR-007: what DocGuard could not read does not change the exit code; it is said after the
+  // Adopt block, on every strict run that has something to say, so a limit of the tool is never mistaken
+  // for a gap in the project.
+  const unread = data.strict ? couldNotReadLines(data.strict) : [];
+  if (unread.length > 0) {
+    for (const line of unread) console.log(`  ${line.startsWith('DocGuard') ? c.bold + line : c.dim + line}${c.reset}`);
+    console.log('');
   }
 
   // Baseline suppression is always visible — a gate that hides findings
@@ -1093,6 +1217,9 @@ export function runGuard(projectDir, config, flags) {
       const action = data.baselineStale > 0 && !staleUncertain ? ' Re-freeze to drop them: --update-baseline' : '';
       console.log(`  ${c.dim}   ${parts.join('; ')}.${action}${c.reset}`);
     }
+  } else if (data.strict) {
+    // specs/097 FR-011: under strict every run says how many findings the baseline holds, zero included.
+    console.log(`  ${c.dim}📋 0 findings baselined (${BASELINE_FILE}; \`docguard guard --update-baseline\` records the existing ones)${c.reset}`);
   }
 
   // Act vs escalate, immediately under the verdict: the verdict says whether

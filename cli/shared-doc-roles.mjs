@@ -17,6 +17,25 @@ export function docRolePath(config = {}, role) {
   return path.startsWith('./') ? path.slice(2) : path;
 }
 /**
+ * The fix text for a document role whose file does not exist, in the order a
+ * project can act on it: the mapping first (spec 093, `docs.roles`), creating a
+ * file last. A project that keeps the document somewhere else is told where to
+ * say so; one that already mapped it is told which file the mapping expects.
+ *
+ * @param {object} config
+ * @param {string} role   a key of DOC_ROLES
+ * @param {string} label  what the document is called in prose ("the API reference")
+ * @param {string} content what to put in it, as a clause that completes "Create <path> ..."
+ */
+export function roleMappingFix(config, role, label, content) {
+  const path = docRolePath(config, role);
+  if (config?.docs?.roles?.[role] !== undefined) {
+    return `docs.roles.${role} in .docguard.json maps ${label} to ${path}, and that file does not exist: point docs.roles.${role} at the Markdown file that holds it, or create ${path} ${content}.`;
+  }
+  return `If the project already keeps ${label} in another Markdown file, set docs.roles.${role} in .docguard.json to that file: "docs": { "roles": { "${role}": "<path to that file>" } }. Otherwise create ${path} ${content}.`;
+}
+
+/**
  * The path a document role reads. An explicit `docs.roles` mapping wins; else
  * the default path; else, when the default is missing, the one canonical
  * document with the default's file name (`docs-canonical/03-architecture/

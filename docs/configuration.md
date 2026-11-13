@@ -84,6 +84,82 @@ disabling a required validator in config is reported as REQ001, and an
 unknown key as REQ002. `docguard policy` shows which advisory codes this
 project's CI history shows are ready to promote with `findingSeverity`.
 
+### Enforcement mode
+
+`enforcement` selects how strictly guard judges the project (spec 097,
+`docguard.strict-by-default`). It is a string or an object, and it is separate
+from `profile`, which only says what kind of project this is:
+
+```json
+{ "enforcement": "strict" }
+{ "enforcement": { "mode": "strict", "asOf": "0.47" } }
+```
+
+- **`strict`**: every validator that applies to the project must examine
+  something. One that applies, performed no check, and whose cause is
+  `needs-declaration` or `needs-content` (a declaration or a document the
+  project can write) makes `guard` exit 4 and `ci` block
+  (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. So does one that
+  could not observe at all (`blocked`, or `inconclusive` with zero checks). A
+  validator that does not apply is `skipped`, with what it looked for as the
+  reason.
+  A validator that performed at least one check and could not read the rest
+  (some routes unreadable, an optional parser absent) is `inconclusive`, and one
+  whose cause is `layout-not-recognized` is a limit of DocGuard. Neither changes
+  the exit code: both are listed after the Adopt block under "DocGuard could not
+  read", with what was missed and, for a layout, the layouts the validator does
+  read. `--fail-on-inconclusive` still makes a project that asks for it exit 4.
+  When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
+  unexamined validator, `docguard guard --update-baseline`, the waiver form
+  with `owner:` and `expires:`, and the key that selects the lower mode.
+- **`standard`**: the behavior before the default changed. No exit code changes.
+- **Absent**: `strict`. A project that has not chosen a mode is checked in full,
+  and `profile` never selects the mode: the stored value `profile: "standard"`
+  is a project shape, not a choice of strictness. Every run states the mode and
+  where it came from on the first line of its summary, and `--format json`
+  carries `enforcement: { mode, asOf, source }` (`source` is `default` or
+  `config`). If your build turned red after upgrading, see
+  [Upgrading to Strict](upgrading-to-strict.md).
+
+Under `strict`, `--format json` also carries
+`strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], ignoredDisabled[], baselined }`. `ignoredDisabled` lists the `validators.<key>: false` entries strict did not honor (keys only in the compact form).
+Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking, documents? }`.
+Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts?, documents?, howToConfigure? }`: `reason` is what the validator
+could not read, and `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
+`documents` lists the agent-instruction files Freshness did not examine while it examined others (the validator's own
+`unexaminedDocuments`): in `unexamined` when the review no longer covers the file or a root instruction file has no review
+record, which blocks; in `couldNotRead` for any other file with no recorded review (a last-reviewed marker alone may be its vendor's), which does not block. The compact form gives
+`documents` as a count.
+`cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`
+or `nothing-of-this-kind`, or `null` when the validator could not observe its
+input (it is `inconclusive`, and `reason` is the gap). Only the first two,
+and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset
+of the validators, so it does not evaluate the rule and says so.
+
+`asOf` (`"<major>.<minor>"`) holds a project at the strict set of that release (every validator is listed under `0.48`, so `"0.47"` keeps today's exit codes and prints the strict report beside them). A validator or gating code the release table lists under a later version is
+reported as pending and does not change the exit code. Without `asOf` every item
+applies, and one added in the running release or the one before it is labeled
+"new in vX.Y" when it fails.
+
+Under `strict` every registered validator runs, whatever the profile's
+`validators` block or your own file says. A `"validators": { "<key>": false }`
+entry does not switch a validator off under `strict`: nearly every such entry
+was written by `docguard init` from a profile, not chosen by a person, and
+honoring it would exempt existing projects from the checks the default is meant
+to give them. Guard says in one line, on every run, which entries it did not
+honor. To switch a validator off on purpose, use a reasoned waiver
+(`<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`)
+or `"enforcement": "standard"`, under which the `validators` block works as it
+always has.
+
+`docguard init` writes no `enforcement` key by default; `docguard init
+--enforcement strict|standard` writes it, and the interactive setup asks once
+and writes the key only for the non-default answer. `docguard upgrade` reports,
+read-only and without writing, what the default changes for the project: the
+validators that now fail with cause and fix, the items only reported, and the
+three ways forward (fix or declare, waive with reason, owner and expiry, or set
+`"enforcement": "standard"`).
+
 `requiredSections` adds sections a document must carry beyond the canonical
 ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the
 canonical document:

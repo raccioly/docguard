@@ -27,6 +27,7 @@ import { resolveDocDirs } from '../shared.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
@@ -78,6 +79,27 @@ function isGeneratedArtifact(name) {
  * @param {object} config - DocGuard config
  * @returns {{ errors: string[], warnings: string[], passed: number, total: number }}
  */
+/**
+ * Whether Docs-Coverage's kind of check belongs to the project. It always does:
+ * every project has configuration, entry points and source directories that its
+ * Markdown should mention, and a project with no documentation yet is told to
+ * write some, not excused.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies() {
+  return { applies: true, evidence: 'every project has configuration files, entry points and source directories that its documentation should mention' };
+}
+
+function coverageContract(projectDir, config, performed, found, documented) {
+  return contractFields({
+    performed, found, ran: `checked ${performed} configuration file(s), entry point(s), source directorie(s) and README section(s) against the documentation`,
+    decide: applies,
+    empty: () => documented
+      ? { emptyCause: 'needs-content', note: 'Docs-Coverage read the project\'s Markdown but found no README.md, no configuration file, no bin entry and no source directory to look for in it.', howToConfigure: 'Write README.md with "## Installation", "## Usage" and "## License" sections; Docs-Coverage checks each of them and every configuration file, bin entry and source directory the project has against the documentation.' }
+      : { emptyCause: 'needs-declaration', note: 'Docs-Coverage found no Markdown documentation (README.md, AGENTS.md, CLAUDE.md, CONTRIBUTING.md, STANDARD.md, docs-canonical/), so it checked nothing against it.', howToConfigure: 'Write README.md with "## Installation", "## Usage" and "## License" sections (`docguard init` creates a documentation set); Docs-Coverage then checks the project\'s configuration files, bin entries and source directories against it.' },
+  });
+}
+
 export function validateDocsCoverage(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -87,7 +109,7 @@ export function validateDocsCoverage(projectDir, config) {
   const allDocContent = collectDocContent(projectDir, config);
   if (!allDocContent) {
     // Literal legacy shape (no findings key) — tests deepEqual this exact object.
-    return { errors: [], warnings: [], passed: 0, total: 0 };
+    return { errors: [], warnings: [], passed: 0, total: 0, ...coverageContract(projectDir, config, 0, false, false) };
   }
 
   // IaC detection runs once and informs both Check 3 (suppression) and
@@ -130,7 +152,7 @@ export function validateDocsCoverage(projectDir, config) {
   passed += iacChecks.passed;
   findings.push(...iacChecks.findings);
 
-  return resultFromFindings(findings, { passed, total });
+  return { ...resultFromFindings(findings, { passed, total }), ...coverageContract(projectDir, config, total, findings.length > 0, true) };
 }
 
 // ── Check Functions ─────────────────────────────────────────────────────────

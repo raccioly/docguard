@@ -4,13 +4,14 @@ import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { validateMetadataSync } from '../cli/validators/metadata-sync.mjs';
+import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('Metadata Sync Validator', () => {
   it('returns empty results if package.json is missing', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -21,7 +22,7 @@ describe('Metadata Sync Validator', () => {
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{ malformed json');
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -32,7 +33,7 @@ describe('Metadata Sync Validator', () => {
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "test" }));
       const result = validateMetadataSync(tmpDir, {});
-      assert.deepEqual(result, { errors: [], warnings: [], passed: 0, total: 0 });
+      assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -75,11 +76,11 @@ describe('Metadata Sync Validator', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
-      writeFileSync(join(tmpDir, 'README.md'), 'Download /download/v1.0.0/');
+      writeFileSync(join(tmpDir, 'README.md'), 'Download https://example.com/myapp/download/v1.0.0/');
       // Package-qualified install command (the realistic form). The bare
       // `@1.0.0` the old fixture used is now intentionally NOT matched.
       writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install myapp@1.0.0');
-      writeFileSync(join(tmpDir, 'extension.md'), 'version: "1.0.0"');
+      writeFileSync(join(tmpDir, 'extension.md'), '# myapp\n\nversion: "1.0.0"');
 
       const result = validateMetadataSync(tmpDir, { ignore: [] });
       assert.equal(result.total, 3);
@@ -94,12 +95,25 @@ describe('Metadata Sync Validator', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
-      writeFileSync(join(tmpDir, 'README.md'), 'Download /download/v1.1.0/');
+      writeFileSync(join(tmpDir, 'README.md'), 'Download https://example.com/myapp/download/v1.1.0/');
       writeFileSync(join(tmpDir, 'INSTALL.md'), 'npm install myapp@1.1.0');
 
       const result = validateMetadataSync(tmpDir, { ignore: [] });
       assert.equal(result.total, 2);
       assert.equal(result.passed, 2);
+      assert.equal(result.warnings.length, 0);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does NOT read a version stated for another tool (a URL for another project, a key that merely ends in version:)', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    try {
+      writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
+      writeFileSync(join(tmpDir, 'README.md'), 'myapp hooks\n\nminimum_pre_commit_version: 1.0.0\nSee https://example.com/other-tool/releases/download/v1.0.0/ too.\n');
+      const result = validateMetadataSync(tmpDir, { ignore: [] });
+      assert.equal(result.total, 0);
       assert.equal(result.warnings.length, 0);
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });

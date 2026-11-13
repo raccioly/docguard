@@ -38,6 +38,8 @@ import { resolve, dirname, basename, relative } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { walkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
+import { explainPaddedEmpty, sample } from '../shared-project-evidence.mjs';
 
 // Heading slugs and extraction are shared with the MCP doc tools
 // (docguard.mcp-doc-tools#FR-004), so they live in a shared module; the
@@ -292,6 +294,67 @@ function collectCanonicalDocs(projectDir) {
 }
 
 /**
+ * Markdown documents in the project's documentation homes (docs/ and the other
+ * homes `docs.dirs` names) that Cross-Reference does not read, and that link to
+ * another document: the layout it does not recognize.
+ */
+function unreadDocsWithLinks(projectDir, config, read) {
+  const readSet = new Set(read);
+  const out = [];
+  for (const dir of resolveDocDirs(projectDir, config)) {
+    const abs = resolve(projectDir, dir);
+    if (!existsSync(abs)) continue;
+    walkFiles(abs, (full) => {
+      if (!full.toLowerCase().endsWith('.md') || readSet.has(full)) return;
+      let content;
+      try { content = readFileSync(full, 'utf-8'); } catch { return; }
+      if (extractRefs(content, full).some(r => !r.wiki && (!r.file || r.file.toLowerCase().endsWith('.md')))) out.push(relative(projectDir, full).replace(/\\/g, '/'));
+    });
+  }
+  return out.sort();
+}
+
+/**
+ * Does this kind of check belong to the project? It does when the documents it
+ * reads state a link to another markdown document or an anchor, or when
+ * documents it does not read do (a layout it does not recognize). A project
+ * whose documents link to nothing has nothing of this kind.
+ *
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}) {
+  const docs = collectCanonicalDocs(projectDir);
+  let links = 0;
+  let wiki = 0;
+  for (const doc of docs) {
+    let content;
+    try { content = readFileSync(doc, 'utf-8'); } catch { continue; }
+    for (const ref of extractRefs(content, doc)) {
+      if (ref.wiki) wiki++;
+      else if (!ref.file || ref.file.toLowerCase().endsWith('.md')) links++;
+    }
+  }
+  if (links > 0) return { applies: true, kind: 'recognized', evidence: `${links} markdown link(s) or anchor(s) between the ${docs.length} document(s) it reads` };
+  const elsewhere = unreadDocsWithLinks(projectDir, config, docs);
+  if (elsewhere.length > 0) return { applies: true, kind: 'unrecognized-layout', files: elsewhere, evidence: `${elsewhere.length} document(s) outside docs-canonical/ link to other documents (${sample(elsewhere)}), a layout Cross-Reference does not read` };
+  if (wiki > 0) return { applies: true, kind: 'wikilinks', evidence: `${wiki} wikilink(s) in the documents it reads, none of which resolves to a file` };
+  return { applies: false, kind: 'none', evidence: docs.length === 0
+    ? 'no document in docs-canonical/ and none of README.md, AGENTS.md, CHANGELOG.md, CONTRIBUTING.md and the other root documents it reads'
+    : `${docs.length} document(s) read, none with a link to another markdown document or an anchor` };
+}
+
+const READS = 'docs-canonical/**/*.md, the documents a docs.roles mapping names, and the root README.md, AGENTS.md, CHANGELOG.md, DRIFT-LOG.md, ROADMAP.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, PHILOSOPHY.md, STANDARD.md and COMPARISONS.md';
+function emptyFor(d) {
+  if (d.kind === 'unrecognized-layout') {
+    return { emptyCause: 'layout-not-recognized', note: `Cross-Reference read no link where it looks: ${d.evidence}.`, howToConfigure: `Cross-Reference reads ${READS}. Found links in: ${sample(d.files, 5)}, which it does not read. Your documents stay where they are, so their relative links keep resolving. If one of them is a role document (architecture, dataModel, security, testSpec, environment, apiReference or requirements), map it in .docguard.json, for example "docs": { "roles": { "architecture": "docs/ARCHITECTURE.md" } }, and Cross-Reference reads it there. Documents that are not a role are not read for links yet: that is a limit of DocGuard, and \`docguard feedback\` reports the layout.` };
+  }
+  if (d.kind === 'wikilinks') {
+    return { emptyCause: 'layout-not-recognized', note: `Cross-Reference skipped the wikilinks it found: ${d.evidence}.`, howToConfigure: 'Cross-Reference validates [[wikilinks]] only when the repository shows they are file links: a `.obsidian/` directory exists, or at least one [[name]] resolves to a document. Add the `.obsidian/` directory if this is an Obsidian vault, or link documents with markdown links ([text](./OTHER.md)).' };
+  }
+  return { emptyCause: 'nothing-of-this-kind', note: `Cross-Reference found no document link to check: ${d.evidence}.`, howToConfigure: `Nothing to configure unless the documents link to each other: Cross-Reference checks markdown links, anchors and wikilinks in ${READS}.` };
+}
+
+/**
  * Validator entrypoint — matches the standard signature returning
  * { errors, warnings, passed, total }.
  *
@@ -309,8 +372,10 @@ export function validateCrossReferences(projectDir, config = {}) {
 
   const docs = collectCanonicalDocs(projectDir);
   if (docs.length === 0) {
-    return resultFromFindings([], { passed, total, applicable: false });
+    return { ...resultFromFindings([], { passed, total, applicable: false }), ...contractFields({ performed: 0, decide: () => applies(projectDir, config), empty: emptyFor }) };
   }
+  // A link to a file that is not a document passes without being looked at: not a check.
+  let skippedNonDocLinks = 0;
 
   // Build a map of doc path → anchor set for fast lookups during ref resolution.
   const anchorIndex = new Map();
@@ -345,6 +410,7 @@ export function validateCrossReferences(projectDir, config = {}) {
         // links to images / code / config files. Those have their own truth.
         if (!ref.file.toLowerCase().endsWith('.md')) {
           passed++;
+          skippedNonDocLinks++;
           continue;
         }
         targetPath = resolveTarget(docPath, ref.file, projectDir);
@@ -473,7 +539,17 @@ export function validateCrossReferences(projectDir, config = {}) {
     }
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), fixes };
+  const performed = total - skippedNonDocLinks;
+  return {
+    ...resultFromFindings(findings, { passed, total }), fixes,
+    ...explainPaddedEmpty(contractFields({
+      performed,
+      found: findings.length > 0,
+      ran: `${performed} document link(s) and anchor(s) resolved`,
+      decide: () => applies(projectDir, config),
+      empty: emptyFor,
+    })),
+  };
 }
 
 /**

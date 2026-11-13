@@ -17,10 +17,11 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename } from 'node:path';
-import { resolveSourceRoots, summarizeTiers } from '../shared-source.mjs';
+import { collectPackageJsons, resolveSourceRoots, summarizeTiers } from '../shared-source.mjs';
 import { scanPythonModels } from '../scanners/python-models.mjs';
-import { DEFAULT_IGNORE_DIRS, relPosix, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, isNonProductPath, relPosix, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { contractFields } from '../shared-result-contract.mjs';
 import { scanOrmEntities } from '../scanners/schemas.mjs';
 
 const IGNORE_DIRS = new Set([
@@ -54,6 +55,66 @@ const SCHEMA_DETECTORS = [
   },
 ];
 
+// Database libraries Schema-Sync does not read models of: a project that depends on one has a data model
+// that this validator cannot see.
+const UNREAD_DATABASE_DEPENDENCIES = [
+  'pg', 'postgres', 'mysql', 'mysql2', 'sqlite3', 'better-sqlite3', 'mongodb', 'kysely', 'objection', 'bookshelf',
+  '@mikro-orm/core', '@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb', 'dynamoose', 'slonik', '@libsql/client',
+];
+
+// What the project's data layer is called in the fix text, by the dependency that shows it.
+const UNREAD_DATABASE_LABELS = {
+  '@aws-sdk/client-dynamodb': 'DynamoDB', '@aws-sdk/lib-dynamodb': 'DynamoDB', dynamoose: 'DynamoDB',
+  pg: 'PostgreSQL', postgres: 'PostgreSQL', slonik: 'PostgreSQL', mysql: 'MySQL', mysql2: 'MySQL',
+  sqlite3: 'SQLite', 'better-sqlite3': 'SQLite', '@libsql/client': 'SQLite', mongodb: 'MongoDB without Mongoose',
+  kysely: 'a Kysely schema', objection: 'Objection models', bookshelf: 'Bookshelf models', '@mikro-orm/core': 'MikroORM entities',
+};
+
+/** Evidence of a database whose schema lives where Schema-Sync does not read: a SQL file or a database dependency. */
+function unreadSchemaEvidence(projectDir, config) {
+  let sql = null;
+  sharedWalkFiles(projectDir, (full) => {
+    if (sql || !full.toLowerCase().endsWith('.sql')) return;
+    const rel = relPosix(projectDir, full);
+    if (shouldIgnore(rel, config) || isNonProductPath(rel, config)) return;
+    try { if (/create\s+table/i.test(readFileSync(full, 'utf-8').slice(0, 200_000))) sql = rel; } catch { /* unreadable */ }
+  }, { ignoreDirs: IGNORE_DIRS });
+  if (sql) return `${sql} defines tables in SQL`;
+  for (const { pkg } of collectPackageJsons(projectDir, config)) {
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    const lib = UNREAD_DATABASE_DEPENDENCIES.find(name => deps[name]);
+    if (lib) return `package.json depends on the database library ${lib} (${UNREAD_DATABASE_LABELS[lib] || 'a database'})`;
+  }
+  return null;
+}
+
+/**
+ * Whether Schema-Sync's kind of check belongs to the project: it applies when
+ * the project defines database models it reads (Prisma, Drizzle, Mongoose,
+ * TypeORM, Sequelize, Python models, Knex and Rails migrations), and when it
+ * shows a database whose schema it does not read (SQL files that create tables,
+ * a database library dependency). A project with neither has no data model; a
+ * missing DATA-MODEL.md is not the reason.
+ * @implements docguard.strict-by-default#FR-006
+ */
+export function applies(projectDir, config = {}, models = detectAllModels(projectDir, config)) {
+  if (models.length > 0) return { applies: true, evidence: `${models.length} database model(s) detected (${[...new Set(models.map(m => m.framework))].join(', ')})` };
+  const unread = unreadSchemaEvidence(projectDir, config);
+  if (unread) return { applies: true, evidence: unread, unread: true };
+  return { applies: false, evidence: 'no model of Prisma, Drizzle, Mongoose, TypeORM, Sequelize, Knex, Rails or Python ORMs, no SQL file that creates tables and no database library dependency' };
+}
+
+function schemaContract(projectDir, config, performed, found, models) {
+  const doc = docRolePath(config, 'dataModel');
+  return contractFields({
+    performed, found, ran: `compared ${performed} database model(s) with ${doc}`,
+    decide: () => applies(projectDir, config, models),
+    empty: (decision) => decision.applies
+      ? { emptyCause: 'layout-not-recognized', note: `Schema-Sync found ${decision.evidence}, but no model in a form it reads, so it compared no table with ${doc}.`, howToConfigure: `Schema-Sync reads Prisma, Drizzle, Mongoose, TypeORM and Sequelize models, Python (Django, SQLAlchemy, SQLModel) models, Knex migrations under migrations/ or db/migrations/ and Rails migrations under db/migrate/. This project's data layer (${decision.evidence}) is not one of them: that is a limit of DocGuard, not a gap in the project, and the project is not asked to write a model file it does not use. Describe the tables in ${doc} for readers; to have Schema-Sync compare them, ask for this data layer to be supported by opening an issue on the DocGuard repository.` }
+      : { note: 'Schema-Sync found no database model, no SQL file that creates tables and no database library dependency, so there is no data model to document.', howToConfigure: `Nothing to configure unless the project stores data: then define the models in a form Schema-Sync reads and describe them in ${doc}.` },
+  });
+}
+
 /**
  * Main validator entry point.
  *
@@ -85,7 +146,7 @@ export function validateSchemaSync(projectDir, config) {
         suggestion: { kind: 'fix', text: 'Create DATA-MODEL.md, then document the detected models in it', command: 'docguard init' },
       }));
     }
-    return resultFromFindings(findings, { passed, total });
+    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0, detectedModels) };
   }
 
   const dataModelContent = readFileSync(dataModelPath, 'utf-8').toLowerCase();
@@ -94,8 +155,8 @@ export function validateSchemaSync(projectDir, config) {
   const detectedModels = detectAllModels(projectDir, config);
 
   if (detectedModels.length === 0) {
-    // No schema files found — silently pass
-    return resultFromFindings(findings, { passed, total });
+    // No schema files found: nothing was compared, which the contract reports as empty, not as a pass.
+    return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, false, detectedModels) };
   }
 
   // Check each model appears in DATA-MODEL.md
@@ -127,7 +188,7 @@ export function validateSchemaSync(projectDir, config) {
     }
   }
 
-  return resultFromFindings(findings, { passed, total });
+  return { ...resultFromFindings(findings, { passed, total }), ...schemaContract(projectDir, config, total, findings.length > 0, detectedModels) };
 }
 
 // ──── Model Detection ──────────────────────────────────────────────────────

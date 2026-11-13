@@ -55,7 +55,7 @@ function fixture(t, { mapped = true, missingRole, missingEnv = false, missingApi
   const dir = temp(t);
   const paths = mapped ? roles : DOC_ROLES;
   const raw = {
-    projectName: 'role-fixture', projectType: 'api', diskCache: false,
+    projectName: 'role-fixture', projectType: 'api', diskCache: false, enforcement: 'standard',
     sourceRoot: 'src', projectTypeConfig: { needsEnvVars: true, needsEnvExample: false, needsDatabase: true },
     requiredFiles: { canonical: Object.values(DOC_ROLES), agentFile: ['AGENTS.md'], changelog: 'CHANGELOG.md', driftLog: 'DRIFT-LOG.md' },
     documentTypes: Object.fromEntries(Object.values(DOC_ROLES).map(path => [path, { required: true, category: 'canonical' }])),

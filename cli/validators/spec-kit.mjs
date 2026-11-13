@@ -14,4 +14,4 @@
  * migration lives in `scanners/speckit.mjs` alongside the validation logic.
  */
 
-export { validateSpecKitIntegration } from '../scanners/speckit.mjs';
+export { validateSpecKitIntegration, specKitApplies as applies } from '../scanners/speckit.mjs';
