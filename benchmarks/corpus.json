@@ -645,6 +645,54 @@
       "oppositeControl": "dev-instruction-copy-control"
     },
     {
+      "id": "dev-instruction-budget-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-budget",
+      "causalFamily": "instruction-chain-budget",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-budget-control" },
+      "scope": { "validatorKey": "structure", "codes": ["STR004"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "agentInstructions": { "maxBytes": 200 },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "STR004@templates/app/files/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-budget-defect"
+    },
+    {
+      "id": "dev-instruction-budget-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-budget",
+      "causalFamily": "instruction-chain-budget",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-budget-defect" },
+      "scope": { "validatorKey": "structure", "codes": ["STR004"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "agentInstructions": { "maxBytes": 200 },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [
+        "STR004@packages/api/AGENTS.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "dev-instruction-budget-control"
+    },
+    {
       "id": "eval-vendored-instruction-control",
       "split": "evaluation",
       "repositoryGroup": "synthetic-agent-instructions-heldout",

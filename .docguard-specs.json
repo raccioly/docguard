@@ -6823,6 +6823,11 @@
             "line": 895
           },
           {
+            "requirementId": "FR-006",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 89
+          },
+          {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
             "line": 18
@@ -7140,6 +7145,31 @@
         },
         "implementationEvidence": [
           {
+            "requirementId": "FR-001",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared-file-kind.mjs",
+            "line": 29
+          },
+          {
             "requirementId": "FR-009",
             "file": "cli/scanners/agent-instructions.mjs",
             "line": 13
@@ -7151,6 +7181,36 @@
           }
         ],
         "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/file-kinds.test.mjs",
+            "line": 11
+          },
           {
             "requirementId": "FR-007",
             "file": "tests/instruction-copies.test.mjs",
@@ -7170,6 +7230,11 @@
             "requirementId": "FR-010",
             "file": "tests/instruction-copies.test.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/file-kinds-registry.test.mjs",
+            "line": 13
           },
           {
             "requirementId": "SC-001",

@@ -62,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scaffolder's template could push a real chain over 32 KiB. A governing nested
   file, including `templates/AGENTS.md` and `tests/AGENTS.md`, is still
   counted; `fileKinds.own` puts a copy back. Findings are REMOVED where a copy
-  caused them and none are added.
+  caused them and none are added. The benchmark corpus gains an STR004 defect
+  and a clean control, so STR004 now carries measured evidence.
 - **`Examples/`, `Fixtures/`, `Corpus/` and every other directory name now match
   without regard to case** (spec 100 D5), and `corpus`, `golden` join the
   directories the detection scanners treat as non-product (routes, schemas,
