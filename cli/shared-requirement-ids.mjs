@@ -14,8 +14,9 @@
  *   - task IDs (T), design elements (ARCH, MOD, SYS), and story, use-case and
  *     acceptance IDs (US, STORY, UC, AC), which describe or test a requirement
  *     rather than state one;
- *   - a template row: text that is a placeholder (`[capability]`, `<capability>`,
- *     `{{behaviour}}`, `TBD`, or nothing at all).
+ *   - a template row: a requirement whose only content is a slot (`System MUST [capability]`,
+ *     `<capability>`, `{{behaviour}}`), `TBD`, or nothing at all. A real sentence that mentions a
+ *     variable (`write {file} to the output directory`) is a requirement.
  * A project that configures `traceability.requirementPattern` has defined a
  * requirement itself: that pattern is the definition, and only placeholder rows
  * are still ignored.
@@ -41,9 +42,7 @@ const TEMPLATE_DOC = /(?:^|\/)templates?\/|(?:^|\/)[^/]*templates?[^/]*\.md$|(?:
 
 // Placeholder text: a bracket, angle or curly slot holding a word, TBD/TODO, an ellipsis, or nothing.
 // A link `[text](url)` and a task checkbox `[ ]` are not placeholders; an HTML tag is not an angle slot.
-const BRACKET_SLOT = /\[[^\]\n]*[A-Za-z][^\]\n]*\](?!\()/;
 const ANGLE_SLOT = /<(?!\/?(?:a|b|i|u|p|br|hr|em|kbd|sub|sup|code|pre|img|span|div|strong|details|summary)\b)[A-Za-z][^<>\n]*>/i;
-const CURLY_SLOT = /\{\{?[^{}\n]*[A-Za-z][^{}\n]*\}?\}/;
 const EMPTY_TEXT = /^(?:tbd|todo|tba|n\/a|\.{2,}|…)?[\s.:;,-]*$/i;
 
 /** The text of a requirement line after its ID and markup. */
@@ -51,19 +50,73 @@ function bodyText(def) {
   return String(def.text || '').replace(def.id, '').replace(/[*_`|]/g, ' ').replace(/^[\s\-+>#.:)\d]*/, '').trim();
 }
 
-/** Does the declaration's text hold a template slot (`[capability]`, `<capability>`, `{{behaviour}}`)? */
+const MODAL = /\b(?:must|shall|should|may|will|can)\b/i;
+// What may remain of a requirement sentence once its slots are removed for it to be a bare scaffold: an optional
+// article, up to two more subject words, a modal verb, and at most three filler words ("System MUST", "Users MUST be
+// able to", "The system SHOULD support").
+const SCAFFOLD = /^(?:(?:the|a|an|each|every|all)\s+)?(?:[a-z][\w-]*\s+){0,2}(?:must|shall|should|may|will|can)(?:\s+not)?(?:\s+(?:be|able|to|support|provide|allow|enable|have|include|implement)){0,3}$/i;
+
+/** Remove every slot token (balanced square and curly slots, angle slots) from `text`; returns the rest and the count removed. */
+function removeSlots(text) {
+  let out = '';
+  let removed = 0;
+  for (let i = 0; i < text.length;) {
+    const ch = text[i];
+    if (ch === '[' || ch === '{') {
+      const close = ch === '[' ? ']' : '}';
+      let depth = 0;
+      let j = i;
+      for (; j < text.length && text[j] !== '\n'; j++) {
+        if (text[j] === ch) depth++;
+        else if (text[j] === close && --depth === 0) break;
+      }
+      const inner = depth === 0 && text[j] === close ? text.slice(i + 1, j) : null;
+      const isLink = ch === '[' && text[j + 1] === '(';
+      if (inner !== null && /[A-Za-z]/.test(inner) && !isLink) { out += ' '; removed++; i = j + 1; continue; }
+    }
+    if (ch === '<') {
+      const m = ANGLE_SLOT.exec(text.slice(i));
+      if (m && m.index === 0) { out += ' '; removed++; i += m[0].length; continue; }
+    }
+    out += ch;
+    i++;
+  }
+  return { rest: out, removed };
+}
+
+/** The cell that carries the requirement: the text after the ID, or in a table row the first cell with a modal verb, else the longest. */
+function requirementCell(raw) {
+  if ((raw.match(/\|/g) || []).length < 2) return raw;
+  const cells = raw.split('|').map(c => c.trim()).filter(Boolean);
+  return cells.find(c => MODAL.test(c)) || cells.sort((x, y) => y.length - x.length)[0] || '';
+}
+
+/**
+ * Is this declaration a template row: a slot (`[capability]`, `<capability>`, `{{behaviour}}`) that carries the
+ * requirement? The rule: remove every slot token from the requirement text; the row is a template row only when what
+ * is left is the bare scaffold of a requirement sentence ("System MUST", "Users MUST be able to") or nothing. A sentence
+ * that still states something without its slots ("The exporter MUST write {file} to the output directory") is a real
+ * requirement that happens to mention a variable. A filled default row with no slot at all is filled text and counts.
+ */
 export function hasPlaceholderSlot(def) {
   // Brackets, angles and braces inside an inline code span are code, not a template slot:
   // `[Unreleased]`, `--stage [slug]`, `{ mode, asOf }`, `pending: [...]`.
   // A span that opens and does not close on this line (the sentence wraps) is code to the end of the line.
-  const raw = String(def.text || '').replace(def.id, '').replace(/`[^`\n]*`/g, '').replace(/`.*$/, '').replace(/[*_]/g, '');
-  return BRACKET_SLOT.test(raw) || ANGLE_SLOT.test(raw) || CURLY_SLOT.test(raw);
+  const raw = String(def.text || '').replace(def.id, ' ').replace(/`[^`\n]*`/g, '').replace(/`.*$/, '').replace(/[*_]/g, '');
+  const { rest, removed } = removeSlots(requirementCell(raw));
+  if (!removed) return false;
+  const left = rest.replace(/^[\s\-+>#.:)\d]*(?:\[[ xX]\]\s*)?/, '').replace(/[\s.:;,!?"'()-]+/g, ' ').trim();
+  return left === '' || SCAFFOLD.test(left);
 }
 
-/** Is this declaration a template row rather than a requirement? A slot, or no text at all. */
+/** Is this declaration a template row rather than a requirement? A slot-carried row, or no text at all. */
 export function isPlaceholderRequirement(def) {
   if (hasPlaceholderSlot(def)) return true;
-  return EMPTY_TEXT.test(bodyText(def).replace(/^(?:\[[ xX]\]|[-+*]|\d+[.)])\s*/, ''));
+  if (!EMPTY_TEXT.test(bodyText(def).replace(/^(?:\[[ xX]\]|[-+*]|\d+[.)])\s*/, ''))) return false;
+  // An ID line with no text may state its requirement on the lines under it (`- **SC-001**:` then an indented
+  // paragraph): the scanner's block holds them, and a block with text of its own is a real requirement.
+  const under = String(def.block || '').split('\n').slice(1).join(' ').replace(/[*_`|#>\-+\s]+/g, ' ').trim();
+  return !/[A-Za-z]{2,}/.test(under);
 }
 
 /**

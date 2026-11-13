@@ -197,6 +197,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
   template documents are not requirements; the evidence lists each ID once.
 
+- **A template row is a row whose only content is the slot.** The slot rule dropped real
+  requirements whose text mentions `{file}`, `{name}`, `{count}` or `<region>` as part of a
+  sentence. A row is now a template row only when, with every slot removed, what is left is
+  the bare scaffold of a requirement sentence ("System MUST", "Users MUST be able to") or
+  nothing; a sentence that still states something is a requirement. A requirement whose text
+  sits on the lines under its ID is a requirement. Spec Kit's `[NEEDS CLARIFICATION]` example
+  rows and a filled default row with no slot are counted unless the document is a template.
+
 - **Requirement-Anchors counted identifiers that are not requirements.** Whether
   the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
   spec and requirement documents, not decision records, open-item or question lists,
