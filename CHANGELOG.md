@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Security: the word `example` no longer hides a secret-shaped value just by
+  appearing in it.** This change ADDS findings. Before, any value containing
+  `example` anywhere (any case) was dropped silently, so
+  `"k8Jd93kfLQ0exampleZp2Wm7xR41abc"` produced no `SEC002` while the same value
+  without the word did. Now `example` exempts a value only as a whole segment
+  (split on separators and camelCase boundaries) or at the start of the value,
+  the rule already used for `placeholder`, `synthetic`, `dummy` and `changeme`.
+  `EXAMPLE_API_KEY`, `my-example-token` and `exampleSecret123` stay exempt; the
+  exact AWS documentation credentials keep their own exact-match exceptions:
+  the access key `AKIAIOSFODNN7EXAMPLE` and the secret access keys
+  `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` and
+  `je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY`. Known consequence: a word buried
+  in an unbroken run, such as `"myexamplepassword1"`, is now reported (`SEC001`).
+  Findings that can appear: `SEC002` (and `SEC001`, `SEC003`, `SEC004` for
+  values of those kinds). Baselines and `docguard:ignore` pragmas cover a value
+  you have reviewed (#655).
 - **The test suite, benchmarks and tools no longer leave temporary directories
   behind** (#662). Every fixture directory comes from one helper that removes it
   when the test, the file or the process ends, including on failure, Ctrl-C and
