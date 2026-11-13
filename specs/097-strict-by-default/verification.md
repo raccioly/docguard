@@ -405,3 +405,40 @@ All 23 are applicable and every fix leads to a good check.
 - **SC-003: not met.** Exit codes are equal, but the Traceability change moves findings under `standard` beyond FR-019's list:
   1. R2 and R7: the slot rule drops real requirements (one TRC004 lost, four false TRC005 added). Fix the rule so a `{name}` or `<region>` inside prose is not a template slot.
   2. R3: the removal of template-row findings is intended; add it to FR-019.
+
+---
+
+# Fifth run (T018h re-check)
+
+**Measured**: 2026-11-12 on `spec/097-strict-by-default` at "spec(097): task T018h done". One run per repository on fresh copies of all eight.
+
+**Result: SC-001 and SC-003 are both met.**
+
+## The placeholder-row rule
+
+| Repository | Rows ignored | `standard` against `main` | Requirements examined |
+|---|---|---|---|
+| R2 (Python service), the real requirement with `{file}` | 0 | Findings identical; the lost finding is back | 178 = 178 |
+| R7 (game), four real requirements with `{name}`, `{count}` | 0 | Findings identical; the four TRC005 are gone | 1135 = 1135 |
+| R4 (monorepo), the one suspect row | 0 | Findings identical | 127 = 127 |
+| R3 (unfilled templates) | 5 | Five template-row TRC004 removed (accepted by FR-019); the two draft-marker findings accepted | 142 to 137 |
+
+Nothing that states something is ignored in R2, R4 or R7 (no row is ignored, and the findings and counts equal `main`). The five R3 rows are all true template rows (opened three: a row reading "System MUST [capability]", one reading "Users MUST be able to [interaction]", and a success-criteria row made only of three slots).
+
+Residual, not a drop: three sample rows of the same template (a response-time target, "All endpoints require authentication", an uptime target) state something, so they count as requirements and still draw three findings. By the rule they are real requirements; they are the template's default examples.
+
+## Traceability, requirements examined against `main`
+
+Equal on R8 (1187), R1 (25), R2 (178), R4 (127, 8 applicable), R5 (17) and R7 (1135). R3 differs by exactly the five template rows. R6 is skipped (no requirement declared; `main` passed on two documents). "Performed" now equals the number examined; in the fourth run it was one to four short on three repositories.
+
+## Docs-Diff on R6
+
+The text still prints the architecture mapping snippet and now adds "found these by name (candidates, best first …) and cannot tell which one is the document". The two candidates are both documents about the project's AI design; **the real architecture document in the same folder is not named**. By the stated rule (offer none by name when it cannot tell) it should have offered none. Not blocking SC-001: the fix still works through the generate branch.
+
+## Strict and `standard`
+
+`standard` against `main`: exit 2 on all eight; findings equal except the R3 items above; verdict-only differences as before. `strict`: exit 4 on R1 to R7, 2 on R8; **23 blocking** (R1 3, R2 2, R3 4, R4 3, R5 3, R6 5, R7 3) and 7 could not read, every row identical to the fourth run. No error-level finding.
+
+## Originals and method notes
+
+HEAD, status and stash state are identical before and after for R2 to R7. HEAD of the public CLI repository and of the shared DocGuard checkout moved during the pass (fast-forwards by other sessions; status and stash unchanged), and R4's HEAD differs from the earlier runs; the numbers matched the fourth run regardless. A first attempt of this pass ran in the wrong directory and was discarded; the numbers above are from the rerun.
