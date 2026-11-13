@@ -16198,6 +16198,11 @@
           },
           {
             "requirementId": "FR-006",
+            "file": "cli/shared-requirement-definition.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-006",
             "file": "cli/shared-result-contract.mjs",
             "line": 15
           },
