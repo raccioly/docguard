@@ -26,6 +26,7 @@ import {
 } from './scanners/instruction-scopes.mjs';
 import { listTrackedFiles } from './shared-git.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore } from './shared-ignore.mjs';
+import { DETECTION_KEEPS, fileKind, INSTRUCTION_COPY } from './shared-file-kind.mjs';
 
 /** Files a harness loads from the project root for every session. */
 export const ROOT_AGENT_FILES = Object.freeze([
@@ -199,6 +200,22 @@ function namedFiles(path, content) {
   return named;
 }
 
+/**
+ * Is this non-root instruction file left out of the role (docguard.file-kinds#FR-007)? A template copy
+ * always; a copy below a fixture or test directory unless `detection.includeNonProduct` reads those as
+ * product (spec 094); `tests/AGENTS.md` itself by detection's any-ancestor rule. `fileKinds.own` rescues.
+ * @returns {{ kind: string, segment: string|null } | null}
+ */
+export function instructionLeftOut(path, config = {}) {
+  const copy = fileKind(path, config, INSTRUCTION_COPY);
+  if (copy.kind === 'template') return { kind: copy.kind, segment: copy.segment };
+  if (config?.detection?.includeNonProduct) return null;
+  if (copy.kind !== 'own') return { kind: copy.kind, segment: copy.segment };
+  if (!isNonProductPath(path, config)) return null;
+  const where = fileKind(path, config, { kinds: ['fixture', 'test'], asDirectory: true, harnessFolders: 'all', featureSpecs: 'test', skipNames: DETECTION_KEEPS });
+  return { kind: where.kind, segment: where.segment };
+}
+
 const memo = new WeakMap();
 
 /**
@@ -206,7 +223,11 @@ const memo = new WeakMap();
  * the readers this replaces did); other files must be tracked, not ignored
  * and not under test, fixture or example paths.
  *
- * @returns {{ docs: { path, kind, root, pointer, vendored }[], limitations: string[] }}
+ * Non-root files left out as copies (a template, or below a test, fixture or
+ * example directory) are listed in `excluded` with their kind, so a wrongly
+ * classified file stays visible (docguard.file-kinds#FR-010).
+ *
+ * @returns {{ docs: { path, kind, root, pointer, vendored }[], limitations: string[], excluded: { path: string, kind: string, segment: string }[] }}
  */
 export function agentInstructionDocs(projectDir, config = {}) {
   const key = config && typeof config === 'object' ? config : {};
@@ -232,9 +253,17 @@ function computeDocs(projectDir, config) {
     candidates = instructionFilesOnDisk(projectDir).files;
   }
   const found = new Map();
+  const excluded = [];
   const consider = (path, kind, root) => {
     if (found.has(path) || ignored(path)) return;
-    if (!root && isNonProductPath(path, config)) return;
+    // Spec 094 keeps test, fixture and example paths out (any ancestor, so
+    // tests/AGENTS.md too); spec 099 adds template copies, where the folder
+    // that holds the file does not count. `fileKinds.own` puts either back
+    // (docguard.file-kinds#FR-004, FR-007).
+    if (!root) {
+      const left = instructionLeftOut(path, config);
+      if (left) { excluded.push({ path, ...left }); return; }
+    }
     if (!isRegularFile(resolve(projectDir, path))) return;
     found.set(path, { path, kind, root });
   };
@@ -308,7 +337,7 @@ function computeDocs(projectDir, config) {
     if (target && (seen.has(target) || direct.has(target))) target = null;
     inRole.get(path).pointer = { target, via: first.via };
   }
-  return { docs, limitations };
+  return { docs, limitations, excluded: excluded.sort((a, b) => a.path.localeCompare(b.path)) };
 }
 
 /** Root-level, non-vendored role documents: what every harness session loads. */

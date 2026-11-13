@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **One rule for copied files: template and fixture instruction copies leave the
+  agent-instruction role and the chain budget, `PSR006` names a copy that shares
+  a governing file's name, and `fileKinds.own` is the override (specs 099 and
+  100, Stage 1).** This change both REMOVES and ADDS findings.
+  - **Removed.** A nested `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or other
+    instruction file below a template directory
+    (`templates/<app>/files/AGENTS.md`, a form a scaffolder writes into other
+    repositories) was reviewed as this repository's own instructions, so it
+    could get FRS001, FRS002, FRS003, FRS006, FRS007 and FRS009 (adding a root
+    package script made FRS007 say the template never mentions it, which no
+    commit could clear under a gate that refuses every commit while it stands),
+    PSR001 to PSR005, a strict `unexamined` entry and an excerpt-staleness
+    mark. It is now out of the role, so those findings on it are gone. `STR004`
+    also no longer counts such a copy, or a copy below a fixture or example
+    directory, toward a chain's byte budget (D1 of spec 100); a governing nested
+    file, `templates/AGENTS.md` and `tests/AGENTS.md` included, is still counted.
+  - **Added.** `PSR006` (warning): a template, test, fixture or example copy
+    named like one of the project's instruction files (`AGENTS.md`,
+    `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`,
+    `.github/copilot-instructions.md`, a `requiredFiles.agentFile`) while a file
+    that governs the project has the same name: an agent searching the
+    repository may read the copy first. Rename it (`AGENTS.md.template`) or list
+    a fixture that needs the name in `.docguardignore`. Template copies are high
+    confidence, fixture and example copies low. A file that governs its own
+    folder (`packages/api/AGENTS.md`, `templates/AGENTS.md`) is never reported.
+    This ADDS a warning under strict for a project that keeps such a copy.
+  - **How files are classified.** The new module `cli/shared-file-kind.mjs`
+    answers from a closed list of kinds (`own`, `template`, `fixture`, `test`,
+    `vendored`, `generated`, `backup`, `nested-checkout`); what it does not
+    recognize is `own`. Directory names match as whole path segments in any case
+    (`Examples/` and `Fixtures/` now leave the role like `examples/` and
+    `fixtures/`), only before the first dot-directory, never for a package
+    segment. The template names are `templates`, `template`, `_templates`,
+    `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and
+    `skeleton(s)`. Test directories (`test`, `tests`, `__tests__`, `spec(s)`) are
+    their own kind, `test`, so the project's tests are never reported as
+    fixtures; a Spec Kit `specs/012-feature/` is `own`. `corpus` and `golden`
+    mark copies for instruction files only, because a product package can carry
+    either name (`nltk.corpus`): detection and Security never skip them.
+  - **Capitalized directory names now count for detection (Security gating).**
+    `isNonProductPath` is case-insensitive, so a secret-shaped literal under
+    `Examples/`, `Fixtures/`, `Tests/` or `__Mocks__/` is recorded with context
+    `test-path` instead of `product` on `SEC001`, `SEC002`, `SEC003` and
+    `SEC004`, and a `test-path` finding never gates under strict. That REMOVES
+    gating from findings in such directories (the findings are still reported).
+    Lowercase directories, `corpus/` and `golden/` are unchanged. Route
+    detection likewise stops reading a capitalized `Examples/` directory, as it
+    already skipped `examples/`. None of the ten other repositories checked
+    changed.
+  - **`fileKinds.own`** (glob patterns in `.docguard.json`) keeps a file the
+    project's own wherever it sits, for example a real package named `examples`;
+    `.docguardignore` and `ignore` still win. It replaces
+    `agentInstructions.governing`, which was never released.
+  - **Nothing is dropped silently.** `guard --format json` carries `files.kinds`
+    (a count per kind and up to 20 paths per kind of instruction files left out
+    as copies), and the text output prints one line when any were left out. A
+    test fails when a file under `cli/` keeps its own directory-name ignore set
+    or walks the tree without the shared classifier, with an allowlist of the 27
+    files Stage 2 migrates.
+  - The benchmark corpus gains a PSR006 pair and an STR004 pair (the control
+    fails on the code before this change), so both codes now carry measured
+    evidence.
+
 ### Fixed
 
 - **Tests: a fixture commit no longer starts git background maintenance.** `FIXTURE_GIT`

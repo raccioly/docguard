@@ -12,36 +12,36 @@ export const PRECISION_EVIDENCE = Object.freeze({
   "$schema": "https://raccioly.github.io/docguard/schemas/docguard-precision-evidence.schema.json",
   "schemaVersion": 1,
   "measures": "benchmark-precision",
-  "caveat": "Benchmark precision on a deliberately balanced corpus of 15 defect and 15 clean-control cases across 15 repository groups and 15 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound.",
+  "caveat": "Benchmark precision on a deliberately balanced corpus of 17 defect and 17 clean-control cases across 17 repository groups and 17 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound.",
   "minN": 5,
   "source": {
-    "manifestDigest": "sha256:3476ca6ca0e23373aa4c4697dbae1ffa8516271073655944774b62435e323f5f",
-    "toolVersion": "0.47.0",
-    "toolRevision": "354e3d63421ed79eae8d761400bfbb3946945bfa",
-    "detectorsDigest": "sha256:02ad4b5f158ddaa46370071b0b2e044a9986aa03515955563ddc5a348b5380b0",
+    "manifestDigest": "sha256:1cb71636400aef0e4c92040115ae3c0c69ec08e867bcdc3fbbaf29356be45815",
+    "toolVersion": "0.48.0",
+    "toolRevision": "27fd284a71c63e497db57002329c38d1f6f45100",
+    "detectorsDigest": "sha256:b4c2dffd5a8f3df996d9c04acba94a295bdbcef8e0693225187bdef0a1c486b0",
     "reviewStatus": "reviewed",
-    "reviewedAt": "2026-11-12",
+    "reviewedAt": "2026-11-13",
     "reviewer": "DocGuard maintainers",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001 is measured by a single defect/control pair in one repository group, so its point estimate is below the reporting floor and it backs off to the whole-corpus tier."
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Ten of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001, PSR006 and STR004 are each measured by a single defect/control pair in one repository group, so each point estimate is below the reporting floor and backs off to the whole-corpus tier."
   },
   "aggregate": {
-    "cases": 30,
-    "repositoryGroups": 15,
-    "causalFamilies": 15,
-    "truePositives": 15,
+    "cases": 34,
+    "repositoryGroups": 17,
+    "causalFamilies": 17,
+    "truePositives": 17,
     "falsePositives": 0,
     "falseNegatives": 0,
-    "cleanControls": 15,
+    "cleanControls": 17,
     "cleanControlsWithFindings": 0,
-    "precisionDenominator": 15,
+    "precisionDenominator": 17,
     "precision": 1,
     "precisionInterval": [
-      0.796111,
+      0.815676,
       1
     ],
     "recall": 1,
     "recallInterval": [
-      0.796111,
+      0.815676,
       1
     ],
     "quotable": true,
@@ -76,27 +76,27 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "notQuotableReason": "Only 1 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5."
     },
     "pathScopedRules": {
-      "cases": 4,
-      "repositoryGroups": 2,
-      "causalFamilies": 2,
-      "truePositives": 2,
+      "cases": 6,
+      "repositoryGroups": 3,
+      "causalFamilies": 3,
+      "truePositives": 3,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "cleanControls": 2,
+      "cleanControls": 3,
       "cleanControlsWithFindings": 0,
-      "precisionDenominator": 2,
+      "precisionDenominator": 3,
       "precision": 1,
       "precisionInterval": [
-        0.342372,
+        0.438494,
         1
       ],
       "recall": 1,
       "recallInterval": [
-        0.342372,
+        0.438494,
         1
       ],
       "quotable": false,
-      "notQuotableReason": "Only 2 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5."
+      "notQuotableReason": "Only 3 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5."
     },
     "security": {
       "cases": 20,
@@ -122,27 +122,27 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "notQuotableReason": null
     },
     "structure": {
-      "cases": 2,
-      "repositoryGroups": 1,
-      "causalFamilies": 1,
-      "truePositives": 1,
+      "cases": 4,
+      "repositoryGroups": 2,
+      "causalFamilies": 2,
+      "truePositives": 2,
       "falsePositives": 0,
       "falseNegatives": 0,
-      "cleanControls": 1,
+      "cleanControls": 2,
       "cleanControlsWithFindings": 0,
-      "precisionDenominator": 1,
+      "precisionDenominator": 2,
       "precision": 1,
       "precisionInterval": [
-        0.206543,
+        0.342372,
         1
       ],
       "recall": 1,
       "recallInterval": [
-        0.206543,
+        0.342372,
         1
       ],
       "quotable": false,
-      "notQuotableReason": "Only 1 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5."
+      "notQuotableReason": "Only 2 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5."
     },
     "todoTracking": {
       "cases": 2,
@@ -198,23 +198,23 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "backoff": {
         "tier": "aggregate",
         "key": "all-measured-codes",
-        "cases": 30,
-        "repositoryGroups": 15,
-        "causalFamilies": 15,
-        "truePositives": 15,
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
         "falsePositives": 0,
         "falseNegatives": 0,
-        "cleanControls": 15,
+        "cleanControls": 17,
         "cleanControlsWithFindings": 0,
-        "precisionDenominator": 15,
+        "precisionDenominator": 17,
         "precision": 1,
         "precisionInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "recall": 1,
         "recallInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "quotable": true,
@@ -254,23 +254,79 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "backoff": {
         "tier": "aggregate",
         "key": "all-measured-codes",
-        "cases": 30,
-        "repositoryGroups": 15,
-        "causalFamilies": 15,
-        "truePositives": 15,
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
         "falsePositives": 0,
         "falseNegatives": 0,
-        "cleanControls": 15,
+        "cleanControls": 17,
         "cleanControlsWithFindings": 0,
-        "precisionDenominator": 15,
+        "precisionDenominator": 17,
         "precision": 1,
         "precisionInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "recall": 1,
         "recallInterval": [
-          0.796111,
+          0.815676,
+          1
+        ],
+        "quotable": true,
+        "notQuotableReason": null
+      },
+      "adjudicated": {
+        "policyDisagreements": 0,
+        "ambiguous": 0
+      }
+    },
+    "PSR006": {
+      "status": "measured",
+      "validators": [
+        "pathScopedRules"
+      ],
+      "cases": 2,
+      "repositoryGroups": 1,
+      "causalFamilies": 1,
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "cleanControls": 1,
+      "cleanControlsWithFindings": 0,
+      "precisionDenominator": 1,
+      "precision": 1,
+      "precisionInterval": [
+        0.206543,
+        1
+      ],
+      "recall": 1,
+      "recallInterval": [
+        0.206543,
+        1
+      ],
+      "quotable": false,
+      "notQuotableReason": "Only 1 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5.",
+      "backoff": {
+        "tier": "aggregate",
+        "key": "all-measured-codes",
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "cleanControls": 17,
+        "cleanControlsWithFindings": 0,
+        "precisionDenominator": 17,
+        "precision": 1,
+        "precisionInterval": [
+          0.815676,
+          1
+        ],
+        "recall": 1,
+        "recallInterval": [
+          0.815676,
           1
         ],
         "quotable": true,
@@ -510,23 +566,79 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "backoff": {
         "tier": "aggregate",
         "key": "all-measured-codes",
-        "cases": 30,
-        "repositoryGroups": 15,
-        "causalFamilies": 15,
-        "truePositives": 15,
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
         "falsePositives": 0,
         "falseNegatives": 0,
-        "cleanControls": 15,
+        "cleanControls": 17,
         "cleanControlsWithFindings": 0,
-        "precisionDenominator": 15,
+        "precisionDenominator": 17,
         "precision": 1,
         "precisionInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "recall": 1,
         "recallInterval": [
-          0.796111,
+          0.815676,
+          1
+        ],
+        "quotable": true,
+        "notQuotableReason": null
+      },
+      "adjudicated": {
+        "policyDisagreements": 0,
+        "ambiguous": 0
+      }
+    },
+    "STR004": {
+      "status": "measured",
+      "validators": [
+        "structure"
+      ],
+      "cases": 2,
+      "repositoryGroups": 1,
+      "causalFamilies": 1,
+      "truePositives": 1,
+      "falsePositives": 0,
+      "falseNegatives": 0,
+      "cleanControls": 1,
+      "cleanControlsWithFindings": 0,
+      "precisionDenominator": 1,
+      "precision": 1,
+      "precisionInterval": [
+        0.206543,
+        1
+      ],
+      "recall": 1,
+      "recallInterval": [
+        0.206543,
+        1
+      ],
+      "quotable": false,
+      "notQuotableReason": "Only 1 labelled finding(s) behind this rate; DocGuard does not quote a point estimate below 5.",
+      "backoff": {
+        "tier": "aggregate",
+        "key": "all-measured-codes",
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "cleanControls": 17,
+        "cleanControlsWithFindings": 0,
+        "precisionDenominator": 17,
+        "precision": 1,
+        "precisionInterval": [
+          0.815676,
+          1
+        ],
+        "recall": 1,
+        "recallInterval": [
+          0.815676,
           1
         ],
         "quotable": true,
@@ -566,23 +678,23 @@ export const PRECISION_EVIDENCE = Object.freeze({
       "backoff": {
         "tier": "aggregate",
         "key": "all-measured-codes",
-        "cases": 30,
-        "repositoryGroups": 15,
-        "causalFamilies": 15,
-        "truePositives": 15,
+        "cases": 34,
+        "repositoryGroups": 17,
+        "causalFamilies": 17,
+        "truePositives": 17,
         "falsePositives": 0,
         "falseNegatives": 0,
-        "cleanControls": 15,
+        "cleanControls": 17,
         "cleanControlsWithFindings": 0,
-        "precisionDenominator": 15,
+        "precisionDenominator": 17,
         "precision": 1,
         "precisionInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "recall": 1,
         "recallInterval": [
-          0.796111,
+          0.815676,
           1
         ],
         "quotable": true,

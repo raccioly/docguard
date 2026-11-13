@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.5.2 -->
+<!-- docguard:version 1.5.3 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-11-13 -->
 
@@ -116,6 +116,9 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
+| `cli/shared-agent-instructions.mjs`, `cli/validators/path-scoped-rules.mjs` (PSR006, spec 099), `cli/scanners/agent-instructions.mjs` (copies are not measured) | `tests/instruction-copies.test.mjs` | ✅ |
+| `cli/shared-file-kind.mjs` (`fileKind`, `fileKinds.own`), `isNonProductPath`, `isNonProductDir` (spec 100) | `tests/file-kinds.test.mjs`, `tests/file-kinds-detection.test.mjs` | ✅ |
+| `cli/` as a whole: no private directory-name set, no unclassified walk outside an allowlist that carries a reason per entry (spec 100 FR-011) | `tests/file-kinds-registry.test.mjs` | ✅ |
 | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
 | `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
@@ -226,6 +229,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.3 | 2026-11-13 | DocGuard Team | File kinds: `fileKind`, `fileKinds.own`, the `files.kinds` report and the guard test against private directory-name sets (spec 100, Stage 1) |
 | 1.5.2 | 2026-11-13 | DocGuard Team | Fixture git turns background maintenance off (spec 066) |
 | 1.5.1 | 2026-11-13 | DocGuard Team | Fixture directories come from `tests/helpers/temp-dir.mjs` and are removed after every run; the `hermeticity` job checks for leftovers (spec 098) |
 | 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |

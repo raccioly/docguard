@@ -147,6 +147,9 @@ describe('the validator on five harnesses (SC-001)', () => {
       'PSR004:high:.claude/rules/foreign.md',
       'PSR004:high:.cursor/rules/broken.mdc',
       'PSR004:high:.cursor/rules/notes.md',
+      // The fixture's broken pointer is still not checked; its name, shared with the
+      // root AGENTS.md, is a low-confidence copy (docguard.instruction-copies#FR-003).
+      'PSR006:low:tests/fixtures/app/AGENTS.md',
     ]);
     assert.ok(result.findings.every(f => f.severity === 'warn'));
     // A pattern valid for Cursor that DocGuard does not evaluate is a
@@ -161,7 +164,8 @@ describe('the validator on five harnesses (SC-001)', () => {
     assert.doesNotMatch(msg('PSR002'), /reports\/lint\.md/, 'a skill\'s runtime paths are not pointers');
     assert.match(msg('PSR004'), /Claude Code reads `paths:`, not `globs:`, so it ignores this scope and loads it for every file/);
     assert.match(msg('PSR004'), /Cursor ignores \.md files in \.cursor\/rules/);
-    assert.ok(result.findings.every(f => !fileOf(f).startsWith('tests/')), 'fixture instructions are test data');
+    // Fixture instructions are test data: only the PSR006 same-name copy check looks at them.
+    assert.ok(result.findings.every(f => f.code === 'PSR006' || !fileOf(f).startsWith('tests/')), 'fixture instructions are test data');
   });
 
   it('a glob that only matches a file deleted from the working tree is dead', t => {
