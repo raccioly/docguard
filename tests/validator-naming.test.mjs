@@ -32,7 +32,7 @@ function makeRepo(configOverrides) {
   writeFileSync(join(dir, 'AGENTS.md'), '# Agents\n');
   writeFileSync(join(dir, 'DRIFT-LOG.md'), '# Drift\n');
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
-    projectName: 't', profile: 'starter', version: '0.5', ...configOverrides,
+    projectName: 't', profile: 'starter', version: '0.5', enforcement: 'standard', ...configOverrides,
   }, null, 2));
   const env = { ...process.env };
   fixtureGit(dir, ['init', '-q'], { env });

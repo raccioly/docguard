@@ -271,7 +271,7 @@ test('preserves supported-or-unsupported versus disabled coverage in diagnose JS
   const dir = temp(t);
   safeWrite(join(dir, 'src/main.py'), 'import os\n');
   for (const enabled of [true, false]) {
-    safeWrite(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'coverage-fixture', projectType: 'cli', diskCache: false,
+    safeWrite(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'coverage-fixture', projectType: 'cli', diskCache: false, enforcement: 'standard',
       validators: enabledOnly(enabled ? 'architecture' : null), requiredFiles: { canonical: [], agentFile: [] } }));
     const before = snapshot(dir);
     const guardResult = invoke(dir, ['guard', '--format', 'json']);

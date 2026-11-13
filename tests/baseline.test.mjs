@@ -24,7 +24,7 @@ const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
 
 function makeFixture() {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-baseline-'));
-  writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'bl-fixture', profile: 'standard' }));
+  writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'bl-fixture', profile: 'standard', enforcement: 'standard' }));
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   writeFileSync(join(dir, 'docs-canonical', 'ARCHITECTURE.md'), '# Architecture\n');
   return dir;

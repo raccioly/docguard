@@ -186,7 +186,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/docguard-baseline && cd /tmp/docguard-baseline
-          printf '{"projectName":"bl-ci","profile":"standard"}' > .docguard.json
+          printf '{"projectName":"bl-ci","profile":"standard","enforcement":"standard"}' > .docguard.json
           mkdir -p docs-canonical && echo "# Architecture" > docs-canonical/ARCHITECTURE.md
           node "$GITHUB_WORKSPACE/cli/docguard.mjs" guard --update-baseline
           node "$GITHUB_WORKSPACE/cli/docguard.mjs" guard   # must exit 0 now
@@ -204,9 +204,11 @@ jobs:
           mkdir -p /tmp/docguard-test
           node cli/docguard.mjs init --dir /tmp/docguard-test --force
 
-      - name: Guard after init (exit 2 = warnings OK for empty projects)
+      - name: Guard after init (exit 2 = warnings, exit 4 = strict lists what an empty project has not examined)
         run: |
-          node cli/docguard.mjs guard --dir /tmp/docguard-test || [ $? -eq 2 ]
+          status=0
+          node cli/docguard.mjs guard --dir /tmp/docguard-test || status=$?
+          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || [ "$status" -eq 4 ]
 
       - name: Generate in empty dir
         run: |

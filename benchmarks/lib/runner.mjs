@@ -115,6 +115,22 @@ function invokeGuard(projectDir) {
   return { report, exitCode: result.status, durationMs };
 }
 
+/**
+ * The benchmark measures detectors, not an enforcement mode, and its reviewed baseline was
+ * measured under the pre-strict behavior (spec 097). A case project that has a configuration and
+ * does not choose a mode gets `"enforcement": "standard"` written into that file, exactly as an
+ * adopter who keeps the lower mode would write it. `configDigest` is taken from the manifest's
+ * `config`, before this key, so the reviewed baseline's definition fields do not move.
+ */
+function pinStandardEnforcement(projectDir) {
+  const configPath = join(projectDir, '.docguard.json');
+  if (!existsSync(configPath) || lstatSync(configPath).isSymbolicLink()) return;
+  let config;
+  try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch { return; }
+  if (!config || typeof config !== 'object' || config.enforcement !== undefined) return;
+  writeFileSync(configPath, `${JSON.stringify({ ...config, enforcement: 'standard' }, null, 2)}\n`, 'utf8');
+}
+
 function materializeCase(item, manifestDir, runRoot, sourceCache) {
   const destination = join(runRoot, item.id);
   if (item.source.kind === 'fixture') {
@@ -142,6 +158,7 @@ function materializeCase(item, manifestDir, runRoot, sourceCache) {
     if (existsSync(configPath) && lstatSync(configPath).isSymbolicLink()) throw new Error('Benchmark config target cannot be a symlink.');
     writeFileSync(configPath, `${JSON.stringify(item.config, null, 2)}\n`, 'utf8');
   }
+  pinStandardEnforcement(destination);
   return destination;
 }
 
