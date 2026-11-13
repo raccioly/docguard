@@ -374,6 +374,18 @@ describe('US3: the record survives a squash merge and a rebase (FR-005, FR-006, 
     assert.doesNotMatch(spr008[0].message, /tests\/alpha\.test\.js/);
   });
 
+  it('an outcome a later completion in the same pull request superseded does not strand the record', t => {
+    const dir = closedOnBranch(t);
+    put(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 11;\n');
+    git(dir, ['commit', '-qam', 'review feedback changes the implementation']);
+    const again = run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--reason', 'Reviewed again after feedback', '--write', '--format', 'json']);
+    assert.equal(json(again).status, 'VERIFIED', again.out + again.err);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'complete again']);
+    assert.equal(entry(dir).reviewed.reconciliation.outcomes.length, 2);
+    squashOntoMain(dir);
+    assert.deepEqual(codes(family(dir)), [], 'the first outcome\'s evidence differs at the landing commit, but the last review is anchored');
+  });
+
   it('the search result is cached under .docguard/ and a broken cache changes no verdict', t => {
     const dir = closedOnBranch(t);
     squashOntoMain(dir);
@@ -562,6 +574,6 @@ describe('this repository follows its own one-commit flow (FR-013, SC-003)', () 
     if (own.reviewed.lifecycle.delivery !== 'verified') return;
     assert.equal(own.reviewed.lifecycle.persistenceModel, 'living');
     assert.ok(own.reviewed.reconciliation.outcomes.length >= 1);
-    assert.match(text(own.path).split('\n').find(l => l.startsWith('- `')) || '', / Blobs: `/);
+    assert.match(text(own.path).split('\n').find(l => /^- `[0-9a-f]{40}`/.test(l)) || '', / Blobs: `/);
   });
 });

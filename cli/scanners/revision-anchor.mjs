@@ -336,3 +336,32 @@ export function contentAnchors(projectDir, entries, { registryPath }) {
 export function contentAnchor(projectDir, spec, revision, { registryPath }) {
   return contentAnchors(projectDir, [{ spec, revision }], { registryPath }).get(`${spec.specId}|${revision}`);
 }
+
+/**
+ * The recorded revisions that are off HEAD's history and not anchored by their
+ * content: what SPR008 reports and `reanchor` moves. An outcome that carries its
+ * evidence blobs and was superseded by a later review of the same spec (a
+ * second completion in the same pull request, after the evidence changed) does
+ * not strand anything while that later review is on the history or anchored:
+ * only the last reviewed revision is a diff base.
+ * @returns {Array<{ specId: string, revision: string, reason: string, content: object }>}
+ * @implements docguard.completion-one-commit#FR-006
+ */
+export function strandedRevisions(projectDir, registry, { registryPath }) {
+  const dangling = danglingRevisions(projectDir, registry);
+  const specs = new Map((registry?.specs || []).map(spec => [spec.specId, spec]));
+  const anchors = contentAnchors(projectDir, dangling.map(({ specId, revision }) => ({ spec: specs.get(specId), revision })), { registryPath });
+  const key = ({ specId, revision }) => `${specId}|${revision}`;
+  const lastIsFine = specId => {
+    const last = specs.get(specId)?.reviewed?.reconciliation?.lastReviewedRevision;
+    const entry = dangling.find(item => item.specId === specId && item.revision === last);
+    return !entry || anchors.get(key(entry)).anchored;
+  };
+  return dangling
+    .map(item => ({ ...item, content: anchors.get(key(item)) }))
+    .filter(item => {
+      if (item.content.anchored) return false;
+      const last = specs.get(item.specId)?.reviewed?.reconciliation?.lastReviewedRevision;
+      return !(item.content.hasBlobs && item.revision !== last && lastIsFine(item.specId));
+    });
+}
