@@ -41,7 +41,9 @@ import { makeTempDir } from './helpers/temp-dir.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = join(ROOT, 'cli', 'docguard.mjs');
-const ENV = { ...process.env, NO_COLOR: '1', DOCGUARD_NO_UPDATE_HINT: '1' };
+// CI is stripped: a verdict cache is neither read nor written there, and one test below proves that case on purpose.
+const { CI: _ci, ...AMBIENT } = process.env;
+const ENV = { ...AMBIENT, NO_COLOR: '1', DOCGUARD_NO_UPDATE_HINT: '1' };
 const REGISTRY = '.docguard-specs.json';
 const FAMILY = /^(DLC|SPC|SPR)/;
 
@@ -51,8 +53,8 @@ const put = (dir, path, content) => {
   writeFileSync(join(dir, path), content);
 };
 const read = (dir, path) => readFileSync(join(dir, path), 'utf8');
-const cliAt = (cli, dir, args) => {
-  const r = spawnSync(process.execPath, [cli, ...args, '--dir', dir], { encoding: 'utf8', env: ENV });
+const cliAt = (cli, dir, args, env = ENV) => {
+  const r = spawnSync(process.execPath, [cli, ...args, '--dir', dir], { encoding: 'utf8', env });
   return { status: r.status, out: r.stdout, err: r.stderr };
 };
 const run = (dir, args) => cliAt(CLI, dir, args);
@@ -65,7 +67,7 @@ const codes = findings => findings.map(f => f.code).sort();
 const isAncestor = (dir, sha) => spawnSync('git', [...FIXTURE_GIT, 'merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: dir }).status === 0;
 
 /** A project whose gate runs guard on every commit: strict, one spec with T2 open, no hand-edited registry. */
-function adopter(t, { second = false } = {}) {
+function adopter(t, { second = false, approveDocs = true, approvePersistence = true } = {}) {
   const dir = makeTempDir('dg-one-commit-', t);
   git(dir, ['init', '-q', '-b', 'main']);
   git(dir, ['config', 'user.email', 't@example.com']);
@@ -87,8 +89,9 @@ function adopter(t, { second = false } = {}) {
   }
   git(dir, ['add', '-A']);
   assert.equal(run(dir, ['specs', '--write']).status, 0);
-  const approve = run(dir, ['specs', 'approve', '--id', 'acme.alpha', '--delivery', 'in_progress', '--persistence', 'living',
-    '--canonical-doc', 'docs-canonical/ARCHITECTURE.md', '--write', '--format', 'json']);
+  const approve = run(dir, ['specs', 'approve', '--id', 'acme.alpha', '--delivery', 'in_progress',
+    ...(approvePersistence ? ['--persistence', 'living'] : []),
+    ...(approveDocs ? ['--canonical-doc', 'docs-canonical/ARCHITECTURE.md'] : []), '--write', '--format', 'json']);
   assert.equal(json(approve).status, 'APPROVED', approve.out + approve.err);
   git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'add alpha, approved in progress']);
   return dir;
@@ -156,6 +159,42 @@ describe('US1: one commit closes a spec, and every commit passes the gate (FR-00
     }
     assert.equal(seen.length, 3);
     assert.deepEqual(seen.filter(([, found]) => found.length), []);
+  });
+});
+
+/** guard at every commit of `dir`, in a clone: the codes of the DLC, SPC and SPR family found at each. */
+function perCommitGate(t, dir) {
+  const clone = makeTempDir('dg-one-commit-gate-', t);
+  git(clone, ['clone', '-q', '--no-hardlinks', dir, '.']);
+  return git(dir, ['rev-list', '--reverse', 'HEAD']).split('\n').map(sha => {
+    git(clone, ['checkout', '-q', sha]);
+    return [sha.slice(0, 7), codes(family(clone))];
+  });
+}
+
+describe('US1: the sequence an adopter follows, flag by flag (FR-001 to FR-003, SC-001)', () => {
+  it('approve with --persistence only, then complete with --canonical-doc: one commit, a clean gate at every commit', t => {
+    const dir = adopter(t, { approveDocs: false });
+    assert.deepEqual(entry(dir).reviewed.scope.canonicalDocs, []);
+    const closed = closeSpec(dir, ['--canonical-doc', 'docs-canonical/ARCHITECTURE.md']);
+    assert.equal(json(closed).status, 'VERIFIED', closed.out + closed.err);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'close alpha']);
+    assert.deepEqual(entry(dir).reviewed.scope.canonicalDocs, ['docs-canonical/ARCHITECTURE.md']);
+    assert.equal(entry(dir).reviewed.lifecycle.persistenceModel, 'living');
+    const gate = perCommitGate(t, dir);
+    assert.equal(gate.length, 3);
+    assert.deepEqual(gate.filter(([, found]) => found.length), []);
+  });
+
+  it('approve with neither flag, then complete with both: the registry gets both, and the gate is clean', t => {
+    const dir = adopter(t, { approveDocs: false, approvePersistence: false });
+    assert.equal(entry(dir).reviewed.lifecycle.persistenceModel, null);
+    const closed = closeSpec(dir, ['--canonical-doc', 'docs-canonical/ARCHITECTURE.md', '--canonical-doc', 'README.md', '--persistence', 'living']);
+    assert.equal(json(closed).status, 'VERIFIED', closed.out + closed.err);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'close alpha']);
+    assert.equal(entry(dir).reviewed.lifecycle.persistenceModel, 'living');
+    assert.deepEqual(entry(dir).reviewed.scope.canonicalDocs, ['docs-canonical/ARCHITECTURE.md', 'README.md']);
+    assert.deepEqual(perCommitGate(t, dir).filter(([, found]) => found.length), []);
   });
 });
 
@@ -296,6 +335,11 @@ describe('US3: the record survives a squash merge and a rebase (FR-005, FR-006, 
     const reviewed = entry(dir).reviewed.reconciliation.lastReviewedRevision;
     assert.equal(isAncestor(dir, reviewed), false);
     assert.deepEqual(codes(family(dir)), []);
+    // and the next completion still finds its diff base
+    put(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 4;\n');
+    git(dir, ['commit', '-qam', 'a later change']);
+    const next = run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--reason', 'Maintenance review', '--write', '--format', 'json']);
+    assert.equal(json(next).status, 'VERIFIED', next.out + next.err);
   });
 
   it('the next completion finds its diff base with no --since, after the record moved ids', t => {
@@ -340,6 +384,22 @@ describe('US3: the record survives a squash merge and a rebase (FR-005, FR-006, 
     assert.deepEqual(codes(family(dir)), []);
     rmSync(join(dir, '.docguard'), { recursive: true, force: true });
     assert.deepEqual(codes(family(dir)), []);
+  });
+
+  it('under CI nothing is cached or read, and the verdict is the same', t => {
+    const dir = closedOnBranch(t);
+    squashOntoMain(dir);
+    const env = { ...ENV, CI: '1' };
+    const found = json(cliAt(CLI, dir, ['guard', '--format', 'json'], env)).findings.filter(f => FAMILY.test(f.code));
+    assert.deepEqual(codes(found), []);
+    assert.equal(existsSync(join(dir, '.docguard', 'revision-anchors.json')), false);
+    // a planted cache cannot make evidence that changed look reviewed
+    mkdirSync(join(dir, '.docguard'), { recursive: true });
+    writeFileSync(join(dir, '.docguard', 'revision-anchors.json'), JSON.stringify({ version: 1, landings: { [entry(dir).reviewed.reconciliation.lastReviewedRevision]: git(dir, ['rev-parse', 'HEAD']) } }));
+    assert.deepEqual(codes(family(dir)), []);
+    put(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 7;\n');
+    git(dir, ['commit', '-qam', 'edit evidence at the squash commit itself']);
+    assert.deepEqual(family(dir).filter(f => f.code === 'SPR008'), [], 'the landing commit is what is compared, so a later edit is fine');
   });
 
   it('the squash warning no longer tells people to reanchor a record that carries its evidence blobs (FR-012)', t => {

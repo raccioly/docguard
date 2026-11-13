@@ -24,7 +24,7 @@
  * @implements docguard.completion-one-commit#FR-009
  */
 
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { lstatSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { readOutcomeBlobs, stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
@@ -192,6 +192,8 @@ export function evidenceBlobsAt(projectDir, commit, paths) {
 
 const ANCHOR_CACHE = `${STATE_DIR}/revision-anchors.json`;
 const CACHE_LIMIT = 256 * 1024;
+const LOG_BATCH = 200;
+const HASH_RE = /[0-9a-f]{40}(?:[0-9a-f]{24})?/g;
 
 function readAnchorCache(projectDir) {
   // A cache can only arrive through the checkout in CI, so it is not read there.
@@ -201,16 +203,16 @@ function readAnchorCache(projectDir) {
     const stat = lstatSync(path);
     if (!stat.isFile() || stat.size > CACHE_LIMIT) return {};
     const value = JSON.parse(readFileSync(path, 'utf8'));
-    return value && value.version === 1 && value.entries && typeof value.entries === 'object' ? value.entries : {};
+    return value && value.version === 1 && value.landings && typeof value.landings === 'object' ? value.landings : {};
   } catch { return {}; }
 }
 
-function writeAnchorCache(projectDir, entries) {
+function writeAnchorCache(projectDir, landings) {
   if (process.env.CI || !ensureStateDir(projectDir)) return;
   const path = resolve(projectDir, ANCHOR_CACHE);
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
-    writeFileSync(temporary, `${JSON.stringify({ version: 1, entries })}\n`, { flag: 'wx' });
+    writeFileSync(temporary, `${JSON.stringify({ version: 1, landings })}\n`, { flag: 'wx' });
     renameSync(temporary, path);
   } catch {
     try { unlinkSync(temporary); } catch { /* best effort: a cache never changes a verdict */ }
@@ -218,48 +220,119 @@ function writeAnchorCache(projectDir, entries) {
 }
 
 /**
- * Where a recorded revision's review landed on HEAD's history: the first
- * first-parent commit whose registry contains the revision (one `git log -S`
- * over the registry path), and the evidence files whose blobs there differ from
- * the ones reviewed (one `git ls-tree`). It needs no old commit, so it works
- * after a squash merge or a rebase has discarded the id.
- *
- * The cache holds only the landing commit. A hit is trusted no further than a
- * commit that is still an ancestor of HEAD, and the verdict is recomputed from
- * the blobs at that commit, so a stale or planted cache cannot change it.
- * @returns {{ commit: string|null, differing: string[] }} `commit` is null when no commit on
+ * The first first-parent commit whose registry adds each of `revisions`, or
+ * null. Constant git work however many revisions there are: one `rev-list` of
+ * the commits that touched the registry (which also validates the cache, since
+ * a landing commit touched it by definition), one `git log -G` over all the
+ * revisions that were not cached, oldest first. `-G`, not `-S`: a maintenance
+ * commit that moves one recorded revision to another leaves the occurrence
+ * count unchanged, and `-S` would skip it.
+ * @implements docguard.completion-one-commit#FR-009
+ */
+function landingCommits(projectDir, revisions, registryPath) {
+  const landings = new Map(revisions.map(revision => [revision, null]));
+  const chain = new Set(git(projectDir, ['rev-list', '--first-parent', 'HEAD', '--', registryPath]).out.split('\n').map(line => line.trim()).filter(Boolean));
+  const cached = readAnchorCache(projectDir);
+  const pending = [];
+  for (const revision of landings.keys()) {
+    if (typeof cached[revision] === 'string' && chain.has(cached[revision])) landings.set(revision, cached[revision]);
+    else if (REVISION_RE.test(revision)) pending.push(revision);
+  }
+  for (let from = 0; from < pending.length; from += LOG_BATCH) {
+    const batch = new Set(pending.slice(from, from + LOG_BATCH));
+    const log = git(projectDir, ['log', '--first-parent', '--reverse', '-p', '-U0', '--no-color', '--format=%x01%H', `-G${[...batch].join('|')}`, '--', registryPath]);
+    for (const chunk of log.out.split('\x01').slice(1)) {
+      const [commit, ...lines] = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('+') || line.startsWith('+++')) continue;
+        for (const hash of line.match(HASH_RE) || []) {
+          if (batch.has(hash) && landings.get(hash) === null) landings.set(hash, commit.trim());
+        }
+      }
+    }
+  }
+  const found = Object.fromEntries([...landings].filter(([revision, commit]) => commit && pending.includes(revision)));
+  if (Object.keys(found).length) writeAnchorCache(projectDir, { ...cached, ...found });
+  return landings;
+}
+
+/**
+ * Where each recorded revision's review landed on HEAD's history, and which
+ * evidence files have a different blob there than the one reviewed. It needs
+ * no old commit, so it works after a squash merge or a rebase has discarded
+ * the id. The cache holds only landing commits and a hit is trusted no
+ * further than "that commit is still on HEAD's first-parent chain": the
+ * verdict is recomputed from the blobs, so a stale or planted cache cannot
+ * change it. One `rev-list`, at most one `log` per 200 revisions, one
+ * `cat-file --batch-check`, whatever the number of items.
+ * @param {Array<{ key: string, revision: string, blobs: Record<string,string> }>} items
+ * @returns {Map<string, { commit: string|null, differing: string[] }>} `commit` is null when no commit on
  *   this history introduced the revision into the registry
  * @implements docguard.completion-one-commit#FR-006
  * @implements docguard.completion-one-commit#FR-009
  */
-export function locateContentAnchor(projectDir, { specId, revision, blobs, registryPath }) {
-  const paths = Object.keys(blobs).sort();
-  const key = `${specId}|${revision}|${createHash('sha256').update(JSON.stringify(blobs)).digest('hex').slice(0, 16)}`;
-  const entries = readAnchorCache(projectDir);
-  let commit = entries[key]?.commit;
-  if (!(typeof commit === 'string' && REVISION_RE.test(commit) && isAncestorOf(projectDir, commit))) {
-    const introduced = git(projectDir, ['log', '--first-parent', '--format=%H', `-S${revision}`, '--', registryPath]).out
-      .split('\n').map(line => line.trim()).filter(Boolean);
-    commit = introduced.length ? introduced[introduced.length - 1] : null;
-    if (commit) writeAnchorCache(projectDir, { ...entries, [key]: { commit } });
+export function locateContentAnchors(projectDir, items, { registryPath }) {
+  const out = new Map();
+  if (!items.length) return out;
+  const landings = landingCommits(projectDir, [...new Set(items.map(item => item.revision))], registryPath);
+  const lookups = [];
+  for (const item of items) {
+    const commit = landings.get(item.revision);
+    if (!commit) { out.set(item.key, { commit: null, differing: Object.keys(item.blobs).sort() }); continue; }
+    for (const path of Object.keys(item.blobs)) lookups.push({ key: item.key, commit, path });
   }
-  if (!commit) return { commit: null, differing: paths };
-  const found = evidenceBlobsAt(projectDir, commit, paths);
-  return { commit, differing: paths.filter(path => found[path] !== blobs[path]) };
+  const found = new Map();
+  if (lookups.length) {
+    const r = runGit(projectDir, ['cat-file', '--batch-check'], {
+      operation: 'git cat-file (revision anchor)', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024,
+      input: `${lookups.map(lookup => `${lookup.commit}:./${lookup.path}`).join('\n')}\n`,
+    });
+    const lines = r.status === 0 && !r.error ? r.stdout.split('\n') : [];
+    lookups.forEach((lookup, index) => {
+      const [id, type] = (lines[index] || '').split(' ');
+      found.set(`${lookup.key}\0${lookup.path}`, type === 'blob' && REVISION_RE.test(id) ? id : null);
+    });
+  }
+  for (const item of items) {
+    if (out.has(item.key)) continue;
+    const differing = Object.keys(item.blobs).sort().filter(path => found.get(`${item.key}\0${path}`) !== item.blobs[path]);
+    out.set(item.key, { commit: landings.get(item.revision), differing });
+  }
+  return out;
+}
+
+function readSpecContent(projectDir, spec) {
+  try { return readFileSync(resolve(projectDir, spec.path), 'utf8'); } catch { return null; }
 }
 
 /**
- * Whether a recorded revision that is not an ancestor of HEAD is still anchored
- * by its content: its outcome carries the evidence blobs, and the commit that
- * landed the record has exactly those blobs.
- * @returns {{ hasBlobs: boolean, anchored: boolean, commit: string|null, differing: string[] }}
+ * Whether each given recorded revision that is not an ancestor of HEAD is still
+ * anchored by its content: its outcome carries the evidence blobs, and the commit
+ * that landed the record has exactly those blobs.
+ * @param {Array<{ spec: object, revision: string }>} entries
+ * @returns {Map<string, { hasBlobs: boolean, anchored: boolean, commit: string|null, differing: string[] }>}
+ *   keyed by `${specId}|${revision}`
  * @implements docguard.completion-one-commit#FR-006
  */
+export function contentAnchors(projectDir, entries, { registryPath }) {
+  const results = new Map();
+  const items = [];
+  const contents = new Map();
+  for (const { spec, revision } of entries) {
+    const key = `${spec.specId}|${revision}`;
+    if (!contents.has(spec.specId)) contents.set(spec.specId, readSpecContent(projectDir, spec));
+    const content = contents.get(spec.specId);
+    const blobs = content === null ? null : readOutcomeBlobs(content, revision);
+    if (!blobs) results.set(key, { hasBlobs: false, anchored: false, commit: null, differing: [] });
+    else items.push({ key, revision, blobs });
+  }
+  for (const [key, found] of locateContentAnchors(projectDir, items, { registryPath })) {
+    results.set(key, { hasBlobs: true, anchored: found.commit !== null && found.differing.length === 0, commit: found.commit, differing: found.differing });
+  }
+  return results;
+}
+
+/** {@link contentAnchors} for one revision. */
 export function contentAnchor(projectDir, spec, revision, { registryPath }) {
-  let content = null;
-  try { content = readFileSync(resolve(projectDir, spec.path), 'utf8'); } catch { /* no spec file */ }
-  const blobs = content === null ? null : readOutcomeBlobs(content, revision);
-  if (!blobs) return { hasBlobs: false, anchored: false, commit: null, differing: [] };
-  const found = locateContentAnchor(projectDir, { specId: spec.specId, revision, blobs, registryPath });
-  return { hasBlobs: true, anchored: found.commit !== null && found.differing.length === 0, commit: found.commit, differing: found.differing };
+  return contentAnchors(projectDir, [{ spec, revision }], { registryPath }).get(`${spec.specId}|${revision}`);
 }

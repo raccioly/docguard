@@ -3,7 +3,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH, unrecordedCompletions } from '../scanners/spec-registry.mjs';
 import { checkAsBuiltSync, isPatternTier } from '../scanners/as-built.mjs';
-import { contentAnchor, danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
+import { contentAnchors, danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
 import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { explainPaddedEmpty } from '../shared-project-evidence.mjs';
@@ -177,12 +177,16 @@ export function validateSpecRegistry(projectDir, config = {}) {
     if (isShallowRepository(projectDir)) {
       partial = 'This is a shallow clone, so whether recorded review revisions are on this history (SPR008) could not be checked.';
     } else {
-      for (const { specId, revision, reason } of danglingRevisions(projectDir, projection.registry)) {
+      const dangling = danglingRevisions(projectDir, projection.registry);
+      const anchors = contentAnchors(projectDir, dangling.map(({ specId, revision }) => ({
+        spec: projection.registry.specs.find(entry => entry.specId === specId), revision,
+      })), { registryPath: SPEC_REGISTRY_PATH });
+      for (const { specId, revision, reason } of dangling) {
         const spec = projection.registry.specs.find(entry => entry.specId === specId);
         // docguard.completion-one-commit#FR-006: an outcome that carries its evidence blobs
         // is anchored by content. The commit that landed it has those blobs, or SPR008 names
         // the files that differ from what was reviewed.
-        const content = spec ? contentAnchor(projectDir, spec, revision, { registryPath: SPEC_REGISTRY_PATH }) : { hasBlobs: false };
+        const content = anchors.get(`${specId}|${revision}`);
         if (content.anchored) continue;
         const detail = !content.hasBlobs ? ''
           : content.commit

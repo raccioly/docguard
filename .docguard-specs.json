@@ -2855,11 +2855,11 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:82c4536d41ab088924247b6b3f979da8d5ae8bca1b4fec6669e23a433798e4c2"
+            "digest": "sha256:30c9dc9e8f1833d1c986e8fb245a1b9bcea458de30fa374858ffb11cc4fcc320"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
-            "digest": "sha256:efa3eed1b12bc3cf3cd7262180da7c6d79928de17fe3976054cf4f23937d04eb"
+            "digest": "sha256:df158dc1469c38b0dae994abe9de211480e2100ca00945b4aab980c4e306b34a"
           },
           {
             "path": "specs/101-completion-one-commit/tasks.md",
@@ -2924,12 +2924,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 232
+            "line": 271
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 256
+            "line": 315
           },
           {
             "requirementId": "FR-006",
@@ -2964,7 +2964,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 233
+            "line": 230
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 272
           },
           {
             "requirementId": "FR-011",
@@ -7461,7 +7466,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 495
+            "line": 496
           },
           {
             "requirementId": "FR-006",

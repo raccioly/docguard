@@ -28,7 +28,7 @@ import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { appendImplementationOutcome, readOutcomeBlobs, rewriteOutcomeRevision, writeOutcomeBlobs } from '../writers/spec-outcomes.mjs';
-import { commitsBetween, contentAnchor, danglingRevisions, evidenceBlobsAt, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
+import { commitsBetween, contentAnchor, contentAnchors, danglingRevisions, evidenceBlobsAt, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { canonicalOutcome, PERSISTENCE_VALUES, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, unrecordedCompletions, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -386,8 +386,9 @@ export function reanchorSpec(projectDir, config, flags) {
   const moves = [];
   if (spec && !blockers.length) {
     // A revision whose evidence blobs are on this history is anchored by content (docguard.completion-one-commit#FR-006): nothing to move.
-    let dangling = danglingRevisions(projectDir, { specs: [spec] })
-      .filter(item => !contentAnchor(projectDir, spec, item.revision, { registryPath: SPEC_REGISTRY_PATH }).anchored);
+    let dangling = danglingRevisions(projectDir, { specs: [spec] });
+    const anchors = contentAnchors(projectDir, dangling.map(item => ({ spec, revision: item.revision })), { registryPath: SPEC_REGISTRY_PATH });
+    dangling = dangling.filter(item => !anchors.get(`${spec.specId}|${item.revision}`).anchored);
     // docguard.completion-revision-anchoring#FR-006: one spec's dangling
     // revisions can come from different merges, so an attested --to must be
     // scoped to the revision it attests.
