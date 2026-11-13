@@ -139,12 +139,14 @@ function compactContract(validator) {
 
 /** Each unexamined validator is on `validators[]` with its reason and fix; refer to it by key. */
 function compactStrict(strict) {
-  const { unexamined, couldNotRead, ...rest } = strict;
+  const { unexamined, couldNotRead, pending, ...rest } = strict;
   const short = (text, max = 160) => (typeof text === 'string' && text.length > max ? `${text.slice(0, max - 1)}…` : text);
   return {
     ...rest,
     unexamined: (unexamined || []).map(({ name: _name, reason: _reason, howToConfigure: _fix, documents, ...u }) => (documents ? { ...u, documents: documents.length } : u)),
     // Keys and a short reason: the validator's own entry carries the full text.
     couldNotRead: (couldNotRead || []).map(({ name: _name, reason, howToConfigure: _fix, documents, ...u }) => ({ ...u, reason: short(reason), ...(documents ? { documents: documents.length } : {}) })),
+    // A held-back item: its key and the release that lists it; the validator's own entry has the rest.
+    pending: (pending || []).map(({ name: _name, reason: _reason, documents, ...p }) => (documents ? { ...p, documents: documents.length } : p)),
   };
 }

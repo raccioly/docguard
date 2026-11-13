@@ -18,6 +18,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 import * as enforcement from '../cli/enforcement.mjs';
 
@@ -53,8 +54,11 @@ const ALL_KEYS = [
 const only = (...keys) => Object.fromEntries(ALL_KEYS.map(k => [k, keys.includes(k)]));
 
 /** A committed fixture project with strict (or another mode) and only the named validators on. */
-function project(files, { validators, enforcement = 'strict', extra = {} } = {}) {
+function project(inputFiles, { validators, enforcement = 'strict', extra = {} } = {}) {
   const dir = scratch('docguard-cnr-');
+  const isolated = isolateWithWaivers(inputFiles, { validators, enforcement });
+  const files = isolated.files;
+  validators = isolated.config.validators;
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   const config = {
     projectName: 'cnr-fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] },
@@ -179,7 +183,7 @@ describe('a partial API-Surface result under strict', () => {
   });
 
   it('under standard there is no strict block and the exit code is unchanged', () => {
-    const std = project(PARTIAL_API, { validators: only('apiSurface'), enforcement: null });
+    const std = project(PARTIAL_API, { validators: only('apiSurface'), enforcement: 'standard' });
     const { json, status } = guardJson(std);
     assert.equal(json.strict, undefined);
     assert.notEqual(status, 4);

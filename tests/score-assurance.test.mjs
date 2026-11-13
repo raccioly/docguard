@@ -17,7 +17,7 @@ describe('score assurance', () => {
     dir = mkdtempSync(join(tmpdir(), 'docguard-assurance-'));
     mkdirSync(join(dir, 'docs-canonical'));
     writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# Architecture\n' + text);
-    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'assurance', profile: 'starter', diskCache: false }));
+    writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'assurance', profile: 'starter', diskCache: false, enforcement: 'standard' }));
     return loadConfig(dir);
   }
   it('does not treat zero extracted claims as verified prose', () => {

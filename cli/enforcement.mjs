@@ -6,23 +6,28 @@
  * reads validator RESULTS after the run and never imports a validator
  * (Constitution IV), the same way `required-checks.mjs` composes them.
  *
- * Stage A (this file as shipped): the mode is selectable, but an absent
- * `enforcement` key still resolves to `standard`. Stage B changes
- * `DEFAULT_MODE` to `strict`; nothing else in this module changes with it.
+ * An absent `enforcement` key resolves to `strict` (Stage B, FR-001); a project
+ * that wants the lower mode writes `"enforcement": "standard"`.
  *
  * @implements docguard.strict-by-default#FR-001
  * @implements docguard.strict-by-default#FR-007
+ * @implements docguard.strict-by-default#FR-003
+ * @implements docguard.strict-by-default#FR-008
+ * @implements docguard.strict-by-default#FR-011
+ * @implements docguard.strict-by-default#FR-012
+ * @implements docguard.strict-by-default#FR-013
  * @implements docguard.strict-by-default#FR-014
  * @implements docguard.strict-by-default#FR-015
  * @implements docguard.strict-by-default#FR-016
  * @implements docguard.strict-by-default#FR-021
  */
 import { EMPTY_CAUSES, performedChecks } from './validator-coverage.mjs';
+import { STRICT_ADDITIONS, codeAddedIn, compareLines, isNewIn, validatorAddedIn } from './strict-additions.mjs';
 
 export const ENFORCEMENT_MODES = Object.freeze(['strict', 'standard']);
 
-/** What a project that has not chosen gets. Stage B flips this one constant. */
-export const DEFAULT_MODE = 'standard';
+/** What a project that has not chosen gets (FR-001). */
+export const DEFAULT_MODE = 'strict';
 
 /** `asOf` names a release line, `<major>.<minor>`. */
 const AS_OF_RE = /^\d+\.\d+$/;
@@ -58,8 +63,40 @@ export function modeLine(enforcement) {
   const { mode, asOf, source } = enforcement;
   const origin = source === 'config'
     ? 'set by "enforcement" in .docguard.json'
-    : 'the default: no "enforcement" key (strict becomes the default in a later release)';
+    : 'the default: no "enforcement" key ("enforcement": "standard" selects the lower mode)';
   return `Enforcement: ${mode}${asOf ? ` (as of ${asOf})` : ''} — ${origin}`;
+}
+
+/**
+ * Codes that could exit 1 under the 0.47.0 default configuration (FR-008, the plan's
+ * closed list; `tests/strict-by-default.test.mjs` derives it from the v0.47.0 tag).
+ * Under strict an intrinsic error of one of these stays an error, so strict is never
+ * weaker than the old default. ANC001 and ANC003 fail only for a link accepted as
+ * `reviewed-exact`; the source decides that per link.
+ */
+export const V047_ERROR_CODES = Object.freeze(['ANC001', 'ANC003', 'ANC005', 'API004', 'DLK005', 'DRF001', 'DRF002', 'EVD001', 'EVD002', 'OWN007', 'REQ001', 'STR001', 'STR002']);
+
+/** Validators the 0.47.0 defaults left off: strict turns them on, and their intrinsic errors start as warnings. */
+export const OFF_BY_DEFAULT_VALIDATORS = Object.freeze(['security', 'architecture']);
+
+/**
+ * What `resolveFindingEnforcement` needs under strict (FR-008): the closed list, the
+ * validators whose errors are demoted, and the gating codes. With `enforcement.asOf`
+ * set, a gating code the table lists under a later release is not gating yet; it is
+ * returned in `pendingCodes` so the report can say so (FR-013).
+ *
+ * @param {{ gating?: Iterable<string>, additions?: object, enforcement?: object, runningVersion?: string }} [input]
+ */
+export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS, enforcement = null, runningVersion = null } = {}) {
+  const asOf = enforcement?.asOf ?? null;
+  const active = new Set();
+  const pendingCodes = [];
+  for (const code of gating) {
+    const line = codeAddedIn(code, additions);
+    if (asOf && line && compareLines(line, asOf) > 0) pendingCodes.push(code);
+    else active.add(code);
+  }
+  return { closed: new Set(V047_ERROR_CODES), offByDefault: new Set(OFF_BY_DEFAULT_VALIDATORS), gating: active, pendingCodes: pendingCodes.sort(), runningVersion };
 }
 
 /**
@@ -86,7 +123,12 @@ export function modeLine(enforcement) {
  * @param {object[]} results validator results carrying `verdict`
  * @param {{ baselineSuppressed?: number, lite?: boolean }} [extra]
  */
-export function buildStrictReport(results, { baselineSuppressed = 0, lite = false, markers = [] } = {}) {
+export function buildStrictReport(results, {
+  baselineSuppressed = 0, lite = false, markers = [], enforcement = null, additions = STRICT_ADDITIONS,
+  runningVersion = null, pendingCodes = [], ignoredDisabled = [],
+} = {}) {
+  const asOf = enforcement?.asOf ?? null;
+  const pending = [];
   // The N/A marker reader already parses owner and expires (spec 084); an expired or
   // unreadable marker declares nothing, so it never made a result `declared N/A`.
   const markerFor = key => markers.find(m => m.key === key && m.known && !m.metadataProblem && !(m.expires && m.expires < new Date().toISOString().slice(0, 10)));
@@ -119,6 +161,13 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
       });
       continue;
     }
+    // FR-012/FR-013: when the table lists this validator, say when it joined; with `asOf` set, one that
+    // joined after it is reported as pending and does not count.
+    const line = validatorAddedIn(r.key, additions);
+    if (asOf && line && compareLines(line, asOf) > 0) {
+      pending.push({ kind: 'validator', validator: r.key, name: r.name || r.key, since: line, verdict: r.verdict, cause, reason });
+      continue;
+    }
     unexamined.push({
       validator: r.key,
       name: r.name || r.key,
@@ -126,18 +175,26 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
       cause,
       reason,
       howToConfigure: typeof r.howToConfigure === 'string' && r.howToConfigure ? r.howToConfigure : null,
-      newIn: null,
+      newIn: line && isNewIn(line, runningVersion) ? line : null,
       blocking: !lite,
     });
   }
-  for (const r of results) addUnexaminedDocuments(unexamined, couldNotRead, r, lite);
+  for (const r of results) addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion });
+  for (const code of pendingCodes) {
+    const count = results.reduce((n, r) => n + (r.findings || []).filter(f => f.code === code).length, 0);
+    if (count > 0) pending.push({ kind: 'code', code, since: codeAddedIn(code, additions), count });
+  }
   return {
     evaluated: !lite,
     unexamined,
     couldNotRead,
     blocking: [...new Set(unexamined.filter(u => u.blocking).map(u => u.validator))],
-    gating: [...gatingByCode].map(([code, count]) => ({ code, count })).sort((a, b) => a.code.localeCompare(b.code)),
-    pending: [],
+    gating: [...gatingByCode].map(([code, count]) => {
+      const line = codeAddedIn(code, additions);
+      return { code, count, ...(line && isNewIn(line, runningVersion) ? { newIn: line } : {}) };
+    }).sort((a, b) => a.code.localeCompare(b.code)),
+    pending,
+    ignoredDisabled,
     waived,
     baselined: baselineSuppressed,
   };
@@ -160,7 +217,7 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
  * reason names up to three documents, then a count, and the first reason of
  * each cause; its fix is the first document's step of each cause.
  */
-function addUnexaminedDocuments(unexamined, couldNotRead, r, lite) {
+function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion }) {
   const docs = Array.isArray(r.unexaminedDocuments)
     ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content'))
     : [];
@@ -180,15 +237,22 @@ function addUnexaminedDocuments(unexamined, couldNotRead, r, lite) {
   if (blocking.length) {
     const { names, reasons, fix } = summary(blocking);
     const reason = `${blocking.length} document(s) not examined: ${names}. ${reasons}`;
-    const existing = unexamined.find(u => u.validator === r.key);
-    if (existing) {
+    // FR-012/FR-013, as for a validator's own entry: the table says when the validator joined strict;
+    // with `asOf` set before that, its documents are held back as pending and do not count.
+    const line = validatorAddedIn(r.key, additions);
+    const held = pending.find(p => p.kind === 'validator' && p.validator === r.key);
+    if (held || (asOf && line && compareLines(line, asOf) > 0)) {
+      if (held) held.documents = blocking.map(d => d.path);
+      else pending.push({ kind: 'validator', validator: r.key, name: r.name || r.key, since: line, verdict: r.verdict, cause: blocking[0].cause, reason, documents: blocking.map(d => d.path) });
+    } else if (unexamined.find(u => u.validator === r.key)) {
+      const existing = unexamined.find(u => u.validator === r.key);
       existing.documents = blocking.map(d => d.path);
       existing.reason = [existing.reason, reason].filter(Boolean).join(' ');
       existing.howToConfigure = [existing.howToConfigure, fix].filter(Boolean).join(' ');
     } else {
       unexamined.push({
         validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: blocking[0].cause, reason, howToConfigure: fix,
-        documents: blocking.map(d => d.path), newIn: null, blocking: !lite,
+        documents: blocking.map(d => d.path), newIn: line && isNewIn(line, runningVersion) ? line : null, blocking: !lite,
       });
     }
   }
@@ -250,6 +314,25 @@ export function couldNotReadLines(strict) {
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
     if (u.documents?.length && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
+  }
+  return lines;
+}
+
+/**
+ * The summary lines strict adds after the verdict counts: `validators: false` entries it
+ * did not honor (FR-003, on every run) and items held back by `asOf` (FR-013).
+ */
+export function strictSummaryLines(strict) {
+  const lines = [];
+  const ignored = strict?.ignoredDisabled || [];
+  if (ignored.length > 0) {
+    lines.push(`Not honored under strict (these validators run): "validators": false for ${ignored.join(', ')}`);
+    lines.push('  Switch one off on purpose with a reasoned waiver (<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->) or choose "enforcement": "standard".');
+  }
+  const pending = strict?.pending || [];
+  if (pending.length > 0) {
+    lines.push('Pending (strict since a later release; reported only, this does not change the exit code):');
+    for (const p of pending) lines.push(`  • ${p.kind === 'code' ? `${p.code} (${p.count} finding(s))` : p.name || p.validator} — strict since v${p.since}`);
   }
   return lines;
 }

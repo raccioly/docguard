@@ -4,7 +4,7 @@ import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarize
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
 import { listValidatorMarkers } from '../validator-markers.mjs';
-import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, modeLine, strictBlocks } from '../enforcement.mjs';
+import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, strictSummaryLines, strictFindingContext, modeLine, strictBlocks, OFF_BY_DEFAULT_VALIDATORS } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -31,7 +31,7 @@ import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
-import { precisionEvidenceBlock } from '../precision-evidence.mjs';
+import { precisionEvidenceBlock, deriveGatingSet } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
 import { fileURLToPath as fp } from 'node:url';
@@ -346,9 +346,27 @@ function computeDocCoverage(projectDir, config) {
 export function runGuardInternal(projectDir, config) {
   config = applyDocRoles(projectDir, normalizeIgnoreConfig(config));
   // specs/097-strict-by-default FR-001: the mode of this run and where it came from.
-  const enforcement = resolveEnforcement(config);
+  // A project with no .docguard.json has not adopted DocGuard: strict adds nothing there
+  // (US4 scenario 3), so it keeps the standard behavior and says to run `docguard init`.
+  const initialized = existsSync(resolvePath(projectDir, '.docguard.json')) || config?.enforcement !== undefined;
+  const enforcement = initialized ? resolveEnforcement(config) : { mode: 'standard', asOf: null, source: 'default' };
   const strict = enforcement.mode === 'strict';
-  const validators = config.validators || {};
+  const lite = Array.isArray(config.changedFiles);
+  // FR-003 (as amended): under strict every registered validator runs. A `validators.<key>: false` entry,
+  // whether a profile or the project's own file wrote it, does not switch one off: `init` wrote most of them
+  // from a profile, so honoring them would exempt existing adopters. Each one not honored is reported on every
+  // run; a reasoned waiver or `"enforcement": "standard"` switches a validator off on purpose. The pre-commit
+  // subset keeps its own validator set.
+  let validators = config.validators || {};
+  const ignoredDisabled = [];
+  if (strict && !lite) {
+    validators = {};
+    for (const [key, value] of Object.entries(config.validators || {})) {
+      if (value === false) ignoredDisabled.push(key);
+      else validators[key] = value;
+    }
+  }
+  const gatingContext = strict ? strictFindingContext({ gating: deriveGatingSet(undefined, CLI_VERSION), enforcement, runningVersion: CLI_VERSION }) : null;
   const results = [];
 
   const validatorMap = [
@@ -643,17 +661,20 @@ export function runGuardInternal(projectDir, config) {
     let errors = 0, warnings = 0, infos = 0;
     if (Array.isArray(v.findings) && v.findings.length > 0) {
       for (const finding of v.findings) {
-        const enforcement = resolveFindingEnforcement(config, finding, policyKey(v.key));
-        finding.effectiveSeverity = enforcement.level;
-        finding.enforcement = enforcement;
-        if (enforcement.level === 'error') errors++;
-        else if (enforcement.level === 'warn') warnings++;
+        const level = resolveFindingEnforcement(config, finding, policyKey(v.key), gatingContext);
+        finding.effectiveSeverity = level.level;
+        finding.enforcement = level;
+        if (level.level === 'error') errors++;
+        else if (level.level === 'warn') warnings++;
         else infos++;
       }
     } else {
-      errors = v.errors.length;
+      // FR-008: a validator the 0.47.0 defaults left off reports its intrinsic errors as warnings under strict.
+      const demoted = strict && OFF_BY_DEFAULT_VALIDATORS.includes(v.key) ? v.errors.length : 0;
+      errors = v.errors.length - demoted;
+      warnings = demoted;
       if (v.severity === 'high') errors += v.warnings.length;
-      else if (v.severity === 'medium') warnings = v.warnings.length;
+      else if (v.severity === 'medium') warnings += v.warnings.length;
       else infos = v.warnings.length;
     }
     v.effectiveErrors = errors;
@@ -667,7 +688,7 @@ export function runGuardInternal(projectDir, config) {
   // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
   // the full validator set, so it never evaluates the unexamined rule (the report
   // says so with `evaluated: false`).
-  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite: Array.isArray(config.changedFiles), markers: listValidatorMarkers(projectDir, allValidatorKeys) }) : null;
+  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -690,7 +711,6 @@ export function runGuardInternal(projectDir, config) {
   // they never change errors/warnings/exit code. Skipped on the --changed-only
   // lite path, which trades coverage for sub-2s speed and shouldn't pay for a
   // repo-wide Markdown walk.
-  const lite = Array.isArray(config.changedFiles);
   let coverage = null;
   let semanticClaims = null;
   const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
@@ -1078,7 +1098,11 @@ export function runGuard(projectDir, config, flags) {
   // Summary
   console.log(`\n${c.bold}  ─────────────────────────────────────${c.reset}`);
   // specs/097 FR-016: the first line of the summary states the mode and where it came from.
-  if (data.enforcement) console.log(`  ${c.dim}${modeLine(data.enforcement)}${c.reset}`);
+  if (data.enforcement) {
+    console.log(`  ${c.dim}${uninitialised
+      ? 'Enforcement: standard — this project has no .docguard.json; run `docguard init` to adopt DocGuard (strict applies once it is initialized)'
+      : modeLine(data.enforcement)}${c.reset}`);
+  }
   if (data.verdicts) {
     const n = data.verdicts.counts;
     console.log(`  ${c.dim}Verdicts: ${n.pass} pass · ${n.fail} fail · ${n.empty} empty · ${n.inconclusive} inconclusive · ${n.blocked} blocked · ${n.skipped} skipped${c.reset}`);
@@ -1094,6 +1118,7 @@ export function runGuard(projectDir, config, flags) {
       }
     }
   }
+  for (const line of data.strict ? strictSummaryLines(data.strict) : []) console.log(`  ${c.dim}${line}${c.reset}`);
 
   if (data.status === 'PASS') {
     // PASS can still carry raw warnings if a validator was demoted to
@@ -1161,6 +1186,9 @@ export function runGuard(projectDir, config, flags) {
       const action = data.baselineStale > 0 && !staleUncertain ? ' Re-freeze to drop them: --update-baseline' : '';
       console.log(`  ${c.dim}   ${parts.join('; ')}.${action}${c.reset}`);
     }
+  } else if (data.strict) {
+    // specs/097 FR-011: under strict every run says how many findings the baseline holds, zero included.
+    console.log(`  ${c.dim}📋 0 findings baselined (${BASELINE_FILE}; \`docguard guard --update-baseline\` records the existing ones)${c.reset}`);
   }
 
   // Act vs escalate, immediately under the verdict: the verdict says whether

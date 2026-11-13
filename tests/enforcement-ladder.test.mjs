@@ -30,7 +30,7 @@ function project(t, files, config) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-ladder-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
-  write(dir, '.docguard.json', JSON.stringify({ projectName: 'ladder', requiredFiles: { canonical: [], agentFile: [] }, ...config }));
+  write(dir, '.docguard.json', JSON.stringify({ projectName: 'ladder', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, ...config }));
   execFileSync('git', [...FIXTURE_GIT, 'init', '-q', '-b', 'main'], { cwd: dir });
   execFileSync('git', [...FIXTURE_GIT, 'add', '-A'], { cwd: dir });
   execFileSync('git', [...FIXTURE_GIT, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'init'], { cwd: dir });

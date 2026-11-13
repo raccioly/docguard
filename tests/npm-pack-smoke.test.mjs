@@ -138,7 +138,7 @@ describe('npm pack smoke', { skip: SKIP }, () => {
     writeFileSync(join(fixtureDir, 'CHANGELOG.md'), '# Changelog\n## [Unreleased]\n');
     writeFileSync(join(fixtureDir, 'DRIFT-LOG.md'), '# Drift\n');
     writeFileSync(join(fixtureDir, '.docguard.json'),
-      JSON.stringify({ projectName: 'smoke', profile: 'starter', version: '0.6' }));
+      JSON.stringify({ projectName: 'smoke', profile: 'starter', version: '0.6', enforcement: 'standard' }));
     fixtureGit(fixtureDir, ['init', '-q']);
     fixtureGit(fixtureDir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']);
     fixtureGit(fixtureDir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init']);
