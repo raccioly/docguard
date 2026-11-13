@@ -676,9 +676,9 @@ An `@implements` or `@req` tag cites a requirement that no spec or requirement d
 
 The tag cites a requirement of a retired or superseded spec. Point it at the requirement that replaced it, or remove it if the code no longer implements anything that spec described.
 
-### ANC009: Anchor lock has conflicting entries for one link
+### ANC009: Anchor lock has conflicting entries for one link (no longer reported)
 
-Two lines of `.docguard-anchor-lock.jsonl` record the same link with different content, usually after a union merge of two branches that both reviewed it. The link is treated as suspect until someone reviews it: `docguard anchors accept --link <key> --reason "…"` rewrites one entry.
+No longer reported (spec 102, `docguard.anchor-lock-merge`); the code stays registered so configuration and pragmas that name it keep loading. Two lines of `.docguard-anchor-lock.jsonl` for one link, usually from a union merge of two branches that both reviewed it, used to be refused. DocGuard now reads the line whose recorded fingerprints match the code and the requirement as they are now, and the link needs review (ANC001 or ANC002, with its `docguard anchors accept` command) only when none does. Every write leaves one line per link; `docguard anchors merge --write` does the same without accepting anything, and also resolves git conflict markers.
 
 ### ANC010: Requirement anchors were read at a lower tier
 

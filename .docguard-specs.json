@@ -1254,6 +1254,197 @@
       }
     },
     {
+      "specId": "docguard.anchor-lock-merge",
+      "path": "specs/102-anchor-lock-merge/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.anchor-lock-merge#FR-001",
+          "docguard.anchor-lock-merge#FR-002",
+          "docguard.anchor-lock-merge#FR-003",
+          "docguard.anchor-lock-merge#FR-004",
+          "docguard.anchor-lock-merge#FR-005",
+          "docguard.anchor-lock-merge#FR-006",
+          "docguard.anchor-lock-merge#FR-007",
+          "docguard.anchor-lock-merge#FR-008",
+          "docguard.anchor-lock-merge#FR-009",
+          "docguard.anchor-lock-merge#FR-010",
+          "docguard.anchor-lock-merge#SC-001",
+          "docguard.anchor-lock-merge#SC-002",
+          "docguard.anchor-lock-merge#SC-003",
+          "docguard.anchor-lock-merge#SC-004",
+          "docguard.anchor-lock-merge#SC-005"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/102-anchor-lock-merge/spec.md",
+            "digest": "sha256:b682892058b9816747ed1161e576a8248d190ef85a999b16a6e1d2c90f9f06dd"
+          },
+          {
+            "path": "specs/102-anchor-lock-merge/plan.md",
+            "digest": "sha256:5c49da543711e09df282917477df7cf8d51b943ea47b3cf0d60e329a0c078a42"
+          },
+          {
+            "path": "specs/102-anchor-lock-merge/tasks.md",
+            "digest": "sha256:742d93ce83aca4e556f342a0dc8d2d5130fd58b7e39408afea004734c892c769"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 419
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 426
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/commands/anchors.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 453
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/anchors.mjs",
+            "line": 457
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/anchors.mjs",
+            "line": 222
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/anchors.mjs",
+            "line": 228
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/anchors.mjs",
+            "line": 229
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/anchor-lock.mjs",
+            "line": 28
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/requirement-anchors-lock.test.mjs",
+            "line": 120
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-005",
+            "file": "tests/anchor-lock-merge.test.mjs",
+            "line": 18
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.as-built-specs",
       "path": "specs/024-as-built-specs/spec.md",
       "reviewed": {
@@ -7208,6 +7399,11 @@
           },
           {
             "requirementId": "FR-006",
+            "file": "tests/file-kinds-detection.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-006",
             "file": "tests/file-kinds.test.mjs",
             "line": 11
           },
@@ -10793,7 +10989,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 766
+            "line": 769
           },
           {
             "requirementId": "FR-006",
@@ -13211,7 +13407,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 975
+            "line": 978
           },
           {
             "requirementId": "FR-001",
@@ -13221,17 +13417,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 976
+            "line": 979
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 977
+            "line": 980
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 978
+            "line": 981
           },
           {
             "requirementId": "FR-005",
@@ -14889,11 +15085,11 @@
         "artifacts": [
           {
             "path": "specs/070-requirement-anchors/spec.md",
-            "digest": "sha256:0d9c0fc66f1dcbca69c2bb5d36c96ae66f0439c804946e63e03449d478b46db5"
+            "digest": "sha256:a55e7715b9337423e8e7f11fde739ff1ca9de835acbb2dbf8fab98dcb76c3240"
           },
           {
             "path": "specs/070-requirement-anchors/plan.md",
-            "digest": "sha256:2345627f1e4e6c84a76015ffbb9b3115e0c1dec26f6a4985481d6edcf06cffa4"
+            "digest": "sha256:fbf9662db3da59b52e8271b304a650d6f0adc2b18a3b900354a373ad75e1adcc"
           },
           {
             "path": "specs/070-requirement-anchors/tasks.md",
@@ -15053,7 +15249,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/scanners/anchor-lock.mjs",
-            "line": 18
+            "line": 24
           },
           {
             "requirementId": "FR-016",
@@ -15063,17 +15259,17 @@
           {
             "requirementId": "FR-017",
             "file": "cli/scanners/anchor-lock.mjs",
-            "line": 19
+            "line": 25
           },
           {
             "requirementId": "FR-018",
             "file": "cli/scanners/anchor-lock.mjs",
-            "line": 20
+            "line": 26
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/anchors.mjs",
-            "line": 21
+            "line": 22
           },
           {
             "requirementId": "FR-020",
@@ -15083,27 +15279,27 @@
           {
             "requirementId": "FR-021",
             "file": "cli/commands/anchors.mjs",
-            "line": 22
+            "line": 23
           },
           {
             "requirementId": "FR-022",
             "file": "cli/commands/anchors.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-023",
             "file": "cli/commands/anchors.mjs",
-            "line": 24
+            "line": 25
           },
           {
             "requirementId": "FR-024",
             "file": "cli/commands/anchors.mjs",
-            "line": 25
+            "line": 26
           },
           {
             "requirementId": "FR-025",
             "file": "cli/commands/anchors.mjs",
-            "line": 26
+            "line": 27
           },
           {
             "requirementId": "FR-026",
@@ -15138,7 +15334,7 @@
           {
             "requirementId": "FR-032",
             "file": "cli/scanners/anchors.mjs",
-            "line": 562
+            "line": 609
           },
           {
             "requirementId": "FR-033",
@@ -15158,17 +15354,17 @@
           {
             "requirementId": "FR-034",
             "file": "cli/scanners/anchors.mjs",
-            "line": 643
+            "line": 690
           },
           {
             "requirementId": "FR-035",
             "file": "cli/commands/anchors.mjs",
-            "line": 142
+            "line": 144
           },
           {
             "requirementId": "FR-036",
             "file": "cli/scanners/anchors.mjs",
-            "line": 710
+            "line": 757
           },
           {
             "requirementId": "FR-037",
@@ -15178,7 +15374,7 @@
           {
             "requirementId": "FR-037",
             "file": "cli/scanners/anchors.mjs",
-            "line": 741
+            "line": 788
           },
           {
             "requirementId": "FR-037",
@@ -16848,7 +17044,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/requirement-anchors.mjs",
-            "line": 120
+            "line": 121
           },
           {
             "requirementId": "FR-006",
@@ -17670,7 +17866,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1066
+            "line": 1069
           },
           {
             "requirementId": "FR-011",
