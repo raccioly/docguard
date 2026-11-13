@@ -2019,6 +2019,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The anchor lock merges cleanly: two lines for one link, left by a union
+  merge or rebase, are resolved instead of refused (spec 102,
+  `docguard.anchor-lock-merge`).** This change REMOVES findings and moves one.
+  - **Removed.** `ANC009` ("conflicting entries for one link") is no longer
+    reported, and no longer fails a gate. DocGuard keeps the line whose recorded
+    fingerprints match the code and the requirement as they are now and ignores
+    the others; if several match, the newest `date` stands, then the last line.
+    The code stays registered, so `findingSeverity` entries and `explain ANC009`
+    keep working.
+  - **Moved.** When no line matches (both branches reviewed the link, then the
+    merge produced code neither saw), the link is reported as `ANC001` or
+    `ANC002` with its `docguard anchors accept` command, where `ANC009` alone
+    used to appear. That is a link that does need a review.
+  - **Fixed.** `anchors accept` and `anchors disposition` dropped every
+    conflicted key they did not rewrite, so a reviewed link became `ANC004`
+    (info). Every writer now leaves one line per link, in order.
+  - **Added.** `docguard anchors merge --check` (exit 2 when the lock is not one
+    line per link) and `--write` (normalize it, list each link that still needs
+    review with its `anchors accept --file …` command). It also resolves git
+    conflict markers, so a project that dropped `merge=union` repairs a
+    conflicted lock in one command: `docguard anchors merge --write`. Guard
+    reports a lock with markers as `ANC005` and names that command.
+  - The lock format is unchanged; 0.48.0 reads what this version writes.
+
 ### Added
 
 - **One rule for copied files: template and fixture instruction copies leave the
@@ -2384,34 +2410,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **A shallow checkout no longer fails the build under strict.**
-  `actions/checkout` fetches one commit, which hides the git history Freshness
-  reads; that is a property of the checkout, not of the project's documents. A
-  validator, or an agent-instruction document whose review point is not in the
-  clone, now has the new empty cause `history-unavailable`: it is listed under
-  "DocGuard could not read" with the fix (`fetch-depth: 0` on
-  `actions/checkout`, `GIT_DEPTH: 0` on GitLab) on every run, and the exit code
-  is unchanged. A complete repository with fewer than three commits, and a
-  document with no review record at all, still block as before
-  (`docguard.strict-by-default` FR-007, FR-005).
-- **`review --accept` with several paths** recorded only the first and exited 0.
-  It now records every path in one transaction, or refuses all of them, writes
-  nothing, and names the path it could not accept (T028a).
-- **A strict row for unexamined documents said "Freshness is pass".** The
-  Adopt block, `docguard upgrade` and the could-not-read block now say
-  "Freshness did not examine N document(s) (cause)" (T028a).
 
-- **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
-  decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
-  requirement documents; not decision records, open-item or task lists, templates,
-  task, design-element, story or acceptance IDs) and what is a template row
-  (`[slot]`, `<slot>`, `{{slot}}`, `TBD`, or no text). Requirement-Anchors' branch for
-  IDs in a form the scanner does not read now uses it, so decision, open-item and task
-  IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
-  template documents are not requirements; the evidence lists each ID once.
-
-- **A template row is a row whose only content is the slot.** The slot rule dropped real
-
-<!-- truncated: 6641 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6667 more lines — read CHANGELOG.md directly -->
 
 ---
 
