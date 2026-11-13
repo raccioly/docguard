@@ -534,28 +534,45 @@ export function freshnessContract(dir, config, { performed, found, skipped = [],
 
 /**
  * The agent-instruction documents this run did not examine (spec 097 FR-021),
- * each with its cause, a reason that says why, and the step that resolves it.
- * `performed` is not touched: Freshness did examine the other documents, and a
- * document's gap is reported on its own (enforcement reads this list).
- *   needs-declaration  no review point at all: nothing says the document was ever checked;
- *   needs-content      a review exists and no longer covers the document: a file it names
- *                      changed past `freshness.referenceShare` since (FRS006's condition).
- * Suspect reviews come first, then documents with no record, each in path order.
+ * each with its cause, whether the project can be asked to resolve it
+ * (`blocking`), a reason, and the step that resolves it. `performed` is not
+ * touched: Freshness did examine the other documents, and each document's gap
+ * is reported on its own (enforcement reads this list).
+ *   needs-content      a review exists (recorded, or a marker the project wrote) and no longer
+ *                      covers the document: a file it names changed past
+ *                      `freshness.referenceShare` since (FRS006's condition). Always blocking.
+ *   needs-declaration  no review point at all. Blocking for a root instruction file only; for
+ *                      any other (a skill or rule a tool may have installed) ownership is not
+ *                      established, so it is listed and never blocks.
+ * Order: suspect reviews, then root files without a record, then the rest, each in path order.
  * @implements docguard.strict-by-default#FR-021
  * @param {object[]|undefined} gaps what recordedReviewSignals recorded on the run's facts
  */
 export function unexaminedDocuments(gaps) {
   if (!Array.isArray(gaps)) return [];
-  const rank = { 'needs-content': 0, 'needs-declaration': 1 };
-  const fix = path => `Read ${path} against the code it describes, update it where it no longer holds, then record the review: docguard review --accept ${path} --reason "<what you checked>"`;
-  return [...gaps].sort((a, b) => rank[a.cause] - rank[b.cause] || a.path.localeCompare(b.path)).map(g => ({
-    path: g.path,
-    cause: g.cause,
-    reason: g.cause === 'needs-content'
-      ? `${g.path}: its ${g.reviewPoint.date} review no longer covers it; ${g.references.map(r => `${r.path} (${Math.round(r.share * 100)}% added since)`).join(', ')}${g.more ? ` and ${g.more} more` : ''}`
-      : `${g.path} has no review record (no docguard:last-reviewed marker and no recorded review), so nothing says it was ever checked against the code`,
-    howToConfigure: fix(g.path),
-  }));
+  const rank = g => (g.cause === 'needs-content' ? 0 : g.blocking ? 1 : 2);
+  const review = path => `docguard review --accept ${path} --reason "<what you checked>"`;
+  return [...gaps].sort((a, b) => rank(a) - rank(b) || a.path.localeCompare(b.path)).map(g => {
+    if (g.cause === 'needs-content') {
+      return {
+        path: g.path, cause: g.cause, blocking: true,
+        reason: `${g.path}: its ${g.reviewPoint.date} review no longer covers it; ${g.references.map(r => `${r.path} (${Math.round(r.share * 100)}% added since)`).join(', ')}${g.more ? ` and ${g.more} more` : ''}`,
+        howToConfigure: `Read ${g.path} against the code it describes, update it where it no longer holds, then record the review: ${review(g.path)}`,
+      };
+    }
+    if (g.blocking) {
+      return {
+        path: g.path, cause: g.cause, blocking: true,
+        reason: `${g.path} has no review record (no docguard:last-reviewed marker and no recorded review), so nothing says it was ever checked against the code`,
+        howToConfigure: `Read ${g.path} against the code it describes, update it where it no longer holds, then record the review: ${review(g.path)}`,
+      };
+    }
+    return {
+      path: g.path, cause: g.cause, blocking: false,
+      reason: `${g.path} has no review record and no install record, so DocGuard cannot tell whether the project wrote it or a tool installed it`,
+      howToConfigure: `If the project wrote it, read it against the code and record the review: ${review(g.path)}. If a tool installed it, leave it to that tool.`,
+    };
+  });
 }
 
 function resultContract(dir, config, { performed, found, skipped, facts }) {

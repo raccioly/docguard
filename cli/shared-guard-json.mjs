@@ -109,7 +109,7 @@ function withoutLimitations({ limitations: _limitations, ...coverage }) {
  *     (the evidence sentence of `applies` is that reason);
  *   - `note` is dropped when it is the applicability reason it produced;
  *   - `layouts` (the layouts an unread-layout validator does read) is on `strict.couldNotRead`;
- *   - `unexaminedDocuments` is dropped; the `strict.unexamined` entry keeps `documents` as a count;
+ *   - `unexaminedDocuments` is dropped; a `strict.unexamined` or `strict.couldNotRead` entry keeps `documents` as a count;
  *   - `applicability.before` (the status an `applies: false` remap replaced) is dropped;
  *   - `emptyCause` stays on a validator that examined nothing (empty, inconclusive,
  *     or skipped because it does not apply);
@@ -145,6 +145,6 @@ function compactStrict(strict) {
     ...rest,
     unexamined: (unexamined || []).map(({ name: _name, reason: _reason, howToConfigure: _fix, documents, ...u }) => (documents ? { ...u, documents: documents.length } : u)),
     // Keys and a short reason: the validator's own entry carries the full text.
-    couldNotRead: (couldNotRead || []).map(({ name: _name, reason, ...u }) => ({ ...u, reason: short(reason) })),
+    couldNotRead: (couldNotRead || []).map(({ name: _name, reason, howToConfigure: _fix, documents, ...u }) => ({ ...u, reason: short(reason), ...(documents ? { documents: documents.length } : {}) })),
   };
 }

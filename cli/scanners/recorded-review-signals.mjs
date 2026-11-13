@@ -142,20 +142,28 @@ function reviewContext(dir, config, ignored = () => false) {
     let content;
     try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { return null; }
     const point = reviewPointOf(doc.path, content);
-    if (!point || point.unavailable || tracked === null) return { path: doc.path, content, point, measured: null };
+    const root = Boolean(doc.root);
+    if (!point || point.unavailable || tracked === null) return { path: doc.path, root, content, point, measured: null };
     const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
-    return { path: doc.path, content, point, crossing, measured, complete };
+    return { path: doc.path, root, content, point, crossing, measured, complete };
   };
-  // The one definition of a document Freshness did not examine (spec 097 FR-021): a committed
-  // authored document with no review point (`needs-declaration`; an uncommitted one is FRS001's),
-  // or one whose review no longer covers it by the FRS006 rule (`needs-content`). A review point
-  // that cannot be read (shallow clone) is an observation gap, not this.
+  // The one definition of a document Freshness did not examine (spec 097 FR-021), and whether the
+  // project can be asked to resolve it (`blocking`):
+  //   - no review point (`needs-declaration`), committed (an uncommitted one is FRS001's). It blocks
+  //     only for a root instruction file (AGENTS.md, CLAUDE.md, GEMINI.md, AGENTS.override.md,
+  //     .github/copilot-instructions.md, a configured requiredFiles.agentFile), which every session
+  //     loads and the project certainly wrote. Elsewhere ownership is not established (a skill or
+  //     rule a tool may have installed, with no install record): listed, never blocking.
+  //   - a review that no longer covers the document by the FRS006 rule (`needs-content`). It blocks
+  //     wherever it is: a review point (recorded, or a marker the project wrote into the file) is the
+  //     project saying the document is its own.
+  // A review point that cannot be read (shallow clone) is an observation gap, not this.
   const gapOf = status => {
     if (!status || tracked === null) return null;
-    if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration' } : null;
+    if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: status.root, blocking: status.root } : null;
     if (status.point.unavailable || !status.measured || !status.crossing.length) return null;
     const { date, revision, source } = status.point;
-    return { path: status.path, cause: 'needs-content', reviewPoint: { date, revision, source }, references: status.crossing.slice(0, 3).map(r => ({ path: r.path, share: r.share })), more: Math.max(0, status.crossing.length - 3) };
+    return { path: status.path, cause: 'needs-content', root: status.root, blocking: true, reviewPoint: { date, revision, source }, references: status.crossing.slice(0, 3).map(r => ({ path: r.path, share: r.share })), more: Math.max(0, status.crossing.length - 3) };
   };
   return { read, recorded, threshold, role, authored, vendored, pointerText, tracked, roleSet, canonical: docFiles => docFiles.filter(f => !roleSet.has(f) && !vendored.has(f)), reviewPointOf, evidenceFor, statusFor, gapOf };
 }
@@ -259,18 +267,19 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
 /**
  * Agent-instruction documents (authored, non-pointer, committed) that have
  * no review point: no `docguard:last-reviewed` marker and no recorded review.
- * Spec 097's Freshness applicability reports them as `empty` with cause
- * `needs-declaration`; each entry carries the command that records a review.
- * Uncommitted files are left to FRS001.
+ * Spec 097 (FR-021) reports them as unexamined with cause `needs-declaration`;
+ * under strict only a `root` one blocks, and the others are listed as documents
+ * whose ownership is not established. Each entry carries the command that
+ * records a review. Uncommitted files are left to FRS001.
  *
  * @implements docguard.recorded-document-reviews#FR-009
- * @returns {{ path: string, howToConfigure: string }[]}
+ * @returns {{ path: string, root: boolean, howToConfigure: string }[]}
  */
 export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
   const ctx = reviewContext(dir, config);
   if (ctx.tracked === null) return [];
   return ctx.authored.map(doc => ctx.gapOf(ctx.statusFor(doc))).filter(g => g?.cause === 'needs-declaration')
-    .map(({ path }) => ({ path, howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
+    .map(({ path, root }) => ({ path, root, howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
 }
 
 /**

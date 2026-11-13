@@ -130,7 +130,7 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
       blocking: !lite,
     });
   }
-  for (const r of results) addUnexaminedDocuments(unexamined, r, lite);
+  for (const r of results) addUnexaminedDocuments(unexamined, couldNotRead, r, lite);
   return {
     evaluated: !lite,
     unexamined,
@@ -145,39 +145,61 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
 
 /**
  * A validator that examines many documents can report the ones it did not
- * examine (`unexaminedDocuments`: `{ path, cause, reason, howToConfigure }`,
- * Freshness under FR-021) while it performed real checks on the rest. FR-007's
- * zero-check rule is per validator; this is the same rule per document: each
- * listed document is one the project can resolve (cause `needs-declaration` or
- * `needs-content`), so it blocks like an unexamined validator, and `performed`
- * keeps the true count. A waived validator and a `--changed-only` run do not
- * block. One entry per validator key: when the validator is itself unexamined,
- * the documents join its entry. The entry's cause is the first document's (the
- * validator orders them); its reason names up to three documents, then a count,
- * and the first reason of each cause; its fix is the first document's step of
- * each cause.
+ * examine (`unexaminedDocuments`: `{ path, cause, blocking, reason,
+ * howToConfigure }`, Freshness under FR-021) while it performed real checks on
+ * the rest. FR-007's zero-check rule is per validator; this is the same rule per
+ * document.
+ *   - A `blocking` document is one the project can resolve (cause
+ *     `needs-declaration` or `needs-content`): it blocks like an unexamined
+ *     validator, and `performed` keeps the true count. One entry per validator
+ *     key in `unexamined`: when the validator is itself unexamined, the documents
+ *     join its entry. A waived validator and a `--changed-only` run do not block.
+ *   - A non-blocking document (the project may not own it) goes to
+ *     `couldNotRead`, one entry per validator key, and never changes the exit code.
+ * Each entry's cause is its first document's (the validator orders them); its
+ * reason names up to three documents, then a count, and the first reason of
+ * each cause; its fix is the first document's step of each cause.
  */
-function addUnexaminedDocuments(unexamined, r, lite) {
+function addUnexaminedDocuments(unexamined, couldNotRead, r, lite) {
   const docs = Array.isArray(r.unexaminedDocuments)
     ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content'))
     : [];
   if (docs.length === 0) return;
   if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) return;
-  const names = docs.slice(0, 3).map(d => d.path).join(', ') + (docs.length > 3 ? ` and ${docs.length - 3} more` : '');
-  const firstOfEach = docs.filter((d, i) => docs.findIndex(x => x.cause === d.cause) === i);
-  const reason = `${docs.length} document(s) not examined: ${names}. ${firstOfEach.map(d => d.reason).filter(Boolean).join('. ')}`;
-  const howToConfigure = firstOfEach.map(d => d.howToConfigure).filter(Boolean).join(' ') + (docs.length > firstOfEach.length ? ' (one review per document)' : '');
-  const existing = unexamined.find(u => u.validator === r.key);
-  if (existing) {
-    existing.documents = docs.map(d => d.path);
-    existing.reason = [existing.reason, reason].filter(Boolean).join(' ');
-    existing.howToConfigure = [existing.howToConfigure, howToConfigure].filter(Boolean).join(' ');
-    return;
+  const summary = list => {
+    const names = list.slice(0, 3).map(d => d.path).join(', ') + (list.length > 3 ? ` and ${list.length - 3} more` : '');
+    const firstOfEach = list.filter((d, i) => list.findIndex(x => x.cause === d.cause) === i);
+    return {
+      names,
+      reasons: firstOfEach.map(d => d.reason).filter(Boolean).join('. '),
+      fix: firstOfEach.map(d => d.howToConfigure).filter(Boolean).join(' ') + (list.length > firstOfEach.length ? ' (one review per document)' : ''),
+    };
+  };
+  const blocking = docs.filter(d => d.blocking !== false);
+  const listed = docs.filter(d => d.blocking === false);
+  if (blocking.length) {
+    const { names, reasons, fix } = summary(blocking);
+    const reason = `${blocking.length} document(s) not examined: ${names}. ${reasons}`;
+    const existing = unexamined.find(u => u.validator === r.key);
+    if (existing) {
+      existing.documents = blocking.map(d => d.path);
+      existing.reason = [existing.reason, reason].filter(Boolean).join(' ');
+      existing.howToConfigure = [existing.howToConfigure, fix].filter(Boolean).join(' ');
+    } else {
+      unexamined.push({
+        validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: blocking[0].cause, reason, howToConfigure: fix,
+        documents: blocking.map(d => d.path), newIn: null, blocking: !lite,
+      });
+    }
   }
-  unexamined.push({
-    validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: docs[0].cause, reason, howToConfigure,
-    documents: docs.map(d => d.path), newIn: null, blocking: !lite,
-  });
+  if (listed.length) {
+    const { names, reasons, fix } = summary(listed);
+    couldNotRead.push({
+      validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: listed[0].cause,
+      reason: `${listed.length} document(s) whose ownership is not established: ${names}. ${reasons}`,
+      howToConfigure: fix, documents: listed.map(d => d.path),
+    });
+  }
 }
 
 /** The waiver form every strict failure points at (spec 084). */
@@ -227,6 +249,7 @@ export function couldNotReadLines(strict) {
     lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}`);
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
+    if (u.documents?.length && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
   }
   return lines;
 }

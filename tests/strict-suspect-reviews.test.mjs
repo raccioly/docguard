@@ -57,6 +57,10 @@ function commit(dir, files, message, date) {
   fixtureGit(dir, ['commit', '-q', '--allow-empty', '-m', message], { env: { ...process.env, GIT_AUTHOR_DATE: `${date}T12:00:00Z`, GIT_COMMITTER_DATE: `${date}T12:00:00Z` } });
 }
 
+// A harness skill a tool installed (no generated-by header, no install record) naming the engine.
+const HARNESS_SKILL = { '.agents/skills/sample-harness/SKILL.md': '---\nname: sample-harness\ndescription: Run the sample harness against the engine.\n---\n\n# Sample harness\n\nCall `src/engine.mjs` with the probe input and compare the output.\nRun `npm test` afterwards.\n' };
+// AGENTS.md as it would read after a review that follows the engine's growth (no FRS006 crossing).
+const CURRENT_AGENTS = '# Agents\n\n- Run `npm test` before committing.\n- Keep changes small.\n<!-- docguard:last-reviewed 2026-03-05 -->\n';
 const COPILOT = { '.github/copilot-instructions.md': '# Copilot\n\nUse `npm test`. Keep `src/engine.mjs` small and documented.\nPrefer named exports.\n' };
 
 /**
@@ -66,7 +70,7 @@ const COPILOT = { '.github/copilot-instructions.md': '# Copilot\n\nUse `npm test
  * Freshness performs real checks while one document goes unexamined.
  * `extra` adds files to the first commit (another instruction file, say).
  */
-function issue628(enforcement = 'strict', extra = {}) {
+function issue628(enforcement = 'strict', extra = {}, afterInit = null) {
   const dir = mkdtempSync(join(tmpdir(), 'docguard-628-'));
   temporary.push(dir);
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
@@ -86,6 +90,7 @@ function issue628(enforcement = 'strict', extra = {}) {
     'AGENTS.md': '<!-- docguard:last-reviewed 2026-01-01 -->\n# Agents\n\n- `src/engine.mjs` parses the input, then runs it.\n- Run `npm test` before committing.\n',
     ...extra,
   }, 'init', '2026-01-01');
+  if (afterInit) afterInit(dir);
   commit(dir, { 'src/engine.mjs': code(120) }, 'engine grows', '2026-02-01');
   commit(dir, { 'src/engine.mjs': code(220) }, 'engine grows again', '2026-03-01');
   commit(dir, { 'README.md': '# fixture\n' }, 'readme', '2026-03-05');
@@ -188,14 +193,42 @@ describe('T025a / FR-021: per-document gaps on the Freshness result', () => {
   });
 
   it('the run names the same documents as the exported functions (one definition)', () => {
-    const dir = issue628('strict', COPILOT);
+    const dir = issue628('strict', { ...COPILOT, ...HARNESS_SKILL });
     const config = JSON.parse(fixtureGit(dir, ['show', 'HEAD:.docguard.json']));
     const results = validateFreshness(dir, config);
     const contract = freshnessContract(dir, config, { performed: 1, found: true, facts: results.facts });
-    const fromRun = Object.fromEntries(contract.unexaminedDocuments.map(d => [d.path, d.cause]));
-    const missing = agentInstructionDocsWithoutReviewPoint(dir, config).map(d => [d.path, 'needs-declaration']);
-    const suspect = agentInstructionReviewStatus(dir, config).filter(s => s.suspect).map(s => [s.path, 'needs-content']);
+    const fromRun = Object.fromEntries(contract.unexaminedDocuments.map(d => [d.path, `${d.cause}:${d.blocking}`]));
+    const missing = agentInstructionDocsWithoutReviewPoint(dir, config).map(d => [d.path, `needs-declaration:${d.root}`]);
+    const suspect = agentInstructionReviewStatus(dir, config).filter(s => s.suspect).map(s => [s.path, 'needs-content:true']);
     assert.deepEqual(fromRun, Object.fromEntries([...missing, ...suspect]));
+    assert.equal(fromRun['.agents/skills/sample-harness/SKILL.md'], 'needs-declaration:false');
+  });
+
+  it('a harness skill copy with no install record and no review is listed under could-not-read and never blocks', () => {
+    // The TestGuard case by kind: a tool installed its skill into the project's harness folder,
+    // with no generated-by header and no install manifest, and nobody reviewed it.
+    const { status, json } = guardJson(issue628('strict', { ...HARNESS_SKILL, 'AGENTS.md': CURRENT_AGENTS }));
+    assert.notEqual(status, 4, JSON.stringify(json.strict));
+    assert.ok(!json.strict.blocking.includes('freshness'));
+    const listed = json.strict.couldNotRead.find(u => u.validator === 'freshness');
+    assert.deepEqual(listed.documents, ['.agents/skills/sample-harness/SKILL.md']);
+    assert.equal(listed.cause, 'needs-declaration');
+    assert.match(listed.reason, /ownership is not established/);
+    assert.match(listed.howToConfigure, /If the project wrote it.*docguard review --accept \.agents\/skills\/sample-harness\/SKILL\.md.*If a tool installed it, leave it to that tool/);
+  });
+
+  it('a non-root document with a recorded review that no longer covers it blocks', () => {
+    // Recording a review is the project saying the document is its own.
+    const dir = issue628('strict', { 'AGENTS.md': CURRENT_AGENTS, ...HARNESS_SKILL }, (d) => {
+      const r = spawnSync(process.execPath, [CLI, 'review', '--dir', d, '--accept', '.agents/skills/sample-harness/SKILL.md', '--reason', 'the harness skill is ours; read against src/engine.mjs'], { encoding: 'utf8', env: ENV });
+      assert.equal(r.status, 0, r.stderr || r.stdout);
+      commit(d, {}, 'record the skill review', '2026-01-02');
+    });
+    const { status, json } = guardJson(dir);
+    assert.equal(status, 4);
+    const entry = json.strict.unexamined.find(u => u.validator === 'freshness');
+    assert.deepEqual(entry.documents, ['.agents/skills/sample-harness/SKILL.md']);
+    assert.equal(entry.cause, 'needs-content');
   });
 
   it('nothing is unexamined when every review covers its document', () => {
@@ -213,10 +246,10 @@ describe('buildStrictReport: a result that names unexamined documents', () => {
   const freshness = (extra = {}) => ({
     key: 'freshness', name: 'Freshness', verdict: 'fail', performed: 3, findings: [],
     unexaminedDocuments: [
-      { path: 'AGENTS.md', cause: 'needs-content', reason: 'AGENTS.md: its 2026-01-01 review no longer covers src/engine.mjs (82% added since)', howToConfigure: fix('AGENTS.md') },
-      { path: 'a.md', cause: 'needs-declaration', reason: 'a.md has no review record', howToConfigure: fix('a.md') },
-      { path: 'b.md', cause: 'needs-declaration', reason: 'b.md has no review record', howToConfigure: fix('b.md') },
-      { path: 'c.md', cause: 'needs-declaration', reason: 'c.md has no review record', howToConfigure: fix('c.md') },
+      { path: 'AGENTS.md', cause: 'needs-content', blocking: true, reason: 'AGENTS.md: its 2026-01-01 review no longer covers src/engine.mjs (82% added since)', howToConfigure: fix('AGENTS.md') },
+      { path: 'a.md', cause: 'needs-declaration', blocking: true, reason: 'a.md has no review record', howToConfigure: fix('a.md') },
+      { path: 'b.md', cause: 'needs-declaration', blocking: true, reason: 'b.md has no review record', howToConfigure: fix('b.md') },
+      { path: 'c.md', cause: 'needs-declaration', blocking: true, reason: 'c.md has no review record', howToConfigure: fix('c.md') },
     ],
     ...extra,
   });
@@ -238,6 +271,15 @@ describe('buildStrictReport: a result that names unexamined documents', () => {
     assert.equal(report.unexamined.length, 1);
     assert.equal(report.unexamined[0].documents.length, 4);
     assert.deepEqual(report.blocking, ['freshness']);
+  });
+
+  it('a non-blocking document goes to couldNotRead and leaves the exit decision alone', () => {
+    const r = freshness({ unexaminedDocuments: [{ path: '.agents/skills/x/SKILL.md', cause: 'needs-declaration', blocking: false, reason: 'no review record and no install record', howToConfigure: 'If the project wrote it, record the review. If a tool installed it, leave it to that tool.' }] });
+    const report = buildStrictReport([r]);
+    assert.deepEqual(report.blocking, []);
+    assert.deepEqual(report.unexamined, []);
+    assert.deepEqual(report.couldNotRead[0].documents, ['.agents/skills/x/SKILL.md']);
+    assert.match(report.couldNotRead[0].reason, /ownership is not established/);
   });
 
   it('a waived result and a --changed-only run do not block', () => {
