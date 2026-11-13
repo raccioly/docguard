@@ -1145,7 +1145,7 @@ leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding p
 | Field | Meaning |
 |---|---|
 
-<!-- truncated: 315 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 316 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -2037,6 +2037,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sections handed to an agent say when their document may be stale.**
+  `docguard_read_section`, `docguard_task_context` and `docguard agent --task`
+  mark a section with `possiblyStale` when its agent-instruction document has a
+  review that no longer covers the files it names (`suspect-review`) or a
+  current guard run found it due for review (`review-due`), and give
+  `stalenessBasis` so an unmarked section is not read as fresh. Nothing runs
+  guard (specs/097-strict-by-default T028b, from spec 096).
+- **FRS002 ranked and capped in text.** Guard's text output shows the three
+  most stale FRS002 findings and one line for the rest; `--verbose` and JSON
+  keep every one, so exit codes, totals and baselines do not change (T028b).
+
 - **DocGuard's own repository runs strict.** Its `.docguard.json` sets
   `"enforcement": "strict"`; in a full checkout no applicable validator is
   empty, inconclusive or blocked, so guard still exits 2 (warnings only) and CI
@@ -2241,6 +2252,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`review --accept` with several paths** recorded only the first and exited 0.
+  It now records every path in one transaction, or refuses all of them, writes
+  nothing, and names the path it could not accept (T028a).
+- **A strict row for unexamined documents said "Freshness is pass".** The
+  Adopt block, `docguard upgrade` and the could-not-read block now say
+  "Freshness did not examine N document(s) (cause)" (T028a).
+
 - **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
   decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
   requirement documents; not decision records, open-item or task lists, templates,
@@ -2382,26 +2400,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
     (threw) or `skipped` (disabled or declared N/A). Its applicability gains
     `class` (`applicable`, `not-applicable`, `unknown`), and only a
     `not-applicable` check can be skipped.
-  - Guard JSON adds a `verdicts` summary (counts and gaps). SARIF records
-    blocked and inconclusive checks as tool execution notifications, with
-    `executionSuccessful: false` when one is blocked. JUnit renders blocked as
-    `<error>` and inconclusive or empty as `<skipped message>`. Text output
-    prints a verdict line and the reason for every inconclusive check.
-  - `guard --fail-on-inconclusive` exits 4 when a check could not decide;
-    `ci --fail-on-inconclusive` blocks readiness (`CI_INCONCLUSIVE_BLOCKED`);
-    the GitHub Action takes `fail-on-inconclusive`. Without the flag, exit
-    codes are unchanged.
 
-- **Required checks and evidence-based promotion** (`docguard.enforcement-ladder`,
-  spec 083). `requiredChecks` in `.docguard.json` names the validators a
-  project depends on: one that does not decide makes `guard` exit 4 and `ci`
-  block, and only a reasoned N/A marker bypasses it (REQ001 when config
-  disables a required check, REQ002 for an unknown key). `ci` history now
-  records per-code counts and levels, and the new read-only `docguard policy`
-  lists advisory codes this project's history shows are ready to promote and
-  blocking codes that are noisy. In text output, a validator whose findings are all
-
-<!-- truncated: 6477 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6495 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -67,8 +67,8 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 - [x] T027 Strict on the eight audit repositories: open and label every finding that fails a build (SC-002). Repeat T016 and T017 on the Stage B build.
 - [x] T028 Docs: README quick start, `docs/upgrading-to-strict.md`, CI-RECIPES, `action.yml`, the Spec Kit extension's guard command, the breaking-change CHANGELOG entry (FR-022); `docguard specs --write`; `anchors accept`.
 
-- [ ] T028a From the Stage B proof (SC-001 and SC-002 met; SC-003 met once FR-019 lists spec 095's codes): `docguard review --accept` with several paths records every one or refuses; a blocking row for unexamined documents states the document cause, never "<validator> is pass".
-- [ ] T028b Port from spec 096: FRS002 ranked and capped at three per run; the "possibly stale" mark on agent and MCP excerpts.
+- [x] T028a From the Stage B proof (SC-001 and SC-002 met; SC-003 met once FR-019 lists spec 095's codes): `docguard review --accept` with several paths records every one or refuses; a blocking row for unexamined documents states the document cause, never "<validator> is pass".
+- [x] T028b Port from spec 096: FRS002 ranked and capped at three per run; the "possibly stale" mark on agent and MCP excerpts.
 
 ## Stage C — evidence
 

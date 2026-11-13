@@ -608,6 +608,10 @@ npx docguard-cli review --prune                           # drop entries whose s
 npx docguard-cli review --suggest docs-canonical/ARCHITECTURE.md   # propose covers= (low confidence)
 ```
 
+`review --accept` takes several paths (`--accept AGENTS.md CLAUDE.md --reason …`)
+and records every one in one transaction; if any path cannot be accepted it
+writes nothing, names that path and exits 1.
+
 `review --suggest` needs a document; without one it exits 1. A glob in
 `covers=` fingerprints tracked files only (the working tree outside git), so an
 untracked scratch file inside the glob does not change the fingerprint until it

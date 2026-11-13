@@ -2138,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 781
+            "line": 799
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 808
+            "line": 826
           },
           {
             "requirementId": "FR-021",
@@ -4557,7 +4557,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 166
+            "line": 167
           },
           {
             "requirementId": "FR-003",
@@ -4577,7 +4577,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 98
+            "line": 99
           },
           {
             "requirementId": "FR-005",
@@ -4587,7 +4587,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 118
+            "line": 119
           },
           {
             "requirementId": "FR-008",
@@ -13335,7 +13335,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 302
+            "line": 303
           },
           {
             "requirementId": "FR-006",
@@ -13360,7 +13360,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 284
+            "line": 285
           }
         ],
         "testEvidence": [
@@ -13368,6 +13368,11 @@
             "requirementId": "FR-001",
             "file": "tests/recorded-document-reviews.test.mjs",
             "line": 5
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "tests/review-accept-many.test.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-002",
@@ -15774,7 +15779,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 555
+            "line": 551
           },
           {
             "requirementId": "FR-004",
@@ -16352,11 +16357,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:5d0f56f6feb6feff1e86351b99950656f0660c0c61121e78e290037aa6cdf0ae"
+            "digest": "sha256:81cef5fb58e076933881616bf55c8f4da9127044b24bb5c8c3b27e3b2f4c3cbd"
           }
         ],
         "taskCompletion": {
-          "checked": 36,
+          "checked": 38,
           "total": 42
         },
         "implementationEvidence": [
@@ -16647,6 +16652,11 @@
           },
           {
             "requirementId": "FR-014",
+            "file": "cli/commands/guard.mjs",
+            "line": 226
+          },
+          {
+            "requirementId": "FR-014",
             "file": "cli/enforcement.mjs",
             "line": 19
           },
@@ -16804,6 +16814,11 @@
           },
           {
             "requirementId": "FR-014",
+            "file": "tests/frs002-cap.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-014",
             "file": "tests/strict-by-default.test.mjs",
             "line": 18
           },
@@ -16851,6 +16866,16 @@
             "requirementId": "FR-020",
             "file": "tests/strict-by-default.test.mjs",
             "line": 22
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/excerpt-staleness.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/review-accept-many.test.mjs",
+            "line": 9
           },
           {
             "requirementId": "FR-021",
@@ -19721,17 +19746,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 74
+            "line": 75
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 190
+            "line": 191
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 191
+            "line": 192
           },
           {
             "requirementId": "FR-004",
@@ -19872,7 +19897,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/doc-references.mjs",
-            "line": 86
+            "line": 87
           },
           {
             "requirementId": "FR-003",

@@ -450,7 +450,8 @@ task or packet.
 | `provenance.git`, `provenance.registry` | Captured Git and lifecycle-registry state |
 | `assurance` | Retrieval-only scope, unknown factual accuracy, and unverified status |
 | `selection` | Targeted or abstained state, threshold, candidate/omission counts, excluded lifecycle documents, and fixed budgets |
-| `excerpts[]` | Repository-relative path, line range, content/file hashes, kind, optional spec ID, score, reasons, and bounded content |
+| `excerpts[]` | Repository-relative path, line range, content/file hashes, kind, optional spec ID, score, reasons, bounded content, and `possiblyStale: { signals, since? }` when the document is due for review (`review-due`, from a sensor cache for this tree) or its review no longer covers it (`suspect-review`, `since` the review date) |
+| `stalenessBasis` | `sensor-cache` or `review-only`: what the `possiblyStale` marks looked at, so an unmarked excerpt is not read as fresh; outside `coreDigest` |
 | `pointers[]` | Safe task, cited-source, implementation, or test paths with hashes and qualified requirements |
 | `verification[]` | Commands and purposes that still need execution |
 | `navigation` | Safe canonical-document inventory and approved current spec paths |
