@@ -55,11 +55,11 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 
 ## Stage B — the default changes
 
-- [ ] T019 [US1] Failing tests: no `enforcement` key resolves to `strict`; every registered validator runs whatever the profile says; `validators.<key>: false` in the project's own file is honored and reported as "disabled by configuration" (FR-001, FR-003).
-- [ ] T020 [US3] Failing tests: under strict an intrinsic error of Security or Architecture is a warning until its code is gating; a code in the closed list stays an error; `findingSeverity` overrides in both directions (FR-008).
-- [ ] T021 [US3] Failing test: the gating set is derived from the evidence and a code without evidence that meets the bar cannot be in it (FR-009).
-- [ ] T022 [US5] Failing tests: an item the additions table lists under the running or previous minor is labeled "new in vX.Y"; with `asOf` set, a later item is pending and does not affect the exit code; a validator or gating code missing from the table fails a test (FR-012, FR-013).
-- [ ] T023 [US4] Failing tests: `guard --update-baseline` under strict; the baselined count on every run and in JSON; an uninitialized project still exits 3 with one line (FR-011, US4 scenario 3).
+- [x] T019 [US1] Failing tests: no `enforcement` key resolves to `strict`; every registered validator runs whatever the profile says; `validators.<key>: false` in the project's own file is honored and reported as "disabled by configuration" (FR-001, FR-003).
+- [x] T020 [US3] Failing tests: under strict an intrinsic error of Security or Architecture is a warning until its code is gating; a code in the closed list stays an error; `findingSeverity` overrides in both directions (FR-008).
+- [x] T021 [US3] Failing test: the gating set is derived from the evidence and a code without evidence that meets the bar cannot be in it (FR-009).
+- [x] T022 [US5] Failing tests: an item the additions table lists under the running or previous minor is labeled "new in vX.Y"; with `asOf` set, a later item is pending and does not affect the exit code; a validator or gating code missing from the table fails a test (FR-012, FR-013).
+- [x] T023 [US4] Failing tests: `guard --update-baseline` under strict; the baselined count on every run and in JSON; an uninitialized project still exits 3 with one line (FR-011, US4 scenario 3).
 - [ ] T024 [US6] Failing tests: `init` writes no key by default; `--enforcement standard` writes it; the wizard writes it only for a non-default answer; the closing text states the mode (FR-017).
 - [ ] T025 Implementation: `resolveEnforcement` default, `cli/shared.mjs` `resolveFindingEnforcement`, `cli/precision-evidence.mjs` gating set, `cli/strict-additions.mjs`, `cli/commands/init.mjs`.
 - [ ] T025a [US1] Suspect reviews (FR-021): failing tests, then Freshness treats a reviewed agent-instruction document whose review is suspect, or one with no review record, as applies-and-unexamined with the re-review fix. Needs spec 095's review-signal functions on this branch.

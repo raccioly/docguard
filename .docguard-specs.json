@@ -1015,7 +1015,7 @@
           {
             "requirementId": "FR-005",
             "file": ".github/workflows/ci.yml",
-            "line": 396
+            "line": 398
           }
         ],
         "testEvidence": [
@@ -2128,7 +2128,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/precision-evidence.mjs",
-            "line": 79
+            "line": 122
           },
           {
             "requirementId": "FR-017",
@@ -2138,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 743
+            "line": 766
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 770
+            "line": 793
           },
           {
             "requirementId": "FR-021",
@@ -4301,7 +4301,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared.mjs",
-            "line": 140
+            "line": 152
           },
           {
             "requirementId": "FR-001",
@@ -6333,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 10
+            "line": 11
           },
           {
             "requirementId": "FR-010",
@@ -7420,7 +7420,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared.mjs",
-            "line": 184
+            "line": 196
           },
           {
             "requirementId": "FR-003",
@@ -11016,7 +11016,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/ci.yml",
-            "line": 317
+            "line": 319
           },
           {
             "requirementId": "FR-004",
@@ -11196,17 +11196,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 239
+            "line": 251
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 244
+            "line": 256
           },
           {
             "requirementId": "FR-003",
@@ -11241,7 +11241,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-009",
@@ -14694,7 +14694,7 @@
           {
             "requirementId": "FR-040",
             "file": ".github/workflows/ci.yml",
-            "line": 362
+            "line": 364
           },
           {
             "requirementId": "FR-040",
@@ -14734,7 +14734,7 @@
           {
             "requirementId": "SC-003",
             "file": ".github/workflows/ci.yml",
-            "line": 318
+            "line": 320
           }
         ],
         "testEvidence": [
@@ -16148,18 +16148,23 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:f88a6325bd944b170c0b6518b1a0c4fe27dc7a5d731552d5fb8ea80184a84102"
+            "digest": "sha256:6eb6653262e7f263b0d314c6b33c4f8aa1038626725a7e64c575dba7bfcd02c3"
           }
         ],
         "taskCompletion": {
-          "checked": 25,
+          "checked": 30,
           "total": 40
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-001",
             "file": "cli/enforcement.mjs",
-            "line": 13
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/enforcement.mjs",
+            "line": 14
           },
           {
             "requirementId": "FR-004",
@@ -16394,7 +16399,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/enforcement.mjs",
-            "line": 14
+            "line": 13
           },
           {
             "requirementId": "FR-007",
@@ -16402,24 +16407,54 @@
             "line": 9
           },
           {
+            "requirementId": "FR-008",
+            "file": "cli/enforcement.mjs",
+            "line": 15
+          },
+          {
             "requirementId": "FR-010",
             "file": "cli/validators/security.mjs",
             "line": 8
           },
           {
-            "requirementId": "FR-014",
-            "file": "cli/enforcement.mjs",
-            "line": 15
-          },
-          {
-            "requirementId": "FR-015",
+            "requirementId": "FR-011",
             "file": "cli/enforcement.mjs",
             "line": 16
           },
           {
-            "requirementId": "FR-016",
+            "requirementId": "FR-012",
             "file": "cli/enforcement.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/strict-additions.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/enforcement.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/strict-additions.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/enforcement.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/enforcement.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/enforcement.mjs",
+            "line": 21
           },
           {
             "requirementId": "FR-018",
@@ -16434,9 +16469,19 @@
             "line": 11
           },
           {
+            "requirementId": "FR-001",
+            "file": "tests/strict-default.test.mjs",
+            "line": 10
+          },
+          {
             "requirementId": "FR-002",
             "file": "tests/strict-by-default.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/strict-default.test.mjs",
+            "line": 11
           },
           {
             "requirementId": "FR-004",
@@ -16507,6 +16552,31 @@
             "requirementId": "FR-008",
             "file": "tests/strict-by-default.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/strict-default.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/strict-default.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/strict-default.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/strict-default.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/strict-default.test.mjs",
+            "line": 16
           },
           {
             "requirementId": "FR-014",
@@ -17245,7 +17315,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/ci.yml",
-            "line": 233
+            "line": 235
           }
         ],
         "testEvidence": [

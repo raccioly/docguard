@@ -72,7 +72,10 @@ const ALL_KEYS = [
   'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
 ];
 const only = (...keys) => Object.fromEntries(ALL_KEYS.map(k => [k, keys.includes(k)]));
-const cfg = (validators, extra = {}) => ({ projectName: 'strict-fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
+// The fixture helper pins the lower mode, because most tests here pin pre-strict behavior and name the mode when it matters;
+// a test that wants the strict default builds its configuration with `cfgNoMode`.
+const cfgNoMode = (validators, extra = {}) => ({ projectName: 'strict-fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
+const cfg = (validators, extra = {}) => cfgNoMode(validators, { enforcement: 'standard', ...extra });
 
 function guard(dir, args = [], env = {}) {
   const r = spawnSync(process.execPath, [CLI, 'guard', '--dir', dir, ...args], { encoding: 'utf8', env: { ...ENV, ...env } });
@@ -139,9 +142,9 @@ describe('FR-002: v0.47.0 loads a configuration that carries `enforcement`', { s
 
 // ── T005: the mode resolves in one place (FR-001, FR-016) ──
 describe('resolveEnforcement', () => {
-  it('an absent key is the default mode with source "default"; Stage A default is standard', async () => {
+  it('an absent key is the default mode with source "default"; since Stage B the default is strict', async () => {
     const { resolveEnforcement } = await import('../cli/config.mjs');
-    assert.deepEqual(resolveEnforcement({}), { mode: 'standard', asOf: null, source: 'default' });
+    assert.deepEqual(resolveEnforcement({}), { mode: 'strict', asOf: null, source: 'default' });
   });
   it('reads the string and the object form, with source "config"', async () => {
     const { resolveEnforcement } = await import('../cli/config.mjs');
@@ -259,22 +262,23 @@ describe('standard: no exit code moves, and the mode line says where the mode ca
     structure: [NO_API, only('structure')],
   };
   for (const [name, [files, validators]] of Object.entries(fixtures)) {
-    it(`${name}: an absent key and "standard" exit like v0.47.0`, { skip: skipNoTag }, () => {
-      const absent = project(files, cfg(validators));
+    it(`${name}: "standard" exits like v0.47.0`, { skip: skipNoTag }, () => {
       const explicit = project(files, cfg(validators, { enforcement: 'standard' }));
-      const base = v047Guard(absent);
-      assert.equal(guard(absent).status, base.status, 'absent key');
+      const base = v047Guard(explicit);
       assert.equal(guard(explicit).status, base.status, 'explicit standard');
     });
   }
 
-  it('an absent key prints the default, with the key to choose another', () => {
-    const dir = project(NO_API, cfg(only('structure')));
+  it('an absent key prints the default, with the key to choose the lower mode', () => {
+    const dir = project(NO_API, cfgNoMode(only('structure')));
     const r = guard(dir);
-    assert.match(r.out, /Enforcement: standard — the default/);
+    assert.match(r.out, /Enforcement: strict — the default/);
+    assert.match(r.out, /"enforcement": "standard" selects the lower mode/);
     const json = guardJson(dir).json;
-    assert.deepEqual(json.enforcement, { mode: 'standard', asOf: null, source: 'default' });
-    assert.equal(json.strict, undefined, 'strict block only when strict is the mode');
+    assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'default' });
+    assert.ok(json.strict, 'the strict block is present under the default');
+    const std = guardJson(project(NO_API, cfg(only('structure')))).json;
+    assert.equal(std.strict, undefined, 'strict block only when strict is the mode');
   });
 
   it('an explicit key prints that it came from the configuration', () => {
@@ -692,7 +696,7 @@ describe('strict output', () => {
   it('JSON carries enforcement and the strict block', () => {
     const { json } = guardJson(failing());
     assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'config' });
-    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
+    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'disabled', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
     assert.deepEqual(Object.keys(json.strict.unexamined[0]).sort(), ['blocking', 'cause', 'howToConfigure', 'name', 'newIn', 'reason', 'validator', 'verdict']);
     assert.equal(json.strict.baselined, 0);
   });

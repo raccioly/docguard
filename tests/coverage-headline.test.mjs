@@ -48,7 +48,7 @@ function guard(dir) {
 
 const BASE = {
   'package.json': JSON.stringify({ name: 'cov', version: '1.0.0' }),
-  '.docguard.json': JSON.stringify({ projectName: 'cov', profile: 'starter' }),
+  '.docguard.json': JSON.stringify({ projectName: 'cov', profile: 'starter', enforcement: 'standard' }),
   'docs-canonical/ARCHITECTURE.md': '# Architecture\n\nA single module.\n',
   'CHANGELOG.md': '# Changelog\n\n## [Unreleased]\n',
 };

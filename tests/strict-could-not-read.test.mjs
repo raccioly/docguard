@@ -179,7 +179,7 @@ describe('a partial API-Surface result under strict', () => {
   });
 
   it('under standard there is no strict block and the exit code is unchanged', () => {
-    const std = project(PARTIAL_API, { validators: only('apiSurface'), enforcement: null });
+    const std = project(PARTIAL_API, { validators: only('apiSurface'), enforcement: 'standard' });
     const { json, status } = guardJson(std);
     assert.equal(json.strict, undefined);
     assert.notEqual(status, 4);
