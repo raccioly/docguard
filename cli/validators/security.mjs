@@ -49,9 +49,10 @@ const SECRET_PATTERNS = [
 /**
  * A value that is synthetic by its own text (docguard.strict-by-default#FR-010):
  * it names itself a placeholder (`placeholder`, `synthetic`, `not-a-real`,
- * `notreal`, `dummy`, `changeme`, `change-me`) or is one repeated character.
- * `example` is already covered by `isSafePlaceholder` (case-insensitive
- * substring), and `xxx` and `your-` are deliberately not in the list.
+ * `notreal`, `dummy`, `changeme`, `change-me`, `example`) or is one repeated
+ * character. `example` used to be a case-insensitive substring test in
+ * `isSafePlaceholder`; since #655 it follows the same whole-segment rule as the
+ * others. `xxx` and `your-` are deliberately not in the list.
  *
  * DECISION (a word buried in a real-looking key): the word must be a whole
  * segment of the value, split on non-alphanumerics and camelCase boundaries
@@ -67,13 +68,13 @@ const SECRET_PATTERNS = [
 export function isSyntheticValue(value) {
   if (typeof value !== 'string' || !value) return false;
   if (/^(.)\1+$/s.test(value)) return true;
-  if (/^(?:placeholder|synthetic|dummy|changeme)/i.test(value)) return true;
+  if (/^(?:placeholder|synthetic|dummy|changeme|example)/i.test(value)) return true;
   const segments = value
     .replace(/(\p{Ll})(\p{Lu})/gu, '$1 $2')
     .split(/[^\p{L}\p{N}]+/u)
     .filter(Boolean)
     .map(seg => seg.toLowerCase());
-  if (segments.some(seg => seg === 'placeholder' || seg === 'synthetic' || seg === 'notreal' || seg === 'dummy' || seg === 'changeme')) return true;
+  if (segments.some(seg => seg === 'example' || seg === 'placeholder' || seg === 'synthetic' || seg === 'notreal' || seg === 'dummy' || seg === 'changeme')) return true;
   return /(?:^|-)(?:not-a-real|change-me)(?:-|$)/.test(value.toLowerCase().replace(/[_\s]+/g, '-'));
 }
 
@@ -104,7 +105,7 @@ function isSafePlaceholder(line, matchStr, label) {
   if (label === 'AWS Access Key ID') return matchStr === 'AKIAIOSFODNN7EXAMPLE';
   if (label === 'API secret key (Stripe/OpenAI pattern)') return false;
   const value = quotedValue(matchStr);
-  if (/EXAMPLE/i.test(value) || value === 'password123') return true;
+  if (value === 'password123') return true;
   if (isSyntheticValue(value)) return true;
   // Retain documentation-only line comments; executable code followed by an
   // example comment is not documentation-only and must still be checked.

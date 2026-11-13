@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Security: the word `example` no longer hides a secret-shaped value just by
+  appearing in it.** This change ADDS findings. Before, any value containing
+  `example` anywhere (any case) was dropped silently, so
+  `"k8Jd93kfLQ0exampleZp2Wm7xR41abc"` produced no `SEC002` while the same value
+  without the word did. Now `example` exempts a value only as a whole segment
+  (split on separators and camelCase boundaries) or at the start of the value,
+  the rule already used for `placeholder`, `synthetic`, `dummy` and `changeme`.
+  `EXAMPLE_API_KEY`, `my-example-token` and `exampleSecret123` stay exempt; the
+  exact AWS documentation key `AKIAIOSFODNN7EXAMPLE` keeps its own exception.
+  Findings that can appear: `SEC002` (and `SEC001`, `SEC003`, `SEC004` for
+  values of those kinds). Baselines and `docguard:ignore` pragmas cover a value
+  you have reviewed (#655).
+
 ## [0.48.0] - 2026-11-13
 
 ### Breaking

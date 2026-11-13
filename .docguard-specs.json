@@ -5633,7 +5633,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/security.mjs",
-            "line": 170
+            "line": 171
           },
           {
             "requirementId": "FR-006",
@@ -16365,7 +16365,7 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:55721b162d0de71550778a2ad9767ec738cd66aaf92f4c26711f6f39a2459960"
+            "digest": "sha256:623ed3b2a92d318be036c3310d4b36f39504572b76ee756879cedd74938723bd"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
@@ -16373,12 +16373,12 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:062416f56d7447e253b2a9553ed605be462db9e457ccf1a246d39066d2658aa2"
+            "digest": "sha256:579fde8692fee58e1d53e7b4f5e83688cd9daad556ff09560728425dc7612c05"
           }
         ],
         "taskCompletion": {
-          "checked": 40,
-          "total": 43
+          "checked": 41,
+          "total": 44
         },
         "implementationEvidence": [
           {
