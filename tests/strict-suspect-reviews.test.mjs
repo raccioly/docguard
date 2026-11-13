@@ -23,6 +23,7 @@ import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
+import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
 import { buildStrictReport } from '../cli/enforcement.mjs';
 import { agentInstructionDocsWithoutReviewPoint, agentInstructionReviewStatus } from '../cli/scanners/recorded-review-signals.mjs';
 import { validateFreshness, freshnessContract } from '../cli/validators/freshness.mjs';
@@ -76,24 +77,26 @@ function issue628(enforcement = 'strict', extra = {}, afterInit = null) {
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);
   fixtureGit(dir, ['config', 'user.name', 'Fixture']);
-  const config = {
-    projectName: 'fixture-628', version: '0.6',
-    ...(enforcement ? { enforcement } : {}),
-    requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: ['AGENTS.md'] },
-    validators: onlyFreshness,
-  };
-  commit(dir, {
-    '.docguard.json': JSON.stringify(config, null, 2),
+  // Strict runs every validator (FR-003): the others are waived with reasons so only Freshness is looked at.
+  // `enforcement: null` writes no key, so the run takes the default mode (strict since Stage B).
+  const isolated = isolateWithWaivers({
     'package.json': JSON.stringify({ name: 'fixture-628', version: '1.0.0', scripts: { test: 'node --test' } }),
     'src/engine.mjs': code(40),
     'docs-canonical/ARCHITECTURE.md': '<!-- docguard:last-reviewed 2026-01-01 -->\n# Architecture\n\nThe engine lives in `src/engine.mjs`.\n',
     'AGENTS.md': '<!-- docguard:last-reviewed 2026-01-01 -->\n# Agents\n\n- `src/engine.mjs` parses the input, then runs it.\n- Run `npm test` before committing.\n',
     ...extra,
-  }, 'init', '2026-01-01');
+  }, {
+    projectName: 'fixture-628', version: '0.6', enforcement: enforcement ?? 'strict',
+    requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: ['AGENTS.md'] },
+    validators: onlyFreshness,
+  });
+  const config = { ...isolated.config };
+  if (enforcement === null) delete config.enforcement;
+  commit(dir, { ...isolated.files, '.docguard.json': JSON.stringify(config, null, 2) }, 'init', '2026-01-01');
   if (afterInit) afterInit(dir);
   commit(dir, { 'src/engine.mjs': code(120) }, 'engine grows', '2026-02-01');
   commit(dir, { 'src/engine.mjs': code(220) }, 'engine grows again', '2026-03-01');
-  commit(dir, { 'README.md': '# fixture\n' }, 'readme', '2026-03-05');
+  commit(dir, { 'NOTES.md': '# notes\n' }, 'notes', '2026-03-05');
   return dir;
 }
 
@@ -140,6 +143,14 @@ describe('T026 / SC-004: the issue 628 fixture', () => {
     assert.match(entry.howToConfigure, /docguard review --accept AGENTS\.md --reason/);
     // FRS006 stays the warning that names the changed reference.
     assert.ok(json.findings.some(f => f.code === 'FRS006' && f.effectiveSeverity === 'warn' && /src\/engine\.mjs/.test(f.message)));
+  });
+
+  it('with no enforcement key the default is strict, so the same fixture exits 4', () => {
+    const { status, json } = guardJson(issue628(null));
+    assert.equal(json.enforcement.source, 'default');
+    assert.equal(json.enforcement.mode, 'strict');
+    assert.equal(status, 4);
+    assert.deepEqual(json.strict.blocking, ['freshness']);
   });
 
   it('the text output names the file and the re-review step in the Adopt block', () => {
