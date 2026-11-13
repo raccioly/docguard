@@ -227,8 +227,12 @@ extensions/spec-kit-docguard/
   the change, then run `docguard anchors accept --link '<key>'` (or
   `--file <path> --bulk` for a file you changed) with a `--reason` that says
   what you checked. Accept only links in files your change touched. The lock
-  merges with `merge=union`: after a rebase, ANC009 means two lines for one
-  link, so restore `origin/main`'s lock and re-accept only your own files.
+  merges with `merge=union`, so a merge or rebase never conflicts in it. When
+  both sides reviewed one link, DocGuard keeps the line that matches the code
+  now and ignores the other; a link is reported only if neither matches, and
+  you accept it as above. Run `docguard anchors merge --write` to write one
+  line per link (it also resolves git conflict markers if the lock ever
+  conflicts). Do not restore `origin/main`'s lock by hand.
   CODEOWNERS sends every lock change to a maintainer
   (specs/070-requirement-anchors, CI-RECIPES.md Recipe 3f).
 - Run `docguard guard` before pushing — all checks must pass

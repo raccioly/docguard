@@ -10,6 +10,7 @@
  *   docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes]
  *   docguard anchors accept --baseline --bulk --reason <text> [--gitattributes]
  *   docguard anchors accept --remove <key> --reason <text>
+ *   docguard anchors merge (--check | --write)
  *
  * Accepting is a statement that someone read the code against the
  * requirement, so it needs a reason, it is bound to the exact fingerprints it
@@ -24,6 +25,7 @@
  * @implements docguard.requirement-anchors#FR-023
  * @implements docguard.requirement-anchors#FR-024
  * @implements docguard.requirement-anchors#FR-025
+ * @implements docguard.anchor-lock-merge#FR-003
  */
 
 import { execFileSync } from 'node:child_process';
@@ -32,10 +34,10 @@ import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { contentSha } from '../scanners/anchor-cache.mjs';
-import { DISPOSITION_KINDS, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock, serializeAnchorLock } from '../scanners/anchor-lock.mjs';
-import { ANCHOR_LOCK_PATH, computeAnchorStatus, computeOrphans, dispositionKey } from '../scanners/anchors.mjs';
+import { DISPOSITION_KINDS, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, lockFromText, readAnchorLock, serializeAnchorLock } from '../scanners/anchor-lock.mjs';
+import { ANCHOR_LOCK_PATH, computeAnchorStatus, computeLinks, computeOrphans, dispositionKey, readResolvedLock, resolveLockLinks } from '../scanners/anchors.mjs';
 
-const ACTIONS = new Set(['accept', 'disposition']);
+const ACTIONS = new Set(['accept', 'disposition', 'merge']);
 const STATE_ICON = { reviewed: '✅', baselined: '◐ ', unreviewed: '○ ', suspect: '⚠️ ', lost: '❌', 'retired-target': '⊘ ', unverifiable: '? ' };
 
 function headRevision(projectDir) {
@@ -145,7 +147,7 @@ function disposition(projectDir, config, flags) {
   const label = 'anchors disposition';
   const reason = typeof flags.reason === 'string' ? flags.reason.trim() : '';
   if (reason.length < 10 || reason.length > 500) return fail(`${label} needs --reason "<why no requirement applies>" (10-500 characters).`, flags, label);
-  const lockNow = readAnchorLock(projectDir);
+  const lockNow = readResolvedLock(projectDir, config);
   if (lockNow.error) return fail(`${lockNow.error}. Restore the lock before recording a disposition.`, flags, label);
   const dispositions = new Map(lockNow.dispositions);
   const written = [];
@@ -183,7 +185,7 @@ function disposition(projectDir, config, flags) {
       written.push(key);
     }
   }
-  commitFileTransaction([{ path: resolve(projectDir, ANCHOR_LOCK_PATH), content: serializeAnchorLock(lockNow.links, dispositions) }], {
+  commitFileTransaction([{ path: resolve(projectDir, ANCHOR_LOCK_PATH), content: serializeAnchorLock(lockNow.resolved, dispositions) }], {
     validate: () => {
       const back = readAnchorLock(projectDir);
       if (back.error) throw new Error(back.error);
@@ -216,12 +218,81 @@ export function changedDuringRun(projectDir, selected, files) {
   return changed;
 }
 
+/**
+ * Normalize the lock (docguard.anchor-lock-merge#FR-004, FR-005): resolve every
+ * link that has several lines as `readAnchorLock` does, keep both sides of a
+ * git conflict, and write one line per link in canonical order. `--check`
+ * writes nothing and exits 2 when the lock is not already what a write would
+ * produce. Neither flag, or both, is a usage error.
+ *
+ * @implements docguard.anchor-lock-merge#FR-004
+ * @implements docguard.anchor-lock-merge#FR-005
+ */
+function merge(projectDir, config, flags) {
+  const label = 'anchors merge';
+  const check = flags.check === true;
+  const write = flags.write === true;
+  if (check === write) return fail('anchors merge needs exactly one of --check (exit 2 when the lock is not normalized) or --write (normalize it).', flags, label);
+  const path = resolve(projectDir, ANCHOR_LOCK_PATH);
+  if (!existsSync(path)) {
+    const out = { command: label, status: 'NO_LOCK', message: `${ANCHOR_LOCK_PATH} does not exist; there is nothing to merge.` };
+    console.log(flags.format === 'json' ? JSON.stringify(out, null, 2) : out.message);
+    return;
+  }
+  const raw = readFileSync(path, 'utf8');
+  const lock = lockFromText(raw, undefined, { markers: 'drop' });
+  if (lock.error) return fail(`${lock.error}. Resolve the lines that are not valid by hand, or restore the lock from git.`, flags, label);
+  const current = lock.variants.size ? computeLinks(projectDir, config, { noCache: true }).links : [];
+  const resolved = resolveLockLinks(lock, new Map(current.map(l => [l.key, l])));
+  const content = serializeAnchorLock(resolved, lock.dispositions);
+  const normalized = content === raw;
+  if (write && !normalized) {
+    commitFileTransaction([{ path, content }], {
+      validate: () => {
+        const back = readAnchorLock(projectDir);
+        if (back.error) throw new Error(back.error);
+      },
+    });
+  }
+  // Links that need a human: only knowable when the file on disk reads cleanly.
+  let needsReview = null;
+  if (write || lock.markersRemoved === 0) {
+    needsReview = computeAnchorStatus(projectDir, config, { noCache: true }).links
+      .filter(l => l.state === 'suspect')
+      .map(l => ({ key: l.key, requirement: l.requirement, file: l.file, changed: l.side || null,
+        acceptCommand: `docguard anchors accept --file ${l.file} --reason "<what you checked>"` }));
+  }
+  const status = write ? (normalized ? 'UNCHANGED' : 'WRITTEN') : (normalized ? 'NORMALIZED' : 'NOT_NORMALIZED');
+  const summary = { command: label, status, collapsed: lock.collapsed, links: lock.variants.size, markersRemoved: lock.markersRemoved, needsReview };
+  if (flags.format === 'json') console.log(JSON.stringify(summary, null, 2));
+  else {
+    const parts = [];
+    if (lock.collapsed) parts.push(write ? `collapsed ${lock.collapsed} duplicate line(s) for ${lock.variants.size} link(s)` : `${lock.collapsed} duplicate line(s) to collapse`);
+    if (lock.markersRemoved) parts.push(`${write ? 'removed' : 'found'} ${lock.markersRemoved} conflict marker line(s)`);
+    const detail = parts.length ? parts.join('; ') : normalized ? 'already one line per link, in order' : 'not in canonical form (order or spacing)';
+    if (status === 'WRITTEN') console.log(`${c.green}✓ WRITTEN${c.reset} ${ANCHOR_LOCK_PATH}: ${detail}`);
+    else if (status === 'NOT_NORMALIZED') console.log(`${c.yellow}NOT NORMALIZED${c.reset} ${ANCHOR_LOCK_PATH}: ${detail}. Run \`docguard anchors merge --write\`.`);
+    else console.log(`${c.green}✓ ${status}${c.reset} ${ANCHOR_LOCK_PATH}: ${detail}`);
+    if (needsReview?.length) {
+      console.log(`${needsReview.length} link(s) still need review:`);
+      const byFile = new Map();
+      for (const item of needsReview) byFile.set(item.file, [...(byFile.get(item.file) || []), item]);
+      for (const [file, items] of byFile) {
+        console.log(`  ${c.cyan}${file}${c.reset}`);
+        for (const item of items) console.log(`    ${item.requirement} (${item.changed} changed)`);
+        console.log(`    ${items[0].acceptCommand}`);
+      }
+    }
+  }
+  if (check && !normalized) process.exitCode = 2;
+}
+
 function accept(projectDir, config, flags) {
   const reason = typeof flags.reason === 'string' ? flags.reason.trim() : '';
   if (reason.length < 10 || reason.length > 500) return fail('anchors accept needs --reason "<what you checked>" (10-500 characters).', flags);
-  const lockNow = readAnchorLock(projectDir);
+  const lockNow = readResolvedLock(projectDir, config);
   if (lockNow.error) return fail(`${lockNow.error}. Restore the lock before accepting.`, flags);
-  const links = new Map(lockNow.links);
+  const links = new Map(lockNow.resolved);
   const dispositions = lockNow.dispositions;
   let written = [];
   let removed = [];
@@ -304,6 +375,7 @@ export function runAnchors(projectDir, config, flags = {}) {
   try {
     if (action === 'accept') accept(projectDir, config, flags);
     else if (action === 'disposition') disposition(projectDir, config, flags);
+    else if (action === 'merge') merge(projectDir, config, flags);
     else if (flags.orphans) listOrphans(projectDir, config, flags);
     else list(projectDir, config, flags);
   } catch (e) {

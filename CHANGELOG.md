@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The anchor lock merges cleanly: two lines for one link, left by a union
+  merge or rebase, are resolved instead of refused (spec 102,
+  `docguard.anchor-lock-merge`).** This change REMOVES findings and moves one.
+  - **Removed.** `ANC009` ("conflicting entries for one link") is no longer
+    reported, and no longer fails a gate. DocGuard keeps the line whose recorded
+    fingerprints match the code and the requirement as they are now and ignores
+    the others; if several match, the newest `date` stands, then the last line.
+    The code stays registered, so `findingSeverity` entries and `explain ANC009`
+    keep working.
+  - **Moved.** When no line matches (both branches reviewed the link, then the
+    merge produced code neither saw), the link is reported as `ANC001` or
+    `ANC002` with its `docguard anchors accept` command, where `ANC009` alone
+    used to appear. That is a link that does need a review.
+  - **Fixed.** `anchors accept` and `anchors disposition` dropped every
+    conflicted key they did not rewrite, so a reviewed link became `ANC004`
+    (info). Every writer now leaves one line per link, in order.
+  - **Added.** `docguard anchors merge --check` (exit 2 when the lock is not one
+    line per link) and `--write` (normalize it, list each link that still needs
+    review with its `anchors accept --file …` command). It also resolves git
+    conflict markers, so a project that dropped `merge=union` repairs a
+    conflicted lock in one command: `docguard anchors merge --write`. Guard
+    reports a lock with markers as `ANC005` and names that command.
+  - The lock format is unchanged; 0.48.0 reads what this version writes.
+
 ### Added
 
 - **One rule for copied files: template and fixture instruction copies leave the

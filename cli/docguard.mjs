@@ -114,7 +114,7 @@ ${c.bold}Tools (situational, but day-to-day useful)${c.reset}
   ${c.green}specs${c.reset}      Track spec lifecycle and evidence (${c.cyan}--check|--write${c.reset}; ${c.cyan}preflight${c.reset}, ${c.cyan}approve${c.reset}, ${c.cyan}complete${c.reset}, ${c.cyan}require${c.reset}, ${c.cyan}reanchor${c.reset})
   ${c.green}reconcile${c.reset}  Classify code/spec changes since a Git ref before changing intent
   ${c.green}review${c.reset}     Doc sections whose covered code changed (${c.cyan}--accept <doc>#<id>${c.reset}, ${c.cyan}--prune${c.reset}, ${c.cyan}--suggest <doc>${c.reset})
-  ${c.green}anchors${c.reset}    Code→requirement links, what each anchors to and whether it changed since review (${c.cyan}accept${c.reset}, ${c.cyan}--state <s>${c.reset}, ${c.cyan}--format json${c.reset})
+  ${c.green}anchors${c.reset}    Code→requirement links, what each anchors to and whether it changed since review (${c.cyan}accept${c.reset}, ${c.cyan}merge --check|--write${c.reset}, ${c.cyan}--state <s>${c.reset}, ${c.cyan}--format json${c.reset})
   ${c.green}rules${c.reset}      Which agent instruction files each harness loads for a path (${c.cyan}--for <path>${c.reset}, ${c.cyan}--harness <name>${c.reset})
   ${c.green}trace${c.reset}      Requirements traceability matrix (${c.cyan}--reverse${c.reset} for code→doc map, ${c.cyan}--features${c.reset} for per-feature adherence)
   ${c.green}upgrade${c.reset}    Migrate ${c.cyan}.docguard.json${c.reset} schema + CLI (${c.cyan}--apply --pr${c.reset} for team-wide PR)
@@ -408,10 +408,11 @@ const COMMAND_HELP = {
   },
   anchors: {
     summary: 'List every code→requirement link, the symbol, statement, route or file it anchors to, and the tier that resolved it.',
-    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors --orphans [--spec <id>] [--file <path>] [--format json] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text> | docguard anchors disposition (--symbol <file>#<name> | --file <path> --bulk) --kind derived|dead|infrastructure --reason <text> | docguard anchors disposition --remove <file>#<name> --reason <text>',
+    usage: 'docguard anchors [--spec <id>] [--state <state>] [--file <path>] [--format json] [--no-cache] | docguard anchors --orphans [--spec <id>] [--file <path>] [--format json] | docguard anchors accept (--link <key> | --spec <id> | --file <path>) --reason <text> [--bulk] [--gitattributes] | docguard anchors accept --baseline --bulk --reason <text> | docguard anchors accept --remove <key> --reason <text> | docguard anchors disposition (--symbol <file>#<name> | --file <path> --bulk) --kind derived|dead|infrastructure --reason <text> | docguard anchors disposition --remove <file>#<name> --reason <text> | docguard anchors merge (--check | --write)',
     flags: [
       ['accept', 'Record a review of the selected links in .docguard-anchor-lock.jsonl, bound to the fingerprints it saw'],
       ['disposition', 'Record why an untagged symbol implements no requirement: --kind derived, dead or infrastructure'],
+      ['merge', 'Normalize the lock: one line per link (the line that matches the code now stands), conflict markers resolved. --check exits 2 when it is not normalized; --write rewrites it and lists the links that still need review'],
       ['--orphans', 'List the exported or top-level symbols under the governed paths that no tag anchors'],
       ['--symbol <file>#<name>', 'With disposition: the one untagged symbol'],
       ['--kind <kind>', 'With disposition: derived (an unwritten requirement), dead, or infrastructure'],
@@ -424,10 +425,12 @@ const COMMAND_HELP = {
       ['--baseline', 'With accept --bulk: stamp every unreviewed link as baselined (adoption), never as reviewed'],
       ['--remove <key>', 'With accept: delete a lock entry, such as a lost link; with disposition: <file>#<name>'],
       ['--gitattributes', 'With accept: also add the lock\'s merge=union line to .gitattributes'],
+      ['--check', 'With merge: exit 2 when the lock is not one line per link in canonical order; writes nothing'],
+      ['--write', 'With merge: normalize the lock (resolve duplicate lines and git conflict markers) and list the links that still need review'],
       ['--no-cache', 'Ignore the per-file extraction cache in .docguard/'],
       ['--format json', 'Machine-readable output'],
     ],
-    examples: ['docguard anchors', 'docguard anchors --state suspect --format json', 'docguard anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"', "docguard anchors accept --link 'acme.billing#FR-003|src/pricing.mjs|applyDiscount|symbol' --reason \"rounding fix keeps FR-003\""],
+    examples: ['docguard anchors', 'docguard anchors --state suspect --format json', 'docguard anchors accept --baseline --bulk --gitattributes --reason "adopt requirement anchors"', 'docguard anchors merge --check', 'docguard anchors merge --write', "docguard anchors accept --link 'acme.billing#FR-003|src/pricing.mjs|applyDiscount|symbol' --reason \"rounding fix keeps FR-003\""],
   },
   review: {
     summary: 'Record what a document review checked, and review a document or section when the code it names changes.',

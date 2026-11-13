@@ -2,7 +2,7 @@
  * Anchor lock and suspect links (specs/070-requirement-anchors, user story 2):
  * a baselined or reviewed link turns suspect when its code or its requirement
  * changes, an accept is bound to the fingerprints it saw, a deleted tag is
- * lost, the lock merges line by line and fails closed on a conflict, and only
+ * lost, the lock merges line by line (a duplicate is resolved, spec 102), and only
  * `anchors accept` writes it.
  *
  * @req docguard.requirement-anchors#FR-016
@@ -117,7 +117,7 @@ describe('the lock file (FR-016 to FR-018)', () => {
     assert.deepEqual(lock.conflicts, []);
   });
 
-  it('two different lines for one key are a conflict: ANC009, and the link reads as suspect, never current', () => {
+  it('two different lines for one key are not a conflict: both match the code, so the newest stands and nothing is reported (docguard.anchor-lock-merge#FR-002)', () => {
     const dir = project({ git: false });
     baseline(dir);
     const path = join(dir, ANCHOR_LOCK_PATH);
@@ -125,14 +125,15 @@ describe('the lock file (FR-016 to FR-018)', () => {
     const entry = JSON.parse(lines[1]);
     lines.push(stableLine({ ...entry, reason: 'reviewed on another branch' }));
     writeFileSync(path, `${lines.join('\n')}\n`);
-    // The reader itself fails closed: neither conflicting line is a lock entry.
+    // The reader keeps the key as a link and lists both lines for the caller to resolve.
     const lock = readAnchorLock(dir);
-    assert.equal(lock.links.has(entry.key), false);
-    assert.deepEqual(lock.conflicts.map(c => c.key), [entry.key]);
+    assert.equal(lock.links.has(entry.key), true);
+    assert.deepEqual(lock.conflicts, []);
+    assert.equal(lock.variants.get(entry.key).length, 2);
     const s = status(dir);
-    assert.ok(s.problems.some(p => p.code === 'ANC009' && p.message.includes(entry.key)));
-    assert.equal(s.links.find(l => l.key === entry.key).state, 'suspect');
-    assert.ok(guardCodes(dir).includes('ANC009'));
+    assert.ok(!s.problems.some(p => p.code === 'ANC009'));
+    assert.equal(s.links.find(l => l.key === entry.key).state, 'baselined');
+    assert.ok(!guardCodes(dir).includes('ANC009'));
   });
 
   it('a malformed line, a missing header or an unsupported version is one ANC005 error, and nothing reads as current', () => {

@@ -331,8 +331,13 @@ branches that review links of the same spec merge without a conflict:
 
 `docguard anchors accept … --gitattributes` adds that line; DocGuard never
 edits `.gitattributes` without the flag. If a union merge keeps two different
-lines for one link, guard reports ANC009 and treats the link as unreviewed
-until someone accepts it again.
+lines for one link, DocGuard reads the one whose recorded fingerprints match
+the code and the requirement as they are now, so the merge never fails a gate
+by itself; the link needs review (ANC001 or ANC002) only when neither line
+matches. The next `accept` writes one line per link, and `docguard anchors
+merge --write` does the same without accepting anything. Without the union
+line, a merge that conflicts in the lock leaves git conflict markers (ANC005);
+`docguard anchors merge --write` keeps both sides and resolves them.
 
 **Adoption.** Run `docguard anchors accept --baseline --bulk --reason "<why>"`
 once, and commit the lock. Baselined links are never counted as reviewed;

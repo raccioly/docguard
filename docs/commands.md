@@ -737,6 +737,22 @@ Rules for an accept:
   characters.
 - `--baseline` stamps links as baselined, never as reviewed.
 
+**Merging the lock.** Declare the lock `merge=union` in `.gitattributes`
+(`accept --gitattributes` adds the line). Two branches that review the same
+link then merge without a conflict and leave two lines for it. DocGuard reads
+the line whose recorded fingerprints match the code and the requirement as they
+are now and ignores the others; a link needs review (ANC001 or ANC002, with its
+`accept` command) only when none matches. Any `accept` writes one line per
+link. To collapse the lines without accepting anything, or to resolve a lock
+that carries git conflict markers (a project without `merge=union`):
+
+```bash
+npx docguard-cli anchors merge --check    # exit 2 when the lock is not one line per link, in order
+npx docguard-cli anchors merge --write    # normalize it; lists each link that still needs review
+```
+
+Resolve conflicts in code and specs first: the command resolves only the lock.
+
 **Renaming and moving.** The fingerprint leaves out a symbol's own name, so a
 function renamed or moved with an unchanged body is reported **moved**. Its
 review carries over, and the next accept rewrites its key. The carry-over
@@ -885,9 +901,8 @@ With the lock committed, guard reports:
 - **ANC001**: a link whose code changed;
 - **ANC002**: a link whose requirement changed;
 - **ANC003**: a reviewed link whose tag is gone;
-- **ANC005**: an unreadable lock (an error);
+- **ANC005**: an unreadable lock, or one that still holds git conflict markers (an error; `docguard anchors merge --write` resolves the markers);
 - **ANC008**: a tag citing a retired requirement;
-- **ANC009**: a merge conflict in the lock.
 
 DocGuard authenticates nobody. Require review of the lock through CODEOWNERS
 ([CI recipe 3f](../docs-canonical/CI-RECIPES.md)).

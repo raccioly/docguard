@@ -207,7 +207,7 @@ See [Profiles](./profiles.md) for details.
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
 | `aidlc` | `true` | AWS AI-DLC records after the workflow: traceability targets that no longer exist, gaps left in completed stages, unit deliverables removed later, unreadable records (AID001–AID004, informational by default) |
 | `decisionRecords` | `true` | ADR status, supersession links and index rows, and unanswered Spec Kit clarifications or `[Answer]:` tags (DEC001–DEC006, informational by default) |
-| `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, lock merge conflicts (ANC009), and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
+| `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, an unreadable lock, and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
 

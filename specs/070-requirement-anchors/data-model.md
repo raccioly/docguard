@@ -85,7 +85,7 @@ Same file. The key is `disposition|<file>|<anchor>`, with fields `kind`
 Other findings: ANC005 when the lock is unreadable (error, always); ANC006 for
 ambiguous or unresolved scope (info); ANC007 for an unknown requirement
 (warn); ANC009 for a conflicting duplicate key (warn, and the link reads as
-suspect).
+suspect; no longer reported since 2026-11-13, see `docguard.anchor-lock-merge`).
 
 ### Transitions
 
