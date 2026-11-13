@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-11-13
+
 ### Breaking
 
 - **Strict is now the default enforcement mode.** A project with no
@@ -373,6 +375,18 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
 
 Benchmark-Rebaselined: dev-generated-security-control — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
 Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
+
+### Commits
+
+- spec(097): strict by default (#637)
+- docs: pin TestGuard 0.25.0 in the probe commands (#664)
+- docs: say which labels must stay in English in the three READMEs (#647)
+- feat(role): one agent-instruction document role (spec 094) (#633)
+- docs: note the min-release-age caveat for npx testguard-cli and the Homebrew form (#638)
+- chore: TestGuard 0.24.0, parallel and change-scoped probes (#627)
+- maint: 2026-11-11 — score reads configured canonical docs (#625); claimspec re-pin (#619) (#626)
+- [jules:test-gaps] cli/commands/mcp.mjs — two exports covered (#624)
+- fix(release): publish each release to the MCP registry and backfill it (#623)
 
 ## [0.47.0] - 2026-11-10
 

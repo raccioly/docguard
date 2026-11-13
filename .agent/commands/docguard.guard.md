@@ -16,7 +16,7 @@ You are an AI agent enforcing Canonical-Driven Development (CDD) compliance usin
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.47.0`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.48.0`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
 
 ## Step 1: Run Guard (machine-readable)
@@ -29,7 +29,7 @@ Read the JSON contract — do not parse prose:
 
 | Field | Meaning |
 |-------|---------|
-| `status` | `PASS` / `WARN` / `FAIL` (severity-aware; matches the exit code: 0/2/1) |
+| `status` | `PASS` / `WARN` / `FAIL` (severity-aware; matches the exit code: 0/2/1). Under the strict default exit `4` means a validator that applies examined nothing: read `strict.unexamined[]` for each cause and `howToConfigure`; do not set `"enforcement": "standard"` to clear it |
 | `findings[]` | Structured issues: `{code, severity, confidence, message, location, suggestion}` |
 | `nextStep` | The single suggested follow-up command (`null` on PASS) |
 | `reportable[]` | Low-confidence findings (possible false positives) — verify before acting |
