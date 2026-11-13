@@ -2169,6 +2169,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
+  decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
+  requirement documents; not decision records, open-item or task lists, templates,
+  task, design-element, story or acceptance IDs) and what is a template row
+  (`[slot]`, `<slot>`, `{{slot}}`, `TBD`, or no text). Requirement-Anchors' branch for
+  IDs in a form the scanner does not read now uses it, so decision, open-item and task
+  IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
+  template documents are not requirements; the evidence lists each ID once.
+
 - **Requirement-Anchors counted identifiers that are not requirements.** Whether
   the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
   spec and requirement documents, not decision records, open-item or question lists,
@@ -2384,17 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   - commit size over the last 90 days;
   - what git tracks.
 
-  Each item is labeled `deterministic`, `proxy` or `survey-only`. It is
-  `null`, with a reason, when there is no evidence. The view is display-only,
-  like ALCOA+. `docguard_docs_for_path` now gives each referencing doc's
-  `lifecycle`, so agents can skip superseded docs. It also gives that doc's
-  open findings when the AI-DLC sensor has cached a guard run for the current
-  tree state.
-- **Decision records are checked** (`docguard.decision-records`, spec 086). A
-  new advisory Decision-Records validator reads ADRs (one file with
-  `## ADR-NNN` sections, or one file per decision) and reports a missing or
 
-<!-- truncated: 6395 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6404 more lines — read CHANGELOG.md directly -->
 
 ---
 

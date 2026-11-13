@@ -16339,7 +16339,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/requirement-anchors.mjs",
-            "line": 136
+            "line": 120
           },
           {
             "requirementId": "FR-006",

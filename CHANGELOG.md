@@ -174,6 +174,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
+  decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
+  requirement documents; not decision records, open-item or task lists, templates,
+  task, design-element, story or acceptance IDs) and what is a template row
+  (`[slot]`, `<slot>`, `{{slot}}`, `TBD`, or no text). Requirement-Anchors' branch for
+  IDs in a form the scanner does not read now uses it, so decision, open-item and task
+  IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
+  template documents are not requirements; the evidence lists each ID once.
+
 - **Requirement-Anchors counted identifiers that are not requirements.** Whether
   the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
   spec and requirement documents, not decision records, open-item or question lists,

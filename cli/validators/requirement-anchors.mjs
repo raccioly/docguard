@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { classifyRequirementIds, describeSkipped, isPlaceholderRequirement, nonRequirementKind } from '../shared-requirement-ids.mjs';
 import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_FINDINGS = 25;
@@ -66,54 +67,37 @@ function suggestionFor(projectDir, p) {
   }
 }
 
-// A requirement line whose text is a bracketed placeholder ("System MUST [capability]") is a template row, not a requirement.
-// (a task checkbox, `[ ]` or `[x]`, is not a placeholder: the bracket must hold a word)
-const PLACEHOLDER_TEXT = /\[[^\]\n]*[A-Za-z][^\]\n]*\](?!\()/;
-const isPlaceholder = def => PLACEHOLDER_TEXT.test(String(def.text || '').replace(def.id, '').replace(/[*_`]/g, ''));
 // A declaration-shaped line that opens with an ID the default patterns do not read (FR-1: one digit, R-12: one letter).
 const LOOSE_ID = /^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*([A-Z]{1,6}-\d{1,5})\b/;
 
-/** Requirement-like IDs in the requirement documents that the active patterns do not read, with the first document that has them. */
+/**
+ * Requirement-like IDs in the requirement documents that the active patterns do not read, with the first document
+ * that has them. "Requirement-like" is the shared definition (cli/shared-requirement-ids.mjs): an FR, NFR, SC or REQ
+ * prefix, outside decision records, open-item and task lists and templates, and not a placeholder row. The other
+ * identifiers seen are returned by kind, so the evidence can name them.
+ */
 function unreadIds(projectDir, config, patterns) {
   const found = new Map();
+  const other = new Map();
   for (const doc of getRequirementDocPaths(projectDir, config)) {
     let text;
     try { text = readFileSync(doc, 'utf-8'); } catch { continue; }
+    const file = relative(projectDir, doc).replace(/\\/g, '/');
     let fence = false;
     for (const line of text.split('\n')) {
       if (/^\s{0,3}(`{3,}|~{3,})/.test(line)) { fence = !fence; continue; }
       if (fence) continue;
       const m = line.match(LOOSE_ID);
-      if (!m || PLACEHOLDER_TEXT.test(line)) continue;
+      if (!m) continue;
+      const def = { id: m[1], file, text: line.trim() };
+      if (isPlaceholderRequirement(def)) continue;
       if (patterns.some(p => { p.lastIndex = 0; return p.test(m[1]); })) continue;
-      if (!found.has(m[1])) found.set(m[1], relative(projectDir, doc).replace(/\\/g, '/'));
+      const kind = nonRequirementKind(def, { custom: false });
+      if (kind) { other.set(kind, [...(other.get(kind) || []), m[1]]); continue; }
+      if (!found.has(m[1])) found.set(m[1], file);
     }
   }
-  return found;
-}
-
-// What counts as a requirement ID when the project has not configured its own pattern. The scanner reads more
-// shapes (it is also a navigation aid), but "this project has requirements to anchor" is a narrower question.
-// Counted: FR, NFR, SC and REQ, the prefixes of a requirement list (`- **FR-001**: The system MUST ...`).
-// Not counted: T (a task ID), ARCH, MOD and SYS (design elements), US, STORY, UC and AC (stories, use cases and
-// acceptance checks, which describe or test a requirement rather than state one).
-const REQUIREMENT_PREFIXES = new Set(['FR', 'NFR', 'SC', 'REQ']);
-const KIND_OF_PREFIX = { T: 'task', ARCH: 'design-element', MOD: 'design-element', SYS: 'design-element', US: 'story', STORY: 'story', UC: 'use-case', AC: 'acceptance-check' };
-// Where an ID is not a requirement whatever its prefix: a decision record, an open-item or question list, a task list.
-const DECISION_DOC = /(?:^|\/)(?:adrs?|decisions?)\/|(?:^|\/)[^/]*(?:adr|decision)[^/]*\.md$/i;
-const OPEN_ITEM_DOC = /(?:^|\/)[^/]*(?:open[-_ ]?(?:items?|questions?|issues?)|questions|clarifications?)[^/]*\.md$/i;
-const TASK_DOC = /(?:^|\/)[^/]*(?:tasks?|todo|plan)[^/]*\.md$/i;
-
-/** Why a declared ID is not a requirement, or null when it is one (or the project's own pattern says it is). */
-function nonRequirementKind(def, custom) {
-  if (custom) return null;
-  const file = String(def.file || '');
-  if (DECISION_DOC.test(file)) return 'decision';
-  if (OPEN_ITEM_DOC.test(file)) return 'open-item';
-  if (TASK_DOC.test(file)) return KIND_OF_PREFIX[def.id.split('-')[0]] || 'task-list';
-  const prefix = def.id.split('-')[0];
-  if (!REQUIREMENT_PREFIXES.has(prefix)) return KIND_OF_PREFIX[prefix] || 'other';
-  return null;
+  return { found, other };
 }
 
 /**
@@ -139,33 +123,30 @@ export function applies(projectDir, config = {}) {
   const patterns = requirementPatterns(config);
   const custom = Boolean(config.traceability?.requirementPattern);
   const all = [...collectRequirementIds(projectDir, config, patterns).values()];
-  const declared = all.filter(d => !isPlaceholder(d));
-  const placeholders = all.length - declared.length;
-  const skipped = new Map();
-  const real = declared.filter(d => {
-    const kind = nonRequirementKind(d, custom);
-    if (kind) skipped.set(kind, (skipped.get(kind) || 0) + 1);
-    return !kind;
-  });
-  const skippedText = [...skipped].map(([k, n]) => `${n} ${k}`).join(', ');
+  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom });
+  const skippedText = describeSkipped(skipped);
   const source = firstProductSource(projectDir, config);
   if (real.length === 0) {
-    const loose = source ? unreadIds(projectDir, config, patterns) : new Map();
+    // Identifiers in a form the scanner does not read: the same definition decides which are requirement-like.
+    const { found: loose, other } = source && !custom ? unreadIds(projectDir, config, patterns) : { found: new Map(), other: new Map() };
     if (loose.size >= 2) {
-      const [first, file] = [...loose.entries()][0];
-      return { applies: true, kind: 'unrecognized', ids: [...loose.keys()], file, evidence: `${loose.size} requirement-like ID(s) in a form the scanner does not read (${sample([...loose.keys()])}, first in ${file}) and source code (${source})` };
+      const [, file] = [...loose.entries()][0];
+      return { applies: true, kind: 'unrecognized', ids: [...loose.keys()], file, evidence: `${loose.size} requirement-like FR/NFR/SC/REQ ID(s) in a form the scanner does not read (${sample([...loose.keys()])}, first in ${file}) and source code (${source})` };
     }
-    return { applies: false, evidence: placeholders
+    for (const [kind, ids] of other) skipped.set(kind, (skipped.get(kind) || 0) + ids.length);
+    const seen = describeSkipped(skipped);
+    return { applies: false, evidence: placeholders && !seen
       ? `${placeholders} requirement line(s) are template placeholders (such as "System MUST [capability]"), so no requirement is declared yet`
-      : skipped.size
-        ? `the IDs found are not requirements (${skippedText} identifier(s): decision records, open-item lists, task lists, design elements, stories and acceptance checks); a requirement is an FR, NFR, SC or REQ ID in a spec or requirement document, or an ID read by traceability.requirementPattern`
+      : seen
+        ? `the identifiers found are not requirements (${seen} identifier(s): decision records, open-item lists, task lists, templates, design elements, stories and acceptance checks${placeholders ? `, and ${placeholders} placeholder row(s)` : ''}); a requirement is an FR, NFR, SC or REQ ID in a spec or requirement document, or an ID read by traceability.requirementPattern`
         : 'no spec or requirement document declares a requirement ID, so there is nothing for a source tag to cite' };
   }
-  const ids = sample(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id));
+  const distinct = [...new Set(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id))];
+  const ids = sample(distinct);
   const counted = custom ? 'ID(s) read by traceability.requirementPattern' : 'FR/NFR/SC/REQ requirement ID(s)';
   if (!source) return { applies: false, evidence: `${real.length} ${counted} are declared (${ids}) but the project has no product source file to tag (configuration files do not count)` };
   const withSpec = real.find(d => d.specId);
-  return { applies: true, kind: 'recognized', example: withSpec ? `${withSpec.specId}#${withSpec.id}` : null, evidence: `${real.length} ${counted} are declared (${ids}${skipped.size ? `; not counted: ${skippedText} identifier(s)` : ''}) and the project has source code (${source}), so code can cite them` };
+  return { applies: true, kind: 'recognized', example: withSpec ? `${withSpec.specId}#${withSpec.id}` : null, evidence: `${real.length} ${counted} are declared (${ids}${skipped.size ? `; not counted: ${skippedText} identifier(s)` : ''}${placeholders ? `; ${placeholders} placeholder row(s) ignored` : ''}) and the project has source code (${source}), so code can cite them` };
 }
 
 const SPEC_ID_HOW = d => `Qualify each tag with the Spec ID of the spec that declares the requirement${d.example ? `, such as \`// @implements ${d.example}\`` : ', such as `// @implements <spec-id>#FR-001`'}. A Spec ID is declared in the spec itself: a \`**Spec ID**: <unique-id>\` line under the title of specs/<feature>/spec.md (or \`<!-- docguard:spec-id <unique-id> -->\`), and \`docguard specs --write\` records it; a spec that has none needs one added, because a bare FR-001 collides (ANC007) as soon as two specs declare it.`;
