@@ -4,11 +4,12 @@
  * @req docguard.language-repository-coverage#FR-011
  * @req docguard.language-repository-coverage#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, existsSync, rmSync, symlinkSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { loadConfig } from '../cli/config.mjs';
@@ -35,7 +36,7 @@ const docs = {
 const validatorNames = 'structure docsSync drift changelog testSpec environment security architecture freshness traceability docsDiff apiSurface metadataSync docsCoverage docQuality todoTracking schemaSync specKit crossReference generatedStaleness surfaceSync diffSuspicion referenceExistence apiDocSmells canonicalSync metricsConsistency'.split(' ');
 
 function temp(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-role-map-'));
+  const dir = makeTempDir('docguard-role-map-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

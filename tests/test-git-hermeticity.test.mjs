@@ -22,11 +22,12 @@
  * @req docguard.test-git-hermeticity#SC-002
  * @req docguard.test-git-hermeticity#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+
 import { join, relative, resolve } from 'node:path';
 import { FIXTURE_GIT_SHELL, HOSTILE_HOOKS, fixtureGit, hostileGitEnv } from './helpers/git.mjs';
 
@@ -39,7 +40,7 @@ const identity = ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.i
 
 /** A hostile machine and an empty repository initialised on it with the fixture options. */
 function hostileRepo() {
-  const root = mkdtempSync(join(tmpdir(), 'dg-hostile-'));
+  const root = makeTempDir('dg-hostile-');
   temps.push(root);
   const machine = hostileGitEnv(join(root, 'machine'));
   const repo = join(root, 'repo');
@@ -84,7 +85,7 @@ describe('a fixture states its branch instead of inheriting one (FR-003)', () =>
 
 describe('a failed fixture step fails the test loudly (FR-002)', () => {
   it('throws with git\'s own error instead of returning a result nobody reads', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-fixture-fail-'));
+    const dir = makeTempDir('dg-fixture-fail-');
     temps.push(dir);
     assert.throws(() => fixtureGit(dir, ['rev-parse', '--verify', 'HEAD']), /fixture git rev-parse --verify HEAD exited \d+ in .*: fatal: /s);
   });
@@ -130,7 +131,7 @@ describe('no test spawns git around the helper (FR-004)', () => {
 
 describe('DocGuard\'s own scratch repository does not run the machine\'s hooks (FR-005)', () => {
   it('docguard demo commits its fixture on a hostile machine', () => {
-    const root = mkdtempSync(join(tmpdir(), 'dg-demo-hostile-'));
+    const root = makeTempDir('dg-demo-hostile-');
     temps.push(root);
     const { env, fired } = hostileGitEnv(join(root, 'machine'));
     const tmp = join(root, 'tmp');

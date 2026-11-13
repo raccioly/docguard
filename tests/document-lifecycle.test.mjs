@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 /**
  * @req specs/006-document-lifecycle/spec.md#FR-001
@@ -22,7 +23,7 @@ function write(dir, path, content) {
 }
 
 function repository(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-lifecycle-'));
+  const dir = makeTempDir('docguard-lifecycle-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) write(dir, path, content);
   execFileSync('git', [...FIXTURE_GIT, 'init', '-q'], { cwd: dir });
@@ -56,7 +57,7 @@ function registryEntry(lifecycle) {
 
 describe('Document-Lifecycle validator', () => {
   it('is not applicable outside a Git working tree', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-lifecycle-no-git-'));
+    const dir = makeTempDir('docguard-lifecycle-no-git-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     write(dir, 'docs/old-plan.md', '# Plan\n\n**Status:** Superseded\n');
 

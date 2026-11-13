@@ -7,12 +7,13 @@
  * @req docguard.requirement-anchors#FR-037
  * @req docguard.requirement-anchors#SC-010
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { CSV_COLUMNS, matrixModel, toCsv, toReqif, xmlEscape } from '../cli/writers/trace-matrix.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -25,7 +26,7 @@ const cli = (dir, args) => spawnSync(process.execPath, [CLI, ...args, '--dir', d
 
 /** Two requirements, three anchors, two tests: FR-001 × (2 anchors × 2 tests) + FR-002 × 1 anchor = 5 rows. */
 function project({ extraSpec = '' } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-trace-matrix-'));
+  const dir = makeTempDir('dg-trace-matrix-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter' }));
   write(dir, 'specs/001-billing/spec.md', `# Billing\n\n**Spec ID**: \`acme.billing\`\n\n- **FR-001**: Charges.\n- **FR-002**: Carts.\n${extraSpec}`);

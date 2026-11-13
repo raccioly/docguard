@@ -13,12 +13,13 @@
  * @req docguard.asset-path-attribution#SC-002
  * @req docguard.asset-path-attribution#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { assetPathCovers, projectSpecRegistry } from '../cli/scanners/spec-registry.mjs';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { getDiffSnapshot } from '../cli/shared-git.mjs';
@@ -32,7 +33,7 @@ after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: tru
 
 /** A Spec Kit project with one spec, a frozen directory and an ordinary source file. */
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'asset-paths-'));
+  const dir = makeTempDir('asset-paths-');
   temps.push(dir);
   const write = (rel, content) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), content); };
   const git = (...args) => fixtureGit(dir, args);
@@ -136,7 +137,7 @@ describe('a stale entry is reported, not trusted (FR-003)', () => {
   it('outside git, a file on disk satisfies the entry', () => {
     const { dir, setScope } = project();
     setScope({ assetPaths: ['bench/sample/', 'bench/gone/'] });
-    const plain = mkdtempSync(join(tmpdir(), 'asset-paths-nogit-'));
+    const plain = makeTempDir('asset-paths-nogit-');
     temps.push(plain);
     cpSync(dir, plain, { recursive: true, filter: src => !src.split(/[\\/]/).includes('.git') });
     const spr009 = validateSpecRegistry(plain, {}).findings.filter(f => f.code === 'SPR009');
@@ -184,7 +185,7 @@ describe('this repository: spec 036 owns its frozen benchmark assets (FR-005, SC
       .map(item => item.path);
     assert.deepEqual(unresolved(plan(REPO)), []);
     // Reproduce the block on a copy whose registry lacks the list.
-    const copy = mkdtempSync(join(tmpdir(), 'asset-paths-repo-'));
+    const copy = makeTempDir('asset-paths-repo-');
     temps.push(copy);
     fixtureGit(REPO, ['clone', '-q', '--no-hardlinks', REPO, copy]);
     fixtureGit(copy, ['checkout', '-q', fixtureGit(REPO, ['rev-parse', 'HEAD']).trim()]);

@@ -8,11 +8,12 @@
  * macOS and not on Linux, so CI and a laptop judged the same repository
  * differently. Reading directories and normalising the names fixes both.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { findDocsByName, normaliseDocName } from '../cli/shared-doc-roles.mjs';
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
@@ -22,7 +23,7 @@ const DIRS = ['', 'docs', 'documentation', 'docs-canonical'];
 
 describe('findDocsByName', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'dg-names-')); });
+  beforeEach(() => { dir = makeTempDir('dg-names-'); });
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   it('matches case and separators explicitly, not by filesystem accident', () => {
@@ -59,7 +60,7 @@ describe('TODO tracking follows the document, wherever it is named', () => {
   let dir;
   const TODO = 'wire up the retry budget for the upload path';
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-todo-'));
+    dir = makeTempDir('dg-todo-');
     mkdirSync(join(dir, 'src'));
     writeFileSync(join(dir, 'src/a.mjs'), `// TODO: ${TODO}\nexport const x = 1;\n`);
   });

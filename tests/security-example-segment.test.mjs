@@ -6,12 +6,12 @@
  *
  * @implements docguard.strict-by-default#FR-010
  */
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { validateSecurity, isSyntheticValue } from '../cli/validators/security.mjs';
 
 const EXEMPT = [
@@ -28,10 +28,9 @@ const REPORTED = [
 describe('"example" is exempt only as a whole segment (#655)', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-sec-example-'));
+    dir = makeTempDir('docguard-sec-example-');
     writeFileSync(join(dir, '.gitignore'), '.env\n');
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
   const scan = value => {
     mkdirSync(dirname(join(dir, 'src/a.js')), { recursive: true });

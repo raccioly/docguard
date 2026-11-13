@@ -11,12 +11,13 @@
  * @req docguard.spec-first-gate#SC-002
  * @req docguard.spec-first-gate#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { classifySpecFirst } from '../cli/scanners/spec-first.mjs';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 
@@ -34,7 +35,7 @@ function commit(dir, message) {
 }
 
 function repo({ config } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'spec-first-'));
+  const dir = makeTempDir('spec-first-');
   git(dir, 'init', '-q', '-b', 'main');
   git(dir, 'config', 'user.email', 't@t');
   git(dir, 'config', 'user.name', 't');

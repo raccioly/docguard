@@ -7,10 +7,11 @@
  *
  * @req docguard.release-readiness#FR-007
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { writeFileSync, mkdirSync } from 'node:fs';
+
 import { join } from 'node:path';
 import {
   SERVER_NAME, assertReleaseVersions, isAlreadyPublished, listedVersions, registryMissing,
@@ -79,7 +80,7 @@ describe('queryRegistry reports a network failure instead of throwing (FR-007)',
 
 describe('the publish job refuses a tag whose versions disagree (FR-007)', () => {
   const fixture = (server, pkg) => {
-    const dir = mkdtempSync(join(tmpdir(), 'mcp-registry-'));
+    const dir = makeTempDir('mcp-registry-');
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'server.json'), JSON.stringify(server));
     writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));

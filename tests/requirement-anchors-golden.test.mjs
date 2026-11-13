@@ -15,11 +15,12 @@
  * @req docguard.requirement-anchors#FR-039
  * @req docguard.requirement-anchors#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeLinks } from '../cli/scanners/anchors.mjs';
 import { pythonVersion } from '../cli/scanners/py-anchors.mjs';
 
@@ -33,7 +34,7 @@ const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 
 function copy() {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-golden-'));
+  const dir = makeTempDir('dg-golden-');
   dirs.push(dir);
   cpSync(FIXTURE, dir, { recursive: true });
   rmSync(join(dir, 'golden.json'), { force: true });

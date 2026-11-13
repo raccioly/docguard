@@ -11,11 +11,12 @@
  * Detection is by role filename, because the names are the convention that
  * survives relocation; the directory is the part people change.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { detectCanonicalLayout, roleForFilename, normaliseDocName } from '../cli/shared-doc-roles.mjs';
 
@@ -48,7 +49,7 @@ describe('role filenames are recognised across real-world spellings', () => {
 
 describe('canonical layout detection', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'dg-layout-')); });
+  beforeEach(() => { dir = makeTempDir('dg-layout-'); });
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   it('finds documents relocated to docs/canonical/', () => {

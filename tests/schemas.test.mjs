@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { scanSchemasDeep, generateERDiagram } from '../cli/scanners/schemas.mjs';
 
 describe('schemas.mjs - walkDir error handling', () => {
   it('should gracefully handle readdirSync errors during schema scan', () => {
     // We create a temp dir structure that matches drizzle scanning (e.g. src/db)
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-schemas-'));
+    const tempDir = makeTempDir('docguard-test-schemas-');
     const drizzleDir = join(tempDir, 'src', 'db');
     fs.mkdirSync(drizzleDir, { recursive: true });
 
@@ -127,7 +128,7 @@ describe('generateERDiagram', () => {
 
 describe('extractOpenAPIRelationships — field with no `type`', () => {
   it('does not crash on a field with no `type` (valid OpenAPI, e.g. a bare $ref)', () => {
-    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-schema-notype-'));
+    const dir = makeTempDir('docguard-schema-notype-');
     const docTools = {
       openapi: {
         found: true,
@@ -155,7 +156,7 @@ describe('extractOpenAPIRelationships — field with no `type`', () => {
 
 describe('scanSchemasDeep — honors config.ignore (.docguardignore consolidation)', () => {
   it('drops entities whose source file the user excluded', () => {
-    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-schema-ignore-'));
+    const dir = makeTempDir('docguard-schema-ignore-');
     fs.mkdirSync(join(dir, 'src', 'schema'), { recursive: true });
     fs.mkdirSync(join(dir, 'src', 'fixtures'), { recursive: true });
     fs.writeFileSync(join(dir, 'src/schema/user.ts'), 'export const UserSchema = z.object({ name: z.string() });');

@@ -1,9 +1,10 @@
 // @req docguard.adoption-workflow-integrity#FR-014
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
@@ -20,7 +21,7 @@ const cli = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 const validatorKeys = 'structure docsSync drift changelog testSpec environment security architecture freshness traceability docsDiff apiSurface metadataSync docsCoverage docQuality todoTracking schemaSync specKit crossReference generatedStaleness surfaceSync diffSuspicion referenceExistence apiDocSmells canonicalSync metricsConsistency'.split(' ');
 const enabledOnly = key => Object.fromEntries(validatorKeys.map(k => [k, k === key]));
 function temp(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-role-boundary-'));
+  const dir = makeTempDir('docguard-role-boundary-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

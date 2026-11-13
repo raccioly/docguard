@@ -17,12 +17,13 @@
  * @req docguard.requirement-anchors#FR-012
  * @req docguard.requirement-anchors#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { ANCHOR_LOCK_PATH, LOCK_HEADER, readAnchorLock, serializeAnchorLock, stableLine } from '../cli/scanners/anchor-lock.mjs';
 import { computeAnchorStatus } from '../cli/scanners/anchors.mjs';
 import { changedDuringRun } from '../cli/commands/anchors.mjs';
@@ -61,7 +62,7 @@ export class Cart {
 `;
 
 function project({ git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-lock-'));
+  const dir = makeTempDir('dg-anchor-lock-');
   dirs.push(dir);
   mkdirSync(join(dir, 'specs', '001-billing'), { recursive: true });
   mkdirSync(join(dir, 'src'), { recursive: true });

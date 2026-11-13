@@ -11,12 +11,13 @@
  * @req docguard.whole-token-doc-references#SC-001
  * @req docguard.whole-token-doc-references#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { referenceKind, docsForPath, AGENT_FILES } from '../cli/scanners/doc-references.mjs';
 import { computeDocConflicts } from '../cli/commands/impact.mjs';
 import { listCanonicalDocs } from '../cli/shared-ignore.mjs';
@@ -29,7 +30,7 @@ const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-tokens-'));
+  const dir = makeTempDir('docguard-tokens-');
   temps.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(join(dir, rel, '..'), { recursive: true });

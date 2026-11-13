@@ -11,16 +11,17 @@
  * @req SC-P7-003 — Both real heading AND N/A marker pass (no double-fail)
  * @req SC-P7-004 — Warning text suggests the N/A marker template
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateDocSections } from '../cli/validators/structure.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-na-marker-'));
+  const dir = makeTempDir('docguard-na-marker-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

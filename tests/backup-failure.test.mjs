@@ -2,12 +2,13 @@
  * DocGuard CLI Tests — Backup failure handling
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,7 @@ const run = (args, cwd) => execSync(`node ${CLI} ${args}`, {
 
 describe('docguard generate backup failure', () => {
   it('continues generating docs even if backup fails', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-backup-fail-'));
+    const tmpDir = makeTempDir('docguard-backup-fail-');
     try {
       // 1. Setup: Create docs-canonical directory
       const docsDir = join(tmpDir, 'docs-canonical');

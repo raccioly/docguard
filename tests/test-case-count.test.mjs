@@ -6,18 +6,19 @@
  * string literal, and a comment must contribute nothing, while every framework
  * the file finder recognises contributes exactly its declared cases.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { findTestFiles, countDeclaredTestCases, countJsCasesByRegex } from '../cli/shared-test-cases.mjs';
 import { astTierAvailable } from '../cli/scanners/js-ast.mjs';
 
 describe('declared test-case counter', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-test-cases-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-test-cases-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   const put = (rel, content) => {

@@ -7,18 +7,19 @@
  * @req SC-S11-004 — non-code files (.md, .json, etc.) are filtered from impact
  * @req SC-S11-005 — exits 1 when not in a git repo
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-impact-'));
+  const dir = makeTempDir('docguard-impact-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

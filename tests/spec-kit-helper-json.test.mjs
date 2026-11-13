@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
@@ -17,7 +18,7 @@ const PROCESS_TIMEOUT_MS = 20000;
 // Execute a real Node CLI fixture through the shipped Bash helper. A closed PATH
 // excludes host installs and turns any attempted npx download into a local trap.
 function withProject(options, check) {
-  const temp = realpathSync(mkdtempSync(join(tmpdir(), 'docguard-helper-')));
+  const temp = realpathSync(makeTempDir('docguard-helper-'));
   try {
     const root = join(temp, options.specialPath ? 'project spaces;$(touch INJECTED);\x60touch INJECTED\x60 "quote"' : 'project');
     const bin = join(temp, 'bin');

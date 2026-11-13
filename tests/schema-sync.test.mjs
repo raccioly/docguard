@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateSchemaSync } from '../cli/validators/schema-sync.mjs';
 
 describe('validateSchemaSync', () => {
@@ -11,7 +12,7 @@ describe('validateSchemaSync', () => {
   let dataModelPath;
 
   beforeEach(() => {
-    projectDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-schema-sync-'));
+    projectDir = makeTempDir('docguard-test-schema-sync-');
     docsCanonicalDir = join(projectDir, 'docs-canonical');
     dataModelPath = join(docsCanonicalDir, 'DATA-MODEL.md');
   });

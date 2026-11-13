@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
 
@@ -27,7 +28,7 @@ function openapi(paths) {
 
 describe('api-surface validator', () => {
   let tmp;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-api-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-api-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('returns 0/0 (not applicable) when API-REFERENCE.md is absent', () => {

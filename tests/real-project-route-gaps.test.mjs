@@ -16,11 +16,12 @@
  * @req docguard.real-project-route-gaps#SC-001
  * @req docguard.real-project-route-gaps#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
@@ -31,7 +32,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-071-'));
+  const dir = makeTempDir('docguard-071-');
   dirs.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });

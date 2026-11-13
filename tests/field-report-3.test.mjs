@@ -15,12 +15,13 @@
  *   #3  score recognises Vitest-in-vite.config + scripts.test
  *   +   findings infra, stable guard contract, explain <CODE>, feedback loop
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateSecurity } from '../cli/validators/security.mjs';
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
@@ -33,7 +34,7 @@ import { suppressesCode, lineSuppresses, mkFinding, resultFromFindings, CODES } 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 const docguard = (args, opts = {}) => spawnSync('node', [CLI, ...args], { encoding: 'utf-8', ...opts });
 
-function tmp() { return mkdtempSync(join(tmpdir(), 'docguard-fr3-')); }
+function tmp() { return makeTempDir('docguard-fr3-'); }
 function write(dir, files) {
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);

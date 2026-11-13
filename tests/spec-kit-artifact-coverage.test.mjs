@@ -12,12 +12,13 @@
  * @req docguard.spec-kit-artifact-coverage#SC-002
  * @req docguard.spec-kit-artifact-coverage#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
@@ -30,7 +31,7 @@ function write(dir, rel, content) {
 }
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'speckit-cov-'));
+  const dir = makeTempDir('speckit-cov-');
   dirs.push(dir);
   fixtureGit(dir, ['init', '-q']);
   fixtureGit(dir, ['config', 'user.email', 't@t']);

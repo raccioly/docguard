@@ -19,12 +19,13 @@
  * @req SC-PR-004 — gh pr create is invoked with --title and --body
  * @req SC-PR-005 — failure to push exits 1 with a clear error
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -35,7 +36,7 @@ const CLI = join(process.cwd(), 'cli/docguard.mjs');
  * `origin` pointing at the bare remote. Returns { dir, bare }.
  */
 function makeProjectWithBareRemote() {
-  const base = mkdtempSync(join(tmpdir(), 'docguard-pr-e2e-'));
+  const base = makeTempDir('docguard-pr-e2e-');
   const dir = join(base, 'project');
   const bare = join(base, 'remote.git');
   mkdirSync(dir, { recursive: true });

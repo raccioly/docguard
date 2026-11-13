@@ -8,17 +8,18 @@
  * @req SC-S12X-005 — replace-anchor is idempotent (no double-apply)
  * @req SC-S12X-006 — applier won't touch raw-text occurrences of the slug
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateCrossReferences } from '../cli/validators/cross-reference.mjs';
 import { applyMechanicalFix, MECHANICAL_FIX_TYPES } from '../cli/writers/mechanical.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-anchor-fix-'));
+  const dir = makeTempDir('docguard-anchor-fix-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

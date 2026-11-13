@@ -31,12 +31,13 @@
  * @req docguard.specify-init-delegation#SC-004
  * @req docguard.specify-init-delegation#SC-005
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { MIN_SPEC_KIT_VERSION } from '../cli/spec-kit-delegation.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -82,14 +83,14 @@ process.exit(0);
 
 let stubDir;
 before(() => {
-  stubDir = mkdtempSync(join(tmpdir(), 'specify-stub-'));
+  stubDir = makeTempDir('specify-stub-');
   writeFileSync(join(stubDir, 'specify'), STUB);
   chmodSync(join(stubDir, 'specify'), 0o755);
 });
 after(() => { rmSync(stubDir, { recursive: true, force: true }); });
 
 function fixture({ claude = true, specify = null } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'spec-kit-deleg-'));
+  const dir = makeTempDir('spec-kit-deleg-');
   fixtureGit(dir, ['init', '-q']);
   if (claude) writeFileSync(join(dir, 'CLAUDE.md'), '# Agent\n');
   if (specify) {

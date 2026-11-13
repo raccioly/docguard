@@ -12,12 +12,13 @@
  * @req docguard.accountable-suppressions#FR-008
  * @req docguard.accountable-suppressions#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { splitWaiverMetadata } from '../cli/waiver-metadata.mjs';
 import { parseInlinePragma, suppressesCode } from '../cli/findings.mjs';
 import { parseDocguardIgnore, configIgnoreEntry, normalizeIgnoreConfig } from '../cli/shared-ignore.mjs';
@@ -32,7 +33,7 @@ const FUTURE = '2999-12-31';
 const TODAY = '2026-11-02';
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-waiver-'));
+  const dir = makeTempDir('docguard-waiver-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   return dir;

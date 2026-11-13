@@ -11,11 +11,12 @@
  * @req SC-P1-004 — applyCount increments per apply
  * @req SC-P1-005 — firstAppliedAt is preserved across applies
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   appendFixes,
@@ -24,7 +25,7 @@ import {
 } from '../cli/writers/fix-memory.mjs';
 
 function tmp() {
-  return mkdtempSync(join(tmpdir(), 'docguard-suppress-'));
+  return makeTempDir('docguard-suppress-');
 }
 
 describe('shouldSuppressFix — ping-pong gate', () => {

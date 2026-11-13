@@ -1,13 +1,14 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync, mkdirSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { runMcp } from '../cli/commands/mcp.mjs';
 
 describe('runMcp', () => {
   it('exits with code 1 and logs to stderr if transport is invalid', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-runMcp-'));
+    const dir = makeTempDir('docguard-test-runMcp-');
     const originalStderrWrite = process.stderr.write;
     const originalExitCode = process.exitCode;
     let loggedStderr = '';
@@ -35,7 +36,7 @@ describe('runMcp', () => {
   });
 
   it('exits with code 1 and logs to stderr if buildServedRoots throws', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-runMcp-'));
+    const dir = makeTempDir('docguard-test-runMcp-');
     const originalStderrWrite = process.stderr.write;
     const originalExitCode = process.exitCode;
     let loggedStderr = '';

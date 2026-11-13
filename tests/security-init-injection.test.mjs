@@ -33,16 +33,17 @@
  * @req docguard.specify-init-delegation#FR-006 — integration.json is read first,
  *      init-options.json is the fallback
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { getDetectedAgent, safeSpawnSpecify } from '../cli/ensure-skills.mjs';
 import { buildInitArgs } from '../cli/spec-kit-delegation.mjs';
 
 function mkFixture(aiValue) {
-  const dir = mkdtempSync(join(tmpdir(), 'security-inj-'));
+  const dir = makeTempDir('security-inj-');
   mkdirSync(join(dir, '.specify'));
   const opts = aiValue === undefined ? {} : { ai: aiValue };
   writeFileSync(join(dir, '.specify/init-options.json'), JSON.stringify(opts));
@@ -118,12 +119,12 @@ describe('issue #190 — command injection via .specify/init-options.json `ai`',
     });
 
     it('handles missing .specify/init-options.json (no exception)', () => {
-      dir = mkdtempSync(join(tmpdir(), 'security-inj-noopts-'));
+      dir = makeTempDir('security-inj-noopts-');
       assert.equal(getDetectedAgent(dir), null);
     });
 
     it('handles malformed JSON gracefully (no exception)', () => {
-      dir = mkdtempSync(join(tmpdir(), 'security-inj-badjson-'));
+      dir = makeTempDir('security-inj-badjson-');
       mkdirSync(join(dir, '.specify'));
       writeFileSync(join(dir, '.specify/init-options.json'), '{ this is not valid json');
       assert.equal(getDetectedAgent(dir), null);
@@ -132,7 +133,7 @@ describe('issue #190 — command injection via .specify/init-options.json `ai`',
 
   describe('Layer 1b: integration.json (Spec Kit >= 0.8 state)', () => {
     function mkIntegration(json, initOptions) {
-      const d = mkdtempSync(join(tmpdir(), 'security-inj-int-'));
+      const d = makeTempDir('security-inj-int-');
       mkdirSync(join(d, '.specify'));
       writeFileSync(join(d, '.specify/integration.json'), JSON.stringify(json));
       if (initOptions) writeFileSync(join(d, '.specify/init-options.json'), JSON.stringify(initOptions));

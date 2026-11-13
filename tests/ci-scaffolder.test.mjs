@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, symlinkSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, symlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -13,8 +14,8 @@ const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 describe('init CI scaffolder', () => {
   let dir, outside, target;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-ci-scaffold-'));
-    outside = mkdtempSync(join(tmpdir(), 'dg-ci-outside-'));
+    dir = makeTempDir('dg-ci-scaffold-');
+    outside = makeTempDir('dg-ci-outside-');
     target = join(dir, '.github/workflows/docguard.yml');
     writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'consumer', version: '9.8.7' }));
   });

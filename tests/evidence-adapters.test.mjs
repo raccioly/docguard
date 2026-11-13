@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { countEvidenceCollection, readEvidenceSource, resolveJsonPointer } from '../cli/evidence/adapters.mjs';
 import { createEvidenceReader } from '../cli/scanners/semantic-claims.mjs';
 
@@ -13,7 +14,7 @@ import { createEvidenceReader } from '../cli/scanners/semantic-claims.mjs';
  */
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-evidence-adapters-'));
+  const dir = makeTempDir('docguard-evidence-adapters-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

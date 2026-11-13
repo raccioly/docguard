@@ -2027,6 +2027,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Findings that can appear: `SEC002` (and `SEC001`, `SEC003`, `SEC004` for
   values of those kinds). Baselines and `docguard:ignore` pragmas cover a value
   you have reviewed (#655).
+- **The test suite, benchmarks and tools no longer leave temporary directories
+  behind** (#662). Every fixture directory comes from one helper that removes it
+  when the test, the file or the process ends, including on failure, Ctrl-C and
+  SIGTERM, and `npm run test:temp-leaks` proves a full run leaves none.
 
 ## [0.48.0] - 2026-11-13
 
@@ -2397,11 +2401,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing a required section passed silently. Projects with this layout may see
   new STR003 warnings for sections that were never checked (FR-002).
 
-### Budgets
-
-`bytes:mcp:docguard_read_section` grew by 439 bytes on the `finding-channels`
-
-<!-- truncated: 6567 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6571 more lines — read CHANGELOG.md directly -->
 
 ---
 

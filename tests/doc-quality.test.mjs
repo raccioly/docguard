@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateDocQuality } from '../cli/validators/doc-quality.mjs';
 import { legacyShape } from './helpers/legacy-result.mjs';
@@ -11,7 +12,7 @@ describe('Doc-Quality Validator', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    tmpDir = makeTempDir('docguard-test-');
   });
 
   afterEach(() => {

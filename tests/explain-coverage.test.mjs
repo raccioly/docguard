@@ -12,19 +12,20 @@
  * stays explainable. Same spirit as the tool's own metricsConsistency check:
  * documented surface must match implemented surface.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-explain-'));
+  const dir = makeTempDir('docguard-explain-');
   mkdirSync(join(dir, 'docs-canonical'));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 't', version: '0.0.1' }));
   writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# A\nstub.\n');

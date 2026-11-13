@@ -1,3 +1,4 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import test from 'node:test';
 import assert from 'node:assert';
 import path from 'path';
@@ -11,7 +12,7 @@ const mockConfig = {
 };
 
 test('runAgents - basic execution', async (t) => {
-  const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docguard-test-agents-'));
+  const fixtureDir = makeTempDir('docguard-test-agents-');
   fs.writeFileSync(path.join(fixtureDir, 'AGENTS.md'), 'Mock agents content');
 
   const logs = [];
@@ -40,7 +41,7 @@ test('runAgents - basic execution', async (t) => {
 });
 
 test('runAgents - with --check flag in sync', async (t) => {
-  const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'docguard-test-agents-'));
+  const fixtureDir = makeTempDir('docguard-test-agents-');
   fs.writeFileSync(path.join(fixtureDir, 'AGENTS.md'), 'Mock agents content');
 
   const logs = [];

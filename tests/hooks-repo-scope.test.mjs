@@ -13,11 +13,12 @@
  * @req docguard.hooks-repo-scope#SC-001
  * @req docguard.hooks-repo-scope#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,7 +30,7 @@ const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 let base;
 let emptyGlobal;
 beforeEach(() => {
-  base = realpathSync(mkdtempSync(join(tmpdir(), 'dg-065-')));
+  base = realpathSync(makeTempDir('dg-065-'));
   emptyGlobal = join(base, 'empty.gitconfig');
   writeFileSync(emptyGlobal, '');
 });

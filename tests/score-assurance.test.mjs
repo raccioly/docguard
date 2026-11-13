@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { buildScoreAssurance, computeAlcoaCompliance, runScoreInternal } from '../cli/commands/score.mjs';
 import { loadConfig } from '../cli/config.mjs';
@@ -14,7 +15,7 @@ describe('score assurance', () => {
   let dir;
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
   function fixture(text = 'A documented service.') {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-assurance-'));
+    dir = makeTempDir('docguard-assurance-');
     mkdirSync(join(dir, 'docs-canonical'));
     writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# Architecture\n' + text);
     writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'assurance', profile: 'starter', diskCache: false, enforcement: 'standard' }));

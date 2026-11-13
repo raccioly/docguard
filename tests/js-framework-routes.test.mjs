@@ -17,11 +17,12 @@
  * @req docguard.js-framework-routes#SC-001
  * @req docguard.js-framework-routes#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -39,7 +40,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-058-'));
+  const dir = makeTempDir('docguard-058-');
   dirs.push(dir);
   writeFiles(dir, files);
   return dir;

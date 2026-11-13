@@ -10,11 +10,12 @@
  * @req SC-L3-004 — changedFilesSince returns ACMR diff against a ref
  * @req docguard.completion-revision-anchoring#FR-008
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, renameSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   isGitRepo,
@@ -33,7 +34,7 @@ import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function tmp() {
-  return mkdtempSync(join(tmpdir(), 'docguard-git-'));
+  return makeTempDir('docguard-git-');
 }
 
 function cleanup(dir) {

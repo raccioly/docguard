@@ -5,17 +5,18 @@
  * @req SC-P3-002 — TODO-Tracking validator scopes to changedFiles when set
  * @req SC-P3-003 — CHANGED_ONLY_VALIDATORS now includes drift + todoTracking
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateDrift } from '../cli/validators/drift.mjs';
 import { CHANGED_ONLY_VALIDATORS } from '../cli/commands/guard.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-scope-ext-'));
+  const dir = makeTempDir('docguard-scope-ext-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

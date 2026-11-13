@@ -10,12 +10,13 @@
  * @req docguard.strict-by-default#FR-021
  * @req docguard.strict-by-default#FR-005
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
@@ -37,7 +38,7 @@ const KEYS = [
 
 const temporary = [];
 after(() => { for (const dir of temporary) rmSync(dir, { recursive: true, force: true }); });
-const scratch = prefix => { const dir = mkdtempSync(join(tmpdir(), prefix)); temporary.push(dir); return dir; };
+const scratch = prefix => { const dir = makeTempDir(prefix); temporary.push(dir); return dir; };
 const write = (dir, path, body) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), body); };
 const DATES = ['2026-01-01', '2026-01-03', '2026-01-04', '2026-01-05'];
 

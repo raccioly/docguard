@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -31,7 +32,7 @@ function write(dir, path, content) {
 }
 
 function fixture(t, files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-spec-registry-'));
+  const dir = makeTempDir('docguard-spec-registry-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) write(dir, path, content);
   return dir;

@@ -12,11 +12,12 @@
  * @req docguard.watch-deterministic#SC-001
  * @req docguard.watch-deterministic#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { runWatch } from '../cli/commands/watch.mjs';
 
@@ -55,7 +56,7 @@ function fakeClock() {
 describe('watch reliability', () => {
   let dir, controller, watchers, callbacks, oldExitCode, signals, logs, errors, clock;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'watch-reliability-'));
+    dir = makeTempDir('watch-reliability-');
     watchers = new Map(); callbacks = new Map();
     oldExitCode = process.exitCode;
     signals = ['SIGINT', 'SIGTERM'].map(signal => process.listenerCount(signal));

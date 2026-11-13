@@ -8,11 +8,12 @@
  * failures — a validator going dark entirely (generated-staleness), or a
  * reference/smell check silently skipping content that exists on disk.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateApiDocSmells } from '../cli/validators/api-doc-smells.mjs';
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
@@ -24,7 +25,7 @@ import { fixtureGit } from './helpers/git.mjs';
 function git(dir, ...args) { fixtureGit(dir, args); }
 
 let tmpDir;
-beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-nested-p2-')); });
+beforeEach(() => { tmpDir = makeTempDir('docguard-nested-p2-'); });
 afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
 function put(rel, content) {

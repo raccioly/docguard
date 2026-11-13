@@ -15,12 +15,13 @@
  * @req docguard.strict-by-default#FR-021
  * @req docguard.strict-by-default#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
@@ -72,7 +73,7 @@ const COPILOT = { '.github/copilot-instructions.md': '# Copilot\n\nUse `npm test
  * `extra` adds files to the first commit (another instruction file, say).
  */
 function issue628(enforcement = 'strict', extra = {}, afterInit = null) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-628-'));
+  const dir = makeTempDir('docguard-628-');
   temporary.push(dir);
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);
@@ -109,7 +110,7 @@ const TAG = 'v0.47.0';
 const tagExists = (() => { try { fixtureGit(ROOT, ['rev-parse', '--verify', '-q', `${TAG}^{commit}`]); return true; } catch { return false; } })();
 const skipNoTag = tagExists ? false : `${TAG} is not in this clone (shallow checkout); CI fetches full history`;
 function v047Guard(dir) {
-  const base = mkdtempSync(join(tmpdir(), 'docguard-v047-'));
+  const base = makeTempDir('docguard-v047-');
   temporary.push(base);
   const tarball = join(base, '.tag.tar');
   fixtureGit(ROOT, ['archive', '-o', tarball, TAG]);
@@ -336,7 +337,7 @@ describe('T028a: a blocking document row never says the validator is pass', () =
   // A root instruction file with no review record, in a project whose history is otherwise clean, so
   // Freshness examined the canonical document and passed: its verdict is `pass`, and the row still blocks.
   function cleanWithUnreviewedRoot() {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-row-'));
+    const dir = makeTempDir('docguard-row-');
     temporary.push(dir);
     fixtureGit(dir, ['init', '-q', '-b', 'main']);
     fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);

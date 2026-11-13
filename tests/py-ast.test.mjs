@@ -6,11 +6,12 @@
  * which is covered elsewhere. When python3 IS present we assert the AST tier
  * gets routes and schema fields exactly — the accuracy the regex can't promise.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { pyAstAvailable, extractPythonFiles } from '../cli/scanners/py-ast.mjs';
 import { scanPythonWebRoutes } from '../cli/scanners/python-routes.mjs';
@@ -20,7 +21,7 @@ const HAS_PY = pyAstAvailable();
 
 describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 not on PATH' }, () => {
   function parse(src) {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-pyast-'));
+    const dir = makeTempDir('docguard-pyast-');
     const file = join(dir, 'mod.py');
     writeFileSync(file, src);
     try {
@@ -34,7 +35,7 @@ describe('py-ast — Python AST extraction', { skip: HAS_PY ? false : 'python3 n
   // Routes and models are resolved from the module outline the extractor
   // emits (specs/046-python-extraction); these assert through the resolvers.
   function project(src) {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-pyast-'));
+    const dir = makeTempDir('docguard-pyast-');
     writeFileSync(join(dir, 'mod.py'), src);
     return dir;
   }

@@ -8,12 +8,13 @@
  * @req docguard.recorded-document-reviews#FR-001
  * @req docguard.strict-by-default#FR-021
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -29,7 +30,7 @@ after(() => { for (const dir of temporary) rmSync(dir, { recursive: true, force:
 const code = (n) => Array.from({ length: n }, (_, i) => `export const v${i} = ${i};`).join('\n') + '\n';
 
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-accept-many-'));
+  const dir = makeTempDir('docguard-accept-many-');
   temporary.push(dir);
   const files = {
     '.docguard.json': JSON.stringify({ projectName: 'accept-many', version: '0.6', requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: ['AGENTS.md'] } }, null, 2),

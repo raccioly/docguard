@@ -15,12 +15,13 @@
  * @req docguard.recorded-document-reviews#FR-011
  * @req docguard.recorded-document-reviews#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { documentReferences, readDocReviews, DOC_REVIEWS_PATH } from '../cli/scanners/doc-reviews.mjs';
@@ -44,7 +45,7 @@ function commit(dir, files, message, date) {
  * and a `corpus` script and `corpus/` directory appear.
  */
 function project(t, { marker = true, grow = true, surface = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-rdr-'));
+  const dir = makeTempDir('docguard-rdr-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   fixtureGit(dir, ['init', '-q']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);

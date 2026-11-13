@@ -2,17 +2,18 @@
  * v0.31.0 feat 5 — IR soft-link recovery in traceability. An untraced
  * requirement (no @req annotation) is enriched with the TF-IDF-closest test.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 
 describe('traceability IR soft-match (feat 5)', () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-trc-ir-'));
+    dir = makeTempDir('dg-trc-ir-');
     mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
     mkdirSync(join(dir, 'tests'), { recursive: true });
     writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 't', version: '0.0.0' }));

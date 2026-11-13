@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 
 describe('Traceability declarations versus fixture data', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-trace-fixtures-'));
+    dir = makeTempDir('dg-trace-fixtures-');
     mkdirSync(join(dir, 'docs-canonical'));
     mkdirSync(join(dir, 'tests'));
     writeFileSync(join(dir, 'REQUIREMENTS.md'), 'REQ-900 documented control\n');

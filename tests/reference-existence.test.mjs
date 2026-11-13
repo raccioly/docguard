@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateReferenceExistence } from '../cli/validators/reference-existence.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
@@ -12,7 +13,7 @@ function git(dir, ...args) { fixtureGit(dir, args); }
 describe('validateReferenceExistence', () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-ref-'));
+    dir = makeTempDir('dg-ref-');
     git(dir, 'init', '-q', '-b', 'main');
     git(dir, 'config', 'user.email', 't@t.co'); git(dir, 'config', 'user.name', 'T');
     mkdirSync(join(dir, 'src')); mkdirSync(join(dir, 'docs-canonical'));
@@ -50,7 +51,7 @@ describe('validateReferenceExistence', () => {
   });
 
   it('not applicable outside git', () => {
-    const t = mkdtempSync(join(tmpdir(), 'dg-ref-nogit-'));
+    const t = makeTempDir('dg-ref-nogit-');
     try { assert.equal(validateReferenceExistence(t, {}).applicable, false); }
     finally { rmSync(t, { recursive: true, force: true }); }
   });
@@ -59,7 +60,7 @@ describe('validateReferenceExistence', () => {
 describe('REF002 — ADR citations in code comments', () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-adr-'));
+    dir = makeTempDir('dg-adr-');
     git(dir, 'init', '-q', '-b', 'main');
     git(dir, 'config', 'user.email', 't@t.co'); git(dir, 'config', 'user.name', 'T');
     mkdirSync(join(dir, 'src')); mkdirSync(join(dir, 'docs-canonical'));
@@ -100,7 +101,7 @@ describe('REF002 — ADR citations in code comments', () => {
   });
 
   it('flags citations when the repo has no ADR docs at all (strongest signal)', () => {
-    const t = mkdtempSync(join(tmpdir(), 'dg-adr-none-'));
+    const t = makeTempDir('dg-adr-none-');
     try {
       git(t, 'init', '-q', '-b', 'main');
       git(t, 'config', 'user.email', 't@t.co'); git(t, 'config', 'user.name', 'T');
@@ -120,7 +121,7 @@ describe('REF002 — ADR citations in code comments', () => {
   });
 
   it('madr-style docs/adr/0007-*.md defines the number', () => {
-    const t = mkdtempSync(join(tmpdir(), 'dg-adr-madr-'));
+    const t = makeTempDir('dg-adr-madr-');
     try {
       git(t, 'init', '-q', '-b', 'main');
       git(t, 'config', 'user.email', 't@t.co'); git(t, 'config', 'user.name', 'T');

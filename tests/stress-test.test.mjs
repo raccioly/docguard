@@ -15,12 +15,13 @@
  * @req SC-Q-001 — --changed-only on 1000-file repo completes < 500ms
  * @req SC-Q-002 — full guard on 1000-file repo completes < 5s
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -29,7 +30,7 @@ const RUN_STRESS = process.env.STRESS === '1';
 
 // Build a synthetic project with N service files + N route files + canonical docs.
 function makeStressRepo(serviceCount = 500, routeCount = 500) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-stress-'));
+  const dir = makeTempDir('docguard-stress-');
   mkdirSync(join(dir, 'src/services'), { recursive: true });
   mkdirSync(join(dir, 'src/routes'), { recursive: true });
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });

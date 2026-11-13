@@ -138,6 +138,10 @@ test: add edge case tests for score command
 - ANSI colors via the shared `c` object from `docguard.mjs`
 - No TypeScript — plain JavaScript for maximum portability
 
+## Tests That Create Temporary Directories
+
+A temporary directory comes from `makeTempDir(prefix)` in `tests/helpers/temp-dir.mjs`, never from `mkdtempSync(join(tmpdir(), …))` (spec 098). The helper removes the directory when the test it was given (`makeTempDir(prefix, t)`) ends, when the file's tests end, and, as a backstop, when the process exits or is interrupted. It works without the test runner, so a benchmark or tool uses it too and also removes its directories in a `finally`. `tests/test-temp-dirs.test.mjs` fails on a `mkdtemp` call outside the helper, and `npm run test:temp-leaks` runs the suite with an empty temporary folder and fails if anything is left in it.
+
 ## Tests That Create Git Repositories
 
 Fixture git goes through `tests/helpers/git.mjs`; product git does not.

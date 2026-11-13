@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import { buildMemoryPlan } from '../cli/scanners/memory-plan.mjs';
@@ -13,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-agent-'));
+  const dir = makeTempDir('docguard-agent-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

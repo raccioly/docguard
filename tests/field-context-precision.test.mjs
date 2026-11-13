@@ -1,10 +1,11 @@
 // @req docguard.adoption-workflow-integrity#FR-015
 // @req docguard.adoption-workflow-integrity#SC-009
 // @req docs-canonical/REQUIREMENTS.md#FR-023
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateSecurity } from '../cli/validators/security.mjs';
@@ -13,7 +14,7 @@ import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
 // @req docguard.precision-evidence-loop#FR-003
 
 function scan(t, source, validator, filename = 'sample.test.tsx') {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-field-context-'));
+  const dir = makeTempDir('docguard-field-context-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   safeWrite(join(dir, filename), source);
   safeWrite(join(dir, '.gitignore'), '.env\n');

@@ -1,10 +1,11 @@
 // @req docguard.adoption-workflow-integrity#FR-014
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
-import { tmpdir } from 'node:os';
+
 
 import { removeEndpoints, hasGeneratedMarker } from '../cli/writers/api-reference.mjs';
 import { applyApiSurfaceWrites } from '../cli/commands/fix.mjs';
@@ -86,7 +87,7 @@ describe('applyApiSurfaceWrites (review-only contract mismatches)', () => {
     safeWrite(full, content);
   };
 
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-write-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-write-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('keeps a contract omission review-only even in a generated doc', () => {

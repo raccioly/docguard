@@ -15,12 +15,13 @@
  * @req SC-DC-004 — corrupt cache file is silently ignored
  * @req SC-DC-005 — config.diskCache === false disables the layer
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readFileSync, utimesSync, statSync, renameSync, symlinkSync, cpSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync, utimesSync, statSync, renameSync, symlinkSync, cpSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { pathToFileURL } from 'node:url';
 
 import { buildMemoryPlan, clearMemoryPlanCache } from '../cli/scanners/memory-plan.mjs';
@@ -39,7 +40,7 @@ const cachePath = dir => join(dir, '.docguard/plan.cache.json');
 const readCache = dir => JSON.parse(readFileSync(cachePath(dir), 'utf-8'));
 
 function makeRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-disk-cache-'));
+  const dir = makeTempDir('docguard-disk-cache-');
   writeFileSync(join(dir, 'package.json'), JSON.stringify({
     name: 'disk-cache-test', version: '0.0.0',
     dependencies: { express: '^4' },
@@ -103,7 +104,7 @@ describe('disk-backed plan cache', () => {
 
   for (const layer of ['cold', 'disk', 'mixed']) {
     it(`bounds L1 to 32 entries when populated through ${layer} builds`, () => {
-      dir = mkdtempSync(join(tmpdir(), 'docguard-cache-bound-'));
+      dir = makeTempDir('docguard-cache-bound-');
       const repos = Array.from({ length: 40 }, (_, i) => {
         const repo = join(dir, String(i));
         mkdirSync(repo);
@@ -507,7 +508,7 @@ describe('disk-backed plan cache', () => {
 
   it('invalidates disk identity on scanner version and implementation changes', () => {
     dir = makeRepo();
-    const engine = mkdtempSync(join(tmpdir(), 'docguard-cache-engine-'));
+    const engine = makeTempDir('docguard-cache-engine-');
     try {
       cpSync(new URL('../cli/', import.meta.url), join(engine, 'cli'), { recursive: true });
       const manifest = join(engine, 'package.json');

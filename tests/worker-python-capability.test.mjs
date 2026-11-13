@@ -1,9 +1,10 @@
 /** @req specs/009-language-repository-coverage/spec.md#SC-002 */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { grepEnvUsage, extractWorkerEnvBindings } from '../cli/shared-source.mjs';
 import { astTierAvailable } from '../cli/scanners/js-ast.mjs';
@@ -12,7 +13,7 @@ import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { validateArchitecture } from '../cli/validators/architecture.mjs';
 
 function fixture(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-worker-capability-'));
+  const dir = makeTempDir('docguard-worker-capability-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, source] of Object.entries(files)) safeWrite(join(dir, path), source);
   return dir;

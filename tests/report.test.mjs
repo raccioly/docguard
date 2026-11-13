@@ -10,11 +10,12 @@
  * @req SC-RPT-007 — --out writes the artifact to a file
  * @req SC-RPT-008 — findings are grouped by code with counts
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -27,7 +28,7 @@ const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
 /** Minimal project: a config + one canonical doc. Guard will flag plenty
  *  (missing required files) — which is exactly what the evidence tests need. */
 function makeFixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-report-'));
+  const dir = makeTempDir('docguard-report-');
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
     projectName: 'report-fixture',
     profile: 'standard',

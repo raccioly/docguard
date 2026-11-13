@@ -7,12 +7,13 @@
  * notifications-only (202), auth (401), GET (405), and the non-loopback
  * bind refusal without an api-key.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
@@ -28,7 +29,7 @@ describe('docguard mcp --transport http', () => {
   let base;
 
   before(async () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-mcphttp-'));
+    dir = makeTempDir('docguard-mcphttp-');
     writeFileSync(join(dir, '.docguard.json'),
       JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }));
     // Port 0 → OS-assigned; the startup banner on stderr carries the real port.

@@ -21,12 +21,13 @@
  * @req docguard.js-import-edges#SC-002
  * @req docguard.js-import-edges#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { pathToFileURL } from 'node:url';
 
 import {
@@ -45,7 +46,7 @@ afterEach(() => clearImportGraphCache());
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-076-'));
+  const dir = makeTempDir('docguard-076-');
   dirs.push(dir);
   for (const [rel, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
@@ -322,7 +323,7 @@ describe('FR-008: the graph says which tier read each file', () => {
   });
 
   it('without the parser, every file falls back, the graph says so once, and the diagram is partial', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'docguard-076-noparser-'));
+    const tmp = makeTempDir('docguard-076-noparser-');
     dirs.push(tmp);
     cpSync(resolve('cli'), join(tmp, 'cli'), { recursive: true });
     const dir = project({

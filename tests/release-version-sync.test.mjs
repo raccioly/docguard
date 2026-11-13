@@ -6,10 +6,11 @@
  * @req docguard.volatile-anchor-lines#FR-006
  * @req docguard.volatile-anchor-lines#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+
 import { dirname, join } from 'node:path';
 import { syncReleaseVersion } from '../.github/scripts/sync-release-version.mjs';
 import { computeLinks } from '../cli/scanners/anchors.mjs';
@@ -21,7 +22,7 @@ function write(root, relPath, content) {
 }
 
 function fixture({ brokenTemplate = false, agentMirrors = false } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'docguard-release-version-'));
+  const root = makeTempDir('docguard-release-version-');
   write(root, 'package.json', '{"name":"docguard-cli","version":"9.8.7"}\n');
   write(root, 'pyproject.toml', '[project]\nname = "docguard-cli"\nversion = "0.37.0"\n');
   write(root, 'server.json', `${JSON.stringify({

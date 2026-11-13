@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   resolveSourceRoots,
@@ -24,7 +25,7 @@ function write(dir, rel, content) {
 
 describe('shared-source: monorepo discovery', () => {
   let tmp;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-src-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-src-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('resolveSourceRoots honors config.sourceRoot', () => {
@@ -116,7 +117,7 @@ describe('shared-source: monorepo discovery', () => {
 
 describe('readScannable — size cap + generated/minified skip', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-scan-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-scan-'); });
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   it('reads a normal source file', () => {

@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateDiffSuspicion } from '../cli/validators/diff-suspicion.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
@@ -14,7 +15,7 @@ function git(dir, ...args) { fixtureGit(dir, args); }
 describe('validateDiffSuspicion', () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-dsp-'));
+    dir = makeTempDir('dg-dsp-');
     git(dir, 'init', '-q', '-b', 'main');
     git(dir, 'config', 'user.email', 't@t.co');
     git(dir, 'config', 'user.name', 'T');
@@ -55,7 +56,7 @@ describe('validateDiffSuspicion', () => {
   });
 
   it('is not applicable outside a git repo', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'dg-dsp-nogit-'));
+    const tmp = makeTempDir('dg-dsp-nogit-');
     try {
       const r = validateDiffSuspicion(tmp, {});
       assert.equal(r.applicable, false);
@@ -63,7 +64,7 @@ describe('validateDiffSuspicion', () => {
   });
 
   it('is not applicable when the diff removed nothing (pure additions)', () => {
-    const d2 = mkdtempSync(join(tmpdir(), 'dg-dsp-add-'));
+    const d2 = makeTempDir('dg-dsp-add-');
     try {
       git(d2, 'init', '-q', '-b', 'main');
       git(d2, 'config', 'user.email', 't@t.co'); git(d2, 'config', 'user.name', 'T');

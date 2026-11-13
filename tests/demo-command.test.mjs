@@ -17,19 +17,20 @@
  * @req SC-DEMO-006 — --keep preserves the fixture
  * @req SC-DEMO-007 — --quiet suppresses the banner
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 // Each child gets its own temp root, including simultaneous runtime matrices.
 // Inspect kept fixtures before finally removes only this invocation's directory.
 function runDemo(args = [], inspect = () => {}) {
-  const tmp = mkdtempSync(join(tmpdir(), 'docguard-demo-test-'));
+  const tmp = makeTempDir('docguard-demo-test-');
   try {
     const result = spawnSync(process.execPath, [CLI, 'demo', ...args], {
       encoding: 'utf-8',

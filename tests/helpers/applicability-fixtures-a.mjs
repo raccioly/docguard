@@ -3,11 +3,12 @@
  * shared by tests/validator-applicability-a.test.mjs and the registry-wide check of
  * tests/strict-by-default.test.mjs, so both read one table.
  */
+import { makeTempDir } from './temp-dir.mjs';
 import { after } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT } from './git.mjs';
 import { runGuardInternal } from '../../cli/commands/guard.mjs';
 import { loadConfig } from '../../cli/config.mjs';
@@ -17,7 +18,7 @@ after(() => { for (const dir of temporary) rmSync(dir, { recursive: true, force:
 
 /** A fixture project; `git: false` leaves it outside a repository, `commits` adds history. */
 export function project(files, config, { git = true, commits = 1 } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-applies-a-'));
+  const dir = makeTempDir('docguard-applies-a-');
   temporary.push(dir);
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

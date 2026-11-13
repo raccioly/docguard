@@ -9,11 +9,12 @@
  *
  * @req docguard.consumer-report-precision#FR-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { writeFiles } from './fixtures/js-route-shape-projects.mjs';
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { extractRouterRoutes } from '../cli/scanners/router-routes.mjs';
@@ -22,7 +23,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function koa(source) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-080-'));
+  const dir = makeTempDir('docguard-080-');
   dirs.push(dir);
   writeFiles(dir, {
     'package.json': JSON.stringify({ dependencies: { koa: '2.15.3', '@koa/router': '12.0.1' } }),

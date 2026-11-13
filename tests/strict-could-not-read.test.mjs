@@ -11,12 +11,13 @@
  * @req docguard.strict-by-default#FR-015
  * @req docguard.strict-by-default#FR-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -32,7 +33,7 @@ const ENV = { ...process.env, NO_COLOR: '1', DOCGUARD_NO_UPDATE_HINT: '1' };
 
 const temporary = [];
 function scratch(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = makeTempDir(prefix);
   temporary.push(dir);
   return dir;
 }

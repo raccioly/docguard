@@ -28,13 +28,14 @@
  * @req docguard.verdict-contract#SC-002
  * @req docguard.verdict-contract#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { ABSENCE_CLAIM_CODES } from '../cli/findings.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { compactGuardResult } from '../cli/shared-guard-json.mjs';
 import { toSarif } from '../cli/writers/sarif.mjs';
@@ -65,7 +66,7 @@ function write(dir, path, body) {
 }
 
 function project(t, files, { commit = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-verdict-'));
+  const dir = makeTempDir('docguard-verdict-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   execFileSync('git', [...FIXTURE_GIT, 'init', '-q', '-b', 'main'], { cwd: dir });
@@ -82,7 +83,7 @@ function project(t, files, { commit = true } = {}) {
  *   grep-head:    `git grep … HEAD` exits 2; grep at any other revision works.
  */
 function stubGit(t, mode) {
-  const bin = mkdtempSync(join(tmpdir(), 'docguard-stubgit-'));
+  const bin = makeTempDir('docguard-stubgit-');
   t.after(() => rmSync(bin, { recursive: true, force: true }));
   const fail = {
     'check-ignore': 'if [ "$1" = check-ignore ]; then cat >/dev/null; head -c 17000000 /dev/zero; exit 0; fi',

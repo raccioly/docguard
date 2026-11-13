@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { execFileSync, spawnSync } from 'node:child_process';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { removedTokens } from '../cli/shared-diff.mjs';
@@ -12,7 +13,7 @@ import { FIXTURE_GIT } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-field-diff-'));
+  const dir = makeTempDir('dg-field-diff-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

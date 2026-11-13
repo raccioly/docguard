@@ -6,12 +6,13 @@
  *
  * @req docguard.requirement-anchors#FR-031
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeAnchorStatus } from '../cli/scanners/anchors.mjs';
 import { clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -22,7 +23,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 
 function project({ fanOutLimit, extraImporters = 0, hub = false } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-ripple-'));
+  const dir = makeTempDir('dg-anchor-ripple-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter', anchors: fanOutLimit ? { fanOutLimit } : {} }));
   write(dir, 'specs/001-r/spec.md', '# R\n\n**Spec ID**: `acme.r`\n\n- **FR-001**: f.\n- **FR-002**: g.\n- **FR-003**: uses f.\n- **FR-004**: uses g.\n- **FR-005**: two hops.\n- **FR-006**: namespace.\n');

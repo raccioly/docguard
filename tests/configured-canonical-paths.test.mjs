@@ -16,11 +16,12 @@
  * @req docguard.configured-canonical-paths#FR-005
  * @req docguard.configured-canonical-paths#FR-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../cli/config.mjs';
@@ -34,7 +35,7 @@ const DOCS = ['ARCHITECTURE', 'DATA-MODEL', 'SECURITY', 'TEST-SPEC', 'ENVIRONMEN
 const complete = name => readFileSync(join(ROOT, 'docs-canonical', `${name}.md`), 'utf-8');
 
 let dir;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-625-')); });
+beforeEach(() => { dir = makeTempDir('docguard-625-'); });
 afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
 function put(rel, content) {
@@ -74,7 +75,7 @@ describe('#625: docQuality reads the configured canonical documents (FR-001)', (
   it('gives the relocated layout the score the default layout gets for the same content', () => {
     const relocated = scoreOf(project('docs/canonical')).categories.docQuality;
     rmSync(dir, { recursive: true, force: true });
-    dir = mkdtempSync(join(tmpdir(), 'docguard-625-'));
+    dir = makeTempDir('docguard-625-');
     const standard = scoreOf(project('docs-canonical')).categories.docQuality;
     assert.equal(relocated, standard);
   });

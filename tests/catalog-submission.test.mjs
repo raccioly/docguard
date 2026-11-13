@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 const script = fileURLToPath(new URL('../.github/scripts/speckit-submission.py', import.meta.url));
@@ -13,7 +14,7 @@ const catalogWorkflow = readFileSync(new URL('../.github/workflows/sync-speckit-
 const download = 'https://example.com/docguard.zip';
 
 function runReminder(existing = '') {
-  const root = mkdtempSync(join(tmpdir(), 'docguard-catalog-reminder-'));
+  const root = makeTempDir('docguard-catalog-reminder-');
   const bin = join(root, 'bin');
   const log = join(root, 'gh.log');
   const body = join(root, 'body.md');

@@ -8,11 +8,12 @@
  * @req docguard.requirement-anchors#FR-006
  * @req docguard.requirement-anchors#SC-008
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { scanImplementationFilesForReferences } from '../cli/scanners/requirement-evidence.mjs';
 import { DEFAULT_REQ_PATTERNS } from '../cli/shared-requirements.mjs';
 
@@ -26,7 +27,7 @@ const refsIn = (dir, files) => {
 
 describe('implementation evidence reads real comments only (FR-005)', () => {
   it('JS: strings, templates and regex literals do not count; comments do', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-lit-'));
+    const dir = makeTempDir('dg-lit-');
     dirs.push(dir);
     writeFileSync(join(dir, 'a.mjs'), [
       '// @implements acme.x#FR-001',
@@ -40,7 +41,7 @@ describe('implementation evidence reads real comments only (FR-005)', () => {
   });
 
   it('Python and YAML: quoted text does not count; comments do', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-lit-'));
+    const dir = makeTempDir('dg-lit-');
     dirs.push(dir);
     writeFileSync(join(dir, 'a.py'), '# @implements acme.x#FR-001\nx = "# @implements acme.x#FR-012"\ny = """\n# @implements acme.x#FR-013\n"""\n');
     writeFileSync(join(dir, 'w.yml'), '# @implements acme.x#FR-002\nrun: echo "# @implements acme.x#FR-012"\n');
@@ -53,7 +54,7 @@ describe('implementation evidence reads real comments only (FR-005)', () => {
   });
 
   it('every requirement ID in a tagged comment still counts, as before (FR-006)', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-lit-'));
+    const dir = makeTempDir('dg-lit-');
     dirs.push(dir);
     writeFileSync(join(dir, 'b.mjs'), '/**\n * Reads x (acme.x#FR-003).\n * @implements acme.x#FR-004\n */\nexport const b = 1;\n');
     assert.deepEqual(refsIn(dir, ['b.mjs']), ['acme.x#FR-003@b.mjs:2', 'acme.x#FR-004@b.mjs:3']);

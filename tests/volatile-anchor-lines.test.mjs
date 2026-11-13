@@ -17,12 +17,13 @@
  * @req docguard.volatile-anchor-lines#SC-001
  * @req docguard.volatile-anchor-lines#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeAnchorStatus, computeLinks } from '../cli/scanners/anchors.mjs';
 import { declarationTokens } from '../cli/scanners/ts-decls.mjs';
 import { floorTokens, lex } from '../cli/scanners/pattern-lexer.mjs';
@@ -43,7 +44,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 
 function project(rel, content) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-volatile-'));
+  const dir = makeTempDir('dg-volatile-');
   dirs.push(dir);
   write(dir, 'specs/001-v/spec.md', SPEC);
   write(dir, rel, content);

@@ -17,16 +17,14 @@
  * @req docguard.read-only-commands#SC-002
  * @req docguard.read-only-commands#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-  cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
-  statSync, symlinkSync, writeFileSync,
-} from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { devNull, tmpdir } from 'node:os';
+import { devNull } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { notesSince } from './fixtures/changelog-notes.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -46,7 +44,7 @@ const posix = process.platform !== 'win32';
 const temporary = [];
 
 function tempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = makeTempDir(prefix);
   temporary.push(dir);
   return dir;
 }

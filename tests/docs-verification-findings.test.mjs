@@ -10,10 +10,11 @@
  * @req docguard.docs-verification-findings#SC-001
  * @req docguard.docs-verification-findings#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+
 import { dirname, join, delimiter } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -34,7 +35,7 @@ const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursi
 
 let dir;
 const tree = root => readdirSync(root, { recursive: true }).map(String).sort();
-const fresh = prefix => (dir = mkdtempSync(join(tmpdir(), `docguard-054-${prefix}-`)));
+const fresh = prefix => (dir = makeTempDir(`docguard-054-${prefix}-`));
 afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); dir = null; });
 
 describe('a Koa project is labelled Koa and its routes are still read (FR-001)', () => {

@@ -9,12 +9,13 @@
  * topically-clustered rule pairs staged as LLM judgment tasks.
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   auditInstructions,
@@ -26,7 +27,7 @@ import { FIXTURE_GIT } from './helpers/git.mjs';
 
 describe('Instruction Audit scanner', () => {
   let tmpDir;
-  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-instraudit-')); });
+  beforeEach(() => { tmpDir = makeTempDir('docguard-test-instraudit-'); });
   afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
   const write = (name, content) => writeFileSync(join(tmpDir, name), content);
@@ -142,7 +143,7 @@ describe('Instruction Audit scanner', () => {
   });
 
   it('rejects unsafe and symlinked pointers without accepting outside-repository evidence', () => {
-    const outside = mkdtempSync(join(tmpdir(), 'docguard-pointer-outside-'));
+    const outside = makeTempDir('docguard-pointer-outside-');
     try {
       writeFileSync(join(outside, 'outside.md'), '# Outside\n');
       const link = join(tmpDir, 'linked.md');

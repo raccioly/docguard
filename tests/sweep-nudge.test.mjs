@@ -9,19 +9,20 @@
  * @req SC-K6-002 — no nudge when 0-1 docs are stale (no noise on healthy repos)
  * @req SC-K6-003 — nudge is suppressed in --format json mode
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-sweep-'));
+  const dir = makeTempDir('docguard-sweep-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

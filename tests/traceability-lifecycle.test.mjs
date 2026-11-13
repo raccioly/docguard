@@ -1,12 +1,13 @@
 // @req docguard.adoption-workflow-integrity#FR-006
 // @req docguard.adoption-workflow-integrity#SC-004
 // @req docs-canonical/REQUIREMENTS.md#FR-011
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -21,7 +22,7 @@ function git(dir, ...args) {
 }
 
 function fixture(t, { commitRegistry = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-trace-lifecycle-'));
+  const dir = makeTempDir('docguard-trace-lifecycle-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   git(dir, 'init', '-q');
   git(dir, 'config', 'user.email', 'test@example.com');

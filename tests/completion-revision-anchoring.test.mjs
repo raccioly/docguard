@@ -22,12 +22,13 @@
  * @req docguard.completion-revision-anchoring#SC-004
  * @req docguard.completion-revision-anchoring#SC-005
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { completeSpec, planSpecCompletion, reanchorSpec } from '../cli/commands/specs.mjs';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { projectSpecRegistry, readSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
@@ -44,7 +45,7 @@ const git = (dir, args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd:
 
 /** Two approved, implemented specs with evidence, committed on `main`. */
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-anchor-'));
+  const dir = makeTempDir('docguard-anchor-');
   // Retry: a commit can leave a detached `git gc --auto` writing into .git.
   t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   git(dir, ['init', '-q', '-b', 'main']);
@@ -236,7 +237,7 @@ describe('a revision a squash merge discarded is reported and re-anchored (FR-00
 
   it('a shallow clone reports partial coverage instead of SPR008', t => {
     const { dir } = squashMerged(t);
-    const shallow = mkdtempSync(join(tmpdir(), 'docguard-anchor-shallow-'));
+    const shallow = makeTempDir('docguard-anchor-shallow-');
     t.after(() => rmSync(shallow, { recursive: true, force: true }));
     execFileSync('git', [...FIXTURE_GIT, 'clone', '-q', '--depth', '1', `file://${dir}`, shallow]);
     const result = validateSpecRegistry(shallow, {});
@@ -314,7 +315,7 @@ describe('completion records the outcome in the form the registry projects (FR-0
 describe('completion warns when its revision will not survive (FR-004)', () => {
   it('warns off the remote default branch, and not on it', t => {
     const dir = fixture(t);
-    const remote = mkdtempSync(join(tmpdir(), 'docguard-anchor-remote-'));
+    const remote = makeTempDir('docguard-anchor-remote-');
     t.after(() => rmSync(remote, { recursive: true, force: true }));
     git(remote, ['init', '-q', '--bare']);
     git(dir, ['remote', 'add', 'origin', remote]);

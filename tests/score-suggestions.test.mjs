@@ -10,12 +10,13 @@
  * These tests assert the suggestion is derived from the sub-checks that
  * actually failed, and that Python test config is recognized.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -24,7 +25,7 @@ const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
 /** Minimal repo with overridable files. `files` maps relative path → contents. */
 function makeRepo(files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-score-'));
+  const dir = makeTempDir('docguard-score-');
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   const base = {
     'package.json': JSON.stringify({ name: 't', version: '0.1.0' }),

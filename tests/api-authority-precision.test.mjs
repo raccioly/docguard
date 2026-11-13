@@ -1,11 +1,12 @@
 // @req docguard.adoption-workflow-integrity#FR-014
 // @req docguard.adoption-workflow-integrity#SC-008
 // @req docs-canonical/REQUIREMENTS.md#FR-022
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { computeApiSurfaceDrift, validateApiSurface } from '../cli/validators/api-surface.mjs';
 import { applyApiSurfaceWrites } from '../cli/commands/fix.mjs';
@@ -18,7 +19,7 @@ const spec = paths => JSON.stringify({ openapi: '3.0.3', info: { title: 'Synthet
 
 describe('API authority precision', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-authority-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-authority-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
   const write = (path, content) => safeWrite(join(dir, path), content);
   function fixture({ routes = true, doc = defaultDoc } = {}) {
