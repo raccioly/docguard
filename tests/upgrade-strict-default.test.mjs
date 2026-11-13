@@ -34,7 +34,8 @@ function project(files, extra = {}) {
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface'), ...extra }, null, 2));
   execFileSync('git', [...FIXTURE_GIT, 'init', '-q', '-b', 'main'], { cwd: dir });
   execFileSync('git', [...FIXTURE_GIT, 'add', '-A'], { cwd: dir });
-  execFileSync('git', [...FIXTURE_GIT, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'init'], { cwd: dir });
+  // Background maintenance after a commit takes .git/objects/maintenance.lock for a moment; the "writes nothing" snapshot must not see it.
+  execFileSync('git', [...FIXTURE_GIT, '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'init'], { cwd: dir });
   return dir;
 }
 const upgrade = dir => spawnSync(process.execPath, [CLI, 'upgrade', '--schema-only'], { cwd: dir, encoding: 'utf8', env: ENV }).stdout;
