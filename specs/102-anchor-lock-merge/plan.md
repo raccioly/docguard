@@ -28,3 +28,14 @@
 - **`--check` exits 2** like `specs`, `retire` and `reconcile`.
 - **ANC009 is kept in the registry.** `config.mjs` rejects a `findingSeverity` key that is not a known code, so deleting it would break an adopter's configuration. No earlier code was retired, so there is no precedent to follow; the entry stays with help text that says it is no longer reported.
 - **Rejected: a `git merge` driver; a timestamp field; making guard rewrite the lock** (guard never writes, spec 070 FR-022).
+
+## Project Structure
+
+```text
+cli/scanners/anchor-lock.mjs        parseAnchorLock, readAnchorLock (variants), newestEntry
+cli/scanners/anchors.mjs            resolveEntry, resolveLockLinks, readResolvedLock, computeAnchorStatus
+cli/commands/anchors.mjs            accept / disposition write the resolved set; the merge action
+cli/validators/requirement-anchors.mjs  ANC009 leaves the code map; ANC005 suggestion
+cli/findings.mjs                    ANC009 registry entry (no longer reported)
+tests/anchor-lock-merge.test.mjs    real-git merge and rebase, resolver, writers, merge command, 0.48.0
+```

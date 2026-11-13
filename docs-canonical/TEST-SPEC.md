@@ -121,7 +121,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
-| `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-lock.mjs`, `cli/scanners/anchors.mjs`, `cli/commands/anchors.mjs` (duplicate lines resolved by current content, one line per link on every write, `anchors merge`, conflict markers, 0.48.0 compatibility) | `tests/anchor-lock-merge.test.mjs` | ✅ |
 | `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |

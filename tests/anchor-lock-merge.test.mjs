@@ -20,7 +20,7 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import * as lockModule from '../cli/scanners/anchor-lock.mjs';
@@ -140,7 +140,7 @@ const resolveOne = (entries, link = NOW) => {
   writeLock(dir, entries);
   const lock = readAnchorLock(dir);
   assert.equal(lock.error, null);
-  return anchorsModule.resolveLockLinks(lock, new Map([[link.key, link]])).get(link.key);
+  return anchorsModule.resolveLockLinks(lock, new Map([[link.key, link]])).get(KEY);
 };
 
 describe('FR-001: the reader keeps every line of a key and never refuses a duplicate', () => {
@@ -197,9 +197,9 @@ describe('FR-002: which line stands for a link', () => {
   });
 
   it('a key with no current link is decided by the newest date, then file order', () => {
-    const older = mk({ date: '2026-11-01', reason: 'older' });
-    const newer = mk({ date: '2026-11-03', reason: 'newer' });
-    assert.equal(resolveOne([newer, older], { key: 'other', tier: 'babel@7' }).reason, 'newer');
+    const older = mk({ date: '2026-11-01', reason: 'older review text' });
+    const newer = mk({ date: '2026-11-03', reason: 'newer review text' });
+    assert.equal(resolveOne([newer, older], { key: 'other', tier: 'babel@7' }).reason, 'newer review text');
   });
 
   it('a line recorded with a fingerprint algorithm this version cannot compute never beats a line that matches', () => {
@@ -328,7 +328,7 @@ describe('FR-004/FR-005/US3: docguard anchors merge', () => {
     const dir = withDuplicates();
     const check = run(dir, ['anchors', 'merge', '--check']);
     assert.equal(check.status, 2, check.stdout + check.stderr);
-    assert.match(check.stdout, /collapsed \d+/i);
+    assert.match(check.stdout, /\d+ duplicate line/i);
     const w = run(dir, ['anchors', 'merge', '--write']);
     assert.equal(w.status, 0, w.stdout + w.stderr);
     assert.ok([...keyCounts(dir).values()].every(n => n === 1));
@@ -413,6 +413,8 @@ describe('FR-008/SC-005: an older DocGuard reads what this one writes', () => {
     fixtureGit(ROOT, ['archive', '-o', tarball, TAG]);
     assert.equal(spawnSync('tar', ['-x', '-f', tarball, '-C', old]).status, 0);
     rmSync(tarball, { force: true });
+    // The old CLI parses at the same tier as this one only with the same parser installed.
+    symlinkSync(join(ROOT, 'node_modules'), join(old, 'node_modules'), 'dir');
     const dir = project();
     diverge(dir, { ...oneEdits, how: 'merge' });
     assert.equal(run(dir, ['anchors', 'merge', '--write']).status, 0);
