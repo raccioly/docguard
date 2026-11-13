@@ -199,3 +199,16 @@ to adopt DocGuard (strict applies once it is initialized)`.
 A pipeline that fails on a non-zero exit fails on exit 4. See
 [Continuous Integration](guides/ci.md) for the Action and the templates, and
 [Configuration](configuration.md#enforcement-mode) for every key.
+
+Check out the full history. Freshness compares each document with the commits
+that touched it, and a checkout with fewer than three commits gives it nothing
+to read, so guard exits 4 and names Freshness in the Adopt block.
+`actions/checkout` fetches one commit unless told otherwise:
+
+```yaml
+- uses: actions/checkout@v5
+  with:
+    fetch-depth: 0
+```
+
+The Action's own examples and the templates already do this.
