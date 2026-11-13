@@ -12,7 +12,10 @@ import { requirementPatterns } from './shared-requirements.mjs';
 // A requirement line whose text is a bracketed placeholder ("System MUST [capability]") is a template row, not a requirement.
 // (a task checkbox, `[ ]` or `[x]`, is not a placeholder: the bracket must hold a word)
 export const PLACEHOLDER_TEXT = /\[[^\]\n]*[A-Za-z][^\]\n]*\](?!\()/;
-export const isPlaceholder = def => PLACEHOLDER_TEXT.test(String(def.text || '').replace(def.id, '').replace(/[*_`]/g, ''));
+// Brackets inside an inline code span are code, not a template slot: `[Unreleased]`, `[--stage <slug>]`, `pending: [...]`.
+export const hasPlaceholderText = text => PLACEHOLDER_TEXT.test(String(text).replace(/`[^`\n]*`/g, ''));
+export const isPlaceholder = def => hasPlaceholderText(String(def.text || '').replace(def.id, '').replace(/[*_]/g, ''));
+
 // What counts as a requirement ID when the project has not configured its own pattern. The scanner reads more
 // shapes (it is also a navigation aid), but "this project has requirements to anchor" is a narrower question.
 // Counted: FR, NFR, SC and REQ, the prefixes of a requirement list (`- **FR-001**: The system MUST ...`).

@@ -399,6 +399,12 @@ describe('group A: Traceability traces requirements', () => {
     assert.equal((result.findings || []).filter(f => f.code === 'TRC004').length, 1, 'only FR-003 has no test');
   });
 
+  it('a requirement that mentions brackets inside a code span is a requirement, not a template row', () => {
+    const { result } = run('traceability', { files: { 'package.json': PKG, 'docs-canonical/REQUIREMENTS.md': '# Requirements\n\n- **FR-001**: The cut MUST move the `[Unreleased]` body and accept `--stage [slug]`.\n' } });
+    assert.equal(result.performed, 1);
+    assert.equal(result.applies.applies, true);
+  });
+
   it('keeps `total` as the checks it counted under standard (requirements plus orphan references plus document checks)', () => {
     const dir = project(files({ 'tests/a.test.js': '// @req FR-001\ntest("a", () => {});\n' }), cfg('traceability', { enforcement: 'standard' }));
     const result = runGuardInternal(dir, loadConfig(dir)).validators.find(v => v.key === 'traceability');

@@ -22,7 +22,7 @@ import { getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { contractFields } from '../shared-result-contract.mjs';
-import { PLACEHOLDER_TEXT, classifyRequirements } from '../shared-requirement-definition.mjs';
+import { classifyRequirements, hasPlaceholderText } from '../shared-requirement-definition.mjs';
 import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_FINDINGS = 25;
@@ -80,7 +80,7 @@ function unreadIds(projectDir, config, patterns) {
       if (/^\s{0,3}(`{3,}|~{3,})/.test(line)) { fence = !fence; continue; }
       if (fence) continue;
       const m = line.match(LOOSE_ID);
-      if (!m || PLACEHOLDER_TEXT.test(line)) continue;
+      if (!m || hasPlaceholderText(line)) continue;
       if (patterns.some(p => { p.lastIndex = 0; return p.test(m[1]); })) continue;
       if (!found.has(m[1])) found.set(m[1], relative(projectDir, doc).replace(/\\/g, '/'));
     }
