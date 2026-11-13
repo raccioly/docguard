@@ -2827,11 +2827,28 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cf765a3311c23e38a008f027666bf045c5b16314",
+          "lastReviewedRevision": "b0a77f1f954f6534b6535577dff2609b34b07665",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
               "reason": "Reviewed on main at 9fea8e5 plus this branch. The adopter scenario runs with no hand edit of the registry in one closing commit that passes guard at every commit. Squash and rebase leave SPR008 silent; changed evidence names its files. SPR010 flagged 0 of 92 specs here and 0 of 10 other repositories. Blob ids ride on the spec's outcome line because 0.48.0 rejects any new registry key. No benchmark pair for SPR010, as for SPR006 to SPR009.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "b0a77f1f954f6534b6535577dff2609b34b07665",
+              "reason": "Reviewed again after merging main (87f0400) and after superseded outcomes were made not to strand a record: the closing flow, squash and rebase, changed evidence, SPR010 and 0.48.0 both ways are unchanged; the evidence files changed since the first review (batched search, supersede rule, tests, docs).",
               "evidence": [
                 "cli/commands/specs.mjs",
                 "cli/scanners/revision-anchor.mjs",
@@ -2873,7 +2890,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:0936b4a384cdde70f59d675f52345de1f3e9ef57103ce3532e1ada157d943dfc"
+            "digest": "sha256:baa18119e3036c077f82f6418dd257677218cd5a67ef415c88ec7c99fced69da"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
