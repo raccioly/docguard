@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:e2e49d6497c4c35a62f50a47ced6c8483ab2665b625877094bcbebe8247dca71",
+          "fingerprint": "sha256:5d41e026af192e7d6fe44b10243e463350be18ff95c8bac4d59363e00f9f5c89",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "planSpecCompletion now reads over-budget ranges in batches and accepts a newer --since only past every budget, recorded as narrowedFrom; the section says so",
-      "reviewedAt": "2026-10-13",
-      "reviewedRevision": "1a7bfabbee9c95f7eb67a3e5b01799c7a3da98e3"
+      "reason": "Reviewed the requirement-identity section against planSpecCompletion after spec 101: the content anchor and the one-commit flow are described",
+      "reviewedAt": "2026-11-13",
+      "reviewedRevision": "9fea8e56b6143654daf25117bb969b01dfcec9b3"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:eefdad45db5f2dc695cf8f5d954cdca564018811516b1bedbc136d772f93f122",
+          "fingerprint": "sha256:b49950eb82dbf892629ecfb917431561a1c8619bbdcdec75f7ec9714cccd5f2f",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:789fb75e16087a23957ff96005308de37b9de60749bb4fcebe515c616803a368",
+          "fingerprint": "sha256:95586659e607da4653e5093d007f0915162cdcf2144420438ba8a7a741c8f55a",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "completeSpec passes narrowedFrom into the canonical outcome and the schema declares it; the outcomes table gains the narrowedFrom row",
-      "reviewedAt": "2026-10-13",
-      "reviewedRevision": "1a7bfabbee9c95f7eb67a3e5b01799c7a3da98e3"
+      "reason": "Reviewed the registry section against completeSpec and reanchorSpec after spec 101: canonicalDocs flag, the Blobs outcome segment and its backfill are documented",
+      "reviewedAt": "2026-11-13",
+      "reviewedRevision": "9fea8e56b6143654daf25117bb969b01dfcec9b3"
     }
   }
 }

@@ -2859,7 +2859,7 @@
           },
           {
             "path": "specs/101-completion-one-commit/tasks.md",
-            "digest": "sha256:043259e2b37f6d99595ec3f25942ea50b750d90fc7e59b8fc742089048604b0c"
+            "digest": "sha256:f9ec1806bf072dd7c408df064c70b7f20125f736b7dd6cf919b2f3a625db2816"
           }
         ],
         "taskCompletion": {
@@ -2983,7 +2983,88 @@
             "line": 21
           }
         ],
-        "testEvidence": []
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/spec-completion-one-commit.test.mjs",
+            "line": 30
+          }
+        ]
       }
     },
     {

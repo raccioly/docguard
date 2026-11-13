@@ -329,6 +329,8 @@ Requirement definitions are identified by immutable spec ID plus requirement ID 
 Validation, `trace --features`, and the spec registry share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Registry completion evidence always requires an explicit spec ID or exact path qualifier, even when a bare ID is currently unique. Repeated mentions within one document do not create additional identities. Text inside an HTML comment declares nothing; a `<!--` quoted in an inline code span is text, not a comment opener (`shared-html-comments.mjs`, shared with the instruction-pointer reader). Linkage remains evidence of a declaration, not proof of behavioral correctness. Each definition also carries its whole `block` (a list item with its nested lines, a heading through the next heading, a table row, or a paragraph) so a requirement fingerprint sees every line of it, while `text` stays the declaration line that the TF-IDF test hint and preflight overlap detection read.
 
 Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision, reading a range past the per-call diff budget in bounded batches, and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. A newer `--since` replaces that revision only when its range exceeds the budgets even in batches, and the outcome then records the commits it did not reconcile as `narrowedFrom`. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
+
+A completion also records the git blob of every evidence file on its outcome line in the spec (`Blobs:`), written in the same transaction as the registry. A recorded revision that a squash merge or a rebase made unreachable is anchored by those blobs when the first-parent commit that introduced it into the registry has them (`revision-anchor.mjs#locateContentAnchor`, one `git log -S` over the registry and one `git ls-tree`; only the landing commit is cached under `.docguard/`). That commit is also the next completion's diff base. The registry keeps its closed key set, so a 0.48.0 reader loads it unchanged; the spec's own task list is a lifecycle file for its completion, so the tick, the record and the outcome land in one commit (`specs/101-completion-one-commit`).
 <!-- /docguard:section -->
 
 
@@ -518,19 +520,38 @@ budgets even when read in batches; the outcome then records the skipped
 commits as `narrowedFrom`. Any other `--since` blocks with SPC006 and writes
 nothing (`specs/028-completion-revision-anchoring`).
 
+Close a spec in one commit, with no hand edit of `.docguard-specs.json`
+(`specs/101-completion-one-commit`): tick the last task, run `docguard specs
+--write`, then `docguard specs complete --id <spec-id> --since <ref>
+--canonical-doc <path> --persistence living --reason "<reviewed outcome>"
+--write` (`--canonical-doc` is repeatable; both flags also exist on `specs
+approve`), and commit once. Ticking boxes in the completing spec's own
+`tasks.md` is part of closing it; any other change to that file, or a tick in
+another spec's, still blocks. The tick, the registry record and the outcome land
+in one commit, so a gate that runs `guard` on every commit never sees DLC002 or
+a half-written record. Several completions can share that commit: the registry,
+active context and outcome blocks they write do not count as changes.
+
+The record survives a squash merge and a rebase. Each outcome also records the
+git blob of every evidence file (the `Blobs:` segment of its line in the spec's
+outcome block), and a recorded revision that is no longer an ancestor of `HEAD`
+is still anchored when the commit that landed the record has those blobs. Guard
+reports `SPR008` only when the evidence changed between review and landing (the
+message names the files), or for a record written before blobs were recorded;
+`docguard specs reanchor --id <spec-id> --write` moves such a record to the first
+commit on HEAD's first-parent history whose evidence files are byte-identical,
+and adds the blobs (`specs/028-completion-revision-anchoring`,
+`specs/101-completion-one-commit`). When no commit carries those bytes, or the
+old revision no longer resolves, `--to <merge commit> --reason "<why>"` records
+an attested anchor and the evidence files that differ. When one spec has
+dangling revisions from different merges, add `--from <revision>` so each is
+attested to its own merge. The next `specs complete` takes the landing commit as
+its diff base, so `--since` is needed only when no commit carries the evidence.
+
 Under squash merges, run completions on a branch whose HEAD is the default
-branch's tip, run as many `specs complete --write` as needed (the registry,
-active context and outcome blocks they write do not count as changes), and
-commit once. Every outcome then records a revision that stays on the default
-branch. A completion recorded on a PR branch's own commit would be discarded by
-the squash, and `specs complete` warns when that is about to happen. Guard
-reports such a revision as `SPR008`; `docguard specs reanchor --id <spec-id>
---write` moves it to the first commit on HEAD's first-parent history whose
-evidence files are byte-identical (`specs/028-completion-revision-anchoring`).
-When no commit carries those bytes, or the old revision no longer resolves,
-`--to <merge commit> --reason "<why>"` records an attested anchor and the
-evidence files that differ. When one spec has dangling revisions from different
-merges, add `--from <revision>` so each is attested to its own merge.
+branch's tip when a record carries no evidence blobs (one written before they
+were recorded): every outcome then records a revision that stays on the default
+branch, and `specs complete` warns when it does not.
 
 ## Recipe 3c — Spec-first gate
 
@@ -718,26 +739,7 @@ A Git hook lives in the shared `.git/hooks` and is active on every branch and li
 
 Regenerate installed hooks after upgrading to pick up changes in hook behavior. The pre-push score hook parses real JSON and enforces its configured minimum; it complements the full CI gate. Local hooks can be bypassed, so protected merges remain necessary for shared enforcement.
 
-## Recipe 5 — Pre-commit lite (changed files only)
-
-`guard --changed-only --since <ref>` runs its curated validator subset with changed-file scoping, plus explicitly escalated validators. Use a full guard at the merge boundary. The entry point and `guard.mjs` define the current subset; a copied list in this recipe would drift.
-
-## Permissions cheatsheet
-
-| Operation | Default authority | Additional authority |
-|---|---|---|
-| Guard, score, report | Repository read | Artifact storage if configured |
-| Mechanical repair | Read/write controlled checkout | Branch/PR publication only when enabled |
-| Feedback preview | Local analysis | User submits reviewed public metadata voluntarily |
-| External precision corpus | Public read-only Git fetch | Network access to exact pinned commits; no project script execution |
-| Scheduled review | Repository read | Notification or publication only when explicitly configured |
-
-## Action inputs reference
-
-`action.yml` is the authoritative composite-action input contract. Review command selection, CLI version (`docguard-version`; empty installs the version the action release was published with), warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
-
-
-<!-- truncated: 4 more lines — read docs-canonical/CI-RECIPES.md directly -->
+<!-- truncated: 23 more lines — read docs-canonical/CI-RECIPES.md directly -->
 
 ---
 
@@ -903,12 +905,13 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].path` | Projection | Current spec path or former path for a retired record |
 | `specs[].reviewed.lifecycle` | Human review | Orthogonal approval, delivery, context, retirement reason, storage, and persistence policy. `specs approve` records approval and a `planned`, `in_progress` or `implemented` delivery; `specs complete` records `verified` |
 | `specs[].reviewed.relations` | Human review | `extends`, `duplicates`, `conflictsWith`, `supersedes`, and `supersededBy` spec-ID edges |
-| `specs[].reviewed.scope.canonicalDocs` | Human review | Canonical documents affected by the specification |
+| `specs[].reviewed.scope.canonicalDocs` | `specs approve` / `specs complete --canonical-doc` | Canonical documents affected by the specification. Each must exist; stored sorted and deduplicated; a flag replaces the list |
 | `specs[].reviewed.scope.sourcePaths` | `generate --spec --write` | Optional. Code areas an as-built spec describes; SPR007 re-scans them. Serialized only when set |
 | `specs[].reviewed.scope.assetPaths` | Human review | Optional. Files the spec owns that cannot carry a spec annotation (digest-pinned fixtures, recorded outputs): `dir/` covers a directory, any other entry one file, no wildcards. Reconciliation links changes under them to the spec; an entry covering no tracked file is SPR009. Serialized only when set |
 | `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor. Evidence paths and deviations are deduplicated and sorted (`localeCompare`); `specs complete` writes them in that order whatever order they were given in |
+| `specs/<feature>/spec.md` outcome line, `Blobs:` segment | `specs complete` | Not a registry field (a 0.48.0 reader rejects any new key there): the line ends with `` Blobs: `path`=`blob`, … `` (the git blob id of each evidence file at the reviewed revision), after the cleaned fields. A recorded revision that is not an ancestor of `HEAD` is anchored when the first-parent commit that introduced it into the registry has those blobs (`specs/101-completion-one-commit`). `specs reanchor` backfills it for a record moved by blob equality; a record without it behaves as before |
 | `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`, and `differing` evidence paths when the target's bytes differ). Serialized only when set |
 | `specs[].reviewed.reconciliation.outcomes[].narrowedFrom` | `specs complete` | Optional: the review reconciled from a newer `--since` because the recorded revision's range exceeded the diff budgets even when read in batches — `revision` (the recorded one), `since`, `skippedCommits` (not reconciled) and `reason` (the budget). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
@@ -1143,9 +1146,8 @@ leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding p
 `cli/scanners/suppressions.mjs`) lists every native suppression:
 
 | Field | Meaning |
-|---|---|
 
-<!-- truncated: 316 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 317 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -2013,6 +2015,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Specs: one commit closes a spec, and the completion record survives a squash merge
+  or a rebase (`specs/101-completion-one-commit`).** This change REMOVES `SPR008` findings
+  and `DLC002` findings and ADDS `SPR010`. Before, `specs complete` refused to run while the
+  spec's last task tick was uncommitted (SPC001), so the tick was committed first and that
+  commit raised `DLC002`; `canonicalDocs` and `persistenceModel` were hand edits of
+  `.docguard-specs.json`; and the recorded commit id was not an ancestor of `HEAD` after a
+  squash or a rebase, so `SPR008` fired until a second "reanchor" commit landed. Now:
+
+  ```
+  # tick the last task, then
+  docguard specs --write
+  docguard specs complete --id <spec-id> --since <ref> --canonical-doc <path> \
+    --persistence living --reason "<what was reviewed>" --write
+  git add -A && git commit
+  ```
+
+  `specs approve` takes the same repeatable `--canonical-doc <path>` (each must exist; stored
+  sorted and deduplicated, replacing the list) and `--persistence living|flow_forward|flow_back`.
+  Ticking boxes in the completing spec's own `tasks.md` no longer blocks `complete` (any other
+  change to it, and any change to another spec's, still does), so the tick, the record and the
+  outcome land in one commit that passes `guard`. Each new outcome also records the git blob of
+  every evidence file, as a `Blobs:` segment of its line in the spec's outcome block (not in
+  the registry, whose closed key set a 0.48.0 reader enforces). `SPR008` no longer fires for a
+  recorded revision that is not on the history when the commit that landed the record has those
+  blobs; it fires when the evidence changed between review and landing, and its message names
+  the files that differ. The next `complete` takes that landing commit as its diff base, so it
+  needs `--since` only when no commit carries the evidence. Records written before this change
+  behave as before, and `specs reanchor` still repairs them (and adds the blobs).
+  **Findings that can appear:** `SPR010` (warn): a current spec whose delivery is `verified` or
+  `released` and whose registry entry records no outcome, which `specs approve` cannot set and
+  `specs complete` never leaves empty, so it was set by hand. Measured on this repository
+  and ten other repositories with a registry: 0 specs flagged (only this repository has any
+  verified spec, 87 of them, all with outcomes). `specs --check` lists them too
+  (`unrecordedCompletions` in `--format json`).
+
 ### Fixed
 
 - **Tests: a fixture commit no longer starts git background maintenance.** `FIXTURE_GIT`
@@ -2367,45 +2406,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Requirement-Anchors and Doc-Dependency evidence.** A template row such as
   "System MUST [capability]" no longer counts as a requirement; tooling
   configuration (`*.config.*`, rc and setup files) is no longer offered as the
-  project's source code or as the `covers=` example; the fix says where a Spec ID is
-  declared; requirement IDs in a form the scanner does not read (`FR-1`) are
-  reported as `layout-not-recognized` with the `traceability.requirementPattern`
-  setting that reads them.
-- **Cross-Reference no longer tells a project to move its documents.** Where the
-  documents live outside what it reads, the text names what it reads and the
-  `docs.roles` mapping; a declared collection whose glob matches nothing is
-  `needs-content`, not a layout DocGuard fails to read.
 
-- **Generated-Staleness never saw the draft marker DocGuard writes.** It looked
-  for `<!-- status: draft -->` or `status: draft` front matter, while every
-  generator writes `<!-- docguard:status draft -->`, so a generated skeleton left
-  in draft was not flagged (GST001) and a project whose only generated documents
-  were drafts was reported as having none. Both spellings are read. Under
-  `standard` this adds GST001 findings for a draft left unchanged beyond the
-  staleness window (14 days by default).
-
-- **`ARCHITECTURE.md` listed exit codes 0-3.** It now documents exit 4 (a check that
-  had to decide did not: `--fail-on-inconclusive`, `requiredChecks`).
-
-- **Releases are now published to the official MCP registry.** The listing at
-  `registry.modelcontextprotocol.io` had been stuck at 0.40.5 because
-  publishing there was a manual step. The release workflow's new
-  `publish-mcp-registry` job publishes each release with GitHub OIDC (no stored
-  secret), and the 10-minute sweep backfills the registry whenever its latest
-  version is behind the released one, so v0.47.0 is listed by the first sweep
-  after this lands. An unreadable registry publishes nothing
-  (`docguard.release-readiness` FR-007).
-- **`score` reads canonical documents kept outside `docs-canonical/`** (#625).
-  A project that lists its documents in `requiredFiles.canonical` (for example
-  under `docs/canonical/`) passed Structure, but docQuality reported every
-  document as "file missing" and scored 0%, and ALCOA+ Original and Available
-  said no canonical directory exists. docQuality now reads the same file the
-  other categories read: a `docs.roles` mapping, the default path, or the one
-  same-named entry of `requiredFiles.canonical`. ALCOA+ counts those documents,
-  so Contemporaneous also checks their age. The suggestion's `fix --doc` names
-  the role (`architecture`), not a path (`docguard.configured-canonical-paths`
-
-<!-- truncated: 6576 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6613 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2931,6 +2933,16 @@ extensions/spec-kit-docguard/
   is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
   A change to a parser that reads documents runs `npm run fuzz` (seeded
   fuzzing: no throw, same answer twice, bounded time; specs/088-validator-fuzz).
+- **Close a spec in one commit, with no hand edit of the registry.** Tick the
+  last task, run `docguard specs --write`, then `docguard specs complete --id
+  <spec-id> --since <ref> --canonical-doc <path> --persistence living --reason
+  <text> --write` (`specs approve` takes the same two flags) and commit once: the
+  tick, the registry record and the outcome land together, so a gate that runs
+  `guard` on every commit never sees DLC002 or a half-written record. The record
+  carries the git blob of every evidence file, so it survives a squash merge or
+  a rebase and needs no second "reanchor" commit; run `docguard specs reanchor`
+  only for a record guard reports as SPR008
+  (`specs/101-completion-one-commit`).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test
