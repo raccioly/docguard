@@ -64,8 +64,11 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 - [x] T025 Implementation: `resolveEnforcement` default, `cli/shared.mjs` `resolveFindingEnforcement`, `cli/precision-evidence.mjs` gating set, `cli/strict-additions.mjs`, `cli/commands/init.mjs`.
 - [x] T025a [US1] Suspect reviews (FR-021): failing tests, then Freshness treats a reviewed agent-instruction document whose review is suspect, or one with no review record, as applies-and-unexamined with the re-review fix. Needs spec 095's review-signal functions on this branch.
 - [x] T026 The issue 628 fixture (SC-004), with spec 095's codes where they are available.
-- [ ] T027 Strict on the eight audit repositories: open and label every finding that fails a build (SC-002). Repeat T016 and T017 on the Stage B build.
+- [x] T027 Strict on the eight audit repositories: open and label every finding that fails a build (SC-002). Repeat T016 and T017 on the Stage B build.
 - [x] T028 Docs: README quick start, `docs/upgrading-to-strict.md`, CI-RECIPES, `action.yml`, the Spec Kit extension's guard command, the breaking-change CHANGELOG entry (FR-022); `docguard specs --write`; `anchors accept`.
+
+- [ ] T028a From the Stage B proof (SC-001 and SC-002 met; SC-003 met once FR-019 lists spec 095's codes): `docguard review --accept` with several paths records every one or refuses; a blocking row for unexamined documents states the document cause, never "<validator> is pass".
+- [ ] T028b Port from spec 096: FRS002 ranked and capped at three per run; the "possibly stale" mark on agent and MCP excerpts.
 
 ## Stage C — evidence
 
