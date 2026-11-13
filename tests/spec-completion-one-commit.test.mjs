@@ -36,7 +36,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { fixtureGit } from './helpers/git.mjs';
+import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
 import { makeTempDir } from './helpers/temp-dir.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -62,7 +62,7 @@ const entry = (dir, id = 'acme.alpha') => registry(dir).specs.find(s => s.specId
 const guardFindings = (dir, cli = CLI) => json(cliAt(cli, dir, ['guard', '--format', 'json'])).findings;
 const family = (dir, cli = CLI) => guardFindings(dir, cli).filter(f => FAMILY.test(f.code));
 const codes = findings => findings.map(f => f.code).sort();
-const isAncestor = (dir, sha) => spawnSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: dir }).status === 0;
+const isAncestor = (dir, sha) => spawnSync('git', [...FIXTURE_GIT, 'merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: dir }).status === 0;
 
 /** A project whose gate runs guard on every commit: strict, one spec with T2 open, no hand-edited registry. */
 function adopter(t, { second = false } = {}) {
@@ -429,7 +429,7 @@ describe('US4: a hand-set verified state with no outcome is reported (FR-011)', 
 });
 
 describe('US5: 0.48.0 and this version read each other\'s registry (FR-010)', () => {
-  const tagExists = spawnSync('git', ['rev-parse', '--verify', '--quiet', 'v0.48.0^{commit}'], { cwd: ROOT }).status === 0;
+  const tagExists = spawnSync('git', [...FIXTURE_GIT, 'rev-parse', '--verify', '--quiet', 'v0.48.0^{commit}'], { cwd: ROOT }).status === 0;
   const skip = tagExists ? false : 'v0.48.0 is not in this clone (shallow checkout); CI fetches full history';
   let V048 = null;
   const old = () => {
@@ -486,7 +486,7 @@ describe('this repository follows its own one-commit flow (FR-013, SC-003)', () 
     for (const path of ['AGENTS.md', 'CONTRIBUTING.md', 'docs-canonical/CI-RECIPES.md', 'docs/guides/spec-kit.md']) {
       assert.match(text(path), /--canonical-doc/, path);
     }
-    for (const path of ['AGENTS.md', 'CONTRIBUTING.md']) assert.match(text(path), /one commit/i, path);
+    for (const path of ['AGENTS.md', 'CONTRIBUTING.md']) assert.match(text(path), /one\s+commit/i, path);
   });
 
   it('no workflow text still tells people to edit canonicalDocs by hand', () => {
