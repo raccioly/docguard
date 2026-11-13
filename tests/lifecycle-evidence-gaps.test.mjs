@@ -8,12 +8,13 @@
  * @req docguard.lifecycle-evidence-gaps#SC-002
  * @req docguard.lifecycle-evidence-gaps#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { projectSpecRegistry } from '../cli/scanners/spec-registry.mjs';
 import { validateSpecRegistry } from '../cli/validators/spec-registry.mjs';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
@@ -24,7 +25,7 @@ afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, forc
 
 const SPEC = '# Feature\n\n**Spec ID**: `acme.feature`\n\n## Requirements\n\n- **FR-001**: Do the thing.\n';
 function repo(files, { commit = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'lifecycle-gaps-'));
+  const dir = makeTempDir('lifecycle-gaps-');
   dirs.push(dir);
   const git = (...a) => fixtureGit(dir, a);
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');

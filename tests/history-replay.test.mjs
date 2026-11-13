@@ -3,18 +3,19 @@
  *
  * @req docguard.recorded-document-reviews#FR-012
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 import { replayRepository, summarize } from '../benchmarks/history-replay/run.mjs';
 
 const code = (n, tag = 'v') => Array.from({ length: n }, (_, i) => `export const ${tag}${i} = ${i};`).join('\n') + '\n';
 
 function history(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-replay-'));
+  const dir = makeTempDir('docguard-replay-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   fixtureGit(dir, ['init', '-q']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);

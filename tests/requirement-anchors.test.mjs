@@ -19,12 +19,13 @@
  * @req docguard.requirement-anchors#FR-041
  * @req docguard.requirement-anchors#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeLinks, linkKey, requirementFingerprint } from '../cli/scanners/anchors.mjs';
 import { resolveFileAnchors } from '../cli/scanners/anchor-tags.mjs';
 import { requirementPatterns } from '../cli/shared-requirements.mjs';
@@ -37,7 +38,7 @@ const EXPECTED = JSON.parse(readFileSync(join(FIXTURE, 'expected.json'), 'utf8')
 const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 const copyFixture = () => {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchors-'));
+  const dir = makeTempDir('dg-anchors-');
   dirs.push(dir);
   cpSync(FIXTURE, dir, { recursive: true });
   rmSync(join(dir, 'expected.json'));

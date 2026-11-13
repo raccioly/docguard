@@ -4,10 +4,11 @@
  *
  * @req docguard.release-cut-green#FR-007
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -56,7 +57,7 @@ function script(workflow, name) {
 }
 
 function inTemp(fn) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-ci-repro-'));
+  const dir = makeTempDir('dg-ci-repro-');
   try { return fn(dir); } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 

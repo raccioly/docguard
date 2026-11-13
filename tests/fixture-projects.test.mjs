@@ -22,18 +22,19 @@
  * @req SC-Q1-002 — no validator leaks a developer error in any fixture
  * @req SC-Q1-003 — all 22 validators register in every fixture
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-fixture-'));
+  const dir = makeTempDir('docguard-fixture-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

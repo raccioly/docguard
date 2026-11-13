@@ -3,11 +3,12 @@
  * shared by tests/validator-applicability-b.test.mjs and the registry-wide check of
  * tests/strict-by-default.test.mjs, so both read one table.
  */
+import { makeTempDir } from './temp-dir.mjs';
 import { after } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT } from './git.mjs';
 import { runGuardInternal } from '../../cli/commands/guard.mjs';
 import { loadConfig } from '../../cli/config.mjs';
@@ -28,7 +29,7 @@ export function put(dir, files) {
  * `aged` is { path: days }: the file's mtime is moved back by that many days.
  */
 export function project(files, config, { git = true, history = [], aged = {}, brokenGit = false } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-applies-b-'));
+  const dir = makeTempDir('docguard-applies-b-');
   temporary.push(dir);
   put(dir, files);
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify(config, null, 2));

@@ -17,11 +17,12 @@
  * @req docguard.coverage-followups#SC-001
  * @req docguard.coverage-followups#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -50,7 +51,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-063-'));
+  const dir = makeTempDir('docguard-063-');
   dirs.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     const abs = join(dir, rel);
@@ -514,7 +515,7 @@ describe('Express, Koa, Fastify and NestJS route case sensitivity (FR-009)', () 
 let noPython = null;
 function pathWithoutPython() {
   if (noPython) return noPython;
-  noPython = mkdtempSync(join(tmpdir(), 'docguard-063-nopy-'));
+  noPython = makeTempDir('docguard-063-nopy-');
   dirs.push(noPython);
   for (const bin of ['node', 'git']) {
     const which = spawnSync('command', ['-v', bin], { shell: true, encoding: 'utf8' }).stdout.trim();

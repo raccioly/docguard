@@ -21,19 +21,20 @@
  * @req docguard.calibrated-finding-channels#FR-020
  * @req FR-020 — the badge withholds its top grade from an incomplete run
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { badgeColor, incompleteCoverage, INCOMPLETE_COVERAGE_STATES } from '../cli/commands/guard.mjs';
 
 const CLI = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'docguard.mjs');
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-coverage-'));
+  const dir = makeTempDir('dg-coverage-');
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), body);

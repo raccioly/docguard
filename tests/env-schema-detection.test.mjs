@@ -11,15 +11,16 @@
  * schema's env keys. Gated on an actual `parse(process.env)` / cleanEnv /
  * convict signal so data schemas (parse(req.body), camelCase keys) are ignored.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { grepEnvUsage } from '../cli/shared-source.mjs';
 
 function repoWith(relPath, content) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-envschema-'));
+  const dir = makeTempDir('docguard-envschema-');
   const full = join(dir, relPath);
   mkdirSync(join(full, '..'), { recursive: true });
   writeFileSync(full, content);

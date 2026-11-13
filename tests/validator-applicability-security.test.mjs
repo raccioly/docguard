@@ -12,11 +12,12 @@
  * @implements docguard.strict-by-default#FR-005
  * @implements docguard.strict-by-default#FR-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateSecurity, applies } from '../cli/validators/security.mjs';
 import { validateResultContract } from '../cli/validator-coverage.mjs';
@@ -31,7 +32,7 @@ const withKey = result => ({ key: 'security', ...result });
 describe('security result contract', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-sec-contract-'));
+    dir = makeTempDir('docguard-sec-contract-');
     writeFileSync(join(dir, '.gitignore'), '.env\n');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -105,7 +106,7 @@ describe('security result contract', () => {
     assert.equal(r.passed, 2);
     assert.deepEqual(r.errors, []);
     assert.deepEqual(r.warnings, []);
-    const none = mkdtempSync(join(tmpdir(), 'docguard-sec-none-'));
+    const none = makeTempDir('docguard-sec-none-');
     try {
       writeFileSync(join(none, '.gitignore'), '.env\n');
       const e = validateSecurity(none, {});

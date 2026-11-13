@@ -7,12 +7,13 @@
  *   #2   `fix` agrees with `guard` — reports advisory warnings, not "complete"
  *   #4   `trace` doesn't list markdown command docs as SECURITY auth modules
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -27,7 +28,7 @@ function gitInit(dir) {
   fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init'], { env });
 }
 
-function tmp() { return mkdtempSync(join(tmpdir(), 'docguard-fr2-')); }
+function tmp() { return makeTempDir('docguard-fr2-'); }
 function write(dir, files) {
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);

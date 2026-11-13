@@ -10,12 +10,13 @@
  * @req docguard.requirement-anchors#FR-009
  * @req docguard.requirement-anchors#FR-040
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeLinks } from '../cli/scanners/anchors.mjs';
 import { treeSitterManifest } from '../cli/scanners/ts-anchors.mjs';
 
@@ -29,7 +30,7 @@ const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursi
 
 const GO = 'package svc\n\nimport "fmt"\n\n// @implements acme.svc#FR-001\nfunc Serve(n int) int {\n\tfmt.Println(n)\n\treturn n + 1\n}\n';
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-ts-'));
+  const dir = makeTempDir('dg-anchor-ts-');
   dirs.push(dir);
   write(dir, 'specs/001-svc/spec.md', '# Svc\n\n**Spec ID**: `acme.svc`\n\n- **FR-001**: Serve.\n');
   write(dir, 'src/svc.go', GO);
@@ -118,7 +119,7 @@ describe('with the real vetted artifacts', { skip: !REAL && 'the anchor-oracle C
     grammars: Object.fromEntries(Object.entries(manifest.grammars).map(([lang, g]) => [lang, join(nm, g.package, g.file)])),
   };
   const golden = () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-ts-golden-'));
+    const dir = makeTempDir('dg-anchor-ts-golden-');
     dirs.push(dir);
     cpSync(resolve('tests/fixtures/anchors/golden'), dir, { recursive: true });
     return dir;

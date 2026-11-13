@@ -25,9 +25,10 @@
  * The repositories are only read: each evaluation point is a detached
  * worktree under the system temp directory, removed afterwards.
  */
+import { makeTempDir } from '../../tests/helpers/temp-dir.mjs';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { devNull, tmpdir } from 'node:os';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { devNull } from 'node:os';
 import { join, resolve } from 'node:path';
 import { agentInstructionDocs } from '../../cli/shared-agent-instructions.mjs';
 import { documentReferences } from '../../cli/scanners/doc-reviews.mjs';
@@ -106,7 +107,7 @@ export function replayRepository(repo, { name = repo, until = 'HEAD', labels = {
   const chain = firstParent(repo, until);
   const head = chain[chain.length - 1];
   const worktrees = new Map();
-  const root = mkdtempSync(join(tmpdir(), 'docguard-replay-'));
+  const root = makeTempDir('docguard-replay-');
   const worktreeAt = sha => {
     if (!worktrees.has(sha)) {
       const dir = join(root, sha.slice(0, 12));

@@ -11,17 +11,18 @@
  *   of the false-positive classes contributing to the warning reduction.
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { grepEnvUsage } from '../cli/shared-source.mjs';
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-patch-'));
+  const dir = makeTempDir('docguard-patch-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

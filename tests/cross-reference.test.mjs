@@ -7,11 +7,12 @@
  * @req SC-K7-004 — code-fenced examples don't trigger false positives
  * @req SC-K7-005 — slugifyHeading matches GitHub's GFM rules for common cases
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   slugifyHeading,
@@ -22,7 +23,7 @@ import {
 } from '../cli/validators/cross-reference.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-xref-'));
+  const dir = makeTempDir('docguard-xref-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

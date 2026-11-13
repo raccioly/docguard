@@ -5,12 +5,13 @@
  * @req docguard.language-repository-coverage#SC-004
  * @req specs/009-language-repository-coverage/spec.md#FR-016
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { detectRepositoryRootGuidance, renderRepositoryRootGuidance } from '../cli/repository-root.mjs';
@@ -19,7 +20,7 @@ import { FIXTURE_GIT } from './helpers/git.mjs';
 const cli = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-root-guidance-'));
+  const dir = makeTempDir('docguard-root-guidance-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

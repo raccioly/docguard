@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
@@ -31,7 +32,7 @@ function git(dir, ...args) {
 }
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-archive-'));
+  const dir = makeTempDir('docguard-archive-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   mkdirSync(join(dir, 'specs', '001-done'), { recursive: true });
   mkdirSync(join(dir, 'docs'), { recursive: true });

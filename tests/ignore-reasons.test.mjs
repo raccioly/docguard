@@ -17,11 +17,12 @@
  * @req docguard.ignore-reasons#SC-001
  * @req docguard.ignore-reasons#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -47,7 +48,7 @@ const write = (root, rel, text) => { mkdirSync(dirname(join(root, rel)), { recur
 
 let dir;
 const fresh = (files = {}) => {
-  dir = mkdtempSync(join(tmpdir(), 'docguard-057-'));
+  dir = makeTempDir('docguard-057-');
   for (const [rel, text] of Object.entries(files)) write(dir, rel, text);
   return dir;
 };

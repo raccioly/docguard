@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { execSync } from 'node:child_process';
 
 // Checkbox markers concat-built so DocGuard's own traceability validator
@@ -23,7 +24,7 @@ describe('Spec-Kit — phantom-completion detection (SPK008/SPK009)', () => {
   let tmp;
 
   beforeEach(() => {
-    tmp = mkdtempSync(join(tmpdir(), 'docguard-phantom-'));
+    tmp = makeTempDir('docguard-phantom-');
   });
 
   afterEach(() => {

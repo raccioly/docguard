@@ -11,11 +11,12 @@
  * double-fires (documented-but-absent AND undocumented). These tests lock in
  * the resolution — and, crucially, that it does NOT over-prefix sibling routes.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 
@@ -28,7 +29,7 @@ function express(dir) {
 
 describe('Express mount-prefix resolution', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-mounts-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-mounts-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('prefixes an IMPORTED sub-router with its mount path (default + named exports)', () => {

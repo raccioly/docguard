@@ -6,11 +6,12 @@
  * (the generated hook template has no `set -e`; FRS002's repository-wide scope is
  * deliberate and says so in its own message) and are deliberately not asserted.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { execSync } from 'node:child_process';
 
 import { digestSource } from '../cli/scanners/spec-registry.mjs';
@@ -50,7 +51,7 @@ describe('field report §3.4 — a review stamp is not a content change', () => 
 describe('field report §3.1 — a document staged in this commit is not "review due"', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'fr-staged-'));
+    dir = makeTempDir('fr-staged-');
     runGit('init', dir);
     runGit('config user.name "Test"', dir);
     runGit('config user.email test@example.com', dir);
@@ -88,7 +89,7 @@ describe('field report §3.1 — a document staged in this commit is not "review
 describe('field report §3.3 — DocGuard must not report its own backup file', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'fr-bak-'));
+    dir = makeTempDir('fr-bak-');
     mkdirSync(join(dir, 'docs-canonical'));
     writeFileSync(join(dir, 'README.md'), '# Project\n\nDocs.\n');
   });

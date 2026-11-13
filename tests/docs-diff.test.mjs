@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { diffTechStack } from '../cli/validators/docs-diff.mjs';
 
@@ -16,7 +17,7 @@ describe('Docs-Diff Validator', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    tmpDir = makeTempDir('docguard-test-');
   });
 
   afterEach(() => {
@@ -85,7 +86,7 @@ describe('Docs-Diff Validator', () => {
 
   it('collectCodeTests ignores test files excluded by config', async () => {
     const { collectCodeTests } = await import('../cli/validators/docs-diff.mjs');
-    const tmpDir2 = mkdtempSync(join(tmpdir(), 'docguard-test2-'));
+    const tmpDir2 = makeTempDir('docguard-test2-');
     try {
       mkdirSync(join(tmpDir2, 'src'));
       writeFileSync(join(tmpDir2, 'src/a.test.js'), 'test()');
@@ -106,7 +107,7 @@ describe('diffRoutes and diffEntities Coverage', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-diff-'));
+    tmpDir = makeTempDir('docguard-test-diff-');
   });
 
   afterEach(() => {
@@ -128,7 +129,7 @@ describe('runDiff Coverage', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-rundiff-'));
+    tmpDir = makeTempDir('docguard-test-rundiff-');
   });
 
   afterEach(() => {

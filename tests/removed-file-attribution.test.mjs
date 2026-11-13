@@ -9,12 +9,13 @@
  * @req docguard.removed-file-attribution#SC-001
  * @req docguard.removed-file-attribution#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { BLOCKER_CODES } from '../cli/findings.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -38,7 +39,7 @@ const BETA = '# Feature Specification: Beta\n\n**Spec ID**: `acme.beta`\n\n## Re
 
 /** A Spec Kit project: alpha approved and current, beta a draft. */
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'removed-files-'));
+  const dir = makeTempDir('removed-files-');
   temps.push(dir);
   const write = (rel, content) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), content); };
   const git = (...args) => fixtureGit(dir, args);

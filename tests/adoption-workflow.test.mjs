@@ -12,12 +12,13 @@
  * @req docguard.adoption-workflow-integrity#SC-006
  * @req docs-canonical/REQUIREMENTS.md#FR-008
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 
 const run = (args, cwd) => spawnSync(process.execPath, args, {
@@ -30,7 +31,7 @@ describe('packed adopter workflow', () => {
   let project;
 
   before(() => {
-    root = mkdtempSync(join(tmpdir(), 'docguard-adoption-'));
+    root = makeTempDir('docguard-adoption-');
     const packDir = join(root, 'pack');
     const extractDir = join(root, 'extract');
     project = join(root, 'project');

@@ -10,11 +10,12 @@
  * @req SC-HIS-007 — `score --trend --format json` is pure parseable JSON
  * @req SC-HIS-008 — ci --format json survives a pipe (stdout.write, not console.log+exit)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -24,7 +25,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, '..', 'cli', 'docguard.mjs');
 
 function makeFixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-history-'));
+  const dir = makeTempDir('docguard-history-');
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({
     projectName: 'history-fixture', profile: 'standard',
   }));

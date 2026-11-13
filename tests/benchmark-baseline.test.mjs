@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 /**
@@ -145,7 +146,7 @@ describe('baseline schema', () => {
 
 describe('benchmark run provenance', () => {
   it('refuses a legacy baseline before spending a run on it', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-baseline-'));
+    const dir = makeTempDir('docguard-baseline-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const legacy = committed();
     delete legacy.$schema;
@@ -160,7 +161,7 @@ describe('benchmark run provenance', () => {
   });
 
   it('carries the caveat on every report and writes a validated candidate envelope', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-baseline-'));
+    const dir = makeTempDir('docguard-baseline-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const target = join(dir, 'candidate.json');
     const written = spawnSync(process.execPath, [RUN, '--split', 'development', '--write-baseline', target], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
@@ -181,7 +182,7 @@ describe('benchmark run provenance', () => {
   });
 
   it('--acknowledge-file moves a declared fixture correction out of the comparison and errors on an unreadable file', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-baseline-'));
+    const dir = makeTempDir('docguard-baseline-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const baseline = committed();
     const victim = baseline.core.cases.find(item => item.id === 'dev-generated-security-control');

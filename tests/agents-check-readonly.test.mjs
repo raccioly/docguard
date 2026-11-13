@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, lstatSync, readlinkSync, rmSync, chmodSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, lstatSync, readlinkSync, rmSync, chmodSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
@@ -20,7 +21,7 @@ function snapshot(root, dir = root) {
   return entries;
 }
 function fixture(t) {
-  const root = mkdtempSync(join(tmpdir(), 'dg-agents-readonly-'));
+  const root = makeTempDir('dg-agents-readonly-');
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const project = join(root, 'project'), bin = join(root, 'bin'), log = join(root, 'specify.log');
   safeWrite(join(project, 'package.json'), '{"name":"read-only-fixture","version":"1.0.0"}');

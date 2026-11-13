@@ -17,11 +17,12 @@
 // Outcomes; these cases are the reproductions that A/B was checked against.
 // @req docguard.consumer-report-precision#SC-002
 // @req docguard.consumer-report-precision#SC-003
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
 import { applyMechanicalFix } from '../cli/writers/mechanical.mjs';
 import { detectUntouchedClaims, detectSpecKit } from '../cli/scanners/speckit.mjs';
@@ -33,7 +34,7 @@ const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 
 function project(files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-080-'));
+  const dir = makeTempDir('dg-080-');
   dirs.push(dir);
   write(dir, files);
   return dir;

@@ -2,15 +2,16 @@
  * @req docguard.language-repository-coverage#FR-004
  * @req docguard.language-repository-coverage#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { describeCheckCoverage } from '../cli/validator-coverage.mjs';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
-const fixture = t => { const dir = mkdtempSync(join(tmpdir(), 'docguard-check-coverage-')); t.after(() => rmSync(dir, { recursive: true, force: true })); return dir; };
+const fixture = t => { const dir = makeTempDir('docguard-check-coverage-'); t.after(() => rmSync(dir, { recursive: true, force: true })); return dir; };
 test('coverage distinguishes configuration, absence, unsupported input and completed predicates', t => {
   const dir = fixture(t);
   assert.equal(describeCheckCoverage(dir, {}, { status: 'skipped' }).status, 'disabled');

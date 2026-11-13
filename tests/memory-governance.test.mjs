@@ -10,12 +10,13 @@
  * @req docguard.memory-governance#SC-001
  * @req docguard.memory-governance#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateAidlc } from '../cli/validators/aidlc.mjs';
 import { ABSENCE_CLAIM_CODES, codeDefaultLevel } from '../cli/findings.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -24,7 +25,7 @@ const CLI = resolve('cli/docguard.mjs');
 const SPACE = 'aidlc/spaces/default';
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-mem-'));
+  const dir = makeTempDir('docguard-mem-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   return dir;

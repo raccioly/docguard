@@ -1,15 +1,16 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { commitFileTransaction } from '../cli/writers/file-transaction.mjs';
 
 /** @req docguard.document-lifecycle#FR-013 */
 
 describe('Lifecycle file transaction', () => {
   it('commits replacements, additions, and deletions as one set', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-transaction-'));
+    const dir = makeTempDir('docguard-transaction-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const keep = join(dir, 'keep.json');
     const remove = join(dir, 'remove.md');
@@ -27,7 +28,7 @@ describe('Lifecycle file transaction', () => {
   });
 
   it('restores every original when a later mutation fails', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-transaction-'));
+    const dir = makeTempDir('docguard-transaction-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const first = join(dir, 'first.json');
     const second = join(dir, 'second.json');
@@ -42,7 +43,7 @@ describe('Lifecycle file transaction', () => {
   });
 
   it('rolls back when post-commit validation rejects the resulting set', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-transaction-'));
+    const dir = makeTempDir('docguard-transaction-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     mkdirSync(join(dir, 'nested'));
     const file = join(dir, 'nested', 'state.json');
@@ -54,7 +55,7 @@ describe('Lifecycle file transaction', () => {
   });
 
   it('cleans already-staged files when preparation fails', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-transaction-'));
+    const dir = makeTempDir('docguard-transaction-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const file = join(dir, 'state.json');
     writeFileSync(file, 'old');

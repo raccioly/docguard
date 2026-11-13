@@ -2,11 +2,12 @@
  * @req docguard.adoption-workflow-integrity#FR-007
  * @req docs-canonical/REQUIREMENTS.md#FR-012
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 const CLI = new URL('../cli/docguard.mjs', import.meta.url).pathname;
@@ -16,7 +17,7 @@ describe('findingSeverity config contract', () => {
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   function fixture(findingSeverity) {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-finding-policy-'));
+    dir = makeTempDir('docguard-finding-policy-');
     const files = {
       'package.json': JSON.stringify({ name: 'finding-policy', version: '1.0.0' }),
       '.docguard.json': JSON.stringify({

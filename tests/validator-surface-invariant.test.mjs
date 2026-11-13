@@ -16,12 +16,13 @@
  *
  * @req docguard.output-ux#FR-008
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import { countValidatorModules } from '../cli/shared-validator-surface.mjs';
@@ -36,7 +37,7 @@ const CLAIM_RE = /(\d+)\s+(?:automated\s+)?validators|Validators\s*\((\d+)\)/g;
 
 describe('validator surface invariant', () => {
   it('registers exactly one key per shipped validator module', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-surface-'));
+    const dir = makeTempDir('dg-surface-');
     try {
       writeFileSync(join(dir, '.docguard.json'), '{"projectName":"surface-probe"}');
       // guard exits non-zero on a bare fixture (missing canonical docs); the

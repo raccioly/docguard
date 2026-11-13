@@ -18,12 +18,13 @@
  * @req docguard.jules-policy#SC-001
  * @req docguard.jules-policy#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { execFile, execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { devNull, tmpdir } from 'node:os';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { devNull } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -565,7 +566,7 @@ describe('environment setup fails closed (FR-011)', () => {
   // Runs the real script in a scratch repository whose npm and CLI are stubs,
   // so the exit status is decided by the script, not by this repository's suite.
   const scratch = (testExit, guardExit) => {
-    const dir = mkdtempSync(join(tmpdir(), 'jules-setup-'));
+    const dir = makeTempDir('jules-setup-');
     const bin = join(dir, 'bin');
     mkdirSync(join(dir, 'repo', '.jules'), { recursive: true });
     mkdirSync(join(dir, 'repo', 'cli'), { recursive: true });

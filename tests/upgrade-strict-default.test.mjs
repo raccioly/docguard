@@ -5,13 +5,14 @@
  *
  * @req docguard.strict-by-default#FR-018
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
@@ -27,7 +28,7 @@ const KEYS = ['structure', 'docsSync', 'drift', 'changelog', 'architecture', 'te
 const only = (...on) => Object.fromEntries(KEYS.map(k => [k, on.includes(k)]));
 
 function project(files, extra = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-upgrade-strict-'));
+  const dir = makeTempDir('docguard-upgrade-strict-');
   temporary.push(dir);
   for (const [path, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), body); }
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators: only('apiSurface'), ...extra }, null, 2));

@@ -14,19 +14,20 @@
  * every other command, `generate` included, writes only its own outputs. So
  * this exercises idempotency through `init`.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync, statSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readdirSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-skills-'));
+  const dir = makeTempDir('docguard-skills-');
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   // Mark spec-kit as already initialized so ensureSpecKit early-returns and
   // doesn't scaffold (keeps this test about skills only). The generic

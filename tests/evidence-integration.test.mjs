@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { coverSemanticClaims, evaluateEvidence } from '../cli/evidence/evaluate.mjs';
 import { EVIDENCE_SCHEMA_URL } from '../cli/evidence/manifest.mjs';
 import { contentHash } from '../cli/scanners/semantic-claims.mjs';
@@ -42,7 +43,7 @@ function read(dir, path) {
 }
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-evidence-integration-'));
+  const dir = makeTempDir('docguard-evidence-integration-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   write(dir, 'docs-canonical/FACTS.md', [
     '# Facts', '', '## Policy', 'Retention is 30 days.', 'Roles are admin, editor, viewer.', '',

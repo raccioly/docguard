@@ -19,12 +19,13 @@
  * @req docguard.code-derived-diagrams#SC-003
  * @req docguard.code-derived-diagrams#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { buildImportGraph, cachedImportGraphCount, clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
 import { buildImportGraph as reexported, validateArchitecture } from '../cli/validators/architecture.mjs';
 import { MAX_EDGES, moduleGraphOptions, moduleOf, renderModuleGraph } from '../cli/scanners/module-diagram.mjs';
@@ -39,7 +40,7 @@ const CLI = resolve('cli/docguard.mjs');
 const MARKER = '<!-- docguard:section id=module-graph source=code -->\n<!-- /docguard:section -->';
 
 function fixture(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-diagrams-'));
+  const dir = makeTempDir('docguard-diagrams-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) if (body !== undefined) write(dir, path, body);
   return dir;
@@ -337,7 +338,7 @@ describe('sync --since scopes both sections (FR-009)', () => {
 
 /** A PATH holding only node and git, so neither python3 nor python resolves. */
 function pathWithoutPython(t) {
-  const bin = mkdtempSync(join(tmpdir(), 'docguard-nopy-'));
+  const bin = makeTempDir('docguard-nopy-');
   t.after(() => rmSync(bin, { recursive: true, force: true }));
   symlinkSync(process.execPath, join(bin, 'node'));
   const git = process.env.PATH.split(delimiter).map(d => join(d, 'git')).find(p => existsSync(p));

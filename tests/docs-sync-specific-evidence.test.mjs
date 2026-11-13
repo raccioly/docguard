@@ -15,12 +15,13 @@
  * @req docguard.docs-sync-specific-evidence#SC-001
  * @req docguard.docs-sync-specific-evidence#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { delimiter, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { visibleMarkdown } from '../cli/shared-html-comments.mjs';
 import { createUrlPathMatcher, namesDirectory, namesToken, treePaths } from '../cli/scanners/doc-references.mjs';
 import { appRouterPath } from '../cli/scanners/routes.mjs';
@@ -34,7 +35,7 @@ const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 
 function makeDir(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-dsy-specific-'));
+  const dir = makeTempDir('docguard-dsy-specific-');
   temps.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(join(dir, rel, '..'), { recursive: true });

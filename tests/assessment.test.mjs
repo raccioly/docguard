@@ -1,9 +1,10 @@
 // @req docguard.adoption-workflow-integrity#FR-009
 // @req docs-canonical/REQUIREMENTS.md#FR-013
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -95,7 +96,7 @@ describe('assessment command contracts', () => {
   });
 
   function makeIncompleteProject() {
-    projectDir = mkdtempSync(join(tmpdir(), 'docguard-assessment-'));
+    projectDir = makeTempDir('docguard-assessment-');
     mkdirSync(join(projectDir, 'docs-canonical'));
     writeFileSync(join(projectDir, '.docguard.json'), JSON.stringify({
       projectName: 'assessment-fixture',

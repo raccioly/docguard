@@ -11,12 +11,13 @@
  * @req docguard.field-report-followups#SC-002
  * @req docguard.field-report-followups#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { CURRENT_SCHEMA_VERSION } from '../cli/shared.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -26,7 +27,7 @@ afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, forc
 
 const strip = s => s.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '');
 function project(files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'frf-'));
+  const dir = makeTempDir('frf-');
   dirs.push(dir);
   fixtureGit(dir, ['init', '-q']);
   for (const [rel, content] of Object.entries(files)) {
@@ -39,7 +40,7 @@ function project(files = {}) {
 // contributor's global core.hooksPath neither receives the hooks nor makes the
 // installer refuse (spec 065). Other commands keep the real environment.
 // @req docguard.hooks-repo-scope#FR-006
-const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+const isolatedGitConfig = join(makeTempDir('dg-gitcfg-'), 'gitconfig');
 writeFileSync(isolatedGitConfig, '');
 const HOOKS_ENV = { GIT_CONFIG_GLOBAL: isolatedGitConfig, GIT_CONFIG_NOSYSTEM: '1' };
 

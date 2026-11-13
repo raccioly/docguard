@@ -3,12 +3,13 @@
  * agent task list carries a structured (activity-labeled) diff and flags claims
  * about just-changed code. Backward compatible without --since.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -18,7 +19,7 @@ function git(dir, ...a) { fixtureGit(dir, a); }
 describe('verify --since change context (feat 6)', () => {
   let dir;
   before(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-vcc-'));
+    dir = makeTempDir('dg-vcc-');
     git(dir, 'init', '-q', '-b', 'main');
     git(dir, 'config', 'user.email', 't@t.co'); git(dir, 'config', 'user.name', 'T');
     mkdirSync(join(dir, 'src')); mkdirSync(join(dir, 'docs-canonical'));

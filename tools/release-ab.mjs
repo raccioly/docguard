@@ -23,9 +23,10 @@
  * @implements docguard.release-trend-gate#FR-002
  * @implements docguard.release-trend-gate#FR-004
  */
+import { makeTempDir } from '../tests/helpers/temp-dir.mjs';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { devNull, tmpdir } from 'node:os';
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { devNull } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -81,7 +82,7 @@ function git(cwd, args) {
 
 /** A fresh one-commit repository holding the tracked content of `source`. */
 function freshCopy(headTree, source) {
-  const parent = mkdtempSync(join(tmpdir(), 'docguard-release-ab-'));
+  const parent = makeTempDir('docguard-release-ab-');
   const dest = join(parent, 'p');
   const src = resolve(headTree, source);
   if (source === '.') {

@@ -9,12 +9,13 @@
  * @req docguard.requirement-anchors#FR-035
  * @req docguard.requirement-anchors#FR-036
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeOrphans } from '../cli/scanners/anchors.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -27,7 +28,7 @@ const cli = (dir, args) => spawnSync(process.execPath, [CLI, ...args, '--dir', d
 const json = (dir, args) => JSON.parse(cli(dir, [...args, '--format', 'json']).stdout);
 
 function project({ anchors = { orphanPaths: ['src'] }, extra = {} } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-orphans-'));
+  const dir = makeTempDir('dg-anchor-orphans-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter', anchors }));
   write(dir, 'specs/001-billing/spec.md', '# Billing\n\n**Spec ID**: `acme.billing`\n\n- **FR-001**: Charges.\n- **FR-002**: Carts.\n');

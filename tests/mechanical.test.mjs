@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { applyMechanicalFix } from '../cli/writers/mechanical.mjs';
 
@@ -10,7 +11,7 @@ describe('mechanical writers', () => {
   let dir;
   const write = (rel, content) => writeFileSync(join(dir, rel), content);
   const read = (rel) => readFileSync(join(dir, rel), 'utf-8');
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-mech-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-mech-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('replace-count: rewrites the stale number and is idempotent', () => {

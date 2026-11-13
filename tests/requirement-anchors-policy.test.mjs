@@ -12,12 +12,13 @@
  * @req docguard.requirement-anchors#SC-005
  * @req docguard.requirement-anchors#SC-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { ANCHOR_FAIL_DEFAULT, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../cli/scanners/anchors.mjs';
 import { planSpecCompletion } from '../cli/commands/specs.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
@@ -33,7 +34,7 @@ function write(dir, rel, content) {
   writeFileSync(join(dir, rel), content);
 }
 function project(failOn) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-policy-'));
+  const dir = makeTempDir('dg-anchor-policy-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter', anchors: failOn ? { failOn } : {} }));
   write(dir, 'specs/001-billing/spec.md', '# Billing\n\n**Spec ID**: `acme.billing`\n\n- **FR-001**: A module.\n- **FR-002**: Discounts.\n- **FR-003**: A server.\n- **FR-004**: A ledger.\n');

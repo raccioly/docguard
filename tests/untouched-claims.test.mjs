@@ -19,12 +19,13 @@
  * @req FR-021
  * @req docguard.calibrated-finding-channels#FR-021
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { detectUntouchedClaims, featureTouchedPaths, detectSpecKit } from '../cli/scanners/speckit.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
@@ -32,7 +33,7 @@ const dirs = [];
 
 /** A git repo whose spec was committed, then code landed in later commits. */
 function repo({ tasks, alsoCommit = {}, andThen = {}, commitSpec = true }) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-untouched-'));
+  const dir = makeTempDir('dg-untouched-');
   dirs.push(dir);
   const put = (p, body) => {
     mkdirSync(dirname(join(dir, p)), { recursive: true });
@@ -164,7 +165,7 @@ describe('SPK010 precision — it must not accuse honestly', () => {
 
 describe('SPK010 — silent when the answer is unknowable', () => {
   test('no git repository', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-nogit-'));
+    const dir = makeTempDir('dg-nogit-');
     dirs.push(dir);
     mkdirSync(join(dir, 'specs/001-thing'), { recursive: true });
     mkdirSync(join(dir, 'docs-canonical'), { recursive: true });

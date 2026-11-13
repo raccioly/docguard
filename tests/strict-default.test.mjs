@@ -15,12 +15,13 @@
  * @req docguard.strict-by-default#FR-012
  * @req docguard.strict-by-default#FR-013
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
@@ -34,7 +35,7 @@ after(() => { for (const dir of temporary) rmSync(dir, { recursive: true, force:
 // The two root files a default configuration requires, so a fixture's only findings are the ones under test.
 const ROOT_FILES = { 'CHANGELOG.md': '# Changelog\n\n## [Unreleased]\n', 'DRIFT-LOG.md': '# Drift log\n' };
 function project(files, config, { git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-strict-default-'));
+  const dir = makeTempDir('docguard-strict-default-');
   temporary.push(dir);
   for (const [path, body] of Object.entries({ ...(config ? ROOT_FILES : {}), ...files })) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

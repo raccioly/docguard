@@ -1,7 +1,8 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync } from 'node:fs';
+
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
@@ -11,7 +12,7 @@ import { FIXTURE_GIT } from './helpers/git.mjs';
 const cli = resolve('cli/docguard.mjs');
 
 test('diagnose keeps freshness as review for conventional and custom documents', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-diagnose-review-'));
+  const dir = makeTempDir('dg-diagnose-review-');
   try {
     execFileSync('git', [...FIXTURE_GIT, 'init', '-q', dir]);
     safeWrite(join(dir, 'src/index.mjs'), 'export const ready = true;\n');

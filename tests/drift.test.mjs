@@ -1,13 +1,14 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateDrift } from '../cli/validators/drift.mjs';
 
 describe('validateDrift', () => {
   it('is not-applicable (NOT a fake pass) when no DRIFT comments are found', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-drift-'));
+    const tempDir = makeTempDir('docguard-test-drift-');
     try {
       const config = { requiredFiles: { driftLog: 'DRIFT-LOG.md' } };
       fs.writeFileSync(join(tempDir, 'test.js'), 'console.log("hello");');
@@ -26,7 +27,7 @@ describe('validateDrift', () => {
   });
 
   it('returns errors when DRIFT comments exist but DRIFT-LOG.md is missing', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-drift-'));
+    const tempDir = makeTempDir('docguard-test-drift-');
     try {
       const config = { requiredFiles: { driftLog: 'DRIFT-LOG.md' } };
       fs.writeFileSync(join(tempDir, 'test.js'), '// DRIFT: We needed to do this\nconsole.log("hello");');
@@ -43,7 +44,7 @@ describe('validateDrift', () => {
   });
 
   it('returns errors when DRIFT comments exist but are not mentioned in DRIFT-LOG.md', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-drift-'));
+    const tempDir = makeTempDir('docguard-test-drift-');
     try {
       const config = { requiredFiles: { driftLog: 'DRIFT-LOG.md' } };
       fs.writeFileSync(join(tempDir, 'test.js'), '// DRIFT: We needed to do this\nconsole.log("hello");');
@@ -61,7 +62,7 @@ describe('validateDrift', () => {
   });
 
   it('returns passed when DRIFT comments are correctly logged in DRIFT-LOG.md for various styles', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-drift-'));
+    const tempDir = makeTempDir('docguard-test-drift-');
     try {
       const config = { requiredFiles: { driftLog: 'DRIFT-LOG.md' } };
 

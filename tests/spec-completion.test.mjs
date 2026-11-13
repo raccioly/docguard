@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { completeSpec, normalizeExternalDeliveryStatus, planSpecCompletion } from '../cli/commands/specs.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -27,7 +28,7 @@ function git(dir, args) {
 }
 
 function fixture(t, { checked = true, implementation = true, test = true, tasks = true, persistenceModel = null } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-complete-'));
+  const dir = makeTempDir('docguard-complete-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   git(dir, ['init', '-q']);
   git(dir, ['config', 'user.email', 'test@example.com']);

@@ -16,12 +16,13 @@
  * @req docguard.doc-ownership-map#SC-003
  * @req docguard.doc-ownership-map#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import {
   DEVIN_WIKI, lintDevinWiki, loadOwnership, ownerOf, ownershipReport, resolveOwner,
 } from '../cli/scanners/doc-ownership.mjs';
@@ -38,7 +39,7 @@ function write(dir, path, body) {
 }
 
 function project(t, files, { git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-own-'));
+  const dir = makeTempDir('docguard-own-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   if (git) {

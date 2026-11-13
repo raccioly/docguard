@@ -8,11 +8,12 @@
  * @req SC-M2-005 — entries are capped at MAX_ENTRIES
  * @req SC-M2-006 — isFixRecorded returns true after appendFixes
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   loadFixMemory,
@@ -22,7 +23,7 @@ import {
 } from '../cli/writers/fix-memory.mjs';
 
 function tmp() {
-  return mkdtempSync(join(tmpdir(), 'docguard-fixmem-'));
+  return makeTempDir('docguard-fixmem-');
 }
 
 describe('fingerprintFix', () => {

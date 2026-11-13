@@ -8,11 +8,12 @@
  * @req SC-K2-003 — `--check-only` exits 1 when behind, 0 when current
  * @req SC-K2-004 — Post-guard nudge fires only when project schema < CLI schema
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   CURRENT_SCHEMA_VERSION,
@@ -22,7 +23,7 @@ import {
 import { checkUpgradeStatus, migrateSchema } from '../cli/commands/upgrade.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-upgrade-'));
+  const dir = makeTempDir('docguard-upgrade-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

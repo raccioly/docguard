@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { detectSpecDivergence, findAllOpenApiSpecs, validateApiSurface } from '../cli/validators/api-surface.mjs';
 
@@ -22,7 +23,7 @@ describe('multi-OpenAPI-spec divergence', () => {
     mkdirSync(join(full, '..'), { recursive: true });
     writeFileSync(full, content);
   };
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-multispec-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-multispec-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('finds specs in canonical locations and flags divergence', () => {

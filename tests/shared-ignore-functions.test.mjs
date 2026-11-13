@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import test from 'node:test';
 import assert from 'node:assert';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import {
   isNonProductDir,
   isNonProductPath,
@@ -39,7 +40,7 @@ test('isNonProductPath handles deep paths correctly', (t) => {
 });
 
 test('walkFiles recursively visits files and respects options', (t) => {
-  const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-walkfiles-'));
+  const tmpDir = makeTempDir('docguard-test-walkfiles-');
 
   mkdirSync(join(tmpDir, 'src'));
   writeFileSync(join(tmpDir, 'src', 'index.js'), 'console.log("hello");');

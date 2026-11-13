@@ -24,11 +24,12 @@
  * @req docguard.php-dotnet-routes#SC-002
  * @req docguard.php-dotnet-routes#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { extractSymfonyRoutes, lexPhp } from '../cli/scanners/php-routes.mjs';
 import { extractAspNetRoutes, lexCSharp } from '../cli/scanners/dotnet-routes.mjs';
@@ -40,7 +41,7 @@ const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-059-'));
+  const dir = makeTempDir('dg-059-');
   temps.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });

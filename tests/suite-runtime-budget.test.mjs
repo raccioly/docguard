@@ -7,10 +7,11 @@
  * @req docguard.release-cut-green#FR-007
  * @req docguard.release-cut-green#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -148,7 +149,7 @@ describe('buildReference is in the units of the median runner among its inputs',
 
 describe('the check command', () => {
   const inTemp = (fn) => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-suite-budget-'));
+    const dir = makeTempDir('docguard-suite-budget-');
     try { return fn(dir); } finally { rmSync(dir, { recursive: true, force: true }); }
   };
   const check = (dir, tests, extraArgs = []) => {

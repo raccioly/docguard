@@ -9,12 +9,13 @@
  * @req docguard.release-trend-gate#FR-006
  * @req docguard.release-trend-gate#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { changelogSection, compareRuns, expandCorpus, judge, loadGateConfig } from '../tools/release-ab.mjs';
 
 const TOOL = resolve('tools/release-ab.mjs');
@@ -35,7 +36,7 @@ function cliTree(root, name, { version, findings, exit = 0, changelog = null }) 
   return dir;
 }
 function gate(t, base, head) {
-  const root = mkdtempSync(join(tmpdir(), 'docguard-release-ab-test-'));
+  const root = makeTempDir('docguard-release-ab-test-');
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const b = cliTree(root, 'base', { version: '1.0.0', ...base });
   const h = cliTree(root, 'head', { version: '1.1.0', ...head });
@@ -118,7 +119,7 @@ describe('FR-002 / FR-004 — judging and configuration', () => {
     assert.ok(dirs.some(d => d.dir === '.'), 'the repository itself is in the corpus');
     assert.ok(dirs.filter(d => d.dir.startsWith('benchmarks/fixtures/')).length >= 5, 'the benchmark fixtures are in the corpus');
     for (const [code, reason] of Object.entries(dirs.find(d => d.dir === '.').ignoreCodes)) assert.match(reason, /by design|does not have/, code);
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-gate-cfg-'));
+    const dir = makeTempDir('docguard-gate-cfg-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     writeFileSync(join(dir, 'g.json'), JSON.stringify({ schemaVersion: 1, corpus: ['.'], volatileCodes: { FRS001: '' } }));
     assert.throws(() => loadGateConfig(join(dir, 'g.json')), /needs a reason/);

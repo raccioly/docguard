@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateSchemaSync } from '../cli/validators/schema-sync.mjs';
 import { collectCodeTests } from '../cli/validators/docs-diff.mjs';
@@ -16,7 +17,7 @@ function write(dir, rel, content) {
 
 describe('monorepo-aware validators (config.sourceRoot)', () => {
   let tmp;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-mono-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-mono-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('schema-sync finds Prisma models under a sourceRoot package, not just root', () => {

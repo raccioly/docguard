@@ -14,12 +14,13 @@
  * @req docguard.enforcement-ladder#FR-012
  * @req docguard.enforcement-ladder#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
@@ -27,7 +28,7 @@ const CLI = resolve('cli/docguard.mjs');
 const write = (dir, path, body) => { mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), body); };
 
 function project(t, files, config) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-ladder-'));
+  const dir = makeTempDir('docguard-ladder-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'ladder', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, ...config }));

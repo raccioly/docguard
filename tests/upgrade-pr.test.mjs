@@ -12,17 +12,18 @@
  * @req SC-P4-002 — gh-absent environment produces a clear error
  * @req SC-P4-003 — --pr without --apply is harmless (no PR opened)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-pr-'));
+  const dir = makeTempDir('docguard-pr-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

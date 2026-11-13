@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { runTraceFeatures } from '../cli/commands/trace.mjs';
@@ -16,7 +17,7 @@ for (const [name, refs, expected] of [
   ['normalized relative qualifier', `// @req ./specs/a/spec.md#${id}`, [1, 0]],
 ]) {
   test(name, t => {
-    const root = mkdtempSync(join(tmpdir(), 'dg-scoped-req-'));
+    const root = makeTempDir('dg-scoped-req-');
     t.after(() => rmSync(root, { recursive: true, force: true }));
     for (const feature of ['a', 'b']) safeWrite(join(root, `specs/${feature}/spec.md`), `# Feature ${feature}\n- ${id}: implement ${feature}\n`);
     safeWrite(join(root, 'tests/link.test.mjs'), refs);
@@ -40,7 +41,7 @@ for (const [name, refs, expected] of [
 
 for (const reference of [id, 'specs/a/spec.md#' + id, 'specs/missing/spec.md#' + id]) {
   test('unique identity resolution: ' + reference, t => {
-    const root = mkdtempSync(join(tmpdir(), 'dg-unique-req-'));
+    const root = makeTempDir('dg-unique-req-');
     t.after(() => rmSync(root, { recursive: true, force: true }));
     safeWrite(join(root, 'specs/a/spec.md'), '# Requirements\n- ' + id + ': implement\n- ' + id + ': repeated mention\n');
     safeWrite(join(root, 'tests/link.test.mjs'), '// @req ' + reference);

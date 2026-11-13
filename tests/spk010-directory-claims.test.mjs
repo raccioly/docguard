@@ -7,12 +7,13 @@
  * @req docguard.spk010-directory-claims#SC-001
  * @req docguard.spk010-directory-claims#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { detectUntouchedClaims, detectSpecKit, touchedWithin } from '../cli/scanners/speckit.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
@@ -21,7 +22,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 
 /** Baseline project, then the spec commit, then the implementation commit. */
 function repo({ tasks, baseline = {}, andThen = {} }) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-spk010-dir-'));
+  const dir = makeTempDir('dg-spk010-dir-');
   dirs.push(dir);
   const put = (p, body) => {
     mkdirSync(dirname(join(dir, p)), { recursive: true });

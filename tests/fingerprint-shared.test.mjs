@@ -7,11 +7,12 @@
  *
  * @req docguard.requirement-anchors#FR-015
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { createContext, docLockStatus, fingerprint, serializeLock, DOC_LOCK_PATH } from '../cli/scanners/doc-deps.mjs';
 import { pyAstAvailable, pythonCommand } from '../cli/scanners/py-ast.mjs';
 import { pythonRuns, pythonVersion } from '../cli/scanners/py-anchors.mjs';
@@ -22,7 +23,7 @@ const GOLDEN = JSON.parse(readFileSync(join(FIXTURE, 'golden.json'), 'utf8'));
 const REFS = JSON.parse(readFileSync(join(FIXTURE, 'refs.json'), 'utf8'));
 const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
-const tmp = () => { const d = mkdtempSync(join(tmpdir(), 'dg-fp-')); dirs.push(d); return d; };
+const tmp = () => { const d = makeTempDir('dg-fp-'); dirs.push(d); return d; };
 
 describe('doclock-v0 stays byte-identical (FR-015)', () => {
   const python = pyAstAvailable() ? pythonVersion() : null;

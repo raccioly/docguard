@@ -7,11 +7,12 @@
  * config schema — the real defect was that a failed global npm install exited
  * before the migration could run.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -33,7 +34,7 @@ const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 const REPO = fileURLToPath(new URL('..', import.meta.url));
 
 function fixture(t, files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-field-0420-'));
+  const dir = makeTempDir('docguard-field-0420-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) {
     const target = join(dir, path);

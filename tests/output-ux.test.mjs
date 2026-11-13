@@ -30,12 +30,13 @@
  * @req docguard.output-ux#SC-002
  * @req docguard.output-ux#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { devNull, tmpdir } from 'node:os';
+import { devNull } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import { colorEnabled } from '../cli/shared.mjs';
@@ -59,7 +60,7 @@ delete BASE_ENV.FORCE_COLOR;
 const ANSI = /\x1b\[/;
 
 function project(t, files = {}, { git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-049-'));
+  const dir = makeTempDir('docguard-049-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, content] of Object.entries(files)) write(dir, path, content);
   if (git) {
@@ -248,7 +249,7 @@ describe('the sync loop (FR-003, FR-004, FR-005)', () => {
       'src/py/app.py': 'import os\n',
       'docs-canonical/ARCHITECTURE.md': `# Architecture\n<!-- docguard:generated true -->\n\n${marker}\n`,
     });
-    const bin = mkdtempSync(join(tmpdir(), 'docguard-049-nopy-'));
+    const bin = makeTempDir('docguard-049-nopy-');
     t.after(() => rmSync(bin, { recursive: true, force: true }));
     symlinkSync(process.execPath, join(bin, 'node'));
     const gitBin = process.env.PATH.split(delimiter).map(d => join(d, 'git')).find(p => existsSync(p));

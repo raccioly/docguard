@@ -9,12 +9,13 @@
  * @req docguard.dora-evidence#SC-001
  * @req docguard.dora-evidence#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateWithSchemas } from '../cli/claimspec-schema.mjs';
 import { docsForPath } from '../cli/scanners/doc-references.mjs';
 import { SENSOR_CACHE, treeKey } from '../cli/sensor-cache.mjs';
@@ -36,7 +37,7 @@ function commit(dir, message = 'c') {
   fixtureGit(dir, ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', message]);
 }
 function project(t, files, { git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-dora-'));
+  const dir = makeTempDir('docguard-dora-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   write(dir, { 'package.json': '{"name":"fx","dependencies":{"express":"^4"}}\n', 'src/app.js': APP, 'docs-canonical/API-REFERENCE.md': API_DOC, ...files });
   if (git) { fixtureGit(dir, ['init', '-q', '-b', 'main']); commit(dir, 'init'); }

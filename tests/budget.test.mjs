@@ -26,9 +26,10 @@
  * @req docguard.budget-deterministic#SC-001
  * @req docguard.budget-deterministic#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { compare, guardPair, loadBudgets, measurePair, median, parseExemptions, renderTable } from '../tools/budget.mjs';
@@ -103,7 +104,7 @@ describe('Budget-Exempt waives exactly the named metric (FR-003)', () => {
 
 /** A stand-in tree whose CLI busy-waits `ms` for guard and answers the rest minimally. */
 function stubTree(ms) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-budget-stub-'));
+  const dir = makeTempDir('docguard-budget-stub-');
   dirs.push(dir);
   mkdirSync(join(dir, 'cli'), { recursive: true });
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'stub', version: '0.0.0', dependencies: {} }));

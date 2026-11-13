@@ -19,12 +19,13 @@
  * @req docguard.calibrated-finding-channels#SC-007
  * @req docguard.calibrated-finding-channels#SC-008
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync, execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { derivePrecisionEvidence } from '../benchmarks/lib/precision-evidence.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -34,7 +35,7 @@ const CLI = join(ROOT, 'cli', 'docguard.mjs');
 const dirs = [];
 
 function project(files, { git = false } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-accept-'));
+  const dir = makeTempDir('dg-accept-');
   dirs.push(dir);
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

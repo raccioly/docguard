@@ -9,17 +9,18 @@
  * @req SC-B7-002 — Environment validator agrees with diff on NODE_ENV (no asymmetry)
  * @req SC-B7-003 — PATH (truly system) still filtered out from doc-side prose mentions
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { diffEnvVars } from '../cli/commands/diff.mjs';
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-b7-'));
+  const dir = makeTempDir('docguard-b7-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

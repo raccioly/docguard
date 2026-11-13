@@ -12,10 +12,11 @@
  * @req docguard.dogfood-round-2#SC-001
  * @req docguard.dogfood-round-2#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +32,7 @@ const run = (args, cwd) => spawnSync(process.execPath, [CLI, ...args], {
 const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 
 let dir;
-const fresh = prefix => (dir = mkdtempSync(join(tmpdir(), `docguard-061-${prefix}-`)));
+const fresh = prefix => (dir = makeTempDir(`docguard-061-${prefix}-`));
 afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); dir = null; });
 
 const finding = (result, code) => result.findings.find(f => f.code === code);

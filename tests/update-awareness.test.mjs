@@ -16,12 +16,13 @@
  * @req docguard.update-awareness#SC-003
  * @req docguard.update-awareness#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import {
   releaseAge, releaseDateFromChangelog, updateHintText, footerHint, UPDATE_HINT_DAYS, UPDATE_HINT_OPT_OUT,
 } from '../cli/release-age.mjs';
@@ -31,7 +32,7 @@ const VERSION = JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).ver
 const DAY = 86400000;
 const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
-const temp = prefix => { const dir = mkdtempSync(join(tmpdir(), prefix)); temps.push(dir); return dir; };
+const temp = prefix => { const dir = makeTempDir(prefix); temps.push(dir); return dir; };
 const isoDaysAgo = days => new Date(Date.now() - days * DAY).toISOString().slice(0, 10);
 
 /** A package directory with a package.json and, optionally, a CHANGELOG. */

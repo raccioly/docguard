@@ -20,12 +20,13 @@
  * @req SC-INIT-SMART-006 — pre-existing canonical docs skip smart mode
  * @req SC-INIT-SMART-007 — 10+ top-level source files (Python style) triggers smart mode
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -34,7 +35,7 @@ const CLI = join(process.cwd(), 'cli/docguard.mjs');
 function stripAnsi(s) { return s.replace(/\x1B\[[0-9;]*[A-Za-z]/g, ''); }
 
 function mkFixture({ withSrcDir = false, withCliDir = false, withPyFiles = 0, withCanonicalDoc = false } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'init-smart-'));
+  const dir = makeTempDir('init-smart-');
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'fixture', version: '0.0.1' }));
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['config', 'user.email', 't@t']);

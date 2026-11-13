@@ -278,8 +278,20 @@ jobs:
             exit 1
           fi
 
+      # The same single run also proves the suite removes every temporary directory it
+      # creates (specs/098-test-temp-dirs): TMPDIR points at an empty folder for the run,
+      # and the step after it fails if anything is left there. One run of the suite, not two.
+      - name: Point TMPDIR at an empty folder
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/suite-tmp"
+          echo "TMPDIR=$RUNNER_TEMP/suite-tmp" >> "$GITHUB_ENV"
+
       - name: Run tests under the hostile config
         run: npm test
+
+      - name: The suite left no temporary directory behind
+        run: node tools/check-temp-leaks.mjs --check "$RUNNER_TEMP/suite-tmp"
 
   # ── Spec-first gate (Constitution X, specs/015-spec-first-gate) ──
   # A change to cli/ must name its governing spec or declare

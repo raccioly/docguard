@@ -9,12 +9,13 @@
  *
  * @req docguard.requirement-anchors#FR-038
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeAnchorStatus, computeLinks } from '../cli/scanners/anchors.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -41,7 +42,7 @@ const SOURCE = [
 ].join('\n');
 
 function project({ anchors = { import: ['strictdoc', 'openfasttrace'], importMap: MAP }, source = SOURCE, extra = {} } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-import-'));
+  const dir = makeTempDir('dg-anchor-import-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter', anchors }));
   write(dir, 'specs/001-billing/spec.md', '# Billing\n\n**Spec ID**: `acme.billing`\n\n- **FR-001**: Charges.\n- **FR-002**: Refunds.\n- **FR-003**: Notices.\n');

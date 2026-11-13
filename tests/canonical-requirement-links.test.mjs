@@ -9,19 +9,20 @@
  * @req docguard.canonical-requirement-links#SC-001
  * @req docguard.canonical-requirement-links#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
 
 const REQS = '# Requirements\n\n| ID | Priority | Requirement |\n|---|---|---|\n| FR-024 | P1 | A repo-wide hook must not block an unadopted tree. |\n';
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-canonical-links-'));
+  const dir = makeTempDir('docguard-canonical-links-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const write = (p, c) => { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), c); };
   const git = args => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

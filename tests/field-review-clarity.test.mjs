@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
@@ -12,7 +13,7 @@ import { FIXTURE_GIT } from './helpers/git.mjs';
 
 let dir;
 const put = (path, content) => safeWrite(join(dir, path), content);
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'dg-review-clarity-')); });
+beforeEach(() => { dir = makeTempDir('dg-review-clarity-'); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 function git(...args) {

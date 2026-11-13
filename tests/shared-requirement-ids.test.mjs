@@ -6,10 +6,11 @@
  *
  * @req docguard.strict-by-default#FR-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
 import { classifyRequirementIds, hasPlaceholderSlot, isPlaceholderRequirement } from '../cli/shared-requirement-ids.mjs';
@@ -124,7 +125,7 @@ describe('shared requirement IDs: a slot token inside a real sentence (T018h)', 
 
 describe('the validators keep a real requirement that mentions a slot token (T018h)', () => {
   const build = () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-slot-'));
+    const dir = makeTempDir('docguard-slot-');
     const ids = Object.keys(REAL_REQUIREMENTS_WITH_SLOT_TOKENS).map((_, i) => `FR-${String(i + 1).padStart(3, '0')}`);
     const rows = Object.values(REAL_REQUIREMENTS_WITH_SLOT_TOKENS).map((text, i) => `- **${ids[i]}**: ${text}`);
     mkdirSync(join(dir, 'specs', '001-x'), { recursive: true });

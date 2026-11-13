@@ -5,19 +5,20 @@
  * @req SC-Q2-002 — every active validator carries a numeric durationMs in JSON output
  * @req SC-Q2-003 — --profile is off by default (no noise)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-profile-'));
+  const dir = makeTempDir('docguard-profile-');
   const files = {
     'package.json': JSON.stringify({ name: 'p', version: '0.0.1' }),
     'docs-canonical/ARCHITECTURE.md': '# A\nstub.\n',

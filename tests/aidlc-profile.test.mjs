@@ -12,11 +12,12 @@
  * @req docguard.aidlc-profile#FR-007
  * @req docguard.aidlc-profile#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateAidlc } from '../cli/validators/aidlc.mjs';
 import { isPathTarget, parseStageProgress } from '../cli/scanners/aidlc.mjs';
 import { ABSENCE_CLAIM_CODES, codeDefaultLevel } from '../cli/findings.mjs';
@@ -28,7 +29,7 @@ const TABLE = (rows) => JSON.stringify({ stage: 'code-generation', unit: 'u1-aut
 const MANIFEST = (paths) => JSON.stringify({ stage: 'code-generation', unit: 'u1-auth', version: 1, writes: paths.map(path => (typeof path === 'string' ? { path } : path)) });
 
 function project(t, files, { commit = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-aidlc-'));
+  const dir = makeTempDir('docguard-aidlc-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   if (commit) {

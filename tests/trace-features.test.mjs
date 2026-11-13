@@ -17,11 +17,12 @@
  * isn't itself scanned as a real requirement/test reference during DocGuard's
  * own self-guard.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { runTrace, runTraceFeatures } from '../cli/commands/trace.mjs';
 import { validateTraceability } from '../cli/validators/traceability.mjs';
@@ -54,7 +55,7 @@ const CONFIG = { projectName: 'fixture' };
  *                  requirement ID appears in no test.
  */
 function makeTwoFeatureRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-trace-feat-'));
+  const dir = makeTempDir('docguard-trace-feat-');
 
   write(dir, 'specs/001-complete/spec.md',
     `# Feature: Complete\n\n## User Scenarios\nStuff.\n\n## Requirements\n- ${FR1}: parse the input\n\n## Success Criteria\nDone.\n`);
@@ -223,7 +224,7 @@ describe('trace --features', () => {
   });
 
   it('reports N/A cleanly when no spec-kit features exist (text)', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-trace-feat-'));
+    dir = makeTempDir('docguard-trace-feat-');
     write(dir, 'src/index.js', 'console.log(1);\n');
     const out = capture(() => runTraceFeatures(dir, CONFIG, {}));
     assert.match(out, /No spec-kit features detected/);
@@ -231,7 +232,7 @@ describe('trace --features', () => {
   });
 
   it('reports N/A cleanly when no spec-kit features exist (JSON stays parseable)', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-trace-feat-'));
+    dir = makeTempDir('docguard-trace-feat-');
     const out = capture(() => runTraceFeatures(dir, CONFIG, { format: 'json' }));
     const parsed = JSON.parse(out);
     assert.deepEqual(parsed.features, []);

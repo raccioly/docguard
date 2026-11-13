@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 import { toSarif } from '../cli/writers/sarif.mjs';
@@ -142,7 +143,7 @@ describe('SARIF writer — toSarif()', () => {
 describe('guard --format sarif (spawn)', () => {
   let tmpDir;
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-sarif-'));
+    tmpDir = makeTempDir('docguard-test-sarif-');
     writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: 'sarif-fixture', version: '1.0.0' }));
     writeFileSync(join(tmpDir, '.docguard.json'), JSON.stringify({ profile: 'starter', projectName: 'sarif-fixture' }));
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });

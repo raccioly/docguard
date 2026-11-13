@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { scanFrontend } from '../cli/scanners/frontend.mjs';
 
@@ -14,7 +15,7 @@ function write(dir, rel, content) {
 
 describe('frontend scanner', () => {
   let tmp;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-fe-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-fe-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('extracts React Router screens and unwraps guard/layout wrappers', () => {

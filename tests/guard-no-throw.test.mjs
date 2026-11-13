@@ -17,18 +17,19 @@
  * @req SC-B5-001 — no validator emits a ReferenceError-shape error
  * @req SC-B5-002 — every registered validator executes (no silent module-load failures)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 function makeRealisticRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-no-throw-'));
+  const dir = makeTempDir('docguard-no-throw-');
   const env = { ...process.env };
 
   // Minimal but realistic — has source files, canonical docs, git history.

@@ -6,11 +6,12 @@
  * @req SC-JUN-003 — XML special characters are escaped (attributes AND bodies)
  * @req SC-JUN-004 — CLI emits parseable XML with no banner bytes; exit codes match guard
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -93,7 +94,7 @@ describe('guard --format junit — CLI', () => {
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   it('emits parseable XML from byte 0 and exits 1 on a bare fixture (errors)', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-junit-'));
+    dir = makeTempDir('docguard-junit-');
     writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'junit-fixture', profile: 'standard' }));
     mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
     writeFileSync(join(dir, 'docs-canonical', 'ARCHITECTURE.md'), '# Architecture\n');

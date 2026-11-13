@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 const CLI = new URL('../cli/docguard.mjs', import.meta.url).pathname;
@@ -15,7 +16,7 @@ describe('llms --full and memory --pack (v0.29)', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-llmsfull-'));
+    tmpDir = makeTempDir('docguard-test-llmsfull-');
     writeFileSync(join(tmpDir, 'package.json'),
       JSON.stringify({ name: 'llms-fixture', version: '1.0.0', description: 'Fixture for llms tests' }));
     // `version` here is the .docguard.json SCHEMA version. It is set to a value

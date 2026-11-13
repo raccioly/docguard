@@ -14,17 +14,18 @@
  * @req docguard.adoption-workflow-integrity#FR-008
  * @req docguard.adoption-workflow-integrity#SC-005
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { resolveSeverity, resolveFindingEnforcement, SEVERITY_LEVELS } from '../cli/shared.mjs';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-severity-'));
+  const dir = makeTempDir('docguard-severity-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

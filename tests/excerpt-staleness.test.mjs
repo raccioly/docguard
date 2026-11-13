@@ -8,12 +8,13 @@
  *
  * @req docguard.strict-by-default#FR-021
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 import { readSection } from '../cli/scanners/doc-references.mjs';
@@ -31,7 +32,7 @@ const CONFIG = { projectName: 'stale-excerpt', version: '0.6', requiredFiles: { 
 
 /** AGENTS.md reviewed on 2026-01-01 describes src/engine.mjs, which then grew to five times its size. */
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-stale-excerpt-'));
+  const dir = makeTempDir('docguard-stale-excerpt-');
   temporary.push(dir);
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);

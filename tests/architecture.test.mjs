@@ -3,16 +3,17 @@
  *   from .docguard.json. Verified by tests below that pass config.ignore
  *   and check that ignored layer dirs aren't flagged as missing.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateArchitecture } from '../cli/validators/architecture.mjs';
 
 describe('architecture.mjs - validateArchitecture', () => {
   it('should pass on empty project or empty config layers', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-arch-'));
+    const tempDir = makeTempDir('docguard-test-arch-');
     try {
       const results = validateArchitecture(tempDir, {});
       assert.equal(results.name, 'architecture');
@@ -26,7 +27,7 @@ describe('architecture.mjs - validateArchitecture', () => {
   });
 
   it('should detect layer violations based on config', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-arch-'));
+    const tempDir = makeTempDir('docguard-test-arch-');
     try {
       fs.mkdirSync(join(tempDir, 'src', 'components'), { recursive: true });
       fs.mkdirSync(join(tempDir, 'src', 'utils'), { recursive: true });
@@ -61,7 +62,7 @@ describe('architecture.mjs - validateArchitecture', () => {
   });
 
   it('should detect layer boundaries based on ARCHITECTURE.md auto-detect', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-arch-'));
+    const tempDir = makeTempDir('docguard-test-arch-');
     try {
       fs.mkdirSync(join(tempDir, 'src', 'routes'), { recursive: true });
       fs.mkdirSync(join(tempDir, 'src', 'services'), { recursive: true });
@@ -92,7 +93,7 @@ describe('architecture.mjs - validateArchitecture', () => {
   });
 
   it('should detect circular dependencies and report them as warnings', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-arch-'));
+    const tempDir = makeTempDir('docguard-test-arch-');
     try {
       fs.mkdirSync(join(tempDir, 'src', 'circle'), { recursive: true });
 

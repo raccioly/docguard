@@ -8,11 +8,12 @@
  * catch it.
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateSurfaceSync } from '../cli/validators/surface-sync.mjs';
 
@@ -24,7 +25,7 @@ function write(dir, rel, content) {
 
 describe('Surface-Sync validator', () => {
   let tmp;
-  beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), 'docguard-surface-sync-')); });
+  beforeEach(() => { tmp = makeTempDir('docguard-surface-sync-'); });
   afterEach(() => { rmSync(tmp, { recursive: true, force: true }); });
 
   it('returns N/A (total 0) when no surfaces are configured', () => {

@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateDocsCoverage } from '../cli/validators/docs-coverage.mjs';
 import { astTierAvailable } from '../cli/scanners/js-ast.mjs';
 
 function scan(t, source, docs = '') {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-reference-evidence-'));
+  const dir = makeTempDir('docguard-reference-evidence-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   safeWrite(join(dir, 'README.md'), '# Fixture\n## Installation\n## Usage\n## License\n' + docs);
   safeWrite(join(dir, 'src/config.ts'), source);
