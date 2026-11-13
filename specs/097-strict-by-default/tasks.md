@@ -60,12 +60,12 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 - [x] T021 [US3] Failing test: the gating set is derived from the evidence and a code without evidence that meets the bar cannot be in it (FR-009).
 - [x] T022 [US5] Failing tests: an item the additions table lists under the running or previous minor is labeled "new in vX.Y"; with `asOf` set, a later item is pending and does not affect the exit code; a validator or gating code missing from the table fails a test (FR-012, FR-013).
 - [x] T023 [US4] Failing tests: `guard --update-baseline` under strict; the baselined count on every run and in JSON; an uninitialized project still exits 3 with one line (FR-011, US4 scenario 3).
-- [ ] T024 [US6] Failing tests: `init` writes no key by default; `--enforcement standard` writes it; the wizard writes it only for a non-default answer; the closing text states the mode (FR-017).
-- [ ] T025 Implementation: `resolveEnforcement` default, `cli/shared.mjs` `resolveFindingEnforcement`, `cli/precision-evidence.mjs` gating set, `cli/strict-additions.mjs`, `cli/commands/init.mjs`.
+- [x] T024 [US6] Failing tests: `init` writes no key by default; `--enforcement standard` writes it; the wizard writes it only for a non-default answer; the closing text states the mode (FR-017).
+- [x] T025 Implementation: `resolveEnforcement` default, `cli/shared.mjs` `resolveFindingEnforcement`, `cli/precision-evidence.mjs` gating set, `cli/strict-additions.mjs`, `cli/commands/init.mjs`.
 - [x] T025a [US1] Suspect reviews (FR-021): failing tests, then Freshness treats a reviewed agent-instruction document whose review is suspect, or one with no review record, as applies-and-unexamined with the re-review fix. Needs spec 095's review-signal functions on this branch.
 - [x] T026 The issue 628 fixture (SC-004), with spec 095's codes where they are available.
 - [ ] T027 Strict on the eight audit repositories: open and label every finding that fails a build (SC-002). Repeat T016 and T017 on the Stage B build.
-- [ ] T028 Docs: README quick start, `docs/upgrading-to-strict.md`, CI-RECIPES, `action.yml`, the Spec Kit extension's guard command, the breaking-change CHANGELOG entry (FR-022); `docguard specs --write`; `anchors accept`.
+- [x] T028 Docs: README quick start, `docs/upgrading-to-strict.md`, CI-RECIPES, `action.yml`, the Spec Kit extension's guard command, the breaking-change CHANGELOG entry (FR-022); `docguard specs --write`; `anchors accept`.
 
 ## Stage C — evidence
 

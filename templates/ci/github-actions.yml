@@ -39,6 +39,8 @@ jobs:
           status=0
           docguard ci --format json --threshold 70 --no-history > "$DOCGUARD_REPORT" 2> "$DOCGUARD_LOG" || status=$?
           cat "$DOCGUARD_LOG" >&2
+          # Exit 4 (strict enforcement: a check that applies examined nothing) fails the job like 1: the
+          # report and the log carry each item with its fix. Do not add `|| true`.
           # Validate machine output and normalize the verdict from the actual
           # exit code (including CI threshold failures in older releases).
           DOCGUARD_STATUS="$status" node --input-type=module -e '

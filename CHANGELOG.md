@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+- **Strict is now the default enforcement mode.** A project with no
+  `enforcement` key in `.docguard.json` runs under strict: `docguard guard`
+  exits 4 (and `ci` blocks) when a validator that applies to the project
+  examined nothing for a reason the project can resolve, and prints an **Adopt**
+  block with each validator's cause and fix. A partial result, a layout DocGuard
+  does not read and a finding that is not gating stay reported and do not change
+  the exit code. If your build turned red after upgrading, in this order: apply
+  the fix under each item, record existing findings with
+  `docguard guard --update-baseline`, waive a validator that does not apply with
+  `<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`,
+  or set `"enforcement": "standard"` to keep the earlier exit codes. `docguard
+  upgrade` previews all of this for your project and writes nothing; the page
+  [Upgrading to Strict](docs/upgrading-to-strict.md) shows real output.
+  `docguard init` writes no `enforcement` key unless you pass
+  `--enforcement strict|standard` or answer the setup question with the
+  non-default, and it no longer writes `"architecture": false` or
+  `"security": false` into a new `.docguard.json`. Under strict a
+  `"validators": { "<key>": false }` entry does not switch a check off (most
+  were written by `init`, not chosen); guard names the entries it did not honor,
+  and a validator is switched off on purpose with a reasoned waiver or
+  `"enforcement": "standard"`. The Action,
+  the GitLab component and the GitHub template fail on exit 4
+  (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
+
 ### Added
 
 - **DocGuard's own repository runs strict.** Its `.docguard.json` sets

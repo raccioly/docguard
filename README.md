@@ -132,6 +132,8 @@ npm i -g docguard-cli
 docguard diagnose
 ```
 
+> **Strict is the default.** `docguard guard` exits 4 when a check that applies to your project examined nothing (for example no API reference although you have routes), and prints what to add. A check that does not apply is skipped, and a layout DocGuard cannot read is reported without failing the run. Upgrading and seeing a red build? Read [Upgrading to Strict](https://raccioly.github.io/docguard/upgrading-to-strict) (also in [`docs/upgrading-to-strict.md`](docs/upgrading-to-strict.md)). To stay on the earlier behavior, set `"enforcement": "standard"` in `.docguard.json`; under strict a `"validators": { "<key>": false }` entry no longer switches a check off.
+
 ### Python (PyPI)
 
 ```bash

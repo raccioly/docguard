@@ -61,6 +61,14 @@ correct. Use guard findings for enforcement; a high score alone proves neither.
 | `specs --check` | Registry current | (not used) | Registry missing, stale or inconsistent | (not used) |
 | `verify --evidence` | Every declaration verified | A contradiction, or an invalid manifest | Stale, inconclusive or unsupported evidence | (not used) |
 
+`guard` and `ci` also exit `4` under the strict default: a validator that applies
+to the project examined nothing for a reason the project can resolve, or could
+not observe at all. The output lists each one with its cause and fix. A plain
+shell step fails on `4`, and so does the Action. Hold a project at the checks it
+already passes with `"enforcement": { "mode": "strict", "asOf": "0.47" }`, or
+stay on the earlier behavior with `"enforcement": "standard"`; see
+[Upgrading to Strict](../upgrading-to-strict.md).
+
 A plain shell step fails on any non-zero exit, so by default warnings fail the
 job. To let warnings pass, capture the status and allow only `0` and `2`:
 

@@ -51,15 +51,17 @@ npx docguard-cli guard --no-baseline     # Ignore the committed baseline this ru
 npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not decide
 ```
 
-**Enforcement mode (spec 097).** The first line of the summary states the mode
-(`strict` or `standard`) and whether it came from `"enforcement"` in
-`.docguard.json` or from the default. Under `strict`, a validator that applies
-to the project and examined nothing, for a reason the project can resolve,
-exits 4, and the **Adopt** block (printed with `--quiet` too) lists each one
+**Enforcement mode (spec 097).** The default is `strict`. The first line of the
+summary states the mode (`strict` or `standard`) and whether it came from
+`"enforcement"` in `.docguard.json` or from the default. Under `strict`, a
+validator that applies to the project and examined nothing, for a reason the
+project can resolve, exits 4 (the default for a project that has not chosen a
+mode; `"enforcement": "standard"` restores the earlier exit codes), and the **Adopt** block (printed with `--quiet` too) lists each one
 with its cause and fix, the baseline command, the waiver form and the key for
 the lower mode. A partial result and a layout DocGuard does not read are listed
 after it under "DocGuard could not read" and leave the exit code alone. See
-[Configuration](configuration.md#enforcement-mode).
+[Configuration](configuration.md#enforcement-mode) and
+[Upgrading to Strict](upgrading-to-strict.md).
 
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes
 `.docguard.baseline.json` (commit it). From then on guard/ci suppress those
@@ -192,7 +194,13 @@ npx docguard-cli init --profile starter         # Minimal: ARCHITECTURE + CHANGE
 npx docguard-cli init --profile enterprise      # Everything + strict validators
 npx docguard-cli init --dir /path/to/project    # Specify directory
 npx docguard-cli init --skip-prompts            # No AI prompt output
+npx docguard-cli init --enforcement standard    # Write the lower mode into .docguard.json
 ```
+
+`init` writes no `enforcement` key by default, which means the strict default.
+`--enforcement strict|standard` writes the key; the interactive setup asks once
+and writes it only for the non-default answer. The closing text states the mode.
+Init never writes configuration that switches a validator off.
 
 **Profiles:**
 
@@ -235,10 +243,13 @@ npx docguard-cli upgrade --check-only # Exit 1 when anything is behind
 npx docguard-cli upgrade --apply      # Install the CLI, migrate the schema, refresh agent files
 ```
 
-The report also states what the `strict` enforcement mode would change for this
-project: the validators that apply and examined nothing (cause and fix), the
-findings that would fail the build by code, and the commands that record or
-waive them. That part is read-only and runs offline.
+The report also states what the `strict` default changes for this project: the
+validators that now fail because they apply and examined nothing (cause and
+fix), the findings that fail the build by code, the items DocGuard could not read
+(reported, not failing), and the three ways forward in order: fix or declare,
+waive with a reason, an owner and an expiry, or set `"enforcement": "standard"`.
+That part is read-only and runs offline. See
+[Upgrading to Strict](upgrading-to-strict.md).
 
 `upgrade --apply` refreshes agent files the way `init` installs them: DocGuard's
 skills and commands that differ from this CLI's copies, and a Spec Kit extension

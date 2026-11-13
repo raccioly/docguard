@@ -176,7 +176,7 @@
       "uniqueItems": true
     },
     "enforcement": {
-      "description": "How strictly guard judges the project (specs/097-strict-by-default). `strict`: every validator that applies must examine something, or guard exits 4. `standard`: the behavior before this key existed. Absent: the default mode (standard until a later release makes strict the default). `profile` never selects it. The object form adds `asOf`, a release line (`major.minor`) that holds checks added after it as pending.",
+      "description": "How strictly guard judges the project (specs/097-strict-by-default). `strict`: every validator that applies must examine something, or guard exits 4. `standard`: the behavior before this key existed. Absent: strict, the default. `profile` never selects it. The object form adds `asOf`, a release line (`major.minor`) that holds checks added after it as pending.",
       "oneOf": [
         { "type": "string", "enum": ["strict", "standard"] },
         {

@@ -92,7 +92,7 @@ from `profile`, which only says what kind of project this is:
 
 ```json
 { "enforcement": "strict" }
-{ "enforcement": { "mode": "standard", "asOf": "0.49" } }
+{ "enforcement": { "mode": "strict", "asOf": "0.47" } }
 ```
 
 - **`strict`**: every validator that applies to the project must examine
@@ -112,14 +112,17 @@ from `profile`, which only says what kind of project this is:
   When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
   unexamined validator, `docguard guard --update-baseline`, the waiver form
   with `owner:` and `expires:`, and the key that selects the lower mode.
-- **`standard`**: the behavior before this key existed. No exit code changes.
-- **Absent**: the default mode. In this release that is `standard`; a later
-  release makes it `strict`. Every run states the mode and where it came from
-  on the first line of its summary, and `--format json` carries
-  `enforcement: { mode, asOf, source }` (`source` is `default` or `config`).
+- **`standard`**: the behavior before the default changed. No exit code changes.
+- **Absent**: `strict`. A project that has not chosen a mode is checked in full,
+  and `profile` never selects the mode: the stored value `profile: "standard"`
+  is a project shape, not a choice of strictness. Every run states the mode and
+  where it came from on the first line of its summary, and `--format json`
+  carries `enforcement: { mode, asOf, source }` (`source` is `default` or
+  `config`). If your build turned red after upgrading, see
+  [Upgrading to Strict](upgrading-to-strict.md).
 
 Under `strict`, `--format json` also carries
-`strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], baselined }`.
+`strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], ignoredDisabled[], baselined }`. `ignoredDisabled` lists the `validators.<key>: false` entries strict did not honor (keys only in the compact form).
 Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking, documents? }`.
 Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts?, documents?, howToConfigure? }`: `reason` is what the validator
 could not read, and `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
@@ -133,9 +136,29 @@ input (it is `inconclusive`, and `reason` is the gap). Only the first two,
 and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset
 of the validators, so it does not evaluate the rule and says so.
 
-`docguard upgrade` reports, read-only, what `strict` would change for the
-project. `asOf` is read and validated in this release and held for the stage
-that adds the release table.
+`asOf` (`"<major>.<minor>"`) holds a project at the strict set of that release (every validator is listed under `0.48`, so `"0.47"` keeps today's exit codes and prints the strict report beside them). A validator or gating code the release table lists under a later version is
+reported as pending and does not change the exit code. Without `asOf` every item
+applies, and one added in the running release or the one before it is labeled
+"new in vX.Y" when it fails.
+
+Under `strict` every registered validator runs, whatever the profile's
+`validators` block or your own file says. A `"validators": { "<key>": false }`
+entry does not switch a validator off under `strict`: nearly every such entry
+was written by `docguard init` from a profile, not chosen by a person, and
+honoring it would exempt existing projects from the checks the default is meant
+to give them. Guard says in one line, on every run, which entries it did not
+honor. To switch a validator off on purpose, use a reasoned waiver
+(`<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`)
+or `"enforcement": "standard"`, under which the `validators` block works as it
+always has.
+
+`docguard init` writes no `enforcement` key by default; `docguard init
+--enforcement strict|standard` writes it, and the interactive setup asks once
+and writes the key only for the non-default answer. `docguard upgrade` reports,
+read-only and without writing, what the default changes for the project: the
+validators that now fail with cause and fix, the items only reported, and the
+three ways forward (fix or declare, waive with reason, owner and expiry, or set
+`"enforcement": "standard"`).
 
 `requiredSections` adds sections a document must carry beyond the canonical
 ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the

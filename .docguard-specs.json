@@ -7904,7 +7904,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/setup.mjs",
-            "line": 395
+            "line": 410
           },
           {
             "requirementId": "FR-005",
@@ -10519,7 +10519,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 761
+            "line": 766
           },
           {
             "requirementId": "FR-006",
@@ -11236,7 +11236,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 203
+            "line": 204
           },
           {
             "requirementId": "FR-008",
@@ -12567,7 +12567,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 312
+            "line": 315
           },
           {
             "requirementId": "FR-012",
@@ -12937,7 +12937,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 970
+            "line": 975
           },
           {
             "requirementId": "FR-001",
@@ -12947,17 +12947,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 971
+            "line": 976
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 972
+            "line": 977
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 973
+            "line": 978
           },
           {
             "requirementId": "FR-005",
@@ -15386,7 +15386,7 @@
           {
             "requirementId": "FR-010",
             "file": "action.yml",
-            "line": 204
+            "line": 206
           }
         ],
         "testEvidence": [
@@ -15754,12 +15754,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 395
+            "line": 398
           },
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 397
+            "line": 400
           },
           {
             "requirementId": "FR-002",
@@ -15774,7 +15774,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 535
+            "line": 555
           },
           {
             "requirementId": "FR-004",
@@ -16040,7 +16040,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 336
+            "line": 339
           },
           {
             "requirementId": "FR-007",
@@ -16050,7 +16050,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/init.mjs",
-            "line": 337
+            "line": 340
           },
           {
             "requirementId": "FR-008",
@@ -16065,7 +16065,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/init.mjs",
-            "line": 338
+            "line": 341
           },
           {
             "requirementId": "FR-010",
@@ -16075,7 +16075,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 339
+            "line": 342
           },
           {
             "requirementId": "FR-012",
@@ -16344,7 +16344,7 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:a541406be489b12c66142981001f3d7b3f4ea419ad4965d7699e0fdf3fe14611"
+            "digest": "sha256:5bf128ee3be24d361e6e7ea4366dd85f566c5ef68da6f1aac0a25d1a44d9bd1f"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
@@ -16352,11 +16352,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:78e96729af6d424fffa8b6da4817879613b7e3a24210fd30c442768ac6dc9890"
+            "digest": "sha256:745956d5147fba355211b1cad20449ecfeaab54938f6a1da283ba3b3e774b069"
           }
         ],
         "taskCompletion": {
-          "checked": 32,
+          "checked": 35,
           "total": 40
         },
         "implementationEvidence": [
@@ -16661,6 +16661,11 @@
             "line": 21
           },
           {
+            "requirementId": "FR-017",
+            "file": "cli/init-enforcement.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-018",
             "file": "cli/commands/upgrade.mjs",
             "line": 310
@@ -16828,9 +16833,19 @@
             "line": 20
           },
           {
+            "requirementId": "FR-017",
+            "file": "tests/init-enforcement.test.mjs",
+            "line": 6
+          },
+          {
             "requirementId": "FR-018",
             "file": "tests/strict-by-default.test.mjs",
             "line": 21
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/upgrade-strict-default.test.mjs",
+            "line": 6
           },
           {
             "requirementId": "FR-020",
@@ -17320,7 +17335,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1061
+            "line": 1066
           },
           {
             "requirementId": "FR-011",

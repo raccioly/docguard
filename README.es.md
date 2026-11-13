@@ -42,6 +42,8 @@ npx docguard-cli guard      # valida — verde significa "docs correctos"
 npx docguard-cli score      # nota de madurez de la documentación (0-100)
 ```
 
+> **El modo estricto es el predeterminado.** `docguard guard` termina con código 4 cuando una verificación que aplica a tu proyecto no examinó nada (por ejemplo, no hay referencia de API aunque existan rutas) y muestra qué añadir. Una verificación que no aplica se omite, y un formato que DocGuard no lee solo se informa, sin hacer fallar la ejecución. ¿Actualizaste y el build se puso rojo? Lee [Actualizar al modo estricto](https://raccioly.github.io/docguard/upgrading-to-strict) (en inglés). Para mantener el comportamiento anterior, define `"enforcement": "standard"` en `.docguard.json`.
+
 Para un proyecto existente, el camino inverso funciona mejor:
 
 ```bash

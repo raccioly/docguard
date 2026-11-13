@@ -30,7 +30,7 @@ import { c, CURRENT_SCHEMA_VERSION, compareVersions } from '../shared.mjs';
 import { installAgentAssets, staleAgentAssets } from '../ensure-skills.mjs';
 import { readAgentSurface } from '../agent-surface.mjs';
 import { packagedExtensionVersion, readRegistryEntry, refreshSpecKitExtension } from '../spec-kit-delegation.mjs';
-import { adoptLines, modeLine, resolveEnforcement } from '../enforcement.mjs';
+import { WAIVER_FORM, couldNotReadLines, modeLine, resolveEnforcement } from '../enforcement.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -317,12 +317,32 @@ export async function strictUpgradeLines(projectDir, config) {
   const strict = data.strict;
   const lines = [modeLine(current)];
   const gating = strict.gating.reduce((n, g) => n + g.count, 0);
+  const noKey = current.source === 'default';
+  if (noKey) lines.push('This version makes strict the default, and this project has no "enforcement" key, so it now runs under strict: guard exits 4 when a validator that applies to it examined nothing.');
+  if (noKey) {
+    // `validators.<key>: false` in the project's own file switches nothing off under strict (FR-003): say which checks now run.
+    let offEntries = [];
+    try { offEntries = Object.entries(JSON.parse(readFileSync(resolve(projectDir, '.docguard.json'), 'utf-8')).validators || {}).filter(([, v]) => v === false).map(([k]) => k); } catch { /* unreadable: nothing to say */ }
+    if (offEntries.length) lines.push(`Your .docguard.json sets ${offEntries.length} validator(s) to false: ${offEntries.join(', ')}. Strict does not honor that, so they now run. To switch one off on purpose, use a reasoned waiver or "enforcement": "standard".`);
+  }
   if (strict.blocking.length === 0 && gating === 0) {
-    lines.push('Strict would change nothing for this project: every validator that applies examined something, and no finding is newly blocking.');
+    lines.push('Strict would change nothing for this project: every validator that applies is examined or waived, and no finding is newly blocking.');
+    lines.push(...couldNotReadLines(strict).map((l, i) => (i === 0 ? 'Reported, and not failing the build: DocGuard could not read some items.' : l)));
     return lines;
   }
-  lines.push(`Under strict this project would report ${strict.blocking.length} validator(s) that apply and examined nothing and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
-  lines.push(...adoptLines(strict).slice(1));
+  lines.push(`${noKey ? 'What now fails' : 'Under strict this project would report'}: ${strict.blocking.length} validator(s) that apply and examined nothing and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
+  for (const u of strict.unexamined.filter(x => x.blocking)) {
+    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
+    const fix = u.howToConfigure || u.reason;
+    if (fix) lines.push(`      ${fix}`);
+  }
+  const unread = couldNotReadLines(strict);
+  if (unread.length) lines.push('Reported, and not failing the build:', ...unread.slice(1));
+  lines.push('Ways forward, in this order:');
+  lines.push('  1. Fix or declare: apply the fix under each item above' + (gating ? '; record the findings that already exist with `docguard guard --update-baseline` (new ones of the same code still fail).' : '.'));
+  lines.push('  2. Waive a validator that does not apply, with a reason, an owner and an expiry:');
+  lines.push(`       ${WAIVER_FORM}`);
+  lines.push('  3. Stay on the lower mode on purpose: add `"enforcement": "standard"` to .docguard.json.');
   lines.push('Nothing was written.');
   return lines;
 }
