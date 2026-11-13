@@ -96,6 +96,21 @@ export const NON_REQUIREMENT_IDS = {
   'docs-canonical/PLAN.md': '# Plan\n\n- [ ] T001 Set up the queue\n- [ ] T002 Write the worker\n\n- **ARCH-001**: The worker component\n- **MOD-002**: The queue module\n',
 };
 
+// Decision, open-item and task identifiers in a form the scanner does not read, in documents not named for them.
+export const UNREAD_NON_REQUIREMENT_IDS = {
+  'docs-canonical/NOTES.md': '# Notes\n\n- **D-7**: We chose a queue over cron.\n- **D-8**: The worker retries three times.\n- **OI-001**: Who owns the retries?\n- **OI-002**: Which region first?\n- **T-7**: Write the worker.\n- **T-8**: Write the queue.\n',
+};
+// Unfilled template rows in forms other than square brackets, and a template document.
+export const PLACEHOLDER_FORMS = {
+  'specs/001-unfilled/spec.md': '# Feature: Unfilled\n\n## Requirements\n\n- **FR-001**: System MUST <capability>\n- **FR-002**: The system shall {{behaviour}}\n- **FR-003**: TBD\n- **FR-004**:\n',
+  'docs-canonical/templates/spec-template.md': '# Spec template\n\n- **FR-010**: The system MUST do something.\n- **NFR-010**: The system MUST be fast.\n',
+};
+// The same bare ID declared by two specs that carry no Spec ID.
+export const SAME_ID_TWICE = {
+  'specs/001-a/spec.md': '# Feature: A\n\n- **FR-001**: The system MUST do a.\n',
+  'specs/002-b/spec.md': '# Feature: B\n\n- **FR-001**: The system MUST do b.\n',
+};
+
 export const FIXTURES = {
   // A project with specs is never empty here: a spec without registry evidence is a finding (SPR001), not silence.
   specRegistry: {
@@ -120,6 +135,8 @@ export const FIXTURES = {
       'nothing-of-this-kind (no source)': { files: { 'package.json': PKG, ...SPEC }, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (template placeholders only)': { files: { ...BASE, ...SPEC_TEMPLATE }, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind (only decision, open-item, task and design IDs)': { files: { ...BASE, ...NON_REQUIREMENT_IDS }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (decision, open-item and task IDs in an unread form)': { files: { ...BASE, ...UNREAD_NON_REQUIREMENT_IDS }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (unfilled template rows)': { files: { ...BASE, ...PLACEHOLDER_FORMS }, cause: 'nothing-of-this-kind' },
       'layout-not-recognized (IDs of one digit)': { files: { ...BASE, ...SPEC_SHORT_IDS }, cause: 'layout-not-recognized' },
     },
     fix: { files: { ...BASE, ...SPEC, 'src/index.js': '// @implements demo.feature#FR-001\nexport const a = 1;\n' }, extra: { anchors: { enabled: true } } },

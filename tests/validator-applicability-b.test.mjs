@@ -30,7 +30,7 @@ import { runGuardInternal } from '../cli/commands/guard.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { EMPTY_CAUSES, validateResultContract } from '../cli/validator-coverage.mjs';
 
-import { ALL_KEYS, BASE, CONFIG_FILES, DOCS, FIXTURES, FINAL_TEMPLATE, KEYS, NON_REQUIREMENT_IDS, PKG, SPEC, SPEC_SHORT_IDS, SPEC_TEMPLATE, SRC, cfg, only, project, put, run, temporary } from './helpers/applicability-fixtures-b.mjs';
+import { ALL_KEYS, BASE, CONFIG_FILES, DOCS, FIXTURES, FINAL_TEMPLATE, KEYS, NON_REQUIREMENT_IDS, PLACEHOLDER_FORMS, SAME_ID_TWICE, UNREAD_NON_REQUIREMENT_IDS, PKG, SPEC, SPEC_SHORT_IDS, SPEC_TEMPLATE, SRC, cfg, only, project, put, run, temporary } from './helpers/applicability-fixtures-b.mjs';
 
 const MODULE = {
   specRegistry: 'spec-registry', docDependency: 'doc-dependency', requirementAnchors: 'requirement-anchors',
@@ -297,5 +297,38 @@ describe('group B: Requirement-Anchors counts only requirement IDs (spec 097 T01
     const { result } = run('requirementAnchors', { files: { ...BASE, ...NON_REQUIREMENT_IDS }, extra: { traceability: { requirementPattern: '\\b(ARCH)-(\\d{3})\\b' } } });
     assert.equal(result.applies.applies, true);
     assert.match(result.applies.evidence, /traceability\.requirementPattern/);
+  });
+});
+
+describe('group B: one definition of a requirement ID (spec 097 T018g)', () => {
+  it('the unread-form branch applies the same definition: decision, open-item and task IDs are not requirement-like', () => {
+    const { result } = run('requirementAnchors', { files: { ...BASE, ...UNREAD_NON_REQUIREMENT_IDS } });
+    assert.equal(result.applies.applies, false);
+    assert.equal(result.emptyCause, 'nothing-of-this-kind');
+    for (const kind of [/decision/, /open-item/, /task/]) assert.match(result.applies.evidence, kind);
+    assert.doesNotMatch(result.applies.evidence, /requirement-like/);
+  });
+  it('an unread FR form still is requirement-like', () => {
+    const { result } = run('requirementAnchors', FIXTURES.requirementAnchors.empties['layout-not-recognized (IDs of one digit)']);
+    assert.equal(result.emptyCause, 'layout-not-recognized');
+  });
+  it('unfilled template rows (angle, curly, TBD, empty) and a template document declare no requirement', () => {
+    const { result } = run('requirementAnchors', { files: { ...BASE, ...PLACEHOLDER_FORMS } });
+    assert.equal(result.applies.applies, false, result.applies.evidence);
+  });
+  it('the evidence lists each ID once', () => {
+    const { result } = run('requirementAnchors', { files: { ...BASE, ...SAME_ID_TWICE } });
+    assert.equal(result.applies.applies, true);
+    assert.doesNotMatch(result.applies.evidence, /FR-001, FR-001/);
+  });
+  it('the definition lives in one shared module that Requirement-Anchors imports', async () => {
+    const mod = await import('../cli/shared-requirement-ids.mjs');
+    assert.equal(typeof mod.classifyRequirementIds, 'function');
+    assert.equal(typeof mod.isPlaceholderRequirement, 'function');
+    assert.equal(mod.isPlaceholderRequirement({ id: 'FR-001', text: '- **FR-001**: System MUST <capability>' }), true);
+    assert.equal(mod.isPlaceholderRequirement({ id: 'FR-001', text: '- **FR-001**: The system MUST page the list.' }), false);
+    assert.equal(mod.isPlaceholderRequirement({ id: 'T001', text: '- [ ] T001 Write the worker' }), false);
+    const { readFileSync } = await import('node:fs');
+    assert.match(readFileSync(new URL('../cli/validators/requirement-anchors.mjs', import.meta.url), 'utf8'), /shared-requirement-ids\.mjs/);
   });
 });
