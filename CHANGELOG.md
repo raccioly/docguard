@@ -100,6 +100,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Specs 093, 094 and 095 are verified** (`docguard.configured-canonical-paths`,
+  `docguard.agent-instruction-role`, `docguard.recorded-document-reviews`),
+  closed with `specs complete` in the one-commit flow of spec 101. Guard no
+  longer reports DLC002 for them. No finding code or exit code changes.
 - **Specs: one commit closes a spec, and the completion record survives a squash merge
   or a rebase (`specs/101-completion-one-commit`).** This change REMOVES `SPR008` findings
   and `DLC002` findings and ADDS `SPR010`. Before, `specs complete` refused to run while the
