@@ -2859,7 +2859,7 @@
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
-            "digest": "sha256:daafcae5bd97fe9177270f4a58f9c5873614476bdd76c1a245d52daed89a884a"
+            "digest": "sha256:efa3eed1b12bc3cf3cd7262180da7c6d79928de17fe3976054cf4f23937d04eb"
           },
           {
             "path": "specs/101-completion-one-commit/tasks.md",
