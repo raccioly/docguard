@@ -2082,6 +2082,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment document by a folder or file name that contains the role's word,
   and otherwise give the exact `docs.roles` snippet with a placeholder path
   (`docguard.strict-by-default` FR-006, T018g).
+- **The `docs.roles` mapping offer ranks its candidates.** A file whose own name
+  has the role's word ranks above one that only sits in a folder with that word;
+  within a folder match only an overview or index document (overview, index,
+  README, summary) is a candidate, and siblings are not listed. Nothing is cut
+  from the list before ranking. When the rule cannot tell which file is the
+  document it offers none by name, says which folder it looked in, and prints the
+  snippet with a placeholder path (`docguard.strict-by-default` FR-007, T018h).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
@@ -2386,15 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   text parsers must not throw, must answer the same twice, and must finish
   within time linear in its input. That covers requirement IDs, ADRs, AI-DLC
   stage progress, waiver metadata, headings, doc sections, covers lists,
-  lifecycle status, API tables, HTML comments and `.docguardignore`.
-  `npm run fuzz -- --cases 20000 --save` runs deep and keeps what it finds.
-- **A release is compared with the previous release before it ships**
-  (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
-  `release.yml` runs the previous release's CLI and the candidate over the
-  repository and the benchmark fixtures. It fails unless this section names
-  every finding code whose findings changed, and any exit-code change. It also
 
-<!-- truncated: 6418 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6425 more lines — read CHANGELOG.md directly -->
 
 ---
 
