@@ -356,11 +356,18 @@
           "type": "object",
           "description": "Per-chain allowance for existing debt, keyed by the chain's deepest instruction file. The chain may shrink; growth past the allowance is reported.",
           "additionalProperties": { "type": "integer", "minimum": 1 }
-        },
-        "governing": {
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileKinds": {
+      "type": "object",
+      "description": "File kinds (specs/100-file-kinds): which files are this project's own and which are copies written for another project (template, fixture, vendored, generated, backup, nested-checkout). A file nothing recognizes is own.",
+      "properties": {
+        "own": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
-          "description": "Glob patterns for instruction files that govern their folder even below a template, test, fixture or example directory (spec 099). A matching file stays in the agent-instruction role and is never PSR006."
+          "description": "Glob patterns for files that are the project's own wherever they sit, even below a directory named templates, examples, fixtures or tests. A matching file stays in the agent-instruction role and the instruction-chain budget and is never PSR006; a product package that happens to be called examples is rescued with one pattern. .docguardignore and ignore still win and remain the way to exclude a file."
         }
       },
       "additionalProperties": false

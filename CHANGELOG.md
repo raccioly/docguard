@@ -21,24 +21,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `packages/api/AGENTS.md` in a monorepo, or `templates/AGENTS.md` itself, is
   never reported. This change ADDS a warning under strict for a project that
   keeps such a copy (spec 099).
-- **`agentInstructions.governing`**: glob patterns for instruction files that
-  govern their folder even below a template, test, fixture or example
-  directory. A matching file is reviewed like any other and is never PSR006.
+- **File kinds: one rule for copied files (specs 099 and 100, Stage 1).** A new
+  module, `cli/shared-file-kind.mjs`, answers "is this file this project's
+  own" from a closed list of kinds (`own`, `template`, `fixture`, `vendored`,
+  `generated`, `backup`, `nested-checkout`). What it does not recognize is
+  always `own`. Directory names match as whole path segments in any case, only
+  before the first dot-directory, and never for a package segment. The
+  template names are `templates`, `template`, `_templates`, `__templates__`,
+  `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and `skeleton(s)`;
+  `corpus` and `golden` join the fixture names. `fileKinds.own` (glob
+  patterns in `.docguard.json`) keeps a file the project's own wherever it
+  sits, for example a real package named `examples`; `.docguardignore` and
+  `ignore` still win. It replaces `agentInstructions.governing`, which was
+  never released. `guard --format json` carries `files.kinds` (a count per kind
+  and up to 20 paths per kind of instruction files left out as copies), and
+  the text output prints one line when any were left out, so a wrongly
+  classified governing file stays visible. A test now fails when a file under
+  `cli/` keeps its own directory-name ignore set or walks the tree without the
+  shared classifier, with an allowlist of the 27 files Stage 2 migrates.
 
 ### Fixed
 
-- **A template instruction file is no longer reviewed as this repository's
-  instructions.** A nested `AGENTS.md`, `CLAUDE.md` or other instruction file
-  below a `templates`, `template`, `scaffold(s)` or `boilerplate(s)` directory
+- **A template or example instruction file is no longer reviewed as this
+  repository's instructions, and no longer counts against its budget.** This
+  change both REMOVES and ADDS findings. A nested `AGENTS.md`, `CLAUDE.md` or
+  other instruction file below a `templates`, `template`, `scaffold(s)`,
+  `boilerplate(s)`, `starter-kit(s)` or `skeleton(s)` directory
   (`templates/<app>/files/AGENTS.md`, a form a scaffolder writes into other
   repositories) left the agent-instruction role only when it sat under a test,
   fixture or example path. Under a template directory it got FRS006, FRS007 and
   FRS009, and adding a root package script made FRS007 report that the template
   never mentions it, a finding no commit could clear under a gate that refuses
   every commit while it stands. Such copies are now out of the role for
-  Freshness and Path-Scoped-Rules. The folder that holds the file does not
-  count: `templates/AGENTS.md` still governs `templates/` (spec 099).
-
+  Freshness and Path-Scoped-Rules, so FRS001, FRS002, FRS003, FRS006, FRS007
+  and FRS009 and PSR001 to PSR005 on them are gone. The folder that holds the
+  file does not count: `templates/AGENTS.md` still governs `templates/`
+  (spec 099).
+- **`STR004` no longer counts a template or fixture instruction copy** (spec
+  100 D1). The instruction-chain budget measured every nested `AGENTS.md`, so a
+  scaffolder's template could push a real chain over 32 KiB. A governing nested
+  file, including `templates/AGENTS.md` and `tests/AGENTS.md`, is still
+  counted; `fileKinds.own` puts a copy back. Findings are REMOVED where a copy
+  caused them and none are added.
+- **`Examples/`, `Fixtures/`, `Corpus/` and every other directory name now match
+  without regard to case** (spec 100 D5), and `corpus`, `golden` join the
+  directories the detection scanners treat as non-product (routes, schemas,
+  environment variables, frameworks, the symbol map, ownership, Security's
+  test-path context, Docs-Sync). A project with such a directory sees detection
+  results from it leave, so findings that came only from it (for example
+  SEC001 to SEC004 context, route and schema findings) are REMOVED, and drift
+  findings that rested on them can be ADDED where a document now names
+  something the scanners no longer see.
 - **Security: the word `example` no longer hides a secret-shaped value just by
   appearing in it.** This change ADDS findings. Before, any value containing
   `example` anywhere (any case) was dropped silently, so

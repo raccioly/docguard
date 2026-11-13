@@ -1,5 +1,10 @@
 import { isExpired, isOwner, parseWaiverDate, splitWaiverMetadata } from './waiver-metadata.mjs';
 import { resolveDocRole } from './shared-doc-roles.mjs';
+import { compileGlob, fileKind, FIXTURE_DIRS, isPackageSegment, mayHoldOwnFiles } from './shared-file-kind.mjs';
+// The glob compiler and the package-segment rule live with the file-kind vocabulary (specs/100-file-kinds):
+// the module that classifies paths must not import this one back.
+export { compileGlob, isPackageSegment };
+export { FIXTURE_DIRS as DEFAULT_DETECTION_IGNORE_DIRS } from './shared-file-kind.mjs';
 /**
  * Shared Ignore Utility — Unified file filtering for all validators.
  *
@@ -104,11 +109,7 @@ const ALWAYS_REJECT_PATH_RE =
  * `src/main/java/com/example/…` is the product, and so is a Go
  * `internal/example` package (see `isPackageSegment`).
  */
-export const DEFAULT_DETECTION_IGNORE_DIRS = new Set([
-  'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata',
-  'test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs', '__mocks__', 'mocks',
-  'examples', 'example', 'sample', 'samples',
-]);
+// DEFAULT_DETECTION_IGNORE_DIRS is the fixture vocabulary of cli/shared-file-kind.mjs (re-exported above).
 
 /**
  * True for a directory DocGuard itself writes: the canonical and implementation
@@ -129,35 +130,6 @@ export function isDocguardOwnedDir(projectDir, relDir) {
   } catch { return false; }
 }
 
-/** JVM source roots: below `src/main/<one of these>/` every segment is a package. */
-const JVM_SOURCE_LANGUAGES = new Set(['java', 'kotlin', 'scala', 'groovy']);
-/** First segments of a reverse-domain package name (`com.example`, `org.samples`). */
-const REVERSE_DOMAIN_ROOTS = new Set([
-  'com', 'org', 'net', 'io', 'dev', 'edu', 'gov', 'mil', 'info', 'biz', 'co', 'eu',
-  'uk', 'de', 'fr', 'br', 'nl', 'ch', 'se', 'fi', 'dk', 'jp', 'cn', 'au', 'ca', 'ru', 'es', 'pl',
-]);
-const EXAMPLE_NAMES = new Set(['example', 'examples', 'sample', 'samples']);
-
-/**
- * Is `segments[index]` a package name rather than a directory of its own kind?
- * - anything below `src/main/{java,kotlin,scala,groovy}/`: Maven and Gradle
- *   main sources are product code by construction (tests live in `src/test`);
- * - `example(s)`/`sample(s)` right after a reverse-domain root (`com/example`)
- *   or after Go's `internal` (`internal/example`).
- *
- * @implements docguard.fallback-language-coverage#FR-006
- */
-export function isPackageSegment(segments, index) {
-  for (let j = 0; j + 2 < index; j++) {
-    if (segments[j] === 'src' && segments[j + 1] === 'main' && JVM_SOURCE_LANGUAGES.has(segments[j + 2])) return true;
-  }
-  if (index > 0 && EXAMPLE_NAMES.has(segments[index])) {
-    const before = segments[index - 1];
-    if (REVERSE_DOMAIN_ROOTS.has(before) || before === 'internal') return true;
-  }
-  return false;
-}
-
 /**
  * True if `dirName` is a non-product dir detection should skip by default.
  * Pass `parentRel` (the POSIX project-relative path of the directory that
@@ -166,22 +138,25 @@ export function isPackageSegment(segments, index) {
  */
 export function isNonProductDir(dirName, config = {}, parentRel = null) {
   if (config?.detection?.includeNonProduct) return false;
-  if (!DEFAULT_DETECTION_IGNORE_DIRS.has(dirName)) return false;
-  if (!parentRel) return true;
-  const segments = [...String(parentRel).split('/').filter(s => s && s !== '.'), dirName];
-  return !isPackageSegment(segments, segments.length - 1);
+  if (!FIXTURE_DIRS.has(String(dirName).toLowerCase())) return false;
+  const segments = [...(parentRel ? String(parentRel).split('/').filter(s => s && s !== '.') : []), dirName];
+  if (parentRel && isPackageSegment(segments, segments.length - 1)) return false;
+  // A walker that prunes this directory would never reach what `fileKinds.own` rescues below it.
+  return !mayHoldOwnFiles(segments.join('/'), config);
 }
 
 /**
  * True if ANY path segment of `relPath` (POSIX, project-relative) is a
  * non-product detection dir — for filtering file-level detection results.
- * Package segments (`src/main/java/com/example/…`) do not count.
+ * Package segments (`src/main/java/com/example/…`) do not count. A view of
+ * `fileKind` (specs/100-file-kinds FR-006): the `fixture` vocabulary, matched
+ * without regard to case, every segment (also after a dot-directory) and the
+ * last one too; `fileKinds.own` rescues a path.
  */
 export function isNonProductPath(relPath, config = {}) {
   if (config?.detection?.includeNonProduct) return false;
   if (!relPath) return false;
-  const segments = relPath.split('/');
-  return segments.some((seg, i) => DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i));
+  return fileKind(relPath, config, { asDirectory: true, kinds: ['fixture'], harnessFolders: 'all' }).kind === 'fixture';
 }
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
@@ -602,41 +577,7 @@ export function shouldIgnore(relPath, config, validatorKey) {
  *   `{a,b}` → alternation (non-nested)     → (?:a|b)
  * Everything else is regex-escaped. Fully anchored: ^...$.
  *
- * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__/**\/*.test.{ts,js}")
- * @returns {RegExp}
- */
-export function compileGlob(pattern) {
-  const glob = String(pattern);
-  let re = '';
-  for (let i = 0; i < glob.length; i++) {
-    const ch = glob[i];
-    if (ch === '*') {
-      if (glob[i + 1] === '*') {
-        i++;
-        if (glob[i + 1] === '/') { re += '(?:.*/)?'; i++; }
-        else re += '.*';
-      } else {
-        re += '[^/]*';
-      }
-    } else if (ch === '?') {
-      re += '[^/]';
-    } else if (ch === '{') {
-      const end = glob.indexOf('}', i);
-      if (end > i) {
-        re += '(?:' + glob.slice(i + 1, end).split(',')
-          .map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')';
-        i = end;
-      } else {
-        re += '\\{';
-      }
-    } else {
-      re += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-  }
-  return new RegExp(`^${re}$`);
-}
-
-// Back-compat internal alias — globMatch below always used the anchored form.
+ * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__// Back-compat internal alias — globMatch below always used the anchored form.
 const globToMatchRegex = compileGlob;
 
 /**

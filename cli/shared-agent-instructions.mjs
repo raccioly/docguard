@@ -25,9 +25,8 @@ import {
   claudeImportsIn, instructionFilesOnDisk, instructionKind, MAX_IMPORT_HOPS, MAX_INSTRUCTION_FILES, safeProjectPath,
 } from './scanners/instruction-scopes.mjs';
 import { listTrackedFiles } from './shared-git.mjs';
-import {
-  buildIgnoreFilter, compileGlob, DEFAULT_DETECTION_IGNORE_DIRS, isNonProductPath, isPackageSegment, loadDocguardIgnore,
-} from './shared-ignore.mjs';
+import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore } from './shared-ignore.mjs';
+import { fileKind, INSTRUCTION_COPY } from './shared-file-kind.mjs';
 
 /** Files a harness loads from the project root for every session. */
 export const ROOT_AGENT_FILES = Object.freeze([
@@ -201,60 +200,6 @@ function namedFiles(path, content) {
   return named;
 }
 
-/** Directory names that hold forms a project writes into other repositories (spec 099 FR-001). */
-export const TEMPLATE_DIRS = Object.freeze(new Set([
-  'templates', 'template', '_templates', '__templates__', 'scaffold', 'scaffolds', 'boilerplate', 'boilerplates',
-]));
-
-/** `agentInstructions.governing` globs, compiled once per config. */
-const governingMemo = new WeakMap();
-function governingMatchers(config) {
-  const key = config && typeof config === 'object' ? config : null;
-  if (!key) return [];
-  if (governingMemo.has(key)) return governingMemo.get(key);
-  const raw = key.agentInstructions?.governing;
-  const list = (Array.isArray(raw) ? raw : []).filter(p => typeof p === 'string' && p.trim()).map(p => {
-    try { return compileGlob(p.trim().replace(/^\.\//, '')); } catch { return null; }
-  }).filter(Boolean);
-  governingMemo.set(key, list);
-  return list;
-}
-
-/** True when `agentInstructions.governing` names this path: it is the project's instructions wherever it sits (FR-002). */
-export function isDeclaredGoverning(path, config = {}) {
-  return governingMatchers(config).some(re => re.test(path));
-}
-
-/**
- * Is this instruction file a copy written for another project rather than
- * instructions for this one (specs/099-instruction-copies)? A copy sits below
- * a template directory (`templates/<app>/files/AGENTS.md`), or below a test,
- * fixture or example directory (`tests/fixtures/repo/CLAUDE.md`). The folder
- * that holds the file does not count: `templates/AGENTS.md` governs
- * `templates/`. Only segments before the first dot-directory count, because
- * every file under `.claude/` or `.cursor/` is one the harness loads.
- * `agentInstructions.governing` overrides both.
- *
- * @implements docguard.instruction-copies#FR-001
- * @implements docguard.instruction-copies#FR-002
- * @returns {{ kind: 'template'|'non-product', segment: string } | null}
- */
-export function instructionCopyOf(path, config = {}) {
-  if (typeof path !== 'string' || !path.includes('/')) return null;
-  if (isDeclaredGoverning(path, config)) return null;
-  const segments = path.split('/');
-  const folder = segments.length - 2; // index of the segment holding the file
-  let nonProduct = null;
-  for (let i = 0; i < folder; i++) {
-    const seg = segments[i];
-    if (seg.startsWith('.')) break;
-    const lower = seg.toLowerCase();
-    if (TEMPLATE_DIRS.has(lower)) return { kind: 'template', segment: seg };
-    if (!nonProduct && DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i)) nonProduct = { kind: 'non-product', segment: seg };
-  }
-  return nonProduct;
-}
-
 const memo = new WeakMap();
 
 /**
@@ -262,7 +207,11 @@ const memo = new WeakMap();
  * the readers this replaces did); other files must be tracked, not ignored
  * and not under test, fixture or example paths.
  *
- * @returns {{ docs: { path, kind, root, pointer, vendored }[], limitations: string[] }}
+ * Non-root files left out as copies (a template, or below a test, fixture or
+ * example directory) are listed in `excluded` with their kind, so a wrongly
+ * classified file stays visible (docguard.file-kinds#FR-010).
+ *
+ * @returns {{ docs: { path, kind, root, pointer, vendored }[], limitations: string[], excluded: { path: string, kind: string, segment: string }[] }}
  */
 export function agentInstructionDocs(projectDir, config = {}) {
   const key = config && typeof config === 'object' ? config : {};
@@ -288,11 +237,22 @@ function computeDocs(projectDir, config) {
     candidates = instructionFilesOnDisk(projectDir).files;
   }
   const found = new Map();
+  const excluded = [];
   const consider = (path, kind, root) => {
     if (found.has(path) || ignored(path)) return;
-    // Spec 094 keeps test, fixture and example paths out; spec 099 adds template copies.
-    // `agentInstructions.governing` puts either back (docguard.instruction-copies#FR-002).
-    if (!root && !isDeclaredGoverning(path, config) && (isNonProductPath(path, config) || instructionCopyOf(path, config)?.kind === 'template')) return;
+    // Spec 094 keeps test, fixture and example paths out (any ancestor, so
+    // tests/AGENTS.md too); spec 099 adds template copies, where the folder
+    // that holds the file does not count. `fileKinds.own` puts either back
+    // (docguard.file-kinds#FR-004, FR-007).
+    if (!root) {
+      const copy = fileKind(path, config, INSTRUCTION_COPY);
+      if (copy.kind === 'template') { excluded.push({ path, kind: 'template', segment: copy.segment }); return; }
+      if (isNonProductPath(path, config)) {
+        const where = copy.kind === 'fixture' ? copy : fileKind(path, config, { kinds: ['fixture'], asDirectory: true, harnessFolders: 'all' });
+        excluded.push({ path, kind: 'fixture', segment: where.segment });
+        return;
+      }
+    }
     if (!isRegularFile(resolve(projectDir, path))) return;
     found.set(path, { path, kind, root });
   };
@@ -366,7 +326,7 @@ function computeDocs(projectDir, config) {
     if (target && (seen.has(target) || direct.has(target))) target = null;
     inRole.get(path).pointer = { target, via: first.via };
   }
-  return { docs, limitations };
+  return { docs, limitations, excluded: excluded.sort((a, b) => a.path.localeCompare(b.path)) };
 }
 
 /** Root-level, non-vendored role documents: what every harness session loads. */

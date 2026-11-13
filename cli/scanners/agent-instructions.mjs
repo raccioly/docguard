@@ -8,12 +8,18 @@
  * scanner measures every chain so the Structure validator can compare it with
  * a budget.
  *
+ * A file that is a copy written for another project (below a template,
+ * fixture or example directory; the folder that holds it does not count) is not
+ * measured: no agent working in this project loads it (docguard.file-kinds#FR-009).
+ *
  * @implements docguard.agent-instruction-budget#FR-001
+ * @implements docguard.file-kinds#FR-009
  */
 
 import { existsSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { walkFiles, relPosix, buildIgnoreFilter, loadDocguardIgnore } from '../shared-ignore.mjs';
+import { fileKind, INSTRUCTION_COPY } from '../shared-file-kind.mjs';
 
 export const DEFAULT_INSTRUCTION_BUDGET = 32768;
 const NAMES = ['AGENTS.override.md', 'AGENTS.md'];
@@ -31,7 +37,7 @@ function fileForDir(absDir) {
  * @returns {{ leaf: string, files: string[], bytes: number }[]} one entry per
  *   directory that holds an instruction file, sorted by leaf path.
  */
-export function measureInstructionChains(projectDir) {
+export function measureInstructionChains(projectDir, config = {}) {
   const root = resolve(projectDir);
   // buildIgnoreFilter, not shared.mjs loadIgnorePatterns: the latter drops
   // gitignore-style `dir/` patterns (tracked on #455).
@@ -42,6 +48,7 @@ export function measureInstructionChains(projectDir) {
     if (!NAMES.includes(basename(full))) return;
     const rel = relPosix(projectDir, full);
     if (isIgnored(rel)) return;
+    if (fileKind(rel, config, INSTRUCTION_COPY).kind !== 'own') return;
     dirs.add(dirname(full));
   });
 

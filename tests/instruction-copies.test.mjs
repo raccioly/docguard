@@ -10,6 +10,11 @@
  * @req docguard.instruction-copies#FR-004
  * @req docguard.instruction-copies#FR-006
  * @req docguard.instruction-copies#SC-001
+ * @req docguard.file-kinds#FR-007
+ * @req docguard.file-kinds#FR-008
+ * @req docguard.file-kinds#FR-009
+ * @req docguard.file-kinds#FR-010
+ * @req docguard.file-kinds#SC-001
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
@@ -21,7 +26,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fixtureGit } from './helpers/git.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
 import { validatePathScopedRules } from '../cli/validators/path-scoped-rules.mjs';
-import { agentInstructionDocs, instructionCopyOf } from '../cli/shared-agent-instructions.mjs';
+import { agentInstructionDocs } from '../cli/shared-agent-instructions.mjs';
+import { fileKind } from '../cli/shared-file-kind.mjs';
+import { measureInstructionChains } from '../cli/scanners/agent-instructions.mjs';
+import { validateStructure } from '../cli/validators/structure.mjs';
 import { CODES } from '../cli/findings.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
@@ -74,18 +82,19 @@ describe('FR-001 — a template is not reviewed as this repository\'s instructio
   });
 
   it('a template segment inside a harness dot-directory does not make a copy', () => {
-    assert.equal(instructionCopyOf('.cursor/rules/templates/x.mdc', {}), null);
-    assert.equal(instructionCopyOf('.claude/skills/templates/SKILL.md', {}), null);
-    assert.equal(instructionCopyOf('Templates/App/AGENTS.md', {})?.kind, 'template');
-    assert.equal(instructionCopyOf('apps/web/templates/base/.claude/rules/a.md', {})?.kind, 'template');
-    assert.equal(instructionCopyOf('src/main/java/com/example/AGENTS.md', {}), null);
+    const copy = p => fileKind(p, {}, { describesFolder: true, kinds: ['template', 'fixture'] }).kind;
+    assert.equal(copy('.cursor/rules/templates/x.mdc'), 'own');
+    assert.equal(copy('.claude/skills/templates/SKILL.md'), 'own');
+    assert.equal(copy('Templates/App/AGENTS.md'), 'template');
+    assert.equal(copy('apps/web/templates/base/.claude/rules/a.md'), 'template');
+    assert.equal(copy('src/main/java/com/example/AGENTS.md'), 'own');
   });
 });
 
-describe('FR-002 — agentInstructions.governing puts a file back in the role', () => {
-  it('a governing glob rescues a template and a fixture path, and silences PSR006', t => {
+describe('FR-002 — fileKinds.own puts a file back in the role', () => {
+  it('an own glob rescues a template and a fixture path, and silences PSR006', t => {
     const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': RULES, 'tests/fixtures/repo/AGENTS.md': RULES });
-    const config = { agentInstructions: { governing: ['templates/new-app/**', 'tests/fixtures/repo/AGENTS.md'] } };
+    const config = { fileKinds: { own: ['templates/new-app/**', 'tests/fixtures/repo/AGENTS.md'] } };
     assert.deepEqual(agentInstructionDocs(dir, config).docs.map(d => d.path).sort(), ['AGENTS.md', 'templates/new-app/files/AGENTS.md', 'tests/fixtures/repo/AGENTS.md']);
     assert.deepEqual(psr006(dir, config), []);
   });
@@ -101,6 +110,7 @@ describe('FR-003 — PSR006: a copy shares the real file\'s name', () => {
     assert.equal(hits[0].confidence, 'high');
     assert.match(hits[0].message, /same name as AGENTS\.md/);
     assert.match(hits[0].suggestion.text, /AGENTS\.md\.template/);
+    assert.match(hits[0].suggestion.text, /fileKinds\.own/);
   });
 
   it('a fixture copy is reported with low confidence and names .docguardignore', t => {
@@ -109,6 +119,8 @@ describe('FR-003 — PSR006: a copy shares the real file\'s name', () => {
     assert.equal(hits.length, 1);
     assert.equal(hits[0].confidence, 'low');
     assert.match(hits[0].suggestion.text, /\.docguardignore/);
+    assert.match(hits[0].suggestion.text, /fileKinds\.own/);
+    assert.doesNotMatch(hits[0].suggestion.text, /agentInstructions\.governing/);
   });
 
   it('copilot instructions are matched by path tail, and configured agent files by basename', t => {
@@ -176,5 +188,119 @@ describe('FR-004 — catalog and explain', () => {
     const r = spawnSync(process.execPath, [CLI, 'guard', '--format', 'json'], { cwd: dir, encoding: 'utf8' });
     const json = JSON.parse(r.stdout);
     assert.ok(json.findings.some(f => f.code === 'PSR006' && f.location === 'templates/new-app/files/AGENTS.md'), r.stdout.slice(0, 2000));
+  });
+});
+
+// ── spec 100 Stage 1 ────────────────────────────────────────────────────────
+
+const chainLeaves = (dir, config = {}) => measureInstructionChains(dir, config).map(c => c.leaf);
+const kb = n => 'x'.repeat(n * 1024);
+
+describe('D1 — the instruction-chain budget does not count a copy (spec 100 FR-009)', () => {
+  it('a template copy adds nothing to STR004; a governing package file still does', t => {
+    const dir = repo(t, { 'AGENTS.md': kb(20), 'templates/app/files/AGENTS.md': kb(20) });
+    assert.deepEqual(chainLeaves(dir), ['AGENTS.md']);
+    const code = validateStructure(dir, { requiredFiles: { canonical: [], agentFile: ['AGENTS.md'], driftLog: 'DRIFT-LOG.md' } }).findings.map(f => f.code);
+    assert.ok(!code.includes('STR004'), 'a template must not push the chain over 32 KiB');
+    const real = repo(t, { 'AGENTS.md': kb(20), 'packages/api/AGENTS.md': kb(20) });
+    assert.deepEqual(chainLeaves(real), ['AGENTS.md', 'packages/api/AGENTS.md']);
+    const over = validateStructure(real, { requiredFiles: { canonical: [], agentFile: ['AGENTS.md'], driftLog: 'DRIFT-LOG.md' } }).findings.map(f => f.code);
+    assert.ok(over.includes('STR004'));
+  });
+
+  it('a fixture copy is skipped, and a case-variant folder is skipped like the lowercase one (D5)', t => {
+    const dir = repo(t, { 'AGENTS.md': kb(1), 'tests/fixtures/repo/AGENTS.md': kb(30), 'Examples/x/AGENTS.md': kb(30), 'Fixtures/f/AGENTS.md': kb(30), 'Templates/t/AGENTS.md': kb(30) });
+    assert.deepEqual(chainLeaves(dir), ['AGENTS.md']);
+  });
+
+  it('templates/AGENTS.md governs its folder and is counted; the copy beside it is not', t => {
+    const dir = repo(t, { 'AGENTS.md': kb(1), 'templates/AGENTS.md': kb(2), 'templates/app/files/AGENTS.md': kb(30) });
+    assert.deepEqual(chainLeaves(dir), ['AGENTS.md', 'templates/AGENTS.md']);
+  });
+
+  it('fileKinds.own puts a copy back in the budget', t => {
+    const dir = repo(t, { 'AGENTS.md': kb(1), 'templates/app/files/AGENTS.md': kb(2) });
+    assert.deepEqual(chainLeaves(dir, { fileKinds: { own: ['templates/app/**'] } }), ['AGENTS.md', 'templates/app/files/AGENTS.md']);
+  });
+
+  it('tests/AGENTS.md governs tests/: counted by the budget, still out of the role (spec 094)', t => {
+    const dir = repo(t, { 'AGENTS.md': kb(1), 'tests/AGENTS.md': RULES });
+    assert.deepEqual(chainLeaves(dir), ['AGENTS.md', 'tests/AGENTS.md']);
+    assert.deepEqual(agentInstructionDocs(dir, {}).docs.map(d => d.path), ['AGENTS.md']);
+    assert.deepEqual(psr006(dir), []);
+  });
+});
+
+describe('D5 — case-variant folders leave the role exactly as lowercase ones do', () => {
+  it('Examples/, Fixtures/, TEMPLATES/ and Starter-Kit/ copies are out of the role', t => {
+    const dir = repo(t, {
+      'AGENTS.md': RULES, 'Examples/x/AGENTS.md': RULES, 'Fixtures/f/AGENTS.md': RULES, 'TEMPLATES/t/AGENTS.md': RULES,
+      'Starter-Kit/s/AGENTS.md': RULES, 'skeleton/k/CLAUDE.md': RULES, 'corpus/c/AGENTS.md': RULES,
+    });
+    assert.deepEqual(agentInstructionDocs(dir, {}).docs.map(d => d.path), ['AGENTS.md']);
+  });
+
+  it('PSR006 names a case-variant copy', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'Examples/x/AGENTS.md': RULES, 'TEMPLATES/t/AGENTS.md': RULES });
+    assert.deepEqual(psr006(dir).map(h => [h.location, h.confidence]), [['Examples/x/AGENTS.md', 'low'], ['TEMPLATES/t/AGENTS.md', 'high']]);
+  });
+});
+
+describe('FR-010 — nothing is dropped silently', () => {
+  const guardJson = (dir, extra = {}) => {
+    const r = spawnSync(process.execPath, [CLI, 'guard', '--format', 'json'], { cwd: dir, encoding: 'utf8' });
+    return JSON.parse(r.stdout);
+  };
+  const config = extra => JSON.stringify({ projectName: 'fx', enforcement: 'standard', ...extra });
+
+  it('guard JSON counts every kind and lists the instruction files left out, per kind', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': TEMPLATE, 'tests/fixtures/r/CLAUDE.md': RULES, '.docguard.json': config() });
+    const kinds = guardJson(dir).files.kinds;
+    assert.equal(kinds.counts.template, 1);
+    assert.ok(kinds.counts.fixture >= 1);
+    assert.ok(kinds.counts.own >= 3);
+    assert.deepEqual(kinds.excluded.template, ['templates/new-app/files/AGENTS.md']);
+    assert.deepEqual(kinds.excluded.fixture, ['tests/fixtures/r/CLAUDE.md']);
+    assert.equal(kinds.excluded.own, undefined);
+  });
+
+  it('caps each list at 20 paths and says how many more there were', t => {
+    const files = { 'AGENTS.md': RULES, '.docguard.json': config() };
+    for (let i = 0; i < 25; i++) files[`templates/app${String(i).padStart(2, '0')}/files/AGENTS.md`] = TEMPLATE;
+    const kinds = guardJson(repo(t, files)).files.kinds;
+    assert.equal(kinds.excluded.template.length, 20);
+    assert.equal(kinds.counts.template, 25);
+    assert.equal(kinds.excludedMore.template, 5);
+  });
+
+  it('fileKinds.own empties the list', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': TEMPLATE, '.docguard.json': config({ fileKinds: { own: ['templates/new-app/**'] } }) });
+    const kinds = guardJson(dir).files.kinds;
+    assert.deepEqual(kinds.excluded, {});
+    assert.equal(kinds.counts.template, undefined);
+  });
+
+  it('text output prints one line naming the count and fileKinds.own, and none when nothing was left out', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': TEMPLATE, 'tests/fixtures/r/CLAUDE.md': RULES, '.docguard.json': config() });
+    const out = spawnSync(process.execPath, [CLI, 'guard'], { cwd: dir, encoding: 'utf8' }).stdout;
+    const lines = out.split('\n').filter(l => /left out of review as copies/.test(l));
+    assert.equal(lines.length, 1, out.slice(0, 3000));
+    assert.match(lines[0], /2 instruction file\(s\)/);
+    assert.match(lines[0], /fileKinds\.own/);
+    const clean = repo(t, { 'AGENTS.md': RULES, '.docguard.json': config() });
+    assert.doesNotMatch(spawnSync(process.execPath, [CLI, 'guard'], { cwd: clean, encoding: 'utf8' }).stdout, /left out of review as copies/);
+  });
+
+  it('the lite (--changed-only) path carries no files field', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': TEMPLATE, '.docguard.json': config() });
+    const r = spawnSync(process.execPath, [CLI, 'guard', '--format', 'json', '--changed-only'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(JSON.parse(r.stdout).files, undefined);
+  });
+});
+
+describe('agentInstructions.governing is gone (spec 100 FR-004)', () => {
+  it('the old key no longer rescues a copy', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'templates/new-app/files/AGENTS.md': RULES });
+    assert.deepEqual(agentInstructionDocs(dir, { agentInstructions: { governing: ['templates/**'] } }).docs.map(d => d.path), ['AGENTS.md']);
   });
 });

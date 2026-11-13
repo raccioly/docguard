@@ -15,6 +15,25 @@
 | FR-012, FR-013 | 2 | Migrate each allowlisted file; fix D2, D3, D4, D6, D8, D9; walkers skip a nested checkout; the backup-document warning. |
 | FR-014, FR-015 | 3 | Mirror grouping by content hash and drift warnings in Path-Scoped-Rules and the instruction validators. |
 
+## Technical Context
+
+- **Language/runtime**: JavaScript (ES modules), Node.js 18+. No new dependency.
+- **Storage**: none. The only disk read is one `existsSync` per directory for `nested-checkout`, cached; classification reads no file contents.
+- **Testing**: `node:test` (`tests/file-kinds.test.mjs`, `tests/file-kinds-registry.test.mjs`, additions to `tests/instruction-copies.test.mjs`).
+- **Constraints**: no import cycle between `cli/shared-file-kind.mjs` and `cli/shared-ignore.mjs` (ARC002), so the glob compiler and the package-segment rule moved into the new module and `shared-ignore.mjs` re-exports them; guard time and agent-facing bytes stay within the CI budget.
+
+## Project Structure
+
+```
+cli/shared-file-kind.mjs          fileKind, the vocabulary, fileKinds.own, compileGlob, isPackageSegment
+cli/shared-ignore.mjs             isNonProductPath / isNonProductDir are views of it; re-exports
+cli/shared-agent-instructions.mjs the role: template and fixture copies leave it, `excluded` is recorded
+cli/scanners/agent-instructions.mjs  chain budget skips a copy
+cli/validators/path-scoped-rules.mjs PSR006 on fileKind
+cli/commands/guard.mjs            files.kinds and the text line
+tests/file-kinds*.test.mjs        the module and the registry guard
+```
+
 ## Research decisions
 
 - **Unknown is `own`.** Classifying a file as a copy removes it from checks, and strict mode fails on what it examines. A missed copy costs a finding; a wrongly dropped governing file costs a hidden defect.

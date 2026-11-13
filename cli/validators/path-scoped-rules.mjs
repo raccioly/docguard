@@ -32,9 +32,8 @@ import { readFrontmatter } from '../scanners/frontmatter.mjs';
 import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
-import {
-  agentInstructionDocs, fileSha256, instructionCopyOf, isDeclaredGoverning, ROOT_AGENT_FILES,
-} from '../shared-agent-instructions.mjs';
+import { agentInstructionDocs, fileSha256, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
+import { fileKind, INSTRUCTION_COPY } from '../shared-file-kind.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
@@ -73,9 +72,8 @@ export function validatePathScopedRules(projectDir, config = {}) {
 
   const { entries: all, files: instructionFiles, skipped } = instructionScopes(projectDir, projectFiles);
   // Test, fixture and example paths (spec 094) and template copies (spec 099 FR-001) are
-  // forms for other projects, not this one's instructions, unless agentInstructions.governing names them.
-  const entries = all.filter(e => isDeclaredGoverning(e.file, config)
-    || (!isNonProductPath(e.file, config) && instructionCopyOf(e.file, config)?.kind !== 'template'));
+  // forms for other projects, not this one's instructions, unless fileKinds.own names them.
+  const entries = all.filter(e => !isNonProductPath(e.file, config) && fileKind(e.file, config, INSTRUCTION_COPY).kind !== 'template');
   const role = agentInstructionDocs(projectDir, config);
   const copies = instructionCopies(projectFiles, config);
   if (entries.length === 0 && copies.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
@@ -254,8 +252,8 @@ export function validatePathScopedRules(projectDir, config = {}) {
       message: `${c.path} is a ${template ? 'template' : 'test, fixture or example'} copy (under \`${c.copy.segment}/\`) with the same name as ${c.governing}: an agent searching the repository for ${c.name} may read it as this project's instructions`,
       location: { file: c.path },
       suggestion: template
-        ? { kind: 'fix', text: `Rename it to ${base}.template and have whatever writes it out drop the suffix. If it does govern its folder, list it in agentInstructions.governing` }
-        : { kind: 'review', text: `Rename it to ${base}.template and have the test copy it into place, or, if the fixture needs the name, list it in .docguardignore with a reason. If it does govern its folder, list it in agentInstructions.governing` },
+        ? { kind: 'fix', text: `Rename it to ${base}.template and have whatever writes it out drop the suffix. If it does govern its folder, list it in fileKinds.own` }
+        : { kind: 'review', text: `Rename it to ${base}.template and have the test copy it into place, or, if the fixture needs the name, list it in .docguardignore with a reason. If it does govern its folder, list it in fileKinds.own` },
     }));
   }
   if (copyFindings > MAX_COPY_FINDINGS) limitations.push(`${copyFindings - MAX_COPY_FINDINGS} more instruction copies not listed`);
@@ -281,7 +279,7 @@ export function validatePathScopedRules(projectDir, config = {}) {
  * name with a file that governs this project (spec 099 FR-003). Names are the
  * root instruction files' basenames, `.github/copilot-instructions.md` by path
  * tail, and each `requiredFiles.agentFile` basename. A governing file is a root
- * file, a nested file that is not a copy, or one `agentInstructions.governing`
+ * file, a nested file that is not a copy, or one `fileKinds.own`
  * names. `files` is already filtered by `.docguardignore` and `ignore`.
  *
  * @implements docguard.instruction-copies#FR-003
@@ -298,8 +296,8 @@ export function instructionCopies(files, config = {}) {
     const name = nameOf(path);
     if (!name) continue;
     const group = groups.get(name) || { governing: [], copies: [] };
-    const copy = instructionCopyOf(path, config);
-    if (copy) group.copies.push({ path, copy });
+    const copy = fileKind(path, config, INSTRUCTION_COPY);
+    if (copy.kind !== 'own') group.copies.push({ path, copy });
     else group.governing.push(path);
     groups.set(name, group);
   }

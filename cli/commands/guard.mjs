@@ -1,5 +1,6 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
+import { fileKind, FILE_KINDS } from '../shared-file-kind.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
@@ -19,14 +20,14 @@ import { applyDocRoles } from '../shared-doc-roles.mjs';
  */
 
 import { c, resolveSeverity, resolveFindingEnforcement, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
-import { walkFiles, buildIgnoreFilter, normalizeIgnoreConfig } from '../shared-ignore.mjs';
+import { walkFiles, buildIgnoreFilter, normalizeIgnoreConfig, relPosix } from '../shared-ignore.mjs';
 import { ABSENCE_CLAIM_CODES, CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
 import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
-import { changedFilesSince, isGitRepo } from '../shared-git.mjs';
+import { changedFilesSince, isGitRepo, listTrackedFiles } from '../shared-git.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
@@ -359,6 +360,51 @@ function computeDocCoverage(projectDir, config) {
       .map(d => ({ path: d.path, source: d.vendored.source, reason: d.vendored.reason }));
   } catch { vendoredInstructions = []; }
   return { discovered: all.length, canonical: canonicalCount, specKit, tracked, ignored, unclassified, vendoredInstructions };
+}
+
+/** Most paths listed per kind in `files.kinds.excluded`. */
+export const MAX_EXCLUDED_PER_KIND = 20;
+
+/**
+ * Which files are the project's own and which are copies (specs/100-file-kinds
+ * FR-010). `counts` is one number per kind over the tracked files that are not
+ * ignored (a kind with no files is absent). `excluded` lists, per non-`own`
+ * kind, the files left out of a document or instruction role, so a wrongly
+ * classified governing file is visible; `excludedMore` says how many past the
+ * cap.
+ */
+export function computeFileKinds(projectDir, config) {
+  const fileIgnored = loadIgnorePatterns(projectDir);
+  const configIgnored = buildIgnoreFilter(config.ignore || []);
+  let files = listTrackedFiles(projectDir);
+  if (files === null) {
+    files = [];
+    walkFiles(projectDir, full => { files.push(relPosix(projectDir, full)); });
+  }
+  const counts = {};
+  for (const path of files) {
+    if (fileIgnored(path) || configIgnored(path)) continue;
+    const { kind } = fileKind(path, config);
+    counts[kind] = (counts[kind] || 0) + 1;
+  }
+  const ordered = Object.fromEntries(FILE_KINDS.filter(k => counts[k]).map(k => [k, counts[k]]));
+  const excluded = {};
+  const excludedMore = {};
+  for (const item of agentInstructionDocs(projectDir, config).excluded || []) {
+    const list = excluded[item.kind] || (excluded[item.kind] = []);
+    if (list.length < MAX_EXCLUDED_PER_KIND) list.push(item.path);
+    else excludedMore[item.kind] = (excludedMore[item.kind] || 0) + 1;
+  }
+  return { counts: ordered, excluded, ...(Object.keys(excludedMore).length ? { excludedMore } : {}) };
+}
+
+/** One text line when instruction files were left out as copies, or null. */
+export function excludedKindsLine(kinds) {
+  const excluded = kinds?.excluded || {};
+  const total = Object.entries(excluded).reduce((n, [kind, list]) => n + list.length + (kinds.excludedMore?.[kind] || 0), 0);
+  if (!total) return null;
+  const parts = Object.entries(excluded).map(([kind, list]) => `${kind}: ${list.slice(0, 3).join(', ')}${list.length + (kinds.excludedMore?.[kind] || 0) > 3 ? ', ...' : ''}`);
+  return `${total} instruction file(s) left out of review as copies (${parts.join('; ')}); a file that governs its folder goes in fileKinds.own, the full list is files.kinds.excluded in --format json`;
 }
 
 export function runGuardInternal(projectDir, config) {
@@ -730,10 +776,12 @@ export function runGuardInternal(projectDir, config) {
   // lite path, which trades coverage for sub-2s speed and shouldn't pay for a
   // repo-wide Markdown walk.
   let coverage = null;
+  let files = null;
   let semanticClaims = null;
   const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
   if (!lite) {
     try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
+    try { files = { kinds: computeFileKinds(projectDir, config) }; } catch { files = null; }
     try {
       const claims = extractSemanticClaims(projectDir, config);
       const scoped = coverSemanticClaims(claims, evidence);
@@ -767,6 +815,8 @@ export function runGuardInternal(projectDir, config) {
     ...(baselineMap && verdicts.gaps.length > 0 ? { baselineStaleUncertain: true } : {}),
     baselineAgeDays: baselineAge,
     coverage,
+    // docguard.file-kinds#FR-010: copies left out of a role stay visible.
+    ...(files ? { files } : {}),
     checkCoverage,
     verdicts,
     enforcement,
@@ -1314,6 +1364,8 @@ export function runGuard(projectDir, config, flags) {
       }
     }
   }
+  const leftOut = excludedKindsLine(data.files?.kinds);
+  if (leftOut) console.log(`  ${c.dim}↪ ${leftOut}${c.reset}`);
   if (data.checkCoverage) {
     const counts = data.checkCoverage.counts;
     // Lead with how many validators actually checked. The passed/total figure

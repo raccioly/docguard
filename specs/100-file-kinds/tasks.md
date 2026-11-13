@@ -11,22 +11,22 @@
 
 ### Phase 2: Tests first
 
-- [ ] T002 [US1] `tests/file-kinds.test.mjs`: the closed kind list; every vocabulary word in lower, upper and mixed case; `describesFolder` on and off; the dot-segment cutoff and `harnessFolders: 'all'`; package segments in any case; `kinds` restriction and precedence; backup names for documents and not for code; backup directories only inside documentation directories; nested checkout with `opts.root` and without; `fileKinds.own`; unknown paths are `own` (FR-001 to FR-005).
-- [ ] T003 [US2] `tests/instruction-copies.test.mjs`: D1 (STR004 skips a template and a fixture copy, counts a governing nested file and `templates/AGENTS.md`); D5 (`Examples/` and `Fixtures/` leave the role as lowercase does); `fileKinds.own` replaces `agentInstructions.governing`; `tests/AGENTS.md` keeps spec 094's behavior (FR-007 to FR-009).
-- [ ] T004 [US4] Same file: `files.kinds` in guard JSON (counts, excluded, capped at 20) and the text line; absent on the lite path (FR-010).
-- [ ] T005 [US6] `tests/file-kinds-registry.test.mjs`: the heuristic, the allowlist with a reason per entry, exact in both directions (FR-011).
+- [x] T002 [US1] [US3] `tests/file-kinds.test.mjs`: the closed kind list; every vocabulary word in lower, upper and mixed case; `describesFolder` on and off; the dot-segment cutoff and `harnessFolders: 'all'`; package segments in any case; `kinds` restriction and precedence; backup names for documents and not for code; backup directories only inside documentation directories; nested checkout with `opts.root` and without; `fileKinds.own`; unknown paths are `own` (FR-001 to FR-005).
+- [x] T003 [US2] [US3] `tests/instruction-copies.test.mjs`: D1 (STR004 skips a template and a fixture copy, counts a governing nested file and `templates/AGENTS.md`); D5 (`Examples/` and `Fixtures/` leave the role as lowercase does); `fileKinds.own` replaces `agentInstructions.governing`; `tests/AGENTS.md` keeps spec 094's behavior (FR-007 to FR-009).
+- [x] T004 [US4] Same file: `files.kinds` in guard JSON (counts, excluded, capped at 20) and the text line; absent on the lite path (FR-010).
+- [x] T005 [US6] `tests/file-kinds-registry.test.mjs`: the heuristic, the allowlist with a reason per entry, exact in both directions (FR-011).
 
 ### Phase 3: Implementation
 
-- [ ] T006 `cli/shared-file-kind.mjs` (FR-001 to FR-005).
-- [ ] T007 `cli/shared-ignore.mjs` callers; delete `instructionCopyOf`, `TEMPLATE_DIRS`, `isDeclaredGoverning` (FR-006).
-- [ ] T008 Role, Path-Scoped-Rules, PSR006 on `fileKind` (FR-007, FR-008).
-- [ ] T009 `measureInstructionChains(projectDir, config)` and `structure.mjs` (FR-009).
-- [ ] T010 `files.kinds` in `cli/commands/guard.mjs` (FR-010).
+- [x] T006 `cli/shared-file-kind.mjs` (FR-001 to FR-005).
+- [x] T007 `cli/shared-ignore.mjs` callers; delete `instructionCopyOf`, `TEMPLATE_DIRS`, `isDeclaredGoverning` (FR-006).
+- [x] T008 Role, Path-Scoped-Rules, PSR006 on `fileKind` (FR-007, FR-008).
+- [x] T009 `measureInstructionChains(projectDir, config)` and `structure.mjs` (FR-009).
+- [x] T010 `files.kinds` in `cli/commands/guard.mjs` (FR-010).
 
 ### Phase 4: Docs, evidence, verification
 
-- [ ] T011 `docs/configuration.md`, schema, DATA-MODEL, ARCHITECTURE, TEST-SPEC, findings reference, CHANGELOG, `docguard explain PSR006`, strict additions, precision evidence.
+- [x] T011 `docs/configuration.md`, schema, DATA-MODEL, ARCHITECTURE, TEST-SPEC, findings reference, CHANGELOG, `docguard explain PSR006`, strict additions, precision evidence.
 - [ ] T012 Benchmarks (a D1 pair if the corpus supports STR004); A/B on DocGuard and eight other repositories, every difference labelled.
 - [ ] T013 `npm test`; `node cli/docguard.mjs guard`; CI lint.
 
@@ -39,5 +39,5 @@
 
 ## Stage 3 (later)
 
-- [ ] T030 Mirror grouping by content hash across instruction files and skill copies; one finding naming every path (FR-014).
+- [ ] T030 [US5] Mirror grouping by content hash across instruction files and skill copies; one finding naming every path (FR-014).
 - [ ] T031 Drift warnings for same-skill copies and near-identical root instruction files; `GEMINI.md` like the others (FR-015).

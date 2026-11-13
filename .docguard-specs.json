@@ -98,17 +98,17 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-ignore.mjs",
-            "line": 388
+            "line": 363
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-ignore.mjs",
-            "line": 417
+            "line": 392
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-ignore.mjs",
-            "line": 418
+            "line": 393
           },
           {
             "requirementId": "FR-004",
@@ -660,7 +660,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/agent-instructions.mjs",
-            "line": 11
+            "line": 15
           },
           {
             "requirementId": "FR-002",
@@ -2138,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 799
+            "line": 849
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 826
+            "line": 876
           },
           {
             "requirementId": "FR-021",
@@ -3475,17 +3475,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 33
+            "line": 38
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 35
+            "line": 40
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 61
+            "line": 66
           },
           {
             "requirementId": "FR-003",
@@ -6333,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 10
+            "line": 11
           },
           {
             "requirementId": "FR-010",
@@ -6823,11 +6823,6 @@
             "line": 895
           },
           {
-            "requirementId": "FR-006",
-            "file": "cli/shared-ignore.mjs",
-            "line": 148
-          },
-          {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
             "line": 18
@@ -7132,19 +7127,56 @@
           },
           {
             "path": "specs/100-file-kinds/plan.md",
-            "digest": "sha256:1c7db24fc967ac362f1381ecff3e77158acff9c06f7ea8d51671317a68345ec0"
+            "digest": "sha256:7707805e96024763303d98b11fbb8078fc9b47f40b6220e2676dc42cc4f5bef7"
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:897f935343e626ee77902469708a18e493a80b0b3592d85a8b3a1b25798c5a34"
+            "digest": "sha256:fe2038e2e570efc2e6d95bb664c4cb4049e43bd781f43dd6abb5f0cd3ef8bf84"
           }
         ],
         "taskCompletion": {
-          "checked": 1,
+          "checked": 11,
           "total": 19
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/agent-instructions.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/agent-instructions.mjs",
+            "line": 16
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-007",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 17
+          }
+        ]
       }
     },
     {
@@ -7527,7 +7559,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-ignore.mjs",
-            "line": 120
+            "line": 121
           },
           {
             "requirementId": "FR-006",
@@ -8278,27 +8310,27 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-ignore.mjs",
-            "line": 249
+            "line": 224
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 236
+            "line": 211
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-ignore.mjs",
-            "line": 250
+            "line": 225
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-ignore.mjs",
-            "line": 251
+            "line": 226
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-ignore.mjs",
-            "line": 252
+            "line": 227
           },
           {
             "requirementId": "FR-005",
@@ -8358,12 +8390,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-ignore.mjs",
-            "line": 484
+            "line": 459
           },
           {
             "requirementId": "FR-010",
             "file": "cli/shared-ignore.mjs",
-            "line": 531
+            "line": 506
           },
           {
             "requirementId": "FR-010",
@@ -8511,16 +8543,6 @@
         },
         "implementationEvidence": [
           {
-            "requirementId": "FR-001",
-            "file": "cli/shared-agent-instructions.mjs",
-            "line": 238
-          },
-          {
-            "requirementId": "FR-002",
-            "file": "cli/shared-agent-instructions.mjs",
-            "line": 239
-          },
-          {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
             "line": 22
@@ -8528,7 +8550,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 287
+            "line": 285
           }
         ],
         "testEvidence": [
@@ -11383,7 +11405,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-002",
@@ -11428,7 +11450,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 12
+            "line": 13
           },
           {
             "requirementId": "FR-009",
@@ -16751,7 +16773,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 55
+            "line": 54
           },
           {
             "requirementId": "FR-006",
@@ -16861,7 +16883,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 226
+            "line": 227
           },
           {
             "requirementId": "FR-014",
