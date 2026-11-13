@@ -55,7 +55,8 @@ function bodyText(def) {
 export function hasPlaceholderSlot(def) {
   // Brackets, angles and braces inside an inline code span are code, not a template slot:
   // `[Unreleased]`, `--stage [slug]`, `{ mode, asOf }`, `pending: [...]`.
-  const raw = String(def.text || '').replace(def.id, '').replace(/`[^`\n]*`/g, '').replace(/[*_`]/g, '');
+  // A span that opens and does not close on this line (the sentence wraps) is code to the end of the line.
+  const raw = String(def.text || '').replace(def.id, '').replace(/`[^`\n]*`/g, '').replace(/`.*$/, '').replace(/[*_]/g, '');
   return BRACKET_SLOT.test(raw) || ANGLE_SLOT.test(raw) || CURLY_SLOT.test(raw);
 }
 

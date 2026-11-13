@@ -405,6 +405,11 @@ describe('group A: Traceability traces requirements', () => {
     assert.equal(result.applies.applies, true);
   });
 
+  it('a requirement whose code span wraps onto the next line is a requirement', () => {
+    const { result } = run('traceability', { files: { 'package.json': PKG, 'docs-canonical/REQUIREMENTS.md': '# Requirements\n\n- **FR-001**: `tool approve --id <id> [--delivery\n  planned]` MUST record the approval.\n' } });
+    assert.equal(result.performed, 1);
+  });
+
   it('keeps `total` as the checks it counted under standard (requirements plus orphan references plus document checks)', () => {
     const dir = project(files({ 'tests/a.test.js': '// @req FR-001\ntest("a", () => {});\n' }), cfg('traceability', { enforcement: 'standard' }));
     const result = runGuardInternal(dir, loadConfig(dir)).validators.find(v => v.key === 'traceability');
