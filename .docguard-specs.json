@@ -8595,7 +8595,7 @@
           },
           {
             "path": "specs/099-instruction-copies/plan.md",
-            "digest": "sha256:18ba13f0e203e41a065d97ac965037fa2739d43d96d83c8fd50415560f0f7bfe"
+            "digest": "sha256:7b4cb77ba33872880bb3f9645e111977702ca167534ea98b4a836e8cffb0fb21"
           },
           {
             "path": "specs/099-instruction-copies/tasks.md",

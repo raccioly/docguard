@@ -11,6 +11,19 @@
 | FR-004 | `cli/findings.mjs` (catalog, so `explain` and `docs:reference` follow), `schemas/docguard-config.schema.json`, `docs-canonical/DATA-MODEL.md`, `CHANGELOG.md`. |
 | FR-005 | `benchmarks/fixtures/instruction-copies/` plus two corpus cases and the reviewed baseline. |
 
+## Technical Context
+
+JavaScript (ES modules), Node.js 18+, no new dependency. Tests use `node:test`. The classifier lives in `cli/shared-file-kind.mjs` since spec 100.
+
+## Project Structure
+
+```
+cli/shared-agent-instructions.mjs   the role
+cli/validators/path-scoped-rules.mjs PSR006
+tests/instruction-copies.test.mjs
+benchmarks/fixtures/instruction-copies-*  corpus pair
+```
+
 ## Research decisions
 
 - **A role-only rule, not a new `DEFAULT_DETECTION_IGNORE_DIRS` entry.** Routes, schemas, the module diagram, ownership and the symbol map read that set, and `templates/` holds product files in Django, Flask and Jinja projects.
