@@ -87,6 +87,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment document by a folder or file name that contains the role's word,
   and otherwise give the exact `docs.roles` snippet with a placeholder path
   (`docguard.strict-by-default` FR-006, T018g).
+- **The `docs.roles` mapping offer ranks its candidates.** A file whose own name
+  has the role's word ranks above one that only sits in a folder with that word;
+  within a folder match only an overview or index document (overview, index,
+  README, summary) is a candidate, and siblings are not listed. Nothing is cut
+  from the list before ranking. When the rule cannot tell which file is the
+  document it offers none by name, says which folder it looked in, and prints the
+  snippet with a placeholder path (`docguard.strict-by-default` FR-007, T018h).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).

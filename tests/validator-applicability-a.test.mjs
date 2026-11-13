@@ -316,10 +316,38 @@ describe('group A: defects the Stage A proof found', () => {
       assert.match(r.howToConfigure, /"architecture": "docs\/03-architecture\/SYSTEM-OVERVIEW\.md"/);
     });
 
-    it('Docs-Diff: with several candidates it names them and gives the hand-mapping snippet with a placeholder', () => {
-      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', 'docs/architecture/A.md': '# a\n', 'docs/architecture/B.md': '# b\n' } });
-      assert.match(r.howToConfigure, /candidates: docs\/architecture\/A\.md, docs\/architecture\/B\.md/);
-      assert.match(r.howToConfigure, /"architecture": "<path\/to\/your-document\.md>"/);
+    const ARCH = (files) => resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', ...files } }).howToConfigure;
+
+    it('Docs-Diff: a folder named for the role holding four documents offers the overview, not the first three', () => {
+      const how = ARCH({ 'docs/architecture/deployment-notes.md': '# d\n', 'docs/architecture/glossary.md': '# g\n', 'docs/architecture/meeting-notes.md': '# m\n', 'docs/architecture/OVERVIEW.md': '# o\n' });
+      assert.match(how, /"architecture": "docs\/architecture\/OVERVIEW\.md"/);
+      assert.doesNotMatch(how, /deployment-notes|glossary|meeting-notes/);
+    });
+
+    it('Docs-Diff: a file whose own name has the role word ranks above one that only sits in the folder', () => {
+      const how = ARCH({ 'docs/architecture/OVERVIEW.md': '# o\n', 'docs/design/architecture-guide.md': '# g\n' });
+      assert.match(how, /"architecture": "docs\/design\/architecture-guide\.md"/);
+    });
+
+    it('Docs-Diff: the best candidate is never cut from a long list of name matches', () => {
+      const files = {};
+      for (const n of ['a', 'b', 'c', 'd', 'e', 'f']) files[`docs/architecture-${n}.md`] = '# x\n';
+      files['docs/ARCHITECTURE.md'] = '# the one\n';
+      assert.match(ARCH(files), /"architecture": "docs\/ARCHITECTURE\.md"/);
+    });
+
+    it('Docs-Diff: when it cannot tell which file is the document it offers none by name, says where it looked, and prints the placeholder snippet', () => {
+      const how = ARCH({ 'docs/architecture/deployment-notes.md': '# d\n', 'docs/architecture/glossary.md': '# g\n' });
+      assert.doesNotMatch(how, /"architecture": "docs\/architecture\//);
+      assert.match(how, /looked in docs\/architecture\//i);
+      assert.match(how, /"architecture": "<path\/to\/your-document\.md>"/);
+      assert.doesNotMatch(how, /deployment-notes|glossary/);
+    });
+
+    it('Docs-Diff: several files that each have the role word in their name are listed, best first, and none is offered by name', () => {
+      const how = ARCH({ 'docs/architecture-a.md': '# a\n', 'docs/architecture-b.md': '# b\n' });
+      assert.match(how, /candidates, best first: docs\/architecture-a\.md, docs\/architecture-b\.md/);
+      assert.match(how, /"architecture": "<path\/to\/your-document\.md>"/);
     });
 
     it('Docs-Diff: with no candidate at all the fix text still says how to map a document by hand', () => {
