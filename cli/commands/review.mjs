@@ -50,35 +50,75 @@ function writeLock(projectDir, lock) {
   });
 }
 
+/**
+ * `review --accept <path>…`: every path named is recorded, or none is
+ * (specs/097-strict-by-default T028a). Each path is planned first, with no
+ * write: a document review for a whole document (docguard.recorded-document-
+ * reviews#FR-001) and the covered sections it has. The first path that cannot
+ * be accepted refuses the whole command and is named. Then the reviews file and
+ * the doc lock are written in one transaction.
+ */
 function acceptSections(projectDir, config, flags) {
   const reason = String(flags.reason || '').replace(/\s+/g, ' ').trim();
   if (reason.length < 8 || reason.length > 500) throw new Error('review --accept requires --reason with 8-500 characters: say what you checked.');
-  const target = String(flags.accept);
+  // `--accept A B` — the parser leaves B among the positional arguments.
+  const targets = [...new Set([].concat(flags.accept, flags.args || []).filter(t => typeof t === 'string' && t.trim()).map(t => t.trim()))];
+  const shared = { date: new Date().toISOString().slice(0, 10), reason };
+  const plans = targets.map(target => planAccept(projectDir, config, target, shared));
+
+  const documents = plans.map(p => p.documentReview).filter(Boolean);
+  const sections = plans.flatMap(p => p.sections);
+  const writes = [];
+  const reviewsPath = resolve(projectDir, DOC_REVIEWS_PATH);
+  const lockPath = resolve(projectDir, DOC_LOCK_PATH);
+  const changedDocs = documents.filter(d => !d.unchanged);
+  if (changedDocs.length) {
+    const reviews = shared.reviews;
+    for (const d of changedDocs) reviews.documents[d.doc] = d.entry;
+    writes.push({ path: reviewsPath, content: serializeDocReviews(reviews) });
+  }
+  if (sections.length) {
+    const { lock, error } = readLock(projectDir);
+    if (error) throw new Error(`${error} — restore it from git or delete it before accepting.`);
+    const entryBase = { reason, revision: headRevision(projectDir), date: shared.date };
+    for (const { doc, section } of sections) lock.sections[`${doc}#${section.id}`] = acceptedEntry(shared.lockCtx ||= createContext(projectDir, config), section, entryBase);
+    writes.push({ path: lockPath, content: serializeLock(lock) });
+  }
+  if (writes.length) {
+    commitFileTransaction(writes, {
+      validate: () => {
+        if (changedDocs.length) { const back = readDocReviews(projectDir); if (back.error) throw new Error(back.error); }
+        if (sections.length) { const back = readLock(projectDir); if (back.error) throw new Error(back.error); }
+      },
+    });
+  }
+  const documentResults = documents.map(d => ({ path: d.doc, references: Object.keys(d.entry.references).length, excluded: Object.keys(d.entry.excluded).length, revision: d.revision, written: !d.unchanged }));
+  return {
+    command: 'review', action: 'accept',
+    status: sections.length || changedDocs.length ? 'ACCEPTED' : 'CURRENT',
+    accepted: sections.map(({ doc, section }) => `${doc}#${section.id}`),
+    ...(documentResults.length === 1 ? { document: documentResults[0] } : {}),
+    ...(documentResults.length > 1 ? { documents: documentResults } : {}),
+  };
+}
+
+/** What accepting one path would write, with no write; throws an error that names the path. */
+function planAccept(projectDir, config, target, shared) {
   const [doc, id] = target.includes('#') ? [target.slice(0, target.indexOf('#')), target.slice(target.indexOf('#') + 1)] : [target, null];
   // docguard.recorded-document-reviews#FR-001: `--accept <doc>` records a
   // document review (what was referenced, fingerprinted) as well as any
   // covered sections it has.
-  const documentReview = id ? null : recordDocumentReview(projectDir, config, doc, reason);
+  const documentReview = id ? null : planDocumentReview(projectDir, config, doc, shared);
   if (!candidateDocs(projectDir, config).includes(doc)) {
-    if (documentReview) return documentReview;
+    if (documentReview) return { documentReview, sections: [] };
     throw new Error(`${doc} is not a canonical doc, README.md or a root agent-instruction file.`);
   }
-  const sections = coveredSections(readFileSync(resolve(projectDir, doc), 'utf8')).filter(s => !id || s.id === id);
-  if (!sections.length) {
-    if (documentReview) return documentReview;
+  const found = coveredSections(readFileSync(resolve(projectDir, doc), 'utf8')).filter(s => !id || s.id === id);
+  if (!found.length) {
+    if (documentReview) return { documentReview, sections: [] };
     throw new Error(id ? `${doc} has no section ${id} with covers=.` : `${doc} has no section with covers=.`);
   }
-  const { lock, error } = readLock(projectDir);
-  if (error) throw new Error(`${error} — restore it from git or delete it before accepting.`);
-  const ctx = createContext(projectDir, config);
-  const entryBase = { reason, revision: headRevision(projectDir), date: new Date().toISOString().slice(0, 10) };
-  const accepted = [];
-  for (const section of sections) {
-    lock.sections[`${doc}#${section.id}`] = acceptedEntry(ctx, section, entryBase);
-    accepted.push(`${doc}#${section.id}`);
-  }
-  writeLock(projectDir, lock);
-  return { command: 'review', action: 'accept', status: 'ACCEPTED', accepted, ...(documentReview ? { document: documentReview.document } : {}) };
+  return { documentReview, sections: found.map(section => ({ doc, section })) };
 }
 
 /** The documents a document-level review may record (FR-001). */
@@ -94,37 +134,29 @@ export function documentReviewTargets(projectDir, config) {
   return out;
 }
 
-function recordDocumentReview(projectDir, config, doc, reason) {
-  const targets = documentReviewTargets(projectDir, config);
+function planDocumentReview(projectDir, config, doc, shared) {
+  const targets = (shared.targets ||= documentReviewTargets(projectDir, config));
   const target = targets.get(doc);
   if (!target) {
     const some = [...targets.keys()].slice(0, 6).join(', ');
     throw new Error(`${doc} is not an agent-instruction, canonical, README or CONTRIBUTING document${some ? ` (for example: ${some})` : ''}.`);
   }
   if (target.pointer !== undefined) throw new Error(`${doc} only points to ${target.pointer || 'a file outside the repository'}; review ${target.pointer || 'that file'} instead.`);
-  const reviewsRead = readDocReviews(projectDir);
-  if (reviewsRead.error) throw new Error(`${reviewsRead.error} — restore it from git or delete it before accepting.`);
-  const tracked = listTrackedFiles(projectDir);
-  if (tracked === null) throw new Error('review --accept <doc> needs git: the review records the commit it was made at.');
-  const revision = headRevision(projectDir);
-  const vendored = new Set(agentInstructionDocs(projectDir, config).docs.filter(d => d.vendored).map(d => d.path));
-  const content = readFileSync(resolve(projectDir, doc), 'utf8');
-  const entry = documentReviewEntry(createContext(projectDir, config), projectDir, doc, content, {
-    tracked, vendored, config, reason, revision, date: new Date().toISOString().slice(0, 10),
-  });
-  const reviews = reviewsRead.reviews;
-  const unchanged = serializeDocReviews(reviews.documents[doc] || {}) === serializeDocReviews(entry);
-  if (!unchanged) {
-    reviews.documents[doc] = entry;
-    const path = resolve(projectDir, DOC_REVIEWS_PATH);
-    commitFileTransaction([{ path, content: serializeDocReviews(reviews) }], {
-      validate: () => { const back = readDocReviews(projectDir); if (back.error) throw new Error(back.error); },
-    });
+  if (!shared.reviews) {
+    const reviewsRead = readDocReviews(projectDir);
+    if (reviewsRead.error) throw new Error(`${reviewsRead.error} — restore it from git or delete it before accepting.`);
+    shared.reviews = reviewsRead.reviews;
   }
-  return {
-    command: 'review', action: 'accept', status: unchanged ? 'CURRENT' : 'ACCEPTED', accepted: [],
-    document: { path: doc, references: Object.keys(entry.references).length, excluded: Object.keys(entry.excluded).length, revision, written: !unchanged },
-  };
+  if (shared.tracked === undefined) shared.tracked = listTrackedFiles(projectDir);
+  if (shared.tracked === null) throw new Error('review --accept <doc> needs git: the review records the commit it was made at.');
+  shared.revision ||= headRevision(projectDir);
+  shared.vendored ||= new Set(agentInstructionDocs(projectDir, config).docs.filter(d => d.vendored).map(d => d.path));
+  const content = readFileSync(resolve(projectDir, doc), 'utf8');
+  const entry = documentReviewEntry(shared.ctx ||= createContext(projectDir, config), projectDir, doc, content, {
+    tracked: shared.tracked, vendored: shared.vendored, config, reason: shared.reason, revision: shared.revision, date: shared.date,
+  });
+  const unchanged = serializeDocReviews(shared.reviews.documents[doc] || {}) === serializeDocReviews(entry);
+  return { doc, entry, unchanged, revision: shared.revision };
 }
 
 function pruneLock(projectDir, config) {
@@ -216,11 +248,11 @@ export function runReview(projectDir, config, flags = {}) {
     } else if (result.action === 'prune' && result.pruned.length === 0) {
       console.log(`${c.green}✓ Nothing to prune${c.reset} ${c.dim}— every lock entry still has its section.${c.reset}`);
     } else {
-      if (result.document) {
-        const d = result.document;
+      const documents = result.documents || (result.document ? [result.document] : []);
+      for (const d of documents) {
         console.log(`${c.green}✓ ${d.written ? 'RECORDED' : 'CURRENT'}${c.reset} ${d.path} reviewed at ${String(d.revision || '').slice(0, 12)}: ${d.references} referenced file(s) fingerprinted, ${d.excluded} excluded ${c.dim}(${DOC_REVIEWS_PATH})${c.reset}`);
       }
-      if ((result.accepted || result.pruned || []).length || !result.document) console.log(`${c.green}✓ ${result.status}${c.reset} ${(result.accepted || result.pruned || []).join(', ')}`);
+      if ((result.accepted || result.pruned || []).length || !documents.length) console.log(`${c.green}✓ ${result.status}${c.reset} ${(result.accepted || result.pruned || []).join(', ')}`);
     }
     return result;
   } catch (error) {
