@@ -314,3 +314,94 @@ Test-Spec now names both map headings in every repository where it blocks (R3, R
 | R6 | 0 / 0 / 0 | **Pass with 2 checks**: two documents' links to code; none of its 91 canonical documents and no requirement |
 
 - **Is the evidence true?** The applicability is defensible in all eight. The statement of what was examined is not: the "N document(s)" branch counts documents; "performed" adds documents and requirements, so 1140, 1109 and 2 say little; template placeholder rows count as requirements (R3); and on R6 a pass with no requirement reads as coverage the project does not have.
+
+---
+
+# Fourth run (T018g re-check)
+
+**Measured**: 2026-11-12 on `spec/097-strict-by-default` at "merge: group A fixes from the third proof pass (PR 661); task T018g done". One run per repository; the numbers that differ from the third run are all in rows these fixes touch. The originals' HEAD, full-status hash, stash-list hash and every stash entry's content hash are identical before and after.
+
+**Result: SC-001 is met. SC-003 is not met**, by one defect and one missing list entry (below).
+
+## Metadata-Sync
+
+R1 (public CLI) is now **skipped**: "declares a version, and no document states a version for this package in a form Metadata-Sync compares". The pre-commit framework's minimum version no longer counts, and the row no longer blocks. R2 to R7 are unchanged (skipped). R8 passes with 33 version references compared (real).
+
+## Requirement-Anchors
+
+- **R6 (large Next.js): skipped.** "The identifiers found are not requirements (15 decision, 1 open-item, 10 task, 3 other, 28 template identifiers …)".
+- **Placeholder rows ignored:** R2 1, R3 7, R4 1, R7 4. Each ID is listed once.
+- **Opened three ignored and three counted rows.**
+  - Ignored correctly (R3 template): "System MUST [capability]", a row ending "Measured via [tool]", "[Measurable user outcome]".
+  - Counted correctly (R3): two real requirements of a feature spec, plus one template default ("All endpoints require authentication | Validated by guard") with no slot, which is still counted and still draws one finding.
+  - **Ignored wrongly: real requirements.** R2 loses one requirement and R7 loses four, whose text contains `{file}`, `{name}` or `{count}` (a URL or key template inside prose). R4's single ignored row fits the same pattern. The curly and angle slot rule is too wide.
+
+## Traceability, all eight
+
+| Kind | Applies | Requirements examined | TRC004 (third run) |
+|---|---|---|---|
+| R8 DocGuard | Yes | 1187, pass | 0 |
+| R1 CLI | Yes | 25, pass | 0 |
+| R2 | Yes | 177, fail | 177 (178): one real requirement lost its finding |
+| R3 | Yes | 135, fail | 98 (105): seven template rows gone, correct |
+| R4 | Yes | 126, fail | 6 (6) |
+| R5 | Yes | 17, fail | 1 (1) |
+| R6 | **No** ("a document alone has none"); was a pass on 2 checks | 0 | 0 |
+| R7 | Yes | 1131, fail | 1 (1), plus **4 new TRC005** |
+
+The four new TRC005 on R7 are the defect above made visible: tests cite four requirements of a feature spec, and those requirements are now treated as not existing, so each test is reported as an orphan reference, under `standard` too. The inconsistency the build session suspected (only task or decision IDs, findings while `applies()` says no) does not appear: R6 is skipped with no findings.
+
+## Docs-Diff, Test-Spec, Environment, API-Surface on R6
+
+The text now offers the architecture mapping, with candidates, and prints the snippet with a placeholder path. The candidates are three files in the architecture folder; **the project's real architecture document, in that same folder, is not among them** (apparently capped at three) and two of the three are wrong. Test-Spec names the existing testing document and both headings. Environment and API-Surface print the snippet.
+
+## `standard` against `main`
+
+Exit 2 on all eight. Findings equal except:
+
+| Difference | Where | Status |
+|---|---|---|
+| Seven template-row TRC004 removed; two accepted draft-marker findings added | R3 | The removal is intended; **not on FR-019's list** |
+| One real-requirement TRC004 removed | R2 | **Defect** |
+| Four TRC005 added | R7 | **Defect** |
+
+Verdict-only: Traceability `pass` to `empty` (R6, the FR-004 case), Spec-Registry `empty` to `pass` (R7), Cross-Reference `pass` to `empty` (R5).
+
+## Strict, all eight
+
+| | strict exit | Blocking (third run) | Could not read (third run) |
+|---|---|---|---|
+| R1 | 4 | 3 (4) | 0 |
+| R2 | 4 | 2 | 3 |
+| R3 | 4 | 4 | 1 |
+| R4 | 4 | 3 | 1 |
+| R5 | 4 | 3 | 2 |
+| R6 | 4 | 5 | 0 (1) |
+| R7 | 4 | 3 | 0 |
+| R8 | 2 | 0 | 0 |
+
+23 validators block; 7 could not read; no error-level finding.
+
+## Final SC-001 table
+
+All 23 are applicable and every fix leads to a good check.
+
+| Kind | Validator | Fix leads to |
+|---|---|---|
+| R1 CLI | Doc-Dependency, Requirement-Anchors, Surface-Sync | Real check |
+| R2 | Doc-Dependency, Requirement-Anchors | Real check |
+| R3 | Test-Spec, Doc-Dependency, Requirement-Anchors | Real check |
+| R3 | API-Surface | Generated document; then leaves the list (partial) |
+| R4 | Doc-Dependency, Requirement-Anchors | Real check |
+| R4 | API-Surface | Generated document; then leaves the list |
+| R5 | Test-Spec, Doc-Dependency, Requirement-Anchors | Real check |
+| R6 | Test-Spec, Doc-Dependency | Real check |
+| R6 | Environment, Docs-Diff, API-Surface | Generated document, real afterwards |
+| R7 | Test-Spec, Doc-Dependency, Requirement-Anchors | Real check |
+
+## Criteria
+
+- **SC-001: met.** 23 of 23 applicable with a working fix.
+- **SC-003: not met.** Exit codes are equal, but the Traceability change moves findings under `standard` beyond FR-019's list:
+  1. R2 and R7: the slot rule drops real requirements (one TRC004 lost, four false TRC005 added). Fix the rule so a `{name}` or `<region>` inside prose is not a template slot.
+  2. R3: the removal of template-row findings is intended; add it to FR-019.
