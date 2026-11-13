@@ -2806,7 +2806,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -2827,8 +2827,26 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "cf765a3311c23e38a008f027666bf045c5b16314",
+          "outcomes": [
+            {
+              "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
+              "reason": "Reviewed on main at 9fea8e5 plus this branch. The adopter scenario runs with no hand edit of the registry in one closing commit that passes guard at every commit. Squash and rebase leave SPR008 silent; changed evidence names its files. SPR010 flagged 0 of 92 specs here and 0 of 10 other repositories. Blob ids ride on the spec's outcome line because 0.48.0 rejects any new registry key. No benchmark pair for SPR010, as for SPR006 to SPR009.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -2855,7 +2873,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:30c9dc9e8f1833d1c986e8fb245a1b9bcea458de30fa374858ffb11cc4fcc320"
+            "digest": "sha256:62ce0bdc83c4c99cd6d9f8308c46afb78a3ec6734ee212ed9547453d3c68119c"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
@@ -2863,11 +2881,11 @@
           },
           {
             "path": "specs/101-completion-one-commit/tasks.md",
-            "digest": "sha256:c4e7a2fd92ce0b6478fa57878208931a5a328bc4130562d4c82dee320f7bd01e"
+            "digest": "sha256:c288db50a7fc325c6d7b3c53814458267e5a4ee26c32e56dbc6d6372f0e7c368"
           }
         ],
         "taskCompletion": {
-          "checked": 10,
+          "checked": 11,
           "total": 11
         },
         "implementationEvidence": [

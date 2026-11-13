@@ -106,3 +106,9 @@ Reported in the pull request, not as criteria: which tests of `tests/spec-comple
 - Moving the SPR008 or DLC002 gate itself: they stay warnings under the same rules.
 - Retiring or archiving a completed spec.
 - A `schemaVersion` bump: 0.48.0 refuses it.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `cf765a3311c23e38a008f027666bf045c5b16314` — Reviewed on main at 9fea8e5 plus this branch. The adopter scenario runs with no hand edit of the registry in one closing commit that passes guard at every commit. Squash and rebase leave SPR008 silent; changed evidence names its files. SPR010 flagged 0 of 92 specs here and 0 of 10 other repositories. Blob ids ride on the spec's outcome line because 0.48.0 rejects any new registry key. No benchmark pair for SPR010, as for SPR006 to SPR009. Evidence: `cli/commands/specs.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/scanners/spec-registry.mjs`, `cli/validators/spec-registry.mjs`, `cli/writers/spec-outcomes.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `docs-canonical/DATA-MODEL.md`, `tests/spec-completion-one-commit.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/specs.mjs`=`0639a2cc1c860a0d9c4436cc938c54a5862446be`, `cli/scanners/revision-anchor.mjs`=`3dee72bad313c7fe54878ff134ded470061ed0f5`, `cli/scanners/spec-registry.mjs`=`4d17c435e72e955e5e0f59d291329cb499930e92`, `cli/validators/spec-registry.mjs`=`ff21b5f3ea625a736cd3c638cec18bcd8c482b26`, `cli/writers/spec-outcomes.mjs`=`512db60a622bedf494e65c010209ae503b0ec011`, `docs-canonical/ARCHITECTURE.md`=`592bbb53986d987ad82da8288d26da1a2356f8e0`, `docs-canonical/CI-RECIPES.md`=`76b39ca2b32a6b70421e8e3296f805d22a925646`, `docs-canonical/DATA-MODEL.md`=`1316de9bf793c458480d09652473330398de3001`, `tests/spec-completion-one-commit.test.mjs`=`ca3efebb214751e862543e4154cf14ebfea02446`.
+<!-- docguard:implementation-outcomes:end -->

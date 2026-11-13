@@ -21,4 +21,4 @@
 
 - [x] T009 SPR010 measured on this repository and the other repositories with a registry.
 - [x] T010 `npm test`, the CI lint, `guard`, the benchmark baseline.
-- [ ] T011 Complete this spec with the new flow (flags, one commit, no hand edit) and simulate the squash merge in a scratch clone (SC-003).
+- [x] T011 Complete this spec with the new flow (flags, one commit, no hand edit) and simulate the squash merge in a scratch clone (SC-003).
