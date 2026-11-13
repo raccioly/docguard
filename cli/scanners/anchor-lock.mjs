@@ -8,9 +8,15 @@
  * JSON Lines, not JSON, because two branches that each review links of the
  * same spec must merge without a conflict: `.gitattributes` declares the file
  * `merge=union`, and a union merge works line by line. The cost of union is
- * that it can keep two different lines for one key; the reader treats that as
- * a conflict (ANC009) and the link as unreviewed, so a bad merge fails closed.
+ * that it keeps two different lines when both branches reviewed the same key.
+ * The reader keeps every distinct line (`variants`) and the caller resolves
+ * them against the link as it is now (`resolveEntry` in anchors.mjs): the line
+ * whose fingerprints match is the review, the others are superseded. A
+ * duplicate is never an error. Every writer writes one line per key.
  * Identical duplicates and a duplicated header (both sides keep it) collapse.
+ * A lock that still carries git conflict markers is unreadable here (ANC005);
+ * `docguard anchors merge --write` resolves it.
+ * (Spec: specs/102-anchor-lock-merge, docguard.anchor-lock-merge#FR-001.)
  *
  * The lock records only the latest accept per key. Earlier accepts are in
  * `git log -p -- .docguard-anchor-lock.jsonl`, an audit trail with no cap.
@@ -18,6 +24,8 @@
  * @implements docguard.requirement-anchors#FR-016
  * @implements docguard.requirement-anchors#FR-017
  * @implements docguard.requirement-anchors#FR-018
+ * @implements docguard.anchor-lock-merge#FR-001
+ * @implements docguard.anchor-lock-merge#FR-005
  */
 
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
@@ -75,13 +83,91 @@ export function entryProblem(entry) {
   return null;
 }
 
+const MARKER_OPEN = /^<{7}(?: |$)/;
+const MARKER_BASE = /^\|{7}(?: |$)/;
+const MARKER_MID = /^={7}$/;
+const MARKER_CLOSE = /^>{7}(?: |$)/;
+const isMarker = text => MARKER_OPEN.test(text) || MARKER_BASE.test(text) || MARKER_MID.test(text) || MARKER_CLOSE.test(text);
+
+/** The one thing to do about a lock that carries git conflict markers. */
+export const MERGE_COMMAND = 'docguard anchors merge --write';
+
+/**
+ * Parse the lock's text. Pure: no file, no link, no clock.
+ *
+ * `markers: 'refuse'` (the reader) treats a git conflict marker as an error;
+ * `markers: 'drop'` (`anchors merge`) keeps both sides, drops the marker lines
+ * and the `|||||||` base section of a diff3 style, so a review removed on one
+ * side is not resurrected from the common ancestor.
+ *
+ * @returns {{ error: string|null, byKey: Map<string, object[]>, entryLines: number, markersRemoved: number }}
+ *   `byKey`: every key with its distinct entries (identical after key sorting
+ *   count once), in file order.
+ */
+export function parseAnchorLock(raw, { markers = 'refuse' } = {}) {
+  const lines = raw.split('\n');
+  const byKey = new Map(); // key → [{ text, entry }]
+  let header = false;
+  let entryLines = 0;
+  let markersRemoved = 0;
+  let inBase = false;
+  const headerText = stableLine(LOCK_HEADER);
+  const failed = error => ({ error, byKey: new Map(), entryLines: 0, markersRemoved: 0 });
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i].trim();
+    if (!text) continue;
+    if (isMarker(text)) {
+      if (markers !== 'drop') return failed(`${ANCHOR_LOCK_PATH}:${i + 1} is a git conflict marker; run \`${MERGE_COMMAND}\` to keep both sides and resolve them`);
+      markersRemoved++;
+      if (MARKER_BASE.test(text)) inBase = true;
+      else if (MARKER_MID.test(text) || MARKER_CLOSE.test(text)) inBase = false;
+      continue;
+    }
+    if (inBase) continue;
+    let value;
+    try { value = JSON.parse(text); } catch (e) {
+      return failed(`${ANCHOR_LOCK_PATH}:${i + 1} is not valid JSON (${e.message})`);
+    }
+    if (value && value.kind !== undefined && value.key === undefined) {
+      if (stableLine(value) !== headerText) {
+        return failed(`${ANCHOR_LOCK_PATH}:${i + 1} has an unsupported header ${JSON.stringify(value)}; this DocGuard reads ${headerText}`);
+      }
+      header = true;
+      continue;
+    }
+    const problem = entryProblem(value);
+    if (problem) return failed(`${ANCHOR_LOCK_PATH}:${i + 1}: ${problem}`);
+    entryLines++;
+    const canonical = stableLine(value);
+    const list = byKey.get(value.key) || [];
+    if (!list.some(x => x.text === canonical)) list.push({ text: canonical, entry: value });
+    byKey.set(value.key, list);
+  }
+  if (!header) return failed(`${ANCHOR_LOCK_PATH} has no header line ${headerText}`);
+  return { error: null, byKey: new Map([...byKey].map(([key, list]) => [key, list.map(x => x.entry)])), entryLines, markersRemoved };
+}
+
+/** The entry that stands when nothing says otherwise: the newest `date` (a day), then the last in file order. */
+export function newestEntry(entries) {
+  let best = entries[0];
+  for (const e of entries) if (e.date >= best.date) best = e;
+  return best;
+}
+
 /**
  * Read the lock.
- * @returns {{ exists: boolean, error: string|null, links: Map<string, object>, dispositions: Map<string, object>, conflicts: { key: string, lines: number[] }[] }}
+ *
+ * `links` and `dispositions` hold one entry per key: for a key with several
+ * distinct lines, the newest. `variants` lists those keys with every line, so
+ * a caller that knows the link as it is now can choose better
+ * (`resolveLockLinks` in anchors.mjs). `collapsed` is the number of entry
+ * lines beyond one per key. `conflicts` is always empty: a duplicate is no
+ * longer a conflict (kept so callers that read it keep working).
+ * @returns {{ exists: boolean, error: string|null, links: Map<string, object>, dispositions: Map<string, object>, variants: Map<string, object[]>, collapsed: number, conflicts: [] }}
  */
 export function readAnchorLock(projectDir) {
   const path = resolve(projectDir, ANCHOR_LOCK_PATH);
-  const empty = { exists: false, error: null, links: new Map(), dispositions: new Map(), conflicts: [] };
+  const empty = { exists: false, error: null, links: new Map(), dispositions: new Map(), variants: new Map(), collapsed: 0, conflicts: [] };
   if (!existsSync(path)) return empty;
   let raw;
   try {
@@ -92,43 +178,21 @@ export function readAnchorLock(projectDir) {
   } catch (e) {
     return { ...empty, exists: true, error: `${ANCHOR_LOCK_PATH} cannot be read: ${e.message}` };
   }
-  const lines = raw.split('\n');
-  const seen = new Map(); // key → { line, text, entry }
-  const conflicted = new Map(); // key → line numbers
-  let header = false;
-  const headerText = stableLine(LOCK_HEADER);
-  for (let i = 0; i < lines.length; i++) {
-    const text = lines[i].trim();
-    if (!text) continue;
-    let value;
-    try { value = JSON.parse(text); } catch (e) {
-      return { ...empty, exists: true, error: `${ANCHOR_LOCK_PATH}:${i + 1} is not valid JSON (${e.message})` };
-    }
-    if (value && value.kind !== undefined && value.key === undefined) {
-      if (stableLine(value) !== headerText) {
-        return { ...empty, exists: true, error: `${ANCHOR_LOCK_PATH}:${i + 1} has an unsupported header ${JSON.stringify(value)}; this DocGuard reads ${headerText}` };
-      }
-      header = true;
-      continue;
-    }
-    const problem = entryProblem(value);
-    if (problem) return { ...empty, exists: true, error: `${ANCHOR_LOCK_PATH}:${i + 1}: ${problem}` };
-    const canonical = stableLine(value);
-    const prior = seen.get(value.key);
-    if (!prior) { seen.set(value.key, { line: i + 1, text: canonical, entry: value }); continue; }
-    if (prior.text === canonical) continue; // identical duplicate from a union merge
-    if (!conflicted.has(value.key)) conflicted.set(value.key, [prior.line]);
-    conflicted.get(value.key).push(i + 1);
-  }
-  if (!header) return { ...empty, exists: true, error: `${ANCHOR_LOCK_PATH} has no header line ${headerText}` };
+  return lockFromText(raw, empty);
+}
+
+/** The reader's result for already-read text (`anchors merge` reads it once). */
+export function lockFromText(raw, empty = { exists: true, error: null, links: new Map(), dispositions: new Map(), variants: new Map(), collapsed: 0, conflicts: [] }, options = {}) {
+  const parsed = parseAnchorLock(raw, options);
+  if (parsed.error) return { ...empty, exists: true, error: parsed.error };
   const links = new Map();
   const dispositions = new Map();
-  for (const [key, { entry }] of seen) {
-    if (conflicted.has(key)) continue; // fail closed: neither side counts
-    (key.startsWith('disposition|') ? dispositions : links).set(key, entry);
+  const variants = new Map();
+  for (const [key, entries] of parsed.byKey) {
+    if (entries.length > 1) variants.set(key, entries);
+    (key.startsWith('disposition|') ? dispositions : links).set(key, newestEntry(entries));
   }
-  const conflicts = [...conflicted].map(([key, lineNumbers]) => ({ key, lines: lineNumbers })).sort((a, b) => (a.key < b.key ? -1 : 1));
-  return { exists: true, error: null, links, dispositions, conflicts };
+  return { exists: true, error: null, links, dispositions, variants, collapsed: parsed.entryLines - parsed.byKey.size, conflicts: [], markersRemoved: parsed.markersRemoved };
 }
 
 /** The lock's text: header, then entries sorted by key, then a newline. */

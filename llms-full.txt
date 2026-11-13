@@ -651,8 +651,13 @@ branches that review links of the same spec merge without a conflict:
 
 `docguard anchors accept … --gitattributes` adds that line; DocGuard never
 edits `.gitattributes` without the flag. If a union merge keeps two different
-lines for one link, guard reports ANC009 and treats the link as unreviewed
-until someone accepts it again.
+lines for one link, DocGuard reads the one whose recorded fingerprints match
+the code and the requirement as they are now, so the merge never fails a gate
+by itself; the link needs review (ANC001 or ANC002) only when neither line
+matches. The next `accept` writes one line per link, and `docguard anchors
+merge --write` does the same without accepting anything. Without the union
+line, a merge that conflicts in the lock leaves git conflict markers (ANC005);
+`docguard anchors merge --write` keeps both sides and resolves them.
 
 **Adoption.** Run `docguard anchors accept --baseline --bulk --reason "<why>"`
 once, and commit the lock. Baselined links are never counted as reviewed;
@@ -733,12 +738,7 @@ Regenerate installed hooks after upgrading to pick up changes in hook behavior. 
 | External precision corpus | Public read-only Git fetch | Network access to exact pinned commits; no project script execution |
 | Scheduled review | Repository read | Notification or publication only when explicitly configured |
 
-## Action inputs reference
-
-`action.yml` is the authoritative composite-action input contract. Review command selection, CLI version (`docguard-version`; empty installs the version the action release was published with), warning policy, score threshold, working directory, and optional commit/comment flags. Pin the action to a reviewed commit and retain the corresponding release label for maintenance.
-
-
-<!-- truncated: 4 more lines — read docs-canonical/CI-RECIPES.md directly -->
+<!-- truncated: 9 more lines — read docs-canonical/CI-RECIPES.md directly -->
 
 ---
 
@@ -1044,9 +1044,14 @@ This file holds the reviewed state of links. Normative schema:
 
 **Reading and writing:**
 - The reader accepts any line order. Identical duplicates collapse.
-- Two different lines for one key are a conflict (ANC009), and the link
-  reads as unreviewed.
-- Only `docguard anchors accept` writes the file.
+- Two different lines for one key (a union merge of two reviews) are read
+  together: the line whose fingerprints match the link as it is now stands; if
+  several match, the newest `date` (then the last line) stands; if none
+  matches, the link is suspect as one stale entry would be. There is no
+  conflict code (ANC009 is no longer reported; spec 102).
+- Every writer (`docguard anchors accept`, `accept --remove`, `disposition`,
+  `merge --write`) writes one line per key, sorted by key. Nothing else writes
+  the file.
 
 **Link state:** derived from the lock and the current fingerprints.
 
@@ -1141,12 +1146,7 @@ leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding p
 
 ### Suppression model
 
-`docguard ignore --format json` (`collectSuppressions`,
-`cli/scanners/suppressions.mjs`) lists every native suppression:
-
-| Field | Meaning |
-
-<!-- truncated: 317 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 322 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1727,7 +1727,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
-| `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize, union-merge conflicts) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-lock.mjs` (anchor lock read/serialize) | `tests/requirement-anchors-lock.test.mjs` | ✅ |
+| `cli/scanners/anchor-lock.mjs`, `cli/scanners/anchors.mjs`, `cli/commands/anchors.mjs` (duplicate lines resolved by current content, one line per link on every write, `anchors merge`, conflict markers, 0.48.0 compatibility) | `tests/anchor-lock-merge.test.mjs` | ✅ |
 | `tools/anchor-churn-replay.mjs`, anchor failure policy (`failOn`), SPC007 own-spec exemption | `tests/requirement-anchors-policy.test.mjs` | ✅ |
 | Anchor rename/move carry-over | `tests/requirement-anchors-rename.test.mjs` | ✅ |
 | Anchor ripple; `reverseImportAncestors` / `reverseImportIndex` shared with `impact` | `tests/requirement-anchors-ripple.test.mjs`, `tests/impact-walk-relocation.test.mjs`, `tests/impact.test.mjs` | ✅ |
@@ -2017,6 +2018,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Fixed
+
+- **The anchor lock merges cleanly: two lines for one link, left by a union
+  merge or rebase, are resolved instead of refused (spec 102,
+  `docguard.anchor-lock-merge`).** This change REMOVES findings and moves one.
+  - **Removed.** `ANC009` ("conflicting entries for one link") is no longer
+    reported, and no longer fails a gate. DocGuard keeps the line whose recorded
+    fingerprints match the code and the requirement as they are now and ignores
+    the others; if several match, the newest `date` stands, then the last line.
+    The code stays registered, so `findingSeverity` entries and `explain ANC009`
+    keep working.
+  - **Moved.** When no line matches (both branches reviewed the link, then the
+    merge produced code neither saw), the link is reported as `ANC001` or
+    `ANC002` with its `docguard anchors accept` command, where `ANC009` alone
+    used to appear. That is a link that does need a review.
+  - **Fixed.** `anchors accept` and `anchors disposition` dropped every
+    conflicted key they did not rewrite, so a reviewed link became `ANC004`
+    (info). Every writer now leaves one line per link, in order.
+  - **Added.** `docguard anchors merge --check` (exit 2 when the lock is not one
+    line per link) and `--write` (normalize it, list each link that still needs
+    review with its `anchors accept --file …` command). It also resolves git
+    conflict markers, so a project that dropped `merge=union` repairs a
+    conflicted lock in one command: `docguard anchors merge --write`. Guard
+    reports a lock with markers as `ANC005` and names that command.
+  - The lock format is unchanged; 0.48.0 reads what this version writes.
 
 ### Added
 
@@ -2383,34 +2410,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **A shallow checkout no longer fails the build under strict.**
-  `actions/checkout` fetches one commit, which hides the git history Freshness
-  reads; that is a property of the checkout, not of the project's documents. A
-  validator, or an agent-instruction document whose review point is not in the
-  clone, now has the new empty cause `history-unavailable`: it is listed under
-  "DocGuard could not read" with the fix (`fetch-depth: 0` on
-  `actions/checkout`, `GIT_DEPTH: 0` on GitLab) on every run, and the exit code
-  is unchanged. A complete repository with fewer than three commits, and a
-  document with no review record at all, still block as before
-  (`docguard.strict-by-default` FR-007, FR-005).
-- **`review --accept` with several paths** recorded only the first and exited 0.
-  It now records every path in one transaction, or refuses all of them, writes
-  nothing, and names the path it could not accept (T028a).
-- **A strict row for unexamined documents said "Freshness is pass".** The
-  Adopt block, `docguard upgrade` and the could-not-read block now say
-  "Freshness did not examine N document(s) (cause)" (T028a).
 
-- **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
-  decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and
-  requirement documents; not decision records, open-item or task lists, templates,
-  task, design-element, story or acceptance IDs) and what is a template row
-  (`[slot]`, `<slot>`, `{{slot}}`, `TBD`, or no text). Requirement-Anchors' branch for
-  IDs in a form the scanner does not read now uses it, so decision, open-item and task
-  IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
-  template documents are not requirements; the evidence lists each ID once.
-
-- **A template row is a row whose only content is the slot.** The slot rule dropped real
-
-<!-- truncated: 6641 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6667 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2968,8 +2969,12 @@ extensions/spec-kit-docguard/
   the change, then run `docguard anchors accept --link '<key>'` (or
   `--file <path> --bulk` for a file you changed) with a `--reason` that says
   what you checked. Accept only links in files your change touched. The lock
-  merges with `merge=union`: after a rebase, ANC009 means two lines for one
-  link, so restore `origin/main`'s lock and re-accept only your own files.
+  merges with `merge=union`, so a merge or rebase never conflicts in it. When
+  both sides reviewed one link, DocGuard keeps the line that matches the code
+  now and ignores the other; a link is reported only if neither matches, and
+  you accept it as above. Run `docguard anchors merge --write` to write one
+  line per link (it also resolves git conflict markers if the lock ever
+  conflicts). Do not restore `origin/main`'s lock by hand.
   CODEOWNERS sends every lock change to a maintainer
   (specs/070-requirement-anchors, CI-RECIPES.md Recipe 3f).
 - Run `docguard guard` before pushing — all checks must pass

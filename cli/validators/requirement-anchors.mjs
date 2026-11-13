@@ -17,6 +17,7 @@
 
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { revisionResolves } from '../scanners/doc-deps.mjs';
+import { MERGE_COMMAND } from '../scanners/anchor-lock.mjs';
 import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
 import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
 import { readFileSync } from 'node:fs';
@@ -47,7 +48,6 @@ const CODES = {
   ANC005: { severity: 'error', disposition: 'act' },
   ANC007: { severity: 'warn', disposition: 'act' },
   ANC008: { severity: 'warn', disposition: 'act' },
-  ANC009: { severity: 'warn', disposition: 'act' },
   ANC010: { severity: 'warn', disposition: 'escalate' },
 };
 
@@ -59,10 +59,11 @@ function suggestionFor(projectDir, p) {
     }
     case 'ANC002': return { kind: 'review', text: `Read the new requirement text against the code, then run \`${acceptCommand(p.key)}\`` };
     case 'ANC003': return { kind: 'review', text: 'Restore the tag where the requirement is now implemented, or remove the link with `docguard anchors accept --remove <key> --reason "…"`' };
-    case 'ANC005': return { kind: 'review', text: `Restore ${ANCHOR_LOCK_PATH} from git, or delete it and baseline again with \`docguard anchors accept --baseline --bulk --reason "…"\`` };
+    case 'ANC005':
+      if (/git conflict marker/.test(p.message || '')) return { kind: 'fix', text: `Keep both sides and resolve them with \`${MERGE_COMMAND}\`, then review the links it lists`, command: MERGE_COMMAND };
+      return { kind: 'review', text: `Restore ${ANCHOR_LOCK_PATH} from git, or delete it and baseline again with \`docguard anchors accept --baseline --bulk --reason "…"\`` };
     case 'ANC007': return { kind: 'review', text: 'Qualify the tag with the Spec ID that declares the requirement, fix the ID, or remove the tag' };
     case 'ANC008': return { kind: 'review', text: 'Point the tag at the requirement that replaced the retired one, or remove it' };
-    case 'ANC009': return { kind: 'review', text: 'Review the link, then accept it again; that rewrites one entry and resolves the conflict' };
     default: return { kind: 'review', text: 'Install the missing parser or fix the file; untrack a committed .docguard/ with `git rm --cached -r .docguard`' };
   }
 }

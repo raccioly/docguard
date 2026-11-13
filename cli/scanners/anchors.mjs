@@ -33,7 +33,7 @@ import { buildIgnoreFilter, compileGlob, relPosix, walkFiles } from '../shared-i
 import { fileContentAtRev, listTrackedFiles } from '../shared-git.mjs';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { openAnchorCache, contentSha } from './anchor-cache.mjs';
-import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, gitattributesDeclaresUnion, readAnchorLock } from './anchor-lock.mjs';
+import { ANCHOR_LOCK_PATH, GITATTRIBUTES_LINE, MERGE_COMMAND, gitattributesDeclaresUnion, newestEntry, readAnchorLock } from './anchor-lock.mjs';
 import { FILE_TIER, importSettings, orphanCandidates, pythonCandidateLines, resolveFileAnchors, tagHint, volatileLinesFor } from './anchor-tags.mjs';
 import { BABEL_TIER, V1_PREFIX, dg1 } from './fingerprint.mjs';
 import { PATTERN_ALGO, languageOf } from './pattern-lexer.mjs';
@@ -415,6 +415,54 @@ export function compareEntry(entry, link) {
   return { verdict: 'suspect', side: !codeSame && !reqSame ? 'both' : !codeSame ? 'code' : 'requirement', tierChanged: !sameTier };
 }
 
+/**
+ * Which of several lines for one link stands (docguard.anchor-lock-merge#FR-002).
+ * A line matches when `compareEntry` finds the link as it was when recorded:
+ * the exact fingerprints at the same tier, the floor when the tier changed. The
+ * newest matching line stands (newest `date`, then last in file order); with
+ * none matching, the newest line stands and the link is suspect as one stale
+ * entry would be. A line this version cannot compare never beats one it can.
+ *
+ * @implements docguard.anchor-lock-merge#FR-002
+ */
+export function resolveEntry(candidates, link) {
+  if (candidates.length === 1) return candidates[0];
+  const matching = candidates.filter(entry => {
+    const verdict = compareEntry(entry, link).verdict;
+    return verdict !== 'suspect' && verdict !== 'unverifiable';
+  });
+  return newestEntry(matching.length ? matching : candidates);
+}
+
+/**
+ * The lock's link entries, one per key, with every key that has several lines
+ * resolved against the link as it is now. A key with no current link keeps the
+ * reader's choice (newest `date`, then file order).
+ */
+export function resolveLockLinks(lock, linksByKey) {
+  const out = new Map(lock.links);
+  for (const [key, candidates] of lock.variants) {
+    if (lock.dispositions.has(key)) continue; // no fingerprints to compare
+    const link = linksByKey.get(key);
+    if (link) out.set(key, resolveEntry(candidates, link));
+  }
+  return out;
+}
+
+/**
+ * The lock as every writer must see it (docguard.anchor-lock-merge#FR-003):
+ * one entry per key, duplicates resolved against the current links. The links
+ * are computed afresh (never from the cache) and only when a key has several
+ * lines.
+ * @implements docguard.anchor-lock-merge#FR-003
+ */
+export function readResolvedLock(projectDir, config = {}) {
+  const lock = readAnchorLock(projectDir);
+  if (lock.error || lock.variants.size === 0) return { ...lock, resolved: lock.links };
+  const current = computeLinks(projectDir, config, { noCache: true }).links;
+  return { ...lock, resolved: resolveLockLinks(lock, new Map(current.map(l => [l.key, l]))) };
+}
+
 const describeLink = l => `${l.requirement} → ${l.file}${l.scope === 'file' ? '' : ` ${l.anchor}`}`;
 
 /**
@@ -427,7 +475,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
   const lock = readAnchorLock(projectDir);
   const problems = [...base.problems];
   const notes = [];
-  const lockSummary = { path: ANCHOR_LOCK_PATH, exists: lock.exists, entries: lock.links.size, error: lock.error, conflicts: lock.conflicts.length };
+  const lockSummary = { path: ANCHOR_LOCK_PATH, exists: lock.exists, entries: lock.links.size, error: lock.error, conflicts: lock.conflicts.length, duplicateLines: lock.collapsed, resolvedKeys: lock.variants.size };
   if (lock.error) {
     problems.push({ code: 'ANC005', file: ANCHOR_LOCK_PATH, line: null, tier: 'file', confidence: 'high', message: lock.error });
     return { ...base, problems, lock: lockSummary, lost: [], notes,
@@ -437,10 +485,10 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     notes.push(`.gitattributes does not declare the anchor lock merge=union, so two branches that review links can conflict. Add the line \`${GITATTRIBUTES_LINE}\`, or run \`docguard anchors accept … --gitattributes\`.`);
   }
   if (lock.exists) notes.push('DocGuard records reasons and bulk flags but authenticates nobody: require human review of .docguard-anchor-lock.jsonl through CODEOWNERS.');
-  const conflicted = new Set(lock.conflicts.map(c => c.key));
-  for (const c of lock.conflicts) {
-    problems.push({ code: 'ANC009', file: ANCHOR_LOCK_PATH, line: c.lines[0], tier: 'file', confidence: 'high',
-      message: `${ANCHOR_LOCK_PATH} records ${c.key} on lines ${c.lines.join(' and ')} with different content (usually a union merge of two reviews); the link is treated as unreviewed until it is accepted again` });
+  // A key with several lines is resolved against the link as it is now; a duplicate is never a finding.
+  const lockEntries = resolveLockLinks(lock, new Map(base.links.map(l => [l.key, l])));
+  if (lock.collapsed > 0) {
+    notes.push(`${ANCHOR_LOCK_PATH} holds ${lock.collapsed} duplicate line(s) left by a union merge; they are resolved when read, and \`${MERGE_COMMAND}\` (or the next \`docguard anchors accept\`) writes one line per link.`);
   }
   const current = new Set(base.links.map(l => l.key));
   const links = base.links.map(link => {
@@ -449,8 +497,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
         message: `@${link.verb} at ${link.file}:${link.tagLine} cites ${link.requirement}, a requirement of a retired or superseded spec; point it at the requirement that replaced it, or remove it` });
       return { ...link, state: 'retired-target' };
     }
-    if (conflicted.has(link.key)) return { ...link, state: 'suspect', side: 'conflict' };
-    const entry = lock.links.get(link.key);
+    const entry = lockEntries.get(link.key);
     // FR-038: OpenFastTrace's "outdated": the tag covers an older revision than the mapping expects.
     if (link.imported?.outdated) {
       const { revision, expected } = link.imported.outdated;
@@ -495,7 +542,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     unreviewedByCode.set(k, [...(unreviewedByCode.get(k) || []), l]);
   }
   const claims = new Map(); // candidate key → lost entry keys that point at it
-  const orphaned = [...lock.links].filter(([key]) => !current.has(key));
+  const orphaned = [...lockEntries].filter(([key]) => !current.has(key));
   for (const [key, entry] of orphaned) {
     const candidates = unreviewedByCode.get(`${entry.requirement}\u0000${entry.code}`) || [];
     if (candidates.length === 1) claims.set(candidates[0].key, [...(claims.get(candidates[0].key) || []), key]);
@@ -506,7 +553,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     movedTo.set(oldKeys[0], links.find(l => l.key === candidateKey));
   }
   for (const [oldKey, target] of movedTo) {
-    const entry = lock.links.get(oldKey);
+    const entry = lockEntries.get(oldKey);
     const index = links.indexOf(target);
     links[index] = { ...target, state: 'moved', entry, reviewedState: entry.state, movedFrom: oldKey };
     const unreviewedNote = problems.findIndex(p => p.code === 'ANC004' && p.file === target.file && p.line === target.tagLine && p.message.startsWith(target.requirement));
@@ -514,7 +561,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
     notes.push(`${target.requirement} moved from ${entry.file}${entry.scope === 'file' ? '' : ` ${entry.anchor}`} to ${target.file}${target.scope === 'file' ? '' : ` ${target.anchor}`} with its code unchanged; its ${entry.state} review carries over until the next accept rewrites the key.`);
   }
   const lost = [];
-  for (const [key, entry] of lock.links) {
+  for (const [key, entry] of lockEntries) {
     if (current.has(key) || movedTo.has(key)) continue;
     const exists = base.requirements?.has(entry.requirement);
     const retired = !exists && base.retired?.has(entry.requirement);
@@ -530,7 +577,7 @@ export function computeAnchorStatus(projectDir, config = {}, options = {}) {
   for (const l of [...links, ...lost]) byState[l.state] = (byState[l.state] || 0) + 1;
   const baselined = byState.baselined || 0;
   const summary = { ...base.summary, byState, baselinedShare: links.length ? Number((baselined / links.length).toFixed(3)) : 0 };
-  return { ...base, links, lost, problems, lock: lockSummary, notes, summary };
+  return { ...base, links, lost, problems, lock: lockSummary, lockEntries, notes, summary };
 }
 
 /** A code-side suspect: the anchored code changed since its review (FR-032). */

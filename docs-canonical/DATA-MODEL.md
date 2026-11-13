@@ -297,9 +297,14 @@ This file holds the reviewed state of links. Normative schema:
 
 **Reading and writing:**
 - The reader accepts any line order. Identical duplicates collapse.
-- Two different lines for one key are a conflict (ANC009), and the link
-  reads as unreviewed.
-- Only `docguard anchors accept` writes the file.
+- Two different lines for one key (a union merge of two reviews) are read
+  together: the line whose fingerprints match the link as it is now stands; if
+  several match, the newest `date` (then the last line) stands; if none
+  matches, the link is suspect as one stale entry would be. There is no
+  conflict code (ANC009 is no longer reported; spec 102).
+- Every writer (`docguard anchors accept`, `accept --remove`, `disposition`,
+  `merge --write`) writes one line per key, sorted by key. Nothing else writes
+  the file.
 
 **Link state:** derived from the lock and the current fingerprints.
 

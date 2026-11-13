@@ -21,9 +21,13 @@
 4. **Reading.** The reader accepts any order.
 5. **Duplicate keys.**
    - Identical duplicates collapse into one.
-   - Differing duplicates produce ANC009. The link is then compared as if it
-     had no entry, and is reported as suspect.
-   - The next accept rewrites the key, which resolves the conflict.
+   - Differing duplicates are resolved against the link as it is now: the line
+     whose fingerprints match stands (the newest `date`, then the last line,
+     if several match); with none matching the newest stands and the link is
+     suspect as one stale entry would be. ANC009 is no longer reported.
+     *(Amended 2026-11-13 by `docguard.anchor-lock-merge`.)*
+   - Every write leaves one line per key, and `docguard anchors merge --write`
+     does it without accepting anything.
 6. **Validation.** Every entry is checked against
    `schemas/docguard-anchor-lock.schema.json`. A malformed line produces
    ANC005 with the line number.

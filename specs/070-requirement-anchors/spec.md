@@ -170,7 +170,10 @@ An accept clears exactly the accepted link.
 8. **Given** two branches that each accept different links of the same spec,
    **When** git merges them, **Then** the lock merges without conflict. If
    both branches wrote the same key with different content, the link reads as
-   suspect and a finding names both entries.
+   suspect and a finding names both entries. *(Amended 2026-11-13 by
+   `docguard.anchor-lock-merge`: the line that matches the merged code and
+   requirement stands and nothing is reported; the link is suspect, with the
+   normal ANC001 or ANC002, only when neither matches.)*
 9. **Given** a baselined or reviewed link whose tag is gone while its
    requirement still exists, **Then** the link is lost. `anchors accept --remove <key> --reason`
    removes it.
@@ -616,7 +619,11 @@ is reported unavailable and the pattern tier is used.
     transaction. Without that flag, DocGuard MUST NOT modify `.gitattributes`
     (Constitution VI).
   - A key that appears twice with different content MUST read as suspect and
-    produce a finding naming both entries.
+    produce a finding naming both entries. *(Amended 2026-11-13 by
+    `docguard.anchor-lock-merge`: a key with several lines is resolved against
+    the current code and requirement, the line that matches stands, and a link
+    is reported only when none matches, as ANC001 or ANC002. ANC009 is no
+    longer reported.)*
   - The shapes of `.docguard-specs.json` and `.docguard-doc-lock.json` MUST
     NOT change.
 - **FR-018**: A lock that fails to parse, or whose schema version is
@@ -656,7 +663,7 @@ is reported unavailable and the pattern tier is used.
   | ANC006 | Ambiguous or unresolved scope | info | act |
   | ANC007 | Tag cites a requirement that does not exist | warn | act |
   | ANC008 | Tag cites a retired or superseded requirement | warn | act |
-  | ANC009 | Conflicting duplicate lock key | warn | act |
+  | ANC009 | Conflicting duplicate lock key (no longer reported since 2026-11-13, `docguard.anchor-lock-merge`) | warn | act |
   | ANC010 | Tier unavailable, unverifiable, or stale cache | warn | escalate |
 
 #### Commands and writes
@@ -664,7 +671,7 @@ is reported unavailable and the pattern tier is used.
 - **FR-021**: `docguard anchors` MUST list every link with its state, scope,
   tier and anchor. It MUST support `--format json`, `--spec <id>` and
   `--state <state>`.
-- **FR-022**: Clearing goes through
+- **FR-022** *(amended 2026-11-13 by `docguard.anchor-lock-merge`: `docguard anchors merge --write` also writes the lock, normalizing it)*: Clearing goes through
   `docguard anchors accept --link <key>|--spec <id>|--file <path> --reason <text>`:
   - The reason MUST be at least 10 characters.
   - An accept that affects more than one link MUST require `--bulk`.

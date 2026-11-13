@@ -271,7 +271,9 @@ writer. This mirrors spec 030 exactly.
   - The reader tolerates any line order, which a union merge can produce. The
     writer re-sorts.
   - A duplicate key with differing content means both entries are treated as
-    absent for comparison: the link is suspect, plus ANC009.
+    absent for comparison: the link is suspect, plus ANC009. *(Amended
+    2026-11-13 by `docguard.anchor-lock-merge`: resolved against the current
+    code; no ANC009.)*
 - **Accept**:
   1. Compute fingerprints for the selection.
   2. Read the files again and refuse if the bytes changed during the run
