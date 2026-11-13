@@ -109,12 +109,16 @@ export const FIXTURES = {
     },
     fix: { files: { 'package.json': PKG, 'docs-canonical/ARCHITECTURE.md': '# Architecture\n' }, opts: { commits: 3 } },
   },
+  // Traceability traces requirements to tests, so it applies only when the project declares one (the definition
+  // Requirement-Anchors uses). It cannot be empty while it applies: every declared requirement counts toward
+  // `performed` (one a planned spec defers included), hence no applies-and-empty fixture.
   traceability: {
     empties: {
-      'needs-declaration': { files: { 'package.json': PKG, 'docs-canonical/NOTES.md': '# Notes\n' }, cause: 'needs-declaration' },
+      'nothing-of-this-kind (documents, no requirement)': { files: { 'package.json': PKG, 'docs-canonical/NOTES.md': '# Notes\n' }, cause: 'nothing-of-this-kind' },
+      'nothing-of-this-kind (only template placeholder rows)': { files: { 'package.json': PKG, 'docs-canonical/REQUIREMENTS.md': '# Requirements\n\n- **FR-001**: The system MUST [capability]\n' }, cause: 'nothing-of-this-kind' },
       'nothing-of-this-kind': { files: { 'package.json': PKG }, cause: 'nothing-of-this-kind' },
     },
-    fix: { files: { 'package.json': PKG, 'docs-canonical/NOTES.md': '# Notes\n', 'docs-canonical/ARCHITECTURE.md': '# Architecture\n', 'src/index.js': 'export const x = 1;\n' }, extra: { requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: [] } } },
+    applying: { files: { 'package.json': PKG, 'docs-canonical/REQUIREMENTS.md': '# Requirements\n\n- **FR-001**: The system MUST list the orders of a customer.\n- **FR-002**: The system MUST [capability]\n', 'tests/a.test.js': '// @req FR-001\ntest("a", () => {});\n' } },
   },
   docsDiff: {
     empties: {

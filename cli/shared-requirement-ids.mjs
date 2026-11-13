@@ -51,10 +51,18 @@ function bodyText(def) {
   return String(def.text || '').replace(def.id, '').replace(/[*_`|]/g, ' ').replace(/^[\s\-+>#.:)\d]*/, '').trim();
 }
 
-/** Is this declaration a template row rather than a requirement? */
+/** Does the declaration's text hold a template slot (`[capability]`, `<capability>`, `{{behaviour}}`)? */
+export function hasPlaceholderSlot(def) {
+  // Brackets, angles and braces inside an inline code span are code, not a template slot:
+  // `[Unreleased]`, `--stage [slug]`, `{ mode, asOf }`, `pending: [...]`.
+  // A span that opens and does not close on this line (the sentence wraps) is code to the end of the line.
+  const raw = String(def.text || '').replace(def.id, '').replace(/`[^`\n]*`/g, '').replace(/`.*$/, '').replace(/[*_]/g, '');
+  return BRACKET_SLOT.test(raw) || ANGLE_SLOT.test(raw) || CURLY_SLOT.test(raw);
+}
+
+/** Is this declaration a template row rather than a requirement? A slot, or no text at all. */
 export function isPlaceholderRequirement(def) {
-  const raw = String(def.text || '').replace(def.id, '').replace(/[*_`]/g, '');
-  if (BRACKET_SLOT.test(raw) || ANGLE_SLOT.test(raw) || CURLY_SLOT.test(raw)) return true;
+  if (hasPlaceholderSlot(def)) return true;
   return EMPTY_TEXT.test(bodyText(def).replace(/^(?:\[[ xX]\]|[-+*]|\d+[.)])\s*/, ''));
 }
 

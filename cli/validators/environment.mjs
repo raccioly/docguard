@@ -110,7 +110,7 @@ function environmentContract(projectDir, config, performed, found) {
       ? (() => {
         const role = roleDocument(projectDir, config, 'environment');
         const content = 'a "## Setup Steps" section and a "## Environment Variables" section that lists every variable the code reads; `.env.example` entries count as documentation';
-        return { emptyCause: 'needs-declaration', note: `Environment found ${decision.evidence}, but no ${envDoc}, so it compared no variable with a document.`, howToConfigure: role.lead ? `${role.lead}The document needs ${content}.` : `Create ${envDoc} with ${content} (\`docguard generate\` drafts it from the code).` };
+        return { emptyCause: 'needs-declaration', note: `Environment found ${decision.evidence}, but no ${envDoc}, so it compared no variable with a document.`, howToConfigure: role.lead ? `${role.lead}The document needs ${content}.` : `Create ${envDoc} with ${content} (\`docguard generate\` drafts it from the code).${role.tail}` };
       })()
       : { note: `Environment found no ${envDoc}, no .env template and no source that reads an environment variable, so there is nothing to document.`, howToConfigure: `Nothing to configure unless the project reads environment variables: then document them in ${envDoc}.` },
   });

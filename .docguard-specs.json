@@ -4311,32 +4311,32 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 445
+            "line": 446
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 460
+            "line": 461
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 477
+            "line": 478
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 184
+            "line": 185
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 236
+            "line": 237
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 251
+            "line": 252
           },
           {
             "requirementId": "FR-006",
@@ -5603,7 +5603,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 406
+            "line": 407
           },
           {
             "requirementId": "FR-002",
@@ -5663,7 +5663,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 353
+            "line": 354
           },
           {
             "requirementId": "FR-008",
@@ -7450,7 +7450,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 520
+            "line": 533
           },
           {
             "requirementId": "FR-005",
@@ -16148,11 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:3d729934d1d3f6e1f1a3965e64ac3e8fdb535f56e964d3d81f6b2aeafb9c44e9"
+            "digest": "sha256:7bd9818cd129f8bbc50984930171a88c6da3561b7ff4d10d8869b0d691cfe0f8"
           }
         ],
         "taskCompletion": {
-          "checked": 23,
+          "checked": 24,
           "total": 39
         },
         "implementationEvidence": [
@@ -16324,7 +16324,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metadata-sync.mjs",
-            "line": 118
+            "line": 141
           },
           {
             "requirementId": "FR-006",
@@ -16389,7 +16389,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/traceability.mjs",
-            "line": 135
+            "line": 136
           },
           {
             "requirementId": "FR-007",
@@ -16467,6 +16467,11 @@
             "requirementId": "FR-005",
             "file": "tests/validator-applicability-b.test.mjs",
             "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/shared-requirement-ids.test.mjs",
+            "line": 7
           },
           {
             "requirementId": "FR-006",

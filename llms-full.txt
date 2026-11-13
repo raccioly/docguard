@@ -2068,6 +2068,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for an architecture document kept elsewhere even when the test spec exists,
   and Test-Spec names both accepted map headings in every fix text
   (`docguard.strict-by-default` FR-006, T018f).
+- **Group A, third proof pass.** Metadata-Sync counts only a version stated for
+  this package (`<package>@x.y.z`, a URL that names the package, a `version:`
+  line that opens its line in a document that names the package); the
+  comparison and the applicability decision share that one selection, so
+  another tool's minimum version in a guide is neither compared nor counted.
+  Traceability's `performed` is the number of requirements it examined (`total`
+  is unchanged), a template row (`System MUST [capability]`) is no longer a
+  requirement and draws no TRC004, and a project that declares no requirement
+  is not applicable. The placeholder and requirement-ID definition moved to
+  `cli/shared-requirement-definition.mjs`, shared with Requirement-Anchors.
+  Docs-Diff, Test-Spec and Environment find an architecture, test or
+  environment document by a folder or file name that contains the role's word,
+  and otherwise give the exact `docs.roles` snippet with a placeholder path
+  (`docguard.strict-by-default` FR-006, T018g).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).
@@ -2379,22 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   `release.yml` runs the previous release's CLI and the candidate over the
   repository and the benchmark fixtures. It fails unless this section names
   every finding code whose findings changed, and any exit-code change. It also
-  re-runs the budgets and the precision benchmark against the previous tag.
-  Maintainer tooling only (`tools/release-ab.mjs`, `release-gate.json`); the
-  package is unchanged.
-- **DORA's documentation and AI capabilities, from the repository**
-  (`docguard.dora-evidence`, spec 092). `docguard score --dora` maps facts
-  DocGuard already computes onto DORA's eight documentation-quality survey
-  items and its AI Capabilities Model:
-  - doc and code agreement;
-  - the doc lock;
-  - Agent Readability;
-  - runbooks;
-  - commit size over the last 90 days;
-  - what git tracks.
 
-
-<!-- truncated: 6404 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6418 more lines — read CHANGELOG.md directly -->
 
 ---
 

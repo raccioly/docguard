@@ -45,22 +45,49 @@ function readPackageVersion(projectDir, config) {
 }
 
 /**
- * The forms in which a document states the package's version, for the comparison and for the
- * decision whether there is anything to compare: URLs with a version (`/v0.7.2/`, `/tags/v0.7.2`,
- * `/releases/0.7.2`), YAML-style `version: 0.7.2`, and `<package>@0.7.2` install commands. The
- * npm form is anchored to THIS package's name; a bare `@1.2.3` over-matched `node@18.2.0`,
- * `@types/node@1.2.3` and prose.
+ * The forms in which a document states THIS package's version, shared by the comparison and by the
+ * decision whether there is anything to compare, so the two cannot disagree (spec 097 FR-006):
+ *   - `<package>@x.y.z`, an install line that names the package (a bare `@1.2.3` over-matched
+ *     `node@18.2.0`, `@types/node@1.2.3` and prose);
+ *   - a URL that names the package and carries a version (`.../<package>/releases/download/v0.7.2/...`,
+ *     `/tags/v0.7.2`, `/archive/0.7.2`), never a URL for another project;
+ *   - a `version: x.y.z` line that opens its line (so `minimum_pre_commit_version: 3.2.0` is not one),
+ *     in a document that names the package, that is, a document about it.
+ * A project without a package name has no way to say which package, so it keeps the broad reading.
+ *
+ * @returns {Array<{ re: RegExp, accept: (content: string, match: RegExpExecArray) => boolean }>}
  */
 function actionableVersionPatterns(currentName) {
+  const lower = currentName ? currentName.toLowerCase() : null;
+  const tokenAround = (content, index) => {
+    let start = index;
+    while (start > 0 && !/[\s"'`(<>]/.test(content[start - 1])) start--;
+    let end = index;
+    while (end < content.length && !/[\s"'`)<>]/.test(content[end])) end++;
+    return content.slice(start, end).toLowerCase();
+  };
   const patterns = [
-    /(?:archive|tags|releases|download)\/v?(\d+\.\d+\.\d+)/g,
-    /version:\s*["']?(\d+\.\d+\.\d+)["']?/g,
+    { re: /(?:archive|tags|releases|download)\/v?(\d+\.\d+\.\d+)/g, accept: (content, m) => !lower || tokenAround(content, m.index).includes(lower) },
+    { re: /version:\s*["']?(\d+\.\d+\.\d+)["']?/g, accept: (content, m) => {
+      if (!lower) return true;
+      const lineStart = content.lastIndexOf('\n', m.index - 1) + 1;
+      return /^\s*(?:[-*]\s+)?$/.test(content.slice(lineStart, m.index)) && content.toLowerCase().includes(lower);
+    } },
   ];
   if (currentName) {
     const escaped = currentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    patterns.push(new RegExp(`${escaped}@v?(\\d+\\.\\d+\\.\\d+)`, 'g'));
+    patterns.push({ re: new RegExp(`${escaped}@v?(\\d+\\.\\d+\\.\\d+)`, 'g'), accept: () => true });
   }
   return patterns;
+}
+
+/** Every version a document states for the package, in the forms above. */
+function* statedVersions(content, name) {
+  for (const { re, accept } of actionableVersionPatterns(name)) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(content)) !== null) if (accept(content, m)) yield m[1];
+  }
 }
 
 /** The first document that states a version in a form the comparison reads, as { file, version }, or null. */
@@ -78,11 +105,7 @@ function firstVersionStatement(projectDir, name) {
     if (lower.includes('changelog') || lower.includes('drift-log') || isIgnored(rel)) continue;
     let content;
     try { content = readFileSync(mdFile, 'utf-8'); } catch { continue; }
-    for (const pattern of actionableVersionPatterns(name)) {
-      pattern.lastIndex = 0;
-      const m = pattern.exec(content);
-      if (m) return { file: rel.split(sep).join('/'), version: m[1] };
-    }
+    for (const version of statedVersions(content, name)) return { file: rel.split(sep).join('/'), version };
   }
   return null;
 }
@@ -96,7 +119,7 @@ function withStatement(projectDir, manifestEvidence, name) {
   const statement = firstVersionStatement(projectDir, name || null);
   return statement
     ? { applies: true, evidence: `${manifestEvidence}, and ${statement.file} states a version (${statement.version})` }
-    : { applies: false, noStatement: true, evidence: `${manifestEvidence}, and no document states a version in a form Metadata-Sync compares (a URL with a version, a \`version:\` line or a \`<package>@x.y.z\` install command), so there is nothing that can drift` };
+    : { applies: false, noStatement: true, evidence: `${manifestEvidence}, and no document states a version for this package in a form Metadata-Sync compares (a \`<package>@x.y.z\` install command, a URL that names the package and carries a version, or a \`version:\` line in a document about it), so there is nothing that can drift` };
 }
 
 /**
@@ -237,41 +260,34 @@ export function validateMetadataSync(projectDir, config) {
     // - npm install / npx commands
     // - Badge URLs
     // NOT in prose text like "In v0.2.0 we added..." or roadmap discussions
-    const actionablePatterns = actionableVersionPatterns(currentName);
+    for (const foundVersion of statedVersions(content, currentName)) {
+      const fParts = foundVersion.split('.');
+      const fMajor = parseInt(fParts[0], 10);
+      const fMinor = parseInt(fParts[1], 10);
+      const fPatch = parseInt(fParts[2], 10);
 
-    for (const pattern of actionablePatterns) {
-      pattern.lastIndex = 0;
-      let match;
-      while ((match = pattern.exec(content)) !== null) {
-        const foundVersion = match[1];
-        const fParts = foundVersion.split('.');
-        const fMajor = parseInt(fParts[0], 10);
-        const fMinor = parseInt(fParts[1], 10);
-        const fPatch = parseInt(fParts[2], 10);
+      // Only flag if same major but older version (same package, stale ref)
+      const isOlder = fMajor === major && (
+        fMinor < minor ||
+        (fMinor === minor && fPatch < patch)
+      );
 
-        // Only flag if same major but older version (same package, stale ref)
-        const isOlder = fMajor === major && (
-          fMinor < minor ||
-          (fMinor === minor && fPatch < patch)
-        );
-
-        if (isOlder && foundVersion !== currentVersion) {
-          total++;
-          findings.push(mkFinding({
-            code: 'MDS002',
-            validator: 'metadataSync',
-            severity: 'warn',
-            message: `${relPath} references "v${foundVersion}" in an actionable context (URL/install/declaration) but current version is "${currentVersion}"`,
-            location: relPath,
-            suggestion: { kind: 'fix', text: `Replace the stale ${foundVersion} reference with ${currentVersion}`, command: 'docguard fix --write' },
-          }));
-          if (!fixes.some(f => f.file === relPath && f.found === foundVersion)) {
-            fixes.push({ type: 'replace-version', file: relPath, found: foundVersion, actual: currentVersion });
-          }
-        } else if (fMajor === major && fMinor === minor && foundVersion === currentVersion) {
-          total++;
-          passed++;
+      if (isOlder && foundVersion !== currentVersion) {
+        total++;
+        findings.push(mkFinding({
+          code: 'MDS002',
+          validator: 'metadataSync',
+          severity: 'warn',
+          message: `${relPath} references "v${foundVersion}" in an actionable context (URL/install/declaration) but current version is "${currentVersion}"`,
+          location: relPath,
+          suggestion: { kind: 'fix', text: `Replace the stale ${foundVersion} reference with ${currentVersion}`, command: 'docguard fix --write' },
+        }));
+        if (!fixes.some(f => f.file === relPath && f.found === foundVersion)) {
+          fixes.push({ type: 'replace-version', file: relPath, found: foundVersion, actual: currentVersion });
         }
+      } else if (fMajor === major && fMinor === minor && foundVersion === currentVersion) {
+        total++;
+        passed++;
       }
     }
   }

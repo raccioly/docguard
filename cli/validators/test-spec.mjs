@@ -76,7 +76,7 @@ function testSpecContract(projectDir, config, { performed, found, mapped }) {
       if (!existsSync(resolveDocRole(projectDir, config, 'testSpec'))) {
         const role = roleDocument(projectDir, config, 'testSpec');
         const table = '"## Source-to-Test Map" table (the older "## Service-to-Test Map" heading is read too), `| Source File | Unit Test | Status |`, one row per source file and its test file';
-        return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).` };
+        return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).${role.tail}` };
       }
       return mapped
         ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map (or the older Service-to-Test Map) in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
