@@ -189,7 +189,7 @@ describe('T025a / FR-021: per-document gaps on the Freshness result', () => {
 
   it('the run names the same documents as the exported functions (one definition)', () => {
     const dir = issue628('strict', COPILOT);
-    const config = JSON.parse(spawnSync('git', ['show', 'HEAD:.docguard.json'], { cwd: dir, encoding: 'utf8' }).stdout);
+    const config = JSON.parse(fixtureGit(dir, ['show', 'HEAD:.docguard.json']));
     const results = validateFreshness(dir, config);
     const contract = freshnessContract(dir, config, { performed: 1, found: true, facts: results.facts });
     const fromRun = Object.fromEntries(contract.unexaminedDocuments.map(d => [d.path, d.cause]));
