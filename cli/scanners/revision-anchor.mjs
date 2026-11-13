@@ -18,11 +18,17 @@
  * @implements docguard.completion-revision-anchoring#FR-001
  * @implements docguard.completion-revision-anchoring#FR-002
  * @implements docguard.completion-revision-anchoring#FR-003
+ * @implements docguard.completion-one-commit#FR-001
+ * @implements docguard.completion-one-commit#FR-006
+ * @implements docguard.completion-one-commit#FR-007
+ * @implements docguard.completion-one-commit#FR-009
  */
 
-import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { lstatSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
+import { readOutcomeBlobs, stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
+import { ensureStateDir, STATE_DIR } from '../writers/state-dir.mjs';
 import { OWN_STATE_PATHSPEC, isShallowRepository, runGit } from '../shared-git.mjs';
 
 const REVISION_RE = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
@@ -93,17 +99,21 @@ export function danglingRevisions(projectDir, registry) {
   return out;
 }
 
+/** A task list with every checkbox read as unchecked: equal for two lists that differ only by ticks. */
+const uncheckedTasks = text => String(text).replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[[ xX]\]/gm, '$1[ ]');
+
 /**
  * Tracked changes other than the lifecycle files completion itself writes:
  * the registry, the active context, and spec files whose change is confined
  * to the implementation-outcomes block.
  * @returns {string[]|null} changed paths, or null when git cannot answer
  */
-export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [] }) {
+export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [], tickOnlyPaths = [] }) {
   // DocGuard's own .docguard/ state is never a change (docguard.read-only-commands#FR-006).
   const status = git(projectDir, ['status', '--porcelain=v1', '-z', '--untracked-files=no', ...OWN_STATE_PATHSPEC]);
   if (!status.ok) return null;
   const specs = new Set(specPaths);
+  const tickOnly = new Set(tickOnlyPaths);
   const entries = status.out.split('\0').filter(Boolean);
   const changed = [];
   for (let i = 0; i < entries.length; i++) {
@@ -112,6 +122,15 @@ export function nonLifecycleChanges(projectDir, { registryPath, contextPath, spe
     const path = entry.slice(3);
     if (code.includes('R') || code.includes('C')) i++; // the original path follows a rename/copy
     if (path === registryPath || path === contextPath) continue;
+    // docguard.completion-one-commit#FR-001: ticking a box in the completing
+    // spec's own task list is part of closing it, so the tick, the record and
+    // the outcome can land in one commit. Any other edit of that file is not.
+    if (tickOnly.has(path) && !code.includes('D') && !code.includes('R')) {
+      const committed = git(projectDir, ['show', `HEAD:${path}`]);
+      let current = null;
+      try { current = readFileSync(resolve(projectDir, path), 'utf8'); } catch { /* deleted or unreadable */ }
+      if (committed.ok && current !== null && uncheckedTasks(committed.out) === uncheckedTasks(current)) continue;
+    }
     if (specs.has(path) && !code.includes('D') && !code.includes('R')) {
       const committed = git(projectDir, ['show', `HEAD:${path}`]);
       let current = null;
@@ -154,4 +173,195 @@ export function findAnchor(projectDir, from, evidence, { limit = HISTORY_LIMIT }
     if (differing.length === 0) return { target: candidate, differing: [] };
   }
   return { target: null, differing };
+}
+
+/** The git blob id of each path in `paths` at `commit` (relative to the project), or null when the path is absent there. */
+export function evidenceBlobsAt(projectDir, commit, paths) {
+  const out = Object.fromEntries(paths.map(path => [path, null]));
+  if (!paths.length) return out;
+  const r = git(projectDir, ['ls-tree', '-z', commit, '--', ...paths.map(path => `:(literal)${path}`)]);
+  if (!r.ok) return out;
+  for (const record of r.out.split('\0').filter(Boolean)) {
+    const tab = record.indexOf('\t');
+    const [, type, id] = record.slice(0, tab).split(' ');
+    const path = record.slice(tab + 1);
+    if (type === 'blob' && path in out) out[path] = id;
+  }
+  return out;
+}
+
+const ANCHOR_CACHE = `${STATE_DIR}/revision-anchors.json`;
+const CACHE_LIMIT = 256 * 1024;
+const LOG_BATCH = 200;
+const HASH_RE = /[0-9a-f]{40}(?:[0-9a-f]{24})?/g;
+
+function readAnchorCache(projectDir) {
+  // A cache can only arrive through the checkout in CI, so it is not read there.
+  if (process.env.CI) return {};
+  try {
+    const path = resolve(projectDir, ANCHOR_CACHE);
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.size > CACHE_LIMIT) return {};
+    const value = JSON.parse(readFileSync(path, 'utf8'));
+    return value && value.version === 1 && value.landings && typeof value.landings === 'object' ? value.landings : {};
+  } catch { return {}; }
+}
+
+function writeAnchorCache(projectDir, landings) {
+  if (process.env.CI || !ensureStateDir(projectDir)) return;
+  const path = resolve(projectDir, ANCHOR_CACHE);
+  const temporary = `${path}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporary, `${JSON.stringify({ version: 1, landings })}\n`, { flag: 'wx' });
+    renameSync(temporary, path);
+  } catch {
+    try { unlinkSync(temporary); } catch { /* best effort: a cache never changes a verdict */ }
+  }
+}
+
+/**
+ * The first first-parent commit whose registry adds each of `revisions`, or
+ * null. Constant git work however many revisions there are: one `rev-list` of
+ * the commits that touched the registry (which also validates the cache, since
+ * a landing commit touched it by definition), one `git log -G` over all the
+ * revisions that were not cached, oldest first. `-G`, not `-S`: a maintenance
+ * commit that moves one recorded revision to another leaves the occurrence
+ * count unchanged, and `-S` would skip it.
+ * @implements docguard.completion-one-commit#FR-009
+ */
+function landingCommits(projectDir, revisions, registryPath) {
+  const landings = new Map(revisions.map(revision => [revision, null]));
+  const chain = new Set(git(projectDir, ['rev-list', '--first-parent', 'HEAD', '--', registryPath]).out.split('\n').map(line => line.trim()).filter(Boolean));
+  const cached = readAnchorCache(projectDir);
+  const pending = [];
+  for (const revision of landings.keys()) {
+    if (typeof cached[revision] === 'string' && chain.has(cached[revision])) landings.set(revision, cached[revision]);
+    else if (REVISION_RE.test(revision)) pending.push(revision);
+  }
+  for (let from = 0; from < pending.length; from += LOG_BATCH) {
+    const batch = new Set(pending.slice(from, from + LOG_BATCH));
+    const log = git(projectDir, ['log', '--first-parent', '--reverse', '-p', '-U0', '--no-color', '--format=%x01%H', `-G${[...batch].join('|')}`, '--', registryPath]);
+    for (const chunk of log.out.split('\x01').slice(1)) {
+      const [commit, ...lines] = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('+') || line.startsWith('+++')) continue;
+        for (const hash of line.match(HASH_RE) || []) {
+          if (batch.has(hash) && landings.get(hash) === null) landings.set(hash, commit.trim());
+        }
+      }
+    }
+  }
+  const found = Object.fromEntries([...landings].filter(([revision, commit]) => commit && pending.includes(revision)));
+  if (Object.keys(found).length) writeAnchorCache(projectDir, { ...cached, ...found });
+  return landings;
+}
+
+/**
+ * Where each recorded revision's review landed on HEAD's history, and which
+ * evidence files have a different blob there than the one reviewed. It needs
+ * no old commit, so it works after a squash merge or a rebase has discarded
+ * the id. The cache holds only landing commits and a hit is trusted no
+ * further than "that commit is still on HEAD's first-parent chain": the
+ * verdict is recomputed from the blobs, so a stale or planted cache cannot
+ * change it. One `rev-list`, at most one `log` per 200 revisions, one
+ * `cat-file --batch-check`, whatever the number of items.
+ * @param {Array<{ key: string, revision: string, blobs: Record<string,string> }>} items
+ * @returns {Map<string, { commit: string|null, differing: string[] }>} `commit` is null when no commit on
+ *   this history introduced the revision into the registry
+ * @implements docguard.completion-one-commit#FR-006
+ * @implements docguard.completion-one-commit#FR-009
+ */
+export function locateContentAnchors(projectDir, items, { registryPath }) {
+  const out = new Map();
+  if (!items.length) return out;
+  const landings = landingCommits(projectDir, [...new Set(items.map(item => item.revision))], registryPath);
+  const lookups = [];
+  for (const item of items) {
+    const commit = landings.get(item.revision);
+    if (!commit) { out.set(item.key, { commit: null, differing: Object.keys(item.blobs).sort() }); continue; }
+    for (const path of Object.keys(item.blobs)) lookups.push({ key: item.key, commit, path });
+  }
+  const found = new Map();
+  if (lookups.length) {
+    const r = runGit(projectDir, ['cat-file', '--batch-check'], {
+      operation: 'git cat-file (revision anchor)', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024,
+      input: `${lookups.map(lookup => `${lookup.commit}:./${lookup.path}`).join('\n')}\n`,
+    });
+    const lines = r.status === 0 && !r.error ? r.stdout.split('\n') : [];
+    lookups.forEach((lookup, index) => {
+      const [id, type] = (lines[index] || '').split(' ');
+      found.set(`${lookup.key}\0${lookup.path}`, type === 'blob' && REVISION_RE.test(id) ? id : null);
+    });
+  }
+  for (const item of items) {
+    if (out.has(item.key)) continue;
+    const differing = Object.keys(item.blobs).sort().filter(path => found.get(`${item.key}\0${path}`) !== item.blobs[path]);
+    out.set(item.key, { commit: landings.get(item.revision), differing });
+  }
+  return out;
+}
+
+function readSpecContent(projectDir, spec) {
+  try { return readFileSync(resolve(projectDir, spec.path), 'utf8'); } catch { return null; }
+}
+
+/**
+ * Whether each given recorded revision that is not an ancestor of HEAD is still
+ * anchored by its content: its outcome carries the evidence blobs, and the commit
+ * that landed the record has exactly those blobs.
+ * @param {Array<{ spec: object, revision: string }>} entries
+ * @returns {Map<string, { hasBlobs: boolean, anchored: boolean, commit: string|null, differing: string[] }>}
+ *   keyed by `${specId}|${revision}`
+ * @implements docguard.completion-one-commit#FR-006
+ */
+export function contentAnchors(projectDir, entries, { registryPath }) {
+  const results = new Map();
+  const items = [];
+  const contents = new Map();
+  for (const { spec, revision } of entries) {
+    const key = `${spec.specId}|${revision}`;
+    if (!contents.has(spec.specId)) contents.set(spec.specId, readSpecContent(projectDir, spec));
+    const content = contents.get(spec.specId);
+    const blobs = content === null ? null : readOutcomeBlobs(content, revision);
+    if (!blobs) results.set(key, { hasBlobs: false, anchored: false, commit: null, differing: [] });
+    else items.push({ key, revision, blobs });
+  }
+  for (const [key, found] of locateContentAnchors(projectDir, items, { registryPath })) {
+    results.set(key, { hasBlobs: true, anchored: found.commit !== null && found.differing.length === 0, commit: found.commit, differing: found.differing });
+  }
+  return results;
+}
+
+/** {@link contentAnchors} for one revision. */
+export function contentAnchor(projectDir, spec, revision, { registryPath }) {
+  return contentAnchors(projectDir, [{ spec, revision }], { registryPath }).get(`${spec.specId}|${revision}`);
+}
+
+/**
+ * The recorded revisions that are off HEAD's history and not anchored by their
+ * content: what SPR008 reports and `reanchor` moves. An outcome that carries its
+ * evidence blobs and was superseded by a later review of the same spec (a
+ * second completion in the same pull request, after the evidence changed) does
+ * not strand anything while that later review is on the history or anchored:
+ * only the last reviewed revision is a diff base.
+ * @returns {Array<{ specId: string, revision: string, reason: string, content: object }>}
+ * @implements docguard.completion-one-commit#FR-006
+ */
+export function strandedRevisions(projectDir, registry, { registryPath }) {
+  const dangling = danglingRevisions(projectDir, registry);
+  const specs = new Map((registry?.specs || []).map(spec => [spec.specId, spec]));
+  const anchors = contentAnchors(projectDir, dangling.map(({ specId, revision }) => ({ spec: specs.get(specId), revision })), { registryPath });
+  const key = ({ specId, revision }) => `${specId}|${revision}`;
+  const lastIsFine = specId => {
+    const last = specs.get(specId)?.reviewed?.reconciliation?.lastReviewedRevision;
+    const entry = dangling.find(item => item.specId === specId && item.revision === last);
+    return !entry || anchors.get(key(entry)).anchored;
+  };
+  return dangling
+    .map(item => ({ ...item, content: anchors.get(key(item)) }))
+    .filter(item => {
+      if (item.content.anchored) return false;
+      const last = specs.get(item.specId)?.reviewed?.reconciliation?.lastReviewedRevision;
+      return !(item.content.hasBlobs && item.revision !== last && lastIsFine(item.specId));
+    });
 }

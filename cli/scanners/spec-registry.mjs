@@ -35,6 +35,8 @@ const CONTEXT = new Set(['current', 'retired']);
 const RETIREMENT = new Set([null, 'completed', 'superseded', 'abandoned']);
 const STORAGE = new Set(['working_tree', 'git_history']);
 const PERSISTENCE = new Set([null, 'flow_back', 'flow_forward', 'living']);
+/** The values a person may record (docguard.completion-one-commit#FR-003). */
+export const PERSISTENCE_VALUES = Object.freeze(['living', 'flow_forward', 'flow_back']);
 const STOP_TERMS = new Set(['must', 'should', 'with', 'from', 'that', 'this', 'have', 'into']);
 
 const posix = path => path.split(sep).join('/').replace(/^\.\//, '');
@@ -133,6 +135,22 @@ function reconcileLegacyForms(recorded, projected, artifactDigests) {
   }
   return { value, forms: [...forms].sort() };
 }
+/**
+ * Current specs whose delivery is `verified` or `released` and whose entry has
+ * no recorded outcome. `approve` cannot set those states and `complete` always
+ * records an outcome with them, so such an entry was edited by hand (or
+ * predates outcomes).
+ * @implements docguard.completion-one-commit#FR-011
+ */
+export function unrecordedCompletions(registry) {
+  return (registry?.specs || [])
+    .filter(spec => spec.reviewed?.lifecycle?.context === 'current'
+      && ['verified', 'released'].includes(spec.reviewed?.lifecycle?.delivery)
+      && !(spec.reviewed?.reconciliation?.outcomes || []).length)
+    .map(spec => spec.specId)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 /** The registry's one order for unordered string lists. */
 export const sortedUnique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b));
 

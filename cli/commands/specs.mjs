@@ -10,6 +10,15 @@
  * @implements docguard.first-spec-preflight#FR-008
  * @implements docguard.first-spec-preflight#FR-009
  * @implements docguard.first-spec-preflight#FR-010
+ * @implements docguard.completion-one-commit#FR-001
+ * @implements docguard.completion-one-commit#FR-002
+ * @implements docguard.completion-one-commit#FR-003
+ * @implements docguard.completion-one-commit#FR-004
+ * @implements docguard.completion-one-commit#FR-005
+ * @implements docguard.completion-one-commit#FR-007
+ * @implements docguard.completion-one-commit#FR-008
+ * @implements docguard.completion-one-commit#FR-011
+ * @implements docguard.completion-one-commit#FR-012
  */
 
 import { createHash } from 'node:crypto';
@@ -18,11 +27,11 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
-import { appendImplementationOutcome, rewriteOutcomeRevision } from '../writers/spec-outcomes.mjs';
-import { commitsBetween, danglingRevisions, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit } from '../scanners/revision-anchor.mjs';
+import { appendImplementationOutcome, readOutcomeBlobs, rewriteOutcomeRevision, writeOutcomeBlobs } from '../writers/spec-outcomes.mjs';
+import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, strandedRevisions } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
-import { canonicalOutcome, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
+import { canonicalOutcome, PERSISTENCE_VALUES, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, unrecordedCompletions, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
 import { checkSpecFirst } from '../scanners/spec-first.mjs';
@@ -48,12 +57,55 @@ function headRevision(projectDir) {
 // Completion may run several times against one revision before a single
 // commit: the registry, the active context and outcome blocks it writes do
 // not count as changes (docguard.completion-revision-anchoring#FR-001).
-function blockingChanges(projectDir, registry) {
+function blockingChanges(projectDir, registry, ownTaskLists = []) {
   return nonLifecycleChanges(projectDir, {
     registryPath: SPEC_REGISTRY_PATH,
     contextPath: CONTEXT_PATH,
     specPaths: (registry?.specs || []).map(spec => spec.path),
+    tickOnlyPaths: ownTaskLists,
   });
+}
+
+/** The completing spec's own task list: ticking it is part of closing the spec (docguard.completion-one-commit#FR-001). */
+function ownTaskLists(spec) {
+  return (spec?.observed?.artifacts || []).map(artifact => artifact.path).filter(path => /(?:^|\/)tasks\.md$/i.test(path));
+}
+
+const SAFE_DOC = path => !path.startsWith('/') && !/^[a-zA-Z]:/.test(path) && !path.split(/[\\/]/).some(part => part === '..' || part === '.local' || part === '');
+
+/**
+ * Apply `--canonical-doc` and `--persistence` to a projected spec entry, in
+ * memory, and say what is wrong with them. The registry is written only by the
+ * caller, after the whole command is known to be allowed.
+ * @implements docguard.completion-one-commit#FR-002
+ * @implements docguard.completion-one-commit#FR-003
+ */
+function applyReviewedScope(projectDir, spec, flags) {
+  const problems = [];
+  let changed = false;
+  if (flags.canonicalDocs !== undefined) {
+    const docs = [];
+    for (const raw of flags.canonicalDocs) {
+      const path = String(raw).replace(/\\/g, '/').replace(/^\.\//, '');
+      if (!path || !SAFE_DOC(path)) problems.push({ code: 'SPC005', message: `--canonical-doc ${raw} must be a repository-relative path outside .local.` });
+      else if (!existsSync(resolve(projectDir, path))) problems.push({ code: 'SPC005', message: `--canonical-doc ${path} does not exist.` });
+      else docs.push(path);
+    }
+    if (!problems.length) {
+      const next = sortedUnique(docs);
+      if (JSON.stringify(next) !== JSON.stringify(spec.reviewed.scope.canonicalDocs)) changed = true;
+      spec.reviewed.scope.canonicalDocs = next;
+    }
+  }
+  if (flags.persistence !== undefined) {
+    if (!PERSISTENCE_VALUES.includes(flags.persistence)) {
+      problems.push({ code: 'SPC002', message: `--persistence must be one of ${PERSISTENCE_VALUES.join(', ')}; found ${flags.persistence}.` });
+    } else {
+      if (spec.reviewed.lifecycle.persistenceModel !== flags.persistence) changed = true;
+      spec.reviewed.lifecycle.persistenceModel = flags.persistence;
+    }
+  }
+  return { problems, changed };
 }
 
 function describeChanges(changed) {
@@ -104,8 +156,8 @@ function ownFailingAnchors(projectDir, config, specId) {
  * as `narrowedFrom` for the outcome to record.
  * @implements docguard.completion-revision-anchoring#FR-009
  */
-function reviewBaseline(projectDir, config, spec, ref, runtime) {
-  const recorded = spec.reviewed.reconciliation.lastReviewedRevision;
+function reviewBaseline(projectDir, config, spec, ref, runtime, recordedOverride = null) {
+  const recorded = recordedOverride || spec.reviewed.reconciliation.lastReviewedRevision;
   const blocked = message => ({ blocker: { code: 'SPC006', message } });
   const recordedCommit = resolveCommit(projectDir, recorded);
   if (!recordedCommit) {
@@ -126,19 +178,36 @@ function reviewBaseline(projectDir, config, spec, ref, runtime) {
   return { narrowedFrom: { revision: recordedCommit, since: sinceCommit, skippedCommits, reason: full.coverage.reason } };
 }
 
+/**
+ * Where a spec's recorded review revision stands on HEAD's history: an ancestor
+ * (`commit` is null: use it as it is), anchored by content (`commit` is the
+ * commit that landed the same evidence), or lost (an outcome that carries
+ * blob ids, with no commit on this history that has them). A record without
+ * blob ids is not described: it behaves as it always did.
+ * @implements docguard.completion-one-commit#FR-007
+ */
+function recordedBase(projectDir, spec, revision) {
+  if (resolveCommit(projectDir, revision) && isAncestorOf(projectDir, revision)) return null;
+  const found = contentAnchor(projectDir, spec, revision, { registryPath: SPEC_REGISTRY_PATH });
+  if (!found.hasBlobs) return null;
+  if (found.anchored) return { commit: found.commit };
+  return { lost: true, differing: found.differing };
+}
+
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   const loaded = readSpecRegistry(projectDir);
   const revision = headRevision(projectDir);
   const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
   const blockers = [...projection.issues];
+  if (spec) blockers.push(...applyReviewedScope(projectDir, spec, flags).problems);
   if (!flags.id) blockers.push({ code: 'SPC001', message: 'Completion requires --id <spec-id>.' });
   if (!loaded.exists || loaded.error || !projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before completion.' });
   if (!spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
   if (!revision) blockers.push({ code: 'SPC001', message: 'Completion requires a resolvable Git HEAD.' });
-  const changed = blockingChanges(projectDir, projection.registry);
+  const changed = blockingChanges(projectDir, projection.registry, ownTaskLists(spec));
   if (changed === null || changed.length) {
-    blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions are allowed); changed: ${describeChanges(changed)}.` });
+    blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions, and ticked boxes in this spec's own task list, are allowed); changed: ${describeChanges(changed)}.` });
   }
 
   let reconcile = null;
@@ -172,17 +241,24 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
       .map(identity => identity.slice(identity.lastIndexOf('#') + 1))
       .filter(id => !covered.has(id));
     if (missing.length) blockers.push({ code: 'SPC004', message: `Qualified implementation or test evidence is missing for: ${missing.join(', ')}.` });
-    if (spec.reviewed.scope.canonicalDocs.length === 0) blockers.push({ code: 'SPC005', message: 'Completion requires at least one reviewed affected canonical document.' });
+    if (spec.reviewed.scope.canonicalDocs.length === 0) blockers.push({ code: 'SPC005', message: 'Completion requires at least one reviewed affected canonical document; record it with `--canonical-doc <path>` (repeatable).' });
     for (const path of spec.reviewed.scope.canonicalDocs) {
       if (!existsSync(resolve(projectDir, path))) blockers.push({ code: 'SPC005', message: `Affected canonical document is missing: ${path}.` });
     }
     const recordedRevision = spec.reviewed.reconciliation.lastReviewedRevision;
-    const since = flags.since || recordedRevision;
+    // docguard.completion-one-commit#FR-007: a recorded revision a squash merge or a
+    // rebase discarded is replaced, as the diff base, by the commit that landed the
+    // same evidence; with none, a person names the base.
+    const anchor = recordedRevision ? recordedBase(projectDir, spec, recordedRevision) : null;
+    const baseRevision = anchor?.commit || recordedRevision;
+    const since = flags.since || (anchor?.lost ? null : baseRevision);
     const runtime = { diffLimits: options.diffLimits };
-    const baseline = since && recordedRevision && flags.since
-      ? reviewBaseline(projectDir, config, spec, flags.since, runtime) : {};
+    const baseline = since && recordedRevision && flags.since && !anchor?.lost
+      ? reviewBaseline(projectDir, config, spec, flags.since, runtime, anchor?.commit || null) : {};
     narrowedFrom = baseline.narrowedFrom || null;
-    if (!since) blockers.push({ code: 'SPC006', message: 'Completion requires --since <review-baseline> for the first reconciliation.' });
+    if (!since && anchor?.lost) {
+      blockers.push({ code: 'SPC006', message: `The recorded review revision ${recordedRevision.slice(0, 12)} is not on this history, and no commit on it carries the evidence that was reviewed${anchor.differing.length ? ` (differing: ${anchor.differing.join(', ')})` : ''}; pass --since <review-baseline>.` });
+    } else if (!since) blockers.push({ code: 'SPC006', message: 'Completion requires --since <review-baseline> for the first reconciliation.' });
     else if (baseline.blocker) blockers.push(baseline.blocker);
     else {
       reconcile = buildReconciliationPlan(projectDir, config, since, runtime);
@@ -234,6 +310,7 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   if (!reason || reason.length > 500) throw new Error('Completion --write requires --reason with 1-500 characters.');
   const projection = projectSpecRegistry(projectDir, config);
   const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
+  applyReviewedScope(projectDir, spec, flags);
   const specPath = resolve(projectDir, spec.path);
   const successor = flags.successor
     ? projection.registry.specs.find(entry => entry.specId === flags.successor) : null;
@@ -255,7 +332,11 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   if (outcome.deviations.length > 20 || outcome.deviations.some(item => item.length > 500)) {
     throw new Error('Completion accepts at most 20 deviations of 1-500 characters.');
   }
-  const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), outcome);
+  // docguard.completion-one-commit#FR-005: the blob of every evidence file at the revision
+  // reviewed, so the record is anchored by content, not only by a commit id a squash discards.
+  const evidenceBlobs = evidenceBlobsAt(projectDir, plan.revision, outcome.evidence);
+  const blobsComplete = outcome.evidence.length > 0 && outcome.evidence.every(path => evidenceBlobs[path]);
+  const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), { ...outcome, ...(blobsComplete ? { evidenceBlobs } : {}) });
   if (spec.reviewed.lifecycle.delivery !== 'released') spec.reviewed.lifecycle.delivery = 'verified';
   spec.reviewed.reconciliation.lastReviewedRevision = plan.revision;
   spec.reviewed.reconciliation.outcomes = [...spec.reviewed.reconciliation.outcomes, outcome].slice(-20);
@@ -281,7 +362,9 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   // reconciliation (docguard.completion-revision-anchoring#FR-004).
   const warnings = [];
   if (reachableFromDefaultBranch(projectDir) === false) {
-    warnings.push(`HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it. Complete on a branch at the default branch's tip, or run \`docguard specs reanchor --id ${plan.specId} --write\` after merging.`);
+    warnings.push(blobsComplete
+      ? `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, but the record stays anchored by the evidence blobs it carries, so no second commit is needed unless the evidence changes before it lands.`
+      : `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, and this record carries no evidence blobs to anchor it by. Complete on a branch at the default branch's tip, or run \`docguard specs reanchor --id ${plan.specId} --write\` after merging.`);
   }
   return { command: 'complete', ...plan, status: 'VERIFIED', applied: true, outcome, warnings };
 }
@@ -302,7 +385,8 @@ export function reanchorSpec(projectDir, config, flags) {
   if (changed === null || changed.length) blockers.push({ code: 'SPC001', message: `Re-anchoring requires a clean tracked working tree; changed: ${describeChanges(changed)}.` });
   const moves = [];
   if (spec && !blockers.length) {
-    let dangling = danglingRevisions(projectDir, { specs: [spec] });
+    // A revision whose evidence blobs are on this history is anchored by content (docguard.completion-one-commit#FR-006): nothing to move.
+    let dangling = strandedRevisions(projectDir, { specs: [spec] }, { registryPath: SPEC_REGISTRY_PATH });
     // docguard.completion-revision-anchoring#FR-006: one spec's dangling
     // revisions can come from different merges, so an attested --to must be
     // scoped to the revision it attests.
@@ -361,11 +445,19 @@ export function reanchorSpec(projectDir, config, flags) {
   let specContent = readFileSync(resolve(projectDir, spec.path), 'utf8');
   const rec = spec.reviewed.reconciliation;
   for (const move of moves) {
+    const hadBlobs = readOutcomeBlobs(specContent, move.from) !== null;
     if (rec.lastReviewedRevision === move.from) rec.lastReviewedRevision = move.to;
     rec.outcomes = rec.outcomes.map(outcome => (outcome.revision === move.from
       ? { ...outcome, revision: move.to, reanchoredFrom: { revision: move.from, method: move.method, ...(move.reason ? { reason: move.reason } : {}), ...(move.differing?.length ? { differing: move.differing } : {}) } }
       : outcome));
     specContent = rewriteOutcomeRevision(specContent, move.from, move.to);
+    // docguard.completion-one-commit#FR-008: a record moved by blob equality gains the
+    // evidence blobs for its latest outcome, so the next squash or rebase cannot strand it.
+    const latest = rec.outcomes[rec.outcomes.length - 1];
+    if (move.method === 'blob-equal' && !hadBlobs && latest?.revision === move.to) {
+      const blobs = evidenceBlobsAt(projectDir, move.to, latest.evidence);
+      if (latest.evidence.length && latest.evidence.every(path => blobs[path])) specContent = writeOutcomeBlobs(specContent, move.to, blobs);
+    }
   }
   const artifact = spec.observed.artifacts.find(item => item.path === spec.path);
   if (artifact) artifact.digest = digest(specContent);
@@ -408,6 +500,8 @@ export function approveSpec(projectDir, config, flags = {}) {
   if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
   if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before approval; run `docguard specs --write` first.' });
   if (spec && spec.reviewed.lifecycle.context !== 'current') blockers.push({ code: 'SPC001', message: `Spec ${spec.specId} is retired; only a current spec can be approved.` });
+  const scope = spec ? applyReviewedScope(projectDir, spec, flags) : { problems: [], changed: false };
+  blockers.push(...scope.problems);
   const delivery = flags.delivery === undefined ? null : String(flags.delivery);
   if (delivery !== null && !APPROVABLE_DELIVERY.includes(delivery)) {
     blockers.push({ code: 'SPC002', message: `--delivery must be ${APPROVABLE_DELIVERY.join(', ')}; verified and released are recorded by \`docguard specs complete\`.` });
@@ -419,7 +513,7 @@ export function approveSpec(projectDir, config, flags = {}) {
   const from = spec ? { approval: spec.reviewed.lifecycle.approval, delivery: spec.reviewed.lifecycle.delivery } : null;
   const to = from ? { approval: 'approved', delivery: delivery && APPROVABLE_DELIVERY.includes(delivery) ? delivery : from.delivery } : null;
   const transition = from ? { approval: `${from.approval}→${to.approval}`, delivery: `${from.delivery}→${to.delivery}` } : null;
-  const unchanged = from && from.approval === to.approval && from.delivery === to.delivery;
+  const unchanged = from && from.approval === to.approval && from.delivery === to.delivery && !scope.changed;
   const result = {
     command: 'approve',
     specId: flags.id || null,
@@ -509,6 +603,11 @@ function printResult(result) {
     // migrated.
     console.log(`Note: registry uses an older encoding (${result.legacyForms.join(', ')}); content is unchanged. `
       + 'Run `docguard specs --write` to migrate it.');
+  }
+  if (result.unrecordedCompletions?.length) {
+    // docguard.completion-one-commit#FR-011: delivery is `verified` only because someone set it, or the spec predates outcomes.
+    console.log(`Note: ${result.unrecordedCompletions.length} spec(s) are verified or released with no recorded outcome (SPR010); \`docguard specs complete\` records one:`);
+    for (const id of result.unrecordedCompletions) console.log(`  ${id}: verified with no recorded outcome`);
   }
   if (result.untrackedEvidence?.length) {
     console.log(`Not counted: ${result.untrackedEvidence.length} untracked test file(s) carry requirement annotations. `
@@ -623,6 +722,7 @@ export function runSpecs(projectDir, config, flags = {}) {
       issues: projection.issues,
       differences: projection.differences,
       legacyForms: projection.legacyForms,
+      unrecordedCompletions: unrecordedCompletions(projection.registry),
     };
     if (flags.format === 'json') console.log(JSON.stringify(result, null, 2));
     else printResult(result);

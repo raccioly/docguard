@@ -165,7 +165,9 @@ JSON by hand.
 - Recording an approval rationale in the registry (it has no field for one;
   adding it is a schema change).
 - Commands for `persistenceModel`, `canonicalDocs` and relations; they stay
-  hand-reviewed edits.
+  hand-reviewed edits. *(Amended 2026-11-13, spec 101: `specs approve` and `specs complete` now take
+  `--persistence` and a repeatable `--canonical-doc`, because `complete` requires both. Relations
+  stay hand-reviewed.)*
 
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes

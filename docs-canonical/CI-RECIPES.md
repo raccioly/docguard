@@ -180,19 +180,38 @@ budgets even when read in batches; the outcome then records the skipped
 commits as `narrowedFrom`. Any other `--since` blocks with SPC006 and writes
 nothing (`specs/028-completion-revision-anchoring`).
 
+Close a spec in one commit, with no hand edit of `.docguard-specs.json`
+(`specs/101-completion-one-commit`): tick the last task, run `docguard specs
+--write`, then `docguard specs complete --id <spec-id> --since <ref>
+--canonical-doc <path> --persistence living --reason "<reviewed outcome>"
+--write` (`--canonical-doc` is repeatable; both flags also exist on `specs
+approve`), and commit once. Ticking boxes in the completing spec's own
+`tasks.md` is part of closing it; any other change to that file, or a tick in
+another spec's, still blocks. The tick, the registry record and the outcome land
+in one commit, so a gate that runs `guard` on every commit never sees DLC002 or
+a half-written record. Several completions can share that commit: the registry,
+active context and outcome blocks they write do not count as changes.
+
+The record survives a squash merge and a rebase. Each outcome also records the
+git blob of every evidence file (the `Blobs:` segment of its line in the spec's
+outcome block), and a recorded revision that is no longer an ancestor of `HEAD`
+is still anchored when the commit that landed the record has those blobs. Guard
+reports `SPR008` only when the evidence changed between review and landing (the
+message names the files), or for a record written before blobs were recorded;
+`docguard specs reanchor --id <spec-id> --write` moves such a record to the first
+commit on HEAD's first-parent history whose evidence files are byte-identical,
+and adds the blobs (`specs/028-completion-revision-anchoring`,
+`specs/101-completion-one-commit`). When no commit carries those bytes, or the
+old revision no longer resolves, `--to <merge commit> --reason "<why>"` records
+an attested anchor and the evidence files that differ. When one spec has
+dangling revisions from different merges, add `--from <revision>` so each is
+attested to its own merge. The next `specs complete` takes the landing commit as
+its diff base, so `--since` is needed only when no commit carries the evidence.
+
 Under squash merges, run completions on a branch whose HEAD is the default
-branch's tip, run as many `specs complete --write` as needed (the registry,
-active context and outcome blocks they write do not count as changes), and
-commit once. Every outcome then records a revision that stays on the default
-branch. A completion recorded on a PR branch's own commit would be discarded by
-the squash, and `specs complete` warns when that is about to happen. Guard
-reports such a revision as `SPR008`; `docguard specs reanchor --id <spec-id>
---write` moves it to the first commit on HEAD's first-parent history whose
-evidence files are byte-identical (`specs/028-completion-revision-anchoring`).
-When no commit carries those bytes, or the old revision no longer resolves,
-`--to <merge commit> --reason "<why>"` records an attested anchor and the
-evidence files that differ. When one spec has dangling revisions from different
-merges, add `--from <revision>` so each is attested to its own merge.
+branch's tip when a record carries no evidence blobs (one written before they
+were recorded): every outcome then records a revision that stays on the default
+branch, and `specs complete` warns when it does not.
 
 ## Recipe 3c — Spec-first gate
 

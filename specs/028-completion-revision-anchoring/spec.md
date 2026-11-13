@@ -148,25 +148,27 @@ specs in a row, and commits once. Every outcome records `main`'s tip.
 
 ### Functional Requirements
 
-- **FR-001**: The completion clean-tree check MUST ignore tracked changes
+- **FR-001** *(amended 2026-11-13, spec 101: the completing spec's own `tasks.md`, when the change only ticks boxes, is a lifecycle file too)*: The completion clean-tree check MUST ignore tracked changes
   confined to the lifecycle files completion writes:
   - the spec registry;
   - the active context file;
   - a spec file whose content, with its implementation-outcomes block removed,
     equals the committed content with its block removed.
-- **FR-002**: The Spec-Registry validator MUST emit SPR008 (warn) for each spec
+- **FR-002** *(amended 2026-11-13, spec 101)*: The Spec-Registry validator MUST emit SPR008 (warn) for each spec
   whose `lastReviewedRevision` or outcome revision does not resolve or is not an
-  ancestor of `HEAD`. In a shallow repository it MUST report partial coverage
+  ancestor of `HEAD`, unless the outcome carries its evidence blobs and the commit that landed the record
+  has them (`docguard.completion-one-commit` FR-006); its message then names the evidence files that differ. In a shallow repository it MUST report partial coverage
   instead.
-- **FR-003**: `specs reanchor --id <id> [--to <rev>] [--write --reason <text>]`
+- **FR-003** *(amended 2026-11-13, spec 101: it also backfills the evidence blobs of the latest outcome it moves, and treats a content-anchored revision as current)*: `specs reanchor --id <id> [--to <rev>] [--write --reason <text>]`
   MUST find, or accept, a target revision that is an ancestor of `HEAD` and
   whose evidence blobs equal the old revision's, or accept an attested target
   (`--to` with `--reason`) whose differing evidence files it records. It MUST rewrite
   `lastReviewedRevision`, the affected outcome revisions (registry and spec
   outcome block) and `reanchoredFrom` through `commitFileTransaction`. Without a
   resolvable old revision it MUST require both `--to` and `--reason`.
-- **FR-004**: `specs complete --write` MUST warn when `HEAD` is not reachable
-  from the remote default branch.
+- **FR-004** *(amended 2026-11-13, spec 101)*: `specs complete --write` MUST warn when `HEAD` is not reachable
+  from the remote default branch. Since spec 101 the warning says the record stays anchored by its evidence
+  blobs, and recommends `specs reanchor` only for a record that carries none.
 - **FR-005**: `docs/commands.md`, DATA-MODEL (`reanchoredFrom`) and CI-RECIPES
   (the completion workflow under squash merges) MUST document the behaviour.
 - **FR-006**: `specs reanchor --from <revision>` MUST limit the command to that

@@ -1,6 +1,7 @@
 /**
  * Append a bounded, machine-owned outcome index without rewriting spec intent.
  * @implements docguard.document-lifecycle#FR-016
+ * @implements docguard.completion-one-commit#FR-005
  */
 
 const START = '<!-- docguard:implementation-outcomes:start -->';
@@ -8,6 +9,48 @@ const END = '<!-- docguard:implementation-outcomes:end -->';
 
 function clean(value, max = 500) {
   return String(value || '').replace(/\s+/g, ' ').replace(/[<>`]/g, '').trim().slice(0, max);
+}
+
+// docguard.completion-one-commit#FR-005: the evidence blob ids ride at the end of
+// the outcome line, after every cleaned field, so user text (stripped of backticks
+// by clean()) cannot forge the segment, and the registry's closed key set stays
+// untouched (a 0.48.0 reader rejects any new key). These two functions are the
+// only code that knows the carrier.
+const BLOB_ID = '[0-9a-f]{40}(?:[0-9a-f]{24})?';
+const BLOBS_TAIL = new RegExp(` Blobs: ((?:\`[^\`\\n]+\`=\`${BLOB_ID}\`(?:, )?)+)\\.$`);
+
+/** ` Blobs: \`path\`=\`id\`, ….` for a path→blob map, or '' when there is none. */
+export function formatOutcomeBlobs(blobs) {
+  const entries = Object.entries(blobs || {}).filter(([path, id]) => path && !/[`\n]/.test(path) && new RegExp(`^${BLOB_ID}$`).test(id));
+  if (!entries.length) return '';
+  return ` Blobs: ${entries.sort(([a], [b]) => a.localeCompare(b)).map(([path, id]) => `\`${path}\`=\`${id}\``).join(', ')}.`;
+}
+
+/**
+ * The path→blob map recorded for the outcome at `revision`, or null when that
+ * outcome has none (a record written before this field existed).
+ */
+export function readOutcomeBlobs(content, revision) {
+  const start = String(content).indexOf(START);
+  const end = String(content).indexOf(END, start);
+  if (start < 0 || end < 0) return null;
+  const line = content.slice(start, end).split('\n').find(item => item.startsWith(`- \`${revision}\``));
+  const tail = line && BLOBS_TAIL.exec(line);
+  if (!tail) return null;
+  const blobs = {};
+  for (const [, path, id] of tail[1].matchAll(new RegExp(`\`([^\`\\n]+)\`=\`(${BLOB_ID})\``, 'g'))) blobs[path] = id;
+  return Object.keys(blobs).length ? blobs : null;
+}
+
+/** The spec with `blobs` set on the outcome line at `revision`; every other byte is unchanged. */
+export function writeOutcomeBlobs(content, revision, blobs) {
+  const start = content.indexOf(START);
+  const end = content.indexOf(END, start);
+  const segment = formatOutcomeBlobs(blobs);
+  if (start < 0 || end < 0 || !segment) return content;
+  const block = content.slice(start, end).split('\n').map(line => (line.startsWith(`- \`${revision}\``)
+    ? `${line.replace(BLOBS_TAIL, '')}${segment}` : line)).join('\n');
+  return content.slice(0, start) + block + content.slice(end);
 }
 
 // The outcome arrives in the registry's canonical form, so the line lists
@@ -25,7 +68,7 @@ export function appendImplementationOutcome(content, outcome) {
   const skipped = narrowed
     ? ` Not reconciled: \`${narrowed.revision.slice(0, 12)}\`..\`${narrowed.since.slice(0, 12)}\` (${narrowed.skippedCommits} commit${narrowed.skippedCommits === 1 ? '' : 's'}) — ${clean(narrowed.reason)}`
     : '';
-  const line = `- \`${outcome.revision}\` — ${reason} Evidence: ${evidence}. Accepted deviations: ${deviations}. Successor: ${successor}.${skipped}`;
+  const line = `- \`${outcome.revision}\` — ${reason} Evidence: ${evidence}. Accepted deviations: ${deviations}. Successor: ${successor}.${skipped}${formatOutcomeBlobs(outcome.evidenceBlobs)}`;
   const block = `${START}\n## Implementation Outcomes\n\n${line}\n${END}`;
   const pattern = new RegExp(`${START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
   if (!pattern.test(content)) return `${content.trimEnd()}\n\n${block}\n`;

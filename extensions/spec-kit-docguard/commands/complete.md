@@ -35,8 +35,13 @@ docguard specs approve --id <spec-id> --delivery implemented --write
    the maintainer. Apply it only when the maintainer supplies the rationale:
 
 ```bash
-docguard specs complete --id <spec-id> --since <ref> --write --reason "<reviewed outcome>"
+docguard specs complete --id <spec-id> --since <ref> --canonical-doc <doc> --write --reason "<reviewed outcome>"
 ```
+
+   `--canonical-doc <path>` (repeatable) and `--persistence living|flow_forward|flow_back`
+   record the reviewed scope; never edit `.docguard-specs.json` by hand. Tick the
+   last task and run `docguard specs --write` first, then commit the tick, the
+   registry and the outcome together.
 
 The write records the outcome, advances delivery through `implemented` to
 `verified`, and regenerates `.docguard/current-context.json` as one staged,

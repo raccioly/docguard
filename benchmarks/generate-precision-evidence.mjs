@@ -27,6 +27,8 @@ export function renderEvidenceModule(evidence) {
  * Every ratio here is benchmark precision on labelled, deliberately balanced
  * cases. It is not the probability that a finding in a user's repository is
  * real, and a code absent from \`byCode\` has no benchmark evidence at all.
+ *
+ * @implements docguard.precision-evidence-loop#FR-019
  */
 
 export const PRECISION_EVIDENCE = Object.freeze(${JSON.stringify(evidence, null, 2)});

@@ -98,6 +98,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     fails on the code before this change), so both codes now carry measured
     evidence.
 
+### Changed
+
+- **Specs: one commit closes a spec, and the completion record survives a squash merge
+  or a rebase (`specs/101-completion-one-commit`).** This change REMOVES `SPR008` findings
+  and `DLC002` findings and ADDS `SPR010`. Before, `specs complete` refused to run while the
+  spec's last task tick was uncommitted (SPC001), so the tick was committed first and that
+  commit raised `DLC002`; `canonicalDocs` and `persistenceModel` were hand edits of
+  `.docguard-specs.json`; and the recorded commit id was not an ancestor of `HEAD` after a
+  squash or a rebase, so `SPR008` fired until a second "reanchor" commit landed. Now:
+
+  ```
+  # tick the last task, then
+  docguard specs --write
+  docguard specs complete --id <spec-id> --since <ref> --canonical-doc <path> \
+    --persistence living --reason "<what was reviewed>" --write
+  git add -A && git commit
+  ```
+
+  `specs approve` takes the same repeatable `--canonical-doc <path>` (each must exist; stored
+  sorted and deduplicated, replacing the list) and `--persistence living|flow_forward|flow_back`.
+  Ticking boxes in the completing spec's own `tasks.md` no longer blocks `complete` (any other
+  change to it, and any change to another spec's, still does), so the tick, the record and the
+  outcome land in one commit that passes `guard`. Each new outcome also records the git blob of
+  every evidence file, as a `Blobs:` segment of its line in the spec's outcome block (not in
+  the registry, whose closed key set a 0.48.0 reader enforces). `SPR008` no longer fires for a
+  recorded revision that is not on the history when the commit that landed the record has those
+  blobs; it fires when the evidence changed between review and landing, and its message names
+  the files that differ. The next `complete` takes that landing commit as its diff base, so it
+  needs `--since` only when no commit carries the evidence. Records written before this change
+  behave as before, and `specs reanchor` still repairs them (and adds the blobs).
+  **Findings that can appear:** `SPR010` (warn): a current spec whose delivery is `verified` or
+  `released` and whose registry entry records no outcome, which `specs approve` cannot set and
+  `specs complete` never leaves empty, so it was set by hand. Measured on this repository
+  and ten other repositories with a registry: 0 specs flagged (only this repository has any
+  verified spec, 87 of them, all with outcomes). `specs --check` lists them too
+  (`unrecordedCompletions` in `--format json`).
+
+
 ### Fixed
 
 - **Tests: a fixture commit no longer starts git background maintenance.** `FIXTURE_GIT`

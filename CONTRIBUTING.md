@@ -131,6 +131,28 @@ test: add edge case tests for score command
 4. Update relevant docs in `docs-canonical/` if architecture changed
 5. Request review
 
+## Closing a Spec
+
+A change that implements a spec closes it in the same pull request, in one
+commit, with no hand edit of `.docguard-specs.json` (`specs/101-completion-one-commit`):
+
+```bash
+# tick the last task in specs/<feature>/tasks.md, then:
+docguard specs --write
+docguard specs complete --id <spec-id> --since <ref> \
+  --canonical-doc docs-canonical/ARCHITECTURE.md --persistence living \
+  --reason "<what was reviewed>" --write
+git add -A && git commit
+```
+
+`specs approve` takes the same `--canonical-doc` (repeatable) and `--persistence`
+flags. Ticking boxes in the completing spec's own `tasks.md` does not block
+`complete`; any other change to it does. The record carries the git blob of every
+evidence file, so a squash merge or a rebase does not strand it: there is no
+second "reanchor" commit. Run `docguard specs reanchor --id <spec-id> --write`
+only when guard reports SPR008 (a record written before blobs were recorded, or
+evidence that changed between review and landing).
+
 ## Code Style
 
 - ES Modules (`import`/`export`) throughout
