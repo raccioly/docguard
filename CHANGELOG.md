@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sections handed to an agent say when their document may be stale.**
+  `docguard_read_section`, `docguard_task_context` and `docguard agent --task`
+  mark a section with `possiblyStale` when its agent-instruction document has a
+  review that no longer covers the files it names (`suspect-review`) or a
+  current guard run found it due for review (`review-due`), and give
+  `stalenessBasis` so an unmarked section is not read as fresh. Nothing runs
+  guard (specs/097-strict-by-default T028b, from spec 096).
+- **FRS002 ranked and capped in text.** Guard's text output shows the three
+  most stale FRS002 findings and one line for the rest; `--verbose` and JSON
+  keep every one, so exit codes, totals and baselines do not change (T028b).
+
 - **DocGuard's own repository runs strict.** Its `.docguard.json` sets
   `"enforcement": "strict"`; in a full checkout no applicable validator is
   empty, inconclusive or blocked, so guard still exits 2 (warnings only) and CI
@@ -238,6 +249,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   English. Documentation only; support for other languages stays open in #644.
 
 ### Fixed
+
+- **`review --accept` with several paths** recorded only the first and exited 0.
+  It now records every path in one transaction, or refuses all of them, writes
+  nothing, and names the path it could not accept (T028a).
+- **A strict row for unexamined documents said "Freshness is pass".** The
+  Adopt block, `docguard upgrade` and the could-not-read block now say
+  "Freshness did not examine N document(s) (cause)" (T028a).
 
 - **One definition of a requirement ID, shared.** `cli/shared-requirement-ids.mjs`
   decides what counts as a requirement (FR, NFR, SC and REQ IDs in spec and

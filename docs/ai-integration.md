@@ -55,7 +55,7 @@ applies to stdio and `--transport http`).
 | `docguard_report` | Commit-stamped compliance evidence with a tamper-evident integrity hash |
 | `docguard_docs_for_path` | Which canonical doc lines, agent-instruction lines, `@implements`/`@req` IDs, `@doc` annotations and `covers=` sections describe one file. `docs.lifecycle` names each referencing doc whose header status is not active (`superseded`, `retired`, or its status), so an agent can skip it. `docs.openFindings` gives each doc's finding codes when `docguard sensor --aidlc` has cached a guard run for the exact tree state; `docs.findingsBasis` says whether it has (`sensor-cache` or `no-current-guard-run`). |
 | `docguard_doc_structure` | One document's headings (with anchors, line ranges, bytes), section markers and fact markers |
-| `docguard_read_section` | One section by id, anchor or heading, bounded (8 KiB default, 32 KiB cap, `nextOffset` when truncated) |
+| `docguard_read_section` | One section by id, anchor or heading, bounded (8 KiB default, 32 KiB cap, `nextOffset` when truncated); `possiblyStale` when its document is due for review or its review no longer covers it, and `stalenessBasis` saying what was looked at |
 | `docguard_task_context` | The `agent --task` context packet: task-linked requirements, code and test pointers, excerpts |
 | `docguard_anchors` | Each `@implements`/`@req` tag, the requirement it resolves to, and the symbol, statement, route or file it anchors to, with its tier |
 | `docguard_diagnose` | Failing/warning validators with per-finding suggestions, shaped for action |

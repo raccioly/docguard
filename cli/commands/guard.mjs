@@ -216,6 +216,22 @@ export function classifyResult(result) {
   return { status, quality };
 }
 
+/** How many FRS002 lines guard's text output shows per run (T028b); JSON keeps every one. */
+export const FRS002_SHOWN = 3;
+
+/**
+ * FRS002 findings, most stale first: measured staleness evidence (the largest
+ * share of a referenced file added since the review, spec 095) first, then the
+ * repository-wide commit count the message states, then the location.
+ * @implements docguard.strict-by-default#FR-014
+ */
+export function rankFrs002(items) {
+  const share = i => Math.max(0, ...((i.staleness?.references || []).map(r => Number(r.share) || 0)));
+  const commits = i => Number((String(i.message || '').match(/(\d+) code commits since/) || [])[1]) || 0;
+  const where = i => String(typeof i.location === 'string' ? i.location : i.location?.file || '');
+  return [...items].sort((a, b) => share(b) - share(a) || commits(b) - commits(a) || where(a).localeCompare(where(b)));
+}
+
 /**
  * v0.27: the list of issues to render for a validator. Prefers structured
  * findings (code + confidence + suggestion) when present; otherwise maps the
@@ -236,6 +252,8 @@ function renderableItems(v) {
       // nothing while the summary counts said escalations existed.
       disposition: f.disposition,
       suggestion: f.suggestion,
+      location: f.location,
+      staleness: f.staleness,
     }));
   }
   return [
@@ -1063,7 +1081,17 @@ export function runGuard(projectDir, config, flags) {
     // v0.27: render from structured findings when the validator emits them
     // (each issue carries a code, confidence, and a `→ suggestion`); otherwise
     // fall back to the legacy error/warning strings. Identical gating.
-    for (const item of renderableItems(v)) {
+    // T028b: identical repository-wide FRS002 lines train a reader to skip them. Text shows the
+    // FRS002_SHOWN most stale and one line for the rest; --verbose and JSON keep every one, so the exit
+    // code, the totals and the baseline do not move.
+    let items = renderableItems(v);
+    let hiddenFrs002 = 0;
+    if (v.key === 'freshness' && !flags.verbose) {
+      const frs002 = rankFrs002(items.filter(i => i.code === 'FRS002'));
+      hiddenFrs002 = Math.max(0, frs002.length - FRS002_SHOWN);
+      items = [...items.filter(i => i.code !== 'FRS002'), ...frs002.slice(0, FRS002_SHOWN)];
+    }
+    for (const item of items) {
       if (item.severity === 'error' && !showErr) continue;
       if (item.severity === 'warn' && !showWarn) continue;
       const effective = item.effectiveSeverity || item.severity;
@@ -1086,6 +1114,9 @@ export function runGuard(projectDir, config, flags) {
           console.log(`         ${c.dim}${item.suggestion.pragma}${c.reset}`);
         }
       }
+    }
+    if (hiddenFrs002 > 0 && showWarn) {
+      console.log(`     ${c.yellow}⚠${c.reset} ${c.dim}[FRS002] and ${hiddenFrs002} more document(s) due for review by the repository-wide count — \`docguard guard --verbose\` lists them all${c.reset}`);
     }
     // If a validator reports passed < total but has no errors/warnings, surface
     // the gap honestly so users aren't left wondering where the deficit went.

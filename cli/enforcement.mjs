@@ -270,24 +270,40 @@ function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite
 export const WAIVER_FORM = '<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->';
 
 /**
+ * The first line of a strict row. A row for documents a validator left
+ * unexamined (FR-021) names the documents, never the validator's verdict: the
+ * validator may have passed on everything else, and "Freshness is pass" on a
+ * row that blocks the run reads as a contradiction (T028a).
+ */
+export function strictRowHeadline(u) {
+  const cause = u.cause ? ` (${u.cause})` : '';
+  const newIn = u.newIn ? ` — new in v${u.newIn}` : '';
+  return u.documents?.length
+    ? `${u.name} did not examine ${u.documents.length} document(s)${cause}${newIn}`
+    : `${u.name} is ${u.verdict}${cause}${newIn}`;
+}
+
+/** One blocking row as the Adopt block and `docguard upgrade` print it: the headline, then why and the fix. */
+export function strictRowLines(u) {
+  const lines = [`  • ${strictRowHeadline(u)}`];
+  if (u.documents?.length) {
+    if (u.reason) lines.push(`      ${u.reason}`);
+    if (u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
+    return lines;
+  }
+  const fix = u.howToConfigure || u.reason;
+  if (fix) lines.push(`      ${fix}`);
+  return lines;
+}
+
+/**
  * The "Adopt" block of FR-014, as lines of text without color: the fix per
  * unexamined validator, the command that records existing findings, the
  * waiver form, and the key that selects the lower mode, in that order.
  */
 export function adoptLines(strict) {
   const lines = ['Adopt — what strict found and how to resolve each item:'];
-  for (const u of strict.unexamined.filter(u => u.blocking)) {
-    if (u.documents?.length) {
-      // A validator that examined other things and left these documents unexamined (FR-021).
-      lines.push(`  • ${u.name} did not examine ${u.documents.length} document(s)${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
-      if (u.reason) lines.push(`      ${u.reason}`);
-      if (u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
-      continue;
-    }
-    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
-    const fix = u.howToConfigure || u.reason;
-    if (fix) lines.push(`      ${fix}`);
-  }
+  for (const u of strict.unexamined.filter(u => u.blocking)) lines.push(...strictRowLines(u));
   const gatingTotal = strict.gating.reduce((n, g) => n + g.count, 0);
   if (gatingTotal > 0) {
     lines.push(`  Record the ${gatingTotal} existing finding(s) that fail the build (new ones of the same code still fail):`);
@@ -310,7 +326,7 @@ export function couldNotReadLines(strict) {
   if (items.length === 0) return [];
   const lines = ['DocGuard could not read: (reported only; this does not change the exit code)'];
   for (const u of items) {
-    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}`);
+    lines.push(`  • ${strictRowHeadline({ ...u, newIn: null })}`);
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
     if (u.documents?.length && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);

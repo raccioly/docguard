@@ -153,6 +153,10 @@ export function runAgent(projectDir, config, flags) {
     }
     for (const excerpt of packet.excerpts) {
       console.log(`  ${c.bold}${excerpt.path}:${excerpt.startLine}-${excerpt.endLine}${c.reset} ${c.dim}[${excerpt.kind} · score ${excerpt.score}]${c.reset}`);
+      if (excerpt.possiblyStale) {
+        const why = excerpt.possiblyStale.signals.map(s => (s === 'suspect-review' ? `its ${excerpt.possiblyStale.since} review no longer covers the files it names` : 'it is due for review')).join('; ');
+        console.log(`  ${c.yellow}⚠ possibly stale: ${why} — read the code before trusting this excerpt${c.reset}`);
+      }
       for (const line of excerpt.content.split('\n')) console.log(`    ${line}`);
       console.log('');
     }

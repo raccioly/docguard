@@ -23,7 +23,8 @@
 
 import { lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
+import { agentInstructionDocs, agentInstructionKind, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
+import { currentFileCodes } from '../sensor-cache.mjs';
 import { listTrackedFiles, runGit } from '../shared-git.mjs';
 import { createContext, fingerprint } from './doc-deps.mjs';
 import { DOC_REVIEWS_PATH, documentReferences, readDocReviews } from './doc-reviews.mjs';
@@ -314,3 +315,48 @@ export function agentInstructionReviewStatus(dir, config = {}) {
   }
   return out;
 }
+
+/** Finding codes that say a document is due for review, as the sensor cache records them per file. */
+const REVIEW_DUE_CODES = new Set(['FRS002', 'FRS003', 'FRS006', 'FRS007']);
+
+/**
+ * Whether excerpts of these documents may be stale, for the sections handed
+ * to an agent (`docguard agent --task`, MCP `docguard_task_context` and
+ * `docguard_read_section`; specs/097-strict-by-default T028b, from spec 096).
+ * Never runs guard:
+ *   - `suspect-review`: an agent-instruction document whose review no longer
+ *     covers it by FRS006's rule, measured directly (`since` is the review date);
+ *   - `review-due`: the sensor cache for this exact tree state lists a review
+ *     code (FRS002, FRS003, FRS006, FRS007) on the document.
+ * `basis` says how much was looked at, so an absent mark never reads as
+ * "fresh": `sensor-cache` (both signals), or `review-only` (no current guard
+ * run, so only the direct review check ran).
+ * @param {string[]} paths project-relative document paths
+ * @returns {{ basis: 'sensor-cache'|'review-only', marks: Map<string, { signals: string[], since?: string }> }}
+ */
+export function excerptStaleness(dir, config, paths) {
+  const unique = [...new Set(paths)];
+  const codes = currentFileCodes(dir);
+  const marks = new Map();
+  const add = (path, signal, since) => {
+    const m = marks.get(path) || { signals: [] };
+    if (!m.signals.includes(signal)) m.signals.push(signal);
+    if (since) m.since = since;
+    marks.set(path, m);
+  };
+  const agentFiles = new Set([...ROOT_AGENT_FILES, ...[].concat(config?.requiredFiles?.agentFile || [])]);
+  const agentPaths = unique.filter(p => agentFiles.has(p) || agentInstructionKind(p));
+  if (agentPaths.length) {
+    try {
+      const ctx = reviewContext(dir, config);
+      for (const doc of ctx.authored.filter(d => agentPaths.includes(d.path))) {
+        const status = ctx.statusFor(doc);
+        if (status?.point && !status.point.unavailable && status.crossing?.length) add(doc.path, 'suspect-review', status.point.date);
+      }
+    } catch { /* an unreadable history leaves the excerpt unmarked; the basis still says what ran */ }
+  }
+  if (codes) for (const p of unique) if ((codes[p] || []).some(code => REVIEW_DUE_CODES.has(code))) add(p, 'review-due');
+  for (const m of marks.values()) m.signals.sort();
+  return { basis: codes ? 'sensor-cache' : 'review-only', marks };
+}
+
