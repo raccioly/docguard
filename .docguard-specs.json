@@ -4311,32 +4311,32 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 445
+            "line": 446
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 460
+            "line": 461
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 477
+            "line": 478
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 184
+            "line": 185
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 236
+            "line": 237
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 251
+            "line": 252
           },
           {
             "requirementId": "FR-006",
@@ -5603,7 +5603,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 406
+            "line": 407
           },
           {
             "requirementId": "FR-002",
@@ -5663,7 +5663,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 353
+            "line": 354
           },
           {
             "requirementId": "FR-008",
@@ -7450,7 +7450,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 520
+            "line": 529
           },
           {
             "requirementId": "FR-005",
@@ -16319,7 +16319,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metadata-sync.mjs",
-            "line": 118
+            "line": 141
           },
           {
             "requirementId": "FR-006",
@@ -16339,7 +16339,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/requirement-anchors.mjs",
-            "line": 136
+            "line": 108
           },
           {
             "requirementId": "FR-006",
@@ -16384,7 +16384,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/traceability.mjs",
-            "line": 135
+            "line": 136
           },
           {
             "requirementId": "FR-007",

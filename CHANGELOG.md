@@ -73,6 +73,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for an architecture document kept elsewhere even when the test spec exists,
   and Test-Spec names both accepted map headings in every fix text
   (`docguard.strict-by-default` FR-006, T018f).
+- **Group A, third proof pass.** Metadata-Sync counts only a version stated for
+  this package (`<package>@x.y.z`, a URL that names the package, a `version:`
+  line that opens its line in a document that names the package); the
+  comparison and the applicability decision share that one selection, so
+  another tool's minimum version in a guide is neither compared nor counted.
+  Traceability's `performed` is the number of requirements it examined (`total`
+  is unchanged), a template row (`System MUST [capability]`) is no longer a
+  requirement and draws no TRC004, and a project that declares no requirement
+  is not applicable. The placeholder and requirement-ID definition moved to
+  `cli/shared-requirement-definition.mjs`, shared with Requirement-Anchors.
+  Docs-Diff, Test-Spec and Environment find an architecture, test or
+  environment document by a folder or file name that contains the role's word,
+  and otherwise give the exact `docs.roles` snippet with a placeholder path
+  (`docguard.strict-by-default` FR-006, T018g).
 - **OWN008: an ownership entry with a placeholder purpose.** A `purpose` that is
   blank or a `<placeholder>` is reported, so a drafted block applied unedited no
   longer passes. An entry that omits `purpose` is unaffected (FR-004).

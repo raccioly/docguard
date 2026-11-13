@@ -191,6 +191,21 @@ describe('group A: defects the Stage A proof found', () => {
       }
     });
 
+    it('a version stated for this package is read in three forms: the install line, a URL that names it, a version: line in a document about it', async () => {
+      for (const readme of ['npm install svc@1.2.0\n', 'https://example.com/org/svc/releases/download/v1.2.0/svc.tgz\n', '# svc\n\nversion: 1.2.0\n']) {
+        const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': PKG, 'README.md': readme } });
+        assert.equal(a.applies, true, readme);
+      }
+    });
+
+    it('a version of another tool is not one for this package: a URL for another project, a key that ends in version:, a version: line in a document that does not name the package', async () => {
+      for (const readme of ['The svc guide.\nhttps://example.com/framework/releases/download/v3.2.0/x.tgz\n', 'The svc guide.\nminimum_pre_commit_version: 3.2.0\n', '# Hooks\n\nversion: 3.2.0\n']) {
+        const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': PKG, 'README.md': readme } });
+        assert.equal(a.applies, false, readme);
+        assert.match(a.evidence, /for this package/);
+      }
+    });
+
     it('a package with no version does not apply', async () => {
       const a = await decideOf('metadata-sync', 'applies', 'metadataSync', { files: { 'package.json': JSON.stringify({ name: 'app' }) } });
       assert.equal(a.applies, false);
@@ -296,6 +311,22 @@ describe('group A: defects the Stage A proof found', () => {
       assert.match(r.howToConfigure, /"architecture": "docs-implementation\/ARCHITECTURE\.md"/);
     });
 
+    it('Docs-Diff: an architecture document in an architecture folder under another name is offered as a mapping', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', 'docs/03-architecture/SYSTEM-OVERVIEW.md': '# System overview\n' } });
+      assert.match(r.howToConfigure, /"architecture": "docs\/03-architecture\/SYSTEM-OVERVIEW\.md"/);
+    });
+
+    it('Docs-Diff: with several candidates it names them and gives the hand-mapping snippet with a placeholder', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', 'docs/architecture/A.md': '# a\n', 'docs/architecture/B.md': '# b\n' } });
+      assert.match(r.howToConfigure, /candidates: docs\/architecture\/A\.md, docs\/architecture\/B\.md/);
+      assert.match(r.howToConfigure, /"architecture": "<path\/to\/your-document\.md>"/);
+    });
+
+    it('Docs-Diff: with no candidate at all the fix text still says how to map a document by hand', () => {
+      const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'docs-canonical/TEST-SPEC.md': '# Test Spec\n', 'notes/thoughts.md': '# thoughts\n' } });
+      assert.match(r.howToConfigure, /"architecture": "<path\/to\/your-document\.md>"/);
+    });
+
     it('Docs-Diff: an unmapped architecture document elsewhere is offered as a mapping', () => {
       const r = resultOf('docsDiff', { files: { 'package.json': EXPRESS, 'tests/a.test.js': 't\n', 'docs-implementation/ARCHITECTURE.md': '# Architecture\n\nExpress.\n' } });
       assert.match(r.howToConfigure, /"architecture": "docs-implementation\/ARCHITECTURE\.md"/);
@@ -354,5 +385,37 @@ describe('group A: defects the Stage A proof found', () => {
         }
       }
     });
+  });
+});
+
+describe('group A: Traceability traces requirements', () => {
+  const FR = '# Requirements\n\n- **FR-001**: The system MUST list the orders of a customer.\n- **FR-002**: The system MUST [capability]\n- **FR-003**: The system MUST cancel an order.\n';
+  const files = (extra = {}) => ({ 'package.json': PKG, 'docs-canonical/REQUIREMENTS.md': FR, ...extra });
+
+  it('performed is the number of requirements traced, and a template row is not one', () => {
+    const { result } = run('traceability', { files: files({ 'tests/a.test.js': '// @req FR-001\ntest("a", () => {});\n' }) });
+    assert.equal(result.performed, 2, 'FR-001 and FR-003; the placeholder row FR-002 is neither traced nor reported');
+    assert.ok(!(result.findings || []).some(f => /FR-002/.test(f.message)), 'no TRC004 on the template row');
+    assert.equal((result.findings || []).filter(f => f.code === 'TRC004').length, 1, 'only FR-003 has no test');
+  });
+
+  it('keeps `total` as the checks it counted under standard (requirements plus orphan references plus document checks)', () => {
+    const dir = project(files({ 'tests/a.test.js': '// @req FR-001\ntest("a", () => {});\n' }), cfg('traceability', { enforcement: 'standard' }));
+    const result = runGuardInternal(dir, loadConfig(dir)).validators.find(v => v.key === 'traceability');
+    assert.equal(result.total, 2);
+    assert.equal(result.passed, 1);
+  });
+
+  it('a project with documents and no requirement does not apply, and says no requirement ID is declared', async () => {
+    const { dir, config, result } = run('traceability', { files: { 'package.json': PKG, 'docs-canonical/NOTES.md': '# Notes\n' } });
+    assert.equal(result.applies.applies, false);
+    assert.match(result.applies.evidence, /no requirement ID is declared/);
+    const a = (await import('../cli/validators/traceability.mjs')).applies(dir, config);
+    assert.equal(a.applies, false);
+  });
+
+  it('a project whose only IDs are tasks or decisions is not applicable either', () => {
+    const { result } = run('traceability', { files: { 'package.json': PKG, 'specs/001-x/tasks.md': '- [ ] T001 do it\n' } });
+    assert.equal(result.applies.applies, false);
   });
 });

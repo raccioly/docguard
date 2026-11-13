@@ -18,11 +18,11 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { revisionResolves } from '../scanners/doc-deps.mjs';
 import { ANCHOR_LOCK_PATH, anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
-import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
+import { getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { requirementPatterns } from '../shared-requirements.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { PLACEHOLDER_TEXT, classifyRequirements } from '../shared-requirement-definition.mjs';
 import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
 const MAX_FINDINGS = 25;
@@ -66,10 +66,6 @@ function suggestionFor(projectDir, p) {
   }
 }
 
-// A requirement line whose text is a bracketed placeholder ("System MUST [capability]") is a template row, not a requirement.
-// (a task checkbox, `[ ]` or `[x]`, is not a placeholder: the bracket must hold a word)
-const PLACEHOLDER_TEXT = /\[[^\]\n]*[A-Za-z][^\]\n]*\](?!\()/;
-const isPlaceholder = def => PLACEHOLDER_TEXT.test(String(def.text || '').replace(def.id, '').replace(/[*_`]/g, ''));
 // A declaration-shaped line that opens with an ID the default patterns do not read (FR-1: one digit, R-12: one letter).
 const LOOSE_ID = /^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s*)?[\s*`_]*([A-Z]{1,6}-\d{1,5})\b/;
 
@@ -92,30 +88,6 @@ function unreadIds(projectDir, config, patterns) {
   return found;
 }
 
-// What counts as a requirement ID when the project has not configured its own pattern. The scanner reads more
-// shapes (it is also a navigation aid), but "this project has requirements to anchor" is a narrower question.
-// Counted: FR, NFR, SC and REQ, the prefixes of a requirement list (`- **FR-001**: The system MUST ...`).
-// Not counted: T (a task ID), ARCH, MOD and SYS (design elements), US, STORY, UC and AC (stories, use cases and
-// acceptance checks, which describe or test a requirement rather than state one).
-const REQUIREMENT_PREFIXES = new Set(['FR', 'NFR', 'SC', 'REQ']);
-const KIND_OF_PREFIX = { T: 'task', ARCH: 'design-element', MOD: 'design-element', SYS: 'design-element', US: 'story', STORY: 'story', UC: 'use-case', AC: 'acceptance-check' };
-// Where an ID is not a requirement whatever its prefix: a decision record, an open-item or question list, a task list.
-const DECISION_DOC = /(?:^|\/)(?:adrs?|decisions?)\/|(?:^|\/)[^/]*(?:adr|decision)[^/]*\.md$/i;
-const OPEN_ITEM_DOC = /(?:^|\/)[^/]*(?:open[-_ ]?(?:items?|questions?|issues?)|questions|clarifications?)[^/]*\.md$/i;
-const TASK_DOC = /(?:^|\/)[^/]*(?:tasks?|todo|plan)[^/]*\.md$/i;
-
-/** Why a declared ID is not a requirement, or null when it is one (or the project's own pattern says it is). */
-function nonRequirementKind(def, custom) {
-  if (custom) return null;
-  const file = String(def.file || '');
-  if (DECISION_DOC.test(file)) return 'decision';
-  if (OPEN_ITEM_DOC.test(file)) return 'open-item';
-  if (TASK_DOC.test(file)) return KIND_OF_PREFIX[def.id.split('-')[0]] || 'task-list';
-  const prefix = def.id.split('-')[0];
-  if (!REQUIREMENT_PREFIXES.has(prefix)) return KIND_OF_PREFIX[prefix] || 'other';
-  return null;
-}
-
 /**
  * Does this kind of check belong to the project? It does when the project
  * declares requirement IDs and has product source code to tag.
@@ -136,18 +108,7 @@ function nonRequirementKind(def, custom) {
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
-  const patterns = requirementPatterns(config);
-  const custom = Boolean(config.traceability?.requirementPattern);
-  const all = [...collectRequirementIds(projectDir, config, patterns).values()];
-  const declared = all.filter(d => !isPlaceholder(d));
-  const placeholders = all.length - declared.length;
-  const skipped = new Map();
-  const real = declared.filter(d => {
-    const kind = nonRequirementKind(d, custom);
-    if (kind) skipped.set(kind, (skipped.get(kind) || 0) + 1);
-    return !kind;
-  });
-  const skippedText = [...skipped].map(([k, n]) => `${n} ${k}`).join(', ');
+  const { patterns, custom, real, placeholders, skipped, skippedText } = classifyRequirements(projectDir, config);
   const source = firstProductSource(projectDir, config);
   if (real.length === 0) {
     const loose = source ? unreadIds(projectDir, config, patterns) : new Map();
