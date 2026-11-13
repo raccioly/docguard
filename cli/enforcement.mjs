@@ -112,7 +112,9 @@ export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS
  *   - `couldNotRead`, which never changes the exit code: it performed at least one
  *     check and could not observe the rest (a partial `inconclusive`: unreadable
  *     routes, an optional parser that is absent), or its cause is
- *     `layout-not-recognized`, a limit of DocGuard and not a gap in the project.
+ *     `layout-not-recognized`, a limit of DocGuard and not a gap in the project, or
+ *     `history-unavailable`, a shallow checkout that does not carry the git history
+ *     the check reads (added 2026-11-13).
  *     `--fail-on-inconclusive` and `requiredChecks` keep their own rules.
  *
  * `gating` is the findings that fail the build, by code (Stage A: exactly the
@@ -153,10 +155,13 @@ export function buildStrictReport(results, {
     // was partly examined (at least one check ran) is reported and leaves the exit code alone.
     const partial = r.verdict === 'inconclusive' && performedChecks(r) >= 1;
     const unreadLayout = r.verdict === 'empty' && cause === 'layout-not-recognized';
+    // A shallow checkout hides the history the check reads: a property of the checkout, not of the project's documents.
+    const noHistory = r.verdict === 'empty' && cause === 'history-unavailable';
     const unclassified = r.verdict === 'empty' && cause !== 'needs-declaration' && cause !== 'needs-content';
-    if (partial || unreadLayout || unclassified) {
+    if (partial || unreadLayout || noHistory || unclassified) {
       couldNotRead.push({
         validator: r.key, name: r.name || r.key, verdict: r.verdict, cause, reason,
+        ...(noHistory && typeof r.howToConfigure === 'string' && r.howToConfigure ? { howToConfigure: r.howToConfigure } : {}),
         ...(Array.isArray(r.layouts) && r.layouts.length ? { layouts: r.layouts } : {}),
       });
       continue;
@@ -213,13 +218,16 @@ export function buildStrictReport(results, {
  *     join its entry. A waived validator and a `--changed-only` run do not block.
  *   - A non-blocking document (the project may not own it) goes to
  *     `couldNotRead`, one entry per validator key, and never changes the exit code.
+ *   - A `history-unavailable` document (a shallow checkout hides the history its review
+ *     point needs) goes to `couldNotRead` too, with the fetch-the-history fix; it joins the
+ *     validator's own `history-unavailable` entry when there is one.
  * Each entry's cause is its first document's (the validator orders them); its
  * reason names up to three documents, then a count, and the first reason of
  * each cause; its fix is the first document's step of each cause.
  */
 function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion }) {
   const docs = Array.isArray(r.unexaminedDocuments)
-    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content'))
+    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content' || d.cause === 'history-unavailable'))
     : [];
   if (docs.length === 0) return;
   if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) return;
@@ -232,8 +240,9 @@ function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite
       fix: firstOfEach.map(d => d.howToConfigure).filter(Boolean).join(' ') + (list.length > firstOfEach.length ? ' (one review per document)' : ''),
     };
   };
-  const blocking = docs.filter(d => d.blocking !== false);
-  const listed = docs.filter(d => d.blocking === false);
+  const noHistory = docs.filter(d => d.cause === 'history-unavailable');
+  const blocking = docs.filter(d => d.cause !== 'history-unavailable' && d.blocking !== false);
+  const listed = docs.filter(d => d.cause !== 'history-unavailable' && d.blocking === false);
   if (blocking.length) {
     const { names, reasons, fix } = summary(blocking);
     const reason = `${blocking.length} document(s) not examined: ${names}. ${reasons}`;
@@ -253,6 +262,20 @@ function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite
       unexamined.push({
         validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: blocking[0].cause, reason, howToConfigure: fix,
         documents: blocking.map(d => d.path), newIn: line && isNewIn(line, runningVersion) ? line : null, blocking: !lite,
+      });
+    }
+  }
+  if (noHistory.length) {
+    const { names, reasons, fix } = summary(noHistory);
+    const existing = couldNotRead.find(c => c.validator === r.key && c.cause === 'history-unavailable');
+    if (existing) {
+      existing.documents = noHistory.map(d => d.path);
+      existing.reason = [existing.reason?.replace(/\.?$/, '.'), `Not examined: ${names}.`].filter(Boolean).join(' ');
+    } else {
+      couldNotRead.push({
+        validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: 'history-unavailable',
+        reason: `${noHistory.length} document(s) not examined because this checkout is a shallow clone: ${names}. ${reasons}`,
+        howToConfigure: fix, documents: noHistory.map(d => d.path),
       });
     }
   }
@@ -329,7 +352,7 @@ export function couldNotReadLines(strict) {
     lines.push(`  • ${strictRowHeadline({ ...u, newIn: null })}`);
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
-    if (u.documents?.length && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
+    if ((u.documents?.length || u.cause === 'history-unavailable') && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
   }
   return lines;
 }

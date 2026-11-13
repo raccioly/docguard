@@ -16,7 +16,7 @@ import { resolve, join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
 // FR-005: the shared helper, not a private copy of `git rev-parse`.
-import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
+import { gitMetadataStatus, isShallowRepository, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -259,9 +259,11 @@ export function validateFreshness(dir, config) {
   const totalCommits = getTotalCommits(dir);
   results.facts.commits = totalCommits;
   if (totalCommits < 3) {
+    results.facts.shallow = isShallowRepository(dir);
     results.push({
       status: 'skip',
-      message: `Only ${totalCommits} commits — freshness check needs ≥3 commits`,
+      message: `Only ${totalCommits} commits — freshness check needs ≥3 commits${results.facts.shallow ? ' (this checkout is a shallow clone)' : ''}`,
+      ...(results.facts.shallow ? { historyUnavailable: true } : {}),
     });
     // Spec 095's signals are facts (no review record, an unreadable reviews
     // file, a reference measured against a review point), not history
@@ -562,6 +564,13 @@ export function unexaminedDocuments(gaps) {
         howToConfigure: `Read ${g.path} against the code it describes, update it where it no longer holds, then record the review: ${review(g.path)}`,
       };
     }
+    if (g.cause === 'history-unavailable') {
+      return {
+        path: g.path, cause: g.cause, blocking: false,
+        reason: g.detail || `${g.path}: this checkout is a shallow clone, so the commit its review point names is not in it`,
+        howToConfigure: HISTORY_FIX,
+      };
+    }
     if (g.blocking) {
       return {
         path: g.path, cause: g.cause, blocking: true,
@@ -579,6 +588,8 @@ export function unexaminedDocuments(gaps) {
   });
 }
 
+const HISTORY_FIX = 'Fetch the full history: for GitHub Actions set `fetch-depth: 0` on actions/checkout, for GitLab CI set `GIT_DEPTH: 0`, or run `git fetch --unshallow`. Until then Freshness compares nothing with the code history; this does not change the exit code.';
+
 function resultContract(dir, config, { performed, found, skipped, facts }) {
   return contractFields({
     performed, found, ran: `compared ${performed} document(s) with the code history`,
@@ -586,6 +597,11 @@ function resultContract(dir, config, { performed, found, skipped, facts }) {
     empty: (decision) => {
       if (!decision.applies) return { note: 'Freshness found no Git repository, so it compared no document with a commit history.', howToConfigure: 'Nothing to configure unless the project is under version control: run `git init` and commit the documents, and Freshness compares them with the code history.' };
       const commits = (facts.commits ??= getTotalCommits(dir));
+      // FR-007 (2026-11-13): a shallow clone lacks the history, which is not the project's state; a complete repository with
+      // too few commits is, and keeps blocking.
+      const shallow = (facts.shallow ??= isShallowRepository(dir));
+      if (shallow && commits < 3) return { emptyCause: 'history-unavailable', note: `Freshness found ${commits} commit(s) because this checkout is a shallow clone, so it compared no document with the code history.`, howToConfigure: HISTORY_FIX };
+      if (shallow && skipped.some(r => r.historyUnavailable)) return { emptyCause: 'history-unavailable', note: `Freshness reviewed none of this shallow clone's documents: ${skipped.map(r => r.message).join('; ')}`, howToConfigure: HISTORY_FIX };
       if (commits < 3) return { emptyCause: 'needs-content', note: `Freshness found ${commits} commit(s) and needs at least 3 to compare documents with the code history.`, howToConfigure: 'Commit the project\'s work (`git commit`); in CI, fetch the full history (for GitHub Actions, `fetch-depth: 0` on actions/checkout), because a shallow clone has too few commits.' };
       const docCount = facts.docs ?? collectDocs(dir, config, pathFilter(dir, config)).length;
       if (docCount === 0) return { emptyCause: 'needs-declaration', note: 'Freshness found no canonical document, agent-instruction file or changelog to compare with the code history.', howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md (`docguard generate` drafts it), commit it, and Freshness reports when it falls behind the code.' };

@@ -97,7 +97,7 @@ export function describeCheckCoverage(projectDir, config, result) {
  * @implements docguard.strict-by-default#FR-005
  * @implements docguard.strict-by-default#FR-006
  */
-export const EMPTY_CAUSES = Object.freeze(['needs-declaration', 'needs-content', 'layout-not-recognized', 'nothing-of-this-kind']);
+export const EMPTY_CAUSES = Object.freeze(['needs-declaration', 'needs-content', 'layout-not-recognized', 'nothing-of-this-kind', 'history-unavailable']);
 
 /**
  * How many checks a validator genuinely performed. The explicit `performed`

@@ -25,7 +25,7 @@ import { lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { agentInstructionDocs, agentInstructionKind, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
 import { currentFileCodes } from '../sensor-cache.mjs';
-import { listTrackedFiles, runGit } from '../shared-git.mjs';
+import { isShallowRepository, listTrackedFiles, runGit } from '../shared-git.mjs';
 import { createContext, fingerprint } from './doc-deps.mjs';
 import { DOC_REVIEWS_PATH, documentReferences, readDocReviews } from './doc-reviews.mjs';
 import {
@@ -118,16 +118,19 @@ function reviewContext(dir, config, ignored = () => false) {
   const times = new Map();
   const endOfDay = date => { if (!eod.has(date)) eod.set(date, commitAtEndOfDay(dir, date)); return eod.get(date); };
   const timeOf = rev => { if (!times.has(rev)) times.set(rev, commitTime(dir, rev)); return times.get(rev); };
+  // A review point that cannot be placed because the checkout is shallow is missing history, not a missing review.
+  let shallowKnown;
+  const shallow = () => (shallowKnown ??= isShallowRepository(dir));
   const reviewPointOf = (doc, content) => {
     const entry = recorded[doc];
     if (entry?.reviewedRevision) {
-      if (!commitExists(dir, entry.reviewedRevision)) return { unavailable: `${doc}: the recorded review commit ${entry.reviewedRevision.slice(0, 12)} is not in this history (shallow clone or rewritten history)` };
+      if (!commitExists(dir, entry.reviewedRevision)) return { unavailable: `${doc}: the recorded review commit ${entry.reviewedRevision.slice(0, 12)} is not in this history (shallow clone or rewritten history)`, history: shallow() };
       return { revision: entry.reviewedRevision, date: entry.reviewedAt, source: 'recorded', entry };
     }
     const marker = markerDate(content);
     if (marker) {
       const revision = endOfDay(marker);
-      if (!revision) return { unavailable: `${doc}: no commit on or before its ${marker} review marker` };
+      if (!revision) return { unavailable: `${doc}: no commit on or before its ${marker} review marker${shallow() ? ' (this checkout is a shallow clone)' : ''}`, history: shallow() };
       return { revision, date: marker, source: 'marker' };
     }
     return null;
@@ -165,7 +168,12 @@ function reviewContext(dir, config, ignored = () => false) {
   const gapOf = status => {
     if (!status || tracked === null) return null;
     if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: status.root, blocking: status.root } : null;
-    if (status.point.unavailable) return null;
+    if (status.point.unavailable) {
+      // FR-007 (2026-11-13): in a shallow clone this is the history the checkout lacks; elsewhere it stays a skip.
+      return status.point.history && trackedSet.has(status.path)
+        ? { path: status.path, cause: 'history-unavailable', root: status.root, blocking: false, detail: status.point.unavailable }
+        : null;
+    }
     if (!status.root && status.point.source === 'marker') {
       return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: false, blocking: false, marker: status.point.date } : null;
     }
@@ -205,7 +213,7 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
     const gap = ctx.gapOf(status);
     if (gap) gaps.push(gap);
     const { content, point } = status;
-    if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
+    if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable, ...(point.history ? { historyUnavailable: true } : {}) }); continue; }
     // No review point: spec 097 reports this as Freshness applying and
     // examining nothing (`empty`, cause `needs-declaration`), through
     // agentInstructionDocsWithoutReviewPoint below, not as a finding.

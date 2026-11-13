@@ -201,9 +201,11 @@ A pipeline that fails on a non-zero exit fails on exit 4. See
 [Configuration](configuration.md#enforcement-mode) for every key.
 
 Check out the full history. Freshness compares each document with the commits
-that touched it, and a checkout with fewer than three commits gives it nothing
-to read, so guard exits 4 and names Freshness in the Adopt block.
-`actions/checkout` fetches one commit unless told otherwise:
+that touched it. `actions/checkout` fetches one commit unless told otherwise,
+and a shallow checkout like that no longer fails the build: guard reports
+Freshness under "DocGuard could not read" (cause `history-unavailable`) on every
+run and leaves the exit code alone. But Freshness checks nothing until the full
+history is fetched, so set `fetch-depth: 0` anyway:
 
 ```yaml
 - uses: actions/checkout@v5
@@ -211,4 +213,6 @@ to read, so guard exits 4 and names Freshness in the Adopt block.
     fetch-depth: 0
 ```
 
-The Action's own examples and the templates already do this.
+The Action's own examples and the templates already do this. A repository that
+really has fewer than three commits (a fresh `git init`) is a different case: it
+still exits 4, and the fix is to commit the work.

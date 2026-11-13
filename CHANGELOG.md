@@ -36,10 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
 - **Exit codes:** a project that exited 0 or 2 on 0.47.0 can exit 4 on this
   release without changing a file, because the default mode changed. The two
-  cases the release comparison shows: a checkout with fewer than three commits
-  (a shallow clone in CI, or a fresh `git init`) exits 4 because Freshness
-  applies and has no history to read, and the fix it prints is to fetch the
-  full history (`fetch-depth: 0` on `actions/checkout`); a project with
+  cases the release comparison shows: a repository with fewer than three
+  commits (a fresh `git init`) exits 4 because Freshness applies and has no
+  history to read, and the fix it prints is to commit the work. A shallow CI
+  checkout does not exit 4: guard reports Freshness under "could not read" with
+  the cause `history-unavailable` and the fix `fetch-depth: 0` on
+  `actions/checkout`, on every run, and the exit code is unchanged; a project with
   documents and no test map, architecture section or other declaration a
   validator needs exits 4 with the Adopt block. Exit 1 is unchanged: no finding
   fails a build that did not on 0.47.0. `"enforcement": "standard"` restores the
@@ -276,6 +278,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A shallow checkout no longer fails the build under strict.**
+  `actions/checkout` fetches one commit, which hides the git history Freshness
+  reads; that is a property of the checkout, not of the project's documents. A
+  validator, or an agent-instruction document whose review point is not in the
+  clone, now has the new empty cause `history-unavailable`: it is listed under
+  "DocGuard could not read" with the fix (`fetch-depth: 0` on
+  `actions/checkout`, `GIT_DEPTH: 0` on GitLab) on every run, and the exit code
+  is unchanged. A complete repository with fewer than three commits, and a
+  document with no review record at all, still block as before
+  (`docguard.strict-by-default` FR-007, FR-005).
 - **`review --accept` with several paths** recorded only the first and exited 0.
   It now records every path in one transaction, or refuses all of them, writes
   nothing, and names the path it could not accept (T028a).
