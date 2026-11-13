@@ -2015,70 +2015,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`PSR006`: an instruction-file copy shares the real file's name.** A
-  template, test, fixture or example copy named like one of the project's
-  instruction files (`AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`,
-  `GEMINI.md`, `.github/copilot-instructions.md`, a `requiredFiles.agentFile`)
-  is a warning when a file that governs the project has the same name: an agent
-  searching the repository may read the copy first. Rename it
-  (`AGENTS.md.template`), or list a fixture that needs the name in
-  `.docguardignore`. Template copies are high confidence; test, fixture and
-  example copies are low. A nested file that governs its own folder, such as
-  `packages/api/AGENTS.md` in a monorepo, or `templates/AGENTS.md` itself, is
-  never reported. This change ADDS a warning under strict for a project that
-  keeps such a copy (spec 099).
-- **File kinds: one rule for copied files (specs 099 and 100, Stage 1).** A new
-  module, `cli/shared-file-kind.mjs`, answers "is this file this project's
-  own" from a closed list of kinds (`own`, `template`, `fixture`, `vendored`,
-  `generated`, `backup`, `nested-checkout`). What it does not recognize is
-  always `own`. Directory names match as whole path segments in any case, only
-  before the first dot-directory, and never for a package segment. The
-  template names are `templates`, `template`, `_templates`, `__templates__`,
-  `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and `skeleton(s)`;
-  `corpus` and `golden` join the fixture names. `fileKinds.own` (glob
-  patterns in `.docguard.json`) keeps a file the project's own wherever it
-  sits, for example a real package named `examples`; `.docguardignore` and
-  `ignore` still win. It replaces `agentInstructions.governing`, which was
-  never released. `guard --format json` carries `files.kinds` (a count per kind
-  and up to 20 paths per kind of instruction files left out as copies), and
-  the text output prints one line when any were left out, so a wrongly
-  classified governing file stays visible. A test now fails when a file under
-  `cli/` keeps its own directory-name ignore set or walks the tree without the
-  shared classifier, with an allowlist of the 27 files Stage 2 migrates.
+- **One rule for copied files: template and fixture instruction copies leave the
+  agent-instruction role and the chain budget, `PSR006` names a copy that shares
+  a governing file's name, and `fileKinds.own` is the override (specs 099 and
+  100, Stage 1).** This change both REMOVES and ADDS findings.
+  - **Removed.** A nested `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or other
+    instruction file below a template directory
+    (`templates/<app>/files/AGENTS.md`, a form a scaffolder writes into other
+    repositories) was reviewed as this repository's own instructions, so it
+    could get FRS001, FRS002, FRS003, FRS006, FRS007 and FRS009 (adding a root
+    package script made FRS007 say the template never mentions it, which no
+    commit could clear under a gate that refuses every commit while it stands),
+    PSR001 to PSR005, a strict `unexamined` entry and an excerpt-staleness
+    mark. It is now out of the role, so those findings on it are gone. `STR004`
+    also no longer counts such a copy, or a copy below a fixture or example
+    directory, toward a chain's byte budget (D1 of spec 100); a governing nested
+    file, `templates/AGENTS.md` and `tests/AGENTS.md` included, is still counted.
+  - **Added.** `PSR006` (warning): a template, test, fixture or example copy
+    named like one of the project's instruction files (`AGENTS.md`,
+    `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`,
+    `.github/copilot-instructions.md`, a `requiredFiles.agentFile`) while a file
+    that governs the project has the same name: an agent searching the
+    repository may read the copy first. Rename it (`AGENTS.md.template`) or list
+    a fixture that needs the name in `.docguardignore`. Template copies are high
+    confidence, fixture and example copies low. A file that governs its own
+    folder (`packages/api/AGENTS.md`, `templates/AGENTS.md`) is never reported.
+    This ADDS a warning under strict for a project that keeps such a copy.
+  - **How files are classified.** The new module `cli/shared-file-kind.mjs`
+    answers from a closed list of kinds (`own`, `template`, `fixture`,
+    `vendored`, `generated`, `backup`, `nested-checkout`); what it does not
+    recognize is `own`. Directory names match as whole path segments in any case
+    (`Examples/` and `Fixtures/` now leave the role like `examples/` and
+    `fixtures/`), only before the first dot-directory, never for a package
+    segment. The template names are `templates`, `template`, `_templates`,
+    `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and
+    `skeleton(s)`; `corpus` and `golden` join the fixture names that
+    `isNonProductPath` already used. Because `isNonProductPath` is now
+    case-insensitive and knows those two names, a directory such as `Examples/`
+    or `Corpus/` is non-product for detection too; ten other repositories checked
+    saw no change from it, and Security's test-path `context` on its findings
+    could change for such a directory (not measured).
+  - **`fileKinds.own`** (glob patterns in `.docguard.json`) keeps a file the
+    project's own wherever it sits, for example a real package named `examples`;
+    `.docguardignore` and `ignore` still win. It replaces
+    `agentInstructions.governing`, which was never released.
+  - **Nothing is dropped silently.** `guard --format json` carries `files.kinds`
+    (a count per kind and up to 20 paths per kind of instruction files left out
+    as copies), and the text output prints one line when any were left out. A
+    test fails when a file under `cli/` keeps its own directory-name ignore set
+    or walks the tree without the shared classifier, with an allowlist of the 27
+    files Stage 2 migrates.
+  - The benchmark corpus gains a PSR006 pair and an STR004 pair (the control
+    fails on the code before this change), so both codes now carry measured
+    evidence.
 
 ### Fixed
 
-- **A template or example instruction file is no longer reviewed as this
-  repository's instructions, and no longer counts against its budget.** This
-  change both REMOVES and ADDS findings. A nested `AGENTS.md`, `CLAUDE.md` or
-  other instruction file below a `templates`, `template`, `scaffold(s)`,
-  `boilerplate(s)`, `starter-kit(s)` or `skeleton(s)` directory
-  (`templates/<app>/files/AGENTS.md`, a form a scaffolder writes into other
-  repositories) left the agent-instruction role only when it sat under a test,
-  fixture or example path. Under a template directory it got FRS006, FRS007 and
-  FRS009, and adding a root package script made FRS007 report that the template
-  never mentions it, a finding no commit could clear under a gate that refuses
-  every commit while it stands. Such copies are now out of the role for
-  Freshness and Path-Scoped-Rules, so FRS001, FRS002, FRS003, FRS006, FRS007
-  and FRS009 and PSR001 to PSR005 on them are gone. The folder that holds the
-  file does not count: `templates/AGENTS.md` still governs `templates/`
-  (spec 099).
-- **`STR004` no longer counts a template or fixture instruction copy** (spec
-  100 D1). The instruction-chain budget measured every nested `AGENTS.md`, so a
-  scaffolder's template could push a real chain over 32 KiB. A governing nested
-  file, including `templates/AGENTS.md` and `tests/AGENTS.md`, is still
-  counted; `fileKinds.own` puts a copy back. Findings are REMOVED where a copy
-  caused them and none are added. The benchmark corpus gains an STR004 defect
-  and a clean control, so STR004 now carries measured evidence.
-- **`Examples/`, `Fixtures/`, `Corpus/` and every other directory name now match
-  without regard to case** (spec 100 D5), and `corpus`, `golden` join the
-  directories the detection scanners treat as non-product (routes, schemas,
-  environment variables, frameworks, the symbol map, ownership, Security's
-  test-path context, Docs-Sync). A project with such a directory sees detection
-  results from it leave, so findings that came only from it (for example
-  SEC001 to SEC004 context, route and schema findings) are REMOVED, and drift
-  findings that rested on them can be ADDED where a document now names
-  something the scanners no longer see.
 - **Security: the word `example` no longer hides a secret-shaped value just by
   appearing in it.** This change ADDS findings. Before, any value containing
   `example` anywhere (any case) was dropped silently, so
@@ -2405,7 +2397,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sits on the lines under its ID is a requirement. Spec Kit's `[NEEDS CLARIFICATION]` example
   rows and a filled default row with no slot are counted unless the document is a template.
 
-<!-- truncated: 6635 more lines — read CHANGELOG.md directly -->
+- **Requirement-Anchors counted identifiers that are not requirements.** Whether
+  the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
+  spec and requirement documents, not decision records, open-item or question lists,
+  task lists, task IDs (T001), design elements (ARCH, MOD, SYS) or story, use-case
+  and acceptance IDs (US, STORY, UC, AC); a configured
+  `traceability.requirementPattern` is the definition. The evidence names the kind of
+  identifier it counted and the kinds it did not. A task checkbox (`[ ]`) is no longer
+
+<!-- truncated: 6627 more lines — read CHANGELOG.md directly -->
 
 ---
 

@@ -137,6 +137,7 @@ Given the same defect in `AGENTS.md`, `CLAUDE.md` and `.github/copilot-instructi
 - **A real product package named `examples`** (a workspace member that publishes to a registry) is rescued by `fileKinds.own: ["examples/**"]`, and nothing else has to change.
 - **Case-only differences.** `Templates` and `templates` classify alike, and so does `TEMPLATES`.
 - **`tests/AGENTS.md`.** Out of the role (spec 094), not a PSR006 copy, in the budget: see the decision above.
+- **Spec Kit `specs/`.** `spec` and `specs` are in the fixture vocabulary because detection scanners already treat them as test data (RSpec-style trees). A Spec Kit `specs/` directory holds this project's own documents (`isDocguardOwnedDir`), so Stage 2 MUST exempt it before any document role asks `fileKind`; until then `files.kinds.counts` counts those files as `fixture` and no document role reads the answer.
 - **A documentation directory named `archive`.** `docs-canonical/archive/SECURITY.md` is a `backup` document; an `archive/` directory outside a documentation directory is not.
 - **Source named like a backup.** `src/old.js` and `cli/copy.mjs` are code: `backup` never applies to code.
 

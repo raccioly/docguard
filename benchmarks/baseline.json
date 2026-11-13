@@ -16,7 +16,8 @@
     "manifestDigest": "sha256:1cb71636400aef0e4c92040115ae3c0c69ec08e867bcdc3fbbaf29356be45815",
     "tool": {
       "version": "0.48.0",
-      "revision": "27fd284a71c63e497db57002329c38d1f6f45100"
+      "revision": "27fd284a71c63e497db57002329c38d1f6f45100",
+      "detectorsDigest": "sha256:6cfa4249bf31a14e2e274245addb040959cfaaf934480d0dbeacfe9e073acae3"
     },
     "cases": [
       {
