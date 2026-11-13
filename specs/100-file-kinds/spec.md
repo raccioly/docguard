@@ -184,3 +184,13 @@ Stage 3:
 - Path-based baseline fingerprints: moving a file between kinds changes a finding's location; the baseline migration is a separate design.
 - Classification by content (placeholders, hashes) in Stage 1 and Stage 2. Stage 3 uses a hash only to group identical mirrors.
 - Directory kinds for `demo`, `seed`, `baseline`, `content`, `public`, `assets`, `legacy`.
+
+## Stage 2 decisions (2026-11-13)
+
+Recorded while building Stage 2; they refine how the requirements above are met and change none of their text.
+
+- **Security reads every kind.** FR-012 says a nested checkout is never walked; the owner's rule for this stage says Security keeps reporting secrets in copies. `walkFiles` skips a nested checkout by default and Security alone passes `nestedCheckouts: false`. Its directory list stays the original narrow one and is the single exemption in the registry test (it carries its reason).
+- **The backup warning (FR-013) is by file name only.** Measured on the project's own tracked files across real repositories, the only documents in a documentation directory named like a backup were `.md.bak` files, which `generate --force` and `init --force` write. No repository held a document below an archive folder of a documentation directory, and a top-level `archive/` is deliberate in the ones that have it. So `STR008` warns for a backup-named document in a documentation directory, and a document under an archive folder leaves the document role without a warning (it is listed under `files.kinds.excluded.backup`).
+- **`backup` never applies to code**, so TODO tracking skips template, fixture and nested-checkout paths, and a `backup/` folder of code is read as the project's own.
+- **Where the copy kinds are asked, and where they are not.** Walkers that always skipped templates (`templates` was in their private list) now skip the `template` kind, which is wider (`scaffold`, `boilerplate`, `starter-kit`, `skeleton`, any case). Validators that read tests on purpose (test-spec mapping, skipped-test tracking, reference-existence) do not ask for `test`. ADR numbering reads archived decision records on purpose.
+- **`isGeneratedPath`'s file-name rules** (`*.min.js`, `*.bundle.js`, `*-generated.*`, `*.d.ts`) are the `generated` kind by name, for code only.

@@ -6,18 +6,12 @@
  * and ISO/IEC/IEEE 29119 traceability requirements.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative, dirname } from 'node:path';
 import { c } from '../shared.mjs';
 import { detectSpecKit } from '../scanners/speckit.mjs';
 import { scanTestFilesForReferences, collectRequirementIds, resolveRequirementReferences } from '../validators/traceability.mjs';
-import { listCanonicalDocs } from '../shared-ignore.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-  '.amplify-hosting', '.serverless',
-]);
+import { listCanonicalDocs, walkFiles } from '../shared-ignore.mjs';
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -482,26 +476,12 @@ function outputText(projectName, matrix, canonicalDocs, orphanedDocs) {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function scanDir(rootDir, dir, files) {
-  let entries;
-  try {
-    entries = readdirSync(dir);
-  } catch { return; }
-
-  for (const entry of entries) {
-    if (IGNORE_DIRS.has(entry)) continue;
-    if (entry.startsWith('.') && entry !== '.env' && entry !== '.env.example'
-        && entry !== '.gitignore' && !entry.startsWith('.github')) continue;
-
-    const full = join(dir, entry);
-    let stat;
-    try { stat = statSync(full); } catch { continue; }
-
-    if (stat.isDirectory()) {
-      scanDir(rootDir, full, files);
-    } else {
-      files.push(relative(rootDir, full));
-    }
-  }
+  // The shared walker: build output and package caches are skipped by its one list, and a nested checkout is
+  // not this project's files (spec 100). The dot entries below are the ones a trace reads on purpose.
+  walkFiles(dir, (full) => { files.push(relative(rootDir, full)); }, {
+    root: rootDir,
+    keepDot: entry => entry === '.env' || entry === '.env.example' || entry === '.gitignore' || entry.startsWith('.github'),
+  });
 }
 
 // ── Per-feature spec adherence (trace --features) ───────────────────────────

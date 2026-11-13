@@ -553,16 +553,23 @@ export const CODE_GLOBS = [
  * failed to answer, which is recorded as a gap. The caller pairs two calls
  * (doc's last-update rev vs HEAD) to detect present→gone, and must not read
  * null as absent.
+ * `accept` (optional, `(path) => boolean`) narrows a match to the files the caller counts.
  * @returns {boolean|null}
  */
-export function symbolExistsAtRev(dir, symbol, rev, pathspecs = CODE_GLOBS) {
-  const r = runGit(dir, ['grep', '-q', '-w', '-F', '-e', symbol, rev, '--', ...pathspecs], {
-    operation: 'git grep', answers: [0, 1, 128], stdio: ['pipe', 'ignore', 'pipe'],
+export function symbolExistsAtRev(dir, symbol, rev, pathspecs = CODE_GLOBS, accept = null) {
+  // Without a path filter only the answer matters (`-q`). With one, the files that match are listed and the
+  // symbol counts as present when at least one of them is accepted: a copy of the project (a fixture, a
+  // template) must not stand in for the code the document names (specs/100-file-kinds D2).
+  const r = runGit(dir, ['grep', accept ? '-lz' : '-q', '-w', '-F', '-e', symbol, rev, '--', ...pathspecs], {
+    operation: 'git grep', answers: [0, 1, 128], stdio: ['pipe', accept ? 'pipe' : 'ignore', 'pipe'],
   });
   if (r.error || r.signal) return null;
-  if (r.status === 0) return true;
   if (r.status === 1 || r.status === 128) return false;
-  return null;
+  if (r.status !== 0) return null;
+  if (!accept) return true;
+  const prefix = `${rev}:`;
+  return String(r.stdout || '').split('\0').filter(Boolean)
+    .some(line => accept((line.startsWith(prefix) ? line.slice(prefix.length) : line).replace(/\\/g, '/')));
 }
 
 /**

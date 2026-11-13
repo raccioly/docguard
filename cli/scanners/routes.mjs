@@ -39,6 +39,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, dirname } from 'node:path';
 import { resolveSourceRoots, readScannable, tierFor, summarizeTiers, collectPackageJsons, pagesOutputDir } from '../shared-source.mjs';
 import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
+import { holdsOwnGit } from '../shared-file-kind.mjs';
 import { extractJsRouteCalls, extractJsRouteObjects, extractJsMountsAndImports, importedStaticStrings, nextRouteHandlers, isAuthMiddlewareName, AUTH_CHECK_RE, matchingBracket } from './js-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 import { scanPythonWebRoutes } from './python-routes.mjs';
@@ -1175,7 +1176,7 @@ function walkRouteDirs(dir, callback) {
       if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
-        walkRouteDirs(fullPath, callback);
+        if (!holdsOwnGit(fullPath)) walkRouteDirs(fullPath, callback); // a nested checkout is another project's (specs/100-file-kinds)
       } else if (entry.isFile()) {
         callback(fullPath);
       }
@@ -1214,7 +1215,7 @@ export function findRouteFiles(dir, pattern, { maxFiles = ROUTE_SCAN_MAX_FILES, 
       // Build output, including a .NET `bin/` (docguard.coverage-followups#FR-002).
       if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
       const fullPath = join(d, entry.name);
-      if (entry.isDirectory()) walk(fullPath, depth + 1);
+      if (entry.isDirectory()) { if (!holdsOwnGit(fullPath)) walk(fullPath, depth + 1); }
       else if (entry.isFile() && pattern.test(entry.name)) {
         if (results.length >= maxFiles) { truncated = true; return; }
         results.push(fullPath);

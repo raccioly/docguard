@@ -23,13 +23,16 @@
  * `countJsCasesByRegex` and is deliberately conservative.
  *
  * Zero additional dependencies — pure Node.js built-ins plus the shared parser.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';
 import { walkFiles } from './shared-ignore.mjs';
+import { TEST_LOCATIONS } from './shared-file-kind.mjs';
 import { parseJsTs, walk, astTierAvailable } from './scanners/js-ast.mjs';
 
-const TEST_DIRS = ['tests', 'test', '__tests__', 'spec', 'e2e'];
 const JS_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx']);
 
 /** JS/TS: `x.test.ts`, `x.spec.mjs`, or anything under a `__tests__` folder. */
@@ -56,7 +59,7 @@ function isTestFile(path) {
 export function findTestFiles(projectDir) {
   const seen = new Set();
   const add = (f) => { if (isTestFile(f) && !seen.has(f)) seen.add(f); };
-  for (const td of TEST_DIRS) {
+  for (const td of TEST_LOCATIONS) {
     const dir = resolve(projectDir, td);
     if (existsSync(dir)) walkFiles(dir, add);
   }

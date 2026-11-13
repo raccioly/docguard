@@ -42,6 +42,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, extname, relative, basename } from 'node:path';
 import { lastCommitHash, symbolExistsAtRev, gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs';
 import { walkFiles, isNonProductPath, listCanonicalDocs } from '../shared-ignore.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { resolveDocDirs } from '../shared.mjs';
@@ -64,6 +65,14 @@ export function applies(projectDir, config = {}) {
   const run = validateReferenceExistence(projectDir, config);
   return { applies: run.applies.applies, evidence: run.applies.evidence };
 }
+
+/**
+ * The files whose symbols do not count as "the code the document names" (spec 100 D2): a template, fixture,
+ * vendored or generated copy, or a nested checkout. A fixture that still defines a removed function must not
+ * hide the stale reference. Tests stay code: a document may name a test helper, and a test that defines it is
+ * the project's own.
+ */
+const COPY_OF_CODE_KINDS = ['template', 'fixture', 'vendored', 'generated', 'nested-checkout'];
 
 const CODE_EXT = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs', '.java',
@@ -233,6 +242,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
   // has nothing to do, so the walk stays as cheap as before for either alone.
   const headIds = new Set();
   const citations = [];
+  const countsAsCode = rel => fileKind(rel, config, { root: resolve(projectDir), kinds: COPY_OF_CODE_KINDS }).kind === 'own';
   walkFiles(projectDir, (full) => {
     if (!CODE_EXT.has(extname(full))) return;
     const content = readScannable(full);
@@ -249,7 +259,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
         collectAdrCitations(content, rel, citations);
       }
     }
-  });
+  }, { root: resolve(projectDir), config, skipKinds: COPY_OF_CODE_KINDS });
 
   if (!needIds && citations.length === 0) {
     return notApplicable(`${docs.length} document(s) read, none backticks a compound code identifier (camelCase, snake_case, PascalCase) and no source comment cites ADR-NNN`);
@@ -261,7 +271,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
   // so it is withheld and counted (docguard.verdict-contract#FR-006).
   const headPresence = new Map();
   const presentAtHead = (sym) => {
-    if (!headPresence.has(sym)) headPresence.set(sym, symbolExistsAtRev(projectDir, sym, 'HEAD'));
+    if (!headPresence.has(sym)) headPresence.set(sym, symbolExistsAtRev(projectDir, sym, 'HEAD', undefined, countsAsCode));
     return headPresence.get(sym);
   };
   let unknownPresence = 0;
@@ -281,7 +291,7 @@ export function validateReferenceExistence(projectDir, config = {}) {
       if (rev === null) rev = lastCommitHash(projectDir, doc.path) || '';
       if (!rev) continue;                        // untracked doc → no "then" snapshot
       const key = `${sym}\0${rev}`;
-      if (!revPresence.has(key)) revPresence.set(key, symbolExistsAtRev(projectDir, sym, rev));
+      if (!revPresence.has(key)) revPresence.set(key, symbolExistsAtRev(projectDir, sym, rev, undefined, countsAsCode));
       if (revPresence.get(key) === null) { unknownPresence++; continue; }
       if (!revPresence.get(key)) continue;       // never existed at doc-time → not our signal
       findings.push(mkFinding({

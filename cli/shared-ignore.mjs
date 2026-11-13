@@ -605,10 +605,20 @@ export function globMatch(relPath, patterns) {
  *
  * @param {string} dir - Absolute directory to walk
  * @param {(absPath: string) => void} callback
- * @param {{ignoreDirs?: Set<string>, skipDotEntries?: boolean, keepDot?: (entry: string) => boolean, onError?: (err: Error, path: string) => void}} [opts]
+ * @param {{ignoreDirs?: Set<string>, skipDotEntries?: boolean, keepDot?: (entry: string) => boolean, onError?: (err: Error, path: string) => void,
+ *   nestedCheckouts?: boolean, skipKinds?: string[], config?: object, root?: string}} [opts]
  *   `keepDot` — exception predicate for dot entries that MUST be walked even
  *   with skipDotEntries on. Load-bearing for e.g. the security validator
  *   (must scan `.env`) and traceability (`.env*`, `.gitignore`, `.github/`).
+ *
+ *   Spec 100 (file kinds): a directory below the start that holds its own `.git`
+ *   entry is another project's checkout, not this project's files, so it is not
+ *   walked. `nestedCheckouts: false` reads it (the security validator keeps
+ *   reporting secrets wherever they are). `skipKinds` lists the file kinds
+ *   (`shared-file-kind.mjs`) the walk leaves out, a directory at a time and, for
+ *   a backup-named document, a file at a time; `fileKinds.own` in `config`
+ *   rescues a path. `root` is the project root the paths are classified from
+ *   (default: the directory the walk started in).
  * @returns {boolean} - true if every entry was readable
  */
 export function walkFiles(dir, callback, opts = {}) {
@@ -617,12 +627,18 @@ export function walkFiles(dir, callback, opts = {}) {
     skipDotEntries = true,
     keepDot = null,
     onError = null,
+    nestedCheckouts = true,
+    skipKinds = null,
+    config = {},
   } = opts;
+  const root = opts.root || dir;
   let entries;
   try { entries = readdirSync(dir); } catch (err) {
     if (onError) onError(err, dir);
     return false;
   }
+  // Recursion keeps the start's root and every option; only `root` is filled in.
+  const inner = opts.root ? opts : { ...opts, root };
   let complete = true;
   for (const entry of entries) {
     if (isIgnoredDirEntry(entry, entries, ignoreDirs)) continue;
@@ -635,12 +651,25 @@ export function walkFiles(dir, callback, opts = {}) {
       continue;
     }
     if (stat.isDirectory()) {
-      if (!walkFiles(full, callback, opts)) complete = false;
+      if (nestedCheckouts && full !== root && existsSync(joinPath(full, '.git'))) continue;
+      if (skipKinds && skipsKind(relPosix(root, full), config, skipKinds, true)) continue;
+      if (!walkFiles(full, callback, inner)) complete = false;
     } else if (stat.isFile()) {
+      if (skipKinds && skipsKind(relPosix(root, full), config, skipKinds, false)) continue;
       callback(full);
     }
   }
   return complete;
+}
+
+/**
+ * Does a walk that leaves out `kinds` skip this path? A directory is pruned
+ * unless `fileKinds.own` names something below it (the files below are then
+ * classified one by one), so a rescued `examples/` package is still read.
+ */
+function skipsKind(rel, config, kinds, isDirectory) {
+  if (fileKind(rel, config, { asDirectory: isDirectory, kinds }).kind === 'own') return false;
+  return !(isDirectory && mayHoldOwnFiles(rel, config));
 }
 
 /**
@@ -679,8 +708,18 @@ export function listCanonicalDocs(projectDir, opts = {}) {
   const root = resolvePath(projectDir, dirName);
   // An explicit role may live outside the conventional canonical directory.
 
+  let roleConfig = opts.config;
+  if (!roleConfig) {
+    const configFile = resolvePath(projectDir, '.docguard.json');
+    try { if (existsSync(configFile)) roleConfig = JSON.parse(readFileSync(configFile, 'utf-8')); }
+    catch { /* loadConfig owns malformed configuration errors */ }
+  }
+
   const isMarkdown = (name) => name.toLowerCase().endsWith('.md');
   const out = [];
+  // A backup-named document or one under a documentation directory's archive folder is not a canonical
+  // document, and a nested checkout is another project's (spec 100 D6, D9): `ARCHITECTURE copy.md` is never read.
+  // `fileKinds.own` brings one back; an explicit `docs.roles` mapping below is never second-guessed.
   if (existsSync(root)) walkFiles(root, (abs) => {
     if (!isMarkdown(abs)) return;
     const rel = relPosix(projectDir, abs);
@@ -690,14 +729,11 @@ export function listCanonicalDocs(projectDir, opts = {}) {
     // Keep dot-FILES that are markdown (old flat behavior included them);
     // dot-DIRECTORIES still get skipped, since the predicate only matches `.md`.
     keepDot: isMarkdown,
+    root: resolvePath(projectDir),
+    config: roleConfig || {},
+    skipKinds: ['backup'],
   });
 
-  let roleConfig = opts.config;
-  if (!roleConfig) {
-    const configFile = resolvePath(projectDir, '.docguard.json');
-    try { if (existsSync(configFile)) roleConfig = JSON.parse(readFileSync(configFile, 'utf-8')); }
-    catch { /* loadConfig owns malformed configuration errors */ }
-  }
   for (const role of Object.keys(roleConfig?.docs?.roles || {})) {
     const abs = resolveDocRole(projectDir, roleConfig, role);
     const rel = relPosix(projectDir, abs);

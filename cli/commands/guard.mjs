@@ -32,6 +32,7 @@ import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
+import { backupDocuments } from '../shared-backup-documents.mjs';
 import { precisionEvidenceBlock, deriveGatingSet } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
@@ -395,16 +396,24 @@ export function computeFileKinds(projectDir, config) {
     if (list.length < MAX_EXCLUDED_PER_KIND) list.push(item.path);
     else excludedMore[item.kind] = (excludedMore[item.kind] || 0) + 1;
   }
+  // A backup-named document or one under an archive folder of a documentation directory is read as no document
+  // (specs/100-file-kinds D6, D9, FR-013): it is listed too, so a wrongly named real document stays visible.
+  for (const { path } of backupDocuments(projectDir, config, files)) {
+    const list = excluded.backup || (excluded.backup = []);
+    if (list.length < MAX_EXCLUDED_PER_KIND) list.push(path);
+    else excludedMore.backup = (excludedMore.backup || 0) + 1;
+  }
   return { counts: ordered, excluded, ...(Object.keys(excludedMore).length ? { excludedMore } : {}) };
 }
 
-/** One text line when instruction files were left out as copies, or null. */
+/** One text line when instruction files or documents were left out as copies, or null. */
 export function excludedKindsLine(kinds) {
   const excluded = kinds?.excluded || {};
   const total = Object.entries(excluded).reduce((n, [kind, list]) => n + list.length + (kinds.excludedMore?.[kind] || 0), 0);
   if (!total) return null;
   const parts = Object.entries(excluded).map(([kind, list]) => `${kind}: ${list.slice(0, 3).join(', ')}${list.length + (kinds.excludedMore?.[kind] || 0) > 3 ? ', ...' : ''}`);
-  return `${total} instruction file(s) left out of review as copies (${parts.join('; ')}); a file that governs its folder goes in fileKinds.own, the full list is files.kinds.excluded in --format json`;
+  const noun = excluded.backup ? 'file(s)' : 'instruction file(s)';
+  return `${total} ${noun} left out of review as copies (${parts.join('; ')}); a file that governs its folder goes in fileKinds.own, the full list is files.kinds.excluded in --format json`;
 }
 
 export function runGuardInternal(projectDir, config) {

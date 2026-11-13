@@ -4,10 +4,14 @@
  * and extracts available data from their outputs.
  * 
  * Philosophy: Detect and leverage, never replace.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { basename, resolve, join } from 'node:path';
+import { walkFiles } from '../shared-ignore.mjs';
 
 /**
  * Read + parse a JSON file, returning null on any error (missing, unreadable,
@@ -352,17 +356,8 @@ function detectSwagger(dir) {
 
 function countFiles(dir, pattern) {
   let count = 0;
-  try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      const fullPath = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        count += countFiles(fullPath, pattern);
-      } else if (pattern.test(entry.name)) {
-        count++;
-      }
-    }
-  } catch { /* skip */ }
+  // The shared walker: dot entries and the one list of build output and package caches are skipped, and a
+  // nested checkout is not this project's stories (specs/100-file-kinds).
+  walkFiles(dir, (full) => { if (pattern.test(basename(full))) count++; });
   return count;
 }

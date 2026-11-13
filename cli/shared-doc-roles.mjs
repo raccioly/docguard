@@ -1,6 +1,9 @@
 /** Explicit document roles let existing repository layouts serve as canonical input. */
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, isAbsolute, join, basename, relative, sep } from 'node:path';
+import { fileKind, isFeatureSpecDirectory, NOT_OWN_KINDS, COPY_KINDS } from './shared-file-kind.mjs';
+// The Spec Kit feature-directory rule lives with the file-kind vocabulary (specs/100-file-kinds), which this module now asks.
+export { isFeatureSpecDirectory };
 export const DOC_ROLES = Object.freeze({
   architecture: 'docs-canonical/ARCHITECTURE.md', dataModel: 'docs-canonical/DATA-MODEL.md',
   security: 'docs-canonical/SECURITY.md', testSpec: 'docs-canonical/TEST-SPEC.md',
@@ -274,26 +277,14 @@ export function findDocsByName(projectDir, aliases, dirs) {
  * @param {{maxDepth?: number, skip?: Set<string>}} [opts]
  * @returns {Array<{dir: string, roles: Record<string,string>, count: number}>}
  */
-/**
- * A Spec Kit feature directory: `specs/003-enhanced-transcripts/` and the like.
- * These hold ONE feature's spec and data model, so a directory that happens to
- * carry two role-named files is still that feature's folder, never the
- * project's canonical documentation root. Adopting one would point every
- * validator at a single versioned feature.
- */
-export function isFeatureSpecDirectory(relDir) {
-  if (typeof relDir !== 'string' || !relDir) return false;
-  const segments = relDir.split('/');
-  return segments.some((segment, index) => /^\d{3,}[-_]/.test(segment)
-    && (index === 0 || ['specs', 'spec', 'features'].includes(segments[index - 1].toLowerCase())));
-}
-
 export function detectCanonicalLayout(projectDir, opts = {}) {
   const maxDepth = opts.maxDepth ?? 4;
-  const skip = opts.skip ?? new Set([
-    'node_modules', '.git', '.local', 'dist', 'build', 'coverage',
-    'vendor', '__pycache__', '.venv', 'venv', '.next', 'target', '.testguard',
-  ]);
+  const config = opts.config || {};
+  // A directory is skipped when it is a copy or not this project's file (spec 100 D4): a template, fixture or test
+  // folder, vendored or generated code, a backup folder, a nested checkout. `venv` is a virtualenv by convention,
+  // and dot directories hold tools' files. An explicit `skip` set (a caller's own) still applies.
+  const skip = opts.skip ?? new Set(['venv']);
+  const root = resolve(projectDir);
 
   const byBasename = roleForFilename;
 
@@ -305,19 +296,23 @@ export function detectCanonicalLayout(projectDir, opts = {}) {
     try { entries = readdirSync(absDir, { withFileTypes: true }); } catch { return; }
     for (const entry of entries) {
       const name = entry.name;
+      const rel = relDir ? `${relDir}/${name}` : name;
       if (entry.isDirectory()) {
         if (skip.has(name) || name.startsWith('.')) continue;
-        walk(join(absDir, name), relDir ? `${relDir}/${name}` : name, depth + 1);
+        if (fileKind(rel, config, { asDirectory: true, root, kinds: NOT_OWN_KINDS }).kind !== 'own') continue;
+        walk(join(absDir, name), rel, depth + 1);
         continue;
       }
       const role = byBasename(name);
       if (!role) continue;
+      // A backup-named document (`ARCHITECTURE copy.md`) is not the project's document either.
+      if (fileKind(rel, config, { root, kinds: NOT_OWN_KINDS }).kind !== 'own') continue;
       const key = relDir || '.';
       if (!found.has(key)) found.set(key, {});
-      found.get(key)[role] = relDir ? `${relDir}/${name}` : name;
+      found.get(key)[role] = rel;
     }
   };
-  walk(resolve(projectDir), '', 0);
+  walk(root, '', 0);
 
   return [...found.entries()]
     .map(([dir, roles]) => ({ dir, roles, count: Object.keys(roles).length }))
@@ -337,6 +332,9 @@ function uniqueSameNamedCanonical(projectDir, config, name) {
   }
   // A bounded walk of the canonical directory (shared-ignore imports this
   // module, so it cannot import listCanonicalDocs back).
+  // A backup, archived or template copy never stands in for a role document (spec 100 D3): the walk does not
+  // enter `docs-canonical/archive/` and does not take `ARCHITECTURE copy.md`, so a missing document stays
+  // missing for every validator alike (STR001 and STR003 read the same path).
   const walk = (rel, depth) => {
     if (depth > 6 || found.size > 1) return;
     let entries;
@@ -344,8 +342,9 @@ function uniqueSameNamedCanonical(projectDir, config, name) {
     for (const e of entries) {
       if (e.name.startsWith('.') || e.isSymbolicLink()) continue;
       const child = `${rel}/${e.name}`;
-      if (e.isDirectory()) walk(child, depth + 1);
-      else if (e.isFile() && e.name === name) found.add(child);
+      if (e.isDirectory()) {
+        if (fileKind(child, config, { asDirectory: true, root: resolve(projectDir), kinds: COPY_KINDS }).kind === 'own') walk(child, depth + 1);
+      } else if (e.isFile() && e.name === name && fileKind(child, config, { root: resolve(projectDir), kinds: COPY_KINDS }).kind === 'own') found.add(child);
     }
   };
   walk('docs-canonical', 0);

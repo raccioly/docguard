@@ -17,11 +17,6 @@ import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-]);
-
 const OTHER_VERSIONED_MANIFESTS = ['pyproject.toml', 'setup.py', 'setup.cfg', 'Cargo.toml', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'composer.json', 'mix.exs', 'pubspec.yaml', 'Gemfile'];
 
 /** The version package.json (root, or a workspace package) declares, and its name. */
@@ -337,5 +332,5 @@ function findMarkdownFiles(dir) {
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.
 function walkFiles(dir, callback) {
-  sharedWalkFiles(dir, callback, { ignoreDirs: IGNORE_DIRS });
+  sharedWalkFiles(dir, callback);
 }

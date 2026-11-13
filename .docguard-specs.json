@@ -762,11 +762,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified the one agent-instruction role, pointer and vendored-copy handling and PSR005 against the shipped ARCHITECTURE entry (spec 094) and the recorded A/B and budget run.",
+              "evidence": [
+                "cli/shared-agent-instructions.mjs",
+                "cli/validators/freshness.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/agent-instruction-role.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/shared-agent-instructions.mjs",
                 "cli/validators/freshness.mjs",
@@ -803,7 +817,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:90184776ddc79de5808d281725290f7d500d4a82673ff5567da91258efee0928"
+            "digest": "sha256:377ca96d606bc6ec24426f860c09e18fbdb0660aa30eaf42b7127768e1cd7cee"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -1565,7 +1579,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 878
+            "line": 868
           },
           {
             "requirementId": "FR-002",
@@ -2356,12 +2370,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 849
+            "line": 858
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 876
+            "line": 885
           },
           {
             "requirementId": "FR-021",
@@ -2371,7 +2385,7 @@
           {
             "requirementId": "FR-022",
             "file": "cli/shared-drift.mjs",
-            "line": 37
+            "line": 35
           },
           {
             "requirementId": "FR-022",
@@ -3630,11 +3644,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified the relocated-layout reproduction tests, the STR003 and docs surfaces, and the recorded A/B against the shipped behavior in DATA-MODEL (spec 093).",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/commands/score.mjs",
                 "cli/shared-doc-roles.mjs",
@@ -3666,7 +3693,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:cf4b61504055ede2d6b979adb04f5d72fade18934e43a8ecd94b496e2eb77129"
+            "digest": "sha256:fa2e22115e3e0f8735ae19dd80c7b3ab2a10e3e6daacb050833b3e5b04dc91aa"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
@@ -3685,17 +3712,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 93
+            "line": 96
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 94
+            "line": 97
           },
           {
             "requirementId": "FR-003",
             "file": "cli/commands/score.mjs",
-            "line": 498
+            "line": 499
           }
         ],
         "testEvidence": [
@@ -4037,12 +4064,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1370
+            "line": 1362
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1373
+            "line": 1365
           },
           {
             "requirementId": "FR-002",
@@ -4127,7 +4154,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 1374
+            "line": 1366
           },
           {
             "requirementId": "FR-009",
@@ -4152,12 +4179,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-source.mjs",
-            "line": 1325
+            "line": 1317
           },
           {
             "requirementId": "FR-010",
             "file": "cli/shared-source.mjs",
-            "line": 1353
+            "line": 1345
           }
         ],
         "testEvidence": [
@@ -4711,7 +4738,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/trace.mjs",
-            "line": 57
+            "line": 51
           },
           {
             "requirementId": "FR-007",
@@ -4898,32 +4925,32 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 446
+            "line": 445
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 461
+            "line": 460
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 478
+            "line": 477
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 185
+            "line": 184
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 237
+            "line": 236
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 252
+            "line": 251
           },
           {
             "requirementId": "FR-006",
@@ -4933,12 +4960,12 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/structure.mjs",
-            "line": 244
+            "line": 278
           },
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 766
+            "line": 767
           },
           {
             "requirementId": "FR-009",
@@ -5129,17 +5156,17 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 153
+            "line": 150
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 135
+            "line": 132
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 154
+            "line": 151
           },
           {
             "requirementId": "FR-003",
@@ -5149,17 +5176,17 @@
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/routes.mjs",
-            "line": 254
+            "line": 255
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 88
+            "line": 85
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 89
+            "line": 86
           },
           {
             "requirementId": "FR-005",
@@ -5169,7 +5196,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 90
+            "line": 87
           },
           {
             "requirementId": "FR-008",
@@ -5179,7 +5206,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 155
+            "line": 152
           }
         ],
         "testEvidence": [
@@ -6028,7 +6055,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 44
+            "line": 47
           },
           {
             "requirementId": "FR-003",
@@ -6190,7 +6217,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 407
+            "line": 406
           },
           {
             "requirementId": "FR-002",
@@ -6220,7 +6247,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/security.mjs",
-            "line": 183
+            "line": 185
           },
           {
             "requirementId": "FR-006",
@@ -6250,7 +6277,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 354
+            "line": 353
           },
           {
             "requirementId": "FR-008",
@@ -7352,12 +7379,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1282
+            "line": 1274
           },
           {
             "requirementId": "FR-001",
             "file": "cli/shared-source.mjs",
-            "line": 1288
+            "line": 1280
           },
           {
             "requirementId": "FR-001",
@@ -7382,7 +7409,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 893
+            "line": 883
           },
           {
             "requirementId": "FR-004",
@@ -7392,12 +7419,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 884
+            "line": 874
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 894
+            "line": 884
           },
           {
             "requirementId": "FR-004",
@@ -7407,12 +7434,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared-source.mjs",
-            "line": 895
+            "line": 885
           },
           {
             "requirementId": "FR-006",
             "file": "cli/shared-file-kind.mjs",
-            "line": 98
+            "line": 124
           },
           {
             "requirementId": "FR-007",
@@ -7432,7 +7459,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/routes.mjs",
-            "line": 1202
+            "line": 1203
           },
           {
             "requirementId": "FR-009",
@@ -7442,12 +7469,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 47
+            "line": 44
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 51
+            "line": 48
           },
           {
             "requirementId": "FR-010",
@@ -7715,7 +7742,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:1df21d5c4fa152bb4aefcae679b1d4f84f07bcac7fd9f30d0118407534fa3395"
+            "digest": "sha256:f6d344e729f563a6d449cd9c742d8c16736595f793c6bfbd9c040f0cab23f093"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -7723,11 +7750,11 @@
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:92afd12c5d390b6fffecdbed0cfa59cf1574bc4661bc11a84528809bf61d4826"
+            "digest": "sha256:a314818c4dca31775ea18542681f2c00af6e0575f7abffef816d9e8bf6b0aff5"
           }
         ],
         "taskCompletion": {
-          "checked": 14,
+          "checked": 18,
           "total": 20
         },
         "implementationEvidence": [
@@ -7765,6 +7792,36 @@
             "requirementId": "FR-009",
             "file": "cli/scanners/agent-instructions.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/sync-tests.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/doc-tools.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/frontend.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/iac.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/shared-test-cases.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/shared-backup-documents.mjs",
+            "line": 17
           }
         ],
         "testEvidence": [
@@ -7787,6 +7844,11 @@
             "requirementId": "FR-004",
             "file": "tests/file-kinds.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/file-kinds-stage2.test.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-005",
@@ -7826,7 +7888,12 @@
           {
             "requirementId": "FR-011",
             "file": "tests/file-kinds-registry.test.mjs",
-            "line": 13
+            "line": 15
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/file-kinds-stage2.test.mjs",
+            "line": 9
           },
           {
             "requirementId": "SC-001",
@@ -7971,7 +8038,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1153
+            "line": 1159
           },
           {
             "requirementId": "FR-008",
@@ -8176,7 +8243,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/diff.mjs",
-            "line": 188
+            "line": 176
           },
           {
             "requirementId": "FR-003",
@@ -8211,7 +8278,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 533
+            "line": 530
           },
           {
             "requirementId": "FR-005",
@@ -8221,12 +8288,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/diff.mjs",
-            "line": 349
+            "line": 337
           },
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 898
+            "line": 888
           },
           {
             "requirementId": "FR-007",
@@ -8236,12 +8303,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 899
+            "line": 889
           },
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 1136
+            "line": 1128
           },
           {
             "requirementId": "FR-009",
@@ -8655,12 +8722,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 685
+            "line": 692
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-git.mjs",
-            "line": 686
+            "line": 693
           },
           {
             "requirementId": "FR-004",
@@ -8997,12 +9064,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1429
+            "line": 1435
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1439
+            "line": 1445
           },
           {
             "requirementId": "FR-006",
@@ -9547,32 +9614,32 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 322
+            "line": 319
           },
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 326
+            "line": 323
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 327
+            "line": 324
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 328
+            "line": 325
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 340
+            "line": 337
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 342
+            "line": 339
           }
         ],
         "testEvidence": [
@@ -9736,7 +9803,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared-source.mjs",
-            "line": 452
+            "line": 442
           },
           {
             "requirementId": "FR-003",
@@ -9781,7 +9848,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/routes.mjs",
-            "line": 386
+            "line": 387
           },
           {
             "requirementId": "FR-008",
@@ -9796,7 +9863,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-source.mjs",
-            "line": 434
+            "line": 424
           },
           {
             "requirementId": "FR-009",
@@ -9806,12 +9873,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/routes.mjs",
-            "line": 647
+            "line": 648
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/routes.mjs",
-            "line": 653
+            "line": 654
           },
           {
             "requirementId": "FR-011",
@@ -9826,7 +9893,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/scanners/routes.mjs",
-            "line": 795
+            "line": 796
           }
         ],
         "testEvidence": [
@@ -10005,7 +10072,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/routes.mjs",
-            "line": 541
+            "line": 542
           },
           {
             "requirementId": "FR-002",
@@ -10025,52 +10092,52 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 530
+            "line": 531
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 591
+            "line": 592
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 594
+            "line": 595
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/routes.mjs",
-            "line": 651
+            "line": 652
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 833
+            "line": 823
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-source.mjs",
-            "line": 896
+            "line": 886
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 232
+            "line": 222
           },
           {
             "requirementId": "FR-004",
             "file": "cli/shared-source.mjs",
-            "line": 897
+            "line": 887
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 52
+            "line": 49
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/routes.mjs",
-            "line": 652
+            "line": 653
           },
           {
             "requirementId": "FR-005",
@@ -10080,22 +10147,22 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 325
+            "line": 326
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 533
+            "line": 534
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 326
+            "line": 327
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 743
+            "line": 744
           },
           {
             "requirementId": "FR-008",
@@ -10105,7 +10172,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 327
+            "line": 328
           },
           {
             "requirementId": "FR-009",
@@ -10120,12 +10187,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 327
+            "line": 328
           },
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/schemas.mjs",
-            "line": 378
+            "line": 379
           },
           {
             "requirementId": "FR-010",
@@ -10627,17 +10694,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 40
+            "line": 37
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 41
+            "line": 38
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 42
+            "line": 39
           },
           {
             "requirementId": "FR-004",
@@ -10647,12 +10714,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/import-graph.mjs",
-            "line": 43
+            "line": 40
           },
           {
             "requirementId": "FR-006",
             "file": "cli/shared-source.mjs",
-            "line": 508
+            "line": 498
           },
           {
             "requirementId": "FR-006",
@@ -10662,7 +10729,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/shared-source.mjs",
-            "line": 509
+            "line": 499
           },
           {
             "requirementId": "FR-007",
@@ -10702,7 +10769,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 121
+            "line": 124
           },
           {
             "requirementId": "FR-010",
@@ -10727,7 +10794,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/shared-doc-roles.mjs",
-            "line": 122
+            "line": 125
           },
           {
             "requirementId": "FR-011",
@@ -12112,12 +12179,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 95
+            "line": 89
           },
           {
             "requirementId": "FR-009",
             "file": "cli/commands/trace.mjs",
-            "line": 96
+            "line": 90
           },
           {
             "requirementId": "FR-009",
@@ -12172,7 +12239,7 @@
           {
             "requirementId": "FR-016",
             "file": "cli/validators/reference-existence.mjs",
-            "line": 205
+            "line": 214
           }
         ],
         "testEvidence": [
@@ -13853,7 +13920,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-git.mjs",
-            "line": 592
+            "line": 599
           }
         ],
         "testEvidence": [
@@ -14125,11 +14192,30 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified recorded reviews, FRS006/FRS007/FRS010, the reviews file schema and the recorded TestGuard reproduction, replay and A/B against the shipped ARCHITECTURE and DATA-MODEL text (spec 095).",
+              "evidence": [
+                "cli/commands/review.mjs",
+                "cli/scanners/doc-reviews.mjs",
+                "cli/scanners/recorded-review-signals.mjs",
+                "cli/scanners/reference-staleness.mjs",
+                "cli/validators/freshness.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/history-replay.test.mjs",
+                "tests/program-verification.test.mjs",
+                "tests/recorded-document-reviews.test.mjs",
+                "tests/review-accept-many.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/commands/review.mjs",
                 "cli/scanners/doc-reviews.mjs",
@@ -14175,7 +14261,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:1c67aa661176b2d45ffe48e85fd27632ef0e83ff58da4d6bca35af2c53acc36c"
+            "digest": "sha256:1bbbc7efe929f2c1ca92abd5a03c6f386f8f0c3fc452442c202c2c9c26915838"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
@@ -15788,7 +15874,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/semantic-claims.mjs",
-            "line": 78
+            "line": 79
           },
           {
             "requirementId": "FR-033",
@@ -15818,7 +15904,7 @@
           {
             "requirementId": "FR-037",
             "file": "cli/commands/trace.mjs",
-            "line": 232
+            "line": 226
           },
           {
             "requirementId": "FR-037",
@@ -17398,7 +17484,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/cross-reference.mjs",
-            "line": 323
+            "line": 324
           },
           {
             "requirementId": "FR-006",
@@ -17428,17 +17514,17 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-coverage.mjs",
-            "line": 87
+            "line": 84
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 79
+            "line": 78
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 289
+            "line": 286
           },
           {
             "requirementId": "FR-006",
@@ -17463,7 +17549,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/freshness.mjs",
-            "line": 512
+            "line": 517
           },
           {
             "requirementId": "FR-006",
@@ -17473,7 +17559,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metadata-sync.mjs",
-            "line": 141
+            "line": 136
           },
           {
             "requirementId": "FR-006",
@@ -17488,7 +17574,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/reference-existence.mjs",
-            "line": 61
+            "line": 62
           },
           {
             "requirementId": "FR-006",
@@ -17508,12 +17594,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 33
+            "line": 36
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 43
+            "line": 46
           },
           {
             "requirementId": "FR-006",
@@ -17528,17 +17614,17 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/test-spec.mjs",
-            "line": 58
+            "line": 59
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/todo-tracking.mjs",
-            "line": 285
+            "line": 292
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/traceability.mjs",
-            "line": 136
+            "line": 133
           },
           {
             "requirementId": "FR-007",
@@ -17593,7 +17679,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 227
+            "line": 228
           },
           {
             "requirementId": "FR-014",
@@ -17628,7 +17714,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/validators/freshness.mjs",
-            "line": 552
+            "line": 557
           }
         ],
         "testEvidence": [
@@ -19262,7 +19348,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/schemas.mjs",
-            "line": 328
+            "line": 329
           },
           {
             "requirementId": "FR-002",
@@ -19272,17 +19358,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1147
+            "line": 1148
           },
           {
             "requirementId": "FR-003",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1148
+            "line": 1149
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1149
+            "line": 1150
           },
           {
             "requirementId": "FR-005",
@@ -19292,12 +19378,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1150
+            "line": 1151
           },
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1253
+            "line": 1254
           },
           {
             "requirementId": "FR-006",
@@ -19307,12 +19393,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/schemas.mjs",
-            "line": 1254
+            "line": 1255
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/schemas.mjs",
-            "line": 379
+            "line": 380
           },
           {
             "requirementId": "FR-007",
@@ -19332,22 +19418,22 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/schemas.mjs",
-            "line": 535
+            "line": 536
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/schemas.mjs",
-            "line": 744
+            "line": 745
           },
           {
             "requirementId": "FR-012",
             "file": "cli/scanners/schemas.mjs",
-            "line": 208
+            "line": 209
           },
           {
             "requirementId": "FR-012",
             "file": "cli/scanners/schemas.mjs",
-            "line": 329
+            "line": 330
           }
         ],
         "testEvidence": [
@@ -21016,7 +21102,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-sync.mjs",
-            "line": 134
+            "line": 131
           },
           {
             "requirementId": "FR-004",

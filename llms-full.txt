@@ -85,7 +85,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
 | **Agent-instruction role** | One list of the project's agent instructions: root `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and `requiredFiles.agentFile` (root-level, loaded every session), plus tracked nested AGENTS/CLAUDE/GEMINI files and harness rules and skills outside test, fixture and example paths and below no template directory (`templates/<app>/files/AGENTS.md` is a form for another project; `fileKinds.own` overrides both, specs 099 and 100). Each entry says whether it is a pointer (a short body that imports a file or names another role document; reviewed through its target) and whether it is vendored (listed in a Spec Kit integration manifest, or a skill DocGuard ships) | `cli/shared-agent-instructions.mjs` | Every reader of agent files asks it: Freshness, Reference-Existence, Diff-Suspicion, Canonical-Sync, Doc-Dependency candidates, semantic claims, the instruction audit, `diff --since`, `diff`/MCP references, `diagnose`, the hook nudge and `score --dora`. Path-Scoped-Rules reports PSR005 for a manifest copy whose sha256 changed (spec 094), and PSR006 for a template, test, fixture or example copy that shares a governing instruction file's name (spec 099) |
-| **File kinds** | One answer to "is this file this project's own": `fileKind(path, config, opts)` returns `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup` or `nested-checkout` from a closed directory and file-name vocabulary matched as whole segments in any case before the first dot-directory, never for a package segment. Unknown is always `own`; `fileKinds.own` forces it; a file that describes its own folder (an instruction file) is not classified by the folder that holds it | `cli/shared-file-kind.mjs` | `isNonProductPath` and `isNonProductDir` are views of it; the agent-instruction role, Path-Scoped-Rules (PSR006) and the instruction-chain budget (STR004) call it; guard reports `files.kinds`. A test fails when a file under `cli/` keeps its own directory-name set or walks the tree without it, until Stage 2 of spec 100 migrates the allowlisted files |
+| **File kinds** | One answer to "is this file this project's own": `fileKind(path, config, opts)` returns `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup` or `nested-checkout` from a closed directory and file-name vocabulary matched as whole segments in any case before the first dot-directory, never for a package segment. Unknown is always `own`; `fileKinds.own` forces it; a file that describes its own folder (an instruction file) is not classified by the folder that holds it | `cli/shared-file-kind.mjs` | `isNonProductPath` and `isNonProductDir` are views of it; the agent-instruction role, Path-Scoped-Rules (PSR006) and the instruction-chain budget (STR004) call it; guard reports `files.kinds`. A test fails when a file under `cli/` keeps its own directory-name set or walks the tree without it (the allowlist is empty since Stage 2; Security keeps one exempt list, with its reason, because it reads every kind); `walkFiles` never enters a nested checkout, `listCanonicalDocs` leaves backup documents out, and STR008 reports a backup-named document in a documentation directory (spec 100 Stage 2) |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
@@ -1605,7 +1605,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.5.3 -->
+<!-- docguard:version 1.5.4 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-11-13 -->
 
@@ -1723,7 +1723,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
 | `cli/shared-agent-instructions.mjs`, `cli/validators/path-scoped-rules.mjs` (PSR006, spec 099), `cli/scanners/agent-instructions.mjs` (copies are not measured) | `tests/instruction-copies.test.mjs` | ✅ |
 | `cli/shared-file-kind.mjs` (`fileKind`, `fileKinds.own`), `isNonProductPath`, `isNonProductDir` (spec 100) | `tests/file-kinds.test.mjs`, `tests/file-kinds-detection.test.mjs` | ✅ |
-| `cli/` as a whole: no private directory-name set, no unclassified walk outside an allowlist that carries a reason per entry (spec 100 FR-011) | `tests/file-kinds-registry.test.mjs` | ✅ |
+| `cli/` as a whole: no private directory-name set, no unclassified walk; the allowlist is empty and one exemption (Security) carries its reason (spec 100 FR-011, FR-012) | `tests/file-kinds-registry.test.mjs` | ✅ |
+| `cli/validators/reference-existence.mjs` (D2), `cli/shared-doc-roles.mjs` and `cli/shared-doc-role-hint.mjs` (D3, D4), `listCanonicalDocs` and `cli/commands/llms.mjs` (D6, D9), `cli/validators/todo-tracking.mjs` (D6, D8), `walkFiles` nested checkouts (T022), `cli/shared-backup-documents.mjs` and STR008 (FR-013) | `tests/file-kinds-stage2.test.mjs` | ✅ |
 | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
 | `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
@@ -1834,6 +1835,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.4 | 2026-11-13 | DocGuard Team | File kinds, Stage 2: every walker asks the shared classifier, copies no longer stand in for or hide this project's files, STR008 reports backup documents (spec 100) |
 | 1.5.3 | 2026-11-13 | DocGuard Team | File kinds: `fileKind`, `fileKinds.own`, the `files.kinds` report and the guard test against private directory-name sets (spec 100, Stage 1) |
 | 1.5.2 | 2026-11-13 | DocGuard Team | Fixture git turns background maintenance off (spec 066) |
 | 1.5.1 | 2026-11-13 | DocGuard Team | Fixture directories come from `tests/helpers/temp-dir.mjs` and are removed after every run; the `hermeticity` job checks for leftovers (spec 098) |
@@ -2021,6 +2023,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Every validator and command asks the one file-kind rule; copies of files no longer stand in for this project's own or hide them (spec 100, Stage 2, `docguard.file-kinds`).** The 27 private directory-name lists and unclassified walks that Stage 1 left on an allowlist now ask `fileKind` (or the shared walker, which asks it); the registry test's allowlist is empty and keeps one reasoned exemption, Security, which reads every kind. This change REMOVES findings on copies and ADDS one finding code.
+  - **Removed or changed (a file that is a copy, or build output, no longer counts).**
+    - `REF001` (D2): a template, fixture, vendored or generated copy that still defines a removed function no longer hides a stale reference. Where a document names a symbol that now exists only in such a copy, `REF001` is now reported.
+    - `STR001` and `STR003` (D3): `docs-canonical/archive/SECURITY.md` (or a backup-named copy) no longer stands in for a missing role document. `STR001` says it is missing and `STR003` no longer checks the archive copy's sections.
+    - `XRF001` and the document-reading findings (D6): a backup-named document (`ARCHITECTURE copy.md`, `*.md.bak`, `-old.md`, `(1).md`) or a document below an archive folder of a documentation directory is read as no document: not a canonical document, not reviewed by Freshness (`FRS*`), not read for cross-references, not listed by `docguard llms` (D9), not read as evidence.
+    - `TDO001`, `TDO002`, `TDO003` (D6, D8): TODO tracking skips template, fixture and nested-checkout paths and uses the shared build-output set, so `out/`, `target/` and `obj/` are skipped.
+    - `ARC*`, `DCV*`, `DSY*`, `TRC*`, `TSP*`, `DFT*`, `MET*`, `RTE*`, `SCH*` and the other findings that read the tree: a nested checkout (a directory below the root with its own `.git`) is never walked, and the walkers that kept a private list now use the shared build-output set (`out/`, `target/`, `obj/`, `_build` and the others). Walkers that skipped `templates` now skip the `template` kind (`scaffold`, `boilerplate`, `starter-kit`, `skeleton`, in any case).
+    - The canonical-layout detection and the role hint (D4) never propose a document under a template, fixture, test, vendored, generated, backup or nested-checkout path, so the `docs.roles` advice no longer names `examples/x/docs/ARCHITECTURE.md`.
+  - **Added.** `STR008` (validator `structure`, warn, not gating): a document named like a backup (`ARCHITECTURE.md.bak`, `SECURITY copy.md`, `API (1).md`, `DATA-old.md`) inside a documentation directory (`docs`, `docs-canonical`, `docs-implementation`, `documentation`, `doc`). A document under an `archive/` folder leaves the document role and is listed under `files.kinds.excluded.backup`, without a warning. `docguard explain STR008` says how to fix it.
+  - **Unchanged on purpose.** Security still reports secrets in copies and in nested checkouts. A project's own tests, and ADR numbering over archived records, are still read. `docs-canonical/X.md` beside `docs-implementation/X.md`, per-package READMEs and CHANGELOGs stay the project's own. `fileKinds.own` rescues a path everywhere.
+  - **Also.** `isGeneratedPath`'s file-name rules (`*.min.js`, `*.bundle.js`, `*-generated.*`, `*.d.ts`) are the `generated` kind by name. `walkFiles` takes `skipKinds`, `config`, `root` and `nestedCheckouts`. The registry test now reads each function (a file that asks the classifier somewhere does not cover a walk elsewhere in it).
+
 ### Fixed
 
 - **The anchor lock merges cleanly: two lines for one link, left by a union
@@ -2114,6 +2130,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Specs 093, 094 and 095 are verified** (`docguard.configured-canonical-paths`,
+  `docguard.agent-instruction-role`, `docguard.recorded-document-reviews`),
+  closed with `specs complete` in the one-commit flow of spec 101. Guard no
+  longer reports DLC002 for them. No finding code or exit code changes.
 - **Specs: one commit closes a spec, and the completion record survives a squash merge
   or a rebase (`specs/101-completion-one-commit`).** This change REMOVES `SPR008` findings
   and `DLC002` findings and ADDS `SPR010`. Before, `specs complete` refused to run while the
@@ -2394,26 +2414,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `performed`, `applies` and `applicability.before`, keeps `emptyCause` where a
   validator examined nothing, keeps `howToConfigure` only where it applies and is
   empty, states the sentence of every validator that has nothing to check once,
-  and refers to validators by key in `strict.unexamined`. The full form keeps
-  every field.
-- **Security reports how many files it scanned and why a run scanned none**
-  (spec 097, stage A). The result now carries `performed` (files scanned),
-  `applies` (a project applies when it has a source or configuration file with a
-  scanned extension) and its evidence. When `securityIgnore`, `ignore` or
-  `.docguardignore` excludes every candidate, the SEC011 suggestion names the
-  setting. No finding, level, count or exit code changes under `standard`.
-- **Pointer files are reviewed through their target.** A `CLAUDE.md` that only says
-  "Follow `AGENTS.md`", or a one-line `@AGENTS.md`, no longer gets its own FRS
-  finding; Freshness records that it is reviewed through its target. Installed
-  Spec Kit and DocGuard skill copies are no longer reviewed for staleness, because
-  they are owned upstream (FR-004 to FR-006). Projects with authored skills, rules,
-  Copilot instructions, nested `AGENTS.md` or a `GEMINI.md` now see FRS findings
-  for them.
-- **A validator that performed no check is `empty`, never `pass`.** The verdict
-  now requires at least one performed check. Requirement-Anchors enabled with
-  zero anchors, and Doc-Ownership with a block that lists no entry, are `empty`
 
-<!-- truncated: 6705 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6723 more lines — read CHANGELOG.md directly -->
 
 ---
 

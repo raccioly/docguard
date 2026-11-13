@@ -693,6 +693,55 @@
       "oppositeControl": "dev-instruction-budget-control"
     },
     {
+      "id": "dev-backup-docs-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-backup-docs",
+      "causalFamily": "backup-document-copy",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/backup-docs-control" },
+      "scope": { "validatorKey": "structure", "codes": ["STR008"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "STR008@docs/archive/PLAN-2024.md",
+        "STR008@Downloads/onboarding (1).md"
+      ],
+      "oppositeControl": "dev-backup-docs-defect"
+    },
+    {
+      "id": "dev-backup-docs-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-backup-docs",
+      "causalFamily": "backup-document-copy",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/backup-docs-defect" },
+      "scope": { "validatorKey": "structure", "codes": ["STR008"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [
+        "STR008@docs/GUIDE copy.md"
+      ],
+      "forbidden": [
+        "STR008@docs/GUIDE.md"
+      ],
+      "oppositeControl": "dev-backup-docs-control"
+    },
+    {
       "id": "eval-vendored-instruction-control",
       "split": "evaluation",
       "repositoryGroup": "synthetic-agent-instructions-heldout",

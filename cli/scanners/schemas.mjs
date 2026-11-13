@@ -24,6 +24,7 @@ import {
 import { scanPythonModels } from './python-models.mjs';
 import { readScannable, resolveSourceRoots, getWorkspaceDirs, tierFor } from '../shared-source.mjs';
 import { shouldIgnore, relPosix, isNonProductPath, isIgnoredDirEntry } from '../shared-ignore.mjs';
+import { holdsOwnGit } from '../shared-file-kind.mjs';
 
 /**
  * Deep scan schemas from ORM definitions, validation libraries, and OpenAPI specs.
@@ -1464,7 +1465,7 @@ function _collectFiles(dir, out) {
     if (isIgnoredDirEntry(entry.name, entries) || entry.name.startsWith('.')) continue;
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      _collectFiles(fullPath, out);
+      if (!holdsOwnGit(fullPath)) _collectFiles(fullPath, out); // a nested checkout is another project's
     } else if (entry.isFile() && _CODE_FILE_RE.test(entry.name)) {
       out.push(fullPath);
     }

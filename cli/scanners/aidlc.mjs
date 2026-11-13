@@ -11,10 +11,13 @@
  * @implements docguard.aidlc-profile#FR-001
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { basename, join, relative, resolve, sep } from 'node:path';
+import { DEFAULT_IGNORE_DIRS, walkFiles } from '../shared-ignore.mjs';
 
 const MAX_FILES = 2000;
-const SKIP_DIRS = new Set(['.aidlc-engine', 'node_modules', '.git']);
+// The shared build-output and package-cache set, plus AI-DLC's own engine folder. Dot entries are read: a record
+// holds `.`-folders of its own.
+const SKIP_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.aidlc-engine']);
 
 function listDirs(abs) {
   try { return readdirSync(abs, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort(); } catch { return []; }
@@ -33,14 +36,18 @@ export function findAidlcRecords(projectDir) {
   return records;
 }
 
-function walk(abs, out, depth = 0) {
-  if (depth > 8 || out.length >= MAX_FILES) return;
-  let entries = [];
-  try { entries = readdirSync(abs, { withFileTypes: true }); } catch { return; }
-  for (const e of entries) {
-    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) walk(join(abs, e.name), out, depth + 1); }
-    else if (e.name === 'traceability.json' || e.name === 'source-manifest.json' || e.name === 'aidlc-state.md') out.push(join(abs, e.name));
-  }
+/** Files below `abs` that pass `test`, at most `maxDepth` folders deep and `MAX_FILES` of them, in walk order. */
+function collect(abs, test, maxDepth, out = []) {
+  walkFiles(abs, (full) => {
+    if (out.length >= MAX_FILES) return;
+    if (relative(abs, full).split(sep).length - 1 > maxDepth) return;
+    if (test(basename(full), full)) out.push(full);
+  }, { ignoreDirs: SKIP_DIRS, skipDotEntries: false, root: abs });
+  return out;
+}
+
+function walk(abs, out) {
+  collect(abs, name => name === 'traceability.json' || name === 'source-manifest.json' || name === 'aidlc-state.md', 8, out);
 }
 
 /** Stage slug → checkbox state, from `## Stage Progress` (and phase headings under it). */
@@ -114,16 +121,8 @@ export function findAidlcSpaces(projectDir) {
   return listDirs(spaces).map(space => ({ space, abs: join(spaces, space) }));
 }
 
-function filesIn(abs, test, depth = 0, out = []) {
-  if (depth > 6 || out.length >= MAX_FILES) return out;
-  let entries = [];
-  try { entries = readdirSync(abs, { withFileTypes: true }); } catch { return out; }
-  for (const e of entries) {
-    const p = join(abs, e.name);
-    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) filesIn(p, test, depth + 1, out); }
-    else if (test(e.name, p)) out.push(p);
-  }
-  return out.sort();
+function filesIn(abs, test) {
+  return collect(abs, test, 6).sort();
 }
 
 /** Rule layers AI-DLC's learning loop writes: memory/{org,team,project}.md and memory/phases/*.md. */

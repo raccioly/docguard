@@ -7,8 +7,10 @@
  * recursively walks directories without asking the shared classifier, fails
  * this test unless it is in the allowlist below, with a reason per entry. The
  * allowlist is exact in both directions: an entry that no longer matches
- * fails too, so it can only shrink. Stage 2 migrates every entry and ends
- * with an empty list.
+ * fails too, so it can only shrink. Stage 2 (spec 100 T020) migrated every
+ * entry: the allowlist is empty, and a file that cannot ask the shared
+ * classifier needs a precise exemption (file and what it defines), with the
+ * reason the definition means something other than "not this project's file".
  *
  * @req docguard.file-kinds#FR-011
  */
@@ -31,8 +33,11 @@ const DIRECTORY_NAMES = new Set([
   '.next', '.nuxt', '.git', '.cache', '.turbo', '.venv', '__pycache__',
 ]);
 
+/** What precedes an array that lists file kinds: `kinds: [`, `skipKinds: [`, `COPY_OF_CODE_KINDS = [`. */
+const KIND_LIST_PREFIX = /kinds\s*[:=]\s*(?:Object\.freeze\(\s*)?$/i;
+
 /** A walk is classified when the file asks the shared classifier or uses the shared walker. */
-const CLASSIFIER_USE = /\bfileKind\(|\bisNonProductPath\(|\bisNonProductDir\(|\bwalkFiles\(|\bsharedWalkFiles\(/;
+const CLASSIFIER_USE = /\bfileKind\(|\bisNonProductPath\(|\bisNonProductDir\(|\bwalkFiles\(|\bsharedWalkFiles\(|\bholdsOwnGit\(/;
 
 /**
  * What a source text defines: `sets` (array literals or regex alternations
@@ -44,6 +49,9 @@ export function scanSource(source) {
   const sets = [];
   const words = text => [...text.matchAll(/['"`]([\w.-]+)['"`]/g)].map(m => m[1]);
   for (const m of source.matchAll(/\[[^\[\]]{0,1500}\]/g)) {
+    // A list of file KINDS (`kinds: ['generated', 'vendored']`, `SKIP_KINDS = [...]`) shares words with the directory
+    // vocabulary, but it names the closed kinds of `fileKind`, not directories.
+    if (KIND_LIST_PREFIX.test(source.slice(Math.max(0, m.index - 40), m.index))) continue;
     const names = new Set(words(m[0]).filter(w => DIRECTORY_NAMES.has(w)));
     if (names.size >= 2) sets.push([...names].slice(0, 4).join(','));
   }
@@ -52,13 +60,17 @@ export function scanSource(source) {
     if (names.size >= 2) sets.push([...names].slice(0, 4).join(','));
   }
   const walks = [];
-  if (!CLASSIFIER_USE.test(source)) {
+  {
     const decl = /^(?:export )?(?:async )?(?:function\*? ([A-Za-z_$][\w$]*)\s*\(|const ([A-Za-z_$][\w$]*) = (?:async )?(?:function|\())/gm;
     const marks = [...source.matchAll(decl)].map(m => ({ name: m[1] || m[2], at: m.index }));
     marks.forEach((mark, i) => {
       const body = source.slice(mark.at + 1, i + 1 < marks.length ? marks[i + 1].at : source.length);
       const self = new RegExp(`\\b${mark.name.replace(/\$/g, '\\$')}\\(`);
-      if (/readdirSync\(|readdir\(/.test(body) && self.test(body.slice(body.indexOf('(') + 1))) walks.push(mark.name);
+      // A name inside a string or a comment is not a call (an error message that quotes the function).
+      const code = body.slice(body.indexOf('(') + 1).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+        .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g, '');
+      // The function itself must ask the classifier (a file that asks it elsewhere does not cover this walk).
+      if (/readdirSync\(|readdir\(/.test(body) && self.test(code) && !CLASSIFIER_USE.test(body)) walks.push(mark.name);
     });
   }
   return { sets: [...new Set(sets)], walks };
@@ -75,36 +87,23 @@ function sourceFiles(dir, out = []) {
 
 /**
  * Files not yet migrated to the shared classifier, each with why it is still
- * here. Stage 2 (specs/100-file-kinds T020) removes every entry.
+ * here. Spec 100 Stage 2 (T020) migrated every entry: the list is empty and
+ * stays empty. A file that cannot ask the classifier goes in EXEMPT below.
  */
 const ALLOWLIST = {
-  'cli/commands/diff.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/commands/generate.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/commands/score.mjs': 'Stage 2: keeps a private directory-name skip list and its own recursive walk; move both to walkFiles and fileKind',
-  'cli/commands/sync-tests.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/commands/trace.mjs': 'Stage 2: keeps a private directory-name skip list and its own recursive walk; move both to walkFiles and fileKind',
-  'cli/ensure-skills.mjs': 'Stage 2: recursive read of the shipped skill assets; confirm it is not a project walk, then drop the entry or exempt it with a reason',
-  'cli/scanners/aidlc.mjs': 'Stage 2: keeps a private directory-name skip list and its own recursive walk; move both to walkFiles and fileKind',
-  'cli/scanners/doc-tools.mjs': 'Stage 2: walks directories on its own; move it to walkFiles and fileKind',
-  'cli/scanners/frontend.mjs': 'Stage 2: walks directories on its own; move it to walkFiles and fileKind',
-  'cli/scanners/import-graph.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/scanners/inventory.mjs': 'Stage 2: keeps fixture-name skip lists and walks test files itself; use fileKind (D6, D8 family)',
-  'cli/scanners/project-type.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/scanners/symbol-map.mjs': 'Stage 2: vendored and generated directory regex; becomes the vendored and generated kinds',
-  'cli/scanners/tech-stack.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/shared-doc-role-hint.mjs': 'Stage 2: directory-name skip list behind the role hint, which proposes examples and templates documents (D4)',
-  'cli/shared-doc-roles.mjs': 'Stage 2: directory-name skip list behind uniqueSameNamedCanonical, which adopts an archive copy (D3)',
-  'cli/shared-drift.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/shared-source.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/shared-test-cases.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/validators/docs-coverage.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/validators/docs-diff.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/validators/docs-sync.mjs': 'Stage 2: private skip list beside isNonProductPath',
-  'cli/validators/metadata-sync.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
-  'cli/validators/security.mjs': 'Stage 2: private skip list beside isNonProductPath; templates and backups are not classified',
-  'cli/validators/test-spec.mjs': 'Stage 2: keeps a private directory-name skip list and its own recursive walk; move both to walkFiles and fileKind',
-  'cli/validators/todo-tracking.mjs': 'Stage 2: private ignore set that flags out/ and target/ (D8) and files in templates, backup, examples and fixtures (D6)',
-  'cli/validators/traceability.mjs': 'Stage 2: keeps a private directory-name skip list; replace it with walkFiles and fileKind',
+};
+
+/**
+ * Precise exemptions: a file and what it defines, with the reason the
+ * definition does not mean "not this project's file". Exact in both
+ * directions (an exemption that matches nothing fails), and the definition is
+ * named, so a second set added to the same file is still reported.
+ */
+const EXEMPT = {
+  'cli/validators/security.mjs': {
+    sets: ['node_modules,.git,.next,dist'],
+    reason: 'Security reads every kind of file, copies included: a secret in a template, a backup or a nested checkout is still a leaked secret, and it only labels the context (secretContext). Its list is the original narrow one on purpose: the shared build-output set also skips out/, target/ and obj/, where a bundled key is still a leaked key.',
+  },
 };
 
 const offenders = () => {
@@ -113,7 +112,9 @@ const offenders = () => {
     const rel = relative(ROOT, file).split('\\').join('/');
     if (DEFINING_MODULES.has(rel)) continue;
     const { sets, walks } = scanSource(readFileSync(file, 'utf8'));
-    if (sets.length || walks.length) found[rel] = { sets, walks };
+    const exempt = EXEMPT[rel];
+    const left = { sets: sets.filter(x => !exempt?.sets?.includes(x)), walks: walks.filter(x => !exempt?.walks?.includes(x)) };
+    if (left.sets.length || left.walks.length) found[rel] = left;
   }
   return found;
 };
@@ -125,15 +126,31 @@ describe('the scan itself', () => {
     assert.equal(scanSource('const R = /(?:^|\\/)(?:node_modules|vendor|dist)(?:\\/|$)/;').sets.length, 1);
   });
 
+  it('a list of file kinds is not a set of directory names', () => {
+    assert.deepEqual(scanSource("walk(dir, cb, { kinds: ['generated', 'vendored'] });").sets, []);
+    assert.deepEqual(scanSource("const COPY_OF_CODE_KINDS = ['template', 'fixture', 'vendored', 'generated'];").sets, []);
+    assert.equal(scanSource("const SKIP = ['vendored', 'generated'];").sets.length, 1, 'a plain list of those names is still a set');
+  });
+
+  it('a function name inside a string or a comment is not a recursive call', () => {
+    const quoted = "function plan(s) {\n  if (!s) throw new TypeError('plan(s): pass it');\n  return readdirSync(s);\n}\n";
+    assert.deepEqual(scanSource(quoted).walks, []);
+    const real = "function plan(s) {\n  for (const e of readdirSync(s)) plan(e); // plan(e) again\n}\n";
+    assert.deepEqual(scanSource(real).walks, ['plan']);
+  });
+
   it('one directory name alone is not a set, and ordinary arrays are not', () => {
     assert.deepEqual(scanSource("const A = ['dist'];\nconst B = ['a', 'b', 'c'];").sets, []);
   });
 
-  it('finds a function that reads a directory and calls itself, unless the file asks the classifier', () => {
+  it('finds a function that reads a directory and calls itself, unless that function asks the classifier', () => {
     const walker = "import { readdirSync } from 'node:fs';\nfunction scan(dir) {\n  for (const e of readdirSync(dir)) scan(e);\n}\n";
     assert.deepEqual(scanSource(walker).walks, ['scan']);
     assert.deepEqual(scanSource(`${walker}\nconst keep = f => !fileKind(f, {}).kind;`).walks, []);
     assert.deepEqual(scanSource("function once(dir) { return readdirSync(dir); }").walks, []);
+    // Asking the classifier in some other function of the file does not cover this walk.
+    const elsewhere = `${walker}\nfunction other(f) { return fileKind(f, {}); }\n`;
+    assert.deepEqual(scanSource(elsewhere).walks, ['scan']);
   });
 });
 
@@ -148,6 +165,19 @@ describe('FR-011 — no private directory-name set or unclassified walk under cl
   it('every allowlist entry still offends: the list only shrinks', () => {
     const stale = Object.keys(ALLOWLIST).filter(f => !(f in found));
     assert.deepEqual(stale, [], `These files no longer define a set or walk the tree; delete them from ALLOWLIST: ${stale.join(', ')}`);
+  });
+
+  it('the allowlist is empty: Stage 2 migrated every file', () => {
+    assert.deepEqual(Object.keys(ALLOWLIST), []);
+  });
+
+  it('every exemption still matches what it names, and carries a reason', () => {
+    for (const [file, ex] of Object.entries(EXEMPT)) {
+      assert.ok(typeof ex.reason === 'string' && ex.reason.trim().length >= 40, `${file}: say why the definition is not a copy list`);
+      const { sets, walks } = scanSource(readFileSync(join(ROOT, file), 'utf8'));
+      for (const x of ex.sets || []) assert.ok(sets.includes(x), `${file}: no set ${x} any more; delete the exemption`);
+      for (const x of ex.walks || []) assert.ok(walks.includes(x), `${file}: no walk ${x} any more; delete the exemption`);
+    }
   });
 
   it('every allowlist entry carries a reason', () => {

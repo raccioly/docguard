@@ -33,10 +33,10 @@
 ## Stage 2 (later)
 
 - [x] T019 Spec Kit `specs/<NNN>-feature/` is `own` in `fileKind` (done in Stage 1; detection keeps its answer through `featureSpecs: 'test'`).
-- [ ] T020 Migrate every allowlisted file to `fileKind`; the allowlist ends empty (FR-012).
-- [ ] T021 Fix D2 (REF001 symbol set), D3 (`uniqueSameNamedCanonical`), D4 (`detectCanonicalLayout`, role hint), D6 (backup-named documents, TODO tracking, nested checkouts), D8 (TODO tracking private set), D9 (`docguard llms`), each with a failing test first.
-- [ ] T022 Walkers skip a nested checkout (FR-012).
-- [ ] T023 The backup-document warning, with catalog row, strict addition, precision evidence, benchmark pair and `explain` text (FR-013).
+- [x] T020 Migrate every allowlisted file to `fileKind`; the allowlist ends empty (FR-012).
+- [x] T021 Fix D2 (REF001 symbol set), D3 (`uniqueSameNamedCanonical`), D4 (`detectCanonicalLayout`, role hint), D6 (backup-named documents, TODO tracking, nested checkouts), D8 (TODO tracking private set), D9 (`docguard llms`), each with a failing test first.
+- [x] T022 Walkers skip a nested checkout (FR-012).
+- [x] T023 The backup-document warning, with catalog row, strict addition, precision evidence, benchmark pair and `explain` text (FR-013).
 
 ## Stage 3 (later)
 

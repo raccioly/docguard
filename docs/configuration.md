@@ -474,7 +474,21 @@ list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`,
   `templates/`, and `packages/templates/AGENTS.md` governs a package.
 - **Backups** apply to documents only (`ARCHITECTURE copy.md`,
   `ARCHITECTURE-old.md`, `*.md.bak`, or a document below `archive`, `backup`,
-  `old` or `deprecated` inside `docs/`), never to code.
+  `old` or `deprecated` inside `docs/`), never to code. A backup is read as no
+  document: it is not a canonical document, Freshness does not review it,
+  cross-references are not read from it, `docguard llms` does not list it, and
+  it never stands in for a missing role document. A backup-named document in a
+  documentation directory is **STR008**; a document in an archive folder is
+  left out without a warning.
+- **Nested checkouts.** A directory below the root that holds its own `.git`
+  is another project's files and is never walked. Security is the one reader
+  that still scans one: a secret in a copy is a leaked secret.
+- **Where each reader asks.** TODO tracking skips templates, fixtures and
+  build output (`out/`, `target/`) like the other walkers; reference-existence
+  does not let a template, fixture, vendored or generated copy define the
+  symbol a document names; the canonical-layout detection and the role hint
+  never propose a document under a template, fixture, test, vendored,
+  generated, backup or nested-checkout path.
 
 `fileKinds.own` lists glob patterns for files that are the project's own
 wherever they sit, such as a real package that happens to be called
@@ -486,8 +500,8 @@ wherever they sit, such as a real package that happens to be called
 
 `.docguardignore` and `ignore` still win and remain the way to exclude a file.
 Nothing is dropped silently: `guard --format json` carries `files.kinds` (a
-count per kind, and up to 20 paths per kind of instruction files left out as
-copies), and the text output prints one line when any were left out. PSR006
+count per kind, and up to 20 paths per kind of instruction files and backup
+documents left out as copies), and the text output prints one line when any were left out. PSR006
 warns when a template or fixture copy shares a governing instruction file's
 name; the instruction-chain budget (STR004) does not count a copy.
 

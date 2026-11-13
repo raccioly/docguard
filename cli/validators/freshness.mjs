@@ -15,6 +15,7 @@ import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
 import { resolve, join, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 // FR-005: the shared helper, not a private copy of `git rev-parse`.
 import { gitMetadataStatus, isShallowRepository, unreadableGitApplicability } from '../shared-git.mjs';
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
@@ -59,6 +60,10 @@ function collectDocs(dir, config, ignored) {
       else if (recurse && stat.isDirectory()) {
         for (const entry of readdirSync(abs, { withFileTypes: true })) {
           if (entry.name.startsWith('.')) continue;
+          // A backup-named document (`ARCHITECTURE copy.md`) or one below an archive folder is not reviewed as a
+          // document, and a nested checkout is another project's (specs/100-file-kinds D6).
+          const child = relPosix(dir, join(abs, entry.name));
+          if (fileKind(child, config, { asDirectory: entry.isDirectory(), root: resolve(dir), kinds: ['backup', 'nested-checkout'] }).kind !== 'own') continue;
           if (entry.isDirectory() || extname(entry.name).toLowerCase() === '.md') add(join(rel, entry.name), true);
         }
       }

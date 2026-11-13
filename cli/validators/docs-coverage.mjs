@@ -22,6 +22,7 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { existsSync, readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, isAbsolute } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { fileKind, holdsOwnGit } from '../shared-file-kind.mjs';
 import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS, isDocguardOwnedDir } from '../shared-ignore.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
@@ -29,12 +30,8 @@ import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanner
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  '.turbo', '.vercel', '.svelte-kit', 'cdk.out', '.claude',
-  'target', '.gradle',
-]);
+// The shared build-output and package-cache set (specs/100-file-kinds), plus the harness folder `.claude`.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.claude']);
 
 // Dotfiles that are universally common and don't need documentation
 const COMMON_DOTFILES = new Set([
@@ -300,6 +297,8 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
       } catch { continue; }
 
       if (IGNORE_DIRS.has(entry) || entry.startsWith('.') || entry === '__tests__' || entry === '__test__') continue;
+      // Another project's checkout is not a directory of this one (specs/100-file-kinds).
+      if (holdsOwnGit(fullPath)) continue;
 
       const relPath = relative(projectDir, fullPath);
       // DocGuard's own doc homes are documentation, not source directories.
@@ -601,6 +600,8 @@ function collectDocContent(projectDir, config = {}) {
     for (const entry of entries) {
       if (entry.isSymbolicLink()) continue;
       const path = relative(projectDir, join(dir, entry.name)).split('\\').join('/');
+      // A backup-named document, an archive folder and a nested checkout are not documents of the project (specs/100-file-kinds D6).
+      if (fileKind(path, config, { asDirectory: entry.isDirectory(), root: resolve(projectDir), kinds: ['backup', 'nested-checkout'] }).kind !== 'own') continue;
       if (entry.isDirectory() && !entry.name.startsWith('.')) walkDocs(path);
       else if (entry.isFile() && (/\.md$/i.test(entry.name)
           || (path.startsWith('extensions/') && /\.ya?ml$/i.test(entry.name)))) addDoc(path);

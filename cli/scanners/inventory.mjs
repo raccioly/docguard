@@ -17,7 +17,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
-import { isIgnoredDirEntry, isNonProductDir, isDocguardOwnedDir } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, isIgnoredDirEntry, isNonProductDir, isDocguardOwnedDir, walkFiles } from '../shared-ignore.mjs';
+import { TEST_LOCATIONS } from '../shared-file-kind.mjs';
 
 const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.rb', '.php', '.java', '.kt']);
 const toPosix = (p) => p.split(/[\\/]/).join('/');
@@ -87,9 +88,9 @@ export function scanComponents(projectDir, config = {}, limit = 30) {
 // *_test.py, Go *_test.go, Ruby *_spec.rb / *_test.rb.
 // Django's per-app `tests.py` is a test module too (docguard.generated-docs-consistency#FR-010).
 const TEST_FILE_RE = /(?:\.(?:test|spec)\.[cm]?[jt]sx?|(?:^|\/)test_[^/]*\.py|(?:^|\/)tests\.py|_test\.(?:py|go)|_spec\.rb|(?:^|\/)[^/]*_test\.rb)$/i;
-// Fixture/mock subdirs that sit INSIDE a test dir but aren't themselves tests.
-const FIXTURE_DIRS = new Set(['fixtures', '__fixtures__', 'testdata', 'test-fixtures', 'testfixtures', 'mocks', '__mocks__', 'snapshots', '__snapshots__']);
-const TEST_DIRS = ['tests', 'test', '__tests__', 'spec', 'e2e'];
+// Snapshot output sits INSIDE a test dir but is not a test. Fixture and mock folders are a file kind
+// (specs/100-file-kinds), asked of the shared classifier in `walkTestFiles`.
+const SNAPSHOT_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'snapshots', '__snapshots__']);
 
 function countCases(content, ext) {
   let re;
@@ -104,19 +105,14 @@ function countCases(content, ext) {
   return n;
 }
 
-function walkTestFiles(dir, projectDir, acc) {
-  let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
-  for (const e of entries) {
-    if (e.name.startsWith('.') || isIgnoredDirEntry(e.name, entries)) continue;
-    if (e.isDirectory()) {
-      if (FIXTURE_DIRS.has(e.name)) continue; // fixtures/mocks inside a test dir aren't tests
-      walkTestFiles(join(dir, e.name), projectDir, acc);
-    } else if (e.isFile() && CODE_EXT.has(extname(e.name))) {
-      const rel = toPosix(relative(projectDir, join(dir, e.name)));
-      if (TEST_FILE_RE.test(rel)) acc.add(rel);
-    }
-  }
+function walkTestFiles(dir, projectDir, acc, config = {}) {
+  // Fixture and mock folders inside a test dir are not tests: the `fixture` kind leaves them out (so do
+  // `examples/` and `samples/`). The project's own tests are a kind too (`test`), and are what is read here.
+  walkFiles(dir, (full) => {
+    if (!CODE_EXT.has(extname(full))) return;
+    const rel = toPosix(relative(projectDir, full));
+    if (TEST_FILE_RE.test(rel)) acc.add(rel);
+  }, { ignoreDirs: SNAPSHOT_DIRS, root: projectDir, config, skipKinds: ['fixture'] });
 }
 
 /**
@@ -129,11 +125,11 @@ function walkTestFiles(dir, projectDir, acc) {
 export function scanTestInventory(projectDir, config = {}) {
   const root = resolve(projectDir);
   const acc = new Set();
-  for (const td of TEST_DIRS) {
+  for (const td of TEST_LOCATIONS) {
     const d = join(root, td);
-    if (existsSync(d)) walkTestFiles(d, root, acc);
+    if (existsSync(d)) walkTestFiles(d, root, acc, config);
   }
-  for (const sr of resolveSourceRoots(projectDir, config)) walkTestFiles(sr, root, acc);
+  for (const sr of resolveSourceRoots(projectDir, config)) walkTestFiles(sr, root, acc, config);
 
   const files = [];
   let totalCases = 0;

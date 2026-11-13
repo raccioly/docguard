@@ -22,6 +22,7 @@ import { buildImportGraph, JS_EXTENSIONS } from './import-graph.mjs';
 import { moduleSymbols } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 import { isNonProductPath } from '../shared-ignore.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 import { countLanguages, describeLanguageCounts } from '../shared-source.mjs';
 
 export const SYMBOL_MAP_DEFAULT_BYTES = 4096;
@@ -32,7 +33,9 @@ const ITERATIONS = 30;
 
 const posix = p => String(p).replace(/\\/g, '/');
 const isSource = f => JS_EXTENSIONS.has(extname(f)) || extname(f) === '.py';
-const isGenerated = f => /\.d\.ts$|\.min\.js$|(^|\/)(dist|build|generated|vendor)\//.test(f);
+// Build output, minified bundles, declaration files and vendored code are the `generated` and `vendored` kinds
+// (specs/100-file-kinds); `fileKinds.own` brings a path back.
+const isGenerated = (f, config = {}) => fileKind(f, config, { kinds: ['generated', 'vendored'], harnessFolders: 'all' }).kind !== 'own';
 
 /** Bounded budget from `memory.symbolMap.maxBytes`. */
 export function symbolMapBudget(config = {}) {
@@ -117,13 +120,13 @@ export function buildSymbolMap(projectDir, config = {}, { maxBytes = symbolMapBu
   // Files the graph could not read (Python without an interpreter) are still
   // ranked, and listed without symbols under their degraded tier.
   const files = [...new Set([...graph.files, ...(graph.unsupportedFiles || [])].map(posix))]
-    .filter(f => isSource(f) && !isGenerated(f) && !isNonProductPath(f, config))
+    .filter(f => isSource(f) && !isGenerated(f, config) && !isNonProductPath(f, config))
     .sort();
   const fileSet = new Set(files);
   // Source the graph cannot read is named, never mistaken for a project with
   // no imports (docguard.fallback-language-coverage#FR-010).
   const unanalysed = countLanguages((graph.unanalysedFiles || []).map(posix)
-    .filter(f => !isGenerated(f) && !isNonProductPath(f, config)));
+    .filter(f => !isGenerated(f, config) && !isNonProductPath(f, config)));
   const unanalysedText = describeLanguageCounts(unanalysed);
   const edges = graph.edges
     .filter(e => !e.dynamic)

@@ -182,6 +182,12 @@ export const CODES = {
     help: 'A profile can require sections beyond the canonical ones (the `enterprise-ai` profile requires Risk Assessment and Threat Model in SECURITY.md; `requiredSections` in `.docguard.json` adds more). Add the heading, or own its absence with `<!-- docguard:section <slug> n/a — reason -->`. Informational by default (spec 082): it never changes the exit code unless `findingSeverity.STR007` says so.',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
+  STR008: {
+    validator: 'structure',
+    title: 'Backup copy of a document in a documentation directory',
+    help: 'A file inside a documentation directory (`docs`, `docs-canonical`, `docs-implementation`, `documentation`, `doc`, at any depth) is named like a backup of a document: `ARCHITECTURE.md.bak`, `.orig`, `.backup`, a trailing `~`, `SECURITY copy.md`, `API (1).md`, `DATA-old.md` or `DATA.old.md`. DocGuard reads no backup as a document (it is not a canonical document, not reviewed by Freshness, not read for cross-references, not listed by `docguard llms`) and never lets one stand in for a missing role document, so it is dead weight that can still mislead a reader. `docguard generate --force` and `docguard init --force` write a `.bak` beside the file they replace. Delete it (git keeps the history), add it to `.gitignore`, or, if it is a real document, rename it or list it in `fileKinds.own`. A document below an `archive/`, `old/`, `backup/` or `deprecated/` folder of a documentation directory also leaves the document role, but only the file name makes this finding: an archive is usually kept on purpose. `guard --format json` lists what was left out under `files.kinds.excluded.backup`. The finding reads tracked files only; the first ten are listed, then a count.',
+    suppress: null,
+  },
   CHG001: {
     validator: 'changelog',
     title: 'Missing [Unreleased] section',

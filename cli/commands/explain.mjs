@@ -49,8 +49,9 @@ const EXPLAINERS = {
     triggers: [
       ['Missing required file', 'A canonical doc declared in your config doesn\'t exist on disk. Create it or remove it from `requiredFiles.canonical`.'],
       ['Missing agent file', 'No AGENTS.md or CLAUDE.md found. Create one — even a stub establishes the agent contract.'],
+      ['backup copy of a document', 'STR008: a file in a documentation directory is named like a backup (`ARCHITECTURE.md.bak`, `SECURITY copy.md`, `API (1).md`, `DATA-old.md`). DocGuard reads no backup as a document and never lets one stand in for a missing document, so it is a leftover: delete it (git keeps the history), add it to `.gitignore`, or, if it is a real document, rename it or list it in `fileKinds.own`. `docguard generate --force` writes a `.bak` beside the file it replaces. A document under an `archive/` folder leaves the document role without a warning.'],
     ],
-    example: 'docs-canonical/ARCHITECTURE.md, AGENTS.md, CHANGELOG.md all present',
+    example: 'docs-canonical/ARCHITECTURE.md, AGENTS.md, CHANGELOG.md all present, and no `ARCHITECTURE.md.bak` beside them',
     standard: 'CDD STANDARD (this project\'s STANDARD.md)',
   },
   docsSync: {

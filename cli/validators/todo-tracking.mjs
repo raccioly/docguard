@@ -27,7 +27,8 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, extname } from 'node:path';
-import { shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, shouldIgnore, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 import { maskCodeSpans } from '../shared-html-comments.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -36,11 +37,17 @@ import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { realComments } from '../scanners/anchor-tags.mjs';
 import { languageOf } from '../scanners/pattern-lexer.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-  '.amplify-hosting', '.serverless', 'Research',
-]);
+// Build output and package caches come from the one shared set (spec 100 D8: `out/` and `target/` were read here
+// and nowhere else). `Research` and the hosting folders are this validator's own additions, not a kind.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.amplify-hosting', '.serverless', 'Research']);
+
+/**
+ * Files that are not this project's own work carry no debt of this project's: a scaffolder's template, a fixture
+ * or example project, a backup copy (spec 100 D6; a nested checkout is never walked). The project's own tests are
+ * not in the list: skipped tests are read on purpose.
+ */
+const NOT_OWN_WORK_KINDS = ['template', 'fixture', 'backup'];
+const walkOptions = (projectDir, config) => ({ ignoreDirs: IGNORE_DIRS, root: resolve(projectDir), config, skipKinds: NOT_OWN_WORK_KINDS });
 
 const SOURCE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -292,7 +299,7 @@ export function applies(projectDir, config = {}) {
     if (config?.todoTracking?.includeTestFiles !== true && isTestFilePath(rel)) return;
     if (shouldIgnore(rel, config, 'todoIgnore')) return;
     source = rel;
-  }, { ignoreDirs: IGNORE_DIRS });
+  }, walkOptions(projectDir, config));
   if (source) return { applies: true, evidence: `${source} is a source file whose comments are read` };
   const tests = [];
   findTestFiles(projectDir, projectDir, tests, config);
@@ -556,7 +563,7 @@ function findTestFiles(rootDir, dir, files, config) {
       if (config && shouldIgnore(relPath, config, 'todoIgnore')) return;
       files.push(relPath);
     }
-  }, { ignoreDirs: IGNORE_DIRS });
+  }, walkOptions(rootDir, config));
 }
 
 // Test-file path patterns — TODO scanning skips these by default to avoid
@@ -586,9 +593,7 @@ function findTodos(rootDir, dir, todos, config) {
   }
 
   // v0.29 consolidation: traversal delegates to the shared canonical walker.
-  sharedWalkFiles(dir, (full) => _scanTodoFile(rootDir, full, todos, config), {
-    ignoreDirs: IGNORE_DIRS,
-  });
+  sharedWalkFiles(dir, (full) => _scanTodoFile(rootDir, full, todos, config), walkOptions(rootDir, config));
 }
 
 /**
@@ -605,6 +610,8 @@ function _scanTodoFile(rootDir, full, todos, config) {
 
   const relPath = relative(rootDir, full);
 
+  // A changed file (`--changed-only`) is classified like a walked one.
+  if (fileKind(relPath.split('\\').join('/'), config, { root: resolve(rootDir), kinds: [...NOT_OWN_WORK_KINDS, 'nested-checkout'] }).kind !== 'own') return;
   if (!includeTests && isTestFilePath(relPath)) return;
   if (config && shouldIgnore(relPath, config, 'todoIgnore')) return;
 

@@ -17,18 +17,11 @@
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname, relative, extname } from 'node:path';
-import { shouldIgnore, isNonProductDir, isNonProductPath, walkFiles, isIgnoredDirEntry } from './shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, isNonProductDir, isNonProductPath, walkFiles, isIgnoredDirEntry } from './shared-ignore.mjs';
+// The one shared build-output and package-cache set (specs/100-file-kinds): this module no longer keeps its own.
 import { pythonEnvNames } from './scanners/py-env.mjs';
+import { holdsOwnGit, isGeneratedFileName } from './shared-file-kind.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor', '.turbo',
-  // Maven/Gradle/Cargo build output: compiled or generated, never authored.
-  'cdk.out', 'target', '.gradle',
-  // .NET/C intermediate output and Mix/dune/Sphinx output; a .NET `bin/` is
-  // skipped by isIgnoredDirEntry (docguard.coverage-followups#FR-002).
-  'obj', '_build',
-]);
 
 /** Extensions the env scan reads (docguard.fallback-language-coverage#FR-003). */
 export const CODE_EXTENSIONS = new Set([
@@ -101,11 +94,8 @@ export const MAX_SCAN_BYTES = 1_500_000;
 
 /** True for build artifacts / minified / generated / declaration files. */
 export function isGeneratedPath(p) {
-  const b = String(p);
-  return /\.min\.[cm]?js$/i.test(b)
-      || /\.(bundle|chunk)\.[cm]?jsx?$/i.test(b)
-      || /[.-]generated\.[a-z0-9]+$/i.test(b)
-      || /\.d\.ts$/i.test(b);
+  // The file-name rules are the `generated` kind's (specs/100-file-kinds).
+  return isGeneratedFileName(p);
 }
 
 /**
@@ -466,7 +456,7 @@ export function isPagesProject(dir) {
     for (const e of entries) {
       if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
       const p = join(d, e.name);
-      if (e.isDirectory()) { if (walk(p, depth + 1)) return true; continue; }
+      if (e.isDirectory()) { if (!holdsOwnGit(p) && walk(p, depth + 1)) return true; continue; }
       if (!e.isFile() || !/\.(?:[cm]?[jt]s|[jt]sx)$/.test(e.name) || /\.d\.[cm]?ts$/.test(e.name)) continue;
       if (++seen > 500) return false;
       let text = '';
@@ -1081,6 +1071,8 @@ export function grepEnvUsage(projectDir, config = {}, options = {}) {
       // v0.26: skip test/fixture dirs in env detection. The parent path lets a
       // package segment (`src/main/java/com/example`) through (FR-006).
       if (e.isDirectory() && isNonProductDir(e.name, config, relative(projectDir, dir).replace(/\\/g, '/'))) continue;
+      // Another project's checkout is not this project's environment (specs/100-file-kinds).
+      if (e.isDirectory() && holdsOwnGit(full)) continue;
       if (e.isDirectory()) walk(full, onlyExts);
       else if (e.isFile()) visit(full, onlyExts);
     }

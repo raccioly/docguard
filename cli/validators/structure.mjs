@@ -22,9 +22,12 @@ import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { measureInstructionChains, DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
+import { backupLeftovers } from '../shared-backup-documents.mjs';
 
 // An allowance this far above the chain's size is slack in the ratchet.
 const ALLOWANCE_SLACK_BYTES = 1024;
+// STR008 lists this many backup copies by name, then says how many more there are.
+const MAX_BACKUP_FINDINGS = 10;
 
 /**
  * Whether Structure's kind of check belongs to the project. It always does:
@@ -156,6 +159,37 @@ export function validateStructure(projectDir, config) {
         suggestion: { kind: 'fix', text: `Set agentInstructions.allowances["${chain.leaf}"] to ${Math.max(chain.bytes, maxBytes)}${chain.bytes <= maxBytes ? ' (or remove it: the chain is within the default budget)' : ''}` },
       }));
     }
+  }
+
+  // A backup copy of a document inside a documentation directory (specs/100-file-kinds FR-013). Advisory: it adds
+  // no check to passed/total, so a project's counts do not move. The file is already out of every document check.
+  const leftovers = backupLeftovers(projectDir, config);
+  for (const path of leftovers.slice(0, MAX_BACKUP_FINDINGS)) {
+    findings.push(mkFinding({
+      code: 'STR008',
+      validator: 'structure',
+      severity: 'warn',
+      confidence: 'high',
+      disposition: 'act',
+      message: `${path} is named like a backup copy of a document and sits in a documentation directory; DocGuard reads no backup as a document`,
+      location: path,
+      suggestion: {
+        kind: 'fix',
+        text: `Delete ${path} (git keeps the history) or add it to .gitignore; if it is a real document, rename it or list it in fileKinds.own. \`docguard generate --force\` and \`init --force\` write a .bak beside the file they replace.`,
+      },
+    }));
+  }
+  if (leftovers.length > MAX_BACKUP_FINDINGS) {
+    findings.push(mkFinding({
+      code: 'STR008',
+      validator: 'structure',
+      severity: 'warn',
+      confidence: 'high',
+      disposition: 'act',
+      message: `...and ${leftovers.length - MAX_BACKUP_FINDINGS} more backup copies of documents in documentation directories`,
+      location: null,
+      suggestion: { kind: 'fix', text: 'Delete the backups above and re-run guard to list the rest' },
+    }));
   }
 
   return { name: 'structure', ...resultFromFindings(findings, { passed, total }), ...contractFields({

@@ -12,25 +12,26 @@
  *
  * Monorepo-aware via resolveSourceRoots(). Pure read-only scanning.
  * Zero NPM dependencies — Node.js built-ins only.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, basename, extname } from 'node:path';
 import { resolveSourceRoots, collectPackageJsons, readScannable } from '../shared-source.mjs';
-import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, relPosix } from '../shared-ignore.mjs';
+import { shouldIgnore, relPosix, walkFiles } from '../shared-ignore.mjs';
 import { extractJsxRouteScreens } from './js-ast.mjs';
 const UI_EXT = new Set(['.tsx', '.jsx']);
 
-function walk(dir, onFile, depth = 0) {
-  if (depth > 12 || !existsSync(dir)) return;
-  let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
-  for (const e of entries) {
-    if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
-    const full = join(dir, e.name);
-    if (e.isDirectory()) walk(full, onFile, depth + 1);
-    else if (e.isFile()) onFile(full);
-  }
+// The shared walker: build output and package caches and dot entries skipped, a nested checkout never entered
+// (specs/100-file-kinds). Twelve folders deep is as far as a frontend source tree is read.
+function walk(dir, onFile) {
+  if (!existsSync(dir)) return;
+  walkFiles(dir, (full) => {
+    if (relPosix(dir, full).split('/').length - 1 > 12) return;
+    onFile(full);
+  });
 }
 
 function readSafe(p) { return readScannable(p) ?? ''; } // size-capped; skips bundles

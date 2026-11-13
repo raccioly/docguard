@@ -15,14 +15,14 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative, dirname, basename } from 'node:path';
-import { shouldIgnore, relPosix, isNonProductDir } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, shouldIgnore, relPosix, isNonProductDir } from '../shared-ignore.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 import { hasWorkerConfig, isPagesProject } from '../shared-source.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', 'target',
-  '.cache', '__pycache__', '.venv', 'venv', 'vendor', '.turbo', '.vercel',
-  'bin', 'obj', '.gradle', '.idea', 'cdk.out', '.claude',
-]);
+// The shared build-output and package-cache set, plus `venv` (a virtualenv by convention) and `bin`, which this
+// scanner has always left out. A nested checkout is another project's manifests (specs/100-file-kinds).
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'venv', 'bin']);
+const isNestedCheckout = (root, dir, name) => fileKind(relPosix(root, join(dir, name)), {}, { asDirectory: true, root, kinds: ['nested-checkout'] }).kind !== 'own';
 
 // Manifest filename → ecosystem language.
 const MANIFESTS = [
@@ -56,7 +56,7 @@ function findManifests(projectDir, maxDepth = 4, config = {}) {
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (e.isDirectory()) {
-        if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.')) continue;
+        if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.') || isNestedCheckout(root, dir, e.name)) continue;
         // v0.26 (Bug #1): skip non-product dirs (tests/fixtures/examples/…) by
         // DEFAULT. A fixture `package.json` declaring express or a `py_app`
         // requirements.txt with flask must never set the PROJECT's stack/kind.
@@ -225,13 +225,14 @@ const NET_HTTP_SERVER = /\.\s*(?:HandleFunc|Handle)\s*\(|\bhttp\s*\.\s*(?:Listen
  */
 function servesNetHttp(dir) {
   let seen = 0;
+  const root = resolve(dir);
   const walk = (d, depth) => {
     if (depth > 6 || seen >= 2000) return false;
     let entries;
     try { entries = readdirSync(d, { withFileTypes: true }); } catch { return false; }
     for (const e of entries) {
       if (e.isDirectory()) {
-        if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.') || e.name === 'testdata' || isNonProductDir(e.name)) continue;
+        if (IGNORE_DIRS.has(e.name) || e.name.startsWith('.') || e.name === 'testdata' || isNonProductDir(e.name) || isNestedCheckout(root, d, e.name)) continue;
         if (walk(join(d, e.name), depth + 1)) return true;
       } else if (e.isFile() && e.name.endsWith('.go') && !e.name.endsWith('_test.go')) {
         if (++seen > 2000) return false;
