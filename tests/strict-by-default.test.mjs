@@ -32,6 +32,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
+import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
 import { FIXTURES as FIXTURES_A, run as runA } from './helpers/applicability-fixtures-a.mjs';
 import { FIXTURES as FIXTURES_B, run as runB } from './helpers/applicability-fixtures-b.mjs';
 
@@ -53,7 +54,8 @@ function write(dir, path, body) {
 }
 
 /** A committed fixture project. `config` is the whole .docguard.json. */
-function project(files, config) {
+function project(inputFiles, inputConfig) {
+  const { files, config } = isolateWithWaivers(inputFiles, inputConfig);
   const dir = scratch('docguard-strict-');
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   if (config) write(dir, '.docguard.json', JSON.stringify(config, null, 2));
@@ -72,7 +74,10 @@ const ALL_KEYS = [
   'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
 ];
 const only = (...keys) => Object.fromEntries(ALL_KEYS.map(k => [k, keys.includes(k)]));
-const cfg = (validators, extra = {}) => ({ projectName: 'strict-fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
+// The fixture helper pins the lower mode, because most tests here pin pre-strict behavior and name the mode when it matters;
+// a test that wants the strict default builds its configuration with `cfgNoMode`.
+const cfgNoMode = (validators, extra = {}) => ({ projectName: 'strict-fixture', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, validators, ...extra });
+const cfg = (validators, extra = {}) => cfgNoMode(validators, { enforcement: 'standard', ...extra });
 
 function guard(dir, args = [], env = {}) {
   const r = spawnSync(process.execPath, [CLI, 'guard', '--dir', dir, ...args], { encoding: 'utf8', env: { ...ENV, ...env } });
@@ -139,9 +144,9 @@ describe('FR-002: v0.47.0 loads a configuration that carries `enforcement`', { s
 
 // ── T005: the mode resolves in one place (FR-001, FR-016) ──
 describe('resolveEnforcement', () => {
-  it('an absent key is the default mode with source "default"; Stage A default is standard', async () => {
+  it('an absent key is the default mode with source "default"; since Stage B the default is strict', async () => {
     const { resolveEnforcement } = await import('../cli/config.mjs');
-    assert.deepEqual(resolveEnforcement({}), { mode: 'standard', asOf: null, source: 'default' });
+    assert.deepEqual(resolveEnforcement({}), { mode: 'strict', asOf: null, source: 'default' });
   });
   it('reads the string and the object form, with source "config"', async () => {
     const { resolveEnforcement } = await import('../cli/config.mjs');
@@ -239,7 +244,7 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
     const { status, json } = guardJson(dir);
     assert.equal(status, 0);
     assert.deepEqual(json.strict.unexamined, []);
-    assert.deepEqual(json.strict.waived.map(w => w.validator), ['apiSurface']);
+    assert.ok(json.strict.waived.some(w => w.validator === 'apiSurface'), 'the waiver is counted');
   });
 
   it('--changed-only does not evaluate the unexamined rule and says so', () => {
@@ -259,22 +264,23 @@ describe('standard: no exit code moves, and the mode line says where the mode ca
     structure: [NO_API, only('structure')],
   };
   for (const [name, [files, validators]] of Object.entries(fixtures)) {
-    it(`${name}: an absent key and "standard" exit like v0.47.0`, { skip: skipNoTag }, () => {
-      const absent = project(files, cfg(validators));
+    it(`${name}: "standard" exits like v0.47.0`, { skip: skipNoTag }, () => {
       const explicit = project(files, cfg(validators, { enforcement: 'standard' }));
-      const base = v047Guard(absent);
-      assert.equal(guard(absent).status, base.status, 'absent key');
+      const base = v047Guard(explicit);
       assert.equal(guard(explicit).status, base.status, 'explicit standard');
     });
   }
 
-  it('an absent key prints the default, with the key to choose another', () => {
-    const dir = project(NO_API, cfg(only('structure')));
+  it('an absent key prints the default, with the key to choose the lower mode', () => {
+    const dir = project(NO_API, cfgNoMode(only('structure')));
     const r = guard(dir);
-    assert.match(r.out, /Enforcement: standard — the default/);
+    assert.match(r.out, /Enforcement: strict — the default/);
+    assert.match(r.out, /"enforcement": "standard" selects the lower mode/);
     const json = guardJson(dir).json;
-    assert.deepEqual(json.enforcement, { mode: 'standard', asOf: null, source: 'default' });
-    assert.equal(json.strict, undefined, 'strict block only when strict is the mode');
+    assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'default' });
+    assert.ok(json.strict, 'the strict block is present under the default');
+    const std = guardJson(project(NO_API, cfg(only('structure')))).json;
+    assert.equal(std.strict, undefined, 'strict block only when strict is the mode');
   });
 
   it('an explicit key prints that it came from the configuration', () => {
@@ -660,10 +666,10 @@ describe('strict output', () => {
     const r = guard(failing());
     assert.equal(r.status, 4);
     const i = {
-      adopt: r.out.indexOf('Adopt'),
-      fix: r.out.indexOf('API-REFERENCE.md', r.out.indexOf('Adopt')),
-      waiver: r.out.indexOf('docguard:validator <key> n/a'),
-      mode: r.out.indexOf('"enforcement": "standard"'),
+      adopt: r.out.indexOf('Adopt —'),
+      fix: r.out.indexOf('API-REFERENCE.md', r.out.indexOf('Adopt —')),
+      waiver: r.out.indexOf('docguard:validator <key> n/a', r.out.indexOf('Adopt —')),
+      mode: r.out.indexOf('"enforcement": "standard"', r.out.indexOf('Adopt —')),
     };
     assert.ok(i.adopt >= 0 && i.fix > i.adopt && i.waiver > i.fix && i.mode > i.waiver, JSON.stringify(i));
     assert.match(r.out, /owner:<@handle> expires:<YYYY-MM-DD>/);
@@ -692,7 +698,7 @@ describe('strict output', () => {
   it('JSON carries enforcement and the strict block', () => {
     const { json } = guardJson(failing());
     assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'config' });
-    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
+    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'evaluated', 'gating', 'ignoredDisabled', 'pending', 'unexamined', 'waived']);
     assert.deepEqual(Object.keys(json.strict.unexamined[0]).sort(), ['blocking', 'cause', 'howToConfigure', 'name', 'newIn', 'reason', 'validator', 'verdict']);
     assert.equal(json.strict.baselined, 0);
   });
@@ -755,7 +761,9 @@ describe('upgrade: the read-only strict report', () => {
   });
 
   it('says so when strict would change nothing', () => {
-    const dir = project(NO_API, cfg(only('apiSurface')));
+    // Every other validator is waived, as an adopter would, so strict has nothing left to report.
+    const { files } = isolateWithWaivers(NO_API, { ...cfg(only('apiSurface')), enforcement: 'strict' });
+    const dir = project(files, cfg({ apiSurface: true }));
     assert.match(upgrade(dir).stdout, /Strict would change nothing for this project/);
   });
 

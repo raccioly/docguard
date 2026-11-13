@@ -64,6 +64,49 @@ export function evidenceForContext(code, context) {
   return CONTEXT_EVIDENCE[`${code}:${context}`] || null;
 }
 
+/**
+ * The bar a code clears to become a gating code (spec 097 FR-009): at least 30
+ * labeled findings, a 95% Wilson lower bound of at least 0.85, and evidence
+ * measured on a DocGuard version no more than two minor versions behind the
+ * running one. Thirty true findings out of thirty give a lower bound of 0.886;
+ * twenty-nine of thirty give 0.833 and do not pass. Defined once, here.
+ */
+export const GATING_BAR = Object.freeze({ minLabeled: 30, minLowerBound: 0.85, maxMinorsBehind: 2 });
+
+/** 95% Wilson score lower bound for `successes` of `n`; 0 when n is 0. */
+export function wilsonLower(successes, n, z = 1.96) {
+  if (!(n > 0)) return 0;
+  const p = successes / n;
+  const z2 = z * z;
+  return (p + z2 / (2 * n) - z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / (1 + z2 / n);
+}
+
+/**
+ * The gating codes: derived from the committed evidence, never listed by hand.
+ * The lower bound is computed from the counts (the stored interval is rounded).
+ * A test-path context is not a code and never enters this set; a finding in a
+ * test path is barred separately by `isGatingEligible`.
+ *
+ * @param {object} [evidence] the evidence file (default: the committed one)
+ * @param {string} [runningVersion] the DocGuard version producing the run
+ * @returns {Set<string>}
+ */
+export function deriveGatingSet(evidence = PRECISION_EVIDENCE, runningVersion = null) {
+  const out = new Set();
+  const measured = String(evidence?.source?.toolVersion ?? '').match(/^(\d+)\.(\d+)/);
+  const running = String(runningVersion ?? '').match(/^(\d+)\.(\d+)/);
+  if (!measured || !running) return out;
+  if (measured[1] !== running[1]) return out;
+  if (Number(running[2]) - Number(measured[2]) > GATING_BAR.maxMinorsBehind) return out;
+  for (const [code, e] of Object.entries(evidence.byCode || {})) {
+    if (e?.status !== 'measured') continue;
+    const n = e.precisionDenominator;
+    if (!(n >= GATING_BAR.minLabeled)) continue;
+    if (wilsonLower(e.truePositives, n) >= GATING_BAR.minLowerBound) out.add(code);
+  }
+  return out;
+}
+
 /** Adjudicated disagreements on record for a code; zeros when there are none. */
 export function adjudicatedForCode(code) {
   const entry = evidenceForCode(code);

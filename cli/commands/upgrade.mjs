@@ -326,7 +326,7 @@ export async function strictUpgradeLines(projectDir, config) {
     if (offEntries.length) lines.push(`Your .docguard.json sets ${offEntries.length} validator(s) to false: ${offEntries.join(', ')}. Strict does not honor that, so they now run. To switch one off on purpose, use a reasoned waiver or "enforcement": "standard".`);
   }
   if (strict.blocking.length === 0 && gating === 0) {
-    lines.push('Strict would change nothing for this project: every validator that applies examined something, and no finding is newly blocking.');
+    lines.push('Strict would change nothing for this project: every validator that applies is examined or waived, and no finding is newly blocking.');
     lines.push(...couldNotReadLines(strict).map((l, i) => (i === 0 ? 'Reported, and not failing the build: DocGuard could not read some items.' : l)));
     return lines;
   }

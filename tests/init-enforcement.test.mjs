@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_MODE } from '../cli/enforcement.mjs';
-import { enforcementClosingLines, enforcementToWrite, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../cli/init-enforcement.mjs';
+import { freshProjectLines, enforcementClosingLines, enforcementToWrite, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../cli/init-enforcement.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
 const OTHER = DEFAULT_MODE === 'strict' ? 'standard' : 'strict';
@@ -45,6 +45,28 @@ describe('init writes the enforcement key only on request', () => {
   it('--enforcement standard says what the lower mode does not check', t => {
     const { r } = init(t, ['--enforcement', 'standard']);
     assert.match(r.stdout, /does not fail the run/);
+  });
+
+  it('a fresh strict project is told the next guard lists what is empty, what to do first, and what the hooks do', t => {
+    const { r } = init(t, ['--enforcement', 'strict']);
+    assert.match(r.stdout, /the next `docguard guard` lists what is still empty and exits 4/);
+    assert.match(r.stdout, /fill the generated documents, or run `docguard generate`/);
+    assert.match(r.stdout, /pre-commit hook `docguard hooks` installs runs the full guard, so it blocks a commit/);
+    assert.match(r.stdout, /`guard --changed-only`.*does not\s+evaluate this rule/s);
+  });
+
+  it('a fresh standard project is not told to expect exit 4', t => {
+    const { r } = init(t, ['--enforcement', 'standard']);
+    assert.doesNotMatch(r.stdout, /exits 4\./);
+  });
+
+  it('the hook statements are true of the code: the generated pre-commit hook runs the full guard, the pre-push hook runs score, the manager lines are changed-only and ci', () => {
+    const hooks = readFileSync(resolve('cli/commands/hooks.mjs'), 'utf8');
+    assert.match(hooks, /"\$DOCGUARD" guard\n/);
+    assert.match(hooks, /"\$DOCGUARD" score --format json/);
+    assert.match(hooks, /'pre-commit': 'npx docguard-cli guard --changed-only'/);
+    assert.match(hooks, /'pre-push': 'npx docguard-cli ci'/);
+    assert.equal(freshProjectLines().length > 3, true);
   });
 
   it('an invalid --enforcement value exits 1 and writes nothing', t => {

@@ -101,3 +101,11 @@ describe('upgrade for a project with no enforcement key', () => {
     assert.deepEqual(snapshot(dir), before);
   });
 });
+
+describe('the Action fails on exit 4 and names the strict cause', () => {
+  it('action.yml turns exit 4 into a failed step whose message names the strict cause, not only fail-on-inconclusive', () => {
+    const action = readFileSync(resolve('action.yml'), 'utf8');
+    assert.match(action, /DocGuard guard exited 4: a check that applies to this project examined nothing \(strict enforcement\)/);
+    assert.doesNotMatch(action, /a check could not decide \(fail-on-inconclusive is enabled\)"/);
+  });
+});

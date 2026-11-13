@@ -1,4 +1,4 @@
-import { enforcementClosingLines, enforcementToWrite, modeAfterInit, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../init-enforcement.mjs';
+import { enforcementClosingLines, enforcementToWrite, modeAfterInit, freshProjectLines, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../init-enforcement.mjs';
 import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Init Command — Initialize CDD documentation from templates
@@ -814,7 +814,9 @@ poetry.lock
 
   // The mode this project runs under, and how to change it (specs/097 FR-017).
   console.log('');
-  for (const line of enforcementClosingLines(modeAfterInit(enforcementInFile), { written: Boolean(enforcementInFile) })) console.log(`  ${c.dim}${line}${c.reset}`);
+  const modeNow = modeAfterInit(enforcementInFile);
+  for (const line of enforcementClosingLines(modeNow, { written: Boolean(enforcementInFile) })) console.log(`  ${c.dim}${line}${c.reset}`);
+  if (modeNow === 'strict' && configWasNew) for (const line of freshProjectLines()) console.log(`  ${c.dim}${line}${c.reset}`);
 
   // ── Hooks suggestion ──────────────────────────────────────────────────
   console.log(`\n  ${c.bold}💡 Automation:${c.reset}`);

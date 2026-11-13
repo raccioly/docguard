@@ -60,6 +60,24 @@ export function enforcementClosingLines(mode, { written }) {
   ];
 }
 
+/**
+ * What a freshly initialized project should expect from the next guard under strict, and what its hooks do
+ * about it (checked against cli/commands/hooks.mjs and a fixture): the generated documents hold nothing yet, so
+ * `docguard guard` lists what is still empty and exits 4. The shell pre-commit hook `docguard hooks` installs
+ * runs the full guard and blocks the commit on exit 4 (`git commit --no-verify` skips it); the generated
+ * pre-push hook runs `score`, which does not evaluate the rule; a hook-manager line (`guard --changed-only`)
+ * does not evaluate it either, and `docguard ci` blocks.
+ */
+export function freshProjectLines() {
+  return [
+    'The generated documents hold nothing yet, so the next `docguard guard` lists what is still empty and exits 4.',
+    '  First: fill the generated documents, or run `docguard generate` to draft them from your code.',
+    '  Hooks: the pre-commit hook `docguard hooks` installs runs the full guard, so it blocks a commit while items are open',
+    '  (`git commit --no-verify` skips it). `guard --changed-only` (the line for husky, lefthook and similar) does not',
+    '  evaluate this rule, the generated pre-push hook runs `score`, and `docguard ci` blocks.',
+  ];
+}
+
 /** The mode a project initialized with `written` (a mode or null) will run under. */
 export function modeAfterInit(written) {
   return written || DEFAULT_MODE;

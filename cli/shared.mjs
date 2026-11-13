@@ -66,9 +66,10 @@ export function resolveSeverity(config, validatorKey) {
  * policy wins over validator policy. Without an exact override, intrinsic
  * errors remain blocking, a code registered as informational stays
  * informational (it is more specific than its validator's policy), and
- * validator severity reweights the remaining warnings.
+ * validator severity reweights the remaining warnings. Under strict (the
+ * optional context from `strictFindingContext`) the order of FR-008 applies.
  */
-export function resolveFindingEnforcement(config, finding, validatorKey) {
+export function resolveFindingEnforcement(config, finding, validatorKey, strictContext = null) {
   const code = typeof finding?.code === 'string' ? finding.code.toUpperCase() : null;
   const exact = code && config?.findingSeverity?.[code];
   const normalizedExact = typeof exact === 'string' ? exact.toLowerCase() : null;
@@ -78,6 +79,17 @@ export function resolveFindingEnforcement(config, finding, validatorKey) {
       source: 'finding',
       key: code,
     };
+  }
+  if (strictContext) {
+    // specs/097 FR-008, after the exact override above: a gating code is an error (a finding in a
+    // test path is never gating); an intrinsic error stays one only for a code on the closed list;
+    // an intrinsic error of a validator the 0.47.0 defaults left off is a warning until its code gates.
+    const gating = code && strictContext.gating.has(code) && finding?.context !== 'test-path';
+    if (gating) return { level: 'error', source: 'gating', key: code };
+    if (finding?.severity === 'error') {
+      if (code && strictContext.closed.has(code)) return { level: 'error', source: 'intrinsic', key: code };
+      if (strictContext.offByDefault.has(validatorKey)) return { level: 'warn', source: 'strict-demoted', key: code };
+    }
   }
   if (finding?.severity === 'error') {
     return { level: 'error', source: 'intrinsic', key: code };
