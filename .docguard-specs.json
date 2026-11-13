@@ -7136,11 +7136,11 @@
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:ebe5bac990643eecc6e4c5aa92cad53e18b2275e45d748e15d722e007a4ceb01"
+            "digest": "sha256:5304fbcb750322eaed12c5e4529fb2e9bc90912e79a1e040ab612f7ad1cfe3e4"
           }
         ],
         "taskCompletion": {
-          "checked": 11,
+          "checked": 13,
           "total": 20
         },
         "implementationEvidence": [

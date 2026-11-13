@@ -27,8 +27,8 @@
 ### Phase 4: Docs, evidence, verification
 
 - [x] T011 `docs/configuration.md`, schema, DATA-MODEL, ARCHITECTURE, TEST-SPEC, findings reference, CHANGELOG, `docguard explain PSR006`, strict additions, precision evidence.
-- [ ] T012 Benchmarks (a D1 pair if the corpus supports STR004); A/B on DocGuard and eight other repositories, every difference labelled.
-- [ ] T013 `npm test`; `node cli/docguard.mjs guard`; CI lint.
+- [x] T012 Benchmarks (a D1 pair if the corpus supports STR004); A/B on DocGuard and eight other repositories, every difference labelled.
+- [x] T013 `npm test`; `node cli/docguard.mjs guard`; CI lint.
 
 ## Stage 2 (later)
 
