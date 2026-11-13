@@ -71,7 +71,7 @@ The primary data structure. Controls all CLI behavior.
 | `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
 | `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
 | `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
-| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode (`standard` until the release that makes `strict` the default); `profile` never selects it. `asOf` is `major.minor`. A malformed value is a configuration error |
+| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode, `strict`; `profile` never selects it. `docguard init` writes the key only for an explicit `--enforcement` or a non-default wizard answer. `asOf` is `major.minor`. A malformed value is a configuration error |
 | `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration

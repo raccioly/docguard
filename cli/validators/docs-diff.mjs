@@ -97,14 +97,14 @@ function docsDiffContract(projectDir, config, performed, found) {
       const noDocs = !existsSync(resolveDocRole(projectDir, config, 'architecture')) && !existsSync(resolveDocRole(projectDir, config, 'testSpec'));
       const a = roleDocument(projectDir, config, 'architecture');
       const t = roleDocument(projectDir, config, 'testSpec');
-      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `${a.lead}${t.lead}Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.${a.tail}${t.tail}` };
+      if (!noDocs) return { emptyCause: 'needs-content', note: `${arch} and ${testSpec} give Docs-Diff nothing to compare: neither names a technology or a test file that the code side also lacks.`, howToConfigure: `${a.lead}${t.lead}Name the project's technologies in ${arch} and list its test files in ${testSpec}, each test file in backticks, so Docs-Diff can compare the two sides.${a.parts && t.parts ? ` If the project already keeps these documents under another name or in another folder, map each instead of creating a second one, in .docguard.json (\`docs.roles\`): ${a.parts.snippet} and ${t.parts.snippet}.${a.parts.looked}${t.parts.looked}` : `${a.tail}${t.tail}`}` };
       const archNeeds = 'the technologies the project uses (for example "Express" for an express dependency)';
       const testNeeds = 'the test files listed in backticks (`tests/a.test.js`)';
       const howToConfigure = [
         a.lead ? `${a.lead}It needs ${archNeeds} named.` : `Create ${arch} naming ${archNeeds}.`,
         t.lead ? `${t.lead}It needs ${testNeeds}.` : `Create ${testSpec} listing the test files in backticks (\`tests/a.test.js\`).`,
         !a.lead && !t.lead ? '`docguard generate` drafts both.' : '',
-        `${a.tail}${t.tail}`.trim(),
+        a.parts && t.parts ? `If the project already keeps these documents under another name or in another folder, map each instead of creating a second one, in .docguard.json (\`docs.roles\`): ${a.parts.snippet} and ${t.parts.snippet}.${a.parts.looked}${t.parts.looked}` : `${a.tail}${t.tail}`.trim(),
       ].filter(Boolean).join(' ');
       return { emptyCause: 'needs-declaration', note: `Docs-Diff found ${decision.evidence}, but neither ${arch} nor ${testSpec}, so it compared nothing with a document.`, howToConfigure };
     },

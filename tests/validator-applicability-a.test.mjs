@@ -344,9 +344,16 @@ describe('group A: defects the Stage A proof found', () => {
       assert.doesNotMatch(how, /deployment-notes|glossary/);
     });
 
-    it('Docs-Diff: several files that each have the role word in their name are listed, best first, and none is offered by name', () => {
-      const how = ARCH({ 'docs/architecture-a.md': '# a\n', 'docs/architecture-b.md': '# b\n' });
-      assert.match(how, /candidates, best first: docs\/architecture-a\.md, docs\/architecture-b\.md/);
+    it('Docs-Diff: several files that each have the role word in their name are not listed; it says where it looked and prints only the snippet', () => {
+      const how = ARCH({ 'docs/architecture-review-notes.md': '# a\n', 'docs/architecture-diagram-export.md': '# b\n' });
+      assert.doesNotMatch(how, /architecture-review-notes|architecture-diagram-export/);
+      assert.match(how, /looked in docs\/ and cannot tell which file is the document, so it names none/);
+      assert.match(how, /"architecture": "<path\/to\/your-document\.md>"/);
+    });
+
+    it('Docs-Diff: one file whose name only mentions the role word but is about something else is not offered', () => {
+      const how = ARCH({ 'docs/architecture-review-notes.md': '# a\n' });
+      assert.doesNotMatch(how, /"architecture": "docs\/architecture-review-notes\.md"/);
       assert.match(how, /"architecture": "<path\/to\/your-document\.md>"/);
     });
 

@@ -80,6 +80,12 @@ docguard:
         fi
       fi
 
+      # guard exit code 4 = a check that applies to this project examined nothing (strict enforcement, the
+      # default), or a check could not decide. It stays a failure: the log above lists each item with its fix.
+      if [ "$CMD" = "guard" ] && [ "$RC" = "4" ]; then
+        echo "DocGuard guard exited 4: a check that applies to this project examined nothing. See the Adopt block above; set \"enforcement\": \"standard\" in .docguard.json to stay on the earlier behavior."
+      fi
+
       # SARIF report as a browsable artifact — best-effort, never changes the verdict.
       npx "docguard-cli@$[[ inputs.version ]]" guard --format sarif > docguard.sarif || true
 

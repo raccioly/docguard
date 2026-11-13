@@ -159,6 +159,7 @@ ${c.bold}Options:${c.reset}
                   for the machine-readable manifest.
   --doc <name>    Generate AI prompt for specific doc (architecture, security, etc.)
   --profile <p>   Profile: starter, standard, cli, library, enterprise (init command)
+  --enforcement <m>  strict | standard: the enforcement mode init writes (init command)
   --tax           Show estimated documentation maintenance cost (with score)
   --dora          Show DORA documentation-quality and AI-capability evidence (with score)
   --help          Show this help message
@@ -204,12 +205,13 @@ const COMMAND_HELP = {
   __proto__: null,
   init: {
     summary: 'Bootstrap CDD docs — smart-scans existing code, or writes blank templates.',
-    usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--with <name>] [--fix] [--no-spec-kit|--spec-kit]',
+    usage: 'docguard init [--skeleton|--wizard] [--profile <p>] [--enforcement strict|standard] [--with <name>] [--fix] [--no-spec-kit|--spec-kit]',
     flags: [
       ['--skeleton', 'Blank templates instead of the smart scan-and-propose'],
       ['--wizard', 'Guided interactive onboarding'],
       ['--with <name>', 'Add a scaffolder: agents, hooks, ci, badge, llms, publish'],
       ['--profile <p>', 'starter | standard | cli | library | enterprise (default: standard)'],
+      ['--enforcement <m>', 'strict | standard: write the mode into .docguard.json (default: no key, which is strict)'],
       ['--skip-prompts', 'Non-interactive; create the profile defaults (CI)'],
       ['--fix', 'Headless: create any missing required docs from templates'],
       ['--force', 'Overwrite existing files (.bak backup kept)'],
@@ -720,6 +722,9 @@ async function main() {
       i++;
     } else if (args[i] === '--profile' && args[i + 1]) {
       flags.profile = args[i + 1];
+      i++;
+    } else if (args[i] === '--enforcement' && args[i + 1]) {
+      flags.enforcement = args[i + 1];
       i++;
     } else if (args[i] === '--tax') {
       flags.tax = true;

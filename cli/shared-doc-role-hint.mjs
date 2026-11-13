@@ -55,8 +55,8 @@ function looseCandidates(projectDir, role) {
       if (!/\.(md|markdown|mdx)$/i.test(entry.name)) continue;
       const stem = normalize(entry.name.replace(/\.[^.]+$/, ''));
       if (/adr|decision/.test(stem)) continue;
-      if (keywords.some(k => stem.includes(k))) ranked.push({ file: child, tier: 'named', exact: keywords.includes(stem) });
-      else if (inRoleFolder && OVERVIEW_STEM.test(stem)) ranked.push({ file: child, tier: 'overview', exact: false });
+      if (keywords.some(k => stem.includes(k))) ranked.push({ file: child, stem, tier: 'named', exact: keywords.includes(stem) });
+      else if (inRoleFolder && OVERVIEW_STEM.test(stem)) ranked.push({ file: child, stem, tier: 'overview', exact: false });
     }
   };
   walk('', 0);
@@ -65,13 +65,30 @@ function looseCandidates(projectDir, role) {
   return { ranked, folders: [...folders].sort() };
 }
 
-/** The one candidate the rule can name, or null when it cannot tell which file is the document. */
-function decide(ranked) {
+// After the role's word, a name that still reads as the document itself: architecture-overview, architecture-guide.
+const DOCUMENT_SUFFIX = /^(?:overview|index|readme|summary|guide|document|doc|docs|description|design)?$/;
+
+/** Does the stem read as "the role's document" rather than as a document about something else that mentions it? */
+function readsAsTheDocument(stem, keywords) {
+  return keywords.some(k => {
+    const at = stem.indexOf(k);
+    // "architecture", "systemarchitecture" (one qualifier before) and "architectureoverview" (a document word after).
+    return at >= 0 && DOCUMENT_SUFFIX.test(stem.slice(at + k.length)) && stem.slice(0, at).length <= 'system'.length + 'technical'.length;
+  });
+}
+
+/**
+ * The one candidate the rule can name, or null when it cannot tell which file is the document: a name that is
+ * exactly the role's word, else a single file whose name reads as the document, else a single overview in a
+ * folder named for the role. Anything else (several matches, or a name about something else) is not offered.
+ */
+function decide(ranked, keywords) {
   const named = ranked.filter(c => c.tier === 'named');
   if (named.length) {
     const exact = named.filter(c => c.exact);
     if (exact.length === 1) return exact[0].file;
-    return named.length === 1 ? named[0].file : null;
+    const reads = named.filter(c => readsAsTheDocument(c.stem, keywords));
+    return named.length === 1 && reads.length === 1 ? reads[0].file : null;
   }
   const overviews = ranked.filter(c => c.tier === 'overview');
   return overviews.length === 1 ? overviews[0].file : null;
@@ -101,20 +118,23 @@ export function roleDocument(projectDir, config, role) {
     if (!elsewhere) {
       ({ ranked, folders } = looseCandidates(projectDir, role));
       ranked = ranked.filter(c => c.file !== path);
-      elsewhere = decide(ranked);
+      elsewhere = decide(ranked, ROLE_KEYWORDS[role] || []);
     }
   }
   const snippet = file => `\`"docs": { "roles": { "${role}": "${file}" } }\``;
   let lead = '';
   let tail = '';
+  let parts = null;
   if (mapped && !exists) lead = `\`docs.roles\` in .docguard.json maps ${role} to ${path}, and that file does not exist: create it there, or point the mapping at the document the project already keeps. `;
   else if (elsewhere) lead = `${elsewhere} looks like this document: map it through \`docs.roles\` with ${snippet(elsewhere)} in .docguard.json instead of creating a second one. `;
   else if (!exists) {
-    // It could not tell which file is the document: none is named as the one, but what it saw is said.
-    const named = ranked.filter(c => c.tier === 'named').map(c => c.file);
-    const listed = named.length > 1 ? ` DocGuard found these by name (candidates, best first: ${named.slice(0, 5).join(', ')}${named.length > 5 ? `, and ${named.length - 5} more` : ''}) and cannot tell which one is the document.` : '';
-    const looked = folders.length && !named.length ? ` DocGuard looked in ${folders.slice(0, 3).map(f => `${f}/`).join(', ')} (named for it) and cannot tell which file is the document.` : '';
-    tail = ` If the project already keeps this document under another name or in another folder, map it instead of creating a second one: ${snippet('<path/to/your-document.md>')} in .docguard.json (\`docs.roles\`).${listed}${looked}`;
+    // It could not tell which file is the document: it lists nothing as a candidate, and says where it looked.
+    const dirs = new Set(folders);
+    for (const c of ranked) dirs.add(c.file.includes('/') ? c.file.slice(0, c.file.lastIndexOf('/')) : '');
+    const where = [...dirs].sort().slice(0, 3).map(d => (d ? `${d}/` : 'the project root')).join(', ');
+    const looked = ranked.length || folders.length ? ` DocGuard looked in ${where} and cannot tell which file is the document, so it names none.` : '';
+    tail = ` If the project already keeps this document under another name or in another folder, map it instead of creating a second one: ${snippet('<path/to/your-document.md>')} in .docguard.json (\`docs.roles\`).${looked}`;
+    parts = { snippet: snippet('<path/to/your-document.md>'), looked };
   }
-  return { path, mapped, exists, elsewhere, lead, tail };
+  return { path, mapped, exists, elsewhere, lead, tail, parts };
 }

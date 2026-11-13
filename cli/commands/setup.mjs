@@ -17,6 +17,7 @@
  * Framework dependency: spec-kit (convention, not code).
  */
 
+import { enforcementClosingLines, enforcementToWrite, modeAfterInit, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../init-enforcement.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -113,8 +114,22 @@ export async function runSetup(projectDir, config, flags) {
         projectTypeConfig: typeDefaults[detectedType] || typeDefaults.unknown,
       };
 
+      // The strictness question, in plain words; the key is written only for a non-default answer or an explicit flag.
+      let flagMode = null;
+      if (flags.enforcement !== undefined) { try { flagMode = parseEnforcementFlag(flags.enforcement); } catch { /* init reports it */ } }
+      let wizardMode = null;
+      if (interactive && !flagMode) {
+        console.log('');
+        for (const line of WIZARD_QUESTION) console.log(`     ${line.startsWith('How') ? c.bold + line + c.reset : c.dim + line + c.reset}`);
+        let answer = null;
+        while (answer === null) answer = parseWizardAnswer(await askQuestion('     Keep strict? [Y/n]: '));
+        wizardMode = answer;
+      }
+      const enforcementKey = enforcementToWrite({ flagMode, wizardMode });
+      if (enforcementKey) defaultConfig.enforcement = enforcementKey;
       writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
       console.log(`     ${c.green}✅ Created .docguard.json${c.reset}`);
+      for (const line of enforcementClosingLines(modeAfterInit(enforcementKey), { written: Boolean(enforcementKey) })) console.log(`     ${c.dim}${line}${c.reset}`);
       configured++;
     }
   }

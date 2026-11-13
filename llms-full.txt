@@ -62,7 +62,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
 | **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
 | **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
-| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies, performed zero checks and has cause `needs-declaration` or `needs-content` (or could not observe at all) exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item; a partial result and a `layout-not-recognized` one are listed under "DocGuard could not read" and never change the exit code. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`.  Every validator returns the contract; an observation gap is `inconclusive` and carries no cause. An absent key resolves to `standard` until the stage that changes the default | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
+| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies, performed zero checks and has cause `needs-declaration` or `needs-content` (or could not observe at all) exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item; a partial result and a `layout-not-recognized` one are listed under "DocGuard could not read" and never change the exit code. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`.  Every validator returns the contract; an observation gap is `inconclusive` and carries no cause. An absent key resolves to `strict`, the default; `docguard init` writes the key only for an explicit `--enforcement` or a non-default wizard answer (`cli/init-enforcement.mjs`), and `docguard upgrade` reports what the default changes, read-only | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/init-enforcement.mjs`, `cli/commands/init.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -351,6 +351,10 @@ node_modules/.bin/docguard ci --format json --no-history > docguard-report.json
 ```
 
 The CLI exits 0 for pass, 1 for failure, and 2 for warning-only results. A plain shell step treats both 1 and 2 as failures. To permit warnings, capture the exit status explicitly and allow only 0 or 2. To block warnings, use `ci --fail-on-warning`. Severity overrides retain their configured meaning.
+
+**Exit 4 under the strict default.** `guard` exits 4 when a validator that applies to the project examined nothing for a reason the project can resolve (or could not observe at all), and `ci` blocks with `CI_STRICT_UNEXAMINED`. A pipeline that fails on any non-zero exit fails on 4, which is the point: the job log carries the Adopt block, with each validator's cause and fix, and the "DocGuard could not read" block, which never changes the exit code. The Action turns 4 into a failed step with a message that says so; the GitLab component and `templates/ci/github-actions.yml` pass the exit code through.
+
+For a staged rollout, either pin the release line the project already passes with `"enforcement": { "mode": "strict", "asOf": "0.48" }` in `.docguard.json` (checks added to strict later are reported as pending and do not change the exit code), or stay on the earlier behavior with `"enforcement": "standard"`. Do not make the pipeline swallow exit 4 with `|| true`: the run then reads green for a check that examined nothing. `docguard upgrade` prints what the default changes for a project, read-only, and `docs/upgrading-to-strict.md` walks through the ways forward.
 
 To adopt the gate on a repository that already has findings, run `guard --update-baseline` once and commit `.docguard.baseline.json`. Guard and `ci` then suppress up to the frozen number of each finding, report how many they suppressed, and gate everything new; `--no-baseline` shows everything for one run. A finding is matched by its code, file path without line number, and message with numbers masked. TRC004's trailing IR soft-match hint is left out, so adding an unrelated test file does not bring a frozen finding back. A baseline written by an earlier release still matches, and `--update-baseline` rewrites it in the current form (`specs/052-baseline-stable-fingerprint`).
 
@@ -731,8 +735,8 @@ Regenerate installed hooks after upgrading to pick up changes in hook behavior. 
 
 ## Action outputs reference
 
-Read the outputs declared in `action.yml` and the command's JSON schema before wiring downstream steps. Preserve unknown/unverified values. An integrity digest detects changes to covered report data; it is neither a trusted signature nor proof of a correct scanner.
 
+<!-- truncated: 2 more lines — read docs-canonical/CI-RECIPES.md directly -->
 
 ---
 
@@ -812,7 +816,7 @@ The primary data structure. Controls all CLI behavior.
 | `suppressions.requireOwner` | `boolean` | No | `false` | Report IGN004 for every suppression that can carry metadata and names no `owner:`; it still applies (spec 084) |
 | `suppressions.maxDays` | `integer ≥ 1` | No | — | Report IGN005 for every such suppression whose `expires:` is further out than this, or that has none (spec 084) |
 | `requiredChecks` | `string[]` | No | — | Validator keys that must reach `pass` or `fail` in every run, or guard exits 4 and `ci` blocks; REQ001 when config disables one, REQ002 for an unknown key (spec 083) |
-| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode (`standard` until the release that makes `strict` the default); `profile` never selects it. `asOf` is `major.minor`. A malformed value is a configuration error |
+| `enforcement` | `"strict"` \| `"standard"` \| `{ mode, asOf? }` | No | absent | How strictly guard judges the project (spec 097). Absent resolves to the default mode, `strict`; `profile` never selects it. `docguard init` writes the key only for an explicit `--enforcement` or a non-default wizard answer. `asOf` is `major.minor`. A malformed value is a configuration error |
 | `requiredSections` | `{ [file]: string[] }` | No | — | Extra sections a document must carry, keyed by file (a bare name means the canonical document); a missing one is STR007, informational by default. The `enterprise-ai` profile sets SECURITY.md: Risk Assessment, Threat Model (spec 082) |
 
 ### Example Configuration
@@ -2002,6 +2006,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+- **Strict is now the default enforcement mode.** A project with no
+  `enforcement` key in `.docguard.json` runs under strict: `docguard guard`
+  exits 4 (and `ci` blocks) when a validator that applies to the project
+  examined nothing for a reason the project can resolve, and prints an **Adopt**
+  block with each validator's cause and fix. A partial result, a layout DocGuard
+  does not read and a finding that is not gating stay reported and do not change
+  the exit code. If your build turned red after upgrading, in this order: apply
+  the fix under each item, record existing findings with
+  `docguard guard --update-baseline`, waive a validator that does not apply with
+  `<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`,
+  or set `"enforcement": "standard"` to keep the earlier exit codes. `docguard
+  upgrade` previews all of this for your project and writes nothing; the page
+  [Upgrading to Strict](docs/upgrading-to-strict.md) shows real output.
+  `docguard init` writes no `enforcement` key unless you pass
+  `--enforcement strict|standard` or answer the setup question with the
+  non-default, and it no longer writes `"architecture": false` or
+  `"security": false` into a new `.docguard.json` (a validator switched off in
+  your own file stays off, reported as disabled by configuration). The Action,
+  the GitLab component and the GitHub template fail on exit 4
+  (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
+
 ### Added
 
 - **DocGuard's own repository runs strict.** Its `.docguard.json` sets
@@ -2370,31 +2397,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   deliverables removed after the unit (AID003; git tells a later removal from
   the unit's own deletion), and unreadable records (AID004). DocGuard never
   writes AI-DLC files. COMPARISONS.md gains an AI-DLC section and corrects the
-  Kiro row.
-- **AI-DLC agent memory is governed** (`docguard.memory-governance`, spec 091).
-  Guard reports AI-DLC learned rules and CodeKB files that name deleted paths
-  or unused environment variables (MEM001, MEM002, advisory).
-  `docguard memory --export aidlc` feeds AI-DLC the facts DocGuard verified
-  (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
-  repeated stage-diary entries and flags stale ones without writing anything.
-  DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
-  A rule's path counts as gone only if git history once had it, and template
-  placeholders (`<active-space>`) are never paths: a fresh AI-DLC project's
-  stock `org.md` reports nothing.
 
-- **What DocGuard tells authors to write is what its validators accept**
-  (`docguard.authoring-contract`, spec 082). One registry
-  (`cli/authoring-contract.mjs`) now holds each canonical document's sections.
-  STR003, the Doc Quality score, `explain`, the `fix` prompts and the Spec Kit
-  `docguard-fix` skill all read it. Before this, the skill and `fix` asked
-  agents for sections STR003 does not accept, so an agent following
-  DocGuard's guidance wrote documents that failed DocGuard: "Technology
-  Choices" instead of Tech Stack, "Test Framework" instead of Test
-  Categories, "Data Structures" instead of Entities. A round-trip test feeds
-  every piece of guidance and every template back through the validators.
-  New STR007 reports a section the active profile requires (the
-
-<!-- truncated: 6433 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6456 more lines — read CHANGELOG.md directly -->
 
 ---
 

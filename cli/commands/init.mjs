@@ -1,3 +1,4 @@
+import { enforcementClosingLines, enforcementToWrite, modeAfterInit, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../init-enforcement.mjs';
 import { assertDefaultDocWrites } from '../shared-doc-roles.mjs';
 /**
  * Init Command — Initialize CDD documentation from templates
@@ -202,7 +203,7 @@ async function confirmCanonicalLocation(projectDir, flags) {
  * smart path, so both record the same facts.
  * @implements docguard.output-ux#FR-007
  */
-function buildInitConfig({ projectDir, config, profileName, profile, detectedType, canonical, adoptedOrConfiguredRoles = {} }) {
+function buildInitConfig({ projectDir, config, profileName, profile, detectedType, canonical, adoptedOrConfiguredRoles = {}, enforcement = null }) {
   // Shared with runtime config loading, so a type means the same thing wherever
   // it is decided. Only the four documented booleans are written.
   const shared = getProjectTypeDefaults(detectedType);
@@ -222,6 +223,8 @@ function buildInitConfig({ projectDir, config, profileName, profile, detectedTyp
     projectName: config.projectName,
     version: CURRENT_SCHEMA_VERSION, // single source of truth (shared.mjs) — never hardcode
     profile: profileName,
+    // Written only for an explicit choice (`--enforcement`, or a wizard answer that is not the default).
+    ...(enforcement ? { enforcement } : {}),
     projectType: detectedType,
     projectTypeConfig: ptc,
     // Present only for a mapped layout; a default layout needs no docs.roles.
@@ -233,14 +236,14 @@ function buildInitConfig({ projectDir, config, profileName, profile, detectedTyp
     requiredFiles: {
       canonical: [...canonical, ...Object.values(adoptedOrConfiguredRoles)].sort(),
     },
+    // A validator switched off in the project's own file is "disabled by configuration" under strict, so init
+    // does not write a `false` the person never chose: architecture and security are left to the mode.
     validators: profile.validators || {
       structure: true,
       docsSync: true,
       drift: true,
       changelog: true,
-      architecture: false,
       testSpec: true,
-      security: false,
       environment: true,
       freshness: true,
     },
@@ -458,6 +461,15 @@ function countSpecKitWrites(projectDir, sinceMs, docguardWritten = []) {
 
 export async function runInit(projectDir, configArg, flags) {
   let config = configArg;
+  // `--enforcement` is checked before anything is written.
+  let flagMode = null;
+  if (flags.enforcement !== undefined) {
+    try { flagMode = parseEnforcementFlag(flags.enforcement); } catch (e) {
+      console.error(`${c.red}${e.message}${c.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+  }
   // `--list` is read-only inventory owned by the hooks scaffolder. Routing it
   // through normal init can start prompts or create documentation before the
   // requested inventory is shown, which violates the command's read-only intent.
@@ -521,9 +533,11 @@ export async function runInit(projectDir, configArg, flags) {
       const inferred = buildInitConfig({
         projectDir, config, profileName: 'standard', profile: PROFILES.standard, detectedType, canonical,
         adoptedOrConfiguredRoles: { ...(config.docs?.roles || {}) },
+        enforcement: enforcementToWrite({ flagMode }),
       });
       writeFileSync(smartConfigPath, JSON.stringify(inferred, null, 2) + '\n', 'utf-8');
       console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}.docguard.json${c.reset} ${c.dim}(profile: standard, type: ${detectedType}, ${canonical.length} canonical doc(s) from the plan)${c.reset}\n`);
+      for (const line of enforcementClosingLines(modeAfterInit(enforcementToWrite({ flagMode })), { written: Boolean(flagMode) })) console.log(`  ${c.dim}${line}${c.reset}`);
     } else {
       console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}\n`);
     }
@@ -573,6 +587,7 @@ export async function runInit(projectDir, configArg, flags) {
   }
 
   let selectedDocs;
+  let wizardMode = null;
 
   if (flags.skipPrompts || flags.force || flags.fix) {
     // Non-interactive — use profile defaults. `--fix` lands here too: its
@@ -602,6 +617,14 @@ export async function runInit(projectDir, configArg, flags) {
       }
     }
     console.log('');
+    // The strictness question, once, in plain words; an explicit --enforcement already answered it.
+    if (!flagMode) {
+      for (const line of WIZARD_QUESTION) console.log(`  ${line.startsWith('How') ? c.bold + line + c.reset : c.dim + line + c.reset}`);
+      let answer = null;
+      while (answer === null) answer = parseWizardAnswer(await askQuestion('    Keep strict? [Y/n]: '));
+      wizardMode = answer;
+      console.log('');
+    }
   }
 
   // ── Create selected doc files ──────────────────────────────────────────
@@ -661,6 +684,7 @@ export async function runInit(projectDir, configArg, flags) {
     const defaultConfig = buildInitConfig({
       projectDir, config, profileName, profile, detectedType,
       canonical: selectedDocs.map(d => d.file), adoptedOrConfiguredRoles,
+      enforcement: enforcementToWrite({ flagMode, wizardMode }),
     });
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2) + '\n', 'utf-8');
     created.push('.docguard.json');
@@ -682,6 +706,21 @@ export async function runInit(projectDir, configArg, flags) {
   } else {
     skipped.push('.docguard.json');
     console.log(`  ${c.yellow}⏭️${c.reset}  .docguard.json ${c.dim}(already exists)${c.reset}`);
+  }
+
+  // An explicit `--enforcement` on a project that already has a configuration sets the key there.
+  const configWasNew = created.includes('.docguard.json');
+  let enforcementInFile = configWasNew ? enforcementToWrite({ flagMode, wizardMode }) : null;
+  if (!configWasNew) {
+    const existing = JSON.parse(readFileSync(configPath, 'utf-8'));
+    if (flagMode) {
+      existing.enforcement = flagMode;
+      writeFileSync(configPath, JSON.stringify(existing, null, 2) + '\n', 'utf-8');
+      console.log(`  ${c.green}✅${c.reset} .docguard.json: "enforcement": "${flagMode}"`);
+      enforcementInFile = flagMode;
+    } else {
+      enforcementInFile = typeof existing.enforcement === 'string' ? existing.enforcement : (existing.enforcement?.mode || null);
+    }
   }
 
   // ── Create .docguardignore ────────────────────────────────────────────
@@ -772,6 +811,10 @@ poetry.lock
   if (skipped.length > 0) {
     console.log(`  ${c.yellow}Skipped:${c.reset} ${skipped.length} files (already exist)`);
   }
+
+  // The mode this project runs under, and how to change it (specs/097 FR-017).
+  console.log('');
+  for (const line of enforcementClosingLines(modeAfterInit(enforcementInFile), { written: Boolean(enforcementInFile) })) console.log(`  ${c.dim}${line}${c.reset}`);
 
   // ── Hooks suggestion ──────────────────────────────────────────────────
   console.log(`\n  ${c.bold}💡 Automation:${c.reset}`);
