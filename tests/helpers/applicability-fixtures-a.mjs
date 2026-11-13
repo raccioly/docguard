@@ -4,7 +4,6 @@
  * tests/strict-by-default.test.mjs, so both read one table.
  */
 import { makeTempDir } from './temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { after } from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';

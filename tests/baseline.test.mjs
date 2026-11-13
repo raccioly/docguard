@@ -10,7 +10,6 @@
  * @req SC-BSL-007 — ci honors the baseline (runGuardInternal path)
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';

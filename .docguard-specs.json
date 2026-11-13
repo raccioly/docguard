@@ -17604,12 +17604,12 @@
           },
           {
             "path": "specs/066-test-git-hermeticity/tasks.md",
-            "digest": "sha256:f19b2b9efc4016f069b157bae71c5cd231b6407fbefef481762713c4c6a698e5"
+            "digest": "sha256:2f3145466b4eeb776faee9efe1de511496821a694f01ca1389e52c92a22f6c44"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
-          "total": 7
+          "checked": 8,
+          "total": 8
         },
         "implementationEvidence": [
           {
@@ -17757,11 +17757,6 @@
           "total": 6
         },
         "implementationEvidence": [
-          {
-            "requirementId": "FR-001",
-            "file": "benchmarks/history-replay/run.mjs",
-            "line": 29
-          },
           {
             "requirementId": "FR-005",
             "file": "tools/check-temp-leaks.mjs",

@@ -13,7 +13,6 @@
  * @req SC-P4-003 — --pr without --apply is harmless (no PR opened)
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';

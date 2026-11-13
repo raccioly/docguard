@@ -12,7 +12,6 @@
  * @req SC-P1-005 — firstAppliedAt is preserved across applies
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { rmSync } from 'node:fs';

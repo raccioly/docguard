@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.5.1 -->
+<!-- docguard:version 1.5.2 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-11-13 -->
 
@@ -29,7 +29,7 @@ Local timing depends on runtime and filesystem. Record measured timing with its 
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 
-Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
+Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off, `gc.auto=0` and `maintenance.auto=false` so no detached maintenance holds `.git/objects/maintenance.lock` during a snapshot), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
 
 Temporary directories are removed after every run (spec 098). A test, benchmark or tool creates a fixture directory with `makeTempDir` from `tests/helpers/temp-dir.mjs` and never calls `mkdtemp` or `mkdtempSync` itself. Given a test context, the directory is removed when that test ends; one file-level `after` removes what is left when the file's tests end; a single process `exit` handler removes the rest synchronously, and SIGINT and SIGTERM exit through it (130 and 143). `removeTempDir` is for `benchmarks/` and `tools/` code, which has no test context, and for a caller that retains its output on request (`{ keep: true }`, not registered for removal). The helper removes only a path it created that resolves inside the OS temporary directory, and never follows a symlink out of it. `tests/test-temp-dirs.test.mjs` proves each removal path and reports any file under `tests/`, `benchmarks/` or `tools/` that calls `mkdtemp` outside the helper, naming the file and line. `npm run test:temp-leaks` (`tools/check-temp-leaks.mjs`) runs the suite with `TMPDIR` at a fresh empty folder and fails if anything is left; the CI `hermeticity` job sets `TMPDIR` for its single suite run and checks that folder with `--check <dir>`, so suite time does not double.
 
@@ -225,6 +225,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.2 | 2026-11-13 | DocGuard Team | Fixture git turns background maintenance off (spec 066) |
 | 1.5.1 | 2026-11-13 | DocGuard Team | Fixture directories come from `tests/helpers/temp-dir.mjs` and are removed after every run; the `hermeticity` job checks for leftovers (spec 098) |
 | 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |
 | 1.4.7 | 2026-11-01 | DocGuard Team | Map spec 080's report-precision and router unresolved-path tests, and `tests/anchor-cache.test.mjs` |

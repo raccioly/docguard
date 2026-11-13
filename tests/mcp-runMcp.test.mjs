@@ -1,5 +1,4 @@
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { rmSync, mkdirSync, writeFileSync } from 'node:fs';
