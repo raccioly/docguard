@@ -606,6 +606,93 @@
       "oppositeControl": "dev-vendored-instruction-control"
     },
     {
+      "id": "dev-instruction-copy-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-copies",
+      "causalFamily": "instruction-copy-shares-name",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-copies-control" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR006"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "PSR006@packages/api/AGENTS.md",
+        "PSR006@templates/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-copy-defect"
+    },
+    {
+      "id": "dev-instruction-copy-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-copies",
+      "causalFamily": "instruction-copy-shares-name",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-copies-defect" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR006"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [
+        "PSR006@templates/new-app/files/AGENTS.md"
+      ],
+      "forbidden": [
+        "PSR006@packages/api/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-copy-control"
+    },
+    {
+      "id": "dev-instruction-budget-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-budget",
+      "causalFamily": "instruction-chain-budget",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-budget-control" },
+      "scope": { "validatorKey": "structure", "codes": ["STR004"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "agentInstructions": { "maxBytes": 200 },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "STR004@templates/app/files/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-budget-defect"
+    },
+    {
+      "id": "dev-instruction-budget-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-budget",
+      "causalFamily": "instruction-chain-budget",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-budget-defect" },
+      "scope": { "validatorKey": "structure", "codes": ["STR004"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": [], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "agentInstructions": { "maxBytes": 200 },
+        "validators": { "structure": true }
+      },
+      "mutations": [],
+      "expected": [
+        "STR004@packages/api/AGENTS.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "dev-instruction-budget-control"
+    },
+    {
       "id": "eval-vendored-instruction-control",
       "split": "evaluation",
       "repositoryGroup": "synthetic-agent-instructions-heldout",

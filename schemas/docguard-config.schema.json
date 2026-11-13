@@ -360,6 +360,18 @@
       },
       "additionalProperties": false
     },
+    "fileKinds": {
+      "type": "object",
+      "description": "File kinds (specs/100-file-kinds): which files are this project's own and which are copies written for another project (template, fixture, test, vendored, generated, backup, nested-checkout). A file nothing recognizes is own.",
+      "properties": {
+        "own": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Glob patterns for files that are the project's own wherever they sit, even below a directory named templates, examples, fixtures or tests. A matching file stays in the agent-instruction role and the instruction-chain budget and is never PSR006; a product package that happens to be called examples is rescued with one pattern. .docguardignore and ignore still win and remain the way to exclude a file."
+        }
+      },
+      "additionalProperties": false
+    },
     "anchors": {
       "type": "object",
       "description": "Requirement anchors (`docguard anchors`, specs/070-requirement-anchors): code→requirement tags anchored to the symbol, statement or route below them. Active when `.docguard-anchor-lock.jsonl` exists or `enabled` is true.",
