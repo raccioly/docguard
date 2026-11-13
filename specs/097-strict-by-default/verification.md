@@ -231,3 +231,86 @@ R8 exits 2 under `strict` with nothing blocking, nothing could-not-read and eigh
 - Mutation checks were not run for the five generated documents' Docs-Diff or for the Surface-Sync and Metadata-Sync fixes beyond the ones listed; Metadata-Sync and Surface-Sync were mutated in the first run.
 - The public CLI repository was clean at the start of this run at the same HEAD; the modified file seen at the start of the first run was gone. Its reflog shows no HEAD movement after a fast-forward before the first run, and other sessions had the folder open. The change itself cannot be determined from git state.
 - Stage B (FR-003: every validator runs regardless of profile) is not exercised by this run.
+
+---
+
+# Third run (T018f re-check)
+
+**Measured**: 2026-11-12 on `spec/097-strict-by-default` at "spec(097): task T018f done". A targeted re-check of what T018f touched, one run per repository (no number differed from the second run in an untouched row). Before and after, the originals' HEAD, full-status hash, stash-list hash and every stash entry's content hash are identical.
+
+## Metadata-Sync
+
+| Kind | Second run | Now |
+|---|---|---|
+| R3 serverless API | Blocking, unsure | **Skipped**: "declares 1.0.0, and no document states a version in a form Metadata-Sync compares, so there is nothing that can drift" |
+| R1 public CLI | Blocking | **Still blocking**, and the applicability is false (below) |
+| R2 (no version), R4, R5, R6, R7 (private) | Skipped | Skipped |
+| R8 DocGuard | Pass | Pass, 38 version references compared; its documents do state the version, so the check is real |
+
+R1's evidence: the manifest version and "a document states a version (3.2.0)". That number is the minimum version of the pre-commit framework in a hook guide, not this package's version. The text says to make it match the manifest or remove it. Matching writes a false statement (the pass is real, the content is not); removing deletes a true sentence. Judgment: **not applicable**. Only R1 and R8 have documents that state a version.
+
+## Requirement-Anchors
+
+Blocking on R1, R2, R3, R4, R5, R7 with evidence "N FR/NFR/SC/REQ requirement ID(s) are declared", so the kinds counted are now named. Two residues: R3's count still includes the placeholder rows of a requirements template, and R7's list names one ID twice.
+
+R6 (large Next.js) is still "could not read" with "37 requirement-like ID(s) in a form the scanner does not read (D-7, OI-001, T-7 …)". The fix did not take effect there: decision, open-item and task identifiers are still named and the validator still applies. The project declares no FR/NFR/SC/REQ identifier, so the right answer is skipped, as in the first run. Non-blocking.
+
+## Docs-Diff and Test-Spec texts
+
+Test-Spec now names both map headings in every repository where it blocks (R3, R5, R6, R7). Docs-Diff on R6 is unchanged: it maps only the test document; the architecture document sits in a subfolder under a name the offer did not recognize.
+
+## Strict and standard, all eight
+
+`standard` against `main`: exit 2 on all, findings identical (the two accepted draft-marker findings on R3 only); verdict-only changes as in the second run.
+
+| | strict exit | Blocking | Could not read | Against run 2 |
+|---|---|---|---|---|
+| R1 | 4 | 4 | 0 | same |
+| R2 | 4 | 2 | 3 | same |
+| R3 | 4 | 4 | 1 | Metadata-Sync no longer blocks |
+| R4 | 4 | 3 | 1 | same |
+| R5 | 4 | 3 | 2 | same |
+| R6 | 4 | 5 | 1 | same |
+| R7 | 4 | 3 | 0 | same |
+| R8 | 2 | 0 | 0 | same |
+
+24 validators block; no error-level finding anywhere.
+
+## Final SC-001 table
+
+| Kind | Validator | Judgment | Fix leads to |
+|---|---|---|---|
+| R1 CLI | **Metadata-Sync** | **Not applicable** (false applies) | A false statement, or deleting a true one |
+| R1 | Doc-Dependency, Requirement-Anchors, Surface-Sync | Applicable | Real check |
+| R2 Python service | Doc-Dependency, Requirement-Anchors | Applicable | Real check |
+| R3 serverless API | Test-Spec, Doc-Dependency, Requirement-Anchors | Applicable | Real check |
+| R3 | API-Surface | Applicable | Generated document; then leaves the list (partial) |
+| R4 monorepo | Doc-Dependency, Requirement-Anchors | Applicable | Real check |
+| R4 | API-Surface | Applicable | Generated document; then leaves the list |
+| R5 Next.js on AWS | Test-Spec, Doc-Dependency, Requirement-Anchors | Applicable | Real check |
+| R6 large Next.js | Test-Spec, Doc-Dependency | Applicable | Real check |
+| R6 | Environment, Docs-Diff, API-Surface | Applicable | Generated document, real afterwards (mutations caught) |
+| R7 game | Test-Spec, Doc-Dependency, Requirement-Anchors | Applicable | Real check |
+
+23 applicable, 1 not applicable, 0 unsure; 23 fixes lead to a good check and 1 does not.
+
+- **SC-003: met.**
+- **SC-001: not met, by one row**: Metadata-Sync on R1.
+
+## Traceability (report only)
+
+- **Where it applies.** All eight: each has a `docs-canonical/` directory, which is the first test. The branch that says "N document(s) define requirement IDs" counts documents (a root README or one spec suffices) and does not appear in these eight; once the validator performs, that evidence is replaced by "traced N document(s) and requirement(s)", where N adds documents and requirements.
+- **What it examines.**
+
+| Kind | Requirements discovered / applicable / traced | Outcome |
+|---|---|---|
+| R8 DocGuard | 1187 / 1104 / 1104 | Pass |
+| R1 CLI | 25 / 25 / 25 | Pass |
+| R2 | 178 / 178 / 0 | 178 TRC004 |
+| R3 | 142 / 142 / 37 | 105 TRC004 (8 on template placeholder rows) |
+| R4 | 127 / 8 / 2 (119 deferred as planned) | 6 TRC004 |
+| R5 | 17 / 17 / 16 | 1 TRC004 |
+| R7 | 1135 / 1135 / 963 | 1 finding; its total (969) differs from its performed count (1140) |
+| R6 | 0 / 0 / 0 | **Pass with 2 checks**: two documents' links to code; none of its 91 canonical documents and no requirement |
+
+- **Is the evidence true?** The applicability is defensible in all eight. The statement of what was examined is not: the "N document(s)" branch counts documents; "performed" adds documents and requirements, so 1140, 1109 and 2 say little; template placeholder rows count as requirements (R3); and on R6 a pass with no requirement reads as coverage the project does not have.
