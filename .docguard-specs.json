@@ -7767,6 +7767,31 @@
             "line": 16
           },
           {
+            "requirementId": "FR-012",
+            "file": "cli/commands/sync-tests.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/doc-tools.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/frontend.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/scanners/iac.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/shared-test-cases.mjs",
+            "line": 27
+          },
+          {
             "requirementId": "FR-013",
             "file": "cli/shared-backup-documents.mjs",
             "line": 17

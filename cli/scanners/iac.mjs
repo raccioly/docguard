@@ -15,6 +15,9 @@
  *   - Serverless Fmw  → serverless.yml/serverless.yaml/serverless.ts
  *
  * Zero NPM dependencies — pure Node.js built-ins only.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';

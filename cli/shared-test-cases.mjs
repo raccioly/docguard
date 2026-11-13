@@ -23,6 +23,9 @@
  * `countJsCasesByRegex` and is deliberately conservative.
  *
  * Zero additional dependencies — pure Node.js built-ins plus the shared parser.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename, extname } from 'node:path';

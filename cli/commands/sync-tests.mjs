@@ -18,6 +18,9 @@
  * destructive, and the Test-Spec validator already warns on them.
  *
  * Zero npm dependencies — pure Node.js built-ins.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';

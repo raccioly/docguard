@@ -12,6 +12,9 @@
  *
  * Monorepo-aware via resolveSourceRoots(). Pure read-only scanning.
  * Zero NPM dependencies — Node.js built-ins only.
+ *
+ * @implements docguard.file-kinds#FR-012 {scope=file} Walks through the shared walker or asks the shared classifier;
+ * a nested checkout is never walked.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
