@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "nodeModules": "node_modules",
+  "runnerCmd": "node --test --test-reporter=./tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+}
