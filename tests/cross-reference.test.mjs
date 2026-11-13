@@ -8,7 +8,7 @@
  * @req SC-K7-005 — slugifyHeading matches GitHub's GFM rules for common cases
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-004: this file's temporary directories come from the helper.
+// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';

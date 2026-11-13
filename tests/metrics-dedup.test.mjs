@@ -12,7 +12,7 @@
  * @req SC-N1-004 — passed count uses unique-per-(file,label), not per-match
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
-// @implements docguard.test-temp-dirs#FR-004: this file's temporary directories come from the helper.
+// @implements docguard.test-temp-dirs#FR-001: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
