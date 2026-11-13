@@ -90,10 +90,19 @@ export function recordedRevisions(spec) {
  */
 export function danglingRevisions(projectDir, registry) {
   const out = [];
+  // Specs completed in one commit record the same revision; ask git once per
+  // revision (two processes each) instead of once per spec that names it.
+  const verdicts = new Map();
+  const verdict = revision => {
+    if (!verdicts.has(revision)) {
+      verdicts.set(revision, !revisionResolves(projectDir, revision) ? 'missing' : !isAncestorOf(projectDir, revision) ? 'not-ancestor' : null);
+    }
+    return verdicts.get(revision);
+  };
   for (const spec of registry?.specs || []) {
     for (const revision of recordedRevisions(spec)) {
-      if (!revisionResolves(projectDir, revision)) out.push({ specId: spec.specId, revision, reason: 'missing' });
-      else if (!isAncestorOf(projectDir, revision)) out.push({ specId: spec.specId, revision, reason: 'not-ancestor' });
+      const reason = verdict(revision);
+      if (reason) out.push({ specId: spec.specId, revision, reason });
     }
   }
   return out;

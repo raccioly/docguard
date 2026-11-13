@@ -444,7 +444,7 @@ export function readSpecRegistry(projectDir) {
   return loaded;
 }
 
-function trackedAndClean(projectDir, path) {
+export function trackedAndCleanOne(projectDir, path) {
   const tracked = spawnSync('git', ['ls-files', '--error-unmatch', '--', path], {
     cwd: projectDir, stdio: 'ignore',
   });
@@ -454,14 +454,47 @@ function trackedAndClean(projectDir, path) {
   return working.status === 0 && staged.status === 0;
 }
 
+/**
+ * `trackedAndClean(path)` for many paths of one scan. The per-path answer is
+ * three git processes; a registry of ~100 specs asked it ~100 times, ~3 s of a
+ * guard run that is itself bounded in CI. The index and the changed paths are
+ * read once (`ls-files`, `diff --name-only`, `diff --cached --name-only`), and a path git would read as
+ * a pathspec (a glob, a magic prefix, `.`/`..`, a backslash) or one the index
+ * does not list falls back to the per-path answer, so the verdict is the same.
+ */
+export function trackedAndCleanChecker(projectDir) {
+  let snapshot;
+  const read = () => {
+    const env = { ...process.env, GIT_OPTIONAL_LOCKS: '0' };
+    // All three answer relative to the project directory, which may be a
+    // subdirectory of the repository (`status` would print repository paths).
+    const listed = runGit(projectDir, ['ls-files', '-z'], { env, maxBuffer: 64 * 1024 * 1024 });
+    const working = runGit(projectDir, ['diff', '--name-only', '-z', '--no-renames', '--relative'], { env, maxBuffer: 64 * 1024 * 1024 });
+    const staged = runGit(projectDir, ['diff', '--cached', '--name-only', '-z', '--no-renames', '--relative'], { env, maxBuffer: 64 * 1024 * 1024 });
+    if ([listed, working, staged].some(r => r.error || r.status !== 0)) return null;
+    return {
+      tracked: new Set(listed.stdout.split('\0').filter(Boolean)),
+      dirty: new Set([...working.stdout.split('\0'), ...staged.stdout.split('\0')].filter(Boolean)),
+    };
+  };
+  return path => {
+    const plain = typeof path === 'string' && path !== '' && !/[*?[\]\\:]|^\.{1,2}(\/|$)|\/\.{1,2}(\/|$)|^\/|\/\/|\/$/.test(path);
+    if (!plain) return trackedAndCleanOne(projectDir, path);
+    if (snapshot === undefined) snapshot = read();
+    if (snapshot === null || !snapshot.tracked.has(path)) return trackedAndCleanOne(projectDir, path);
+    return !snapshot.dirty.has(path);
+  };
+}
+
 /** Reviewed lifecycle that may defer implementation-time traceability. */
 export function trustedSpecLifecycleIndex(projectDir) {
   const trusted = new Map();
+  const trackedAndClean = trackedAndCleanChecker(projectDir);
   const loaded = readSpecRegistry(projectDir);
   if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return trusted;
-  if (!trackedAndClean(projectDir, SPEC_REGISTRY_PATH)) return trusted;
+  if (!trackedAndClean(SPEC_REGISTRY_PATH)) return trusted;
   for (const entry of loaded.value.specs) {
-    if (!entry?.specId || !entry?.path || !trackedAndClean(projectDir, entry.path)) continue;
+    if (!entry?.specId || !entry?.path || !trackedAndClean(entry.path)) continue;
     let content;
     try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
     if (parseSpecId(content) !== entry.specId) continue;
@@ -482,12 +515,13 @@ export function trustedSpecLifecycleIndex(projectDir) {
  */
 export function uncommittedPlannedSpecLifecycleIndex(projectDir) {
   const candidates = new Map();
+  const trackedAndClean = trackedAndCleanChecker(projectDir);
   const loaded = readSpecRegistry(projectDir);
   if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return candidates;
-  if (trackedAndClean(projectDir, SPEC_REGISTRY_PATH)) return candidates;
+  if (trackedAndClean(SPEC_REGISTRY_PATH)) return candidates;
   for (const entry of loaded.value.specs) {
     if (entry?.reviewed?.lifecycle?.delivery !== 'planned' || !entry.specId || !entry.path) continue;
-    if (!trackedAndClean(projectDir, entry.path)) continue;
+    if (!trackedAndClean(entry.path)) continue;
     let content;
     try { content = readFileSync(resolve(projectDir, entry.path), 'utf8'); } catch { continue; }
     if (parseSpecId(content) !== entry.specId) continue;
