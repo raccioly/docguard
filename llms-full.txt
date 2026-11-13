@@ -1603,9 +1603,9 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.5.0 -->
+<!-- docguard:version 1.5.2 -->
 <!-- docguard:status active -->
-<!-- docguard:last-reviewed 2026-11-03 -->
+<!-- docguard:last-reviewed 2026-11-13 -->
 
 > DocGuard has a single optional-load npm dependency (`@babel/parser`) and an optional `python3` AST tier. CLI integration tests cover the full stack with `node:test` (zero dev dependencies) and exercise both AST extractors (`js-ast`, `py-ast`) plus their regex fallbacks. The Python AST tests skip themselves automatically on a machine that lacks `python3`.
 
@@ -1632,7 +1632,9 @@ Local timing depends on runtime and filesystem. Record measured timing with its 
 
 Test names follow the pattern: "verb + expected behavior" (e.g., "runs and shows a score", "respects projectTypeConfig"). Each test should isolate its mutable fixtures and clean up its resources.
 
-Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
+Fixture git is independent of the machine's git config (spec 066). A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` from `tests/helpers/git.mjs` on every git call (hooks off through `core.hooksPath` set to the null device, commit and tag signing off, `gc.auto=0` and `maintenance.auto=false` so no detached maintenance holds `.git/objects/maintenance.lock` during a snapshot), or calls `fixtureGit()`, which also throws with git's stderr when a setup step fails. The options travel with each invocation and stay out of the environment, so the product code under test still meets the ambient config; `cli/` uses them only for a scratch repository DocGuard creates itself (`docguard demo`). A fixture that depends on a branch name pins it with `git init -b`. `tests/test-git-hermeticity.test.mjs` reports any git spawn in `tests/` that bypasses the helper; an exemption carries a `fixture-git-exempt:` comment with its reason. The CI `hermeticity` job first proves its config is in effect, then runs the suite under it: every hook fails, signing is mandatory through a gpg that always fails, and the default branch is `trunk`.
+
+Temporary directories are removed after every run (spec 098). A test, benchmark or tool creates a fixture directory with `makeTempDir` from `tests/helpers/temp-dir.mjs` and never calls `mkdtemp` or `mkdtempSync` itself. Given a test context, the directory is removed when that test ends; one file-level `after` removes what is left when the file's tests end; a single process `exit` handler removes the rest synchronously, and SIGINT and SIGTERM exit through it (130 and 143). `removeTempDir` is for `benchmarks/` and `tools/` code, which has no test context, and for a caller that retains its output on request (`{ keep: true }`, not registered for removal). The helper removes only a path it created that resolves inside the OS temporary directory, and never follows a symlink out of it. `tests/test-temp-dirs.test.mjs` proves each removal path and reports any file under `tests/`, `benchmarks/` or `tools/` that calls `mkdtemp` outside the helper, naming the file and line. `npm run test:temp-leaks` (`tools/check-temp-leaks.mjs`) runs the suite with `TMPDIR` at a fresh empty folder and fails if anything is left; the CI `hermeticity` job sets `TMPDIR` for its single suite run and checks that folder with `--check <dir>`, so suite time does not double.
 
 ## Test Categories
 
@@ -1829,6 +1831,8 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.2 | 2026-11-13 | DocGuard Team | Fixture git turns background maintenance off (spec 066) |
+| 1.5.1 | 2026-11-13 | DocGuard Team | Fixture directories come from `tests/helpers/temp-dir.mjs` and are removed after every run; the `hermeticity` job checks for leftovers (spec 098) |
 | 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |
 | 1.4.7 | 2026-11-01 | DocGuard Team | Map spec 080's report-precision and router unresolved-path tests, and `tests/anchor-cache.test.mjs` |
 | 1.4.6 | 2026-10-13 | DocGuard Team | The CI runtime budget is a per-test ceiling at reference-runner speed (`tools/suite-runtime-budget.mjs`, spec 051 FR-007 revision) |
@@ -2071,6 +2075,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tests: a fixture commit no longer starts git background maintenance.** `FIXTURE_GIT`
+  now sets `gc.auto=0` and `maintenance.auto=false`, as CI already does globally, so a
+  detached run cannot hold `.git/objects/maintenance.lock` while a test snapshots a fixture
+  (the "writes nothing" tests of spec 097 failed intermittently on machines without that
+  setting).
 - **Security: the word `example` no longer hides a secret-shaped value just by
   appearing in it.** This change ADDS findings. Before, any value containing
   `example` anywhere (any case) was dropped silently, so
@@ -2399,13 +2408,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Requirement-Anchors counted identifiers that are not requirements.** Whether
   the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
-  spec and requirement documents, not decision records, open-item or question lists,
-  task lists, task IDs (T001), design elements (ARCH, MOD, SYS) or story, use-case
-  and acceptance IDs (US, STORY, UC, AC); a configured
-  `traceability.requirementPattern` is the definition. The evidence names the kind of
-  identifier it counted and the kinds it did not. A task checkbox (`[ ]`) is no longer
 
-<!-- truncated: 6627 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6632 more lines — read CHANGELOG.md directly -->
 
 ---
 

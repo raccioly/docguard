@@ -16,4 +16,4 @@
 
 ## Phase 3: Verification
 
-- [ ] T006 `npm test` twice; `node cli/docguard.mjs guard`; the leak check (SC-001, after); suite wall time before and after (SC-002).
+- [x] T006 `npm test` twice; `node cli/docguard.mjs guard`; the leak check (SC-001, after); suite wall time before and after (SC-002). Measured on macOS, Node 24: `npm test` exit 0 twice (363 s and 381 s, 5,005 tests); `guard` exit 2 (advisories, no errors); the leak check left 0 entries in the fresh temporary folder (13 before). Wall time was not re-measured on the pre-change tree.

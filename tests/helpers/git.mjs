@@ -22,11 +22,13 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { devNull } from 'node:os';
 import { join } from 'node:path';
 
-/** Leading options for every fixture git call: no hooks, no signing. */
+/** Leading options for every fixture git call (docguard.test-git-hermeticity#FR-001): no hooks, no signing, no background maintenance. */
 export const FIXTURE_GIT = Object.freeze([
   '-c', `core.hooksPath=${devNull}`,
   '-c', 'commit.gpgsign=false',
   '-c', 'tag.gpgsign=false',
+  '-c', 'gc.auto=0',
+  '-c', 'maintenance.auto=false',
 ]);
 
 const quote = process.platform === 'win32' ? (arg) => `"${arg}"` : (arg) => `'${arg}'`;

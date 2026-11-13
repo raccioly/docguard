@@ -17878,12 +17878,12 @@
           },
           {
             "path": "specs/066-test-git-hermeticity/tasks.md",
-            "digest": "sha256:f19b2b9efc4016f069b157bae71c5cd231b6407fbefef481762713c4c6a698e5"
+            "digest": "sha256:2f3145466b4eeb776faee9efe1de511496821a694f01ca1389e52c92a22f6c44"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
-          "total": 7
+          "checked": 8,
+          "total": 8
         },
         "implementationEvidence": [
           {
@@ -17961,12 +17961,12 @@
       "path": "specs/098-test-temp-dirs/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -17976,11 +17976,37 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "21a0b6ffa48367af221e21c2c8045d3f0a23ad3c",
+          "outcomes": [
+            {
+              "revision": "573f82426e357a3ee0e5daa1bec0717a9f5c815e",
+              "reason": "Reviewed at main after #677: npm test passes twice (exit 0, 363 s and 381 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. The 118 converted files carry a reconciliation-only @implements reference; the baseline is the revision that tags them, since a range with docs-coverage.test.mjs (raw NUL byte before) reads as binary. Wall time not re-measured before the change.",
+              "evidence": [
+                "benchmarks/history-replay/run.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/test-temp-dirs.test.mjs",
+                "tools/check-temp-leaks.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "21a0b6ffa48367af221e21c2c8045d3f0a23ad3c",
+              "reason": "Reviewed at main after #677: npm test passes without any git override (exit 0, 5,006 tests, 323 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. FIXTURE_GIT now turns background git maintenance off (spec 066 task T008), which removed an intermittent maintenance.lock failure in the spec 097 snapshot tests. Wall time was not measured before the change.",
+              "evidence": [
+                "docs-canonical/TEST-SPEC.md",
+                "tests/test-temp-dirs.test.mjs",
+                "tools/check-temp-leaks.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -18000,7 +18026,7 @@
         "artifacts": [
           {
             "path": "specs/098-test-temp-dirs/spec.md",
-            "digest": "sha256:de0251bea6d3101a619fc85c4ef622a2f214dd15420e916a08dbf8d18ed333ce"
+            "digest": "sha256:6aec2ba007087adb18ebadb6654e78cab1d07169657cc08989d59c5b755339e7"
           },
           {
             "path": "specs/098-test-temp-dirs/plan.md",
@@ -18008,11 +18034,11 @@
           },
           {
             "path": "specs/098-test-temp-dirs/tasks.md",
-            "digest": "sha256:1658edefb8a9fd3217e4271ae16d88860bd039b3a306bfc34c1950f7d26ce447"
+            "digest": "sha256:289ee3b364754e3e27d64c71fc7b701181b7fab7b5b0d8b712e6585902211da3"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
+          "checked": 6,
           "total": 6
         },
         "implementationEvidence": [
@@ -18020,6 +18046,11 @@
             "requirementId": "FR-005",
             "file": "tools/check-temp-leaks.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tools/check-temp-leaks.mjs",
+            "line": 16
           }
         ],
         "testEvidence": [
@@ -18047,6 +18078,26 @@
             "requirementId": "FR-005",
             "file": "tests/test-temp-dirs.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 19
           }
         ]
       }

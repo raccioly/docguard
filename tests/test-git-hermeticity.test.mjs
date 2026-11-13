@@ -57,6 +57,14 @@ describe('fixture git neutralises a hostile global config (FR-001)', () => {
     assert.equal(fixtureGit(repo, ['log', '--format=%G?', '-1'], { env }).trim(), 'N', 'the commit is unsigned');
   });
 
+  it('keeps git background maintenance off, so no fixture holds .git/objects/maintenance.lock', () => {
+    // A machine that leaves maintenance on lets a commit start a detached run that takes the lock while a test snapshots the tree.
+    const on = { ...process.env, GIT_CONFIG_COUNT: '2', GIT_CONFIG_KEY_0: 'gc.auto', GIT_CONFIG_VALUE_0: '6700', GIT_CONFIG_KEY_1: 'maintenance.auto', GIT_CONFIG_VALUE_1: 'true' };
+    const { repo, env } = hostileRepo();
+    assert.equal(fixtureGit(repo, ['config', '--get', 'gc.auto'], { env: { ...env, ...on } }).trim(), '0');
+    assert.equal(fixtureGit(repo, ['config', '--get', 'maintenance.auto'], { env: { ...env, ...on } }).trim(), 'false');
+  });
+
   it('works through the shell form too', () => {
     const { env, fired, repo } = hostileRepo();
     execSync(`git ${FIXTURE_GIT_SHELL} -c user.name=f -c user.email=f@example.invalid commit -q --allow-empty -m fixture`, { cwd: repo, env, stdio: 'pipe' });

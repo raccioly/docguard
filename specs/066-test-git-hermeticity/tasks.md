@@ -19,3 +19,4 @@
 
 - [x] T006 FR-007: `CONTRIBUTING.md`, `docs-canonical/TEST-SPEC.md`, `CHANGELOG.md`.
 - [x] T007 The suite under the hostile config again (SC-001); `npm test`; `docguard specs --write`; `docguard guard` (SC-002).
+- [x] T008 2026-11-13: `FIXTURE_GIT` also sets `gc.auto=0` and `maintenance.auto=false`, matching what CI sets globally (#486), so a commit cannot start detached maintenance that holds `.git/objects/maintenance.lock` while a test snapshots a fixture; `tests/test-git-hermeticity.test.mjs` shows both values in effect.

@@ -13,6 +13,7 @@
  * else 0. Node's own compile cache (`node-compile-cache`) is not ours and is ignored.
  *
  * @implements docguard.test-temp-dirs#FR-005
+ * @implements docguard.test-temp-dirs#SC-001
  */
 import { spawnSync } from 'node:child_process';
 import { readdirSync, statSync } from 'node:fs';
