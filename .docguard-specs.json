@@ -2138,12 +2138,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 766
+            "line": 763
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 793
+            "line": 790
           },
           {
             "requirementId": "FR-021",
@@ -6333,7 +6333,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 11
+            "line": 10
           },
           {
             "requirementId": "FR-010",
@@ -11196,7 +11196,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 12
+            "line": 11
           },
           {
             "requirementId": "FR-002",
@@ -11241,7 +11241,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 13
+            "line": 12
           },
           {
             "requirementId": "FR-009",
@@ -16148,11 +16148,7 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-<<<<<<< HEAD
-            "digest": "sha256:6eb6653262e7f263b0d314c6b33c4f8aa1038626725a7e64c575dba7bfcd02c3"
-=======
-            "digest": "sha256:8e4a7676da10b432972f485ac928447b6d75c60d3d697398e766c592d991d53f"
->>>>>>> origin/spec/097-strict-by-default
+            "digest": "sha256:ad98b05a7d793cabfd5315f12dfa5bc539052c918a51d1e6f4bb34ab57bf72ec"
           }
         ],
         "taskCompletion": {
