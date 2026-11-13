@@ -192,8 +192,10 @@ extensions/spec-kit-docguard/
   tick, the registry record and the outcome land together, so a gate that runs
   `guard` on every commit never sees DLC002 or a half-written record. The record
   carries the git blob of every evidence file, so it survives a squash merge or
-  a rebase and needs no second "reanchor" commit; run `docguard specs reanchor`
-  only for a record guard reports as SPR008
+  a rebase and needs no second "reanchor" commit, as long as the base branch did
+  not change those evidence files after your last `specs complete`; if it did,
+  merge the base in and run `specs complete` again before merging. Run
+  `docguard specs reanchor` only for a record guard reports as SPR008
   (`specs/101-completion-one-commit`).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
