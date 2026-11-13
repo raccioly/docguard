@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { execFileSync } from 'node:child_process';
 import { validateChangelog } from '../cli/validators/changelog.mjs';
 import { FIXTURE_GIT } from './helpers/git.mjs';
@@ -13,7 +14,7 @@ describe('validateChangelog', () => {
   let tempDir;
 
   before(() => {
-    tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-changelog-test-'));
+    tempDir = makeTempDir('docguard-changelog-test-');
   });
 
   after(() => {
@@ -119,7 +120,7 @@ describe('validateChangelog — staged-change check (STANDARD.md)', () => {
   const goodChangelog = '# Changelog\n## [Unreleased]\n- wip\n## [1.0.0]\n- init\n';
 
   beforeEach(() => {
-    repo = fs.mkdtempSync(join(tmpdir(), 'docguard-changelog-git-'));
+    repo = makeTempDir('docguard-changelog-git-');
     git(['init']);
     fs.writeFileSync(join(repo, 'CHANGELOG.md'), goodChangelog);
   });

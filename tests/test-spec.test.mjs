@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateTestSpec } from '../cli/validators/test-spec.mjs';
 import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('validateTestSpec', () => {
   it('should return empty results if TEST-SPEC.md does not exist', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     const config = {};
     const results = validateTestSpec(tempDir, config);
     assert.deepEqual(legacyShape(results), { name: 'test-spec', errors: [], warnings: [], passed: 0, total: 0 });
@@ -16,7 +17,7 @@ describe('validateTestSpec', () => {
   });
 
   it('should parse Source-to-Test Map and Critical User Journeys', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     // Create source files
@@ -66,7 +67,7 @@ describe('validateTestSpec', () => {
   });
 
   it('should skip Critical User Journeys if needsE2E is false', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     const testSpecContent = `
@@ -89,7 +90,7 @@ describe('validateTestSpec', () => {
   });
 
   it('is N/A (not a fake pass) when the spec maps nothing but a tests dir exists', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'tests'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), 'Empty doc');
@@ -106,7 +107,7 @@ describe('validateTestSpec', () => {
   });
 
   it('is N/A when the spec maps nothing but co-located tests exist', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'src/components/__tests__'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'src/components/__tests__/x.test.ts'), 'test');
@@ -122,7 +123,7 @@ describe('validateTestSpec', () => {
   });
 
   it('is N/A when the spec maps nothing but vitest.config.ts exists', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'vitest.config.ts'), '');
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), 'Empty doc');
@@ -141,7 +142,7 @@ describe('validateTestSpec', () => {
   // @req FR-016 — Journey row cells may list multiple test paths in backticks
   // @req SC-010 — multi-path Journey rows recognized
   it('FP-6: parses comma-separated multi-path Journey cells', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'backend/src/__tests__/integration'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'backend/src/__tests__/integration/message-a.test.ts'), '');
@@ -165,7 +166,7 @@ describe('validateTestSpec', () => {
   });
 
   it('FP-6: passes when ANY of the multi-path files exists', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'backend/src/__tests__'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'backend/src/__tests__/exists.test.ts'), '');
@@ -184,7 +185,7 @@ describe('validateTestSpec', () => {
   });
 
   it('FP-6: still warns when NO multi-path files exist', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
@@ -205,7 +206,7 @@ describe('validateTestSpec', () => {
   });
 
   it('FP-6: expands globs in Journey path cells', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(tempDir, 'backend/test-helpers/security'), { recursive: true });
     fs.writeFileSync(join(tempDir, 'backend/test-helpers/security/idor_users.test.ts'), '');
@@ -228,7 +229,7 @@ describe('validateTestSpec', () => {
 
   it('FP-6: accepts (N suites) annotation when literal path missing', () => {
     // Author claim of coverage — trust the annotation rather than reject.
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     fs.writeFileSync(join(tempDir, 'docs-canonical/TEST-SPEC.md'), `
@@ -245,7 +246,7 @@ describe('validateTestSpec', () => {
   });
 
   it('#9: header-aware parser verifies BOTH Unit Test and Integration Test columns', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-spec-'));
+    const tempDir = makeTempDir('docguard-test-spec-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
     // Files on disk: unit + integration for `a`, only unit for `b`.
     fs.writeFileSync(join(tempDir, 'a.js'), '');
@@ -284,7 +285,7 @@ describe('validateTestSpec', () => {
 
 describe('Source-to-Test Map — a description cell is not checked as a test file (FP fix)', () => {
   it('skips prose "what it covers" cells in an integration-test sub-table', () => {
-    const dir = fs.mkdtempSync(join(tmpdir(), 'docguard-ts-desc-'));
+    const dir = makeTempDir('docguard-ts-desc-');
     fs.mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
     fs.mkdirSync(join(dir, 'tests'), { recursive: true });
     fs.writeFileSync(join(dir, 'tests/health.integration.test.ts'), '// test');

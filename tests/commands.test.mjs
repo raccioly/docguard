@@ -3,6 +3,7 @@
  * Run with: npm test
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execSync, execFileSync, spawn } from 'node:child_process';
@@ -83,7 +84,7 @@ describe('docguard audit', () => {
 describe('docguard badge', () => {
   // The deprecated alias initializes skills: keep its writes out of the source tree.
   function runBadge(t, args = []) {
-    const project = mkdtempSync(join(tmpdir(), 'dg-badge-command-'));
+    const project = makeTempDir('dg-badge-command-');
     t.after(() => rmSync(project, { recursive: true, force: true }));
     return execFileSync(process.execPath, [CLI, 'badge', ...args], {
       cwd: project, encoding: 'utf8', timeout: 15000,
@@ -194,7 +195,7 @@ describe('docguard diff', () => {
 
 describe('docguard init', () => {
   it('creates docs in a temp directory', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-test-'));
+    const tmpDir = makeTempDir('sg-test-');
     try {
       const output = run(`init --dir ${tmpDir} --force`);
       assert.match(output, /Created/);
@@ -209,7 +210,7 @@ describe('docguard init', () => {
 
 describe('docguard generate', () => {
   it('generates docs in empty dir', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-'));
+    const tmpDir = makeTempDir('sg-gen-');
     try {
       const output = run(`generate --dir ${tmpDir}`);
       assert.match(output, /Generated: 8/);
@@ -222,7 +223,7 @@ describe('docguard generate', () => {
   });
 
   it('skips existing files without --force', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-'));
+    const tmpDir = makeTempDir('sg-gen-');
     try {
       run(`generate --dir ${tmpDir}`);
       const output = run(`generate --dir ${tmpDir}`);
@@ -237,7 +238,7 @@ describe('docguard generate', () => {
     // wrote every doc with a raw writeFileSync. The plan ALWAYS includes
     // docs-implementation/KNOWN-GOTCHAS.md, so the first write into that
     // not-yet-created dir ENOENT-crashed. safeWrite now creates each parent dir.
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-b2-'));
+    const tmpDir = makeTempDir('sg-gen-b2-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{"name":"b2","version":"1.0.0"}');
       writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
@@ -256,7 +257,7 @@ describe('docguard generate', () => {
     // generate used to emit canonical docs that guard then flagged as "not in
     // your requiredFiles". generate now registers what it emits so guard stays
     // coherent with the generator's own output.
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-b7-'));
+    const tmpDir = makeTempDir('sg-gen-b7-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{"name":"b7","version":"1.0.0","dependencies":{"react":"^18"}}');
       writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
@@ -279,7 +280,7 @@ describe('field report fixes — init --fix headless + generate --plan no side-e
     // --fix is documented "auto-create missing files from templates" but was a
     // dead flag (set, never read) — init fell into the interactive doc-picker
     // and hung/failed with no TTY. It must now run headless and create docs.
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-init-fix-'));
+    const tmpDir = makeTempDir('sg-init-fix-');
     try {
       const output = run(`init --fix --dir ${tmpDir}`);
       assert.doesNotMatch(output, /Which canonical docs/, 'must not enter the interactive picker');
@@ -294,7 +295,7 @@ describe('field report fixes — init --fix headless + generate --plan no side-e
     // `--plan` is a preview; the dispatcher used to run ensureSkills on it,
     // scaffolding .agent/ (+ .specify/) into the user's tree. --plan is now
     // headless, so a preview must not write to the AI-agent skill directories.
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-gen-plan-'));
+    const tmpDir = makeTempDir('sg-gen-plan-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{"name":"b4","version":"1.0.0"}');
       writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
@@ -315,7 +316,7 @@ describe('read-only commands are side-effect-free (v0.26 field report Bug #3)', 
   // writes .agent/skills unconditionally regardless of the spawn.
   for (const cmd of ['guard', 'score', 'diff', 'fix']) {
     it(`docguard ${cmd} does not scaffold .agent/ or .specify/`, () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), `sg-readonly-${cmd}-`));
+      const tmpDir = makeTempDir(`sg-readonly-${cmd}-`);
       try {
         writeFileSync(join(tmpDir, 'package.json'), '{"name":"ro","version":"1.0.0"}');
         writeFileSync(join(tmpDir, 'index.js'), 'export const x = 1;\n');
@@ -367,8 +368,8 @@ describe('per-command --help (B6)', () => {
 
 describe('field report F1/F3 — kind-aware generate + cli/library profiles', () => {
   it('F1: generate --plan flags low-confidence surface for non-web kinds', () => {
-    const cli = mkdtempSync(join(tmpdir(), 'sg-f1-cli-'));
-    const web = mkdtempSync(join(tmpdir(), 'sg-f1-web-'));
+    const cli = makeTempDir('sg-f1-cli-');
+    const web = makeTempDir('sg-f1-web-');
     try {
       // A CLI (bin, no web framework) → kind cli → surface.confidence 'low'.
       writeFileSync(join(cli, 'package.json'), JSON.stringify({ name: 'tool', bin: { tool: './cli.js' }, devDependencies: { typescript: '^5' } }));
@@ -389,7 +390,7 @@ describe('field report F1/F3 — kind-aware generate + cli/library profiles', ()
   });
 
   it('F3: init --profile cli creates a non-web doc set', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-f3-'));
+    const tmpDir = makeTempDir('sg-f3-');
     try {
       run(`init --profile cli --skip-prompts --dir ${tmpDir}`);
       assert.ok(existsSync(join(tmpDir, 'docs-canonical', 'ARCHITECTURE.md')));
@@ -407,7 +408,7 @@ describe('field report F1/F3 — kind-aware generate + cli/library profiles', ()
 
 describe('docguard hooks', () => {
   it('lists available hooks without scaffolding the inspected repository', t => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-list-'));
+    const tmpDir = makeTempDir('sg-hooks-list-');
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
     execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-list","version":"1.0.0"}');
@@ -420,7 +421,7 @@ describe('docguard hooks', () => {
   });
 
   it('distinguishes an existing foreign hook from a DocGuard installation', t => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-hooks-foreign-'));
+    const tmpDir = makeTempDir('sg-hooks-foreign-');
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
     execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-foreign","version":"1.0.0"}');
@@ -432,7 +433,7 @@ describe('docguard hooks', () => {
   });
 
   it('routes init --with hooks --list directly to read-only inventory', t => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-init-hooks-list-'));
+    const tmpDir = makeTempDir('sg-init-hooks-list-');
     t.after(() => rmSync(tmpDir, { recursive: true, force: true }));
     execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: tmpDir });
     writeFileSync(join(tmpDir, 'package.json'), '{"name":"hooks-nested-list","version":"1.0.0"}');
@@ -500,7 +501,7 @@ describe('docguard fix', () => {
 
 describe('init auto-detection', () => {
   it('auto-detects CLI project type and writes config', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-autodetect-'));
+    const tmpDir = makeTempDir('sg-autodetect-');
     try {
       // Create a package.json with bin field (CLI)
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({
@@ -544,7 +545,7 @@ describe('docguard help completeness', () => {
 
 describe('compliance profiles', () => {
   it('starter profile creates minimal files', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-starter-'));
+    const tmpDir = makeTempDir('sg-starter-');
     try {
       run(`init --dir ${tmpDir} --profile starter --force`);
 
@@ -676,7 +677,7 @@ describe('shared ignore utility', () => {
 
 describe('securityIgnore config', () => {
   it('security validator respects securityIgnore', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-sec-'));
+    const tmpDir = makeTempDir('sg-sec-');
     try {
       // Create a file with a fake secret
       mkdirSync(join(tmpDir, 'src'), { recursive: true });
@@ -717,7 +718,7 @@ describe('securityIgnore config', () => {
 
 describe('placeholder exclusions', () => {
   it('does not flag AWS example keys', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-placeholder-'));
+    const tmpDir = makeTempDir('sg-placeholder-');
     try {
       mkdirSync(join(tmpDir, 'src'), { recursive: true });
       writeFileSync(join(tmpDir, 'src', 'form.tsx'),
@@ -827,7 +828,7 @@ describe('globMatch — positive pattern matching with node_modules exclusion', 
 
 describe('CI detection expansion', () => {
   it('score detects buildspec.yml as CI config', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-ci-'));
+    const tmpDir = makeTempDir('docguard-ci-');
     try {
       // Create minimal project structure
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({
@@ -867,7 +868,7 @@ describe('docguard trace error handling', () => {
     const { join } = await import('node:path');
     const assert = await import('node:assert');
 
-    const tmpDir = mkdtempSync(join(tmpdir(), 'docguard-trace-err-'));
+    const tmpDir = makeTempDir('docguard-trace-err-');
     const missingDir = join(tmpDir, 'does-not-exist');
 
     try {
@@ -898,7 +899,7 @@ describe('getTestFilesFromPatterns', () => {
   });
 
   it('should find test files matching patterns', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    const tempDir = makeTempDir('docguard-test-');
     try {
       mkdirSync(join(tempDir, 'src'));
       writeFileSync(join(tempDir, 'src', 'app.test.js'), 'test');
@@ -912,7 +913,7 @@ describe('getTestFilesFromPatterns', () => {
   });
 
   it('should skip directories without read permissions in readdirSync', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    const tempDir = makeTempDir('docguard-test-');
     try {
       mkdirSync(join(tempDir, 'src'));
       writeFileSync(join(tempDir, 'src', 'app.test.js'), 'test');
@@ -956,7 +957,7 @@ describe('docguard watch', () => {
   };
 
   it('starts watch mode and reacts to file changes', async () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-watch-'));
+    const tmpDir = makeTempDir('sg-watch-');
     let child;
     try {
       // Init a project first so guard doesn't fail instantly
@@ -1021,7 +1022,7 @@ describe('docguard watch', () => {
   });
 
   it('runs auto-fix prompts when enabled', async () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-watch-autofix-'));
+    const tmpDir = makeTempDir('sg-watch-autofix-');
     let child;
     try {
       // Init a project first
@@ -1072,7 +1073,7 @@ describe('runCI and runSpecs report through their return value and process.exitC
     }
   };
   const fixture = () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-inproc-'));
+    const dir = makeTempDir('docguard-inproc-');
     writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'inproc', profile: 'starter' }));
     writeFileSync(join(dir, 'README.md'), '# inproc\n');
     return dir;

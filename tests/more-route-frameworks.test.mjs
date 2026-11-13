@@ -19,12 +19,13 @@
  * @req docguard.more-route-frameworks#SC-002
  * @req docguard.more-route-frameworks#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { detectEcosystems } from '../cli/scanners/project-type.mjs';
@@ -36,7 +37,7 @@ const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 
 function tempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = makeTempDir(prefix);
   temps.push(dir);
   return dir;
 }

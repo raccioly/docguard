@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { runSync } from '../cli/commands/sync.mjs';
 import { discoverTestPairs, runSyncTests } from '../cli/commands/sync-tests.mjs';
@@ -35,7 +36,7 @@ describe('docguard sync', () => {
   const read = (rel) => readFileSync(join(dir, rel), 'utf-8');
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-sync-'));
+    dir = makeTempDir('docguard-sync-');
     write('package.json', JSON.stringify({ dependencies: { express: '^4' } }));
     // Spec currently has TWO endpoints.
     write('docs/openapi.yaml', openapi({ '/api/users': ['get'], '/api/orders': ['post'] }));
@@ -161,7 +162,7 @@ describe('sync-tests cli commands', () => {
   // runSyncTests is the `sync --tests` command around reconcileTestMap: a dry
   // run reports and writes nothing; --write applies the same reconciliation.
   it('runSyncTests reports a ghost-source row on a dry run and removes it only with --write', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'docguard-sync-tests-'));
+    const tmp = makeTempDir('docguard-sync-tests-');
     const doc = join(tmp, 'docs-canonical', 'TEST-SPEC.md');
     const capture = flags => {
       const out = [];
@@ -201,7 +202,7 @@ describe('sync-tests cli commands', () => {
   });
 
   it('discoverTestPairs should find basic pairs', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'docguard-test-'));
+    const tmp = makeTempDir('docguard-test-');
     try {
       writeFileSync(join(tmp, 'index.js'), 'export const a = 1;');
       writeFileSync(join(tmp, 'index.test.js'), 'import { a } from "./index.js";');

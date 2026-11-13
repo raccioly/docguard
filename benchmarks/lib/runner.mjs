@@ -8,13 +8,14 @@
 
 import { createHash } from 'node:crypto';
 import {
-  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync,
+  cpSync, existsSync, lstatSync, mkdirSync, readFileSync,
   readdirSync, realpathSync, rmSync, statSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { makeTempDir } from '../../tests/helpers/temp-dir.mjs';
 import { loadBenchmarkManifest, safeRelativePath } from './manifest.mjs';
 import { calculateMetrics } from './metrics.mjs';
 
@@ -221,7 +222,7 @@ export function runBenchmark({
   if (!existsSync(requestedParent) || lstatSync(requestedParent).isSymbolicLink() || !statSync(requestedParent).isDirectory()) {
     throw new Error('Benchmark temporary parent must be an existing non-symlink directory.');
   }
-  const runRoot = mkdtempSync(join(realpathSync(requestedParent), 'docguard-benchmark-'));
+  const runRoot = makeTempDir('docguard-benchmark-', undefined, { parent: realpathSync(requestedParent), keep });
   const coreCases = [];
   const observations = [];
   const sourceCache = new Map();

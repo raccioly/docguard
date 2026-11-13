@@ -14,6 +14,7 @@
  * @req docguard.sync-section-scope#SC-001
  * @req docguard.output-ux#FR-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
@@ -23,16 +24,16 @@ import { strict as assert } from 'node:assert';
 // in sync.test.mjs and the subprocess test below.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { mechanicalSectionsForChanges, SECTION_FILE_MATCHERS, sectionTouchedByChanges } from '../cli/shared-sync-scope.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-sync-since-'));
+  const dir = makeTempDir('docguard-sync-since-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

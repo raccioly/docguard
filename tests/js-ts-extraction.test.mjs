@@ -23,11 +23,12 @@
  * @req docguard.js-ts-extraction#SC-005
  * @req docguard.js-ts-extraction#SC-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   writeFiles, UNPARSEABLE,
@@ -53,7 +54,7 @@ afterEach(() => {
 });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-045-'));
+  const dir = makeTempDir('docguard-045-');
   dirs.push(dir);
   writeFiles(dir, files);
   return dir;

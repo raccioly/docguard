@@ -7,12 +7,13 @@
  *
  * @req docguard.strict-by-default#FR-014
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 import { rankFrs002 } from '../cli/commands/guard.mjs';
@@ -24,7 +25,7 @@ const DOCS = ['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO'];
 
 let dir;
 before(() => {
-  dir = mkdtempSync(join(tmpdir(), 'docguard-frs002-'));
+  dir = makeTempDir('docguard-frs002-');
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);
   fixtureGit(dir, ['config', 'user.name', 'Fixture']);

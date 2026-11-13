@@ -15,15 +15,16 @@
  * @req SC-CANON-006 — Warns when architecture-diagram counts are stale
  * @req SC-CANON-007 — Counts itself per §8.5 (claim includes canonical-sync)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateCanonicalSync } from '../cli/validators/canonical-sync.mjs';
 
 function makeFixture({ name = 'docguard-cli', commandFiles = 0, validatorFiles = 0, readme = '' } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-canon-'));
+  const dir = makeTempDir('docguard-canon-');
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name, version: '0.0.1' }));
   if (readme) writeFileSync(join(dir, 'README.md'), readme);
   mkdirSync(join(dir, 'cli/commands'), { recursive: true });
@@ -50,7 +51,7 @@ describe('canonical-sync validator', () => {
   });
 
   it('returns N/A when no package.json exists', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-canon-nopkg-'));
+    dir = makeTempDir('docguard-canon-nopkg-');
     const r = validateCanonicalSync(dir, {}, null);
     assert.equal(r.na, true);
     assert.match(r.naReason, /no package.json/);

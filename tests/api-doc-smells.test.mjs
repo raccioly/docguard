@@ -2,15 +2,16 @@
  * v0.31.0 feat 4 — API-doc-smells (APS001 Bloated, APS002 Lazy).
  * Deterministic length signals on signature-headed doc units.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateApiDocSmells } from '../cli/validators/api-doc-smells.mjs';
 
 function repo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-aps-'));
+  const dir = makeTempDir('dg-aps-');
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   for (const [rel, content] of Object.entries(files)) writeFileSync(join(dir, rel), content);
   return dir;
@@ -55,7 +56,7 @@ describe('validateApiDocSmells', () => {
   });
 
   it('is not applicable without docs-canonical', () => {
-    const t = mkdtempSync(join(tmpdir(), 'dg-aps-none-'));
+    const t = makeTempDir('dg-aps-none-');
     try { assert.equal(validateApiDocSmells(t, {}).applicable, false); }
     finally { rmSync(t, { recursive: true, force: true }); }
   });

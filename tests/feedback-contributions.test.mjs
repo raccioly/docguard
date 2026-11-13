@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { buildIssueUrl } from '../cli/commands/feedback.mjs';
 
@@ -14,7 +15,7 @@ describe('feedback contribution workflow', () => {
   afterEach(() => { if (dir) rmSync(dir,{recursive:true,force:true}); dir = null; });
   function run(args) {
     if (!dir) {
-      dir=mkdtempSync(join(tmpdir(),'docguard-feedback-review-'));
+      dir=makeTempDir('docguard-feedback-review-');
       writeFileSync(join(dir,'.docguard.json'), JSON.stringify({profile:'starter',projectName:'private-customer',diskCache:false}));
     }
     return spawnSync(process.execPath,[join(process.cwd(),'cli/docguard.mjs'),'feedback','--dir',dir,'--format','json',...args],{encoding:'utf8'});

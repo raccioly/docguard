@@ -11,12 +11,13 @@
  * @req docguard.authoring-contract#FR-006
  * @req docguard.authoring-contract#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { CANONICAL_SECTIONS, requiredSectionMap, requiredSectionsSentence, sectionsFor, skillSectionBlock } from '../cli/authoring-contract.mjs';
 import { validateDocSections } from '../cli/validators/structure.mjs';
 import { docHasSection, PROFILES } from '../cli/shared.mjs';
@@ -32,7 +33,7 @@ const DOCS = Object.keys(CANONICAL_SECTIONS);
 const name = path => path.replace('docs-canonical/', '');
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-authoring-'));
+  const dir = makeTempDir('docguard-authoring-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   return dir;

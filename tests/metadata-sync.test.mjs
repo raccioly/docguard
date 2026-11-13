@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateMetadataSync } from '../cli/validators/metadata-sync.mjs';
 import { legacyShape } from './helpers/legacy-result.mjs';
 
 describe('Metadata Sync Validator', () => {
   it('returns empty results if package.json is missing', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       const result = validateMetadataSync(tmpDir, {});
       assert.deepEqual(legacyShape(result), { errors: [], warnings: [], passed: 0, total: 0 });
@@ -18,7 +19,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('returns empty results if package.json is malformed', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), '{ malformed json');
       const result = validateMetadataSync(tmpDir, {});
@@ -29,7 +30,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('returns empty results if package.json has no version', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "test" }));
       const result = validateMetadataSync(tmpDir, {});
@@ -40,7 +41,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('detects mismatched version in extension.yml', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.0.0" }));
       mkdirSync(join(tmpDir, 'extensions'));
@@ -58,7 +59,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('detects matching version in root extension.yml', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.0.0" }));
       writeFileSync(join(tmpDir, 'extension.yml'), 'version: "1.0.0"\n');
@@ -73,7 +74,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('detects older version references in actionable contexts in markdown', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'README.md'), 'Download https://example.com/myapp/download/v1.0.0/');
@@ -92,7 +93,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('passes current version references in markdown', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'README.md'), 'Download https://example.com/myapp/download/v1.1.0/');
@@ -108,7 +109,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('does NOT read a version stated for another tool (a URL for another project, a key that merely ends in version:)', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'README.md'), 'myapp hooks\n\nminimum_pre_commit_version: 1.0.0\nSee https://example.com/other-tool/releases/download/v1.0.0/ too.\n');
@@ -121,7 +122,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('does NOT flag @version refs for OTHER packages (over-match fix)', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: "myapp", version: "2.0.0" }));
       // All of these are unrelated `@x.y.z` — a bare /@(\d+\.\d+\.\d+)/ used to
@@ -137,7 +138,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('skips CHANGELOG.md and DRIFT-LOG.md', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+    const tmpDir = makeTempDir('sg-meta-');
     try {
       writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.1.0" }));
       writeFileSync(join(tmpDir, 'CHANGELOG.md'), 'Version: "1.0.0"');
@@ -153,7 +154,7 @@ describe('Metadata Sync Validator', () => {
   });
 
   it('skips non-actionable version strings in prose', () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), 'sg-meta-'));
+      const tmpDir = makeTempDir('sg-meta-');
       try {
         writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ version: "1.1.0" }));
         writeFileSync(join(tmpDir, 'README.md'), 'In v1.0.0 we added a feature.');

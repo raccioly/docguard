@@ -31,12 +31,13 @@
  * @req docguard.python-extraction#SC-003
  * @req docguard.python-extraction#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 import { endpointKey } from '../cli/scanners/api-doc.mjs';
@@ -51,7 +52,7 @@ const dirs = [];
 after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 
 function tempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = makeTempDir(prefix);
   dirs.push(dir);
   return dir;
 }

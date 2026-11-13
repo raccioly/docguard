@@ -5,10 +5,10 @@
  * inline, env vars with and without defaults, a JWT library, entities, tests.
  * @req docguard.generated-docs-consistency#SC-001
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fixtureGit } from '../helpers/git.mjs';
+import { makeTempDir } from '../helpers/temp-dir.mjs';
 
 const GITIGNORE = 'node_modules/\n.env\n__pycache__/\n';
 
@@ -208,7 +208,7 @@ type Todo struct {
 
 /** Write `files` into a new temp dir; with `git`, commit them. Returns the dir. */
 export function materialize(files, { prefix = 'gdc-', git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = makeTempDir(prefix);
   for (const [rel, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });
     writeFileSync(join(dir, rel), body);

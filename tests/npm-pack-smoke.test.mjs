@@ -25,12 +25,13 @@
  * @req docguard.adoption-workflow-integrity#FR-010
  * @req docs-canonical/REQUIREMENTS.md#NFR-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 
 // Skip if NPM_PACK_SMOKE=0 — opt-out only. By default this runs in regular
@@ -38,7 +39,7 @@ import { fixtureGit } from './helpers/git.mjs';
 const SKIP = process.env.NPM_PACK_SMOKE === '0';
 
 function tmp(prefix) {
-  return mkdtempSync(join(tmpdir(), `docguard-pack-${prefix}-`));
+  return makeTempDir(`docguard-pack-${prefix}-`);
 }
 
 describe('npm pack smoke', { skip: SKIP }, () => {

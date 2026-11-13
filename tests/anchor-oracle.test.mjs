@@ -8,15 +8,16 @@
  * @req docguard.requirement-anchors#SC-007
  * @req docguard.requirement-anchors#FR-040
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 const INSTALLED = existsSync(resolve('tools/anchor-oracle/node_modules/web-tree-sitter/web-tree-sitter.js'));
-const dir = mkdtempSync(join(tmpdir(), 'dg-oracle-'));
+const dir = makeTempDir('dg-oracle-');
 after(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('anchor oracle (SC-007)', { skip: !INSTALLED && 'tools/anchor-oracle is not installed' }, () => {

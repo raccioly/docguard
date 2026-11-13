@@ -22,11 +22,12 @@
  * @req docguard.calibrated-finding-channels#FR-013
  * @req FR-019 — analyzer tier computed at run time; degraded coverage disclosed
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tierFor, summarizeTiers, tierApplicability, PARSER_TIERS } from '../cli/shared-source.mjs';
@@ -39,7 +40,7 @@ const HAS_PYTHON = pyAstAvailable();
 
 const dirs = [];
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-tier-'));
+  const dir = makeTempDir('dg-tier-');
   dirs.push(dir);
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -50,7 +51,7 @@ function project(files) {
 
 /** A PATH containing node and git but deliberately NO python interpreter. */
 function pathWithoutPython() {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-nopy-'));
+  const dir = makeTempDir('dg-nopy-');
   dirs.push(dir);
   for (const bin of ['node', 'git']) {
     const which = spawnSync('command', ['-v', bin], { shell: true, encoding: 'utf8' }).stdout.trim();

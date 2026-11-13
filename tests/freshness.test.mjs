@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import childProcess, { execSync } from 'node:child_process';
 import { syncBuiltinESMExports } from 'node:module';
 
@@ -16,7 +17,7 @@ const runGit = (args, cwd) => {
 
 describe('readLastReviewedDate — future dates cannot mask staleness', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'fresh-review-')); });
+  beforeEach(() => { dir = makeTempDir('fresh-review-'); });
   afterEach(() => {
     if (dir) rmSync(dir, {
       recursive: true,
@@ -52,7 +53,7 @@ describe('Freshness Validator', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-freshness-'));
+    tmpDir = makeTempDir('docguard-test-freshness-');
   });
 
   afterEach(() => {
@@ -339,7 +340,7 @@ describe('Freshness Validator', () => {
 describe('freshness coverage and history reliability', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'fresh-coverage-'));
+    dir = makeTempDir('fresh-coverage-');
     runGit('init', dir);
     runGit('config user.name Test', dir);
     runGit('config user.email test@example.com', dir);

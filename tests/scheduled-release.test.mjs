@@ -4,11 +4,12 @@
  * @req docguard.release-dispatch-window#FR-003
  * @req docguard.release-dispatch-window#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import {
   evaluateReleaseCandidate,
@@ -156,7 +157,7 @@ describe('scheduled release workflow', () => {
   });
 
   it('validates the real workspace diff and rejects an unexpected path', () => {
-    const root = mkdtempSync(join(tmpdir(), 'docguard-release-candidate-'));
+    const root = makeTempDir('docguard-release-candidate-');
     const writeVersion = version => {
       writeFileSync(join(root, 'package.json'), JSON.stringify({ version }));
       writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ version, packages: { '': { version } } }));

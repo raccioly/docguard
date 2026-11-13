@@ -1,9 +1,10 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, readFileSync, readdirSync, lstatSync, symlinkSync, existsSync } from 'node:fs';
+import { rmSync, readFileSync, readdirSync, lstatSync, symlinkSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { extractSemanticClaims, buildSemanticVerifyTasks, createEvidenceReader, contentHash, gitEvidence, taskEvidence } from '../cli/scanners/semantic-claims.mjs';
 import { buildAgentTaskGraph } from '../cli/commands/agent.mjs';
@@ -58,8 +59,8 @@ describe('agent evidence and context provenance', () => {
   const tasks = () => buildSemanticVerifyTasks(extractSemanticClaims(dir));
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-evidence-'));
-    outside = mkdtempSync(join(tmpdir(), 'docguard-outside-'));
+    dir = makeTempDir('docguard-evidence-');
+    outside = makeTempDir('docguard-outside-');
     write('package.json', JSON.stringify({ name: 'evidence', version: '1.0.0', type: 'module' }));
     write('.docguard.json', JSON.stringify(config));
     write(DOC, '# Limits\n\n## Retention\nRetention is 30 days. See `src/limits.ts:1`.\n');

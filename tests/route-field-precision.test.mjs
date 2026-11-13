@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 import { compareEndpoints } from '../cli/scanners/api-doc.mjs';
@@ -13,7 +14,7 @@ const scan = dir => scanRoutesDeep(dir, { framework: 'Express' }, {}, { config }
 
 describe('mounted route field precision', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-route-precision-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-route-precision-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
   const write = (path, content) => safeWrite(join(dir, path), content);
 

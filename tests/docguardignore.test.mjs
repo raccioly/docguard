@@ -12,11 +12,12 @@
  *   exemplified by these tests — they exercise the shared utility from
  *   `cli/shared-ignore.mjs` that v0.11.x extracted.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import {
   loadDocguardIgnore,
@@ -26,7 +27,7 @@ import {
 } from '../cli/shared-ignore.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-ignorefile-'));
+  const dir = makeTempDir('docguard-ignorefile-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

@@ -3,11 +3,12 @@
  *
  * @req docguard.consumer-report-precision#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { contentSha, openAnchorCache } from '../cli/scanners/anchor-cache.mjs';
 import { STATE_DIR } from '../cli/writers/state-dir.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -23,7 +24,7 @@ describe('anchor-cache', () => {
   });
 
   it('openAnchorCache handles cache misses, writes, and reads', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'docguard-anchor-cache-'));
+    const tmp = makeTempDir('docguard-anchor-cache-');
     try {
       fixtureGit(tmp, ['init', '-q', '-b', 'main']);
 
@@ -57,7 +58,7 @@ describe('anchor-cache', () => {
   });
 
   it('openAnchorCache disables when git tracks files in STATE_DIR', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'docguard-anchor-cache-tracked-'));
+    const tmp = makeTempDir('docguard-anchor-cache-tracked-');
     try {
       fixtureGit(tmp, ['init', '-q', '-b', 'main']);
       mkdirSync(join(tmp, STATE_DIR), { recursive: true });

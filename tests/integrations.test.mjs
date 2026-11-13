@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { detectIntegrations } from '../cli/scanners/integrations.mjs';
 import { buildMemoryPlan } from '../cli/scanners/memory-plan.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-int-'));
+  const dir = makeTempDir('docguard-int-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

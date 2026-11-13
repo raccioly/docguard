@@ -7,17 +7,18 @@
  * @req SC-P3-003 — applier refuses when doc / sectionId / body is missing
  * @req SC-P3-004 — generated-staleness emits fixes[] entries on drift
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { applyMechanicalFix, MECHANICAL_FIX_TYPES } from '../cli/writers/mechanical.mjs';
 import { validateGeneratedStaleness } from '../cli/validators/generated-staleness.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-regen-'));
+  const dir = makeTempDir('docguard-regen-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

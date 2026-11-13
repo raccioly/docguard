@@ -9,11 +9,12 @@
  * Deterministic regardless of whether the `specify` CLI is present: the starter
  * gate skips spec-kit either way, and command install is a plain file copy.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync, execSync } from 'node:child_process';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
@@ -29,7 +30,7 @@ describe('starter profile is minimal (no heavy spec-kit scaffold) + commands at 
   afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }); });
 
   it('skips the .specify/ framework scaffold and installs commands under .agent/', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-starter-'));
+    dir = makeTempDir('docguard-starter-');
     execSync(`git ${FIXTURE_GIT_SHELL} init -q`, { cwd: dir });
 
     const r = runInit(dir, ['--profile', 'starter', '--skip-prompts', '--quiet']);

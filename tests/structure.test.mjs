@@ -1,13 +1,14 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateStructure, validateDocSections } from '../cli/validators/structure.mjs';
 
 describe('validateStructure', () => {
   it('should pass when all required files are present', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-structure-pass-'));
+    const tempDir = makeTempDir('docguard-test-structure-pass-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     // Create required canonical docs
@@ -43,7 +44,7 @@ describe('validateStructure', () => {
   });
 
   it('should fail when files are missing', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-structure-fail-'));
+    const tempDir = makeTempDir('docguard-test-structure-fail-');
     // Do not create any files
 
     const config = {
@@ -76,7 +77,7 @@ describe('validateStructure', () => {
 
 describe('validateDocSections', () => {
   it('should pass when required sections are present', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-sections-pass-'));
+    const tempDir = makeTempDir('docguard-test-sections-pass-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     // Create file with sections
@@ -106,7 +107,7 @@ describe('validateDocSections', () => {
   });
 
   it('should generate warnings for missing sections', () => {
-    const tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-sections-fail-'));
+    const tempDir = makeTempDir('docguard-test-sections-fail-');
     fs.mkdirSync(join(tempDir, 'docs-canonical'), { recursive: true });
 
     // Create file with NO sections

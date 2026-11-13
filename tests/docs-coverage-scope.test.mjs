@@ -1,13 +1,14 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { validateDocsCoverage } from '../cli/validators/docs-coverage.mjs';
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-coverage-scope-'));
+  const dir = makeTempDir('docguard-coverage-scope-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   safeWrite(join(dir, 'README.md'), '# Fixture\n## Installation\n## Usage\n## License\n');
   safeWrite(join(dir, 'src/index.js'), "readFileSync('.customrc');");

@@ -4,18 +4,19 @@
  * @req docguard.language-repository-coverage#FR-011
  * @req docguard.language-repository-coverage#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { generateArchitecture } from '../cli/writers/doc-generators.mjs';
 import { applyMechanicalFix } from '../cli/writers/mechanical.mjs';
 import { assertOwnedCodeSection, inspectSections } from '../cli/writers/sections.mjs';
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-mapped-writer-'));
+  const dir = makeTempDir('docguard-mapped-writer-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

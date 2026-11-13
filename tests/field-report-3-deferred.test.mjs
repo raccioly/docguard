@@ -9,12 +9,13 @@
  *
  * Each block pairs the fix with a non-vacuous control.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateArchitecture } from '../cli/validators/architecture.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
@@ -33,7 +34,7 @@ function openapi(paths) {
   return lines.join('\n');
 }
 
-function tmp() { return mkdtempSync(join(tmpdir(), 'docguard-fr3d-')); }
+function tmp() { return makeTempDir('docguard-fr3d-'); }
 function write(dir, files) {
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);

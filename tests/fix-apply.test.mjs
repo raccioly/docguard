@@ -4,17 +4,18 @@
  *
  * @req docguard.output-ux#FR-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { applyAllMechanicalFixes, runFix } from '../cli/commands/fix.mjs';
 
 describe('applyAllMechanicalFixes', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fix-apply-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fix-apply-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('runs mechanical fixes and returns summary', () => {
@@ -34,7 +35,7 @@ describe('runFix', () => {
   };
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-runfix-'));
+    dir = makeTempDir('docguard-runfix-');
     logOut = '';
     console.log = (...args) => { logOut += args.join(' ') + '\n'; };
   });

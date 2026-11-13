@@ -11,12 +11,13 @@
  * a 2s cap on a loaded runner.
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -98,7 +99,7 @@ describe('docguard mcp', () => {
   before(() => {
     // Minimal project fixture: a config is all guard needs to run (findings
     // about missing docs are expected — the contract shape is what's tested).
-    fixture = mkdtempSync(join(tmpdir(), 'docguard-mcp-'));
+    fixture = makeTempDir('docguard-mcp-');
     writeFileSync(join(fixture, '.docguard.json'), JSON.stringify({
       projectName: 'mcp-fixture',
       profile: 'starter',

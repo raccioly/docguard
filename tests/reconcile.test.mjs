@@ -1,12 +1,13 @@
 // @req docguard.adoption-workflow-integrity#FR-004
 // @req docguard.adoption-workflow-integrity#SC-002
 // @req docs-canonical/REQUIREMENTS.md#FR-009
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { buildReconciliationPlan } from '../cli/scanners/reconciliation.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
@@ -32,7 +33,7 @@ function git(dir, args) {
 }
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-reconcile-'));
+  const dir = makeTempDir('docguard-reconcile-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   git(dir, ['init', '-q']);
   git(dir, ['config', 'user.email', 'test@example.com']);

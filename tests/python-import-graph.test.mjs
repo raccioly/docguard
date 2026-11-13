@@ -5,11 +5,12 @@
  * @req docguard.language-repository-coverage#FR-005
  * @req docguard.language-repository-coverage#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { buildImportGraph, validateArchitecture } from '../cli/validators/architecture.mjs';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
@@ -17,7 +18,7 @@ import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
 const HAS_PY = pyAstAvailable();
 
 function fixture(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-python-graph-'));
+  const dir = makeTempDir('docguard-python-graph-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, source] of Object.entries(files)) safeWrite(join(dir, path), source);
   return dir;

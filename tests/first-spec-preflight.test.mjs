@@ -24,12 +24,13 @@
  * @req docguard.first-spec-preflight#SC-002
  * @req docguard.first-spec-preflight#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { preflightSpec, projectSpecRegistry, SPEC_REGISTRY_PATH } from '../cli/scanners/spec-registry.mjs';
 import { approveSpec, completeSpec, planSpecCompletion, reanchorSpec } from '../cli/commands/specs.mjs';
 import { resolveCommit } from '../cli/scanners/revision-anchor.mjs';
@@ -47,7 +48,7 @@ const specText = (id, extra = '') => `# Feature ${id}\n\n**Spec ID**: \`${id}\`\
 
 /** A Spec Kit project in a temporary git repository, with no registry. */
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'first-spec-'));
+  const dir = makeTempDir('first-spec-');
   temps.push(dir);
   const write = (rel, content) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), content); };
   const git = (...args) => {

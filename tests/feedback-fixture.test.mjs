@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 /**
@@ -79,7 +80,7 @@ describe('synthetic feedback fixture contract', () => {
     const source = buildTestOnlyContribution(manifest);
     assert.match(source, /fixtureHas, false/);
     assert.match(source, /controlHas, true/);
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-feedback-test-'));
+    const dir = makeTempDir('docguard-feedback-test-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const path = join(dir, 'contribution.test.mjs');
     writeFileSync(path, source);
@@ -95,7 +96,7 @@ describe('synthetic feedback fixture contract', () => {
 
 describe('feedback fixture CLI', () => {
   it('reproduces, reduces, previews, and writes only on explicit non-preview use', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-feedback-cli-'));
+    const dir = makeTempDir('docguard-feedback-cli-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     writeFileSync(join(dir, 'feedback.json'), JSON.stringify(template()));
     const cli = resolve('cli/docguard.mjs');

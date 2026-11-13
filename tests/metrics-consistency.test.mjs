@@ -1,9 +1,10 @@
 // @req docguard.adoption-workflow-integrity#FR-015
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateMetricsConsistency } from '../cli/validators/metrics-consistency.mjs';
 
@@ -15,7 +16,7 @@ describe('Metrics-Consistency Validator', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-metrics-'));
+    tmpDir = makeTempDir('docguard-test-metrics-');
   });
 
   afterEach(() => {
@@ -246,7 +247,7 @@ describe('Metrics-Consistency Validator', () => {
 // These cases pin the finished check: the exact README sentence is the CONTROL.
 describe('Metrics-Consistency — "N tests" is a lower-bound check (MET003)', () => {
   let tmpDir;
-  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-metrics-tests-')); });
+  beforeEach(() => { tmpDir = makeTempDir('docguard-test-metrics-tests-'); });
   afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
   const CASE = (name) => `  it('${name}', () => { assert.ok(true); });\n`;
@@ -349,7 +350,7 @@ describe('Metrics-Consistency — project collections (field report #6)', () => 
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-collections-'));
+    tmpDir = makeTempDir('docguard-test-collections-');
     mkdirSync(join(tmpDir, 'src', 'extractors'), { recursive: true });
     mkdirSync(join(tmpDir, 'docs-canonical'), { recursive: true });
     for (let i = 0; i < 19; i++) {
@@ -417,7 +418,7 @@ describe('Metrics-Consistency — project collections (field report #6)', () => 
 // arbitrary non-doc subdir (security/wolf-archive/) is still never walked.
 describe('Metrics-Consistency — auto-detected doc homes', () => {
   let tmpDir;
-  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-dochomes-')); });
+  beforeEach(() => { tmpDir = makeTempDir('docguard-test-dochomes-'); });
   afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
   const guardResultsTwoValidators = () => {

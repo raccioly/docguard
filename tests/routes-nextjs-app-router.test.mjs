@@ -11,18 +11,19 @@
  * These tests pin both layouts so the bug cannot regress.
  */
 
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 
 const NO_SPEC = { openapi: { found: false } };
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-nextjs-'));
+  const dir = makeTempDir('docguard-nextjs-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

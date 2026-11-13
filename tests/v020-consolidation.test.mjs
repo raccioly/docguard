@@ -17,19 +17,20 @@
  * @req SC-V020-008 — dropped aliases (`gen`, `repair`, `dx`, etc.) error with hint
  * @req SC-V020-009 — `audit → guard` continues to work without deprecation warning
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
 const CLI = join(process.cwd(), 'cli/docguard.mjs');
 
 function makeFixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-v020-'));
+  const dir = makeTempDir('docguard-v020-');
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'v020-test', version: '0.0.1' }));
   fixtureGit(dir, ['init', '-q', '-b', 'main']);
   fixtureGit(dir, ['-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']);

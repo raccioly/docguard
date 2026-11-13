@@ -6,11 +6,12 @@
  * score), and completes the "declare intentional non-applicability, visibly"
  * theme alongside the section-level `docguard:section … n/a` marker.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { loadValidatorSuppressions } from '../cli/validator-markers.mjs';
 import { runGuardInternal } from '../cli/commands/guard.mjs';
@@ -18,7 +19,7 @@ import { runGuardInternal } from '../cli/commands/guard.mjs';
 const KEYS = ['structure', 'testSpec', 'traceability', 'security', 'metricsConsistency'];
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-vmarker-'));
+  const dir = makeTempDir('docguard-vmarker-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

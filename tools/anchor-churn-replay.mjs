@@ -24,10 +24,11 @@
  * @implements docguard.requirement-anchors#FR-027
  */
 
+import { makeTempDir } from '../tests/helpers/temp-dir.mjs';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { computeLinks, isExactTier } from '../cli/scanners/anchors.mjs';
 import { loadConfig } from '../cli/config.mjs';
@@ -78,7 +79,7 @@ function classify(cwd, from, to, link) {
 
 export function replay({ commits }) {
   const revs = git(ROOT, ['rev-list', '--first-parent', '-n', String(commits + 1), 'HEAD']).trim().split('\n').reverse();
-  const work = mkdtempSync(join(tmpdir(), 'dg-anchor-replay-'));
+  const work = makeTempDir('dg-anchor-replay-');
   const tree = join(work, 'tree');
   git(ROOT, ['worktree', 'add', '-q', '--detach', tree, revs[0]]);
   const perCommit = [];

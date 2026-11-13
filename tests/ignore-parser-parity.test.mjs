@@ -6,11 +6,12 @@
  * @req docguard.ignore-and-todo-parsing#FR-001
  * @req docguard.ignore-and-todo-parsing#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { loadIgnorePatterns } from '../cli/shared.mjs';
 import { buildIgnoreFilter, loadDocguardIgnore } from '../cli/shared-ignore.mjs';
 
@@ -18,7 +19,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function withIgnore(content) {
-  const dir = mkdtempSync(join(tmpdir(), 'ignore-parity-'));
+  const dir = makeTempDir('ignore-parity-');
   dirs.push(dir);
   writeFileSync(join(dir, '.docguardignore'), content);
   return dir;

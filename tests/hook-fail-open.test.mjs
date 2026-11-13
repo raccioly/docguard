@@ -8,11 +8,12 @@
  * two cannot be consistent, so a hook installed on one branch governed branches
  * that had no config, where guard exited 1 and the hook blocked the commit.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync, mkdirSync } from 'node:fs';
+import { rmSync, writeFileSync, readFileSync, existsSync, chmodSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync, execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT_SHELL } from './helpers/git.mjs';
@@ -23,7 +24,7 @@ const git = (args, cwd) => execSync(`git ${FIXTURE_GIT_SHELL} ${args}`, { cwd, e
 // install hooks, and a contributor's global core.hooksPath must neither receive
 // them nor make the installer refuse (spec 065).
 // @req docguard.hooks-repo-scope#FR-006
-const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+const isolatedGitConfig = join(makeTempDir('dg-gitcfg-'), 'gitconfig');
 writeFileSync(isolatedGitConfig, '');
 const run = (args, cwd) => spawnSync('node', [CLI, ...args], {
   cwd, encoding: 'utf-8', timeout: 60000,
@@ -33,7 +34,7 @@ const run = (args, cwd) => spawnSync('node', [CLI, ...args], {
 describe('uninitialised projects are not blocked', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-failopen-'));
+    dir = makeTempDir('dg-failopen-');
     git('init -q .', dir);
     writeFileSync(join(dir, 'README.md'), '# p\n');
   });
@@ -64,7 +65,7 @@ describe('uninitialised projects are not blocked', () => {
 describe('the installer never destroys a user backup', () => {
   let dir;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'dg-bak-'));
+    dir = makeTempDir('dg-bak-');
     git('init -q .', dir);
     writeFileSync(join(dir, 'README.md'), '# p\n');
   });

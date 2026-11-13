@@ -7,16 +7,17 @@
  * @req SC-M1-004 — N/A when no source=code sections present in any doc
  * @req SC-M1-005 — warning includes a first-drift line hint
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { validateGeneratedStaleness } from '../cli/validators/generated-staleness.mjs';
 
 function makeRepo(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-stale-'));
+  const dir = makeTempDir('docguard-stale-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

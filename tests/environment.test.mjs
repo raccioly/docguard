@@ -1,9 +1,10 @@
 // @req docguard.adoption-workflow-integrity#FR-015
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateEnvironment } from '../cli/validators/environment.mjs';
 import { legacyShape } from './helpers/legacy-result.mjs';
 
@@ -13,7 +14,7 @@ describe('validateEnvironment', () => {
   let envDocPath;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(join(tmpdir(), 'docguard-test-environment-'));
+    tempDir = makeTempDir('docguard-test-environment-');
     docsCanonicalDir = join(tempDir, 'docs-canonical');
     fs.mkdirSync(docsCanonicalDir, { recursive: true });
     envDocPath = join(docsCanonicalDir, 'ENVIRONMENT.md');
@@ -174,7 +175,7 @@ describe('validateEnvironment', () => {
       'export const linked = process.env.LINKED_TOKEN;',
     ].join('\n'));
     fs.writeFileSync(join(tempDir, 'backend', '.env.example'), 'IGNORED_TOKEN=replace-me\n');
-    const outside = fs.mkdtempSync(join(tmpdir(), 'docguard-env-outside-'));
+    const outside = makeTempDir('docguard-env-outside-');
     try {
       fs.writeFileSync(join(outside, '.env.template'), 'LINKED_TOKEN=replace-me\n');
       fs.symlinkSync(join(outside, '.env.template'), join(tempDir, 'backend', '.env.template'));

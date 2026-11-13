@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 const CLI = new URL('../cli/docguard.mjs', import.meta.url).pathname;
@@ -17,7 +18,7 @@ describe('agents --sync / --check (v0.29)', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-agentsync-'));
+    tmpDir = makeTempDir('docguard-test-agentsync-');
     writeFileSync(join(tmpDir, 'package.json'), JSON.stringify({ name: 'sync-fixture', version: '1.0.0' }));
     writeFileSync(join(tmpDir, '.docguard.json'), JSON.stringify({ profile: 'starter', projectName: 'sync-fixture' }));
     writeFileSync(join(tmpDir, 'AGENTS.md'), '# Agent Rules\n\n## Rules\n\n- rule one\n');

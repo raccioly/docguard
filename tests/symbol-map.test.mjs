@@ -18,12 +18,13 @@
  * @req docguard.symbol-map#SC-004
  * @req docguard.symbol-map#FR-011
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { buildSymbolMap, MAX_SYMBOLS_PER_FILE, pageRank, SYMBOL_MAP_MAX_BYTES, symbolMapBudget } from '../cli/scanners/symbol-map.mjs';
 import { clearImportGraphCache } from '../cli/scanners/import-graph.mjs';
 import { aggregateTrials, buildResult, buildTrialPrompt, decideSymbolPromotion, loadManifest, V2_MANIFEST_DIGEST, V3_MANIFEST_DIGEST, verifyFixtures } from '../benchmarks/agent-context/run.mjs';
@@ -31,7 +32,7 @@ import { aggregateTrials, buildResult, buildTrialPrompt, decideSymbolPromotion, 
 const CLI = resolve('cli/docguard.mjs');
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-symbols-'));
+  const dir = makeTempDir('docguard-symbols-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
@@ -139,7 +140,7 @@ describe('opt-in until the benchmark decides (FR-004, SC-002, SC-003)', () => {
 
 /** A PATH holding only node and git, so no Python interpreter resolves. */
 function pathWithoutPython(t) {
-  const bin = mkdtempSync(join(tmpdir(), 'docguard-nopy-'));
+  const bin = makeTempDir('docguard-nopy-');
   t.after(() => rmSync(bin, { recursive: true, force: true }));
   symlinkSync(process.execPath, join(bin, 'node'));
   const git = process.env.PATH.split(delimiter).map(d => join(d, 'git')).find(p => existsSync(p));
@@ -169,7 +170,7 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
 
   it('the context-pack-symbols prompt carries the symbol map and the plain pack does not', t => {
     const task = manifest.tasks.find(x => x.id === 'ledger-rounding');
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-v2-prompt-'));
+    const dir = makeTempDir('docguard-v2-prompt-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     cpSync(resolve('benchmarks/agent-context', task.fixture), dir, { recursive: true });
     assert.match(buildTrialPrompt(task, 'context-pack-symbols', dir), /## Symbol map[\s\S]*src\/currency\/rounding\.mjs/);
@@ -183,7 +184,7 @@ describe('the v2 protocol decides (User Story 2, FR-005, FR-006, FR-008)', () =>
   });
 
   it('rejects the manifest after any change to a frozen field', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-v2-'));
+    const dir = makeTempDir('docguard-v2-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     for (const change of [
       m => { m.protocol.seed = 'other'; },
@@ -279,7 +280,7 @@ describe('the v3 protocol amends only the executable pin (FR-011)', () => {
   });
 
   it('rejects the v3 manifest after any change to a frozen field, including the pin', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-v3-'));
+    const dir = makeTempDir('docguard-v3-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     for (const change of [
       m => { m.protocol.seed = 'other'; },

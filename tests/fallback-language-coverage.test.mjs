@@ -24,12 +24,13 @@
  * @req docguard.fallback-language-coverage#SC-002
  * @req docguard.fallback-language-coverage#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { grepEnvUsage, summarizeTiers, tierApplicability, tierFor } from '../cli/shared-source.mjs';
 import { isNonProductDir, isNonProductPath } from '../cli/shared-ignore.mjs';
 import { findRouteFiles, scanRoutesDeep } from '../cli/scanners/routes.mjs';
@@ -46,7 +47,7 @@ const CLI = resolve('cli/docguard.mjs');
 const NO_SPEC = { openapi: { found: false } };
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-043-'));
+  const dir = makeTempDir('docguard-043-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

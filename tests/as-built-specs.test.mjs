@@ -13,12 +13,13 @@
  * @req docguard.as-built-specs#SC-003
  * @req docguard.as-built-specs#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { collectAreaFacts, resolveArea } from '../cli/scanners/as-built.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -37,7 +38,7 @@ const USERS = [
 ].join('\n');
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'as-built-'));
+  const dir = makeTempDir('as-built-');
   dirs.push(dir);
   const git = (...a) => fixtureGit(dir, a);
   git('init', '-q'); git('config', 'user.email', 't@t'); git('config', 'user.name', 't');

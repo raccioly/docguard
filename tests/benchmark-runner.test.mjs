@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 /**
  * @req docguard.precision-evidence-loop#FR-002
@@ -40,7 +41,7 @@ describe('benchmark runner', () => {
   });
 
   it('removes its own disposable root even when other benchmarks run concurrently', t => {
-    const temporaryParent = mkdtempSync(join(tmpdir(), 'docguard-benchmark-test-'));
+    const temporaryParent = makeTempDir('docguard-benchmark-test-');
     t.after(() => rmSync(temporaryParent, { recursive: true, force: true }));
     runBenchmark({ manifestPath, temporaryParent });
     assert.deepEqual(readdirSync(temporaryParent), []);
@@ -51,7 +52,7 @@ describe('benchmark runner', () => {
   });
 
   it('fails exact mutations without changing the source when preconditions differ', t => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-mutation-'));
+    const dir = makeTempDir('docguard-mutation-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const path = join(dir, 'source.js');
     writeFileSync(path, 'const value = 1;\n');

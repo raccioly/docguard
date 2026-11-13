@@ -10,10 +10,11 @@
  * @req docguard.unreadable-git-metadata#SC-001
  * @req docguard.unreadable-git-metadata#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { gitMetadataStatus } from '../cli/shared-git.mjs';
@@ -40,7 +41,7 @@ function write(dir, files) {
 
 /** A linked worktree whose `.git` points at a gitdir the "sandbox" does not expose. */
 function sandboxedWorktree() {
-  const root = mkdtempSync(join(tmpdir(), 'sandbox-git-'));
+  const root = makeTempDir('sandbox-git-');
   dirs.push(root);
   const main = join(root, 'main');
   mkdirSync(main);
@@ -65,7 +66,7 @@ function coverage(dir) {
 describe('git metadata states', () => {
   it('distinguishes ok, absent and unreadable', () => {
     assert.equal(gitMetadataStatus(process.cwd()).status, 'ok');
-    const plain = mkdtempSync(join(tmpdir(), 'no-git-'));
+    const plain = makeTempDir('no-git-');
     dirs.push(plain);
     // tmpdir itself must not sit inside a repository for this to be "absent".
     if (gitMetadataStatus(tmpdir()).status === 'absent') assert.equal(gitMetadataStatus(plain).status, 'absent');
@@ -96,7 +97,7 @@ describe('a sandboxed worktree reports what it could not check (SC-001)', () => 
 
 describe('a project without git is unchanged (SC-002)', () => {
   it('keeps the history validators as no-matches when no .git exists anywhere', { skip: gitMetadataStatus(tmpdir()).status !== 'absent' && 'tmpdir is inside a repository' }, () => {
-    const dir = mkdtempSync(join(tmpdir(), 'no-git-project-'));
+    const dir = makeTempDir('no-git-project-');
     dirs.push(dir);
     write(dir, FILES);
     const { byName } = coverage(dir);

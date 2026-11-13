@@ -27,14 +27,13 @@
  * @req docguard.spec-kit-integration-honesty#SC-005
  * @req docguard.spec-kit-integration-honesty#SC-006
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import {
-  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync,
-} from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { MIN_SPEC_KIT_VERSION, PACKAGED_EXTENSION_DIR, packagedExtensionVersion } from '../cli/spec-kit-delegation.mjs';
 import { readAgentSurface, readExtensionCommands, verifyHooks, commandHint } from '../cli/agent-surface.mjs';
 import { RELEASE_PATH_ALLOWLIST } from '../cli/release-pr-policy.mjs';
@@ -106,7 +105,7 @@ process.exit(0);
 
 let binDir;
 before(() => {
-  binDir = mkdtempSync(join(tmpdir(), 'specify-honesty-stub-'));
+  binDir = makeTempDir('specify-honesty-stub-');
   writeFileSync(join(binDir, 'specify'), STUB);
   chmodSync(join(binDir, 'specify'), 0o755);
   // `upgrade --apply` must never reach a real global install from a test.
@@ -116,7 +115,7 @@ before(() => {
 after(() => rmSync(binDir, { recursive: true, force: true }));
 
 function project({ claude = false, specify = null } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'spec-kit-honesty-'));
+  const dir = makeTempDir('spec-kit-honesty-');
   fixtureGit(dir, ['init', '-q']);
   if (claude) mkdirSync(join(dir, '.claude'));
   for (const [rel, value] of Object.entries(specify || {})) {

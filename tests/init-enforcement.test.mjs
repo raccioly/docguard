@@ -5,11 +5,12 @@
  *
  * @req docguard.strict-by-default#FR-017
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { DEFAULT_MODE } from '../cli/enforcement.mjs';
 import { freshProjectLines, enforcementClosingLines, enforcementToWrite, parseEnforcementFlag, parseWizardAnswer, WIZARD_QUESTION } from '../cli/init-enforcement.mjs';
@@ -18,7 +19,7 @@ const CLI = resolve('cli/docguard.mjs');
 const OTHER = DEFAULT_MODE === 'strict' ? 'standard' : 'strict';
 
 function init(t, args = []) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-init-enf-'));
+  const dir = makeTempDir('docguard-init-enf-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'svc', version: '1.0.0' }));
   const r = spawnSync(process.execPath, [CLI, 'init', '--profile', 'standard', '--skip-prompts', '--no-spec-kit', ...args], { cwd: dir, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { ...process.env, NO_COLOR: '1' } });

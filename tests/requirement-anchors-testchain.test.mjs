@@ -11,13 +11,14 @@
  * @req docguard.requirement-anchors#FR-045
  * @req docguard.requirement-anchors#FR-046
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeAnchorStatus } from '../cli/scanners/anchors.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -34,7 +35,7 @@ const STATEMENT = 'A discount lowers the total.';
 
 /** A project with a reviewed FR-002 link, then a code change: the link is a code-side suspect. */
 function project({ ref = 'req:acme.billing#FR-002' } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-testchain-'));
+  const dir = makeTempDir('dg-anchor-testchain-');
   dirs.push(dir);
   write(dir, '.docguard.json', JSON.stringify({ projectName: 'fixture', profile: 'starter' }));
   write(dir, 'specs/001-billing/spec.md', '# Billing\n\n**Spec ID**: `acme.billing`\n\n- **FR-001**: Totals.\n- **FR-002**: Discounts.\n');

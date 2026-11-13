@@ -14,12 +14,13 @@
  * @req SC-P1-005 — `guard --pin` writes docguardVersion to .docguard.json
  * @req SC-P1-006 — `guard --pin` refuses on FAIL status (don't pin broken state)
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 // @implements docguard.test-git-hermeticity#FR-001: this file's fixture git goes through the helper.
 
@@ -28,7 +29,7 @@ const PKG = JSON.parse(readFileSync('package.json', 'utf-8'));
 const CURRENT = PKG.version;
 
 function makeRepo(extraConfig = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-pin-'));
+  const dir = makeTempDir('docguard-pin-');
   mkdirSync(join(dir, 'docs-canonical'));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 't', version: '0.0.1' }));
   writeFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), '# A\nstub.\n');

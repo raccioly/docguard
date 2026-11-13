@@ -13,12 +13,13 @@
  * was started to serve. Every fixture is a temp tree; the server is the real
  * CLI over stdio and HTTP.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, posix, win32 } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { isWithinRoot } from '../cli/commands/mcp.mjs';
 import { notesSince } from './fixtures/changelog-notes.mjs';
@@ -32,7 +33,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 
 /** parent/{outside.md, app/{…, pkg/, link-out → parent, link-in → pkg}, app-other/} */
 function tree() {
-  const parent = mkdtempSync(join(tmpdir(), 'docguard-confine-'));
+  const parent = makeTempDir('docguard-confine-');
   dirs.push(parent);
   const app = join(parent, 'app');
   const write = (rel, text) => { mkdirSync(join(parent, rel, '..'), { recursive: true }); writeFileSync(join(parent, rel), text); };

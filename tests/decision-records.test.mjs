@@ -12,16 +12,17 @@
  * @req docguard.decision-records#SC-001
  * @req docguard.decision-records#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { normalizeStatus, parseAdrFile, validateDecisionRecords } from '../cli/validators/decision-records.mjs';
 import { ABSENCE_CLAIM_CODES, codeDefaultLevel } from '../cli/findings.mjs';
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-dec-'));
+  const dir = makeTempDir('docguard-dec-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   return dir;

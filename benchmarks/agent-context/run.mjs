@@ -13,10 +13,11 @@
  * @implements docguard.symbol-map#FR-011
  */
 
+import { makeTempDir } from '../../tests/helpers/temp-dir.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { devNull, tmpdir } from 'node:os';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { devNull } from 'node:os';
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -224,7 +225,7 @@ function runVisible(task, projectDir) {
 }
 
 function materialize(task, label = 'trial') {
-  const root = mkdtempSync(join(tmpdir(), `docguard-r7-${task.id}-${label}-`));
+  const root = makeTempDir(`docguard-r7-${task.id}-${label}-`);
   cpSync(join(HERE, task.fixture), root, { recursive: true });
   for (const args of [['init', '-q', '-b', 'main'], ['add', '-A'], ['commit', '-q', '-m', 'frozen fixture']]) {
     const result = runFile('git', args, { cwd: root, env: FIXED_GIT_ENV });

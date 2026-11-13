@@ -12,12 +12,13 @@
  * @req docguard.dogfood-findings#SC-001
  * @req docguard.dogfood-findings#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { loadConfig } from '../cli/config.mjs';
 import { resolveDocRole } from '../cli/shared-doc-roles.mjs';
 import { validateMetricsConsistency, isWholeSuiteClaim, isSuiteClaimFile } from '../cli/validators/metrics-consistency.mjs';
@@ -27,7 +28,7 @@ const CLI = resolve('cli/docguard.mjs');
 const temps = [];
 after(() => { for (const dir of temps) rmSync(dir, { recursive: true, force: true }); });
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dogfood-050-'));
+  const dir = makeTempDir('dogfood-050-');
   temps.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });

@@ -10,11 +10,12 @@
  * @req docguard.baseline-stable-fingerprint#SC-001
  * @req docguard.baseline-stable-fingerprint#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -64,7 +65,7 @@ describe('fingerprints exclude declared advisory tails (FR-001, FR-004)', () => 
 // A project with two requirements no test annotates, and a test file whose
 // vocabulary overlaps them enough to produce an IR soft-match hint.
 function fixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-bsl-hint-'));
+  const dir = makeTempDir('docguard-bsl-hint-');
   writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'bsl-hint', profile: 'standard' }));
   mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
   writeFileSync(join(dir, 'docs-canonical', 'ARCHITECTURE.md'), '# Architecture\n');
@@ -156,7 +157,7 @@ describe('a legacy entry is matched exactly before a shared stable one (FR-006)'
   // fingerprint. With the stable form tried first, a hinted finding spent the
   // budget the legacy file had recorded for an unhinted one, which resurfaced.
   it('every finding a legacy baseline froze stays suppressed when hinted and unhinted findings share a stable fingerprint', () => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard-bsl-order-'));
+    dir = makeTempDir('docguard-bsl-order-');
     writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'bsl-order', profile: 'standard' }));
     mkdirSync(join(dir, 'docs-canonical'), { recursive: true });
     writeFileSync(join(dir, 'docs-canonical', 'ARCHITECTURE.md'), '# Architecture\n');

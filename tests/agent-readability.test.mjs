@@ -1,14 +1,15 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { assessAgentReadability } from '../cli/scanners/agent-readability.mjs';
 
 describe('Agent Readability scanner', () => {
   let tmpDir;
-  beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-agentread-')); });
+  beforeEach(() => { tmpDir = makeTempDir('docguard-test-agentread-'); });
   afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
   const metric = (res, key) => res.metrics.find(m => m.key === key);

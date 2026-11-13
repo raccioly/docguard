@@ -14,11 +14,12 @@
 // @req docguard.doc-validator-fidelity#SC-002
 // @req docguard.doc-validator-fidelity#SC-003
 // @req docguard.doc-validator-fidelity#SC-004
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { fixtureGit } from './helpers/git.mjs';
@@ -51,7 +52,7 @@ const codes = result => (result.findings ?? []).map(f => f.code);
 
 describe('doc validator fidelity', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fidelity-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   // ── US1 (FR-001): ENV001/ENV002 match headings as STR003 does ─────────────
@@ -399,7 +400,7 @@ describe('doc validator fidelity', () => {
 // ── Review round (2026-10-15): cases an independent review found ──────────
 describe('doc validator fidelity — review findings', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fidelity-review-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
   const CLI = join(ROOT, 'cli', 'docguard.mjs');
   const cli = (args, cwd = dir) => spawnSync(process.execPath, [CLI, ...args], { cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' }, timeout: 120000 });
@@ -607,7 +608,7 @@ describe('doc validator fidelity — review findings', () => {
 // ── Second review round (2026-10-16) ───────────────────────────────────────
 describe('doc validator fidelity — second review findings', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review2-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fidelity-review2-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
   const arch = (body, deps = { react: '18.0.0' }) => {
     write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: deps }));
@@ -684,7 +685,7 @@ describe('doc validator fidelity — second review findings', () => {
 // ── Third review round (2026-10-16) ────────────────────────────────────────
 describe('doc validator fidelity — third review findings', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fidelity-review3-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fidelity-review3-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
   const arch = (body, deps) => {
     write(dir, 'package.json', JSON.stringify({ name: 'x', dependencies: deps }));

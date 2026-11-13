@@ -10,11 +10,12 @@
  * @req docguard.upstream-coverage#FR-007
  * @req docguard.upstream-coverage#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { chainCoverage, citedIds, definedIds } from '../cli/scanners/chain-coverage.mjs';
 import { validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
 import { codeDefaultLevel } from '../cli/findings.mjs';
@@ -66,7 +67,7 @@ describe('chainCoverage', () => {
 
 describe('Spec-Kit validator wiring', () => {
   const project = (t, features) => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-chain-'));
+    const dir = makeTempDir('docguard-chain-');
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     mkdirSync(join(dir, '.specify'), { recursive: true });
     for (const [p, body] of Object.entries(features)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }

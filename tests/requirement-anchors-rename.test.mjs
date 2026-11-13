@@ -7,12 +7,13 @@
  * @req docguard.requirement-anchors#FR-030
  * @req docguard.requirement-anchors#SC-009
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { computeAnchorStatus } from '../cli/scanners/anchors.mjs';
 import { readAnchorLock } from '../cli/scanners/anchor-lock.mjs';
 import { fixtureGit } from './helpers/git.mjs';
@@ -24,7 +25,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
 const BODY = '(total, coupon) {\n  const rate = coupon ? 0.1 : 0;\n  return total * (1 - rate);\n}\n';
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-anchor-move-'));
+  const dir = makeTempDir('dg-anchor-move-');
   dirs.push(dir);
   write(dir, 'specs/001-billing/spec.md', '# Billing\n\n**Spec ID**: `acme.billing`\n\n- **FR-001**: Discounts.\n- **FR-002**: Totals.\n');
   write(dir, 'src/pricing.mjs', `import { x } from './x.mjs';\n\n/** @implements acme.billing#FR-001 */\nexport function applyDiscount${BODY}\n/** @implements acme.billing#FR-002 */\nexport function total() { return x; }\n`);

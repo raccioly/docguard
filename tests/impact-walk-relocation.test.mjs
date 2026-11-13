@@ -7,12 +7,13 @@
  *
  * @req docguard.requirement-anchors#FR-031
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 
 const CLI = resolve('cli/docguard.mjs');
@@ -22,7 +23,7 @@ const write = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursi
 
 describe('impact keeps its reverse-import walk after the move', () => {
   it('reports importers up to two hops, never three, and never a hub', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'dg-impact-walk-'));
+    const dir = makeTempDir('dg-impact-walk-');
     dirs.push(dir);
     write(dir, 'package.json', JSON.stringify({ name: 't', version: '0.0.0' }));
     write(dir, '.docguard.json', JSON.stringify({ projectName: 't', profile: 'starter', version: '0.5' }));

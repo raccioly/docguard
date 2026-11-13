@@ -10,10 +10,11 @@
  * @req docguard.release-cut-green#SC-002
  * @req docguard.release-cut-green#SC-003
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { syncReleaseVersion } from '../.github/scripts/sync-release-version.mjs';
 import { validateReleaseWorkspace } from '../.github/scripts/validate-release-candidate.mjs';
@@ -61,7 +62,7 @@ describe('the release refreshes repository mirrors without ensureSkills (FR-004)
 
 describe('ensureSkills requires the agent surface (FR-005)', () => {
   it('throws instead of silently installing nothing', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-ensure-surface-'));
+    const dir = makeTempDir('docguard-ensure-surface-');
     try {
       assert.throws(() => ensureSkills(dir, { format: 'json', noSpecKit: true }), /surface/);
     } finally {
@@ -93,7 +94,7 @@ describe('the release commits and admits every synchronized path (FR-006)', () =
 
 describe("replaying the cut on this repository's release surfaces (SC-001)", () => {
   it('cuts, synchronizes, validates and stages a candidate whose CHANGELOG checks still hold', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-release-replay-'));
+    const dir = makeTempDir('docguard-release-replay-');
     const git = (...args) => execFileSync('git', [...FIXTURE_GIT, ...args], { cwd: dir, encoding: 'utf8' });
     try {
       // The tracked release surfaces at HEAD, in a repository of their own.

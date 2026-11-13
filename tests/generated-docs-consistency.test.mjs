@@ -16,12 +16,13 @@
  * @req docguard.generated-docs-consistency#FR-011
  * @req docguard.generated-docs-consistency#FR-012
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { parseApiReferenceDoc, compareEndpoints } from '../cli/scanners/api-doc.mjs';
 import { diffEntities, diffEnvVars, diffTechStack } from '../cli/commands/diff.mjs';
@@ -339,7 +340,7 @@ describe('FR-010: plain generate reads the facts guard checks', () => {
     const dir = fixture('django-py');
     const names = scanSchemasDeep(dir, {}, {}, {}).entities.map(e => e.name).sort();
     assert.deepEqual(names, ['Order', 'Product']);
-    const bin = mkdtempSync(join(tmpdir(), 'gdc-nopy-'));
+    const bin = makeTempDir('gdc-nopy-');
     temps.push(bin);
     for (const tool of ['node', 'git']) {
       const which = spawnSync('command', ['-v', tool], { shell: true, encoding: 'utf8' }).stdout.trim();

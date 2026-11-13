@@ -14,11 +14,12 @@
  * The invariant these tests pin: for identical content, a NESTED layout and a
  * FLAT layout must produce the same answer.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { listCanonicalDocs } from '../cli/shared-ignore.mjs';
 import { validateDocsSync } from '../cli/validators/docs-sync.mjs';
@@ -29,7 +30,7 @@ import { computeAlcoaCompliance } from '../cli/commands/score.mjs';
 
 let tmpDir;
 
-beforeEach(() => { tmpDir = mkdtempSync(join(tmpdir(), 'docguard-nested-')); });
+beforeEach(() => { tmpDir = makeTempDir('docguard-nested-'); });
 afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
 
 /** Write a file, creating parent dirs. Path is project-relative POSIX. */
@@ -138,7 +139,7 @@ describe('nested canonical docs — consumer regressions', () => {
     const nested = assessAgentReadability(tmpDir, {});
 
     // Same content, flat — the two layouts must agree.
-    const flatDir = mkdtempSync(join(tmpdir(), 'docguard-nested-flat-'));
+    const flatDir = makeTempDir('docguard-nested-flat-');
     try {
       mkdirSync(join(flatDir, 'docs-canonical'), { recursive: true });
       writeFileSync(join(flatDir, 'docs-canonical/MODULE-MAP.md'), body);

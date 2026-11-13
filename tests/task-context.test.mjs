@@ -13,12 +13,13 @@
  * @req docguard.task-specific-agent-context#SC-002
  * @req docs-canonical/REQUIREMENTS.md#FR-007
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { buildTaskContextPacket, TASK_CONTEXT_LIMITS } from '../cli/scanners/task-context.mjs';
 import { contentHash } from '../cli/scanners/semantic-claims.mjs';
 
@@ -62,7 +63,7 @@ function specEntry({ specId, path, content, context = 'current', approval = 'app
 }
 
 function fixture(t) {
-  const root = mkdtempSync(join(tmpdir(), 'docguard-task-context-'));
+  const root = makeTempDir('docguard-task-context-');
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const active = '# Status Feature\n\n## Requirements\n\n- **FR-001**: `normalizeStatus` in `src/status.mjs` MUST accept queued aliases and return null for unknown values.\n';
   const retired = '# Old Nebula Plan\n\n- **FR-001**: Quasar nebula output MUST bypass normalization.\n';
@@ -135,7 +136,7 @@ describe('task-specific context selector', () => {
   it('never reads private or symlinked mapped documentation', t => {
     const root = fixture(t);
     write(root, '.local/private.md', '# Private\nquasar-secret-token\n');
-    const outside = mkdtempSync(join(tmpdir(), 'docguard-task-context-outside-'));
+    const outside = makeTempDir('docguard-task-context-outside-');
     t.after(() => rmSync(outside, { recursive: true, force: true }));
     write(outside, 'escaped.md', '# Escaped\nquasar-secret-token\n');
     symlinkSync(join(outside, 'escaped.md'), join(root, 'docs-canonical/escaped.md'));

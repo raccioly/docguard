@@ -21,15 +21,16 @@
  * @req docguard.mcp-doc-tools#SC-004
  * @req docguard.mcp-doc-tools#SC-005
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { statSync } from 'node:fs';
 import { docsForPath, docStructure, readSection } from '../cli/scanners/doc-references.mjs';
 import { buildTaskContextPacket } from '../cli/scanners/task-context.mjs';
-import { tmpdir } from 'node:os';
+
 
 const CLI = resolve('cli/docguard.mjs');
 const dirs = [];
@@ -38,7 +39,7 @@ after(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true });
 const LONG = 'é'.repeat(20000); // 40,000 bytes of two-byte characters: past the 32 KiB cap
 
 function project() {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-mcpdoc-'));
+  const dir = makeTempDir('docguard-mcpdoc-');
   dirs.push(dir);
   const files = {
     '.docguard.json': JSON.stringify({ projectName: 'nav', profile: 'starter' }),
@@ -263,7 +264,7 @@ describe('the success criteria', () => {
   });
 
   it('SC-003: the User Story 1 fixture returns exactly its four facts, in a stable order', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-mcpdoc-us1-'));
+    const dir = makeTempDir('docguard-mcpdoc-us1-');
     dirs.push(dir);
     const put = (rel, c) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), c); };
     put('.docguard.json', '{"projectName":"us1","profile":"starter"}');
@@ -280,7 +281,7 @@ describe('the success criteria', () => {
 
   it('SC-004: twenty traversal and symlink inputs are refused and a file outside the root never leaks', () => {
     const dir = project();
-    const outside = mkdtempSync(join(tmpdir(), 'docguard-mcpdoc-outside-'));
+    const outside = makeTempDir('docguard-mcpdoc-outside-');
     dirs.push(outside);
     writeFileSync(join(outside, 'secret.md'), '# SENTINEL-7f3a\n');
     symlinkSync(join(outside, 'secret.md'), join(dir, 'docs-canonical/link.md'));

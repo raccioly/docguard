@@ -1,13 +1,14 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { rmSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs';
+
 import { join } from 'node:path';
 import { buildServedRoots } from '../cli/commands/mcp.mjs';
 
 describe('buildServedRoots', () => {
   it('builds roots from a single project directory', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-roots-'));
+    const dir = makeTempDir('docguard-test-roots-');
     try {
       const result = buildServedRoots(dir);
       assert.equal(result.dir, dir);
@@ -20,9 +21,9 @@ describe('buildServedRoots', () => {
   });
 
   it('builds roots from project directory and extra roots', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-roots-'));
-    const extra1 = mkdtempSync(join(tmpdir(), 'docguard-test-extra1-'));
-    const extra2 = mkdtempSync(join(tmpdir(), 'docguard-test-extra2-'));
+    const dir = makeTempDir('docguard-test-roots-');
+    const extra1 = makeTempDir('docguard-test-extra1-');
+    const extra2 = makeTempDir('docguard-test-extra2-');
     try {
       const result = buildServedRoots(dir, [extra1, extra2]);
       assert.equal(result.dir, dir);
@@ -38,7 +39,7 @@ describe('buildServedRoots', () => {
   });
 
   it('throws an error if an extra root does not exist', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-roots-'));
+    const dir = makeTempDir('docguard-test-roots-');
     const nonExistent = join(dir, 'does-not-exist');
     try {
       assert.throws(() => {
@@ -50,7 +51,7 @@ describe('buildServedRoots', () => {
   });
 
   it('throws an error if an extra root is not a directory', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-roots-'));
+    const dir = makeTempDir('docguard-test-roots-');
     const file = join(dir, 'file.txt');
     writeFileSync(file, 'content');
     try {
@@ -63,8 +64,8 @@ describe('buildServedRoots', () => {
   });
 
   it('deduplicates roots', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-test-roots-'));
-    const extra = mkdtempSync(join(tmpdir(), 'docguard-test-extra-'));
+    const dir = makeTempDir('docguard-test-roots-');
+    const extra = makeTempDir('docguard-test-extra-');
     try {
       const result = buildServedRoots(dir, [extra, extra, dir]);
       assert.equal(result.roots.length, 2);

@@ -5,18 +5,19 @@
  * the runtime must nudge only for canonical docs / doc-referenced code, be
  * throttled, keep stdout machine-clean, and never exit non-zero.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 const CLI = fileURLToPath(new URL('../cli/docguard.mjs', import.meta.url));
 
 function makeRepo(files = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-nudge-'));
+  const dir = makeTempDir('docguard-nudge-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

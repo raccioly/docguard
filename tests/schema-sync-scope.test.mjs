@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 import { loadConfig } from '../cli/config.mjs';
 import { validateSchemaSync } from '../cli/validators/schema-sync.mjs';
@@ -18,7 +19,7 @@ describe('schema-sync scope', () => {
     assert.ok(result.findings[0].message.startsWith('Found ' + count + ' database model(s)'));
   };
 
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-schema-scope-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-schema-scope-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('includes test models unless explicitly excluded', () => {

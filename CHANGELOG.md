@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The test suite, benchmarks and tools no longer leave temporary directories
+  behind** (#662). Every fixture directory comes from one helper that removes it
+  when the test, the file or the process ends, including on failure, Ctrl-C and
+  SIGTERM, and `npm run test:temp-leaks` proves a full run leaves none.
+
 ## [0.48.0] - 2026-11-13
 
 ### Breaking

@@ -5,11 +5,12 @@
  *   exercise the tracking-source matching (ROADMAP / TODO-LOG / similar).
  */
 // @req docguard.adoption-workflow-integrity#FR-015
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 
 import { validateTodoTracking } from '../cli/validators/todo-tracking.mjs';
@@ -21,7 +22,7 @@ describe('Todo-Tracking Validator', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-todo-'));
+    tmpDir = makeTempDir('docguard-test-todo-');
   });
 
   afterEach(() => {
@@ -277,7 +278,7 @@ describe('Todo-Tracking — quoted forms are not annotations (spec 073)', () => 
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'docguard-test-todo-quoted-'));
+    tmpDir = makeTempDir('docguard-test-todo-quoted-');
   });
 
   afterEach(() => {

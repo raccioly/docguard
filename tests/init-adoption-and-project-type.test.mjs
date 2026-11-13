@@ -1,8 +1,9 @@
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { spawnSync } from 'node:child_process';
 
 /**
@@ -22,7 +23,7 @@ const init = (dir, args = []) => spawnSync(process.execPath, [CLI, 'init', '--pr
 const config = dir => JSON.parse(readFileSync(join(dir, '.docguard.json'), 'utf8'));
 
 function scratch(t, build) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-init-'));
+  const dir = makeTempDir('docguard-init-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   build(dir);
   return dir;

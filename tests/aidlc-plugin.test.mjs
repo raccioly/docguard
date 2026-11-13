@@ -11,12 +11,13 @@
  * @req docguard.aidlc-plugin#FR-006
  * @req docguard.aidlc-plugin#SC-002
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { sensorResult } from '../cli/commands/sensor.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 
@@ -25,7 +26,7 @@ const PLUGIN = resolve('extensions/aidlc/docguard');
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 function project(t, files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-sensor-'));
+  const dir = makeTempDir('docguard-sensor-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [p, body] of Object.entries(files)) { mkdirSync(dirname(join(dir, p)), { recursive: true }); writeFileSync(join(dir, p), body); }
   fixtureGit(dir, ['init', '-q', '-b', 'main']);

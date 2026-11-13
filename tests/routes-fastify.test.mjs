@@ -3,11 +3,12 @@
  * url })` form (which the old regex never matched) plus the method shorthand,
  * both via AST with a regex fallback.
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { scanRoutesDeep } from '../cli/scanners/routes.mjs';
 
@@ -20,7 +21,7 @@ function fastify(dir) {
 
 describe('Fastify route scanning', () => {
   let dir;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'docguard-fastify-')); });
+  beforeEach(() => { dir = makeTempDir('docguard-fastify-'); });
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('extracts the object form AND the method shorthand together', () => {

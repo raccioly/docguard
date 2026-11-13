@@ -19,12 +19,13 @@
  * @req docguard.doc-dependency-lock#SC-003
  * @req docguard.output-ux#FR-013
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, after } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { validateDocDependency } from '../cli/validators/doc-dependency.mjs';
 import { coveredSections, createContext, docLockStatus, fingerprint, readLock } from '../cli/scanners/doc-deps.mjs';
 import { pyAstAvailable } from '../cli/scanners/py-ast.mjs';
@@ -59,7 +60,7 @@ An example inside a fence is never a real section.
 `;
 
 function project({ covers = 'src/pricing.mjs#discount', files = {} } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-doclock-'));
+  const dir = makeTempDir('docguard-doclock-');
   dirs.push(dir);
   const all = {
     '.docguard.json': JSON.stringify({ projectName: 'lock', profile: 'starter' }),
@@ -248,7 +249,7 @@ describe('fingerprints are safe and tiered (FR-002)', () => {
 
 describe('opt-in: a project without covers= is unchanged (FR-007, SC-002)', () => {
   it('the validator is not applicable and guard reports the same findings with it on or off', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'docguard-doclock-off-'));
+    const dir = makeTempDir('docguard-doclock-off-');
     dirs.push(dir);
     writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'off', profile: 'starter' }));
     mkdirSync(join(dir, 'docs-canonical'));

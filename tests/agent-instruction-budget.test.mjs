@@ -11,12 +11,13 @@
  * @req docguard.agent-instruction-budget#SC-003
  * @req docguard.agent-instruction-budget#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { measureInstructionChains } from '../cli/scanners/agent-instructions.mjs';
 import { validateStructure } from '../cli/validators/structure.mjs';
 import { detectSpecNumberCollisions, validateSpecKitIntegration } from '../cli/scanners/speckit.mjs';
@@ -27,7 +28,7 @@ const dirs = [];
 afterEach(() => { while (dirs.length) rmSync(dirs.pop(), { recursive: true, force: true }); });
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'agent-budget-'));
+  const dir = makeTempDir('agent-budget-');
   dirs.push(dir);
   for (const [rel, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, rel)), { recursive: true });

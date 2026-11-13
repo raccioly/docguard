@@ -14,12 +14,13 @@
  * @req docguard.calibrated-finding-channels#FR-014
  * @req docs-canonical/REQUIREMENTS.md#FR-017 — feedback samples every unmeasured or low-confidence finding
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fileURLToPath } from 'node:url';
 import { mkFinding } from '../cli/findings.mjs';
 import { isMeasured } from '../cli/precision-evidence.mjs';
@@ -28,7 +29,7 @@ const CLI = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'docgu
 const dirs = [];
 
 function project(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'dg-sampling-'));
+  const dir = makeTempDir('dg-sampling-');
   dirs.push(dir);
   for (const [path, body] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });

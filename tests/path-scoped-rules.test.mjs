@@ -18,12 +18,13 @@
  * @req docguard.path-scoped-rules#SC-003
  * @req docguard.path-scoped-rules#SC-004
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { readFrontmatter } from '../cli/scanners/frontmatter.mjs';
 import { compileScopePattern, instructionKind, safeProjectPath } from '../cli/scanners/instruction-scopes.mjs';
 import { extractInstructionPointers } from '../cli/scanners/instruction-audit.mjs';
@@ -39,7 +40,7 @@ function write(dir, path, body) {
 }
 
 function project(t, files, { git = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-psr-'));
+  const dir = makeTempDir('docguard-psr-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   if (git) {
@@ -244,7 +245,7 @@ describe('rules --for (User Story 3, SC-002)', () => {
 
   it('refuses absolute paths, .., and symlinks that leave the project (FR-006)', t => {
     const dir = project(t, { 'src/a.ts': '' });
-    const outside = mkdtempSync(join(tmpdir(), 'docguard-psr-out-'));
+    const outside = makeTempDir('docguard-psr-out-');
     t.after(() => rmSync(outside, { recursive: true, force: true }));
     symlinkSync(outside, join(dir, 'escape'));
     assert.equal(safeProjectPath(dir, '/etc/passwd'), null);

@@ -6,16 +6,17 @@
  * @req SC-K5-003 — non-lite validators are reported as 'skipped'
  * @req SC-K5-004 — the lite set itself stays unchanged across releases
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { CHANGED_ONLY_VALIDATORS, liteValidatorsConfig } from '../cli/commands/guard.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-changed-only-'));
+  const dir = makeTempDir('docguard-changed-only-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

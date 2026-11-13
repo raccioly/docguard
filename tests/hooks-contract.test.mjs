@@ -1,12 +1,11 @@
 // @req docs-canonical/REQUIREMENTS.md#FR-024
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import {
-  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync,
-} from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { runHooks } from '../cli/commands/hooks.mjs';
 import { safeWrite } from '../cli/writers/generate-io.mjs';
 
@@ -14,7 +13,7 @@ import { safeWrite } from '../cli/writers/generate-io.mjs';
 // global and system Git configuration, so a contributor's global core.hooksPath
 // neither receives these hooks nor makes the installer refuse.
 // @req docguard.hooks-repo-scope#FR-006
-const isolatedGitConfig = join(mkdtempSync(join(tmpdir(), 'dg-gitcfg-')), 'gitconfig');
+const isolatedGitConfig = join(makeTempDir('dg-gitcfg-'), 'gitconfig');
 writeFileSync(isolatedGitConfig, '');
 process.env.GIT_CONFIG_GLOBAL = isolatedGitConfig;
 process.env.GIT_CONFIG_NOSYSTEM = '1';
@@ -35,7 +34,7 @@ describe('generated enforcement shell contracts', () => {
   let bin;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'docguard hook contract '));
+    dir = makeTempDir('docguard hook contract ');
     bin = join(dir, 'bin');
     mkdirSync(bin);
     mkdirSync(join(dir, '.git'));

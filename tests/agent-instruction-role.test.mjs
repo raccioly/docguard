@@ -14,13 +14,14 @@
  * @req docguard.agent-instruction-role#FR-011
  * @req docguard.agent-instruction-role#SC-001
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { fixtureGit } from './helpers/git.mjs';
 import { agentInstructionDocs, rootAgentDocs } from '../cli/shared-agent-instructions.mjs';
 import { validateFreshness } from '../cli/validators/freshness.mjs';
@@ -38,7 +39,7 @@ function write(dir, path, body) {
 
 /** A repository with `files` committed once, then `codeCommits` commits to src/app.js. */
 function repo(t, files, { codeCommits = 0 } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-air-'));
+  const dir = makeTempDir('docguard-air-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   fixtureGit(dir, ['init', '-q']);
   fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);

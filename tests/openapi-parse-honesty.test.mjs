@@ -7,17 +7,18 @@
  *   - A malformed package.json must NOT throw out of detectDocTools (which would
  *     abort the whole scan and make every validator see empty "truth" → false pass).
  */
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 
 import { detectOpenAPI, detectDocTools } from '../cli/scanners/doc-tools.mjs';
 import { validateApiSurface } from '../cli/validators/api-surface.mjs';
 
 function make(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-oa-'));
+  const dir = makeTempDir('docguard-oa-');
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });

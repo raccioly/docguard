@@ -1,10 +1,11 @@
 // @req docguard.adoption-workflow-integrity#FR-011
 // @req docs-canonical/REQUIREMENTS.md#FR-014
+import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
+
 import { countPythonLiteralEntries, PYTHON_LITERAL_LIMITS } from '../cli/evidence/python-literal.mjs';
 import { readEvidenceSource } from '../cli/evidence/adapters.mjs';
 import { createEvidenceReader } from '../cli/scanners/semantic-claims.mjs';
@@ -16,7 +17,7 @@ import { createEvidenceReader } from '../cli/scanners/semantic-claims.mjs';
  */
 
 function fixture(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'docguard-python-literal-'));
+  const dir = makeTempDir('docguard-python-literal-');
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
