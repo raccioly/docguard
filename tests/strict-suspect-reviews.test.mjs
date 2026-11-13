@@ -24,7 +24,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { fixtureGit } from './helpers/git.mjs';
 import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
-import { buildStrictReport } from '../cli/enforcement.mjs';
+import { buildStrictReport, couldNotReadLines } from '../cli/enforcement.mjs';
 import { agentInstructionDocsWithoutReviewPoint, agentInstructionReviewStatus } from '../cli/scanners/recorded-review-signals.mjs';
 import { validateFreshness, freshnessContract } from '../cli/validators/freshness.mjs';
 import { toSarif } from '../cli/writers/sarif.mjs';
@@ -329,5 +329,57 @@ describe('buildStrictReport: a result that names unexamined documents', () => {
     const junit = toJunit(data);
     assert.match(junit, /Freshness: unexamined documents/);
     assert.match(junit, /AGENTS\.md/);
+  });
+});
+
+describe('T028a: a blocking document row never says the validator is pass', () => {
+  // A root instruction file with no review record, in a project whose history is otherwise clean, so
+  // Freshness examined the canonical document and passed: its verdict is `pass`, and the row still blocks.
+  function cleanWithUnreviewedRoot() {
+    const dir = mkdtempSync(join(tmpdir(), 'docguard-row-'));
+    temporary.push(dir);
+    fixtureGit(dir, ['init', '-q', '-b', 'main']);
+    fixtureGit(dir, ['config', 'user.email', 'fixture@example.invalid']);
+    fixtureGit(dir, ['config', 'user.name', 'Fixture']);
+    const isolated = isolateWithWaivers({
+      'package.json': JSON.stringify({ name: 'row-fixture', version: '1.0.0' }),
+      'src/engine.mjs': code(40),
+      'docs-canonical/ARCHITECTURE.md': '<!-- docguard:last-reviewed 2026-01-01 -->\n# Architecture\n\nThe engine lives in `src/engine.mjs`.\n',
+      'AGENTS.md': '# Agents\n\n- `src/engine.mjs` parses the input, then runs it.\n- Run `npm test` before committing.\n',
+    }, {
+      projectName: 'row-fixture', version: '0.6', enforcement: 'strict',
+      requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: ['AGENTS.md'] },
+      validators: onlyFreshness,
+    });
+    commit(dir, { ...isolated.files, '.docguard.json': JSON.stringify(isolated.config, null, 2) }, 'init', '2026-01-01');
+    commit(dir, { 'NOTES.md': '# notes\n' }, 'notes', '2026-01-02');
+    commit(dir, { 'NOTES.md': '# notes\n\nmore\n' }, 'notes', '2026-01-03');
+    return dir;
+  }
+
+  it('guard: Freshness is pass, blocks for AGENTS.md, and the Adopt row says it did not examine the document', () => {
+    const dir = cleanWithUnreviewedRoot();
+    const { status, json } = guardJson(dir);
+    assert.equal(json.validators.find(v => v.key === 'freshness').verdict, 'pass', 'the fixture reproduces a pass verdict');
+    assert.equal(status, 4);
+    const { out } = guard(dir);
+    assert.doesNotMatch(out, /Freshness is pass/);
+    assert.match(out, /Freshness did not examine 1 document\(s\) \(needs-declaration\)/);
+  });
+
+  it('upgrade: the same row in the read-only strict report', () => {
+    const dir = cleanWithUnreviewedRoot();
+    const r = spawnSync(process.execPath, [CLI, 'upgrade', '--schema-only'], { cwd: dir, encoding: 'utf8', env: ENV });
+    assert.doesNotMatch(r.stdout, /Freshness is pass/);
+    assert.match(r.stdout, /Freshness did not examine 1 document\(s\) \(needs-declaration\)/);
+    assert.match(r.stdout, /docguard review --accept AGENTS\.md/);
+  });
+
+  it('the could-not-read block uses the document form too', () => {
+    const report = buildStrictReport([{ key: 'freshness', name: 'Freshness', verdict: 'pass', performed: 2, findings: [],
+      unexaminedDocuments: [{ path: '.agents/skills/x/SKILL.md', cause: 'needs-declaration', blocking: false, reason: 'r', howToConfigure: 'f' }] }]);
+    const text = couldNotReadLines(report).join('\n');
+    assert.doesNotMatch(text, /is pass/);
+    assert.match(text, /Freshness did not examine 1 document\(s\) \(needs-declaration\)/);
   });
 });

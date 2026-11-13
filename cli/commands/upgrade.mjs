@@ -30,7 +30,7 @@ import { c, CURRENT_SCHEMA_VERSION, compareVersions } from '../shared.mjs';
 import { installAgentAssets, staleAgentAssets } from '../ensure-skills.mjs';
 import { readAgentSurface } from '../agent-surface.mjs';
 import { packagedExtensionVersion, readRegistryEntry, refreshSpecKitExtension } from '../spec-kit-delegation.mjs';
-import { WAIVER_FORM, couldNotReadLines, modeLine, resolveEnforcement } from '../enforcement.mjs';
+import { WAIVER_FORM, couldNotReadLines, modeLine, resolveEnforcement, strictRowLines } from '../enforcement.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -331,11 +331,7 @@ export async function strictUpgradeLines(projectDir, config) {
     return lines;
   }
   lines.push(`${noKey ? 'What now fails' : 'Under strict this project would report'}: ${strict.blocking.length} validator(s) that apply and examined nothing and ${gating} finding(s) that fail the build${gating ? `: ${strict.gating.map(g => `${g.code} x${g.count}`).join(', ')}` : ''}.`);
-  for (const u of strict.unexamined.filter(x => x.blocking)) {
-    lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
-    const fix = u.howToConfigure || u.reason;
-    if (fix) lines.push(`      ${fix}`);
-  }
+  for (const u of strict.unexamined.filter(x => x.blocking)) lines.push(...strictRowLines(u));
   const unread = couldNotReadLines(strict);
   if (unread.length) lines.push('Reported, and not failing the build:', ...unread.slice(1));
   lines.push('Ways forward, in this order:');
