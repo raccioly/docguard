@@ -319,6 +319,12 @@ export async function strictUpgradeLines(projectDir, config) {
   const gating = strict.gating.reduce((n, g) => n + g.count, 0);
   const noKey = current.source === 'default';
   if (noKey) lines.push('This version makes strict the default, and this project has no "enforcement" key, so it now runs under strict: guard exits 4 when a validator that applies to it examined nothing.');
+  if (noKey) {
+    // `validators.<key>: false` in the project's own file switches nothing off under strict (FR-003): say which checks now run.
+    let offEntries = [];
+    try { offEntries = Object.entries(JSON.parse(readFileSync(resolve(projectDir, '.docguard.json'), 'utf-8')).validators || {}).filter(([, v]) => v === false).map(([k]) => k); } catch { /* unreadable: nothing to say */ }
+    if (offEntries.length) lines.push(`Your .docguard.json sets ${offEntries.length} validator(s) to false: ${offEntries.join(', ')}. Strict does not honor that, so they now run. To switch one off on purpose, use a reasoned waiver or "enforcement": "standard".`);
+  }
   if (strict.blocking.length === 0 && gating === 0) {
     lines.push('Strict would change nothing for this project: every validator that applies examined something, and no finding is newly blocking.');
     lines.push(...couldNotReadLines(strict).map((l, i) => (i === 0 ? 'Reported, and not failing the build: DocGuard could not read some items.' : l)));

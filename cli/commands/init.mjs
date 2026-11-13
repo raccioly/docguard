@@ -236,8 +236,8 @@ function buildInitConfig({ projectDir, config, profileName, profile, detectedTyp
     requiredFiles: {
       canonical: [...canonical, ...Object.values(adoptedOrConfiguredRoles)].sort(),
     },
-    // A validator switched off in the project's own file is "disabled by configuration" under strict, so init
-    // does not write a `false` the person never chose: architecture and security are left to the mode.
+    // Init writes no `false` entry (FR-003): under strict such an entry switches nothing off, and under standard a
+    // `false` the person never chose would silently disable a check. Architecture and security are left to the mode.
     validators: profile.validators || {
       structure: true,
       docsSync: true,

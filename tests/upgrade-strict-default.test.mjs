@@ -80,6 +80,14 @@ describe('upgrade for a project with no enforcement key', () => {
     assert.ok(out.indexOf('Reported, and not failing') < out.indexOf('Ways forward'));
   });
 
+  it('names the validators your config sets to false, which strict does not honor', () => {
+    const dir = project(ROUTES, { validators: { ...only('apiSurface'), architecture: false, security: false } });
+    const out = upgrade(dir);
+    assert.match(out, /Your \.docguard\.json sets \d+ validator\(s\) to false: .*architecture.*security|Your \.docguard\.json sets \d+ validator\(s\) to false: .*security.*architecture/);
+    assert.match(out, /Strict does not honor that, so they now run/);
+    assert.match(out, /reasoned waiver or "enforcement": "standard"/);
+  });
+
   it('does not say the default changed for a project that wrote the key', () => {
     const out = upgrade(project(ROUTES, { enforcement: 'strict' }));
     assert.doesNotMatch(out, /makes strict the default/);

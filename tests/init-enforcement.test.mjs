@@ -72,7 +72,7 @@ describe('init writes the enforcement key only on request', () => {
   it('the configuration init writes switches no validator off', t => {
     const { config } = init(t);
     const off = Object.entries(config().validators || {}).filter(([, v]) => v === false).map(([k]) => k);
-    assert.deepEqual(off, [], 'a validator disabled in the project\'s own file is disabled by configuration under strict');
+    assert.deepEqual(off, [], 'init writes no `false` entry: the person never chose one (FR-003)');
   });
 });
 

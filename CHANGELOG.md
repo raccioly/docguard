@@ -25,8 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docguard init` writes no `enforcement` key unless you pass
   `--enforcement strict|standard` or answer the setup question with the
   non-default, and it no longer writes `"architecture": false` or
-  `"security": false` into a new `.docguard.json` (a validator switched off in
-  your own file stays off, reported as disabled by configuration). The Action,
+  `"security": false` into a new `.docguard.json`. Under strict a
+  `"validators": { "<key>": false }` entry does not switch a check off (most
+  were written by `init`, not chosen); guard names the entries it did not honor,
+  and a validator is switched off on purpose with a reasoned waiver or
+  `"enforcement": "standard"`. The Action,
   the GitLab component and the GitHub template fail on exit 4
   (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
 

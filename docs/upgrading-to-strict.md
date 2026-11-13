@@ -80,6 +80,23 @@ Take them in this order.
    { "enforcement": "standard" }
    ```
 
+## Your config says `false` for some checks
+
+Older versions of `docguard init` wrote `"validators": { "architecture": false,
+"security": false, ... }` into `.docguard.json` for most projects, from the
+profile and not from a decision. Under strict those entries do not switch a
+validator off: every validator runs, so the checks you never asked for now run
+too. Guard prints one line per run naming the entries it did not honor, and
+`docguard upgrade` lists those validators under what now runs.
+
+To switch a validator off on purpose, use one of two ways:
+
+- a reasoned waiver, for a validator that does not apply (see Ways forward);
+- `"enforcement": "standard"`, under which the `validators` block works as it
+  always has.
+
+New projects no longer get `false` entries from `init`.
+
 ## Roll it out in stages with `asOf`
 
 A new release can add a validator or a gating finding code to strict. To hold a
@@ -119,9 +136,6 @@ only. A validator that examined nothing is cleared by a fix or a waiver.
 - A finding that is a warning. Under strict a finding fails the build only if
   its code could already fail a build before the default changed, or its
   measured precision clears the published bar.
-- A validator you disabled in your own `.docguard.json` with
-  `"validators": { "<key>": false }`. It is reported as disabled by
-  configuration on every run.
 
 ## Stay on `standard`
 

@@ -139,9 +139,15 @@ applies, and one added in the running release or the one before it is labeled
 "new in vX.Y" when it fails.
 
 Under `strict` every registered validator runs, whatever the profile's
-`validators` block says. A validator you switch off with
-`"validators": { "<key>": false }` in your own `.docguard.json` stays off and is
-reported as "disabled by configuration" on every run.
+`validators` block or your own file says. A `"validators": { "<key>": false }`
+entry does not switch a validator off under `strict`: nearly every such entry
+was written by `docguard init` from a profile, not chosen by a person, and
+honoring it would exempt existing projects from the checks the default is meant
+to give them. Guard says in one line, on every run, which entries it did not
+honor. To switch a validator off on purpose, use a reasoned waiver
+(`<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`)
+or `"enforcement": "standard"`, under which the `validators` block works as it
+always has.
 
 `docguard init` writes no `enforcement` key by default; `docguard init
 --enforcement strict|standard` writes it, and the interactive setup asks once

@@ -15570,7 +15570,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/upgrade.mjs",
-            "line": 549
+            "line": 555
           },
           {
             "requirementId": "FR-004",
@@ -16140,7 +16140,7 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:29f6d8a4106134d29949039d3abe89093239361ec4c182671d70fef9859f025d"
+            "digest": "sha256:a541406be489b12c66142981001f3d7b3f4ea419ad4965d7699e0fdf3fe14611"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
@@ -16148,7 +16148,7 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:e6338ed407fcbdbfad176640a1b4cb347866371d870aff326cc768376637ef77"
+            "digest": "sha256:b75ff3fdec16b3712c544c3e36f36390e1c5828f5ab95eca163592953af134ad"
           }
         ],
         "taskCompletion": {
@@ -16422,6 +16422,11 @@
             "line": 17
           },
           {
+            "requirementId": "FR-017",
+            "file": "cli/init-enforcement.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "FR-018",
             "file": "cli/commands/upgrade.mjs",
             "line": 310
@@ -16534,9 +16539,19 @@
             "line": 20
           },
           {
+            "requirementId": "FR-017",
+            "file": "tests/init-enforcement.test.mjs",
+            "line": 6
+          },
+          {
             "requirementId": "FR-018",
             "file": "tests/strict-by-default.test.mjs",
             "line": 21
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/upgrade-strict-default.test.mjs",
+            "line": 6
           },
           {
             "requirementId": "FR-020",
