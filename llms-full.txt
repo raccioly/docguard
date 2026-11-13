@@ -63,7 +63,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Decision records** | ADRs carry a known status, supersession holds both ways and names real records, the index agrees with the records, and asked questions (Spec Kit clarifications, AI-DLC `[Answer]:` tags) have answers (DEC001–DEC006, advisory; spec 086) | `cli/validators/decision-records.mjs` | Structured links only; prose mentions and "partially superseded" are not supersession |
 | **Spec Kit chain coverage** | Checks each feature's spec → plan → tasks chain: requirements no task or plan cites (SPK013), cited IDs the spec does not define (SPK014), artifacts that name no upstream (SPK015), stories with no `[USn]` task (SPK016). Advisory by default (spec 085) | `cli/scanners/chain-coverage.mjs`, `cli/scanners/speckit.mjs` | Pure over file text; a task list that cites no IDs is unchecked, not a set of gaps |
 | **Required checks and policy** | Holds the gate on validators the project depends on until each decides (exit 4, `CI_REQUIRED_CHECK_UNDECIDED`; only a reasoned N/A marker bypasses), records per-code evidence in ci history, and reports which advisory codes are ready to promote (spec 083) | `cli/required-checks.mjs`, `cli/commands/policy.mjs`, `cli/commands/guard.mjs`, `cli/commands/ci.mjs`, `cli/assessment.mjs` | Composes verdicts after the validator loop; never imports a validator. `policy` is read-only |
-| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies, performed zero checks and has cause `needs-declaration` or `needs-content` (or could not observe at all) exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item; a partial result and a `layout-not-recognized` one are listed under "DocGuard could not read" and never change the exit code. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`.  Every validator returns the contract; an observation gap is `inconclusive` and carries no cause. An absent key resolves to `strict`, the default; `docguard init` writes the key only for an explicit `--enforcement` or a non-default wizard answer (`cli/init-enforcement.mjs`), and `docguard upgrade` reports what the default changes, read-only. Under `strict` a `validators.<key>: false` entry switches nothing off (most were written by `init`, not chosen): guard names the entries it did not honor, and a validator is switched off on purpose by a reasoned waiver or `"enforcement": "standard"` | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/init-enforcement.mjs`, `cli/commands/init.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
+| **Enforcement mode** | Selects `strict` or `standard` (spec 097): under `strict` a validator that applies, performed zero checks and has cause `needs-declaration` or `needs-content` (or could not observe at all) exits 4 (`CI_STRICT_UNEXAMINED`), and an "Adopt" block states how to resolve each item; a partial result, a `layout-not-recognized` one and a `history-unavailable` one (a shallow checkout that lacks the git history the check reads; `isShallowRepository` in `cli/shared-git.mjs`) are listed under "DocGuard could not read" and never change the exit code. A validator reports `performed` checks, `applies` with evidence, an empty cause from a closed set and `howToConfigure` (the result contract); a result with zero performed checks is `empty`.  Every validator returns the contract; an observation gap is `inconclusive` and carries no cause. An absent key resolves to `strict`, the default; `docguard init` writes the key only for an explicit `--enforcement` or a non-default wizard answer (`cli/init-enforcement.mjs`), and `docguard upgrade` reports what the default changes, read-only. Under `strict` a `validators.<key>: false` entry switches nothing off (most were written by `init`, not chosen): guard names the entries it did not honor, and a validator is switched off on purpose by a reasoned waiver or `"enforcement": "standard"` | `cli/enforcement.mjs`, `cli/config.mjs` (`resolveEnforcement`), `cli/validator-coverage.mjs` (`performedChecks`, `validateResultContract`, `deriveVerdict`), `cli/commands/guard.mjs`, `cli/commands/upgrade.mjs`, `cli/init-enforcement.mjs`, `cli/commands/init.mjs`, `cli/assessment.mjs`, `cli/writers/sarif.mjs`, `cli/writers/junit.mjs`, `cli/validators/api-surface.mjs`, `cli/validators/docs-sync.mjs`, `cli/validators/surface-sync.mjs` | `enforcement.mjs` reads validator results after the run and imports no validator; each validator owns its `applies` decision and fix text beside its own logic |
 | **Compact guard response** | Projects the full guard result so each fact appears once: findings once, each code's agent-facing evidence once, validator status and counts, each standard applicability reason once; the MCP guard tool's default | `cli/shared-guard-json.mjs`, `cli/validator-coverage.mjs` (`STANDARD_APPLICABILITY_REASONS`), `cli/commands/mcp.mjs`, `cli/commands/guard.mjs` (`--compact`) | A projection, never a recomputation; `detail: "full"` and the CLI's default JSON keep the complete contract |
 | **MCP project confinement** | The MCP server serves its `--dir` (else its working directory) plus each `--root`, fixed at startup. A tool call's `projectDir` resolves against the served directory with symlinks followed and must land inside a served root before anything under it is read | `cli/commands/mcp.mjs` (`isWithinRoot`) | Same check over stdio and HTTP; a refused path gets the same error whether or not it exists; a client cannot widen the roots (specs/041-mcp-project-confinement) |
 | **MCP doc navigation** | Exact, bounded answers for agents: which doc lines, instruction lines, requirement IDs and covered sections describe a file; a document's outline; one section or the lines around a reference; the task context packet. One reference matcher shared with `trace --reverse` and `impact`; a path or basename matches only as a whole file name | `cli/scanners/doc-references.mjs`, `cli/shared-headings.mjs`, `cli/commands/mcp.mjs` | Read-only; paths pass the evidence reader's checks; 8 KiB default and 32 KiB cap per section read; no tool calls a model |
@@ -2038,10 +2038,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`docguard.strict-by-default` FR-001, FR-017, FR-018, FR-022).
 - **Exit codes:** a project that exited 0 or 2 on 0.47.0 can exit 4 on this
   release without changing a file, because the default mode changed. The two
-  cases the release comparison shows: a checkout with fewer than three commits
-  (a shallow clone in CI, or a fresh `git init`) exits 4 because Freshness
-  applies and has no history to read, and the fix it prints is to fetch the
-  full history (`fetch-depth: 0` on `actions/checkout`); a project with
+  cases the release comparison shows: a repository with fewer than three
+  commits (a fresh `git init`) exits 4 because Freshness applies and has no
+  history to read, and the fix it prints is to commit the work. A shallow CI
+  checkout does not exit 4: guard reports Freshness under "could not read" with
+  the cause `history-unavailable` and the fix `fetch-depth: 0` on
+  `actions/checkout`, on every run, and the exit code is unchanged; a project with
   documents and no test map, architecture section or other declaration a
   validator needs exits 4 with the Adopt block. Exit 1 is unchanged: no finding
   fails a build that did not on 0.47.0. `"enforcement": "standard"` restores the
@@ -2278,6 +2280,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A shallow checkout no longer fails the build under strict.**
+  `actions/checkout` fetches one commit, which hides the git history Freshness
+  reads; that is a property of the checkout, not of the project's documents. A
+  validator, or an agent-instruction document whose review point is not in the
+  clone, now has the new empty cause `history-unavailable`: it is listed under
+  "DocGuard could not read" with the fix (`fetch-depth: 0` on
+  `actions/checkout`, `GIT_DEPTH: 0` on GitLab) on every run, and the exit code
+  is unchanged. A complete repository with fewer than three commits, and a
+  document with no review record at all, still block as before
+  (`docguard.strict-by-default` FR-007, FR-005).
 - **`review --accept` with several paths** recorded only the first and exited 0.
   It now records every path in one transaction, or refuses all of them, writes
   nothing, and names the path it could not accept (T028a).
@@ -2388,20 +2400,8 @@ Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal n
 - chore: TestGuard 0.24.0, parallel and change-scoped probes (#627)
 - maint: 2026-11-11 — score reads configured canonical docs (#625); claimspec re-pin (#619) (#626)
 - [jules:test-gaps] cli/commands/mcp.mjs — two exports covered (#624)
-- fix(release): publish each release to the MCP registry and backfill it (#623)
 
-## [0.47.0] - 2026-11-10
-
-### Added
-
-- **mcp.market safety badge in the README.** mcp.market scans every server in
-  the official MCP registry and graded DocGuard A (92/100) with no critical or
-  high findings. The badge updates itself after each scan; the full report is at
-  <https://mcp.market/is-it-safe/raccioly-docguard>.
-- **The test chain follows TestGuard's dependency-closure and external-claims
-  evidence** (`docguard.requirement-anchors` FR-045, FR-046). These fields come
-
-<!-- truncated: 6536 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6548 more lines — read CHANGELOG.md directly -->
 
 ---
 

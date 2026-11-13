@@ -2952,7 +2952,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared-git.mjs",
-            "line": 456
+            "line": 467
           },
           {
             "requirementId": "FR-009",
@@ -7235,7 +7235,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 50
+            "line": 48
           }
         ],
         "testEvidence": [
@@ -7894,12 +7894,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared-git.mjs",
-            "line": 674
+            "line": 685
           },
           {
             "requirementId": "FR-003",
             "file": "cli/shared-git.mjs",
-            "line": 675
+            "line": 686
           },
           {
             "requirementId": "FR-004",
@@ -12982,7 +12982,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-git.mjs",
-            "line": 581
+            "line": 592
           }
         ],
         "testEvidence": [
@@ -13335,7 +13335,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 303
+            "line": 311
           },
           {
             "requirementId": "FR-006",
@@ -13360,7 +13360,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 285
+            "line": 293
           }
         ],
         "testEvidence": [
@@ -16365,20 +16365,20 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:6e41a8cc41d850b2d1963fe8bd62531c243c8b2feaeb51f4ac5a3cdbe9119f48"
+            "digest": "sha256:55721b162d0de71550778a2ad9767ec738cd66aaf92f4c26711f6f39a2459960"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
-            "digest": "sha256:71aa89ecdae911cb67e0df15c95a43373820a31b763f3f270a11269ba4b0c40a"
+            "digest": "sha256:55501c5020f84fd34a420b447c4eea251c6831bbbbd8a44252ea2f8cb1d9f31c"
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:add2243e78fe13cd68f851a63aa7bbab591b0547c62c86352c1ec60ad93d2b8c"
+            "digest": "sha256:062416f56d7447e253b2a9553ed605be462db9e457ccf1a246d39066d2658aa2"
           }
         ],
         "taskCompletion": {
-          "checked": 39,
-          "total": 42
+          "checked": 40,
+          "total": 43
         },
         "implementationEvidence": [
           {
@@ -16544,7 +16544,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/freshness.mjs",
-            "line": 510
+            "line": 512
           },
           {
             "requirementId": "FR-006",
@@ -16632,6 +16632,11 @@
             "line": 9
           },
           {
+            "requirementId": "FR-007",
+            "file": "cli/shared-git.mjs",
+            "line": 127
+          },
+          {
             "requirementId": "FR-008",
             "file": "cli/enforcement.mjs",
             "line": 15
@@ -16704,7 +16709,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/validators/freshness.mjs",
-            "line": 550
+            "line": 552
           }
         ],
         "testEvidence": [
@@ -16750,6 +16755,11 @@
           },
           {
             "requirementId": "FR-005",
+            "file": "tests/strict-shallow-checkout.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-005",
             "file": "tests/validator-applicability-a.test.mjs",
             "line": 17
           },
@@ -16791,6 +16801,11 @@
           {
             "requirementId": "FR-007",
             "file": "tests/strict-could-not-read.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/strict-shallow-checkout.test.mjs",
             "line": 9
           },
           {
@@ -16892,6 +16907,11 @@
             "requirementId": "FR-021",
             "file": "tests/review-accept-many.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/strict-shallow-checkout.test.mjs",
+            "line": 10
           },
           {
             "requirementId": "FR-021",

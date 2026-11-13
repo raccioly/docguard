@@ -36,7 +36,7 @@ The default changes when the proof passes (SC-001 to SC-003), not on a date.
 
 - **Codes that can exit 1 under the 0.47.0 defaults** (from the audit, to be confirmed by the T004 test against the v0.47.0 tag): STR001, STR002, DRF001, DRF002, API004 (contract mode), DLK005, ANC005, ANC001 and ANC003 under `reviewed-exact`, OWN007, EVD001, EVD002, REQ001.
 - **Provably synthetic values for FR-010**, case-insensitive, added to the existing placeholder rule: contains `placeholder`, `synthetic`, `not-a-real`, `notreal`, `dummy`, `changeme` or `change-me`, or is a single repeated character. `example`, `xxx` and `your-` are left as the existing rule has them.
-- **Empty causes**: `needs-declaration`, `needs-content`, `layout-not-recognized`, `nothing-of-this-kind`.
+- **Empty causes**: `needs-declaration`, `needs-content`, `layout-not-recognized`, `nothing-of-this-kind`, `history-unavailable` (added 2026-11-13: a shallow checkout lacks the history the check reads; it never blocks).
 
 ## Project Structure
 
