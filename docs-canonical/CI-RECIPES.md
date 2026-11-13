@@ -272,7 +272,9 @@ candidate with the previous release tag before anything is tagged or published
    benchmark are re-run with the previous release as the base. The release's
    CHANGELOG section is the message file, so a plain
    `Budget-Exempt: <metric> — <reason>` line there waives one metric, as it
-   does in a PR body.
+   does in a PR body, and a `Benchmark-Rebaselined: <case id> — <reason>` line
+   acknowledges a fixture corrected on purpose (the case's other regressions
+   still fail; a line with nothing to acknowledge fails as stale).
 
 With no previous tag the job prints a notice and skips. To run it locally:
 `git archive v0.45.2 | tar -x -C ../prev && ln -s "$PWD/node_modules" ../prev/ && node tools/release-ab.mjs --base ../prev --head .`.

@@ -50,6 +50,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A release can declare a deliberate fixture correction to the benchmark.**
+  The release gate compares the benchmark with the baseline as released, so a
+  fixture corrected on purpose could never pass. A line
+  `Benchmark-Rebaselined: <case id> — <reason>` in the release's CHANGELOG
+  section now moves that case's evidence change into a `rebaselined` list.
+  A new false positive, false negative or abstention on the same case still
+  fails, and a line that names a case with no evidence change, or has no reason,
+  fails too. `benchmarks/run.mjs` takes `--acknowledge-file <path>` for it
+  (specs/087-release-trend-gate FR-006).
 - **Sections handed to an agent say when their document may be stale.**
   `docguard_read_section`, `docguard_task_context` and `docguard agent --task`
   mark a section with `possiblyStale` when its agent-instruction document has a
@@ -361,6 +370,9 @@ documents the `context` field that Security findings carry and the rule that a
 `test-path` finding never counts toward failing a build (spec 097 FR-010).
 
 Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section documents the new Security `context` field (spec 097 FR-010)
+
+Benchmark-Rebaselined: dev-generated-security-control — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
+Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
 
 ## [0.47.0] - 2026-11-10
 

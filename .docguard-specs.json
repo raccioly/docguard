@@ -13862,22 +13862,22 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 275
+            "line": 277
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 371
+            "line": 373
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 406
+            "line": 408
           },
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 585
+            "line": 587
           },
           {
             "requirementId": "FR-005",
@@ -13887,7 +13887,7 @@
           {
             "requirementId": "FR-006",
             "file": ".github/workflows/release.yml",
-            "line": 334
+            "line": 336
           }
         ],
         "testEvidence": [
@@ -14079,7 +14079,7 @@
           {
             "requirementId": "FR-004",
             "file": ".github/workflows/release.yml",
-            "line": 438
+            "line": 440
           },
           {
             "requirementId": "FR-005",
@@ -14104,7 +14104,7 @@
           {
             "requirementId": "FR-007",
             "file": ".github/workflows/release.yml",
-            "line": 767
+            "line": 769
           }
         ],
         "testEvidence": [
@@ -14226,6 +14226,7 @@
           "docguard.release-trend-gate#FR-003",
           "docguard.release-trend-gate#FR-004",
           "docguard.release-trend-gate#FR-005",
+          "docguard.release-trend-gate#FR-006",
           "docguard.release-trend-gate#SC-001",
           "docguard.release-trend-gate#SC-002",
           "docguard.release-trend-gate#SC-003"
@@ -14235,7 +14236,7 @@
         "artifacts": [
           {
             "path": "specs/087-release-trend-gate/spec.md",
-            "digest": "sha256:d0b995a962bbfff3ca61d7bd1990431b939f6ee0d55206dc6849b2f99ecb1ebe"
+            "digest": "sha256:480442703ed971bb85609aaaa365f9202fb46265952e5940852b91ede66ac6a8"
           },
           {
             "path": "specs/087-release-trend-gate/plan.md",
@@ -14243,12 +14244,12 @@
           },
           {
             "path": "specs/087-release-trend-gate/tasks.md",
-            "digest": "sha256:558bd9fb58e8adda85a82758e6448bd0f8247ce30290f15a96ba479c8b1a3fa4"
+            "digest": "sha256:c0a18a5d3af2ebf93a4b7090ca4ac370fab5fa0fb3238f269598d12d03a9d60f"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
-          "total": 8
+          "checked": 9,
+          "total": 9
         },
         "implementationEvidence": [
           {
@@ -14270,6 +14271,11 @@
             "requirementId": "FR-004",
             "file": "tools/release-ab.mjs",
             "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "benchmarks/lib/compare.mjs",
+            "line": 6
           }
         ],
         "testEvidence": [
@@ -14299,9 +14305,19 @@
             "line": 97
           },
           {
-            "requirementId": "SC-001",
+            "requirementId": "FR-006",
+            "file": "tests/benchmark-metrics.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-006",
             "file": "tests/release-trend-gate.test.mjs",
             "line": 9
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/release-trend-gate.test.mjs",
+            "line": 10
           },
           {
             "requirementId": "SC-002",
