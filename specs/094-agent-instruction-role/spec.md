@@ -197,3 +197,9 @@ Verified 2026-11-12 on the branch head. Private projects are not named.
 
   The 10 FRS002 on DocGuard's own documents come from this branch's commit count (15 code commits since their 2026-11-03 review), not from the code. The base CLI reports the same ten on this tree.
 - **Limitation recorded at review (2026-11-12):** PSR005 compares the sha256 of the bytes on disk, so a Windows checkout with `core.autocrlf` would change every manifest copy. Since spec 095, a copy that differs only in CRLF line endings is reported as such ("only in line endings (CRLF)").
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d531756de886c5f89d64125a22a8fb07bb9aafe9` — Verified the one agent-instruction role, pointer and vendored-copy handling and PSR005 against the shipped ARCHITECTURE entry (spec 094) and the recorded A/B and budget run. Evidence: `cli/shared-agent-instructions.mjs`, `cli/validators/freshness.mjs`, `cli/validators/path-scoped-rules.mjs`, `docs-canonical/ARCHITECTURE.md`, `tests/agent-instruction-role.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/shared-agent-instructions.mjs`=`b8ac4b54994ec04e5588cb211e7b831171444293`, `cli/validators/freshness.mjs`=`37c768ce699c12ff61bc799a3c136bff35f9e727`, `cli/validators/path-scoped-rules.mjs`=`6ee39950753106b4a8916804759ef9c0e0d2fab6`, `docs-canonical/ARCHITECTURE.md`=`f3860b5d2c0de06da36eec0695c5b127039d52b4`, `tests/agent-instruction-role.test.mjs`=`e3665c1cfe7a5f602070c54e2729f9afb366af8c`, `tests/program-verification.test.mjs`=`9d469f964d8b5646bce82e396b052e5dc53ad369`.
+<!-- docguard:implementation-outcomes:end -->

@@ -37,6 +37,22 @@ function recorded(dir, ids) {
 }
 
 describe('documentation each spec requires', () => {
+  // @req docguard.configured-canonical-paths#FR-007
+  it('093: STR003 help, the canonical documents and the changelog', () => describes([
+    ['docs/reference/findings.md', ['STR003']],
+    ['docs-canonical/DATA-MODEL.md', ['spec 093']],
+    ['docs-canonical/ARCHITECTURE.md', ['spec 093']],
+    ['CHANGELOG.md', ['#625']],
+  ]));
+
+  // @req docguard.recorded-document-reviews#FR-013
+  it('095: the findings reference, the canonical documents, the review help and the changelog', () => describes([
+    ['docs/reference/findings.md', ['FRS006', 'FRS007']],
+    ['docs-canonical/DATA-MODEL.md', ['.docguard-doc-reviews.json']],
+    ['docs-canonical/ARCHITECTURE.md', ['Recorded document reviews']],
+    ['CHANGELOG.md', ['spec 095']],
+  ]));
+
   // @req docguard.verdict-contract#FR-017
   it('081: verdicts, classes, the ledger and --fail-on-inconclusive', () => describes([
     ['docs-canonical/DATA-MODEL.md', ['verdict', 'class', 'observations']],
@@ -220,4 +236,13 @@ describe('one-time measurements, recorded', () => {
   it('090: the end-to-end fires and validate/build locally and in CI', () => recorded('090-aidlc-plugin', ['SC-001', 'SC-003']));
   // @req docguard.memory-governance#SC-003
   it('091: the A/B', () => recorded('091-memory-governance', ['SC-003']));
+  // @req docguard.configured-canonical-paths#SC-002
+  it('093: the A/B over local projects', () => recorded('093-configured-canonical-paths', ['SC-002']));
+  // @req docguard.agent-instruction-role#SC-002
+  // @req docguard.agent-instruction-role#SC-003
+  it('094: the A/B and the budget run', () => recorded('094-agent-instruction-role', ['SC-002', 'SC-003']));
+  // @req docguard.recorded-document-reviews#SC-002
+  // @req docguard.recorded-document-reviews#SC-003
+  // @req docguard.recorded-document-reviews#SC-004
+  it('095: the TestGuard reproduction, the history replay and the A/B', () => recorded('095-recorded-document-reviews', ['SC-002', 'SC-003', 'SC-004']));
 });
