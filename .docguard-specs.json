@@ -3208,17 +3208,17 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 280
+            "line": 305
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 324
+            "line": 349
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 357
+            "line": 382
           },
           {
             "requirementId": "FR-006",
@@ -3253,12 +3253,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 239
+            "line": 264
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 281
+            "line": 306
           },
           {
             "requirementId": "FR-011",
@@ -11915,7 +11915,7 @@
         "artifacts": [
           {
             "path": "specs/031-non-regression-budgets/spec.md",
-            "digest": "sha256:06eda8bde91f40a56ed1368b7cb640b561115f3829f571d68155a375d53052a5"
+            "digest": "sha256:1ec277f7e053948fd8081628126ca7ae3be1fbcf1821f6f984699a372139f284"
           },
           {
             "path": "specs/031-non-regression-budgets/plan.md",

@@ -90,9 +90,34 @@ export function recordedRevisions(spec) {
  */
 export function danglingRevisions(projectDir, registry) {
   const out = [];
-  // Specs completed in one commit record the same revision; ask git once per
-  // revision (two processes each) instead of once per spec that names it.
+  // Specs completed in one commit record the same revision, so ask git once per
+  // distinct revision. Past a few revisions, two processes each is still the
+  // cost (74 for 37 revisions here): one `cat-file --batch-check` says which
+  // resolve to a commit and one `rev-list HEAD` is the set that
+  // `merge-base --is-ancestor <revision> HEAD` answers membership of.
   const verdicts = new Map();
+  const distinct = [...new Set((registry?.specs || []).flatMap(recordedRevisions))];
+  if (distinct.length > 2) {
+    const resolvable = distinct.filter(revision => REVISION_RE.test(revision));
+    const peeled = new Map();
+    const checked = resolvable.length === 0 ? null : runGit(projectDir, ['cat-file', '--batch-check'], {
+      operation: 'git cat-file (revision anchor)', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024,
+      input: `${resolvable.map(revision => `${revision}^{commit}`).join('\n')}\n`,
+    });
+    const lines = checked && checked.status === 0 && !checked.error ? checked.stdout.split('\n') : null;
+    const listed = lines ? runGit(projectDir, ['rev-list', 'HEAD'], { operation: 'git rev-list (revision anchor)', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 }) : null;
+    if (lines && listed && listed.status === 0 && !listed.error) {
+      const onHistory = new Set(listed.stdout.split('\n').filter(Boolean));
+      resolvable.forEach((revision, index) => {
+        const [id, type] = (lines[index] || '').split(' ');
+        if (type === 'commit' && REVISION_RE.test(id)) peeled.set(revision, id);
+      });
+      for (const revision of distinct) {
+        const commit = peeled.get(revision);
+        verdicts.set(revision, !commit ? 'missing' : !onHistory.has(commit) ? 'not-ancestor' : null);
+      }
+    }
+  }
   const verdict = revision => {
     if (!verdicts.has(revision)) {
       verdicts.set(revision, !revisionResolves(projectDir, revision) ? 'missing' : !isAncestorOf(projectDir, revision) ? 'not-ancestor' : null);

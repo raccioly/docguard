@@ -60,6 +60,22 @@ function perFeatureReference(dir, specDirRel) {
 
 const sorted = set => (set === null ? null : [...set].sort());
 
+function countGitCommands(dir, fn) {
+  const trace = join(makeTraceDir(), 'trace2.json');
+  const previous = process.env.GIT_TRACE2_EVENT;
+  process.env.GIT_TRACE2_EVENT = trace;
+  try { fn(); } finally {
+    if (previous === undefined) delete process.env.GIT_TRACE2_EVENT; else process.env.GIT_TRACE2_EVENT = previous;
+  }
+  const counts = {};
+  for (const line of readFileSync(trace, 'utf8').split('\n').filter(Boolean)) {
+    let e; try { e = JSON.parse(line); } catch { continue; }
+    if (e.event === 'cmd_name') counts[e.name] = (counts[e.name] || 0) + 1;
+  }
+  return counts;
+}
+
+
 describe('the shared feature history answers as the per-feature git questions did', () => {
   test('linear history, a merge, a file added later, and uncommitted work', () => {
     const { dir, git, put, commit } = makeRepo();
@@ -114,21 +130,6 @@ describe('the shared feature history answers as the per-feature git questions di
 });
 
 describe('git process count is bounded, not per spec', () => {
-  function countGitCommands(dir, fn) {
-    const trace = join(makeTraceDir(), 'trace2.json');
-    const previous = process.env.GIT_TRACE2_EVENT;
-    process.env.GIT_TRACE2_EVENT = trace;
-    try { fn(); } finally {
-      if (previous === undefined) delete process.env.GIT_TRACE2_EVENT; else process.env.GIT_TRACE2_EVENT = previous;
-    }
-    const counts = {};
-    for (const line of readFileSync(trace, 'utf8').split('\n').filter(Boolean)) {
-      let e; try { e = JSON.parse(line); } catch { continue; }
-      if (e.event === 'cmd_name') counts[e.name] = (counts[e.name] || 0) + 1;
-    }
-    return counts;
-  }
-
   test('SPK010 reads history with two git log calls whatever the number of specs', () => {
     const { dir, put, commit } = makeRepo();
     put('README.md', '# r\n');
@@ -160,6 +161,35 @@ describe('git process count is bounded, not per spec', () => {
     const missing = '0123456789abcdef0123456789abcdef01234567';
     const stale = { specs: [{ specId: 'a', reviewed: { reconciliation: { lastReviewedRevision: missing } } }, { specId: 'b', reviewed: { reconciliation: { lastReviewedRevision: missing } } }] };
     assert.deepEqual(danglingRevisions(dir, stale).map(d => [d.specId, d.reason]), [['a', 'missing'], ['b', 'missing']]);
+  });
+});
+
+describe('SPR008 over many recorded revisions', () => {
+  test('one cat-file and one rev-list answer what two processes per revision answered', () => {
+    const { dir, git, put, commit } = makeRepo();
+    put('README.md', '# r\n');
+    const onHistory = commit('baseline');
+    git('checkout', '-q', '-b', 'side');
+    put('side.txt', 's\n');
+    const offHistory = commit('side only');
+    git('checkout', '-q', 'main');
+    put('more.txt', 'm\n');
+    const head = commit('more');
+    git('tag', '-a', '-m', 'annotated', 'v1', onHistory);
+    const tagObject = git('rev-parse', 'v1').trim();
+    const missing = '0123456789abcdef0123456789abcdef01234567';
+    const revisions = [onHistory, head, offHistory, missing, tagObject, 'main', 'not a revision'];
+    const registry = { specs: revisions.map((revision, i) => ({ specId: `s.${i}`, reviewed: { reconciliation: { lastReviewedRevision: revision } } })) };
+
+    const reference = revisions.flatMap((revision, i) => danglingRevisions(dir, { specs: [registry.specs[i]] }));
+    let batched;
+    const counts = countGitCommands(dir, () => { batched = danglingRevisions(dir, registry); });
+    assert.deepEqual(batched, reference);
+    assert.deepEqual(batched.map(d => [d.revision === offHistory ? 'off' : d.revision === missing ? 'missing' : d.revision, d.reason]),
+      [['off', 'not-ancestor'], ['missing', 'missing'], ['main', 'missing'], ['not a revision', 'missing']]); // only a full commit id is a recorded revision
+    assert.equal(counts['cat-file'], 1);
+    assert.equal(counts['rev-list'], 1);
+    assert.equal(counts['merge-base'], undefined);
   });
 });
 

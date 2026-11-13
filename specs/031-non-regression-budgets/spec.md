@@ -133,8 +133,9 @@ job produces.
   about 370 s (93 specs) and CI cancelled the job at its bound, because guard
   asked git per spec, so a guard run cost specs x history (6 s at 31 specs,
   22 s at 93) and the job runs guard 12 times. Guard now reads each of those
-  answers once per scan and a local A/B of this repository takes about 135 s,
-  inside the bound. The bound stays 6 minutes; `tests/guard-git-cost.test.mjs`
+  answers once per scan; a local A/B of this repository takes about 135 s, and
+  on the CI runner guard on this repository fell from 23 s to 16 s, inside the
+  bound. The bound stays 6 minutes; `tests/guard-git-cost.test.mjs`
   pins the number of git processes a scan may start, so a per-spec question
   cannot come back unnoticed.
 - **SC-003**: Every PR's budget table lands in its CI job summary, so each
