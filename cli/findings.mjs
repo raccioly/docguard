@@ -884,7 +884,13 @@ export const CODES = {
   SPR008: {
     validator: 'specRegistry',
     title: 'Recorded review revision is not on this history',
-    help: 'A spec\'s `lastReviewedRevision` or an outcome revision does not resolve, or is not an ancestor of HEAD. This happens when `specs complete` ran on a PR branch that was then squash-merged: the reviewed commit never reached the default branch, so the next maintenance completion cannot reconcile from it. Run `docguard specs reanchor --id <spec-id> --write` to move the anchor to the commit on this history whose evidence files are byte-identical; if the old revision no longer exists anywhere, pass `--to <revision> --reason <text>` to attest it. To avoid it, run completions on a branch at the default branch\'s tip and commit them once. In a shallow clone ancestry cannot be known, so the check reports partial coverage instead.',
+    help: 'A spec\'s `lastReviewedRevision` or an outcome revision does not resolve, or is not an ancestor of HEAD, and it is not anchored by its content either. A squash merge or a rebase discards the commit `specs complete` reviewed; a record written by a current DocGuard also carries the git blob of every evidence file (the `Blobs:` segment of its outcome line in the spec), and stays valid when the commit that landed it has those blobs. So this fires for a record written before blobs were recorded, or when the evidence changed between review and landing (the message names the files that differ). Run `docguard specs reanchor --id <spec-id> --write` to move the anchor to the commit on this history whose evidence files are byte-identical; if the old revision no longer exists anywhere, pass `--to <revision> --reason <text>` to attest it. For changed evidence, review it and complete again. In a shallow clone ancestry cannot be known, so the check reports partial coverage instead.',
+    suppress: null,
+  },
+  SPR010: {
+    validator: 'specRegistry',
+    title: 'Verified spec with no recorded outcome',
+    help: 'A current spec\'s delivery is `verified` or `released`, but its registry entry records no reconciliation outcome. `specs approve` cannot set those states and `specs complete` always records an outcome with them, so the state was set by hand (or the spec predates outcomes): no review is on record, and a verified living spec is excluded from the lifecycle review signal DLC002. Record the review with `docguard specs complete --id <spec-id> --since <ref> --reason <text> --write`, which also says which evidence files were reviewed. This is an escalation: DocGuard knows no review was recorded, not that none happened.',
     suppress: null,
   },
   SPR009: {

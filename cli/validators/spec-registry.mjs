@@ -1,9 +1,9 @@
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
+import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH, unrecordedCompletions } from '../scanners/spec-registry.mjs';
 import { checkAsBuiltSync, isPatternTier } from '../scanners/as-built.mjs';
-import { danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
+import { contentAnchor, danglingRevisions, isShallowRepository } from '../scanners/revision-anchor.mjs';
 import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { explainPaddedEmpty } from '../shared-project-evidence.mjs';
@@ -24,6 +24,8 @@ export function applies(projectDir, config = {}, projection = projectSpecRegistr
  * @implements docguard.as-built-specs#FR-005
  * @implements docguard.completion-revision-anchoring#FR-002
  * @implements docguard.asset-path-attribution#FR-003
+ * @implements docguard.completion-one-commit#FR-006
+ * @implements docguard.completion-one-commit#FR-011
  */
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
@@ -177,13 +179,22 @@ export function validateSpecRegistry(projectDir, config = {}) {
     } else {
       for (const { specId, revision, reason } of danglingRevisions(projectDir, projection.registry)) {
         const spec = projection.registry.specs.find(entry => entry.specId === specId);
+        // docguard.completion-one-commit#FR-006: an outcome that carries its evidence blobs
+        // is anchored by content. The commit that landed it has those blobs, or SPR008 names
+        // the files that differ from what was reviewed.
+        const content = spec ? contentAnchor(projectDir, spec, revision, { registryPath: SPEC_REGISTRY_PATH }) : { hasBlobs: false };
+        if (content.anchored) continue;
+        const detail = !content.hasBlobs ? ''
+          : content.commit
+            ? `; the evidence differs from what was reviewed in: ${content.differing.join(', ')}`
+            : '; no commit on this history introduced that record, so the reviewed evidence cannot be compared';
         findings.push(mkFinding({
           code: 'SPR008',
           validator: 'specRegistry',
           severity: 'warn',
           confidence: 'high',
           disposition: 'escalate',
-          message: `${specId}: recorded review revision ${revision.slice(0, 12)} ${reason === 'missing' ? 'does not resolve in this repository' : 'is not on this branch\'s history'}; the next maintenance completion cannot reconcile from it`,
+          message: `${specId}: recorded review revision ${revision.slice(0, 12)} ${reason === 'missing' ? 'does not resolve in this repository' : 'is not on this branch\'s history'}${detail}; the next maintenance completion cannot reconcile from it`,
           location: spec?.path || SPEC_REGISTRY_PATH,
           suggestion: {
             kind: 'review',
@@ -195,6 +206,26 @@ export function validateSpecRegistry(projectDir, config = {}) {
         }));
       }
     }
+  }
+  // SPR010 (docguard.completion-one-commit#FR-011): `approve` cannot set verified or
+  // released, and `complete` always records an outcome with them, so a spec in that
+  // state with none was edited by hand, or predates outcomes.
+  for (const specId of unrecordedCompletions(projection.registry)) {
+    const spec = projection.registry.specs.find(entry => entry.specId === specId);
+    findings.push(mkFinding({
+      code: 'SPR010',
+      validator: 'specRegistry',
+      severity: 'warn',
+      confidence: 'high',
+      disposition: 'escalate',
+      message: `${specId}: delivery is ${spec.reviewed.lifecycle.delivery} but it has no recorded outcome in the registry, so no review is on record`,
+      location: spec.path,
+      suggestion: {
+        kind: 'review',
+        text: `Record the review with \`docguard specs complete --id ${specId} --since <ref> --reason "<what was reviewed>" --write\`; \`complete\` is the only command that sets verified.`,
+        command: `docguard specs complete --id ${specId}`,
+      },
+    }));
   }
   // Every detected specification was examined, at least for its Spec ID: one that has none yields a finding
   // (SPR002) and is not in the registry, so counting only the registry would report zero checks beside findings

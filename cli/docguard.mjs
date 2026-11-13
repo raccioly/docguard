@@ -381,7 +381,7 @@ const COMMAND_HELP = {
   },
   specs: {
     summary: 'Maintain the deterministic spec lifecycle and evidence registry.',
-    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs approve --id <spec-id> [--delivery <state>] [--write] | docguard specs complete --id <spec-id> [--since <ref>] [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
+    usage: 'docguard specs [--check|--write] | docguard specs preflight [--path <spec>] | docguard specs approve --id <spec-id> [--delivery <state>] [--persistence <model>] [--canonical-doc <path>]... [--write] | docguard specs complete --id <spec-id> [--since <ref>] [--persistence <model>] [--canonical-doc <path>]... [--write --reason <text>] | docguard specs require --since <ref> [--message-file <path>] | docguard specs reanchor --id <spec-id> [--from <revision>] [--to <revision>] [--write --reason <text>]',
     flags: [
       ['--check', 'Exit 2 when the committed registry is missing, stale, or inconsistent; planned lifecycle deferral requires a clean tracked registry'],
       ['--write', 'Refresh observed evidence while preserving reviewed lifecycle fields'],
@@ -394,6 +394,8 @@ const COMMAND_HELP = {
       ['--from <revision>', 'With reanchor --to: move only this recorded revision, when a spec\'s dangling revisions came from different merges'],
       ['--message-file <path>', 'With require: PR description or extra text to search for spec references'],
       ['--id <spec-id>', 'Immutable spec identity to approve, complete or re-anchor'],
+      ['--canonical-doc <path>', 'With approve or complete: the reviewed canonical document the spec affects (SPC005); repeatable, must exist, stored sorted and deduplicated, replaces the recorded list'],
+      ['--persistence <model>', 'With approve or complete: living, flow_forward or flow_back. A verified living spec stays in active context (DLC002 is not raised for it)'],
       ['--delivery <state>', 'With approve: planned, in_progress or implemented (verified is recorded by complete)'],
       ['--since <ref>', 'Reconciliation baseline: required when none is recorded; otherwise an older ref widens the review, and a newer one is accepted only when the recorded range exceeds the diff budgets even read in batches, and is recorded as narrowedFrom'],
       ['--reason <text>', 'Reviewed implementation outcome required for completion writes'],
@@ -402,7 +404,7 @@ const COMMAND_HELP = {
       ['--path <spec>', 'Generated spec to compare against current lifecycle state'],
       ['--format json', 'Machine-readable registry or preflight result'],
     ],
-    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs approve --id acme.feature --delivery implemented --write', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
+    examples: ['docguard specs --check', 'docguard specs --write', 'docguard specs preflight --path specs/007-feature/spec.md', 'docguard specs approve --id acme.feature --delivery implemented --write', 'docguard specs require --since origin/main --message-file pr-body.txt', 'docguard specs complete --id acme.feature --since main --canonical-doc docs-canonical/ARCHITECTURE.md --persistence living --write --reason "Reviewed implementation"', 'docguard specs reanchor --id acme.feature --write'],
   },
   anchors: {
     summary: 'List every code→requirement link, the symbol, statement, route or file it anchors to, and the tier that resolved it.',
@@ -847,6 +849,13 @@ async function main() {
     } else if (args[i] === '--delivery' && args[i + 1] && command === 'specs') {
       // `specs approve --delivery <state>` (docguard.first-spec-preflight#FR-005)
       flags.delivery = args[++i];
+    } else if (args[i] === '--canonical-doc' && args[i + 1] && command === 'specs') {
+      // `specs complete|approve --canonical-doc <path>`, repeatable (docguard.completion-one-commit#FR-002)
+      flags.canonicalDocs = flags.canonicalDocs || [];
+      flags.canonicalDocs.push(args[++i]);
+    } else if (args[i] === '--persistence' && args[i + 1] && command === 'specs') {
+      // `specs complete|approve --persistence <model>` (docguard.completion-one-commit#FR-003)
+      flags.persistence = args[++i];
     } else if (args[i] === '--id' && args[i + 1]) {
       flags.id = args[i + 1];
       i++;

@@ -72,7 +72,19 @@ function fixture(t) {
   return dir;
 }
 
-const complete = (dir, id, since, extra = {}) => completeSpec(dir, {}, { id, since, write: true, reason: 'Reviewed in the fixture', ...extra }, { guardResult: passingGuard });
+// Every scenario in this file is a record as 0.48.0 wrote it, with no evidence blobs: the helper drops the
+// `Blobs:` segment a current `complete` adds (specs/101-completion-one-commit), which the registry digests.
+// tests/spec-completion-one-commit.test.mjs covers the records that carry them.
+function complete(dir, id, since, extra = {}) {
+  const result = completeSpec(dir, {}, { id, since, write: true, reason: 'Reviewed in the fixture', ...extra }, { guardResult: passingGuard });
+  if (result.applied) {
+    const spec = projectSpecRegistry(dir).registry.specs.find(entry => entry.specId === id);
+    const path = join(dir, spec.path);
+    writeFileSync(path, readFileSync(path, 'utf8').split('\n').map(line => (line.startsWith('- `') ? line.replace(/ Blobs: .*$/, '') : line)).join('\n'));
+    write(dir, SPEC_REGISTRY_PATH, `${JSON.stringify(projectSpecRegistry(dir).registry, null, 2)}\n`);
+  }
+  return result;
+}
 const recorded = (dir, id) => readSpecRegistry(dir).value.specs.find(s => s.specId === id).reviewed.reconciliation;
 const spr008 = dir => validateSpecRegistry(dir, {}).findings.filter(f => f.code === 'SPR008');
 

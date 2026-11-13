@@ -251,8 +251,8 @@ is only a navigation hint, because the same local ID appears in many specs.
 | `docguard specs --write` | Refresh the observed evidence and keep the reviewed fields | `.docguard-specs.json` |
 | `docguard specs preflight` | Brief the current specs before you write a new one. `BLOCKED` when the registry is stale. | Nothing |
 | `docguard specs preflight --path <spec.md>` | Gate a generated draft: missing or duplicate identity, stale registry, unsafe paths, broken lineage. Text similarity is reported for review and never blocks. | Nothing |
-| `docguard specs approve --id <id> [--delivery <state>]` | Show an approval, and optionally a delivery state (`planned`, `in_progress`, `implemented`). Add `--write` to record it. | With `--write` |
-| `docguard specs complete --id <id> --since <ref>` | Plan the implemented-to-verified transaction and list its blockers. Add `--write --reason "<reviewed outcome>"` to apply it. `--deviation <text>` (repeatable) and `--successor <id>` record accepted deviations and a successor. | With `--write` |
+| `docguard specs approve --id <id> [--delivery <state>] [--persistence <model>] [--canonical-doc <path>]…` | Show an approval, and optionally a delivery state (`planned`, `in_progress`, `implemented`), a persistence model (`living`, `flow_forward`, `flow_back`) and the affected canonical documents (repeatable; each must exist). Add `--write` to record it. | With `--write` |
+| `docguard specs complete --id <id> --since <ref>` | Plan the implemented-to-verified transaction and list its blockers. Add `--write --reason "<reviewed outcome>"` to apply it. `--canonical-doc <path>` (repeatable) and `--persistence <model>` record the reviewed scope in the same transaction. `--deviation <text>` (repeatable) and `--successor <id>` record accepted deviations and a successor. Ticking boxes in this spec's own `tasks.md` does not block it. | With `--write` |
 | `docguard specs require --since <ref> [--message-file <file>]` | The spec-first gate: exit `1` when a change to governed paths names no spec, `2` when inconclusive | Nothing |
 | `docguard specs reanchor --id <id>` | Move a revision that a squash merge discarded (SPR008) to the matching commit on HEAD's history. `--to <rev> --reason <text>` attests an anchor; `--from <rev>` selects one revision. Add `--write` to apply. | With `--write` |
 
@@ -274,7 +274,8 @@ run `docguard explain SPC001` through `SPC008` for details.
 - At least one source file has `@implements <specId>#<req>`, at least one test
   has `@req <specId>#<req>`, and every requirement has evidence (SPC004).
 - `reviewed.scope.canonicalDocs` lists the canonical documents the change
-  updated (SPC005).
+  updated (SPC005). Record them with `--canonical-doc <path>` on `specs approve`
+  or `specs complete`; do not edit the registry by hand.
 - Every file changed since the baseline traces to a spec (SPC006).
 - Guard reports no errors (SPC007).
 
@@ -333,8 +334,8 @@ not.
 | 4. Tasks | `/speckit.tasks` | The `before_tasks` hook runs `docguard specs preflight --path <spec.md> --format json` and stops on `BLOCKED`. It then refreshes the registry with `docguard specs --write`. The optional `after_tasks` hook shows the score. |
 | 5. Approve | A maintainer runs `docguard specs approve --id org.feature --delivery in_progress --write`. | Records approval in the registry, for review in the PR. |
 | 6. Implement | `/speckit.implement`. Annotate code with `@implements org.feature#FR-NNN` and tests with `@req org.feature#FR-NNN`. Check off tasks. Update the canonical docs. | The `after_implement` hook runs guard. |
-| 7. Review completion | List the updated docs in `reviewed.scope.canonicalDocs`. Run `docguard specs --write` and commit. | The optional `complete` hook plans the transaction: `docguard specs complete --id org.feature --since <merge-base>`. |
-| 8. Verify | A maintainer runs `docguard specs approve --id org.feature --delivery implemented --write` if needed, then `docguard specs complete --id org.feature --since <merge-base> --write --reason "<reviewed outcome>"`. | Marks the spec `verified` and regenerates the current context. |
+| 7. Review completion | Tick the last task and run `docguard specs --write`; do not commit yet. | The optional `complete` hook plans the transaction: `docguard specs complete --id org.feature --since <merge-base>`. |
+| 8. Verify | A maintainer runs `docguard specs approve --id org.feature --delivery implemented --persistence living --canonical-doc <doc> --write` if needed, then `docguard specs complete --id org.feature --since <merge-base> --canonical-doc <doc> --write --reason "<reviewed outcome>"`, and commits once: the tick, the registry record and the outcome land together. | Marks the spec `verified` and regenerates the current context. |
 | 9. Gate | CI runs `docguard guard`, `docguard specs --check` and the spec-first gate. | |
 
 Agents do not approve or complete on their own. The `complete` command file
@@ -343,17 +344,16 @@ write only when the maintainer supplies the reason.
 
 ### Squash merges
 
-A completion recorded on a pull request's own commit is lost when the PR is
-squash-merged. Guard then reports SPR008. To avoid it:
-
-1. After the PR merges, branch from the default branch's tip.
-2. Run as many `specs complete --write` as you need, and commit once. The files
-   completion writes do not count as changes, so several completions can share
-   one revision.
-
-`specs complete` warns when a completion is about to be recorded on a commit
-the squash would discard. To repair one, run
-`docguard specs reanchor --id <id> --write`.
+A squash merge or a rebase discards the commit a completion recorded. The
+record survives: each outcome carries the git blob of every evidence file, and a
+revision that is no longer on the history is anchored by those blobs when the
+commit that landed the record has them. Guard reports SPR008 only when the
+evidence changed between review and landing (the message names the files) or
+for a record written before blobs were recorded; repair that one with
+`docguard specs reanchor --id <id> --write`. Run as many
+`specs complete --write` as you need before the one commit: the files
+completion writes do not count as changes, so several completions can share one
+revision.
 
 ## Related commands
 

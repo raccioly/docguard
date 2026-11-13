@@ -185,6 +185,16 @@ extensions/spec-kit-docguard/
   is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
   A change to a parser that reads documents runs `npm run fuzz` (seeded
   fuzzing: no throw, same answer twice, bounded time; specs/088-validator-fuzz).
+- **Close a spec in one commit, with no hand edit of the registry.** Tick the
+  last task, run `docguard specs --write`, then `docguard specs complete --id
+  <spec-id> --since <ref> --canonical-doc <path> --persistence living --reason
+  <text> --write` (`specs approve` takes the same two flags) and commit once: the
+  tick, the registry record and the outcome land together, so a gate that runs
+  `guard` on every commit never sees DLC002 or a half-written record. The record
+  carries the git blob of every evidence file, so it survives a squash merge or
+  a rebase and needs no second "reanchor" commit; run `docguard specs reanchor`
+  only for a record guard reports as SPR008
+  (`specs/101-completion-one-commit`).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

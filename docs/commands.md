@@ -506,7 +506,7 @@ npx docguard-cli specs preflight --path specs/007-feature/spec.md
 npx docguard-cli specs approve --id acme.feature --delivery implemented # plan the approval
 npx docguard-cli specs approve --id acme.feature --delivery implemented --write
 npx docguard-cli specs complete --id acme.feature --since main          # plan the completion
-npx docguard-cli specs complete --id acme.feature --write --reason "..." # apply it
+npx docguard-cli specs complete --id acme.feature --canonical-doc docs-canonical/ARCHITECTURE.md --persistence living --write --reason "..." # apply it, one commit with the task tick
 npx docguard-cli specs require --since origin/main --message-file pr.txt # spec-first gate
 npx docguard-cli specs reanchor --id acme.feature --write               # move a squash-discarded revision
 ```
@@ -544,7 +544,13 @@ never moves a verified spec back. Approval is never read from the spec's prose
 reviewed fields are attested by whoever runs the command and reviewed in the
 pull request that commits the registry. `docguard explain SPC001` … `SPC008`
 explains each blocker `specs approve`, `specs complete` and `specs reanchor`
-print. `specs complete`
+print. `specs approve` and `specs complete` take `--persistence living|flow_forward|flow_back`
+and a repeatable `--canonical-doc <path>` (each path must exist; stored sorted
+and deduplicated, replacing the recorded list), so neither field is edited by
+hand in `.docguard-specs.json`. `specs complete` treats the completing spec's own
+`tasks.md` as a lifecycle file: ticking boxes in it does not block, so the tick,
+the registry record and the outcome land in one commit (any other change to it,
+and any change to another spec's, still blocks with SPC001). `specs complete`
 verifies exact-revision implementation evidence, canonical outcomes, and context
 regeneration before marking a spec verified; `--write` requires a reviewed
 reason and performs the registry, spec outcome, and current-context writes as
@@ -562,7 +568,16 @@ recorded output, is listed by hand under its owner's
 covers a directory, and any other entry covers exactly one file; wildcards are
 rejected. Guard reports **SPR009** for an entry that covers no tracked file.
 
+Each outcome `specs complete --write` records also carries the git blob of every
+evidence file (the `Blobs:` segment of its line in the spec's outcome block), so
+a squash merge or a rebase does not strand it: a recorded revision that is not an
+ancestor of `HEAD` is anchored when the commit that landed the record has those
+blobs, and the next `complete` takes that commit as its diff base. Guard reports
+**SPR010** for a current spec that is `verified` or `released` with no recorded
+outcome, and `specs --check` lists such specs.
+
 `specs reanchor` repairs a recorded revision that a squash merge discarded
+and whose blobs were not recorded, or whose evidence changed
 (guard reports it as **SPR008**). It finds the first commit on HEAD's
 first-parent history whose evidence files are byte-identical to the reviewed
 ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
