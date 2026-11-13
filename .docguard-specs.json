@@ -17688,7 +17688,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -17707,8 +17707,21 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "573f82426e357a3ee0e5daa1bec0717a9f5c815e",
+          "outcomes": [
+            {
+              "revision": "573f82426e357a3ee0e5daa1bec0717a9f5c815e",
+              "reason": "Reviewed at main after #677: npm test passes twice (exit 0, 363 s and 381 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. The 118 converted files carry a reconciliation-only @implements reference; the baseline is the revision that tags them, since a range with docs-coverage.test.mjs (raw NUL byte before) reads as binary. Wall time not re-measured before the change.",
+              "evidence": [
+                "benchmarks/history-replay/run.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/test-temp-dirs.test.mjs",
+                "tools/check-temp-leaks.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -17728,7 +17741,7 @@
         "artifacts": [
           {
             "path": "specs/098-test-temp-dirs/spec.md",
-            "digest": "sha256:de0251bea6d3101a619fc85c4ef622a2f214dd15420e916a08dbf8d18ed333ce"
+            "digest": "sha256:a80937fe0334b178ca9b803406dc095ca739714d96adddc79807b2bc08029247"
           },
           {
             "path": "specs/098-test-temp-dirs/plan.md",

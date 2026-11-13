@@ -59,3 +59,9 @@ Measured on `main` at v0.48.0 (macOS, Node 24, 4,958 tests, all passing): one fu
 
 - Product code under `cli/` that creates temporary directories (`cli/commands/demo.mjs`, `cli/commands/sensor.mjs`, `cli/commands/feedback.mjs`). Whether each removes its directory is product behavior, not test hygiene; any leak found there is reported in the pull request, not fixed here.
 - Directories already left in a machine's temporary folder by earlier runs. They are not cleaned.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `573f82426e357a3ee0e5daa1bec0717a9f5c815e` — Reviewed at main after #677: npm test passes twice (exit 0, 363 s and 381 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. The 118 converted files carry a reconciliation-only @implements reference; the baseline is the revision that tags them, since a range with docs-coverage.test.mjs (raw NUL byte before) reads as binary. Wall time not re-measured before the change. Evidence: `benchmarks/history-replay/run.mjs`, `docs-canonical/TEST-SPEC.md`, `tests/test-temp-dirs.test.mjs`, `tools/check-temp-leaks.mjs`. Accepted deviations: none. Successor: none.
+<!-- docguard:implementation-outcomes:end -->
