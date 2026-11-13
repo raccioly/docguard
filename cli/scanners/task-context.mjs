@@ -15,6 +15,7 @@
 import { basename } from 'node:path';
 import { citedSources, contentHash, createEvidenceReader, evidenceDocs, gitEvidence } from './semantic-claims.mjs';
 import { compileGlob } from '../shared-ignore.mjs';
+import { excerptStaleness } from './recorded-review-signals.mjs';
 
 const LIMITS = Object.freeze({
   taskChars: 2000,
@@ -206,7 +207,8 @@ function pointerRecords(selected, registry, read, task) {
 }
 
 function removeContent(excerpt) {
-  const { content: _content, ...rest } = excerpt;
+  // `possiblyStale` depends on the sensor cache as well as the tree, so it stays out of the digest.
+  const { content: _content, possiblyStale: _stale, ...rest } = excerpt;
   return rest;
 }
 
@@ -274,6 +276,13 @@ export function buildTaskContextPacket(projectDir, config = {}, taskText) {
   if (status === 'abstained') limitations.push('no-candidate-met-relevance-threshold');
   const pointers = status === 'targeted' ? pointerRecords(selected, lifecycle.active, read, signal) : [];
   const publicExcerpts = status === 'targeted' ? selected : [];
+  // T028b (from spec 096): an excerpt from a document that is due for review, or whose review no longer
+  // covers it, says so; `stalenessBasis` says what was looked at, so an unmarked excerpt is not read as fresh.
+  const staleness = publicExcerpts.length ? excerptStaleness(projectDir, config, publicExcerpts.map(e => e.path)) : null;
+  for (const excerpt of publicExcerpts) {
+    const mark = staleness.marks.get(excerpt.path);
+    if (mark) excerpt.possiblyStale = mark;
+  }
   return {
     schemaVersion: 1,
     kind: 'docguard.task-context',
@@ -291,6 +300,7 @@ export function buildTaskContextPacket(projectDir, config = {}, taskText) {
       truncated,
     },
     excerpts: publicExcerpts,
+    ...(staleness ? { stalenessBasis: staleness.basis } : {}),
     pointers,
     verification: [
       { command: 'docguard guard --format json', purpose: 'Resolve deterministic errors and triage warnings.' },
