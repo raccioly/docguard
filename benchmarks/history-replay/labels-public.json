@@ -1,0 +1,57 @@
+{
+  "docguard|AGENTS.md|2026-11-03|+14d|FRS007|fuzz": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "docguard|AGENTS.md|2026-11-03|+28d|FRS007|fuzz": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "docguard|AGENTS.md|2026-11-03|+56d|FRS007|fuzz": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "docguard|CLAUDE.md|2026-11-03|+14d|FRS007|fuzz": {
+    "label": false,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "docguard|CLAUDE.md|2026-11-03|+28d|FRS007|fuzz": {
+    "label": false,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "docguard|CLAUDE.md|2026-11-03|+56d|FRS007|fuzz": {
+    "label": false,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "testguard|AGENTS.md|2026-09-22|+14d|FRS006|src/probe/probe.mjs": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "testguard|AGENTS.md|2026-09-22|+28d|FRS006|src/probe/probe.mjs": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "testguard|AGENTS.md|2026-09-22|+56d|FRS006|src/probe/probe.mjs": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "testguard|AGENTS.md|2026-09-22|+56d|FRS007|corpus": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  },
+  "testguard|AGENTS.md|2026-09-22|+56d|FRS007|corpus/": {
+    "label": true,
+    "confirmed": false,
+    "by": "implementing session for spec 095, 2026-11-12, from reading the referenced file against the document"
+  }
+}

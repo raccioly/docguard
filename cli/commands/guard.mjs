@@ -292,6 +292,19 @@ function collectMarkdown(projectDir) {
  *   ignored      — matched by .docguardignore
  *   unclassified — under NO tier; drift here is invisible (the Gap-1 trap)
  */
+/** Agent-instruction documents with FRS006 or FRS007, for the top line and JSON (spec 095 FR-011). */
+export function staleInstructionsOf(findings) {
+  const byDoc = new Map();
+  for (const f of findings || []) {
+    if (f.code !== 'FRS006' && f.code !== 'FRS007') continue;
+    const doc = String(f.location || '').replace(/:\d+$/, '');
+    if (!doc) continue;
+    if (!byDoc.has(doc)) byDoc.set(doc, new Set());
+    byDoc.get(doc).add(f.code);
+  }
+  return [...byDoc].map(([doc, codes]) => ({ doc, codes: [...codes].sort() })).sort((a, b) => a.doc.localeCompare(b.doc));
+}
+
 function computeDocCoverage(projectDir, config) {
   const fileIgnored = loadIgnorePatterns(projectDir);
   const configIgnored = buildIgnoreFilter(config.ignore || []);
@@ -389,6 +402,8 @@ export function runGuardInternal(projectDir, config) {
           message: r.message,
           location: r.doc || null,
           suggestion: r.suggestion || { kind: 'review', text: 'Review the document against its intended scope. A history signal does not establish which side should change.' },
+          // docguard.recorded-document-reviews#FR-006–FR-010: the evidence travels with the finding.
+          documentRole: r.documentRole, staleness: r.staleness, surface: r.surface,
         }));
       }
       const skipped = freshnessResults.filter(r => r.status === 'skip');
@@ -741,6 +756,9 @@ export function runGuardInternal(projectDir, config) {
     ...(required ? { requiredChecks: { required: required.required, undecided: required.undecided } } : {}),
     semanticClaims,
     evidence,
+    // docguard.recorded-document-reviews#FR-011: agents read these files every
+    // session, so their staleness is said first, whatever its severity.
+    staleInstructions: staleInstructionsOf(allFindings),
     // Benchmark evidence for the codes this run actually emitted. Codes the
     // corpus never exercised say so; none inherits another code's measurement.
     precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
@@ -988,6 +1006,9 @@ export function runGuard(projectDir, config, flags) {
   // ── Text output ──
   console.log(`${c.bold}🛡️  DocGuard Guard — ${config.projectName}${c.reset}`);
   console.log(`${c.dim}   Directory: ${projectDir}${c.reset}\n`);
+  if (data.staleInstructions?.length) {
+    console.log(`  ${c.yellow}⚠ Agents are being served stale instructions: ${data.staleInstructions.map(s => `${s.doc} (${s.codes.join(', ')})`).join('; ')}${c.reset}\n`);
+  }
 
   for (const v of data.validators) {
     if (v.status === 'skipped') {

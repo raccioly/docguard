@@ -8,6 +8,7 @@
  * @implements docguard.calibrated-finding-channels#FR-022
  * @implements docguard.agent-instruction-role#FR-003
  * @implements docguard.agent-instruction-role#FR-005
+ * @implements docguard.recorded-document-reviews#FR-006
  */
 
 import { existsSync, readdirSync, readFileSync, lstatSync } from 'node:fs';
@@ -19,6 +20,7 @@ import { gitMetadataStatus, unreadableGitApplicability } from '../shared-git.mjs
 import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { recordedReviewSignals, recordedReviewDate, laterDate } from '../scanners/recorded-review-signals.mjs';
 
 // Keep aligned with shared-source's supported languages, including module variants.
 const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
@@ -261,7 +263,11 @@ export function validateFreshness(dir, config) {
       status: 'skip',
       message: `Only ${totalCommits} commits — freshness check needs ≥3 commits`,
     });
-    return results;
+    // Spec 095's signals are facts (no review record, an unreadable reviews
+    // file, a reference measured against a review point), not history
+    // heuristics, so a young repository still gets them.
+    results.push(...recordedReviewSignals(dir, config, { ignored: pathFilter(dir, config), docFiles: [], results }));
+    return withDispositions(results);
   }
 
   // ── 1. Check each canonical doc's last update vs latest code commit ──
@@ -321,7 +327,8 @@ export function validateFreshness(dir, config) {
     // doc as stale despite the explicit review. Fall back to git log only when
     // the header is absent. Symmetric with the ALCOA+ "review metadata present"
     // check in score.mjs, which reads the same header.
-    const reviewedDate = readLastReviewedDate(docPath);
+    // A recorded review (spec 095) is a review too: the later of it and the marker.
+    const reviewedDate = laterDate(readLastReviewedDate(docPath), recordedReviewDate(dir, docFile));
     const docDate = reviewedDate || getLastGitDate(docFile, dir);
     if (!docDate) {
       // File exists but has no freshness signal (not in git, no last-reviewed).
@@ -455,6 +462,9 @@ export function validateFreshness(dir, config) {
     } catch { /* skip */ }
   }
 
+  // ── 4. Recorded reviews and per-reference staleness (spec 095) ──
+  results.push(...recordedReviewSignals(dir, config, { ignored, docFiles, results }));
+
   // Every warning here is an ESCALATION: a history signal whose judgement
   // belongs to the reader. That is a separate question from how sure the
   // detector is of what it counted.
@@ -471,21 +481,26 @@ export function validateFreshness(dir, config) {
   // FRS001 is the exception: it fires on the ABSENCE of any dated signal,
   // which an uncommitted file or a shallow clone can produce, so the
   // observation itself is uncertain and stays 'low'.
+  return withDispositions(results);
+}
+
+function withDispositions(results) {
   const reported = results.map(result => result.status === 'warn' ? {
     ...result,
-    confidence: result.code === 'FRS001' ? 'low' : 'high',
-    disposition: 'escalate',
-    suggestion: { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
+    confidence: result.confidence || (result.code === 'FRS001' ? 'low' : 'high'),
+    disposition: result.disposition || 'escalate',
+    suggestion: result.suggestion || { kind: 'review', text: 'Review this history signal against the document’s purpose and intended behavior. Confirm whether documentation or code needs a change; record a review date only after reviewing. Preserve intentional historical content.' },
   } : result);
   reported.facts = results.facts; // what the run asked Git, for freshnessContract
   return reported;
 }
 
-// ── Result contract (specs/097-strict-by-default FR-004 to FR-006) ───────────
+// ── Result contract (specs/097-strict-by-default FR-004 to FR-006, FR-021) ───
 // Kept apart from the checks above: it reads their outcome and adds the fields,
 // and decides nothing about a finding. An agent-instruction document that has no
-// review point yet is not counted as "applies, examined nothing" here; the
-// `empty` branch below is where that cause belongs when it is.
+// review point, or whose review no longer covers it, is a document this run did
+// not examine; it is listed in `unexaminedDocuments` (see unexaminedDocuments
+// below), whatever Freshness performed on the other documents.
 
 /**
  * Whether Freshness's kind of check belongs to the project: it compares
@@ -513,6 +528,58 @@ export function freshnessContract(dir, config, { performed, found, skipped = [],
   if (performed === 0 && !found && (facts.git ??= gitMetadataStatus(dir)).status === 'unreadable') {
     return { performed, applies: applies(dir, config, facts) };
   }
+  const documents = unexaminedDocuments(facts.unexaminedDocuments);
+  return { ...resultContract(dir, config, { performed, found, skipped, facts }), ...(documents.length ? { unexaminedDocuments: documents } : {}) };
+}
+
+/**
+ * The agent-instruction documents this run did not examine (spec 097 FR-021),
+ * each with its cause, whether the project can be asked to resolve it
+ * (`blocking`), a reason, and the step that resolves it. `performed` is not
+ * touched: Freshness did examine the other documents, and each document's gap
+ * is reported on its own (enforcement reads this list).
+ *   needs-content      a review that establishes ownership (any review point of a root file;
+ *                      a recorded review of any other) no longer covers the document: a file
+ *                      it names changed past `freshness.referenceShare` since (FRS006's
+ *                      condition). Always blocking.
+ *   needs-declaration  no review point at all, or a non-root file whose only review point is a
+ *                      marker (a vendor may have written it). Blocking for a root instruction
+ *                      file only; for any other, ownership is not established, so it is listed
+ *                      and never blocks.
+ * Order: suspect reviews, then root files without a record, then the rest, each in path order.
+ * @implements docguard.strict-by-default#FR-021
+ * @param {object[]|undefined} gaps what recordedReviewSignals recorded on the run's facts
+ */
+export function unexaminedDocuments(gaps) {
+  if (!Array.isArray(gaps)) return [];
+  const rank = g => (g.cause === 'needs-content' ? 0 : g.blocking ? 1 : 2);
+  const review = path => `docguard review --accept ${path} --reason "<what you checked>"`;
+  return [...gaps].sort((a, b) => rank(a) - rank(b) || a.path.localeCompare(b.path)).map(g => {
+    if (g.cause === 'needs-content') {
+      return {
+        path: g.path, cause: g.cause, blocking: true,
+        reason: `${g.path}: its ${g.reviewPoint.date} review no longer covers it; ${g.references.map(r => `${r.path} (${Math.round(r.share * 100)}% added since)`).join(', ')}${g.more ? ` and ${g.more} more` : ''}`,
+        howToConfigure: `Read ${g.path} against the code it describes, update it where it no longer holds, then record the review: ${review(g.path)}`,
+      };
+    }
+    if (g.blocking) {
+      return {
+        path: g.path, cause: g.cause, blocking: true,
+        reason: `${g.path} has no review record (no docguard:last-reviewed marker and no recorded review), so nothing says it was ever checked against the code`,
+        howToConfigure: `Read ${g.path} against the code it describes, update it where it no longer holds, then record the review: ${review(g.path)}`,
+      };
+    }
+    return {
+      path: g.path, cause: g.cause, blocking: false,
+      reason: g.marker
+        ? `${g.path} carries a docguard:last-reviewed marker (${g.marker}) but no recorded review; a tool can ship a file with its vendor's marker, so only a recorded review establishes that the project owns it`
+        : `${g.path} has no review record and no install record, so DocGuard cannot tell whether the project wrote it or a tool installed it`,
+      howToConfigure: `If the project wrote it, read it against the code and record the review: ${review(g.path)}. If a tool installed it, leave it to that tool.`,
+    };
+  });
+}
+
+function resultContract(dir, config, { performed, found, skipped, facts }) {
   return contractFields({
     performed, found, ran: `compared ${performed} document(s) with the code history`,
     decide: () => applies(dir, config, facts),

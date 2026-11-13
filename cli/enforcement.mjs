@@ -19,6 +19,7 @@
  * @implements docguard.strict-by-default#FR-014
  * @implements docguard.strict-by-default#FR-015
  * @implements docguard.strict-by-default#FR-016
+ * @implements docguard.strict-by-default#FR-021
  */
 import { EMPTY_CAUSES, performedChecks } from './validator-coverage.mjs';
 import { STRICT_ADDITIONS, codeAddedIn, compareLines, isNewIn, validatorAddedIn } from './strict-additions.mjs';
@@ -178,6 +179,7 @@ export function buildStrictReport(results, {
       blocking: !lite,
     });
   }
+  for (const r of results) addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion });
   for (const code of pendingCodes) {
     const count = results.reduce((n, r) => n + (r.findings || []).filter(f => f.code === code).length, 0);
     if (count > 0) pending.push({ kind: 'code', code, since: codeAddedIn(code, additions), count });
@@ -186,7 +188,7 @@ export function buildStrictReport(results, {
     evaluated: !lite,
     unexamined,
     couldNotRead,
-    blocking: unexamined.filter(u => u.blocking).map(u => u.validator),
+    blocking: [...new Set(unexamined.filter(u => u.blocking).map(u => u.validator))],
     gating: [...gatingByCode].map(([code, count]) => {
       const line = codeAddedIn(code, additions);
       return { code, count, ...(line && isNewIn(line, runningVersion) ? { newIn: line } : {}) };
@@ -196,6 +198,72 @@ export function buildStrictReport(results, {
     waived,
     baselined: baselineSuppressed,
   };
+}
+
+/**
+ * A validator that examines many documents can report the ones it did not
+ * examine (`unexaminedDocuments`: `{ path, cause, blocking, reason,
+ * howToConfigure }`, Freshness under FR-021) while it performed real checks on
+ * the rest. FR-007's zero-check rule is per validator; this is the same rule per
+ * document.
+ *   - A `blocking` document is one the project can resolve (cause
+ *     `needs-declaration` or `needs-content`): it blocks like an unexamined
+ *     validator, and `performed` keeps the true count. One entry per validator
+ *     key in `unexamined`: when the validator is itself unexamined, the documents
+ *     join its entry. A waived validator and a `--changed-only` run do not block.
+ *   - A non-blocking document (the project may not own it) goes to
+ *     `couldNotRead`, one entry per validator key, and never changes the exit code.
+ * Each entry's cause is its first document's (the validator orders them); its
+ * reason names up to three documents, then a count, and the first reason of
+ * each cause; its fix is the first document's step of each cause.
+ */
+function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion }) {
+  const docs = Array.isArray(r.unexaminedDocuments)
+    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content'))
+    : [];
+  if (docs.length === 0) return;
+  if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) return;
+  const summary = list => {
+    const names = list.slice(0, 3).map(d => d.path).join(', ') + (list.length > 3 ? ` and ${list.length - 3} more` : '');
+    const firstOfEach = list.filter((d, i) => list.findIndex(x => x.cause === d.cause) === i);
+    return {
+      names,
+      reasons: firstOfEach.map(d => d.reason).filter(Boolean).join('. '),
+      fix: firstOfEach.map(d => d.howToConfigure).filter(Boolean).join(' ') + (list.length > firstOfEach.length ? ' (one review per document)' : ''),
+    };
+  };
+  const blocking = docs.filter(d => d.blocking !== false);
+  const listed = docs.filter(d => d.blocking === false);
+  if (blocking.length) {
+    const { names, reasons, fix } = summary(blocking);
+    const reason = `${blocking.length} document(s) not examined: ${names}. ${reasons}`;
+    // FR-012/FR-013, as for a validator's own entry: the table says when the validator joined strict;
+    // with `asOf` set before that, its documents are held back as pending and do not count.
+    const line = validatorAddedIn(r.key, additions);
+    const held = pending.find(p => p.kind === 'validator' && p.validator === r.key);
+    if (held || (asOf && line && compareLines(line, asOf) > 0)) {
+      if (held) held.documents = blocking.map(d => d.path);
+      else pending.push({ kind: 'validator', validator: r.key, name: r.name || r.key, since: line, verdict: r.verdict, cause: blocking[0].cause, reason, documents: blocking.map(d => d.path) });
+    } else if (unexamined.find(u => u.validator === r.key)) {
+      const existing = unexamined.find(u => u.validator === r.key);
+      existing.documents = blocking.map(d => d.path);
+      existing.reason = [existing.reason, reason].filter(Boolean).join(' ');
+      existing.howToConfigure = [existing.howToConfigure, fix].filter(Boolean).join(' ');
+    } else {
+      unexamined.push({
+        validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: blocking[0].cause, reason, howToConfigure: fix,
+        documents: blocking.map(d => d.path), newIn: line && isNewIn(line, runningVersion) ? line : null, blocking: !lite,
+      });
+    }
+  }
+  if (listed.length) {
+    const { names, reasons, fix } = summary(listed);
+    couldNotRead.push({
+      validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: listed[0].cause,
+      reason: `${listed.length} document(s) whose ownership is not established: ${names}. ${reasons}`,
+      howToConfigure: fix, documents: listed.map(d => d.path),
+    });
+  }
 }
 
 /** The waiver form every strict failure points at (spec 084). */
@@ -209,6 +277,13 @@ export const WAIVER_FORM = '<!-- docguard:validator <key> n/a — <reason> owner
 export function adoptLines(strict) {
   const lines = ['Adopt — what strict found and how to resolve each item:'];
   for (const u of strict.unexamined.filter(u => u.blocking)) {
+    if (u.documents?.length) {
+      // A validator that examined other things and left these documents unexamined (FR-021).
+      lines.push(`  • ${u.name} did not examine ${u.documents.length} document(s)${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
+      if (u.reason) lines.push(`      ${u.reason}`);
+      if (u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
+      continue;
+    }
     lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
     const fix = u.howToConfigure || u.reason;
     if (fix) lines.push(`      ${fix}`);
@@ -238,6 +313,7 @@ export function couldNotReadLines(strict) {
     lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}`);
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
+    if (u.documents?.length && u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
   }
   return lines;
 }

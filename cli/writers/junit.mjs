@@ -45,6 +45,7 @@ export function toJUnit(data) {
   const cases = [];
   let failures = 0, errorCount = 0, skipped = 0;
 
+  let extraCases = 0;
   for (const v of data.validators || []) {
     const vFindings = Array.isArray(v.findings)
       ? v.findings
@@ -101,9 +102,17 @@ export function toJUnit(data) {
     } else {
       cases.push(`    <testcase ${attrs}/>`);
     }
+    // specs/097 FR-021: documents a validator did not examine while it examined others are
+    // their own case, rendered the way an unexamined validator is (skipped, with cause and fix).
+    if (u?.documents?.length && u.blocking) {
+      skipped++;
+      extraCases++;
+      const docAttrs = `name="${esc(`${v.name}: unexamined documents`)}" classname="docguard.guard"`;
+      cases.push(`    <testcase ${docAttrs}><skipped message="${esc(`${u.cause ? `(${u.cause}) ` : ''}${u.reason}${u.howToConfigure ? ` To fix: ${u.howToConfigure}` : ''}`)}"/></testcase>`);
+    }
   }
 
-  const total = (data.validators || []).length;
+  const total = (data.validators || []).length + extraCases;
   const suiteAttrs =
     `name="docguard guard — ${esc(data.project || 'project')}" ` +
     `tests="${total}" failures="${failures}" errors="${errorCount}" skipped="${skipped}" ` +

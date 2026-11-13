@@ -196,3 +196,4 @@ Verified 2026-11-12 on the branch head. Private projects are not named.
   - no new dependency.
 
   The 10 FRS002 on DocGuard's own documents come from this branch's commit count (15 code commits since their 2026-11-03 review), not from the code. The base CLI reports the same ten on this tree.
+- **Limitation recorded at review (2026-11-12):** PSR005 compares the sha256 of the bytes on disk, so a Windows checkout with `core.autocrlf` would change every manifest copy. Since spec 095, a copy that differs only in CRLF line endings is reported as such ("only in line endings (CRLF)").

@@ -1,0 +1,316 @@
+/**
+ * Freshness signals from recorded reviews and per-reference staleness
+ * (specs/095-recorded-document-reviews).
+ *
+ *   FRS006  an agent-instruction document names a file most of whose lines
+ *           were added since the document's review (and, with a recorded
+ *           review, whose fingerprint changed)
+ *   FRS007  package scripts / top-level directories added since the review
+ *           that the document never mentions
+ *   FRS009  a review marker advanced past a recorded review by a commit that
+ *           changed nothing else in the document
+ *   FRS010  the reviews file cannot be read: every recorded review is unusable
+ *
+ * Canonical documents get no FRS006: their FRS002/FRS003 carries the same
+ * evidence as `staleness` (FR-007). Widening FRS006 to another role waits for
+ * benchmark evidence for that role.
+ *
+ * @implements docguard.recorded-document-reviews#FR-006
+ * @implements docguard.recorded-document-reviews#FR-007
+ * @implements docguard.recorded-document-reviews#FR-008
+ * @implements docguard.recorded-document-reviews#FR-009
+ */
+
+import { lstatSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
+import { listTrackedFiles, runGit } from '../shared-git.mjs';
+import { createContext, fingerprint } from './doc-deps.mjs';
+import { DOC_REVIEWS_PATH, documentReferences, readDocReviews } from './doc-reviews.mjs';
+import {
+  commitAtEndOfDay, commitExists, commitTime, measureReferences, mentionsDir, mentionsScript, surfaceAt, surfaceNow,
+} from './reference-staleness.mjs';
+
+export const DEFAULT_REFERENCE_SHARE = 0.5;
+const MARKER_RE = /<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/;
+const pct = x => `${Math.round(x * 100)}%`;
+
+const reviewsCache = new Map();
+function reviewsFor(dir) {
+  const abs = resolve(dir);
+  let key = `${abs}:none`;
+  try { const st = lstatSync(resolve(abs, DOC_REVIEWS_PATH)); key = `${abs}:${st.mtimeMs}:${st.size}`; } catch { /* absent */ }
+  if (!reviewsCache.has(key)) reviewsCache.set(key, readDocReviews(abs));
+  return reviewsCache.get(key);
+}
+
+/** The recorded review date of a document, as a Date, or null. */
+export function recordedReviewDate(dir, doc) {
+  const entry = reviewsFor(dir).reviews?.documents?.[doc];
+  if (!entry) return null;
+  const d = new Date(`${entry.reviewedAt}T00:00:00Z`);
+  return isNaN(d.getTime()) || d.getTime() > Date.now() ? null : d;
+}
+
+export function laterDate(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  return a.getTime() >= b.getTime() ? a : b;
+}
+
+function markerDate(content) {
+  const m = String(content).match(MARKER_RE);
+  if (!m) return null;
+  const d = new Date(`${m[1]}T00:00:00Z`);
+  return isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== m[1] || d.getTime() > Date.now() ? null : m[1];
+}
+
+/** The referenceShare threshold from config, or the default. */
+export function referenceShare(config) {
+  const v = config?.freshness?.referenceShare;
+  return typeof v === 'number' && v > 0 && v <= 1 ? v : DEFAULT_REFERENCE_SHARE;
+}
+
+/** The commit that last set the marker line, and whether it changed anything else in the document. */
+function markerOnlyCommit(dir, doc, content) {
+  const lineNo = String(content).split('\n').findIndex(l => MARKER_RE.test(l)) + 1;
+  if (!lineNo) return null;
+  const b = runGit(dir, ['blame', '--porcelain', '-L', `${lineNo},${lineNo}`, 'HEAD', '--', doc], { operation: 'git blame (review marker)', answers: [0] });
+  const commit = (b.stdout || '').match(/^([0-9a-f]{40,64}) /)?.[1];
+  if (!commit || /^0+$/.test(commit)) return null;
+  const d = runGit(dir, ['show', '--format=', '--unified=0', commit, '--', doc], { operation: 'git show (review marker commit)', answers: [0], maxBuffer: 16 * 1024 * 1024 });
+  const changed = (d.stdout || '').split('\n').filter(l => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
+  const other = changed.filter(l => !MARKER_RE.test(l) && l.slice(1).trim() !== '');
+  return { commit, markerOnly: changed.length > 0 && other.length === 0 };
+}
+
+/**
+ * Everything the review checks share for one run: the role, the tracked
+ * files, the recorded reviews and caches. `statusFor(doc)` is the single
+ * place the FRS006 rule is evaluated (docguard.recorded-document-reviews#FR-006).
+ */
+function reviewContext(dir, config, ignored = () => false) {
+  const read = reviewsFor(dir);
+  const recorded = read.reviews?.documents || {};
+  const threshold = referenceShare(config);
+  const role = agentInstructionDocs(dir, config).docs;
+  const authored = role.filter(d => !d.pointer && !d.vendored && !ignored(d.path));
+  const vendored = new Set(role.filter(d => d.vendored).map(d => d.path));
+  const pointerText = new Map();
+  for (const d of role.filter(x => x.pointer?.target)) {
+    try { pointerText.set(d.pointer.target, `${pointerText.get(d.pointer.target) || ''}\n${readFileSync(resolve(dir, d.path), 'utf8')}`); } catch { /* unreadable pointer */ }
+  }
+  const tracked = listTrackedFiles(dir);
+  const trackedSet = new Set(tracked || []);
+  const roleSet = new Set(authored.map(d => d.path));
+  const cache = new Map();
+  let fpCtx = null;
+  const fpChanged = (path, rec) => {
+    if (!rec) return true; // named after the review: no fingerprint to compare
+    fpCtx ||= createContext(dir, config);
+    const now = fingerprint(fpCtx, path, { preferTier: rec.tier });
+    return !now.ok || now.fingerprint !== rec.fingerprint;
+  };
+
+  // One run, one HEAD: cache what several documents share (a review date, a commit's time).
+  const eod = new Map();
+  const times = new Map();
+  const endOfDay = date => { if (!eod.has(date)) eod.set(date, commitAtEndOfDay(dir, date)); return eod.get(date); };
+  const timeOf = rev => { if (!times.has(rev)) times.set(rev, commitTime(dir, rev)); return times.get(rev); };
+  const reviewPointOf = (doc, content) => {
+    const entry = recorded[doc];
+    if (entry?.reviewedRevision) {
+      if (!commitExists(dir, entry.reviewedRevision)) return { unavailable: `${doc}: the recorded review commit ${entry.reviewedRevision.slice(0, 12)} is not in this history (shallow clone or rewritten history)` };
+      return { revision: entry.reviewedRevision, date: entry.reviewedAt, source: 'recorded', entry };
+    }
+    const marker = markerDate(content);
+    if (marker) {
+      const revision = endOfDay(marker);
+      if (!revision) return { unavailable: `${doc}: no commit on or before its ${marker} review marker` };
+      return { revision, date: marker, source: 'marker' };
+    }
+    return null;
+  };
+
+  const evidenceFor = (doc, content, point) => {
+    const { references } = documentReferences(dir, doc, content, { tracked, vendored, config });
+    const { references: measured, measured: complete } = measureReferences(dir, doc, references, { revision: point.revision, time: timeOf(point.revision) }, { threshold, cache });
+    const crossing = measured.filter(r => r.share >= threshold && (point.source !== 'recorded' || fpChanged(r.path, point.entry.references?.[r.path])));
+    return { measured, crossing, complete };
+  };
+  const statusFor = doc => {
+    let content;
+    try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { return null; }
+    const point = reviewPointOf(doc.path, content);
+    const root = Boolean(doc.root);
+    if (!point || point.unavailable || tracked === null) return { path: doc.path, root, content, point, measured: null };
+    const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
+    return { path: doc.path, root, content, point, crossing, measured, complete };
+  };
+  // The one definition of a document Freshness did not examine (spec 097 FR-021), and whether the
+  // project can be asked to resolve it (`blocking`):
+  //   - no review point (`needs-declaration`), committed (an uncommitted one is FRS001's). It blocks
+  //     only for a root instruction file (AGENTS.md, CLAUDE.md, GEMINI.md, AGENTS.override.md,
+  //     .github/copilot-instructions.md, a configured requiredFiles.agentFile), which every session
+  //     loads and the project certainly wrote. Elsewhere ownership is not established (a skill or
+  //     rule a tool may have installed, with no install record): listed, never blocking.
+  //   - a review that no longer covers the document by the FRS006 rule (`needs-content`). It blocks
+  //     when the review establishes that the project owns the document: any review point of a root
+  //     file (a recorded review or a docguard:last-reviewed marker), and only a recorded review of
+  //     any other file. A tool can ship a skill or rule that already carries its vendor's marker, so
+  //     a marker alone on a non-root file establishes nothing: that file is listed like one with no
+  //     review (`needs-declaration`, not blocking, `marker` set), whether or not its review is suspect.
+  // A review point that cannot be read (shallow clone) is an observation gap, not this.
+  const gapOf = status => {
+    if (!status || tracked === null) return null;
+    if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: status.root, blocking: status.root } : null;
+    if (status.point.unavailable) return null;
+    if (!status.root && status.point.source === 'marker') {
+      return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: false, blocking: false, marker: status.point.date } : null;
+    }
+    if (!status.measured || !status.crossing.length) return null;
+    const { date, revision, source } = status.point;
+    return { path: status.path, cause: 'needs-content', root: status.root, blocking: true, reviewPoint: { date, revision, source }, references: status.crossing.slice(0, 3).map(r => ({ path: r.path, share: r.share })), more: Math.max(0, status.crossing.length - 3) };
+  };
+  return { read, recorded, threshold, role, authored, vendored, pointerText, tracked, roleSet, canonical: docFiles => docFiles.filter(f => !roleSet.has(f) && !vendored.has(f)), reviewPointOf, evidenceFor, statusFor, gapOf };
+}
+
+/**
+ * @returns {object[]} freshness result entries ({ status, code, doc, message, … })
+ */
+export function recordedReviewSignals(dir, config, { ignored, docFiles, results }) {
+  const out = [];
+  const read = reviewsFor(dir);
+  if (read.error) {
+    out.push({
+      status: 'fail', code: 'FRS010', doc: DOC_REVIEWS_PATH, confidence: 'high', disposition: 'act',
+      message: `${read.error}; every recorded document review is unusable, so review evidence falls back to markers`,
+      suggestion: { kind: 'fix', text: `Restore ${DOC_REVIEWS_PATH} from git (git checkout -- ${DOC_REVIEWS_PATH}), or delete it and record reviews again with docguard review --accept <doc> --reason "…". Put a new field under "extensions".` },
+    });
+  }
+  const ctx = reviewContext(dir, config, ignored);
+  const { threshold, role, authored, pointerText, tracked, roleSet, reviewPointOf, evidenceFor } = ctx;
+  if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
+  const canonical = ctx.canonical(docFiles);
+  const describe = r => `L${r.line} ${r.path} ${pct(r.share)}${r.newSinceBase ? ' (did not exist then)' : ` (+${r.added}/−${r.deleted})`}`;
+  // What this run did not examine, for freshnessContract (spec 097 FR-021); computed here so the
+  // review evidence is measured once per run.
+  const gaps = [];
+  if (results?.facts) results.facts.unexaminedDocuments = gaps;
+
+  for (const doc of authored) {
+    const status = ctx.statusFor(doc);
+    if (!status) continue;
+    const gap = ctx.gapOf(status);
+    if (gap) gaps.push(gap);
+    const { content, point } = status;
+    if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
+    // No review point: spec 097 reports this as Freshness applying and
+    // examining nothing (`empty`, cause `needs-declaration`), through
+    // agentInstructionDocsWithoutReviewPoint below, not as a finding.
+    if (!point) continue;
+    const { crossing, measured, complete } = status;
+    if (!complete) out.push({ status: 'skip', doc: doc.path, message: `${doc.path}: some references could not be measured against ${point.revision.slice(0, 12)}` });
+    if (crossing.length) {
+      const top = crossing.slice(0, 3).map(describe).join('; ');
+      const more = crossing.length > 3 ? `; and ${crossing.length - 3} more` : '';
+      out.push({
+        status: 'warn', code: 'FRS006', doc: `${doc.path}:${crossing[0].line}`, documentRole: 'agent-instruction', confidence: 'high', disposition: 'escalate',
+        message: `${doc.path} names ${crossing.length} file(s) most of whose lines were added since its ${point.date} review${point.source === 'recorded' ? ' (recorded; fingerprint changed)' : ''}: ${top}${more}`,
+        suggestion: { kind: 'review', text: `Read what ${doc.path} says about each file against the file now, update the document, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` },
+        staleness: { reviewPoint: { date: point.date, revision: point.revision, source: point.source }, threshold, references: crossing.slice(0, 10) },
+      });
+    }
+    // FRS007: surface added since the review that the document never mentions.
+    const then = surfaceAt(dir, point.revision);
+    const now = surfaceNow(dir, tracked);
+    // A file that tells agents to follow another instruction file (CLAUDE.md:
+    // "Follow `AGENTS.md`") inherits that file's mentions.
+    const followed = role.filter(r => r.path !== doc.path && new RegExp(`[\`(/]${r.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\`)]`).test(content))
+      .map(r => { try { return readFileSync(resolve(dir, r.path), 'utf8'); } catch { return ''; } }).join('\n');
+    const text = `${content}\n${pointerText.get(doc.path) || ''}\n${followed}`;
+    const scripts = [...now.scripts].filter(s => !then.scripts.has(s) && !mentionsScript(text, s)).sort();
+    const dirs = [...now.dirs].filter(d => !then.dirs.has(d) && !mentionsDir(text, d)).sort();
+    if (scripts.length || dirs.length) {
+      const parts = [scripts.length ? `package script(s) ${scripts.map(s => `\`${s}\``).join(', ')}` : '', dirs.length ? `top-level director${dirs.length > 1 ? 'ies' : 'y'} ${dirs.map(d => `\`${d}/\``).join(', ')}` : ''].filter(Boolean);
+      out.push({
+        status: 'warn', code: 'FRS007', doc: doc.path, documentRole: 'agent-instruction', confidence: 'high', disposition: 'escalate',
+        message: `${doc.path} never mentions ${parts.join(' or ')}, added since its ${point.date} review`,
+        suggestion: { kind: 'review', text: `Decide whether agents need to know about ${[...scripts, ...dirs.map(d => `${d}/`)].join(', ')}; say so in ${doc.path} (or record that it is irrelevant), then docguard review --accept ${doc.path} --reason "<what you checked>"` },
+        surface: { scripts, dirs, reviewPoint: { date: point.date, revision: point.revision, source: point.source } },
+      });
+    }
+    // FRS009: a marker advanced past a recorded review without one.
+    const marker = markerDate(content);
+    if (point.source === 'recorded' && marker && marker > point.date) {
+      const m = markerOnlyCommit(dir, doc.path, content);
+      if (m?.markerOnly) {
+        out.push({
+          status: 'warn', code: 'FRS009', doc: doc.path, documentRole: 'agent-instruction', confidence: 'high', disposition: 'escalate',
+          message: `${doc.path} — review marker moved to ${marker} by ${m.commit.slice(0, 12)}, which changed nothing else in it; the last recorded review is ${point.date}, and staleness is still measured from it`,
+          suggestion: { kind: 'review', text: `If the file was reviewed, record it: docguard review --accept ${doc.path} --reason "<what you checked>". A date alone does not say what was checked.` },
+        });
+      }
+    }
+    void measured;
+  }
+
+  // FR-007: canonical documents carry the evidence on their FRS002/FRS003.
+  for (const doc of canonical) {
+    const due = results.find(r => r.doc === doc && (r.code === 'FRS002' || r.code === 'FRS003'));
+    if (!due) continue;
+    let content;
+    try { content = readFileSync(resolve(dir, doc), 'utf8'); } catch { continue; }
+    const point = reviewPointOf(doc, content);
+    if (!point || point.unavailable) continue;
+    const { crossing } = evidenceFor(doc, content, point);
+    due.documentRole = 'canonical';
+    if (crossing.length) due.staleness = { reviewPoint: { date: point.date, revision: point.revision, source: point.source }, threshold, references: crossing.slice(0, 10) };
+  }
+  for (const r of results) if (!r.documentRole && r.doc && roleSet.has(r.doc)) r.documentRole = 'agent-instruction';
+  return out;
+}
+
+/**
+ * Agent-instruction documents (authored, non-pointer, committed) that have
+ * no review point (no `docguard:last-reviewed` marker and no recorded review),
+ * and non-root ones whose only review point is a marker (`marker` is its date):
+ * for a non-root file only a recorded review establishes that the project owns it.
+ * Spec 097 (FR-021) reports them as unexamined with cause `needs-declaration`;
+ * under strict only a `root` one blocks, and the others are listed as documents
+ * whose ownership is not established. Each entry carries the command that
+ * records a review. Uncommitted files are left to FRS001.
+ *
+ * @implements docguard.recorded-document-reviews#FR-009
+ * @returns {{ path: string, root: boolean, marker?: string, howToConfigure: string }[]}
+ */
+export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
+  const ctx = reviewContext(dir, config);
+  if (ctx.tracked === null) return [];
+  return ctx.authored.map(doc => ctx.gapOf(ctx.statusFor(doc))).filter(g => g?.cause === 'needs-declaration')
+    .map(({ path, root, marker }) => ({ path, root, ...(marker ? { marker } : {}), howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
+}
+
+/**
+ * Every reviewed agent-instruction document (authored, non-pointer, with a
+ * recorded review or a marker) and whether its review is suspect by the FRS006
+ * rule: at least one referenced file over `freshness.referenceShare` since the
+ * review (and, for a recorded review, with a changed fingerprint). FRS006 is
+ * built on the same evaluation, so the two cannot disagree. Spec 097 Stage B
+ * treats a suspect review as no longer covering its document.
+ *
+ * @implements docguard.recorded-document-reviews#FR-006
+ * @returns {{ path, suspect: boolean, reviewPoint: { date, revision, source }, threshold: number, references: object[], complete: boolean }[]}
+ */
+export function agentInstructionReviewStatus(dir, config = {}) {
+  const ctx = reviewContext(dir, config);
+  if (ctx.tracked === null) return [];
+  const out = [];
+  for (const doc of ctx.authored) {
+    const status = ctx.statusFor(doc);
+    if (!status?.point || status.point.unavailable || !status.measured) continue;
+    const { date, revision, source } = status.point;
+    out.push({ path: doc.path, suspect: status.crossing.length > 0, reviewPoint: { date, revision, source }, threshold: ctx.threshold, references: status.crossing, complete: status.complete });
+  }
+  return out;
+}

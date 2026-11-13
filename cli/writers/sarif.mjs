@@ -72,13 +72,17 @@ function invocationFor(validators, strict = null) {
   for (const v of validators) {
     const u = unexamined.get(v.key);
     const strictEmpty = v.verdict === 'empty' && u;
-    if (v.verdict !== 'blocked' && v.verdict !== 'inconclusive' && !strictEmpty) continue;
+    // FR-021: documents left unexamined by a validator that examined others (its verdict is pass or fail).
+    const documents = u?.documents?.length && u.blocking && !strictEmpty && v.verdict !== 'blocked' && v.verdict !== 'inconclusive';
+    if (v.verdict !== 'blocked' && v.verdict !== 'inconclusive' && !strictEmpty && !documents) continue;
     const fix = u?.howToConfigure ? ` To fix: ${u.howToConfigure}` : '';
     const cause = u?.cause ? ` (${u.cause})` : '';
     toolExecutionNotifications.push({
       level: v.verdict === 'blocked' ? 'error' : 'warning',
       descriptor: { id: String(v.key || v.name || 'unknown') },
-      message: { text: `${v.name || v.key} is ${v.verdict}${cause}: ${v.applicability?.reason || 'no reason recorded'}${fix}` },
+      message: { text: documents
+        ? `${v.name || v.key} did not examine ${u.documents.length} document(s)${cause}: ${u.reason}${fix}`
+        : `${v.name || v.key} is ${v.verdict}${cause}: ${v.applicability?.reason || 'no reason recorded'}${fix}` },
     });
   }
   return { executionSuccessful: !validators.some(v => v.verdict === 'blocked'), toolExecutionNotifications };

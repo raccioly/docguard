@@ -71,7 +71,10 @@ export function resolveSeverity(config, validatorKey) {
  */
 export function resolveFindingEnforcement(config, finding, validatorKey, strictContext = null) {
   const code = typeof finding?.code === 'string' ? finding.code.toUpperCase() : null;
-  const exact = code && config?.findingSeverity?.[code];
+  let exact = code && config?.findingSeverity?.[code];
+  // docguard.recorded-document-reviews#FR-010: a role-scoped level applies only
+  // to findings about a document in that role; others keep the default.
+  if (exact && typeof exact === 'object' && !Array.isArray(exact)) exact = finding?.documentRole ? exact[finding.documentRole] : undefined;
   const normalizedExact = typeof exact === 'string' ? exact.toLowerCase() : null;
   if (normalizedExact && SEVERITY_LEVELS.has(normalizedExact)) {
     return {
