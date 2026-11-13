@@ -2192,6 +2192,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   IDs (`D-7`, `OI-001`, `T-7`) no longer make it apply; unfilled template rows and
   template documents are not requirements; the evidence lists each ID once.
 
+- **A template row is a row whose only content is the slot.** The slot rule dropped real
+  requirements whose text mentions `{file}`, `{name}`, `{count}` or `<region>` as part of a
+  sentence. A row is now a template row only when, with every slot removed, what is left is
+  the bare scaffold of a requirement sentence ("System MUST", "Users MUST be able to") or
+  nothing; a sentence that still states something is a requirement. A requirement whose text
+  sits on the lines under its ID is a requirement. Spec Kit's `[NEEDS CLARIFICATION]` example
+  rows and a filled default row with no slot are counted unless the document is a template.
+
 - **Requirement-Anchors counted identifiers that are not requirements.** Whether
   the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
   spec and requirement documents, not decision records, open-item or question lists,
@@ -2385,16 +2393,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   dependency-free fuzzer, and `npm test` runs it with a fixed seed. Each of 19
   text parsers must not throw, must answer the same twice, and must finish
   within time linear in its input. That covers requirement IDs, ADRs, AI-DLC
-  stage progress, waiver metadata, headings, doc sections, covers lists,
-  lifecycle status, API tables, HTML comments and `.docguardignore`.
-  `npm run fuzz -- --cases 20000 --save` runs deep and keeps what it finds.
-- **A release is compared with the previous release before it ships**
-  (`docguard.release-trend-gate`, spec 087). A new `release-gate` job in
-  `release.yml` runs the previous release's CLI and the candidate over the
-  repository and the benchmark fixtures. It fails unless this section names
-  every finding code whose findings changed, and any exit-code change. It also
 
-<!-- truncated: 6418 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6426 more lines — read CHANGELOG.md directly -->
 
 ---
 
