@@ -70,4 +70,36 @@ describe('"example" is exempt only as a whole segment (#655)', () => {
     writeFileSync(join(dir, 'src/a.js'), 'const password = "password123";\n');
     assert.deepEqual(validateSecurity(dir, {}).findings.filter(f => /^SEC00/.test(f.code)), []);
   });
+
+  describe('AWS documentation secret access keys: exact match only', () => {
+    const DOC = ['wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', 'je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY'];
+    const lines = v => [
+      `export const apiKey = "${v}";`,
+      `const secret = "${v}";`,
+      `const aws_secret_access_key = "${v}";`,
+      `AWS_SECRET_ACCESS_KEY = "${v}"`,
+    ];
+    const secFindings = body => {
+      mkdirSync(join(dir, 'src'), { recursive: true });
+      writeFileSync(join(dir, 'src/a.js'), body + '\n');
+      return validateSecurity(dir, {}).findings.filter(f => /^SEC00[1-6]$/.test(f.code));
+    };
+    for (const v of DOC) {
+      for (const line of lines(v)) {
+        it(`exempt: ${line.slice(0, 40)}...`, () => assert.deepEqual(secFindings(line), []));
+      }
+      it(`one character off is still reported: ${v.slice(0, 8)}`, () => {
+        const off = v.replace('EXAMPLEKEY', 'EXAMPLEKEZ');
+        assert.equal(secFindings(`export const apiKey = "${off}";`).length, 1);
+      });
+    }
+  });
+
+  it('KNOWN CONSEQUENCE: a word buried in an unbroken lowercase run is still reported (SEC001)', () => {
+    mkdirSync(join(dir, 'src'), { recursive: true });
+    writeFileSync(join(dir, 'src/a.js'), 'const password = "myexamplepassword1";\n');
+    const f = validateSecurity(dir, {}).findings.filter(x => /^SEC00[1-6]$/.test(x.code));
+    assert.equal(f.length, 1);
+    assert.equal(f[0].code, 'SEC001');
+  });
 });

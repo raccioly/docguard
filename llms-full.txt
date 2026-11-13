@@ -2019,7 +2019,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (split on separators and camelCase boundaries) or at the start of the value,
   the rule already used for `placeholder`, `synthetic`, `dummy` and `changeme`.
   `EXAMPLE_API_KEY`, `my-example-token` and `exampleSecret123` stay exempt; the
-  exact AWS documentation key `AKIAIOSFODNN7EXAMPLE` keeps its own exception.
+  exact AWS documentation credentials keep their own exact-match exceptions:
+  the access key `AKIAIOSFODNN7EXAMPLE` and the secret access keys
+  `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` and
+  `je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY`. Known consequence: a word buried
+  in an unbroken run, such as `"myexamplepassword1"`, is now reported (`SEC001`).
   Findings that can appear: `SEC002` (and `SEC001`, `SEC003`, `SEC004` for
   values of those kinds). Baselines and `docguard:ignore` pragmas cover a value
   you have reviewed (#655).
@@ -2396,12 +2400,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Budgets
 
 `bytes:mcp:docguard_read_section` grew by 439 bytes on the `finding-channels`
-section of DATA-MODEL, 107 over its 332-byte allowance. The section now
-documents the `context` field that Security findings carry and the rule that a
-`test-path` finding never counts toward failing a build (spec 097 FR-010).
 
-
-<!-- truncated: 6563 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6567 more lines — read CHANGELOG.md directly -->
 
 ---
 

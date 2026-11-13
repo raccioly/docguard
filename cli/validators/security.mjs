@@ -97,12 +97,24 @@ export function secretContext(relPath, config = {}) {
 const CONTEXT_CODES = new Set(['SEC001', 'SEC002', 'SEC003', 'SEC004']);
 
 /**
+ * The secret access keys AWS publishes in its documentation, the pairs of
+ * `AKIAIOSFODNN7EXAMPLE`. They sit in countless READMEs and tests. Exact match
+ * only, under any pattern label that can match them (#655: the word-in-value
+ * rule no longer hides them, so they need their own exception).
+ */
+const AWS_DOCUMENTATION_SECRETS = new Set([
+  'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+  'je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY',
+]);
+
+/**
  * Placeholder exemptions belong to the matched value, never sibling fields
  * or trailing comments. Recognizable provider keys use only the exact public
  * AWS example exception, even when the surrounding text says "example".
  */
 function isSafePlaceholder(line, matchStr, label) {
   if (label === 'AWS Access Key ID') return matchStr === 'AKIAIOSFODNN7EXAMPLE';
+  if (AWS_DOCUMENTATION_SECRETS.has(quotedValue(matchStr))) return true;
   if (label === 'API secret key (Stripe/OpenAI pattern)') return false;
   const value = quotedValue(matchStr);
   if (value === 'password123') return true;
