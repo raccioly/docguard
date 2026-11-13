@@ -50,6 +50,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Non-regression budgets** | Compares a PR with its base on one runner: interleaved guard wall time, self-guard error findings, agent-facing output bytes, packed package weight and runtime dependencies, against the ratios and floors in `budgets.json`; `Budget-Exempt` waives one metric with a reason | `tools/budget.mjs`, `budgets.json` | CI `budget` job; development tooling, not shipped in the npm package |
 | **Parser fuzz harness** | A seeded, dependency-free fuzzer runs 19 text parsers on generated Markdown, Spec Kit and AI-DLC shapes and on pathological inputs up to about 200 KB, requiring no throw, the same answer twice, and time linear in the input; `--save` shrinks and keeps a failing input for replay (spec 088) | `tools/fuzz.mjs` | `npm test` runs a fixed seed; development tooling, not shipped |
 | **Release trend gate** | Compares a release candidate with the previous release tag: both CLIs over the `release-gate.json` corpus, one fresh copy each, serially. Every finding code whose findings changed, and any exit-code change, must be named in the CHANGELOG section being released. Budgets and the precision benchmark are re-run against the previous tag (spec 087) | `tools/release-ab.mjs`, `release-gate.json` | `release.yml` `release-gate` job, needed by `create-release`; development tooling, not shipped |
+| **Recorded document reviews** | `review --accept <doc>` records the commit and a fingerprint of every file a document references in `.docguard-doc-reviews.json`. Freshness measures each reference from the later of the review point and the referencing line's last edit (one `git diff --numstat` per review point; blame and a re-measure only for references over the threshold) and reports FRS006 (agent instructions name a file most of whose lines are new since the review), FRS007 (scripts or top-level directories added since the review, never mentioned); `agentInstructionDocsWithoutReviewPoint` lists documents with no review point for spec 097's `needs-declaration`; FRS009 (marker moved without a recorded review) and FRS010 (unreadable reviews file). Canonical documents get the evidence on FRS002. Guard prints a stale-instructions line first and lists them in `staleInstructions[]` | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs`, `cli/commands/guard.mjs` | Separate file from the doc lock (its unknown-field rule would break older readers); future fields under `extensions`; FRS006 is emitted for the agent-instruction role only (spec 095) |
 | **Doc dependency lock** | A doc section declares the code it describes (`covers=` on its `docguard:section` marker); `review --accept` records AST or content fingerprints in `.docguard-doc-lock.json`; the Doc-Dependency validator reports a covered symbol whose code changed (DLK001), a dependency that no longer resolves, an unaccepted or orphaned entry, or an unreadable lock | `cli/scanners/doc-deps.mjs`, `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` | Opt-in by declaration; only `review` writes the lock; runs in `--changed-only` pre-commit mode |
 | **Requirement anchors** | Each `@implements`/`@req` tag anchors to the code under it (file, qualified symbol, statement or route) through Babel, one batched `python3` run, or the self-checking pattern lexer; each link carries an exact, a floor and a requirement fingerprint (`dg1:`). `fingerprint.mjs` holds both the doc lock's `doclock-v0` algorithm and the anchors' `v1`. A link whose code changed lists the tests citing its requirement; `testguard-evidence.mjs` reads saved TestGuard evidence to mark one re-verified. `--orphans` lists untagged exported units under governed paths, and dispositions record why one has no requirement. `trace --matrix` exports requirement → anchor → test as CSV or ReqIF 1.2 through `cli/writers/trace-matrix.mjs`. With `anchors.import`, StrictDoc and OpenFastTrace tags are read, never written. The opt-in tree-sitter tier (`ts-anchors.mjs`, `ts-decls.mjs`, `ts-anchors-child.mjs`) refines pattern-tier symbols from hash-pinned artifacts; `tools/anchor-oracle` measures the pattern tier against it in CI. A `docguard:volatile` comment marks its line, and every tier fingerprints what lies wholly on that line as a placeholder, from one set of marked lines per file (`volatileLinesFor`) | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/pattern-lexer.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/scanners/requirement-docs.mjs`, `cli/scanners/testguard-evidence.mjs`, `cli/scanners/ts-anchors.mjs`, `cli/scanners/ts-decls.mjs`, `cli/scanners/ts-anchors-child.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs`, `cli/writers/trace-matrix.mjs`, `cli/commands/trace.mjs` | Opt-in (`.docguard-anchor-lock.jsonl` or `anchors.enabled`); `anchors` lists in any project; per-file cache in `.docguard/`, untrusted in CI or when tracked |
 | **Version-age note** | Reads the running release's date from the shipped `CHANGELOG.md` heading for exactly its version; when it is more than 14 days old, the guard text footer, the MCP `initialize` instructions and the context pack say a newer version may exist and name `docguard upgrade` | `cli/release-age.mjs`, `cli/commands/guard.mjs`, `cli/commands/mcp.mjs`, `cli/commands/memory.mjs` | No network call; silent when unsure (no CHANGELOG, no heading, bad date, clock before release), in a source checkout, with `DOCGUARD_NO_UPDATE_HINT=1`, and in the guard footer under `CI`; never in JSON, SARIF, JUnit or MCP tool results |
@@ -794,7 +795,8 @@ The primary data structure. Controls all CLI behavior.
 | `collections.*` | `string` (glob) | No | — | Binds a documentation noun to a code collection: `"extractors": "src/extractors/*.py"` lets Metrics-Consistency flag a documented count that disagrees with the file count |
 | `docs.dirs` | `string[]` | No | Auto-detected | EXTENDS the auto-detected documentation homes (docs/, documentation/, guides/, …) with non-standard dirs; exclude via `.docguardignore` |
 | `severity.*` | `"high" \| "medium" \| "low"` | No | `"medium"` | Per-validator exit-code weight — `high` promotes warnings to blocking, `low` demotes them (display unchanged) |
-| `findingSeverity.<CODE>` | `"high" \| "medium" \| "low"` | No | — | Exact stable-code enforcement; takes precedence over validator policy. Intrinsic errors require an exact code entry to be demoted. |
+| `findingSeverity.<CODE>` | `"high" \| "medium" \| "low"` or `{ "agent-instruction" \| "canonical": level }` | No | — | Exact stable-code enforcement; takes precedence over validator policy. Intrinsic errors require an exact code entry to be demoted. The object form scopes the level to findings about a document in that role (`{ "FRS006": { "agent-instruction": "high" } }`); findings about other documents keep the default (spec 095) |
+| `freshness.referenceShare` | `number` (0, 1] | No | `0.5` | FRS006 fires when at least this share of a referenced file's current lines was added since the agent-instruction document's review (spec 095) |
 | `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) and per harness and path (PSR003). For Claude Code the total includes files pulled in by `@path` imports (relative to the importing file, up to 5 hops); a missing import is PSR002 |
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
@@ -937,6 +939,34 @@ linked source, test, canonical document, or decision changed after the last
 reviewed revision. Generated registry and outcome updates do not satisfy that
 gate.
 <!-- /docguard:section -->
+
+## Recorded Document Reviews: `.docguard-doc-reviews.json`
+
+`docguard review --accept <doc> --reason "…"` records what a review of a whole document checked
+(spec 095): the commit (`reviewedRevision`), the date, the reason, and a fingerprint (`content`,
+or `ast`/`python-ast` for `path#symbol`) of every file the document names in backticks, a link or a
+slash-path. `excluded` lists the references that are not measured, with the reason: directories,
+vendored copies, other documents, test/fixture/example paths, changelogs and lockfiles, claims/evidence JSON, DocGuard state files, `linguist-generated` files,
+files with a `generated by` header, and files under 20 lines. Accepted documents: the
+agent-instruction role (non-vendored; a pointer is refused in favor of its target), canonical
+documents, `README.md` and `CONTRIBUTING.md`. An identical rerun writes nothing.
+
+The file is separate from `.docguard-doc-lock.json` because that lock rejects unknown top-level
+fields, so extending it would make an older DocGuard reject the whole lock. This file's
+compatibility rule: a new field goes under an `extensions` object (top level, per document or per
+reference), which readers ignore; any other unknown field is an error, reported as FRS010 (a failing
+finding), never read as "no reviews". Normative schema: `schemas/docguard-doc-reviews.schema.json`.
+
+Freshness reads it: a recorded review is the review point of FRS006 and FRS007 (it wins over the
+`docguard:last-reviewed` marker, which stays honored as the legacy review point until the first
+recorded review), and its date counts for FRS002 and FRS003. FRS006 also requires a referenced file's
+fingerprint to differ from the recorded one. FRS009 reports a marker moved past a recorded review by
+a commit that changed nothing else. Findings about these documents carry `documentRole`
+(`agent-instruction` or `canonical`); FRS006 carries `staleness` (`reviewPoint`, `threshold`,
+`references[]` with `path`, `line`, `added`, `deleted`, `total`, `share`, `newSinceBase`, `base`),
+FRS007 carries `surface` (`scripts`, `dirs`, `reviewPoint`), and a canonical document's FRS002/FRS003
+carries the same `staleness` as information. Guard JSON lists agent-instruction documents with
+FRS006 or FRS007 in `staleInstructions[]` (`{ doc, codes }`).
 
 ## Doc Dependency Lock: `.docguard-doc-lock.json`
 
@@ -1110,37 +1140,8 @@ leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding p
 
 | Field | Meaning |
 |---|---|
-| `asOf` | The UTC day expiries were judged against |
-| `entries[].kind` | `path`, `code` (inline pragma), `validator` / `section` (N/A marker), `fingerprint` (baseline) |
-| `entries[].pattern` / `codes` / `key` | The glob or fingerprint / the pragma's codes (`null` = any code; `docguard:ignore-secret` is `["SEC*"]`) / the validator key or section id |
-| `entries[].scope` | `all-validators`, `validator:<key>`, `section:<id>`, `line` (the pragma's line and the next), `finding` |
-| `entries[].reason` | What the author wrote, or `null`. Never synthesised |
-| `entries[].expires` | `YYYY-MM-DD` or `null`; only `.docguardignore` carries one |
-| `entries[].state` | `active`, `expired`, `invalid` (does not apply), `disabled` (baseline off) |
-| `entries[].source` | `{ file, line }` or `{ file, key }` |
-| `coverage.inlineScan` | `complete`, or `partial` when files could not be read |
-| `export` | The claimspec export report: `exported`, `candidates`, `omitted[]` (`at`, `pattern`, `why`), `rewritten[]` (`at`, `from`, `to`), `notRepresentable[]` (`category`, `count`, `why`), `complete` |
 
-### claimspec `ignore` export
-
-`docguard ignore --format claimspec` writes a claimspec v1 `ignore` document
-(`schemaVersion: 1`, `entries[]` of `kind: "path"`, `pattern`, `reason`,
-optional `expires`). Only `.docguardignore` entries are exported, and only when
-the reason is 8–2000 characters, the expiry is readable or absent, and gitignore
-syntax states the pattern's DocGuard scope exactly (`**/` is prefixed to an
-unanchored pattern containing a slash, a trailing `/` is dropped, and a leading
-`!`, a `**` inside a segment, an unclosed `[` or a POSIX class is refused). `expires` is the
-first instant after the stated day. The schemas are vendored byte-identical in
-`schemas/claimspec/v1/` from raccioly/testguard at the revision recorded in
-`cli/claimspec-schema.mjs`, and every document is validated before it is printed.
-
-## Generated caches and budgets
-
-| File | Written by | Shape |
-|---|---|---|
-| `.docguard/plan.cache.json` | the memory plan (guard, sync, generate) | `{ v, configKey, treeHash, plan, writtenAt }`. `v` is `"3"`: code sections may carry `completeness: "partial"` and a `partialReason`. A cache with another version, config key or tree hash is a miss and is rebuilt |
-
-<!-- truncated: 285 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 315 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 
@@ -1711,6 +1712,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/validators/docs-diff.mjs` | `tests/commands.test.mjs`, `tests/docs-diff.test.mjs` | ✅ |
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
+| `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
+| `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/scanners/pattern-lexer.mjs` (pattern tier: string-aware comments, symbol spans, floor fingerprints) | `tests/pattern-lexer.test.mjs` | ✅ |
 | `cli/scanners/anchor-tags.mjs`, `cli/scanners/anchors.mjs`, `cli/scanners/anchor-cache.mjs`, `cli/validators/requirement-anchors.mjs`, `cli/commands/anchors.mjs` (requirement anchors, ANC001–ANC011) | `tests/requirement-anchors.test.mjs`, `tests/anchor-cache.test.mjs`, `tests/requirement-anchors-golden.test.mjs`, `tests/requirement-anchors-lock.test.mjs` | ✅ |
@@ -2107,6 +2110,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and needs no cause. The drafted ownership block is never offered as a fix without
   saying it must be edited
   (`docguard.strict-by-default` FR-004 to FR-006, stage A).
+- **Recorded document reviews** (#628, spec 095). `docguard review --accept <doc> --reason "…"`
+  now records a whole-document review in `.docguard-doc-reviews.json`: the commit, the reason
+  and a fingerprint of every file the document references. A `docguard:last-reviewed` date says
+  when; this says what was checked.
+- **FRS006: agent instructions name a file that changed since their review.** For AGENTS.md,
+  CLAUDE.md, GEMINI.md, Copilot instructions and authored skills and rules: a referenced file at
+  least half of whose current lines were added since the review (and, with a recorded review,
+  whose fingerprint changed). The message names the line, the file, the share and
+  `+added/−deleted`. On TestGuard at f89ca46 it reports `AGENTS.md:35 src/probe/probe.mjs 74%
+  (+1066/−190)`. Canonical documents carry the same evidence on their FRS002.
+- **FRS007: surface added since the review that the document never mentions** (package scripts,
+  top-level directories). **FRS009**: a review date moved past a recorded review by a commit
+  that changed nothing else. **FRS010**: an unreadable reviews file fails the run.
+- **Guard says first when agents are served stale instructions**, in text (also with `--quiet`)
+  and as `staleInstructions[]` in JSON.
+- **`findingSeverity` accepts a document role**: `{ "FRS006": { "agent-instruction": "high" } }`
+  fails the build for agent instructions only. `freshness.referenceShare` sets the FRS006
+  threshold (default 0.5).
 
 - **One agent-instruction document role** (#628, spec 094). DocGuard decided which
   files are agent instructions in twelve separate lists, and they disagreed: Freshness
@@ -2375,26 +2396,8 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
   Guard reports AI-DLC learned rules and CodeKB files that name deleted paths
   or unused environment variables (MEM001, MEM002, advisory).
   `docguard memory --export aidlc` feeds AI-DLC the facts DocGuard verified
-  (dry run unless `--write`), and `docguard memory --consolidate aidlc` groups
-  repeated stage-diary entries and flags stale ones without writing anything.
-  DocGuard never edits AI-DLC memory layers and never runs `aidlc`.
-  A rule's path counts as gone only if git history once had it, and template
-  placeholders (`<active-space>`) are never paths: a fresh AI-DLC project's
-  stock `org.md` reports nothing.
 
-- **What DocGuard tells authors to write is what its validators accept**
-  (`docguard.authoring-contract`, spec 082). One registry
-  (`cli/authoring-contract.mjs`) now holds each canonical document's sections.
-  STR003, the Doc Quality score, `explain`, the `fix` prompts and the Spec Kit
-  `docguard-fix` skill all read it. Before this, the skill and `fix` asked
-  agents for sections STR003 does not accept, so an agent following
-  DocGuard's guidance wrote documents that failed DocGuard: "Technology
-  Choices" instead of Tech Stack, "Test Framework" instead of Test
-  Categories, "Data Structures" instead of Entities. A round-trip test feeds
-  every piece of guidance and every template back through the validators.
-  New STR007 reports a section the active profile requires (the
-
-<!-- truncated: 6433 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6451 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2788,7 +2791,7 @@ code-truth sections), `score` (CDD maturity 0-100).
 `retire` (remove reviewed docs from active context),
 `specs` (check/refresh/preflight/approve/complete the spec lifecycle registry; `require` for the spec-first gate; `reanchor` for a squash-discarded revision),
 `reconcile` (classify code/spec changes since a Git ref without rewriting intent),
-`review` (doc sections whose covered code changed; `--accept`, `--prune`, `--suggest`),
+`review` (doc sections whose covered code changed; `--accept <doc>` records a document review with a fingerprint per referenced file, `--accept <doc>#<id>` a section review; `--prune`, `--suggest`),
 `anchors` (code→requirement links and whether each changed since review; `accept` records a review),
 `rules` (which instruction files each agent harness loads for a path; `--for <path>`),
 `explain` (explain a validator/warning), `verify` (declared evidence; `--semantic` claims), `ignore` (every suppression with its reason and expiry), `feedback` (report false positives), `mcp` (MCP server; stdio or loopback HTTP; tool calls stay inside the served directory and each `--root`), `report` (compliance bundle), `ci` (guard + score gate), `policy` (which advisory codes CI history shows are ready to promote), `memory` (what DocGuard
@@ -2918,6 +2921,8 @@ extensions/spec-kit-docguard/
   The CI test job fails any single test over 100 seconds at reference-runner
   speed (`TEST_CEILING_MS`, `tools/suite-runtime-budget.mjs`); the suite total
   is reported, not gated (specs/051-release-cut-green FR-007, TEST-SPEC.md).
+  A change to a parser that reads documents runs `npm run fuzz` (seeded
+  fuzzing: no throw, same answer twice, bounded time; specs/088-validator-fuzz).
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

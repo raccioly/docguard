@@ -411,6 +411,7 @@ describe('US4 — formats', () => {
  *   silent    no answer is a legitimate state here; the reason says why
  */
 const GIT_CALL_SITES = {
+  'cli/scanners/recorded-review-signals.mjs': { listTrackedFiles: 'silent: without git the reviews checks return no signal, as the history checks in Freshness already skip' },
   'cli/scanners/anchors.mjs': { listTrackedFiles: 'fallback', fileContentAtRev: 'silent: a path absent at the locked revision has no prior bytes to compare' },
   'cli/scanners/doc-deps.mjs': { listTrackedFiles: 'fallback', fileContentAtRev: 'silent: a dependency added after the revision has no prior text' },
   'cli/scanners/doc-ownership.mjs': { listTrackedFiles: 'fallback' },
@@ -440,6 +441,9 @@ const PRIVATE_GIT_CALLS = {
   'cli/scanners/spec-first.mjs': { args: 'silent: spec-first reports an unreadable range as inconclusive (exit 2), spec 015' },
   'cli/scanners/spec-registry.mjs': { runGit: 'gap', 'ls-files': 'silent: an asset path git cannot confirm tracked and clean is not attributed', diff: 'silent: an asset path git cannot confirm tracked and clean is not attributed' },
   'cli/scanners/speckit.mjs': { runGit: 'gap', args: 'silent: featureTouchedPaths returns null and SPK010 stays silent for the feature (spec 080 FR-004)', 'ls-files': 'silent: unobservablePaths returns null and SPK010 stays silent (spec 080 FR-004)' },
+  'cli/scanners/doc-reviews.mjs': { runGit: 'gap' },
+  'cli/scanners/recorded-review-signals.mjs': { runGit: 'gap' },
+  'cli/scanners/reference-staleness.mjs': { runGit: 'gap' },
   'cli/validators/aidlc.mjs': { runGit: 'gap' },
   'cli/validators/changelog.mjs': { diff: 'silent: no staged list means no staged-change reminder, never a finding' },
   'cli/validators/freshness.mjs': { log: 'silent: freshness signals are escalations; an unknown count raises none', diff: 'silent: freshness signals are escalations; an unknown staged list raises none', 'rev-list': 'silent: freshness signals are escalations; an unknown count raises none' },

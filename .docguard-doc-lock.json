@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:6f038ce398477de1c6c6d87c6ebe1598ee2f4aa03612f9abb92a5c11ed4ff6a8",
+          "fingerprint": "sha256:7c7a31069ae89304d12576101c5b1cfba54f1a74984e5ecdebbb3f4427e3495c",
           "tier": "ast"
         }
       },
-      "reason": "Added the optional context field and isGatingEligible note; checked against mkFinding",
-      "reviewedAt": "2026-11-12",
-      "reviewedRevision": "d7319558ae87d32c9b12e169fa67253017cbc230"
+      "reason": "mkFinding now carries both the Security context field (097) and the freshness documentRole/staleness/surface fields (095); prose states both",
+      "reviewedAt": "2026-11-13",
+      "reviewedRevision": "5d6342b2dbd0b1517d38129a5f30407fff87830d"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
