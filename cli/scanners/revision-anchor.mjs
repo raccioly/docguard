@@ -23,7 +23,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { stripImplementationOutcomes } from '../writers/spec-outcomes.mjs';
-import { OWN_STATE_PATHSPEC, runGit } from '../shared-git.mjs';
+import { OWN_STATE_PATHSPEC, isShallowRepository, runGit } from '../shared-git.mjs';
 
 const REVISION_RE = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 export const HISTORY_LIMIT = 1000;
@@ -35,9 +35,7 @@ function git(projectDir, args) {
   return r.status === 0 && !r.error ? { ok: true, out: r.stdout } : { ok: false, out: '' };
 }
 
-export function isShallowRepository(projectDir) {
-  return git(projectDir, ['rev-parse', '--is-shallow-repository']).out.trim() === 'true';
-}
+export { isShallowRepository };
 
 export function revisionResolves(projectDir, revision) {
   return REVISION_RE.test(revision || '') && git(projectDir, ['cat-file', '-e', `${revision}^{commit}`]).ok;

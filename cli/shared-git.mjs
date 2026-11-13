@@ -121,6 +121,17 @@ export function unreadableGitApplicability(state) {
 }
 
 /**
+ * Whether `dir` is a shallow clone, such as the one `actions/checkout` makes by default (one commit). A
+ * shallow checkout cannot show the history the history checks read. When git is unavailable or the command
+ * fails the answer is false: today's behavior, and the failure is recorded as a gap by runGit.
+ * @implements docguard.strict-by-default#FR-007
+ */
+export function isShallowRepository(dir) {
+  const r = runGit(dir, ['rev-parse', '--is-shallow-repository'], { operation: 'git rev-parse --is-shallow-repository', stdio: ['ignore', 'pipe', 'ignore'] });
+  return r.status === 0 && !r.error && String(r.stdout).trim() === 'true';
+}
+
+/**
  * True if the directory is inside a git work tree. Cached per-call.
  */
 export function isGitRepo(dir) {
