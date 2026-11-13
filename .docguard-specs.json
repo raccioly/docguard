@@ -16148,11 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:e495b55ca4ca88600bf7243e5f0bb85fe796f7d893e2f69ece10fe3abef0944b"
+            "digest": "sha256:f88a6325bd944b170c0b6518b1a0c4fe27dc7a5d731552d5fb8ea80184a84102"
           }
         ],
         "taskCompletion": {
-          "checked": 24,
+          "checked": 25,
           "total": 40
         },
         "implementationEvidence": [

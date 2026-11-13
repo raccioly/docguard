@@ -51,7 +51,7 @@ Tests come first. Each reproduction must fail on the v0.47.0 tag before the chan
 
 - [x] T018g From the third proof pass: Metadata-Sync counts only a version stated for this package (another tool's minimum version in a guide is not one); Requirement-Anchors is not applicable when the only identifiers are decision, open-item or task IDs (its unread-form branch must not treat them as requirement-like), and template placeholder rows are not counted anywhere; Traceability reports requirements traced as its performed count, does not count placeholder rows as requirements, and does not pass on a project with no requirement; the Docs-Diff mapping offer finds an architecture document in a subfolder. Then re-check the affected rows.
 
-- [ ] T018h From the fourth proof pass (SC-001 met; SC-003 not): the placeholder-row rule drops real requirements whose text mentions a slot-like token in prose (`{file}`, `{name}`, `<region>`); a row is a template row only when nothing but the slot carries the requirement. The Docs-Diff mapping offer must not list wrong candidates. Then re-check `standard` against `main` on the affected repositories.
+- [x] T018h From the fourth proof pass (SC-001 met; SC-003 not): the placeholder-row rule drops real requirements whose text mentions a slot-like token in prose (`{file}`, `{name}`, `<region>`); a row is a template row only when nothing but the slot carries the requirement. The Docs-Diff mapping offer must not list wrong candidates. Then re-check `standard` against `main` on the affected repositories.
 
 ## Stage B — the default changes
 
