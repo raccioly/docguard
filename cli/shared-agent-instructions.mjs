@@ -25,7 +25,9 @@ import {
   claudeImportsIn, instructionFilesOnDisk, instructionKind, MAX_IMPORT_HOPS, MAX_INSTRUCTION_FILES, safeProjectPath,
 } from './scanners/instruction-scopes.mjs';
 import { listTrackedFiles } from './shared-git.mjs';
-import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore } from './shared-ignore.mjs';
+import {
+  buildIgnoreFilter, compileGlob, DEFAULT_DETECTION_IGNORE_DIRS, isNonProductPath, isPackageSegment, loadDocguardIgnore,
+} from './shared-ignore.mjs';
 
 /** Files a harness loads from the project root for every session. */
 export const ROOT_AGENT_FILES = Object.freeze([
@@ -199,6 +201,60 @@ function namedFiles(path, content) {
   return named;
 }
 
+/** Directory names that hold forms a project writes into other repositories (spec 099 FR-001). */
+export const TEMPLATE_DIRS = Object.freeze(new Set([
+  'templates', 'template', '_templates', '__templates__', 'scaffold', 'scaffolds', 'boilerplate', 'boilerplates',
+]));
+
+/** `agentInstructions.governing` globs, compiled once per config. */
+const governingMemo = new WeakMap();
+function governingMatchers(config) {
+  const key = config && typeof config === 'object' ? config : null;
+  if (!key) return [];
+  if (governingMemo.has(key)) return governingMemo.get(key);
+  const raw = key.agentInstructions?.governing;
+  const list = (Array.isArray(raw) ? raw : []).filter(p => typeof p === 'string' && p.trim()).map(p => {
+    try { return compileGlob(p.trim().replace(/^\.\//, '')); } catch { return null; }
+  }).filter(Boolean);
+  governingMemo.set(key, list);
+  return list;
+}
+
+/** True when `agentInstructions.governing` names this path: it is the project's instructions wherever it sits (FR-002). */
+export function isDeclaredGoverning(path, config = {}) {
+  return governingMatchers(config).some(re => re.test(path));
+}
+
+/**
+ * Is this instruction file a copy written for another project rather than
+ * instructions for this one (specs/099-instruction-copies)? A copy sits below
+ * a template directory (`templates/<app>/files/AGENTS.md`), or below a test,
+ * fixture or example directory (`tests/fixtures/repo/CLAUDE.md`). The folder
+ * that holds the file does not count: `templates/AGENTS.md` governs
+ * `templates/`. Only segments before the first dot-directory count, because
+ * every file under `.claude/` or `.cursor/` is one the harness loads.
+ * `agentInstructions.governing` overrides both.
+ *
+ * @implements docguard.instruction-copies#FR-001
+ * @implements docguard.instruction-copies#FR-002
+ * @returns {{ kind: 'template'|'non-product', segment: string } | null}
+ */
+export function instructionCopyOf(path, config = {}) {
+  if (typeof path !== 'string' || !path.includes('/')) return null;
+  if (isDeclaredGoverning(path, config)) return null;
+  const segments = path.split('/');
+  const folder = segments.length - 2; // index of the segment holding the file
+  let nonProduct = null;
+  for (let i = 0; i < folder; i++) {
+    const seg = segments[i];
+    if (seg.startsWith('.')) break;
+    const lower = seg.toLowerCase();
+    if (TEMPLATE_DIRS.has(lower)) return { kind: 'template', segment: seg };
+    if (!nonProduct && DEFAULT_DETECTION_IGNORE_DIRS.has(seg) && !isPackageSegment(segments, i)) nonProduct = { kind: 'non-product', segment: seg };
+  }
+  return nonProduct;
+}
+
 const memo = new WeakMap();
 
 /**
@@ -234,7 +290,9 @@ function computeDocs(projectDir, config) {
   const found = new Map();
   const consider = (path, kind, root) => {
     if (found.has(path) || ignored(path)) return;
-    if (!root && isNonProductPath(path, config)) return;
+    // Spec 094 keeps test, fixture and example paths out; spec 099 adds template copies.
+    // `agentInstructions.governing` puts either back (docguard.instruction-copies#FR-002).
+    if (!root && !isDeclaredGoverning(path, config) && (isNonProductPath(path, config) || instructionCopyOf(path, config)?.kind === 'template')) return;
     if (!isRegularFile(resolve(projectDir, path))) return;
     found.set(path, { path, kind, root });
   };

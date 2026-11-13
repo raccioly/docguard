@@ -147,7 +147,7 @@ const EXAMPLE_NAMES = new Set(['example', 'examples', 'sample', 'samples']);
  *
  * @implements docguard.fallback-language-coverage#FR-006
  */
-function isPackageSegment(segments, index) {
+export function isPackageSegment(segments, index) {
   for (let j = 0; j + 2 < index; j++) {
     if (segments[j] === 'src' && segments[j + 1] === 'main' && JVM_SOURCE_LANGUAGES.has(segments[j + 2])) return true;
   }

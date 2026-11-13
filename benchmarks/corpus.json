@@ -606,6 +606,45 @@
       "oppositeControl": "dev-vendored-instruction-control"
     },
     {
+      "id": "dev-instruction-copy-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-copies",
+      "causalFamily": "instruction-copy-shares-name",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-copies-control" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR006"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "PSR006@packages/api/AGENTS.md",
+        "PSR006@templates/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-copy-defect"
+    },
+    {
+      "id": "dev-instruction-copy-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-instruction-copies",
+      "causalFamily": "instruction-copy-shares-name",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/instruction-copies-defect" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR006"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [
+        "PSR006@templates/new-app/files/AGENTS.md"
+      ],
+      "forbidden": [
+        "PSR006@packages/api/AGENTS.md"
+      ],
+      "oppositeControl": "dev-instruction-copy-control"
+    },
+    {
       "id": "eval-vendored-instruction-control",
       "split": "evaluation",
       "repositoryGroup": "synthetic-agent-instructions-heldout",

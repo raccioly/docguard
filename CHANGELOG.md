@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`PSR006`: an instruction-file copy shares the real file's name.** A
+  template, test, fixture or example copy named like one of the project's
+  instruction files (`AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`,
+  `GEMINI.md`, `.github/copilot-instructions.md`, a `requiredFiles.agentFile`)
+  is a warning when a file that governs the project has the same name: an agent
+  searching the repository may read the copy first. Rename it
+  (`AGENTS.md.template`), or list a fixture that needs the name in
+  `.docguardignore`. Template copies are high confidence; test, fixture and
+  example copies are low. A nested file that governs its own folder, such as
+  `packages/api/AGENTS.md` in a monorepo, or `templates/AGENTS.md` itself, is
+  never reported. This change ADDS a warning under strict for a project that
+  keeps such a copy (spec 099).
+- **`agentInstructions.governing`**: glob patterns for instruction files that
+  govern their folder even below a template, test, fixture or example
+  directory. A matching file is reviewed like any other and is never PSR006.
+
 ### Fixed
+
+- **A template instruction file is no longer reviewed as this repository's
+  instructions.** A nested `AGENTS.md`, `CLAUDE.md` or other instruction file
+  below a `templates`, `template`, `scaffold(s)` or `boilerplate(s)` directory
+  (`templates/<app>/files/AGENTS.md`, a form a scaffolder writes into other
+  repositories) left the agent-instruction role only when it sat under a test,
+  fixture or example path. Under a template directory it got FRS006, FRS007 and
+  FRS009, and adding a root package script made FRS007 report that the template
+  never mentions it, a finding no commit could clear under a gate that refuses
+  every commit while it stands. Such copies are now out of the role for
+  Freshness and Path-Scoped-Rules. The folder that holds the file does not
+  count: `templates/AGENTS.md` still governs `templates/` (spec 099).
 
 - **Security: the word `example` no longer hides a secret-shaped value just by
   appearing in it.** This change ADDS findings. Before, any value containing

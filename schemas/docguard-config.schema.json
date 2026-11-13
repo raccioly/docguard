@@ -356,6 +356,11 @@
           "type": "object",
           "description": "Per-chain allowance for existing debt, keyed by the chain's deepest instruction file. The chain may shrink; growth past the allowance is reported.",
           "additionalProperties": { "type": "integer", "minimum": 1 }
+        },
+        "governing": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Glob patterns for instruction files that govern their folder even below a template, test, fixture or example directory (spec 099). A matching file stays in the agent-instruction role and is never PSR006."
         }
       },
       "additionalProperties": false

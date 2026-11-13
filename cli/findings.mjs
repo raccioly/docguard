@@ -881,6 +881,12 @@ export const CODES = {
     help: 'A skill or instruction file that a Spec Kit integration installed (it is listed, with its sha256, in `.specify/integrations/<integration>.manifest.json`) no longer matches any recorded hash. The file is owned upstream: the next `specify integration install` overwrites a local edit, and DocGuard does not review it for staleness. Reinstall the integration to restore the copy, or move the change into a file the project owns. A manifest that does not parse vendors nothing and is reported as partial coverage. DocGuard-installed copies are compared with the running package by `docguard upgrade` instead (spec 094). When the only difference is CRLF line endings (a Windows checkout with `core.autocrlf`), the message says so: mark the file `text eol=lf` in `.gitattributes`.',
     suppress: null,
   },
+  PSR006: {
+    validator: 'pathScopedRules',
+    title: 'Instruction-file copy shares the real file\'s name',
+    help: 'A file named like one of this project\'s instruction files (`AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` or a `requiredFiles.agentFile`) is a copy for another project, and a file that governs this project has the same name. An agent searching the repository for that name may read whichever it finds first, and Codex and Claude Code load a nested `AGENTS.md` or `CLAUDE.md` when they work in its folder. A copy sits below a template directory (`templates`, `template`, `_templates`, `__templates__`, `scaffold(s)`, `boilerplate(s)`; high confidence) or below a test, fixture or example directory (low confidence: a fixture project may need the name). The folder that holds the file does not count, so `templates/AGENTS.md` and `packages/templates/AGENTS.md` govern their folders, and monorepo package files such as `packages/api/AGENTS.md` are never reported; nor are files under a dot-directory segment (`.cursor/rules/templates/`). Rename the copy (`AGENTS.md.template`) and have the scaffolder or test drop the suffix when it writes the file out, or list a fixture in `.docguardignore` with a reason. If the file does govern its folder, list it in `agentInstructions.governing`. Template copies are also left out of the agent-instruction role, so Freshness never reviews them (spec 099).',
+    suppress: null,
+  },
   SPR008: {
     validator: 'specRegistry',
     title: 'Recorded review revision is not on this history',

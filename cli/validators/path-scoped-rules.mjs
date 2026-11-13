@@ -7,6 +7,7 @@
  *   PSR003  the instructions one harness loads for some path exceed the budget
  *   PSR004  a scope DocGuard or the harness cannot read
  *   PSR005  a vendored instruction copy differs from what its installer recorded
+ *   PSR006  a template, test, fixture or example copy shares an instruction file's name
  *
  * Guard evaluates tracked files, so a laptop with untracked or ignored files
  * gets the same answer as CI. Instruction files under test, fixture and
@@ -18,9 +19,10 @@
  * @implements docguard.path-scoped-rules#FR-007
  * @implements docguard.output-ux#FR-011
  * @implements docguard.agent-instruction-role#FR-007
+ * @implements docguard.instruction-copies#FR-003
  */
 
-import { posix } from 'node:path';
+import { basename, posix } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import {
   applicableFor, HARNESSES, instructionScopes, MAX_INSTRUCTION_FILES, safeProjectPath,
@@ -30,14 +32,18 @@ import { readFrontmatter } from '../scanners/frontmatter.mjs';
 import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
-import { agentInstructionDocs, fileSha256 } from '../shared-agent-instructions.mjs';
+import {
+  agentInstructionDocs, fileSha256, instructionCopyOf, isDeclaredGoverning, ROOT_AGENT_FILES,
+} from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
 const MAX_POINTER_FINDINGS = 50;
 const SKILL_DIRS_RE = /^(\.\/)?(scripts|references|assets)\//;
 
-const NOTHING_HOW = 'Nothing to configure unless an agent-instruction file carries something to check: a path scope (a `globs:`, `paths:` or `applyTo:` field), a path pointer (`docs/ARCHITECTURE.md`, `@docs/guide.md`), or a vendored Spec Kit copy. Path-Scoped-Rules reads AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions and the other files of the agent-instruction role.';
+const MAX_COPY_FINDINGS = 50;
+
+const NOTHING_HOW = 'Nothing to configure unless an agent-instruction file carries something to check: a path scope (a `globs:`, `paths:` or `applyTo:` field), a path pointer (`docs/ARCHITECTURE.md`, `@docs/guide.md`), a vendored Spec Kit copy, or a template or fixture copy that shares an instruction file\'s name. Path-Scoped-Rules reads AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions and the other files of the agent-instruction role.';
 
 /**
  * Does this kind of check belong to the project? It does when an agent
@@ -66,14 +72,18 @@ export function validatePathScopedRules(projectDir, config = {}) {
   let projectFiles = allFiles.filter(f => !ignored(f));
 
   const { entries: all, files: instructionFiles, skipped } = instructionScopes(projectDir, projectFiles);
-  const entries = all.filter(e => !isNonProductPath(e.file, config));
+  // Test, fixture and example paths (spec 094) and template copies (spec 099 FR-001) are
+  // forms for other projects, not this one's instructions, unless agentInstructions.governing names them.
+  const entries = all.filter(e => isDeclaredGoverning(e.file, config)
+    || (!isNonProductPath(e.file, config) && instructionCopyOf(e.file, config)?.kind !== 'template'));
   const role = agentInstructionDocs(projectDir, config);
-  if (entries.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
+  const copies = instructionCopies(projectFiles, config);
+  if (entries.length === 0 && copies.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
     return {
       ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files',
       ...contractFields({
         performed: 0,
-        decide: () => ({ applies: false, evidence: 'the project has no agent-instruction file (AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions) outside test, fixture and example paths' }),
+        decide: () => ({ applies: false, evidence: 'the project has no agent-instruction file (AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions) outside test, fixture, example and template paths' }),
         empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules found no agent instruction file to read: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
       }),
     };
@@ -231,20 +241,76 @@ export function validatePathScopedRules(projectDir, config = {}) {
     }));
   }
 
+  // ── PSR006: a copy shares an instruction file's name (spec 099 FR-003) ──
+  let copyFindings = 0;
+  for (const c of copies) {
+    total++;
+    if (++copyFindings > MAX_COPY_FINDINGS) continue;
+    const base = basename(c.path);
+    const template = c.copy.kind === 'template';
+    findings.push(mkFinding({
+      code: 'PSR006', validator: 'pathScopedRules', severity: 'warn',
+      disposition: template ? 'act' : 'escalate', confidence: template ? 'high' : 'low',
+      message: `${c.path} is a ${template ? 'template' : 'test, fixture or example'} copy (under \`${c.copy.segment}/\`) with the same name as ${c.governing}: an agent searching the repository for ${c.name} may read it as this project's instructions`,
+      location: { file: c.path },
+      suggestion: template
+        ? { kind: 'fix', text: `Rename it to ${base}.template and have whatever writes it out drop the suffix. If it does govern its folder, list it in agentInstructions.governing` }
+        : { kind: 'review', text: `Rename it to ${base}.template and have the test copy it into place, or, if the fixture needs the name, list it in .docguardignore with a reason. If it does govern its folder, list it in agentInstructions.governing` },
+    }));
+  }
+  if (copyFindings > MAX_COPY_FINDINGS) limitations.push(`${copyFindings - MAX_COPY_FINDINGS} more instruction copies not listed`);
+
   const passed = Math.max(0, total - findings.length);
   const result = {
     ...resultFromFindings(findings, { passed, total }),
     ...contractFields({
       performed: total,
       found: findings.length > 0,
-      ran: `${total} scope, pointer, import and vendored-copy check(s) over ${instructionFiles.length} instruction file(s)`,
-      decide: () => ({ applies: false, evidence: `${entries.length} agent-instruction file(s) but none carries a path scope, a path pointer, an @import or a vendored copy` }),
+      ran: `${total} scope, pointer, import, vendored-copy and same-name-copy check(s) over ${instructionFiles.length} instruction file(s)`,
+      decide: () => ({ applies: false, evidence: `${entries.length} agent-instruction file(s) but none carries a path scope, a path pointer, an @import or a vendored copy, and no copy shares an instruction file's name` }),
       empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules read ${entries.length} instruction file(s) and found nothing to check: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
     }),
   };
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   result.instructionFiles = instructionFiles.length;
   return result;
+}
+
+/**
+ * Template, test, fixture and example copies that share an instruction file's
+ * name with a file that governs this project (spec 099 FR-003). Names are the
+ * root instruction files' basenames, `.github/copilot-instructions.md` by path
+ * tail, and each `requiredFiles.agentFile` basename. A governing file is a root
+ * file, a nested file that is not a copy, or one `agentInstructions.governing`
+ * names. `files` is already filtered by `.docguardignore` and `ignore`.
+ *
+ * @implements docguard.instruction-copies#FR-003
+ * @returns {{ path: string, name: string, governing: string, copy: { kind, segment } }[]}
+ */
+export function instructionCopies(files, config = {}) {
+  const tails = ROOT_AGENT_FILES.filter(n => n.includes('/'));
+  const names = new Set(ROOT_AGENT_FILES.filter(n => !n.includes('/')));
+  const configured = Array.isArray(config.requiredFiles?.agentFile) ? config.requiredFiles.agentFile : [config.requiredFiles?.agentFile];
+  for (const p of configured) if (typeof p === 'string' && p.trim()) names.add(basename(p.trim()));
+  const nameOf = f => tails.find(t => f === t || f.endsWith(`/${t}`)) || (names.has(basename(f)) ? basename(f) : null);
+  const groups = new Map();
+  for (const path of files) {
+    const name = nameOf(path);
+    if (!name) continue;
+    const group = groups.get(name) || { governing: [], copies: [] };
+    const copy = instructionCopyOf(path, config);
+    if (copy) group.copies.push({ path, copy });
+    else group.governing.push(path);
+    groups.set(name, group);
+  }
+  const out = [];
+  for (const [name, group] of groups) {
+    if (!group.governing.length || !group.copies.length) continue;
+    // Name the root file when there is one, else the shallowest governing file.
+    const governing = [...group.governing].sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))[0];
+    for (const c of group.copies) out.push({ path: c.path, name, governing, copy: c.copy });
+  }
+  return out.sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /**

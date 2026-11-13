@@ -3,21 +3,21 @@
   "schemaVersion": 2,
   "review": {
     "status": "reviewed",
-    "reviewedAt": "2026-11-12",
+    "reviewedAt": "2026-11-13",
     "reviewer": "DocGuard maintainers",
-    "scope": "Fifteen exact defect/control pairs across ten synthetic and five pinned public repository groups. The architecture validator gains its first measured evidence: a three-layer Python package whose defect makes the route layer import the model layer directly, bypassing the declared service boundary. One Python architecture case is checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())), which the analyzer’s own applicability reason places outside scope, and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence. PSR005 gains its first evidence (spec 094): a Spec Kit-installed skill edited after install (defect) or left intact beside an edited authored skill (control); the evaluation pair is a separate group (Codex integration, Copilot instructions).",
-    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 Python layer-boundary pair added on 2026-09-18 was authored labels-first: the fixture and its expected/forbidden identities were committed before the corpus was run, and both cases matched their authored labels on the first run. The PSR005 pairs added on 2026-11-12 were authored labels-first. The development pair matched its labels on the first run. The evaluation pair first abstained (no-matches) because Path-Scoped-Rules returned before checking vendored copies when a project had no scoped instruction file; that early return was fixed and both evaluation cases then matched their unchanged labels.",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Seven of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001 is measured by a single defect/control pair in one repository group, so its point estimate is below the reporting floor and it backs off to the whole-corpus tier.",
+    "scope": "Sixteen exact defect/control pairs across eleven synthetic and five pinned public repository groups. The architecture validator gains its first measured evidence: a three-layer Python package whose defect makes the route layer import the model layer directly, bypassing the declared service boundary. One Python architecture case is checked by the analyzer and remains classified unsupported_syntax, excluded from accuracy ratios: its fixture is a dynamic import (import_module(get_plugin_name())) (outside the analyzer’s declared scope) and it has no paired defect, so scoring it as a clean control would credit a blind spot as evidence. PSR005 gains its first evidence (spec 094): a Spec Kit-installed skill edited after install (defect) or left intact beside an edited authored skill (control); the evaluation pair is a separate group (Codex integration, Copilot instructions). PSR006 (spec 099): a monorepo with a scaffolder template AGENTS.md below templates/<app>/files/ (defect) and without it (control).",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 Python layer-boundary pair added on 2026-09-18 was authored labels-first: the fixture and its expected/forbidden identities were committed before the corpus was run, and both cases matched their authored labels on the first run. The PSR005 pairs added on 2026-11-12 were authored labels-first. The development pair matched its labels on the first run. The evaluation pair first abstained (no-matches) because Path-Scoped-Rules returned before checking vendored copies when a project had no scoped instruction file; that early return was fixed and both evaluation cases then matched their unchanged labels. The PSR006 pair added on 2026-11-13 was authored labels-first and matched its labels on the first run; no other case changed.",
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Nine of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001 and PSR006 are each measured by a single defect/control pair in one repository group, so each point estimate is below the reporting floor and backs off to the whole-corpus tier.",
     "measures": "benchmark-precision",
-    "caveat": "Benchmark precision on a deliberately balanced corpus of 15 defect and 15 clean-control cases across 15 repository groups and 15 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
+    "caveat": "Benchmark precision on a deliberately balanced corpus of 16 defect and 16 clean-control cases across 16 repository groups and 16 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
   "core": {
     "schemaVersion": 1,
-    "manifestDigest": "sha256:3476ca6ca0e23373aa4c4697dbae1ffa8516271073655944774b62435e323f5f",
+    "manifestDigest": "sha256:2d4dfe2683e469d74da0eaa489bb28d1cf85289ca1b3f8ae51fccf82bebbf877",
     "tool": {
-      "version": "0.47.0",
-      "revision": "354e3d63421ed79eae8d761400bfbb3946945bfa",
-      "detectorsDigest": "sha256:02ad4b5f158ddaa46370071b0b2e044a9986aa03515955563ddc5a348b5380b0"
+      "version": "0.48.0",
+      "revision": "cabb7e09fd77f89998719c9b89b0df031be3a71a",
+      "detectorsDigest": "sha256:ed37806e0d7f67a8dd4eb7417ab4117aac44e1cccfa60e85de3f11edd83adea7"
     },
     "cases": [
       {
@@ -169,6 +169,89 @@
         "applicability": {
           "status": "checked",
           "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 0,
+          "total": 1,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-instruction-copy-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-instruction-copies",
+        "causalFamily": "instruction-copy-shares-name",
+        "parserTier": "not-applicable",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:3b3cc76c956b40cae890e4ce0bc8990e83f914dadfdec46846f00e769ab140fc",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR006"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "PSR006@packages/api/AGENTS.md",
+          "PSR006@templates/AGENTS.md"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "na",
+          "passed": 0,
+          "total": 0,
+          "quality": null
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-instruction-copy-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-instruction-copies",
+        "causalFamily": "instruction-copy-shares-name",
+        "parserTier": "not-applicable",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:d8b571d459a6d506352fa827d0ae89016f6e86ca948a58bc49daf13256639359",
+        "configDigest": "sha256:0b41c9655a20a77eeb39e976a9ae8df2c25044e1c3c0b62806ec454ceb8fc554",
+        "scope": {
+          "validatorKey": "pathScopedRules",
+          "codes": [
+            "PSR006"
+          ]
+        },
+        "expected": [
+          "PSR006@templates/new-app/files/AGENTS.md"
+        ],
+        "forbidden": [
+          "PSR006@packages/api/AGENTS.md"
+        ],
+        "actual": [
+          "PSR006@templates/new-app/files/AGENTS.md"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "partial",
+          "reason": "git unavailable: checked the working tree instead of tracked files",
           "class": "applicable"
         },
         "checkCoverage": {
@@ -1262,20 +1345,20 @@
     ],
     "metrics": {
       "aggregate": {
-        "cases": 30,
-        "repositories": 15,
-        "truePositives": 15,
+        "cases": 32,
+        "repositories": 16,
+        "truePositives": 16,
         "falsePositives": 0,
         "falseNegatives": 0,
         "abstainedSupportedCases": 0,
         "unsupportedCases": 1,
-        "defectCases": 15,
-        "cleanControlCases": 15,
+        "defectCases": 16,
+        "cleanControlCases": 16,
         "cleanControlCasesWithFindings": 0,
         "repairs": {
           "accepted": 0,
           "rejected": 0,
-          "notEvaluated": 30
+          "notEvaluated": 32
         },
         "adjudicated": {
           "policyDisagreements": 0,
@@ -1285,21 +1368,21 @@
         "recall": 1,
         "falsePositivesPerRepository": 0,
         "abstentionRate": 0,
-        "unsupportedRate": 0.032258,
+        "unsupportedRate": 0.030303,
         "acceptedRepairRate": null,
         "confidence95": {
           "method": "Wilson score interval, z=1.96",
           "precision": {
-            "lower": 0.796111,
+            "lower": 0.806387,
             "upper": 1
           },
           "recall": {
-            "lower": 0.796111,
+            "lower": 0.806387,
             "upper": 1
           },
           "falsePositiveCaseRate": {
             "lower": 0,
-            "upper": 0.203889
+            "upper": 0.193613
           },
           "acceptedRepairRate": null
         }
@@ -1692,6 +1775,49 @@
             "acceptedRepairRate": null
           }
         },
+        "synthetic-instruction-copies": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
         "synthetic-js-security": {
           "cases": 2,
           "repositories": 1,
@@ -2030,20 +2156,20 @@
           }
         },
         "pathScopedRules": {
-          "cases": 4,
-          "repositories": 2,
-          "truePositives": 2,
+          "cases": 6,
+          "repositories": 3,
+          "truePositives": 3,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 0,
-          "defectCases": 2,
-          "cleanControlCases": 2,
+          "defectCases": 3,
+          "cleanControlCases": 3,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 4
+            "notEvaluated": 6
           },
           "adjudicated": {
             "policyDisagreements": 0,
@@ -2058,16 +2184,16 @@
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
             "precision": {
-              "lower": 0.342372,
+              "lower": 0.438494,
               "upper": 1
             },
             "recall": {
-              "lower": 0.342372,
+              "lower": 0.438494,
               "upper": 1
             },
             "falsePositiveCaseRate": {
               "lower": 0,
-              "upper": 0.657628
+              "upper": 0.561506
             },
             "acceptedRepairRate": null
           }
@@ -2333,20 +2459,20 @@
           }
         },
         "not-applicable": {
-          "cases": 6,
-          "repositories": 3,
-          "truePositives": 3,
+          "cases": 8,
+          "repositories": 4,
+          "truePositives": 4,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 0,
-          "defectCases": 3,
-          "cleanControlCases": 3,
+          "defectCases": 4,
+          "cleanControlCases": 4,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 6
+            "notEvaluated": 8
           },
           "adjudicated": {
             "policyDisagreements": 0,
@@ -2361,16 +2487,16 @@
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
             "precision": {
-              "lower": 0.438494,
+              "lower": 0.5101,
               "upper": 1
             },
             "recall": {
-              "lower": 0.438494,
+              "lower": 0.5101,
               "upper": 1
             },
             "falsePositiveCaseRate": {
               "lower": 0,
-              "upper": 0.561506
+              "upper": 0.4899
             },
             "acceptedRepairRate": null
           }
@@ -2473,158 +2599,168 @@
     "cases": [
       {
         "id": "dev-generated-security-control",
-        "coldMs": 480.376,
-        "warmMs": 464.324
+        "coldMs": 274.903,
+        "warmMs": 286.721
       },
       {
         "id": "dev-generated-security-defect",
-        "coldMs": 440.121,
-        "warmMs": 424.835
+        "coldMs": 527.696,
+        "warmMs": 622.25
       },
       {
         "id": "dev-go-todo-control",
-        "coldMs": 421.462,
-        "warmMs": 402.456
+        "coldMs": 584.517,
+        "warmMs": 555.773
       },
       {
         "id": "dev-go-todo-defect",
-        "coldMs": 439.648,
-        "warmMs": 419.663
+        "coldMs": 535.381,
+        "warmMs": 507.96
+      },
+      {
+        "id": "dev-instruction-copy-control",
+        "coldMs": 593.82,
+        "warmMs": 581.926
+      },
+      {
+        "id": "dev-instruction-copy-defect",
+        "coldMs": 598.199,
+        "warmMs": 618.112
       },
       {
         "id": "dev-js-security-control",
-        "coldMs": 440.096,
-        "warmMs": 421.581
+        "coldMs": 579.381,
+        "warmMs": 645.886
       },
       {
         "id": "dev-js-security-defect",
-        "coldMs": 414.146,
-        "warmMs": 365.63
+        "coldMs": 643.202,
+        "warmMs": 610.418
       },
       {
         "id": "dev-monorepo-security-control",
-        "coldMs": 370.478,
-        "warmMs": 407.334
+        "coldMs": 673.517,
+        "warmMs": 634.316
       },
       {
         "id": "dev-monorepo-security-defect",
-        "coldMs": 407.014,
-        "warmMs": 377.52
+        "coldMs": 574.313,
+        "warmMs": 625.05
       },
       {
         "id": "dev-python-security-control",
-        "coldMs": 345.677,
-        "warmMs": 316.23
+        "coldMs": 753.317,
+        "warmMs": 588.881
       },
       {
         "id": "dev-python-security-defect",
-        "coldMs": 329.383,
-        "warmMs": 354.428
+        "coldMs": 595.39,
+        "warmMs": 598.566
       },
       {
         "id": "dev-sparse-doc-control",
-        "coldMs": 357.972,
-        "warmMs": 350.462
+        "coldMs": 797.633,
+        "warmMs": 749.637
       },
       {
         "id": "dev-sparse-doc-defect",
-        "coldMs": 348.518,
-        "warmMs": 312.162
+        "coldMs": 797.259,
+        "warmMs": 802.676
       },
       {
         "id": "dev-vendored-instruction-control",
-        "coldMs": 340.283,
-        "warmMs": 312.534
+        "coldMs": 619.679,
+        "warmMs": 734.436
       },
       {
         "id": "dev-vendored-instruction-defect",
-        "coldMs": 345.402,
-        "warmMs": 338.264
+        "coldMs": 772.951,
+        "warmMs": 727.803
       },
       {
         "id": "eval-changesets-aws-control",
-        "coldMs": 574.401,
-        "warmMs": 533.511
+        "coldMs": 1147.083,
+        "warmMs": 1231.167
       },
       {
         "id": "eval-changesets-aws-defect",
-        "coldMs": 527.426,
-        "warmMs": 517.599
+        "coldMs": 1089.603,
+        "warmMs": 1318.042
       },
       {
         "id": "eval-chi-aws-control",
-        "coldMs": 418.605,
-        "warmMs": 443.784
+        "coldMs": 806.331,
+        "warmMs": 777.967
       },
       {
         "id": "eval-chi-aws-defect",
-        "coldMs": 447.507,
-        "warmMs": 424.731
+        "coldMs": 719.564,
+        "warmMs": 688.501
       },
       {
         "id": "eval-express-aws-control",
-        "coldMs": 555.467,
-        "warmMs": 535.398
+        "coldMs": 946.749,
+        "warmMs": 1034.803
       },
       {
         "id": "eval-express-aws-defect",
-        "coldMs": 471.326,
-        "warmMs": 433.774
+        "coldMs": 851.974,
+        "warmMs": 1031.599
       },
       {
         "id": "eval-fastify-aws-control",
-        "coldMs": 780.252,
-        "warmMs": 676.902
+        "coldMs": 1378.117,
+        "warmMs": 1448.094
       },
       {
         "id": "eval-fastify-aws-defect",
-        "coldMs": 682.701,
-        "warmMs": 705.635
+        "coldMs": 1237.743,
+        "warmMs": 1511.242
       },
       {
         "id": "eval-flask-aws-control",
-        "coldMs": 641.543,
-        "warmMs": 663.837
+        "coldMs": 1094.208,
+        "warmMs": 1339.852
       },
       {
         "id": "eval-flask-aws-defect",
-        "coldMs": 702.509,
-        "warmMs": 691.202
+        "coldMs": 1044.488,
+        "warmMs": 1057.25
       },
       {
         "id": "eval-python-layers-control",
-        "coldMs": 555.397,
-        "warmMs": 533.408
+        "coldMs": 911.853,
+        "warmMs": 1115.593
       },
       {
         "id": "eval-python-layers-defect",
-        "coldMs": 540.128,
-        "warmMs": 564.221
+        "coldMs": 978.212,
+        "warmMs": 1161.812
       },
       {
         "id": "eval-python-unsupported",
-        "coldMs": 553.336,
-        "warmMs": 528.696
+        "coldMs": 944.397,
+        "warmMs": 1004.128
       },
       {
         "id": "eval-ts-security-control",
-        "coldMs": 432.247,
-        "warmMs": 447.399
+        "coldMs": 629.125,
+        "warmMs": 746.192
       },
       {
         "id": "eval-ts-security-defect",
-        "coldMs": 416.131,
-        "warmMs": 432.643
+        "coldMs": 826.801,
+        "warmMs": 706.906
       },
       {
         "id": "eval-vendored-instruction-control",
-        "coldMs": 462.178,
-        "warmMs": 435.552
+        "coldMs": 846.333,
+        "warmMs": 760.119
       },
       {
         "id": "eval-vendored-instruction-defect",
-        "coldMs": 456.492,
-        "warmMs": 432.006
+        "coldMs": 653.636,
+        "warmMs": 670.192
       }
     ],
     "retainedRoot": null
