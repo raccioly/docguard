@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tests: a fixture commit no longer starts git background maintenance.** `FIXTURE_GIT`
+  now sets `gc.auto=0` and `maintenance.auto=false`, as CI already does globally, so a
+  detached run cannot hold `.git/objects/maintenance.lock` while a test snapshots a fixture
+  (the "writes nothing" tests of spec 097 failed intermittently on machines without that
+  setting).
 - **Security: the word `example` no longer hides a secret-shaped value just by
   appearing in it.** This change ADDS findings. Before, any value containing
   `example` anywhere (any case) was dropped silently, so

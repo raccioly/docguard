@@ -13,6 +13,10 @@
  * @req docguard.test-temp-dirs#FR-003
  * @req docguard.test-temp-dirs#FR-004
  * @req docguard.test-temp-dirs#FR-005
+ * @req docguard.test-temp-dirs#FR-006
+ * @req docguard.test-temp-dirs#SC-001
+ * @req docguard.test-temp-dirs#SC-002
+ * @req docguard.test-temp-dirs#SC-003
  */
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
