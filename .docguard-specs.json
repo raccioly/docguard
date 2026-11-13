@@ -6825,7 +6825,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-file-kind.mjs",
-            "line": 97
+            "line": 98
           },
           {
             "requirementId": "FR-007",
@@ -7128,7 +7128,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:2960679d69292eac8e051b42345b6c8572f7bb95ceb9b59e8fbb62d77d5ea1f7"
+            "digest": "sha256:1df21d5c4fa152bb4aefcae679b1d4f84f07bcac7fd9f30d0118407534fa3395"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -7136,11 +7136,11 @@
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:5304fbcb750322eaed12c5e4529fb2e9bc90912e79a1e040ab612f7ad1cfe3e4"
+            "digest": "sha256:92afd12c5d390b6fffecdbed0cfa59cf1574bc4661bc11a84528809bf61d4826"
           }
         ],
         "taskCompletion": {
-          "checked": 13,
+          "checked": 14,
           "total": 20
         },
         "implementationEvidence": [

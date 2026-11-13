@@ -44,22 +44,24 @@ One module, one closed vocabulary, one override, one place where nothing is drop
 
 ### Kinds
 
-`fileKind(path, config, opts)` returns `{ kind, segment, reason }`. The kinds are a closed list: `own`, `template`, `fixture`, `vendored`, `generated`, `backup`, `nested-checkout`.
+`fileKind(path, config, opts)` returns `{ kind, segment, reason }`. The kinds are a closed list: `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup`, `nested-checkout`.
 
 | Kind | Directory names (whole path segment, case-insensitive) |
 |---|---|
 | `template` | `templates` `template` `_templates` `__templates__` `scaffold` `scaffolds` `boilerplate` `boilerplates` `starter-kit` `starter-kits` `skeleton` `skeletons` |
-| `fixture` | `fixtures` `__fixtures__` `test-fixtures` `testfixtures` `testdata` `test` `tests` `__tests__` `test-helpers` `spec` `specs` `__mocks__` `mocks` `examples` `example` `sample` `samples` `corpus` `golden` |
+| `fixture` | `fixtures` `__fixtures__` `test-fixtures` `testfixtures` `testdata` `__mocks__` `mocks` `examples` `example` `sample` `samples` `corpus` `golden` |
+| `test` | `test` `tests` `__tests__` `test-helpers` `spec` `specs` (the project's own tests: not copies, but detection never reads them as product code) |
 | `vendored` | `node_modules` `vendor` `vendored` `third_party` `.venv` `__pycache__` |
 | `generated` | `dist` `build` `out` `coverage` `target` `obj` `_build` `generated` |
 
-`demo`, `seed`, `baseline`, `content`, `public`, `assets` and `legacy` are not directory kinds: they hold real product too often. `__fixtures__` and `__mocks__` are already in `DEFAULT_DETECTION_IGNORE_DIRS`, so the fixture additions are `corpus` and `golden` only. `vendored` and `generated` keep the meaning of `DEFAULT_IGNORE_DIRS` and add `vendored`, `third_party` and `generated`. Stage 1 answers `vendored` and `generated` from directory names only; `isGeneratedPath`'s file-name rules join in Stage 2.
+`demo`, `seed`, `baseline`, `content`, `public`, `assets` and `legacy` are not directory kinds: they hold real product too often. `__fixtures__` and `__mocks__` are already in `DEFAULT_DETECTION_IGNORE_DIRS`, so the additions are `corpus` and `golden` only, and those two are instruction-copy words: a product package can carry either name (`nltk.corpus`), so detection (`isNonProductPath`, `DEFAULT_DETECTION_IGNORE_DIRS`) never skips them. `vendored` and `generated` keep the meaning of `DEFAULT_IGNORE_DIRS` and add `vendored`, `third_party` and `generated`. Stage 1 answers `vendored` and `generated` from directory names only; `isGeneratedPath`'s file-name rules join in Stage 2.
 
 Rules for the directory vocabulary:
 
 - A segment counts only **before the first segment that starts with `.`**. Harness folders (`.claude/`, `.cursor/`, `.agents/`) hold files the harness loads, whatever their subfolders are called.
 - A package segment never counts (`isPackageSegment`, matched case-insensitively): `src/main/java/com/example` and `com/Example` are product code.
-- When several segments of a path qualify, the kind is chosen in the order `template`, `fixture`, `vendored`, `generated`, and `segment` is the first segment of that kind. (Spec 099 made a template outrank a test folder; this keeps it.)
+- When several segments of a path qualify, the kind is chosen in the order `template`, `fixture`, `test`, `vendored`, `generated` (a file under `tests/fixtures/` is a fixture), and `segment` is the first segment of that kind. (Spec 099 made a template outrank a test folder; this keeps it.)
+- A `spec` or `specs` segment whose next segment is a Spec Kit feature directory (`specs/012-name/`, `isFeatureSpecDirectory`) is the project's own documents: `own`, not `test`, unless `opts.featureSpecs` is `'test'`. `isNonProductPath` and the instruction role pass `'test'`, so detection and spec 094 behave as before.
 - `opts.kinds` restricts the answer to the listed kinds (a caller that asks only about `fixture` is not answered `template`). `opts.harnessFolders: 'all'` turns the dot-segment cutoff off; only `isNonProductPath` uses it, to keep `.agent/skills/x/tests/y.js` non-product as it is today.
 
 ### The folder that holds the file
@@ -137,7 +139,8 @@ Given the same defect in `AGENTS.md`, `CLAUDE.md` and `.github/copilot-instructi
 - **A real product package named `examples`** (a workspace member that publishes to a registry) is rescued by `fileKinds.own: ["examples/**"]`, and nothing else has to change.
 - **Case-only differences.** `Templates` and `templates` classify alike, and so does `TEMPLATES`.
 - **`tests/AGENTS.md`.** Out of the role (spec 094), not a PSR006 copy, in the budget: see the decision above.
-- **Spec Kit `specs/`.** `spec` and `specs` are in the fixture vocabulary because detection scanners already treat them as test data (RSpec-style trees). A Spec Kit `specs/` directory holds this project's own documents (`isDocguardOwnedDir`), so Stage 2 MUST exempt it before any document role asks `fileKind`; until then `files.kinds.counts` counts those files as `fixture` and no document role reads the answer.
+- **Spec Kit `specs/`.** `spec` and `specs` are test directories because detection scanners treat them as test data (RSpec-style trees), but `specs/012-thing/` holds this project's own documents: `fileKind` answers `own` for it by default (`specs/100-file-kinds/spec.md`, `Specs/012-thing/tasks.md`), and `spec/models/user_spec.rb` stays `test`. Detection keeps its older answer through `featureSpecs: 'test'`.
+- **`corpus` and `golden`.** Instruction-copy words only; routes, Security and the other detection callers still read them as product, because `corpus` can be a real package.
 - **A documentation directory named `archive`.** `docs-canonical/archive/SECURITY.md` is a `backup` document; an `archive/` directory outside a documentation directory is not.
 - **Source named like a backup.** `src/old.js` and `cli/copy.mjs` are code: `backup` never applies to code.
 
@@ -147,14 +150,14 @@ Given the same defect in `AGENTS.md`, `CLAUDE.md` and `.github/copilot-instructi
 
 Stage 1:
 
-- **FR-001**: `cli/shared-file-kind.mjs` MUST export `fileKind(path, config, opts)` returning `{ kind, segment, reason }` with `kind` one of `own`, `template`, `fixture`, `vendored`, `generated`, `backup`, `nested-checkout`, and the vocabulary above. A path nothing recognizes is `own`. The function reads no file contents.
+- **FR-001**: `cli/shared-file-kind.mjs` MUST export `fileKind(path, config, opts)` returning `{ kind, segment, reason }` with `kind` one of `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup`, `nested-checkout`, and the vocabulary above. A path nothing recognizes is `own`. The function reads no file contents.
 - **FR-002**: Directory vocabulary MUST match whole path segments case-insensitively, only before the first segment starting with `.` (unless `opts.harnessFolders` is `'all'`), and never for a package segment, which `isPackageSegment` MUST also judge case-insensitively.
 - **FR-003**: With `opts.describesFolder` the holding folder MUST NOT count; without it every ancestor counts. A root file (no ancestor) is always `own`.
 - **FR-004**: `fileKinds.own` (array of globs) MUST force `own`. `agentInstructions.governing` MUST be removed from code, schema, documents and tests. `.docguardignore` and `ignore` MUST still exclude a file first.
 - **FR-005**: `backup` MUST apply only to documents, by the file-name and documentation-directory rules above; `nested-checkout` MUST be answered only when `opts.root` is given and MUST be cached per directory.
-- **FR-006**: `isNonProductPath`, `isNonProductDir` and `DEFAULT_DETECTION_IGNORE_DIRS` MUST become callers or views of the shared vocabulary, keeping their current meaning except case-insensitivity and the added `corpus` and `golden`. `instructionCopyOf` and `TEMPLATE_DIRS` MUST be removed.
-- **FR-007**: The agent-instruction role MUST drop a non-root file that is a template copy (`describesFolder: true`) or below a fixture directory anywhere in its path (spec 094), unless `fileKinds.own` names it. Every reader of the role follows.
-- **FR-008**: PSR006 MUST keep spec 099's meaning on top of `fileKind`: a `template` copy is high confidence, a `fixture` copy low, both with `describesFolder: true`; the suggestion names `fileKinds.own`.
+- **FR-006**: `isNonProductPath`, `isNonProductDir` and `DEFAULT_DETECTION_IGNORE_DIRS` MUST become callers or views of the shared vocabulary, keeping their current meaning except case-insensitivity: they mean `fixture` or `test` (`corpus` and `golden` excluded) and a Spec Kit feature directory still counts. `instructionCopyOf` and `TEMPLATE_DIRS` MUST be removed.
+- **FR-007**: The agent-instruction role MUST drop a non-root file that is a template, fixture or test copy (`describesFolder: true`) or below a fixture or test directory anywhere in its path (spec 094), unless `fileKinds.own` names it. Every reader of the role follows.
+- **FR-008**: PSR006 MUST keep spec 099's meaning on top of `fileKind`: a `template` copy is high confidence, a `fixture` or `test` copy low, both with `describesFolder: true`; the suggestion names `fileKinds.own`.
 - **FR-009**: The instruction-chain budget MUST NOT count a file that is a copy by FR-008's rule (`describesFolder: true`, template or fixture) and MUST honor `fileKinds.own`. A governing nested file is still counted.
 - **FR-010**: Guard JSON MUST carry `files.kinds` with `counts` per kind over tracked files and `excluded`, up to 20 paths per non-`own` kind, for files left out of a document or instruction role; text output MUST print one line when any role file was left out. The field is absent on the `--changed-only` lite path.
 - **FR-011**: A test MUST fail when a file under `cli/` defines a private directory-name ignore set or walks the tree without the shared classifier and is not in an allowlist that carries a reason per entry. The allowlist is exact in both directions: an entry that no longer matches fails.

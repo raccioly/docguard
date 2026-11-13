@@ -85,7 +85,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Lifecycle transactions and context** | Stages registry, recovery, spec outcome, and current-context changes before any visible mutation and rolls the set back on write or validation failure | `cli/writers/file-transaction.mjs`, `cli/writers/spec-outcomes.mjs`, `cli/scanners/lifecycle-context.mjs` | Active context includes approved current spec pointers and content hashes; retired prose is excluded |
 | **Adoption baseline** | `guard --update-baseline` freezes the current findings in `.docguard.baseline.json` as fingerprint → occurrence count; guard and `ci` then suppress up to that many of each and gate everything new, reporting how many were suppressed and how many entries are stale | `cli/writers/baseline.mjs`, `cli/commands/guard.mjs` | A fingerprint hashes the code, the location without its line number and the message with digits masked, minus an advisory tail declared per code in `ADVISORY_TAILS` (today only TRC004's IR soft-match hint, which names whichever test file matches best). Guard also accepts the legacy full-message fingerprint so a baseline from an earlier release keeps working; one finding consumes one entry (specs/052-baseline-stable-fingerprint) |
 | **Agent-instruction role** | One list of the project's agent instructions: root `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` and `requiredFiles.agentFile` (root-level, loaded every session), plus tracked nested AGENTS/CLAUDE/GEMINI files and harness rules and skills outside test, fixture and example paths and below no template directory (`templates/<app>/files/AGENTS.md` is a form for another project; `fileKinds.own` overrides both, specs 099 and 100). Each entry says whether it is a pointer (a short body that imports a file or names another role document; reviewed through its target) and whether it is vendored (listed in a Spec Kit integration manifest, or a skill DocGuard ships) | `cli/shared-agent-instructions.mjs` | Every reader of agent files asks it: Freshness, Reference-Existence, Diff-Suspicion, Canonical-Sync, Doc-Dependency candidates, semantic claims, the instruction audit, `diff --since`, `diff`/MCP references, `diagnose`, the hook nudge and `score --dora`. Path-Scoped-Rules reports PSR005 for a manifest copy whose sha256 changed (spec 094), and PSR006 for a template, test, fixture or example copy that shares a governing instruction file's name (spec 099) |
-| **File kinds** | One answer to "is this file this project's own": `fileKind(path, config, opts)` returns `own`, `template`, `fixture`, `vendored`, `generated`, `backup` or `nested-checkout` from a closed directory and file-name vocabulary matched as whole segments in any case before the first dot-directory, never for a package segment. Unknown is always `own`; `fileKinds.own` forces it; a file that describes its own folder (an instruction file) is not classified by the folder that holds it | `cli/shared-file-kind.mjs` | `isNonProductPath` and `isNonProductDir` are views of it; the agent-instruction role, Path-Scoped-Rules (PSR006) and the instruction-chain budget (STR004) call it; guard reports `files.kinds`. A test fails when a file under `cli/` keeps its own directory-name set or walks the tree without it, until Stage 2 of spec 100 migrates the allowlisted files |
+| **File kinds** | One answer to "is this file this project's own": `fileKind(path, config, opts)` returns `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup` or `nested-checkout` from a closed directory and file-name vocabulary matched as whole segments in any case before the first dot-directory, never for a package segment. Unknown is always `own`; `fileKinds.own` forces it; a file that describes its own folder (an instruction file) is not classified by the folder that holds it | `cli/shared-file-kind.mjs` | `isNonProductPath` and `isNonProductDir` are views of it; the agent-instruction role, Path-Scoped-Rules (PSR006) and the instruction-chain budget (STR004) call it; guard reports `files.kinds`. A test fails when a file under `cli/` keeps its own directory-name set or walks the tree without it, until Stage 2 of spec 100 migrates the allowlisted files |
 | **Agent instruction budget** | Measures every `AGENTS.md` chain from the root to each instruction directory, as Codex loads it (`AGENTS.override.md` replaces `AGENTS.md`), against `agentInstructions.maxBytes` (default 32768) or a per-chain allowance | `cli/scanners/agent-instructions.mjs`, `cli/validators/structure.mjs` | `STR004` is an escalation; `STR005` suggests tightening a slack allowance. Increasing an allowance is a reviewed config change, which the digit-normalized finding baseline could not guarantee |
 | **As-built specs** | `generate --spec <area>` collects deterministic facts under one code area (routes, exported JS/TS symbols, env vars read, entities), renders a Spec Kit spec with one agent-written candidate per fact, and registers it as `origin: as_built` with `sourcePaths`. The Spec-Registry validator re-scans those paths (`SPR007`) | `cli/scanners/as-built.mjs`, `cli/scanners/js-ast.mjs` (`exportedNames`, shared with the symbol map), `cli/commands/generate-as-built.mjs`, `cli/validators/spec-registry.mjs` | DocGuard writes no requirement prose. Facts key on method+path, file+export, name, so line moves never churn them. An App Router handler export is not a second fact beside its route. Route and env facts cite the file and line of the registration or first read. The registry fields are serialized only when set. `--write` commits the spec and its registry entry in one file transaction |
 | **Go, Spring and Rails routes** | Reports each route at the path it is served under. Go (gin, echo, chi, fiber, gorilla/mux, net/http): every router value is a node whose prefix comes from `Group`, chi `Route`/`Mount`, gorilla `PathPrefix().Subrouter()` or `http.StripPrefix`, across blocks, functions and files, resolved after every file is read. Spring (Java and Kotlin): class-level and method mappings, including the `path =`/`value =` forms, arrays, constants and `@RequestMapping(method = …)`. Rails: `config/routes.rb` and the files it `draw`s, with `namespace`, `scope`, nested `resources`, `only:`/`except:`, `member` and `collection` | `cli/scanners/go-routes.mjs`, `cli/scanners/spring-routes.mjs`, `cli/scanners/rails-routes.mjs`, `cli/scanners/route-lexing.mjs`, `cli/scanners/routes.mjs` | No parser: a shared lexer masks comments and strings and pairs brackets, so comments, `_test.go` files, HTTP-client calls and Feign clients do not count. Routes carry `parserTier: fallback-language`. A path or prefix that is not literal, or a Go call with several possible callees, places no route rather than a guessed one (specs/047-go-spring-rails-routes) |
@@ -804,7 +804,7 @@ The primary data structure. Controls all CLI behavior.
 | `freshness.referenceShare` | `number` (0, 1] | No | `0.5` | FRS006 fires when at least this share of a referenced file's current lines was added since the agent-instruction document's review (spec 095) |
 | `agentInstructions.maxBytes` | `integer` | No | `32768` | Byte budget per `AGENTS.md` chain (STR004) and per harness and path (PSR003). For Claude Code the total includes files pulled in by `@path` imports (relative to the importing file, up to 5 hops); a missing import is PSR002 |
 | `agentInstructions.allowances.<file>` | `integer` | No | — | Per-chain allowance keyed by the chain's deepest file; slack of 1 KiB or more reports STR005 |
-| `fileKinds.own` | `string[]` | No | `[]` | Glob patterns for files that are the project's own wherever they sit (specs 099, 100). Directory names `templates`, `template`, `_templates`, `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)` (template) and `fixtures`, `tests`, `examples`, `samples`, `corpus`, `golden` and the rest of the fixture set (fixture) mark a copy written for another project, in any case, as whole segments before the first dot-directory, never a package segment such as `com/example`; a match here keeps the file in the agent-instruction role and the instruction-chain budget and out of PSR006. A file nothing recognizes is own. `.docguardignore` and `ignore` still win. `guard --format json` reports `files.kinds` (`counts` per kind, `excluded` up to 20 paths per kind left out of the instruction role, `excludedMore`)
+| `fileKinds.own` | `string[]` | No | `[]` | Glob patterns for files that are the project's own wherever they sit (specs 099, 100). Directory names `templates`, `template`, `_templates`, `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)` (template) and `fixtures`, `examples`, `samples`, `corpus`, `golden`, `mocks` (fixture) or `tests`, `spec(s)` (test; a Spec Kit `specs/012-feature/` is own) mark a copy written for another project (or, for the test names, the project's own tests), in any case, as whole segments before the first dot-directory, never a package segment such as `com/example`; a match here keeps the file in the agent-instruction role and the instruction-chain budget and out of PSR006. A file nothing recognizes is own. `.docguardignore` and `ignore` still win. `guard --format json` reports `files.kinds` (`counts` per kind, `excluded` up to 20 paths per kind left out of the instruction role, `excludedMore`)
 | `specFirst.paths` / `specFirst.exemptKinds` | `string[]` | No | Everything except Markdown, `specs/**` and tests / `release, deps, typo, test-only` | Governed paths and allowed `Spec-Exempt` kinds for `specs require` |
 | `validators.docDependency` / `pathScopedRules` / `docOwnership` / `requirementAnchors` | `boolean` | No | `true` | Each applies only when its input exists: a `covers=` declaration, agent instruction files, an `ownership` block or `.devin/wiki.json`, an anchor lock or `anchors.enabled` |
 | `anchors` | `object` | No | — | Requirement anchors (specs/070-requirement-anchors): opt-in before a lock exists (`enabled`), which suspect and lost links fail guard (`failOn`: `reviewed-exact` or `none`), foreign tag formats (`import`, `importMap`), the ripple cap (`fanOutLimit`), where `--orphans` looks (`orphanPaths`), the tree-sitter artifacts (`treeSitter.artifacts`) and the TestGuard files read (`testguard.evidence`, `testguard.claims`). `docs/configuration.md` lists each key's default |
@@ -1603,7 +1603,7 @@ A `.docguardignore` entry can end: `expires:YYYY-MM-DD` keeps it through that UT
 
 # Test Specification
 
-<!-- docguard:version 1.5.2 -->
+<!-- docguard:version 1.5.3 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-11-13 -->
 
@@ -1720,7 +1720,7 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/scanners/doc-deps.mjs`, `cli/validators/doc-dependency.mjs`, `cli/commands/review.mjs` (doc dependency lock, DLK001–DLK005) | `tests/doc-dependency-lock.test.mjs`, `tests/fingerprint-shared.test.mjs` | ✅ |
 | `cli/shared-agent-instructions.mjs` (agent-instruction role, pointers, vendored copies, PSR005, spec 094) | `tests/agent-instruction-role.test.mjs` | ✅ |
 | `cli/shared-agent-instructions.mjs`, `cli/validators/path-scoped-rules.mjs` (PSR006, spec 099), `cli/scanners/agent-instructions.mjs` (copies are not measured) | `tests/instruction-copies.test.mjs` | ✅ |
-| `cli/shared-file-kind.mjs` (`fileKind`, `fileKinds.own`), `isNonProductPath`, `isNonProductDir` (spec 100) | `tests/file-kinds.test.mjs` | ✅ |
+| `cli/shared-file-kind.mjs` (`fileKind`, `fileKinds.own`), `isNonProductPath`, `isNonProductDir` (spec 100) | `tests/file-kinds.test.mjs`, `tests/file-kinds-detection.test.mjs` | ✅ |
 | `cli/` as a whole: no private directory-name set, no unclassified walk outside an allowlist that carries a reason per entry (spec 100 FR-011) | `tests/file-kinds-registry.test.mjs` | ✅ |
 | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
 | `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
@@ -1831,6 +1831,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.3 | 2026-11-13 | DocGuard Team | File kinds: `fileKind`, `fileKinds.own`, the `files.kinds` report and the guard test against private directory-name sets (spec 100, Stage 1) |
 | 1.5.2 | 2026-11-13 | DocGuard Team | Fixture git turns background maintenance off (spec 066) |
 | 1.5.1 | 2026-11-13 | DocGuard Team | Fixture directories come from `tests/helpers/temp-dir.mjs` and are removed after every run; the `hermeticity` job checks for leftovers (spec 098) |
 | 1.5.0 | 2026-11-03 | DocGuard Team | Map specs 081–092 to their suites (verdict contract through parser fuzzing); the hermeticity job covers the sensor's scratch clone and the release gate's copies |
@@ -2046,19 +2047,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     folder (`packages/api/AGENTS.md`, `templates/AGENTS.md`) is never reported.
     This ADDS a warning under strict for a project that keeps such a copy.
   - **How files are classified.** The new module `cli/shared-file-kind.mjs`
-    answers from a closed list of kinds (`own`, `template`, `fixture`,
+    answers from a closed list of kinds (`own`, `template`, `fixture`, `test`,
     `vendored`, `generated`, `backup`, `nested-checkout`); what it does not
     recognize is `own`. Directory names match as whole path segments in any case
     (`Examples/` and `Fixtures/` now leave the role like `examples/` and
     `fixtures/`), only before the first dot-directory, never for a package
     segment. The template names are `templates`, `template`, `_templates`,
     `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and
-    `skeleton(s)`; `corpus` and `golden` join the fixture names that
-    `isNonProductPath` already used. Because `isNonProductPath` is now
-    case-insensitive and knows those two names, a directory such as `Examples/`
-    or `Corpus/` is non-product for detection too; ten other repositories checked
-    saw no change from it, and Security's test-path `context` on its findings
-    could change for such a directory (not measured).
+    `skeleton(s)`. Test directories (`test`, `tests`, `__tests__`, `spec(s)`) are
+    their own kind, `test`, so the project's tests are never reported as
+    fixtures; a Spec Kit `specs/012-feature/` is `own`. `corpus` and `golden`
+    mark copies for instruction files only, because a product package can carry
+    either name (`nltk.corpus`): detection and Security never skip them.
+  - **Capitalized directory names now count for detection (Security gating).**
+    `isNonProductPath` is case-insensitive, so a secret-shaped literal under
+    `Examples/`, `Fixtures/`, `Tests/` or `__Mocks__/` is recorded with context
+    `test-path` instead of `product` on `SEC001`, `SEC002`, `SEC003` and
+    `SEC004`, and a `test-path` finding never gates under strict. That REMOVES
+    gating from findings in such directories (the findings are still reported).
+    Lowercase directories, `corpus/` and `golden/` are unchanged. Route
+    detection likewise stops reading a capitalized `Examples/` directory, as it
+    already skipped `examples/`. None of the ten other repositories checked
+    changed.
   - **`fileKinds.own`** (glob patterns in `.docguard.json`) keeps a file the
     project's own wherever it sits, for example a real package named `examples`;
     `.docguardignore` and `ignore` still win. It replaces
@@ -2399,17 +2409,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   template documents are not requirements; the evidence lists each ID once.
 
 - **A template row is a row whose only content is the slot.** The slot rule dropped real
-  requirements whose text mentions `{file}`, `{name}`, `{count}` or `<region>` as part of a
-  sentence. A row is now a template row only when, with every slot removed, what is left is
-  the bare scaffold of a requirement sentence ("System MUST", "Users MUST be able to") or
-  nothing; a sentence that still states something is a requirement. A requirement whose text
-  sits on the lines under its ID is a requirement. Spec Kit's `[NEEDS CLARIFICATION]` example
-  rows and a filled default row with no slot are counted unless the document is a template.
 
-- **Requirement-Anchors counted identifiers that are not requirements.** Whether
-  the project "declares requirement IDs" now counts only FR, NFR, SC and REQ IDs in
-
-<!-- truncated: 6632 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6641 more lines — read CHANGELOG.md directly -->
 
 ---
 

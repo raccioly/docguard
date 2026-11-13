@@ -36,19 +36,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     folder (`packages/api/AGENTS.md`, `templates/AGENTS.md`) is never reported.
     This ADDS a warning under strict for a project that keeps such a copy.
   - **How files are classified.** The new module `cli/shared-file-kind.mjs`
-    answers from a closed list of kinds (`own`, `template`, `fixture`,
+    answers from a closed list of kinds (`own`, `template`, `fixture`, `test`,
     `vendored`, `generated`, `backup`, `nested-checkout`); what it does not
     recognize is `own`. Directory names match as whole path segments in any case
     (`Examples/` and `Fixtures/` now leave the role like `examples/` and
     `fixtures/`), only before the first dot-directory, never for a package
     segment. The template names are `templates`, `template`, `_templates`,
     `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)` and
-    `skeleton(s)`; `corpus` and `golden` join the fixture names that
-    `isNonProductPath` already used. Because `isNonProductPath` is now
-    case-insensitive and knows those two names, a directory such as `Examples/`
-    or `Corpus/` is non-product for detection too; ten other repositories checked
-    saw no change from it, and Security's test-path `context` on its findings
-    could change for such a directory (not measured).
+    `skeleton(s)`. Test directories (`test`, `tests`, `__tests__`, `spec(s)`) are
+    their own kind, `test`, so the project's tests are never reported as
+    fixtures; a Spec Kit `specs/012-feature/` is `own`. `corpus` and `golden`
+    mark copies for instruction files only, because a product package can carry
+    either name (`nltk.corpus`): detection and Security never skip them.
+  - **Capitalized directory names now count for detection (Security gating).**
+    `isNonProductPath` is case-insensitive, so a secret-shaped literal under
+    `Examples/`, `Fixtures/`, `Tests/` or `__Mocks__/` is recorded with context
+    `test-path` instead of `product` on `SEC001`, `SEC002`, `SEC003` and
+    `SEC004`, and a `test-path` finding never gates under strict. That REMOVES
+    gating from findings in such directories (the findings are still reported).
+    Lowercase directories, `corpus/` and `golden/` are unchanged. Route
+    detection likewise stops reading a capitalized `Examples/` directory, as it
+    already skipped `examples/`. None of the ten other repositories checked
+    changed.
   - **`fileKinds.own`** (glob patterns in `.docguard.json`) keeps a file the
     project's own wherever it sits, for example a real package named `examples`;
     `.docguardignore` and `ignore` still win. It replaces

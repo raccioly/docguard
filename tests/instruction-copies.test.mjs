@@ -246,6 +246,15 @@ describe('D5 — case-variant folders leave the role exactly as lowercase ones d
   });
 });
 
+describe('a test directory copy is kind test, left out and reported low', () => {
+  it('tests/app/AGENTS.md is out of the role, listed as test, and PSR006 low; corpus/ goes with it', t => {
+    const dir = repo(t, { 'AGENTS.md': RULES, 'tests/app/AGENTS.md': RULES, 'corpus/c/AGENTS.md': RULES });
+    assert.deepEqual(agentInstructionDocs(dir, {}).excluded.map(e => [e.path, e.kind]), [['corpus/c/AGENTS.md', 'fixture'], ['tests/app/AGENTS.md', 'test']]);
+    assert.deepEqual(psr006(dir).map(h => [h.location, h.confidence]), [['corpus/c/AGENTS.md', 'low'], ['tests/app/AGENTS.md', 'low']]);
+    assert.match(psr006(dir)[0].message, /test, fixture or example copy/);
+  });
+});
+
 describe('FR-010 — nothing is dropped silently', () => {
   const guardJson = (dir, extra = {}) => {
     const r = spawnSync(process.execPath, [CLI, 'guard', '--format', 'json'], { cwd: dir, encoding: 'utf8' });

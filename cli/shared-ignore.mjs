@@ -1,10 +1,10 @@
 import { isExpired, isOwner, parseWaiverDate, splitWaiverMetadata } from './waiver-metadata.mjs';
 import { resolveDocRole } from './shared-doc-roles.mjs';
-import { compileGlob, fileKind, FIXTURE_DIRS, isPackageSegment, mayHoldOwnFiles } from './shared-file-kind.mjs';
+import { compileGlob, DETECTION_KEEPS, fileKind, isPackageSegment, mayHoldOwnFiles, NON_PRODUCT_DIRS } from './shared-file-kind.mjs';
 // The glob compiler and the package-segment rule live with the file-kind vocabulary (specs/100-file-kinds):
 // the module that classifies paths must not import this one back.
 export { compileGlob, isPackageSegment };
-export { FIXTURE_DIRS as DEFAULT_DETECTION_IGNORE_DIRS } from './shared-file-kind.mjs';
+export { NON_PRODUCT_DIRS as DEFAULT_DETECTION_IGNORE_DIRS } from './shared-file-kind.mjs';
 /**
  * Shared Ignore Utility — Unified file filtering for all validators.
  *
@@ -138,7 +138,7 @@ export function isDocguardOwnedDir(projectDir, relDir) {
  */
 export function isNonProductDir(dirName, config = {}, parentRel = null) {
   if (config?.detection?.includeNonProduct) return false;
-  if (!FIXTURE_DIRS.has(String(dirName).toLowerCase())) return false;
+  if (!NON_PRODUCT_DIRS.has(String(dirName).toLowerCase())) return false;
   const segments = [...(parentRel ? String(parentRel).split('/').filter(s => s && s !== '.') : []), dirName];
   if (parentRel && isPackageSegment(segments, segments.length - 1)) return false;
   // A walker that prunes this directory would never reach what `fileKinds.own` rescues below it.
@@ -149,14 +149,14 @@ export function isNonProductDir(dirName, config = {}, parentRel = null) {
  * True if ANY path segment of `relPath` (POSIX, project-relative) is a
  * non-product detection dir — for filtering file-level detection results.
  * Package segments (`src/main/java/com/example/…`) do not count. A view of
- * `fileKind` (specs/100-file-kinds FR-006): the `fixture` vocabulary, matched
+ * `fileKind` (specs/100-file-kinds FR-006): the `fixture` and `test` vocabulary (a Spec Kit `specs/<NNN>-feature/` still counts), matched
  * without regard to case, every segment (also after a dot-directory) and the
  * last one too; `fileKinds.own` rescues a path.
  */
 export function isNonProductPath(relPath, config = {}) {
   if (config?.detection?.includeNonProduct) return false;
   if (!relPath) return false;
-  return fileKind(relPath, config, { asDirectory: true, kinds: ['fixture'], harnessFolders: 'all' }).kind === 'fixture';
+  return fileKind(relPath, config, { asDirectory: true, kinds: ['fixture', 'test'], harnessFolders: 'all', featureSpecs: 'test', skipNames: DETECTION_KEEPS }).kind !== 'own';
 }
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';

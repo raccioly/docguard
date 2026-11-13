@@ -26,7 +26,7 @@ import {
 } from './scanners/instruction-scopes.mjs';
 import { listTrackedFiles } from './shared-git.mjs';
 import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore } from './shared-ignore.mjs';
-import { fileKind, INSTRUCTION_COPY } from './shared-file-kind.mjs';
+import { DETECTION_KEEPS, fileKind, INSTRUCTION_COPY } from './shared-file-kind.mjs';
 
 /** Files a harness loads from the project root for every session. */
 export const ROOT_AGENT_FILES = Object.freeze([
@@ -200,6 +200,22 @@ function namedFiles(path, content) {
   return named;
 }
 
+/**
+ * Is this non-root instruction file left out of the role (docguard.file-kinds#FR-007)? A template copy
+ * always; a copy below a fixture or test directory unless `detection.includeNonProduct` reads those as
+ * product (spec 094); `tests/AGENTS.md` itself by detection's any-ancestor rule. `fileKinds.own` rescues.
+ * @returns {{ kind: string, segment: string|null } | null}
+ */
+export function instructionLeftOut(path, config = {}) {
+  const copy = fileKind(path, config, INSTRUCTION_COPY);
+  if (copy.kind === 'template') return { kind: copy.kind, segment: copy.segment };
+  if (config?.detection?.includeNonProduct) return null;
+  if (copy.kind !== 'own') return { kind: copy.kind, segment: copy.segment };
+  if (!isNonProductPath(path, config)) return null;
+  const where = fileKind(path, config, { kinds: ['fixture', 'test'], asDirectory: true, harnessFolders: 'all', featureSpecs: 'test', skipNames: DETECTION_KEEPS });
+  return { kind: where.kind, segment: where.segment };
+}
+
 const memo = new WeakMap();
 
 /**
@@ -245,13 +261,8 @@ function computeDocs(projectDir, config) {
     // that holds the file does not count. `fileKinds.own` puts either back
     // (docguard.file-kinds#FR-004, FR-007).
     if (!root) {
-      const copy = fileKind(path, config, INSTRUCTION_COPY);
-      if (copy.kind === 'template') { excluded.push({ path, kind: 'template', segment: copy.segment }); return; }
-      if (isNonProductPath(path, config)) {
-        const where = copy.kind === 'fixture' ? copy : fileKind(path, config, { kinds: ['fixture'], asDirectory: true, harnessFolders: 'all' });
-        excluded.push({ path, kind: 'fixture', segment: where.segment });
-        return;
-      }
+      const left = instructionLeftOut(path, config);
+      if (left) { excluded.push({ path, ...left }); return; }
     }
     if (!isRegularFile(resolve(projectDir, path))) return;
     found.set(path, { path, kind, root });

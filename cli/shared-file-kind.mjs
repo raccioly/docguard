@@ -31,9 +31,10 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { isFeatureSpecDirectory } from './shared-doc-roles.mjs';
 
 /** The closed list. Anything a path is not recognized as is `own`. */
-export const FILE_KINDS = Object.freeze(['own', 'template', 'fixture', 'vendored', 'generated', 'backup', 'nested-checkout']);
+export const FILE_KINDS = Object.freeze(['own', 'template', 'fixture', 'test', 'vendored', 'generated', 'backup', 'nested-checkout']);
 
 /**
  * THE canonical anchored glob compiler. Fully anchored: `^...$`.
@@ -117,16 +118,25 @@ export const TEMPLATE_DIRS = names([
   'starter-kit', 'starter-kits', 'skeleton', 'skeletons',
 ]);
 
-/**
- * Test data, sample apps, example projects, mocks. The detection set of
- * `isNonProductPath` as it was, plus `corpus` and `golden`.
- */
+/** Test data, sample apps, example projects, mocks: files that are copies or stand-ins, not the project's own tests. */
 export const FIXTURE_DIRS = names([
-  'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata',
-  'test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs', '__mocks__', 'mocks',
+  'fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata', '__mocks__', 'mocks',
   'examples', 'example', 'sample', 'samples',
   'corpus', 'golden',
 ]);
+
+/** The project's own tests. Not copies, but detection never reads them as product code. */
+export const TEST_DIRS = names(['test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs']);
+
+/**
+ * `corpus` and `golden` mark copies for instruction files (kind fixture), but a
+ * product package can carry either name (`nltk.corpus`), so detection never
+ * skips them: they are in `FIXTURE_DIRS` and not in `NON_PRODUCT_DIRS`.
+ */
+export const DETECTION_KEEPS = Object.freeze(['corpus', 'golden']);
+
+/** Every directory name detection (`isNonProductPath`) treats as non-product: the fixture and test names, as before spec 100. */
+export const NON_PRODUCT_DIRS = names([...FIXTURE_DIRS, ...TEST_DIRS].filter(n => !DETECTION_KEEPS.includes(n)));
 
 /** Code that belongs to someone else (`DEFAULT_IGNORE_DIRS`' package managers, plus vendored and third_party). */
 export const VENDORED_DIRS = names(['node_modules', 'vendor', 'vendored', 'third_party', '.venv', '__pycache__']);
@@ -138,6 +148,7 @@ export const GENERATED_DIRS = names(['dist', 'build', 'out', 'coverage', 'target
 const PRECEDENCE = [
   ['template', TEMPLATE_DIRS],
   ['fixture', FIXTURE_DIRS],
+  ['test', TEST_DIRS],
   ['vendored', VENDORED_DIRS],
   ['generated', GENERATED_DIRS],
 ];
@@ -160,7 +171,7 @@ const BACKUP_NAME_RES = [
  * not count, and only templates and fixtures are copies (specs/099 FR-001,
  * specs/100 FR-007 to FR-009).
  */
-export const INSTRUCTION_COPY = Object.freeze({ describesFolder: true, kinds: Object.freeze(['template', 'fixture']) });
+export const INSTRUCTION_COPY = Object.freeze({ describesFolder: true, featureSpecs: 'test', kinds: Object.freeze(['template', 'fixture', 'test']) });
 
 const OWN = Object.freeze({ kind: 'own', segment: null, reason: 'nothing in the vocabulary matches' });
 
@@ -235,6 +246,10 @@ function backupOf(path, segments, dirCount, wants) {
  * @param {'cutoff'|'all'} [opts.harnessFolders] - `'all'` reads segments after a dot-directory too
  *   (`isNonProductPath`'s historical behavior); the default stops at the first one
  * @param {boolean} [opts.asDirectory] - the last segment names a directory and is classified like one
+ * @param {'own'|'test'} [opts.featureSpecs] - `specs/<NNN>-name/` (a Spec Kit feature directory) is the project's own
+ *   documents, so `own` by default; `'test'` keeps the older reading of `spec(s)` as a test directory
+ *   (`isNonProductPath`, the instruction role)
+ * @param {string[]} [opts.skipNames] - lower-case directory names that do not count (detection passes `DETECTION_KEEPS`)
  * @param {string} [opts.root] - absolute project root; enables `nested-checkout`
  * @returns {{ kind: string, segment: string|null, reason: string }}
  */
@@ -264,8 +279,12 @@ export function fileKind(path, config = {}, opts = {}) {
     const seg = segments[i];
     if (cutoff && seg.startsWith('.')) break;
     const lower = seg.toLowerCase();
+    if (opts.skipNames && opts.skipNames.includes(lower)) continue;
     for (const [kind, set] of PRECEDENCE) {
       if (first.has(kind) || !wants(kind) || !set.has(lower)) continue;
+      // A Spec Kit feature directory is the project's own documents (spec 100): not a test directory.
+      if (kind === 'test' && opts.featureSpecs !== 'test' && (lower === 'spec' || lower === 'specs')
+        && i + 1 < dirCount && isFeatureSpecDirectory(`${lower}/${segments[i + 1]}`)) continue;
       if (isPackageSegment(segments.map(s => s.toLowerCase()), i)) continue;
       first.set(kind, seg);
     }

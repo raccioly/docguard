@@ -450,8 +450,8 @@ Some files in a repository are not the project's own work: a scaffolder's
 `templates/<app>/files/AGENTS.md` is a form written into other repositories, a
 `fixtures/` project is test data, `vendor/` is someone else's code. DocGuard
 asks one question, "is this file the project's own", and answers from a closed
-list of kinds: `own`, `template`, `fixture`, `vendored`, `generated`, `backup`
-and `nested-checkout`.
+list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`,
+`backup` and `nested-checkout`.
 
 - **Unknown is own.** Classifying a file as a copy removes it from checks, so
   a file nothing recognizes stays the project's.
@@ -461,9 +461,12 @@ and `nested-checkout`.
   segment never counts (`src/main/java/com/example`).
   - template: `templates`, `template`, `_templates`, `__templates__`,
     `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)`
-  - fixture: `fixtures`, `__fixtures__`, `testdata`, `tests`, `__tests__`,
-    `spec(s)`, `__mocks__`, `mocks`, `examples`, `samples`, `corpus`, `golden`
-    and the other test-data names
+  - fixture: `fixtures`, `__fixtures__`, `testdata`, `__mocks__`, `mocks`,
+    `examples`, `samples`, `corpus`, `golden` and the other test-data names
+  - test (the project's own tests): `test`, `tests`, `__tests__`,
+    `test-helpers`, `spec`, `specs`; a Spec Kit `specs/012-feature/` is own
+  - `corpus` and `golden` mark copies for instruction files only: detection
+    (routes, Security's test-path context) still reads them as product
   - vendored: `node_modules`, `vendor`, `vendored`, `third_party`; generated:
     `dist`, `build`, `out`, `coverage`, `target`, `generated`
 - **The folder that holds the file does not count** for a file that describes

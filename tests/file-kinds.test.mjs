@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 
 import { makeTempDir } from './helpers/temp-dir.mjs';
 import {
-  FILE_KINDS, FIXTURE_DIRS, GENERATED_DIRS, TEMPLATE_DIRS, VENDORED_DIRS, fileKind,
+  FILE_KINDS, FIXTURE_DIRS, GENERATED_DIRS, NON_PRODUCT_DIRS, TEMPLATE_DIRS, TEST_DIRS, VENDORED_DIRS, fileKind,
 } from '../cli/shared-file-kind.mjs';
 import { DEFAULT_DETECTION_IGNORE_DIRS, compileGlob, globMatch, isNonProductDir, isNonProductPath, isPackageSegment } from '../cli/shared-ignore.mjs';
 
@@ -25,8 +25,8 @@ const kindOf = (path, config, opts) => fileKind(path, config, opts).kind;
 const cases = word => [word, word.toUpperCase(), word[0].toUpperCase() + word.slice(1)];
 
 describe('FR-001 — the closed list of kinds', () => {
-  it('names exactly seven kinds', () => {
-    assert.deepEqual([...FILE_KINDS], ['own', 'template', 'fixture', 'vendored', 'generated', 'backup', 'nested-checkout']);
+  it('names exactly eight kinds', () => {
+    assert.deepEqual([...FILE_KINDS], ['own', 'template', 'fixture', 'test', 'vendored', 'generated', 'backup', 'nested-checkout']);
     assert.ok(Object.isFrozen(FILE_KINDS));
   });
 
@@ -49,7 +49,7 @@ describe('FR-001 — the closed list of kinds', () => {
 
 describe('FR-001 — every vocabulary word, in lower, upper and mixed case', () => {
   const nested = (word, file) => `apps/web/${word}/app/${file}`;
-  for (const [set, kind] of [[TEMPLATE_DIRS, 'template'], [FIXTURE_DIRS, 'fixture'], [VENDORED_DIRS, 'vendored'], [GENERATED_DIRS, 'generated']]) {
+  for (const [set, kind] of [[TEMPLATE_DIRS, 'template'], [FIXTURE_DIRS, 'fixture'], [TEST_DIRS, 'test'], [VENDORED_DIRS, 'vendored'], [GENERATED_DIRS, 'generated']]) {
     it(`${kind}: each word classifies in every case, and reports the segment as written`, () => {
       for (const word of set) {
         if (word.startsWith('.')) continue; // dot directories are the harness cutoff's business
@@ -64,19 +64,21 @@ describe('FR-001 — every vocabulary word, in lower, upper and mixed case', () 
   }
 
   it('the vocabulary sets are disjoint and frozen', () => {
-    const all = [...TEMPLATE_DIRS, ...FIXTURE_DIRS, ...VENDORED_DIRS, ...GENERATED_DIRS];
+    const all = [...TEMPLATE_DIRS, ...FIXTURE_DIRS, ...TEST_DIRS, ...VENDORED_DIRS, ...GENERATED_DIRS];
     assert.equal(new Set(all).size, all.length);
-    for (const s of [TEMPLATE_DIRS, FIXTURE_DIRS, VENDORED_DIRS, GENERATED_DIRS]) assert.ok(Object.isFrozen(s));
+    for (const s of [TEMPLATE_DIRS, FIXTURE_DIRS, TEST_DIRS, VENDORED_DIRS, GENERATED_DIRS]) assert.ok(Object.isFrozen(s));
   });
 
   it('the template vocabulary is the designed one', () => {
     assert.deepEqual([...TEMPLATE_DIRS].sort(), ['_templates', '__templates__', 'boilerplate', 'boilerplates', 'scaffold', 'scaffolds', 'skeleton', 'skeletons', 'starter-kit', 'starter-kits', 'template', 'templates'].sort());
   });
 
-  it('the fixture vocabulary is today\'s detection set plus corpus and golden', () => {
+  it("the fixture and test vocabularies split today's detection set, plus corpus and golden", () => {
+    assert.deepEqual([...TEST_DIRS].sort(), ['__tests__', 'spec', 'specs', 'test', 'test-helpers', 'tests']);
+    assert.deepEqual([...FIXTURE_DIRS].sort(), ['__fixtures__', '__mocks__', 'corpus', 'example', 'examples', 'fixtures', 'golden', 'mocks', 'sample', 'samples', 'test-fixtures', 'testdata', 'testfixtures']);
     const before = ['fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata', 'test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs', '__mocks__', 'mocks', 'examples', 'example', 'sample', 'samples'];
-    assert.deepEqual([...FIXTURE_DIRS].sort(), [...before, 'corpus', 'golden'].sort());
-    assert.deepEqual([...DEFAULT_DETECTION_IGNORE_DIRS].sort(), [...FIXTURE_DIRS].sort());
+    assert.deepEqual([...NON_PRODUCT_DIRS].sort(), [...before].sort(), 'detection keeps its set: corpus and golden can be real packages');
+    assert.deepEqual([...DEFAULT_DETECTION_IGNORE_DIRS].sort(), [...NON_PRODUCT_DIRS].sort());
   });
 
   it('directory names the survey found real product in are not kinds', () => {
@@ -102,26 +104,29 @@ describe('FR-002 — dot segments, package segments, precedence', () => {
   });
 
   it("harnessFolders: 'all' turns the cutoff off", () => {
-    assert.equal(kindOf('.agent/skills/x/tests/y.js', {}, { harnessFolders: 'all' }), 'fixture');
+    assert.equal(kindOf('.agent/skills/x/tests/y.js', {}, { harnessFolders: 'all' }), 'test');
     assert.equal(kindOf('.agent/skills/x/tests/y.js', {}), 'own');
   });
 
   it('a package segment is not a directory of examples, in any case', () => {
     for (const p of ['src/main/java/com/example/A.java', 'src/main/java/com/Example/A.java', 'src/main/kotlin/org/Samples/B.kt', 'internal/example/x.go', 'internal/Example/x.go', 'src/main/java/anything/deep/Tests/C.java']) assert.equal(kindOf(p, {}), 'own', p);
-    assert.equal(kindOf('src/test/java/com/example/A.java', {}), 'fixture');
+    assert.equal(kindOf('src/test/java/com/example/A.java', {}), 'test');
     assert.equal(isPackageSegment(['com', 'Example'], 1), true);
     assert.equal(isPackageSegment(['SRC', 'MAIN', 'JAVA', 'x'], 3), true);
   });
 
   it('when several segments qualify a template outranks a fixture, then vendored and generated', () => {
     assert.deepEqual(fileKind('tests/templates/a/AGENTS.md', {}), { kind: 'template', segment: 'templates', reason: 'below a directory named `templates`' });
-    assert.equal(kindOf('vendor/tests/a.js', {}), 'fixture');
+    assert.equal(kindOf('vendor/tests/a.js', {}), 'test');
+    assert.equal(kindOf('tests/fixtures/a.js', {}), 'fixture');
+    assert.equal(kindOf('fixtures/tests/a.js', {}), 'fixture');
     assert.equal(kindOf('dist/vendor/a.js', {}), 'vendored');
     assert.equal(kindOf('dist/a.js', {}), 'generated');
   });
 
   it('kinds restricts the answer to the listed kinds', () => {
-    assert.equal(kindOf('tests/templates/a.js', {}, { kinds: ['fixture'] }), 'fixture');
+    assert.equal(kindOf('tests/fixtures/a.js', {}, { kinds: ['fixture'] }), 'fixture');
+    assert.equal(kindOf('tests/a.js', {}, { kinds: ['fixture'] }), 'own');
     assert.equal(kindOf('vendor/a.js', {}, { kinds: ['fixture'] }), 'own');
     assert.equal(kindOf('vendor/a.js', {}, { kinds: ['vendored', 'generated'] }), 'vendored');
   });
@@ -145,6 +150,7 @@ describe('FR-003 — the folder that holds the file', () => {
     assert.equal(kindOf('examples/README.md', {}, { describesFolder: true }), 'own');
     assert.equal(kindOf('templates/app/files/AGENTS.md', {}, { describesFolder: true }), 'template');
     assert.equal(kindOf('tests/fixtures/repo/AGENTS.md', {}, { describesFolder: true }), 'fixture');
+    assert.equal(kindOf('tests/app/AGENTS.md', {}, { describesFolder: true }), 'test');
     assert.equal(kindOf('examples/demo/README.md', {}, { describesFolder: true }), 'fixture');
   });
 
@@ -247,13 +253,14 @@ describe('FR-005 — nested checkout', () => {
 });
 
 describe('FR-006 — isNonProductPath and isNonProductDir are views of the vocabulary', () => {
-  it('keep their meaning, and gain case-insensitivity, corpus and golden', () => {
+  it('keep their meaning, and gain case-insensitivity', () => {
     assert.equal(isNonProductPath('src/tests/helper.js'), true);
     assert.equal(isNonProductPath('src/components/button.jsx'), false);
     assert.equal(isNonProductPath('Examples/basic/index.js'), true);
     assert.equal(isNonProductPath('Fixtures/a.js'), true);
-    assert.equal(isNonProductPath('corpus/a.js'), true);
-    assert.equal(isNonProductPath('golden/a.json'), true);
+    assert.equal(isNonProductPath('corpus/a.js'), false, 'nltk.corpus is a real package');
+    assert.equal(isNonProductPath('golden/a.json'), false);
+    assert.equal(kindOf('corpus/a.js', {}), 'fixture');
     assert.equal(isNonProductPath('src/main/java/com/example/A.java'), false);
     assert.equal(isNonProductPath('src/main/java/com/Example/A.java'), false);
     assert.equal(isNonProductPath('src/a.js', { detection: { includeNonProduct: true } }), false);
@@ -270,7 +277,8 @@ describe('FR-006 — isNonProductPath and isNonProductDir are views of the vocab
 
   it('isNonProductDir follows the same vocabulary and case', () => {
     assert.equal(isNonProductDir('Tests'), true);
-    assert.equal(isNonProductDir('GOLDEN'), true);
+    assert.equal(isNonProductDir('Examples'), true);
+    assert.equal(isNonProductDir('GOLDEN'), false);
     assert.equal(isNonProductDir('src'), false);
     assert.equal(isNonProductDir('Example', {}, 'src/main/java/com'), false);
     assert.equal(isNonProductDir('example', {}, 'internal'), false);
@@ -283,5 +291,25 @@ describe('the glob compiler and package rule moved here but stay importable from
     assert.equal(globMatch('src/a.ts', ['**/*.test.ts']), false);
     assert.equal(globMatch('node_modules/x/a.test.ts', ['**/*.test.ts']), false);
     assert.ok(compileGlob('docs/{a,b}/*.md').test('docs/a/x.md'));
+  });
+});
+
+describe("the project's own tests are kind test, not fixture (spec 100)", () => {
+  it('test directories are test; fixture directories under them are fixture', () => {
+    for (const p of ['tests/a.test.js', 'src/__tests__/a.js', 'test-helpers/x.js', 'spec/models/user_spec.rb', 'Tests/a.js']) assert.equal(kindOf(p, {}), 'test', p);
+    assert.equal(kindOf('tests/fixtures/repo/a.js', {}), 'fixture');
+  });
+
+  it('isNonProductPath is test or fixture, exactly as before', () => {
+    for (const p of ['tests/a.js', 'spec/a.rb', 'examples/a.js', 'tests/fixtures/a.js', 'src/__tests__/a.js']) assert.equal(isNonProductPath(p, {}), true, p);
+  });
+
+  it('Spec Kit feature directories are own; the legacy reading is an option', () => {
+    assert.equal(kindOf('specs/100-file-kinds/spec.md', {}), 'own');
+    assert.equal(kindOf('Specs/012-thing/tasks.md', {}), 'own');
+    assert.equal(kindOf('spec/models/user_spec.rb', {}), 'test');
+    assert.equal(kindOf('specs/helpers/a.rb', {}), 'test');
+    assert.equal(kindOf('specs/100-file-kinds/spec.md', {}, { featureSpecs: 'test' }), 'test');
+    assert.equal(isNonProductPath('specs/001-x/spec.md', {}), true, 'detection still skips feature specs, as on main');
   });
 });

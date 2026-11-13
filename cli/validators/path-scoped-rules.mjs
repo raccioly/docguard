@@ -30,9 +30,9 @@ import {
 import { extractInstructionPointers, safePointerPath } from '../scanners/instruction-audit.mjs';
 import { readFrontmatter } from '../scanners/frontmatter.mjs';
 import { DEFAULT_INSTRUCTION_BUDGET } from '../scanners/agent-instructions.mjs';
-import { buildIgnoreFilter, isNonProductPath, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
+import { buildIgnoreFilter, loadDocguardIgnore, walkFiles, relPosix } from '../shared-ignore.mjs';
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
-import { agentInstructionDocs, fileSha256, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
+import { agentInstructionDocs, fileSha256, instructionLeftOut, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
 import { fileKind, INSTRUCTION_COPY } from '../shared-file-kind.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
@@ -73,7 +73,7 @@ export function validatePathScopedRules(projectDir, config = {}) {
   const { entries: all, files: instructionFiles, skipped } = instructionScopes(projectDir, projectFiles);
   // Test, fixture and example paths (spec 094) and template copies (spec 099 FR-001) are
   // forms for other projects, not this one's instructions, unless fileKinds.own names them.
-  const entries = all.filter(e => !isNonProductPath(e.file, config) && fileKind(e.file, config, INSTRUCTION_COPY).kind !== 'template');
+  const entries = all.filter(e => !instructionLeftOut(e.file, config));
   const role = agentInstructionDocs(projectDir, config);
   const copies = instructionCopies(projectFiles, config);
   if (entries.length === 0 && copies.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {

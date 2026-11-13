@@ -17,7 +17,7 @@
     "tool": {
       "version": "0.48.0",
       "revision": "27fd284a71c63e497db57002329c38d1f6f45100",
-      "detectorsDigest": "sha256:6cfa4249bf31a14e2e274245addb040959cfaaf934480d0dbeacfe9e073acae3"
+      "detectorsDigest": "sha256:b4c2dffd5a8f3df996d9c04acba94a295bdbcef8e0693225187bdef0a1c486b0"
     },
     "cases": [
       {
