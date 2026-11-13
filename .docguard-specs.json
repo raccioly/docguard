@@ -3018,7 +3018,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "b0a77f1f954f6534b6535577dff2609b34b07665",
+          "lastReviewedRevision": "0cdebdb13e07577c47e4d9a97cc74ae411953713",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
@@ -3040,6 +3040,23 @@
             {
               "revision": "b0a77f1f954f6534b6535577dff2609b34b07665",
               "reason": "Reviewed again after merging main (87f0400) and after superseded outcomes were made not to strand a record: the closing flow, squash and rebase, changed evidence, SPR010 and 0.48.0 both ways are unchanged; the evidence files changed since the first review (batched search, supersede rule, tests, docs).",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "0cdebdb13e07577c47e4d9a97cc74ae411953713",
+              "reason": "Reviewed again after merging main (21fe8ee): evidence files merged with main's edits (CI-RECIPES, DATA-MODEL, commands docs), so the record is renewed at the merged state; behavior unchanged.",
               "evidence": [
                 "cli/commands/specs.mjs",
                 "cli/scanners/revision-anchor.mjs",
@@ -3081,7 +3098,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:baa18119e3036c077f82f6418dd257677218cd5a67ef415c88ec7c99fced69da"
+            "digest": "sha256:2b73444df11616d9ff3573991eca33b86c940ec7be020876fc9ddefacf28e286"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
