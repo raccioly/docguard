@@ -10,6 +10,7 @@
  */
 import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileKind, NOT_OWN_KINDS } from './shared-file-kind.mjs';
 import { DOC_ROLES, detectCanonicalLayout, docRolePath, isFeatureSpecDirectory, resolveDocRole } from './shared-doc-roles.mjs';
 
 // Words that say a document is the one for a role, matched against the normalized file name and the name of
@@ -20,7 +21,6 @@ const ROLE_KEYWORDS = {
   apiReference: ['apireference', 'apispec'], requirements: ['requirements'],
 };
 const normalize = text => text.toLowerCase().replace(/[^a-z0-9]/g, '');
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'coverage', 'vendor', '__pycache__', 'target']);
 
 // A document that stands for its whole folder: "overview", "system-overview", "index", "README", "summary".
 const OVERVIEW_STEM = /overview$|^(?:index|readme|summary)$/;
@@ -37,7 +37,7 @@ const OVERVIEW_STEM = /overview$|^(?:index|readme|summary)$/;
  *
  * `folders` are the folders named for the role that were looked in, for the sentence that says so.
  */
-function looseCandidates(projectDir, role) {
+function looseCandidates(projectDir, role, config = {}) {
   const keywords = ROLE_KEYWORDS[role] || [];
   const ranked = [];
   const folders = new Set();
@@ -49,8 +49,11 @@ function looseCandidates(projectDir, role) {
     const inRoleFolder = keywords.some(k => parent.includes(k)) && !/adr|decision/.test(parent);
     if (inRoleFolder) folders.add(rel);
     for (const entry of entries) {
-      if (entry.name.startsWith('.') || entry.isSymbolicLink() || SKIP_DIRS.has(entry.name)) continue;
+      if (entry.name.startsWith('.') || entry.isSymbolicLink()) continue;
       const child = rel ? `${rel}/${entry.name}` : entry.name;
+      // A document under a template, fixture, test, vendored, generated, backup or nested-checkout path is never
+      // offered as this project's document (spec 100 D4), and neither is a backup-named one (`ARCHITECTURE copy.md`).
+      if (fileKind(child, config, { asDirectory: entry.isDirectory(), root: resolve(projectDir), kinds: NOT_OWN_KINDS }).kind !== 'own') continue;
       if (entry.isDirectory()) { if (!isFeatureSpecDirectory(child)) walk(child, depth + 1); continue; }
       if (!/\.(md|markdown|mdx)$/i.test(entry.name)) continue;
       const stem = normalize(entry.name.replace(/\.[^.]+$/, ''));
@@ -111,12 +114,12 @@ export function roleDocument(projectDir, config, role) {
   let ranked = [];
   let folders = [];
   if (!exists && !mapped) {
-    for (const hit of detectCanonicalLayout(projectDir)) {
+    for (const hit of detectCanonicalLayout(projectDir, { config })) {
       const found = hit.roles[role];
       if (found && found !== path && existsSync(resolve(projectDir, found))) { elsewhere = found; break; }
     }
     if (!elsewhere) {
-      ({ ranked, folders } = looseCandidates(projectDir, role));
+      ({ ranked, folders } = looseCandidates(projectDir, role, config));
       ranked = ranked.filter(c => c.file !== path);
       elsewhere = decide(ranked, ROLE_KEYWORDS[role] || []);
     }

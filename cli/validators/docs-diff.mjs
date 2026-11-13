@@ -23,7 +23,8 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename, relative } from 'node:path';
-import { shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, shouldIgnore, globMatch, compileGlob, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { TEST_LOCATIONS } from '../shared-file-kind.mjs';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { scanCodeTechnologies, TECH_PATTERNS } from '../scanners/tech-stack.mjs';
 import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
@@ -32,11 +33,9 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'docs-canonical', 'docs-implementation', 'templates',
-]);
+// The shared build-output and package-cache set, plus DocGuard's own document homes. A scaffolder's templates are
+// a file kind (specs/100-file-kinds), left out below.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'docs-canonical', 'docs-implementation']);
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -579,7 +578,7 @@ export function collectCodeTests(dir, config = {}) {
 
   // 2. recursive scan of each source root (co-located + nested __tests__)
   for (const root of resolveSourceRoots(dir, config)) {
-    for (const f of getFilesRecursive(root, config)) {
+    for (const f of getFilesRecursive(root, config, dir)) {
       if (isTest(f)) {
         const rel = relative(dir, f);
         if (!shouldIgnore(rel, config)) codeTests.add(rel);
@@ -588,10 +587,10 @@ export function collectCodeTests(dir, config = {}) {
   }
 
   // 3. root-level conventional test dirs (e2e lives outside any source root)
-  for (const td of ['tests', 'test', '__tests__', 'spec', 'e2e', 'cypress']) {
+  for (const td of [...TEST_LOCATIONS, 'cypress']) {
     const testDir = join(resolve(dir), td);
     if (!existsSync(testDir)) continue;
-    for (const f of getFilesRecursive(testDir, config)) {
+    for (const f of getFilesRecursive(testDir, config, dir)) {
       if (isTest(f)) {
         const rel = relative(dir, f);
         if (!shouldIgnore(rel, config)) codeTests.add(rel);
@@ -620,15 +619,15 @@ export function getTestFilesFromPatterns(dir, patterns, config) {
     if (globMatch(relPath, patterns)) {
       results.add(relPath);
     }
-  }, { ignoreDirs: IGNORE_DIRS });
+  }, { ignoreDirs: IGNORE_DIRS, root: dir, config, skipKinds: ['template'] });
   return [...results];
 }
 
 // v0.29 consolidation: traversal delegates to the shared canonical walker.
-function getFilesRecursive(dir, config) {
+function getFilesRecursive(dir, config, projectDir = dir) {
   const results = [];
   sharedWalkFiles(dir, (fullPath) => {
     if (CODE_EXTENSIONS.has(extname(fullPath))) results.push(fullPath);
-  }, { ignoreDirs: IGNORE_DIRS });
+  }, { ignoreDirs: IGNORE_DIRS, root: projectDir, config, skipKinds: ['template'] });
   return results;
 }

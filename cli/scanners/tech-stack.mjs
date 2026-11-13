@@ -17,7 +17,7 @@
  */
 
 import { join, relative, resolve } from 'node:path';
-import { shouldIgnore, isNonProductPath, walkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, shouldIgnore, isNonProductPath, walkFiles } from '../shared-ignore.mjs';
 import { CODE_EXTENSIONS, collectPackageJsons, findDockerManifest, readScannable } from '../shared-source.mjs';
 import { detectEcosystems } from './project-type.mjs';
 
@@ -179,10 +179,9 @@ const extOf = filePath => (String(filePath).match(/\.[^./\\]+$/) || [''])[0].toL
 /** Lines that are not whole-line comments: a commented-out command is not use. */
 const liveText = content => content.split('\n').filter(line => !COMMENT_LINE_RE.test(line)).join('\n');
 
-const TECH_WALK_IGNORE = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'docs-canonical', 'docs-implementation', 'templates',
-]);
+// The shared build-output and package-cache set, plus DocGuard's own document homes. Templates are a file kind
+// (specs/100-file-kinds): a scaffolder's `package.json` is not a dependency of this project.
+const TECH_WALK_IGNORE = new Set([...DEFAULT_IGNORE_DIRS, 'docs-canonical', 'docs-implementation']);
 
 /**
  * Everything the tech-stack check needs in one pass:
@@ -244,7 +243,7 @@ export function scanCodeTechnologies(dir, config = {}) {
       const command = DOCKER_COMMAND_RE.exec(text);
       if (command) add('Docker', rel, command[0].replace(/\s+/g, ' ').replace(/^(docker-compose) \w+$/, '$1'), 'source');
     }
-  }, { ignoreDirs: TECH_WALK_IGNORE, keepDot: entry => entry === '.github' || /^\.gitlab-ci\.ya?ml$/.test(entry) });
+  }, { ignoreDirs: TECH_WALK_IGNORE, root: root, config, skipKinds: ['template'], keepDot: entry => entry === '.github' || /^\.gitlab-ci\.ya?ml$/.test(entry) });
 
   return {
     evidence: TECH_PATTERNS.filter(t => found.has(t)).map(t => found.get(t)),

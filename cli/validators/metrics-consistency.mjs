@@ -601,7 +601,8 @@ function findMarkdownFiles(dir, config = {}) {
   }
   for (const sub of resolveDocDirs(dir, config)) {
     const searchDir = resolve(dir, sub);
-    if (existsSync(searchDir)) walkFiles(searchDir, add);
+    // A backup-named document is not a document (specs/100-file-kinds D6).
+    if (existsSync(searchDir)) walkFiles(searchDir, add, { root: resolve(dir), config, skipKinds: ['backup'] });
   }
   // The Spec Kit constitution governs the project and lives in a dot
   // directory the walkers skip — read it explicitly.

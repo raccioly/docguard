@@ -17,6 +17,7 @@ import { resolve, extname, basename, relative } from 'node:path';
 import { c } from '../shared.mjs';
 import { runGenerateAsBuilt } from './generate-as-built.mjs';
 import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { TEST_LOCATIONS } from '../shared-file-kind.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
 import { scanRoutesDeep } from '../scanners/routes.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
@@ -35,12 +36,6 @@ import {
   generateEnvironment, generateTestSpec, generateSecurity, generateRootFiles,
 } from '../writers/doc-generators.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-  '.amplify-hosting', '.serverless',
-]);
 
 const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -541,7 +536,7 @@ function scanServices(dir, scan) {
 
 function scanTests(dir, scan) {
   // Find tests — top-level test dirs
-  ['tests', 'test', '__tests__', 'spec', 'e2e'].forEach(testDir => {
+  TEST_LOCATIONS.forEach(testDir => {
     const fullDir = resolve(dir, testDir);
     if (existsSync(fullDir)) {
       const files = getFilesRecursive(fullDir);
@@ -644,11 +639,11 @@ function countFilesAndLines(dir, scan) {
 function walkDir(dir, callback) {
   sharedWalkFiles(dir, (fullPath) => {
     if (CODE_EXTENSIONS.has(extname(fullPath))) callback(fullPath);
-  }, { ignoreDirs: IGNORE_DIRS });
+  });
 }
 
 function getFilesRecursive(dir) {
   const results = [];
-  sharedWalkFiles(dir, (fullPath) => results.push(fullPath), { ignoreDirs: IGNORE_DIRS });
+  sharedWalkFiles(dir, (fullPath) => results.push(fullPath));
   return results;
 }

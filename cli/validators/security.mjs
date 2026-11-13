@@ -31,6 +31,8 @@ const CODE_EXTENSIONS = new Set([
   '.rb', '.php', '.cs', '.env',
 ]);
 
+// SECURITY EXEMPTION (tests/file-kinds-registry.test.mjs): the original narrow list, kept as it is on purpose.
+// The shared build-output set also skips `out/`, `target/` and `obj/`, where a bundled key is still a leaked key.
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build',
   'coverage', '.cache', '__pycache__', '.venv', 'vendor',
@@ -481,5 +483,8 @@ function walkDir(dir, callback) {
   sharedWalkFiles(dir, callback, {
     ignoreDirs: IGNORE_DIRS,
     keepDot: (entry) => entry === '.env',
+    // Security reads every kind of file, a nested checkout included: a secret in a copy is still a leaked secret
+    // (specs/100-file-kinds). It only labels the context (`secretContext`); it never skips a kind.
+    nestedCheckouts: false,
   });
 }

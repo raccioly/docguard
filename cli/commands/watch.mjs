@@ -19,6 +19,7 @@ import { c } from '../shared.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { clearMemoryPlanCache } from '../scanners/memory-plan.mjs';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
+import { holdsOwnGit } from '../shared-file-kind.mjs';
 
 const DEBOUNCE_MS = 500;
 const WATCH_EXTS = new Set([
@@ -184,7 +185,7 @@ function collectWatchDirs(rootDir, skip, onError) {
       const full = resolve(dir, entry.name);
       if (skip(relPosix(rootDir, full)) || entry.isSymbolicLink()) continue;
       try {
-        if (lstatSync(full).isDirectory()) walk(full);
+        if (lstatSync(full).isDirectory() && !holdsOwnGit(full)) walk(full); // a nested checkout is another project's
       } catch (err) {
         if (err.code !== 'ENOENT') onError(err, full);
       }

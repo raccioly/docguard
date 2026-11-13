@@ -17,7 +17,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
-import { walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, walkFiles as sharedWalkFiles, listCanonicalDocs } from '../shared-ignore.mjs';
 /** @implements docguard.adoption-workflow-integrity#FR-006 */
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -111,11 +111,8 @@ function buildTestCorpus(projectDir, projectFiles, { maxFiles = 250, maxTokens =
   return corpus;
 }
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
-  '.cache', '__pycache__', '.venv', 'vendor', '.turbo', '.vercel',
-  '.amplify-hosting', '.serverless',
-]);
+// The shared build-output and package-cache set (specs/100-file-kinds), plus two hosting output folders.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.amplify-hosting', '.serverless']);
 
 
 /**

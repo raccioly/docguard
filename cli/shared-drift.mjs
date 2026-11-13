@@ -4,6 +4,7 @@
  * same lines. Validators do not import each other (tests/validator-isolation).
  */
 import { extname } from 'node:path';
+import { DEFAULT_IGNORE_DIRS } from './shared-ignore.mjs';
 
 export const DRIFT_CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
@@ -11,11 +12,8 @@ export const DRIFT_CODE_EXTENSIONS = new Set([
   '.rb', '.php', '.cs', '.c', '.cpp', '.h',
 ]);
 
-export const DRIFT_IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'cli', // Exclude DocGuard's own source (contains DRIFT: in regex patterns)
-]);
+// The shared build-output and package-cache set, plus `cli`: DocGuard's own source contains `DRIFT:` in regex patterns.
+export const DRIFT_IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'cli']);
 
 // v0.15 hotfix: test files commonly contain literal `// DRIFT:` inside string
 // fixtures (e.g. `'// DRIFT: a-drift\n'`). Reading the test as source would

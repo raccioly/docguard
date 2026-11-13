@@ -15,7 +15,8 @@ import { runGuardInternal } from './guard.mjs';
 import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { assessAgentReadability } from '../scanners/agent-readability.mjs';
 import { loadHistory, sparkline } from '../writers/history.mjs';
-import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { listCanonicalDocs, walkFiles } from '../shared-ignore.mjs';
+import { TEST_LOCATIONS } from '../shared-file-kind.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
 import { anchorGranularity } from '../scanners/anchors.mjs';
 import { computeDoraEvidence } from './score-dora.mjs';
@@ -802,8 +803,7 @@ function calcTestingScore(dir, config) {
 
   // ── Check 1: Test files exist (40 pts) ──
   // Check top-level test directories
-  const testDirs = ['tests', 'test', '__tests__', 'spec', 'e2e'];
-  const hasTopLevelTestDir = testDirs.some(d => existsSync(resolve(dir, d)));
+  const hasTopLevelTestDir = TEST_LOCATIONS.some(d => existsSync(resolve(dir, d)));
 
   // Check co-located tests: **/__tests__/ and **/*.test.* / **/*.spec.*
   // Scan ALL common source roots — not just src/, also backend/, packages/, etc.
@@ -911,12 +911,11 @@ function findColocatedTests(dir) {
   // Scan these common source roots for co-located tests
   // Includes backend/, server/ for monorepo-style projects (e.g., backend/src/__tests__/)
   const sourceRoots = ['src', 'app', 'lib', 'packages', 'modules', 'backend', 'server'];
-  const ignoreSet = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.cache']);
 
   for (const root of sourceRoots) {
     const rootDir = resolve(dir, root);
     if (!existsSync(rootDir)) continue;
-    if (walkForTests(rootDir, ignoreSet)) return true;
+    if (hasTests(rootDir, dir)) return true;
   }
 
   // Also check root-level for *.test.* files (some projects put tests at root)
@@ -930,24 +929,18 @@ function findColocatedTests(dir) {
   return false;
 }
 
-/** Recursively walk a dir looking for test files. Returns true as soon as one is found. */
-function walkForTests(d, ignoreSet) {
-  let entries;
-  try { entries = readdirSync(d); } catch { return false; }
-  for (const entry of entries) {
-    if (ignoreSet.has(entry) || entry.startsWith('.')) continue;
-    const full = join(d, entry);
-    try {
-      const s = statSync(full);
-      if (s.isDirectory()) {
-        if (entry === '__tests__' || entry === '__test__') return true;
-        if (walkForTests(full, ignoreSet)) return true;
-      } else {
-        if (/\.(test|spec)\.[^.]+$/.test(entry)) return true;
-      }
-    } catch { continue; }
-  }
-  return false;
+/**
+ * Does the tree below `d` hold a test file (`*.test.*`, `*.spec.*`) or a file inside a `__tests__` / `__test__`
+ * folder? The shared walker skips build output, package caches, dot entries and nested checkouts.
+ */
+function hasTests(d, projectDir) {
+  let found = false;
+  walkFiles(d, (full) => {
+    if (found) return;
+    const rel = full.slice(d.length + 1).split(sep).join('/');
+    if (/\.(test|spec)\.[^.]+$/.test(rel.slice(rel.lastIndexOf('/') + 1)) || /(^|\/)__tests?__\//.test(rel)) found = true;
+  }, { root: projectDir });
+  return found;
 }
 
 function calcSecurityScore(dir, config) {

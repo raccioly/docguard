@@ -20,6 +20,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { DEFAULT_IGNORE_DIRS } from '../shared-ignore.mjs';
+import { holdsOwnGit } from '../shared-file-kind.mjs';
 
 const MAX_DEPTH = 6;
 
@@ -140,6 +141,7 @@ export function detectIaC(projectDir) {
       if (!e.isDirectory()) continue;
       if (DEFAULT_IGNORE_DIRS.has(e.name)) continue;
       if (e.name.startsWith('.')) continue;
+      if (holdsOwnGit(join(dir, e.name))) continue; // another project's checkout (specs/100-file-kinds)
       walk(join(dir, e.name), depth + 1);
     }
   };

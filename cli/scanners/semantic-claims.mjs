@@ -29,6 +29,7 @@ import { resolve, relative, isAbsolute, sep } from 'node:path';
 import { loadIgnorePatterns } from '../shared.mjs';
 import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
+import { fileKind } from '../shared-file-kind.mjs';
 
 
 // Numbers are only claims when adjacent to a recognized unit.
@@ -196,6 +197,8 @@ export function evidenceDocs(projectDir, config = {}) {
         if (docs.length >= MAX_EVIDENCE_FILES) break;
         if (entry.isSymbolicLink() || privateSegment(entry.name)) continue;
         const path = `${rel}/${entry.name}`;
+        // A backup-named document, an archive folder and a nested checkout are not canonical documents (specs/100-file-kinds D6).
+        if (fileKind(path, config, { asDirectory: entry.isDirectory(), root: projectDir, kinds: ['backup', 'nested-checkout'] }).kind !== 'own') continue;
         if (entry.isDirectory() && !entry.name.startsWith('.')) walk(path);
         else if (entry.isFile() && /\.md$/i.test(entry.name)) docs.push(path);
       }

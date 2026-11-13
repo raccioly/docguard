@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Every validator and command asks the one file-kind rule; copies of files no longer stand in for this project's own or hide them (spec 100, Stage 2, `docguard.file-kinds`).** The 27 private directory-name lists and unclassified walks that Stage 1 left on an allowlist now ask `fileKind` (or the shared walker, which asks it); the registry test's allowlist is empty and keeps one reasoned exemption, Security, which reads every kind. This change REMOVES findings on copies and ADDS one finding code.
+  - **Removed or changed (a file that is a copy, or build output, no longer counts).**
+    - `REF001` (D2): a template, fixture, vendored or generated copy that still defines a removed function no longer hides a stale reference. Where a document names a symbol that now exists only in such a copy, `REF001` is now reported.
+    - `STR001` and `STR003` (D3): `docs-canonical/archive/SECURITY.md` (or a backup-named copy) no longer stands in for a missing role document. `STR001` says it is missing and `STR003` no longer checks the archive copy's sections.
+    - `XRF001` and the document-reading findings (D6): a backup-named document (`ARCHITECTURE copy.md`, `*.md.bak`, `-old.md`, `(1).md`) or a document below an archive folder of a documentation directory is read as no document: not a canonical document, not reviewed by Freshness (`FRS*`), not read for cross-references, not listed by `docguard llms` (D9), not read as evidence.
+    - `TDO001`, `TDO002`, `TDO003` (D6, D8): TODO tracking skips template, fixture and nested-checkout paths and uses the shared build-output set, so `out/`, `target/` and `obj/` are skipped.
+    - `ARC*`, `DCV*`, `DSY*`, `TRC*`, `TSP*`, `DFT*`, `MET*`, `RTE*`, `SCH*` and the other findings that read the tree: a nested checkout (a directory below the root with its own `.git`) is never walked, and the walkers that kept a private list now use the shared build-output set (`out/`, `target/`, `obj/`, `_build` and the others). Walkers that skipped `templates` now skip the `template` kind (`scaffold`, `boilerplate`, `starter-kit`, `skeleton`, in any case).
+    - The canonical-layout detection and the role hint (D4) never propose a document under a template, fixture, test, vendored, generated, backup or nested-checkout path, so the `docs.roles` advice no longer names `examples/x/docs/ARCHITECTURE.md`.
+  - **Added.** `STR008` (validator `structure`, warn, not gating): a document named like a backup (`ARCHITECTURE.md.bak`, `SECURITY copy.md`, `API (1).md`, `DATA-old.md`) inside a documentation directory (`docs`, `docs-canonical`, `docs-implementation`, `documentation`, `doc`). A document under an `archive/` folder leaves the document role and is listed under `files.kinds.excluded.backup`, without a warning. `docguard explain STR008` says how to fix it.
+  - **Unchanged on purpose.** Security still reports secrets in copies and in nested checkouts. A project's own tests, and ADR numbering over archived records, are still read. `docs-canonical/X.md` beside `docs-implementation/X.md`, per-package READMEs and CHANGELOGs stay the project's own. `fileKinds.own` rescues a path everywhere.
+  - **Also.** `isGeneratedPath`'s file-name rules (`*.min.js`, `*.bundle.js`, `*-generated.*`, `*.d.ts`) are the `generated` kind by name. `walkFiles` takes `skipKinds`, `config`, `root` and `nestedCheckouts`. The registry test now reads each function (a file that asks the classifier somewhere does not cover a walk elsewhere in it).
+
 ### Fixed
 
 - **The anchor lock merges cleanly: two lines for one link, left by a union

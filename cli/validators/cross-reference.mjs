@@ -149,7 +149,8 @@ function buildWikiIndex(projectDir, config, docs) {
   for (const d of resolveDocDirs(projectDir, config)) {
     const abs = resolve(projectDir, d);
     if (!existsSync(abs)) continue;
-    walkFiles(abs, (full) => { if (/\.mdx?$/i.test(full)) add(full); });
+    // A backup-named document is not a document (specs/100-file-kinds D6).
+    walkFiles(abs, (full) => { if (/\.mdx?$/i.test(full)) add(full); }, { root: resolve(projectDir), config, skipKinds: ['backup'] });
   }
   return idx;
 }
@@ -309,7 +310,7 @@ function unreadDocsWithLinks(projectDir, config, read) {
       let content;
       try { content = readFileSync(full, 'utf-8'); } catch { return; }
       if (extractRefs(content, full).some(r => !r.wiki && (!r.file || r.file.toLowerCase().endsWith('.md')))) out.push(relative(projectDir, full).replace(/\\/g, '/'));
-    });
+    }, { root: resolve(projectDir), config, skipKinds: ['backup'] });
   }
   return out.sort();
 }

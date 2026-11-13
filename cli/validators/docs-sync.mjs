@@ -18,7 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { roleMappingFix } from '../shared-doc-roles.mjs';
-import { relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs, isNonProductPath } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, relPosix, walkFiles as sharedWalkFiles, listCanonicalDocs, isNonProductPath } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findAllOpenApiSpecs } from '../shared-openapi.mjs';
 import { namesModule, namesDirectory, createUrlPathMatcher, treePaths } from '../scanners/doc-references.mjs';
@@ -26,12 +26,9 @@ import { coveredSections } from '../scanners/doc-deps.mjs';
 import { appRouterPath } from '../scanners/routes.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  // Co-located test dirs — these are not the source under documentation.
-  '__tests__', '__test__',
-]);
+// The shared build-output and package-cache set (specs/100-file-kinds), plus the co-located test dirs: they are
+// not the source under documentation.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '__tests__', '__test__']);
 
 // Files that are tests, not source. Matched against the relative path AND
 // the basename. Covers Jest/Vitest/Mocha/Jasmine/pytest/Go/Java conventions.

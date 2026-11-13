@@ -31,7 +31,33 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { isFeatureSpecDirectory } from './shared-doc-roles.mjs';
+
+/**
+ * A Spec Kit feature directory: `specs/003-enhanced-transcripts/` and the like.
+ * These hold ONE feature's spec and data model, so a directory that happens to
+ * carry two role-named files is still that feature's folder, never the
+ * project's canonical documentation root. Adopting one would point every
+ * validator at a single versioned feature.
+ */
+export function isFeatureSpecDirectory(relDir) {
+  if (typeof relDir !== 'string' || !relDir) return false;
+  const segments = relDir.split('/');
+  return segments.some((segment, index) => /^\d{3,}[-_]/.test(segment)
+    && (index === 0 || ['specs', 'spec', 'features'].includes(segments[index - 1].toLowerCase())));
+}
+
+/**
+ * Every kind but `own`: a path of any of these is never this project's document.
+ * Detection of a canonical layout and the role hint ask for all of them (spec 100 D4).
+ */
+export const NOT_OWN_KINDS = Object.freeze(['template', 'fixture', 'test', 'vendored', 'generated', 'backup', 'nested-checkout']);
+
+/**
+ * The kinds that are someone else's file or a copy of one: not this project's
+ * own work. The project's own tests are not in it: a validator that reads tests
+ * on purpose (test-spec mapping, skipped-test tracking) leaves `test` out.
+ */
+export const COPY_KINDS = Object.freeze(['template', 'fixture', 'vendored', 'generated', 'backup', 'nested-checkout']);
 
 /** The closed list. Anything a path is not recognized as is `own`. */
 export const FILE_KINDS = Object.freeze(['own', 'template', 'fixture', 'test', 'vendored', 'generated', 'backup', 'nested-checkout']);
@@ -138,6 +164,13 @@ export const DETECTION_KEEPS = Object.freeze(['corpus', 'golden']);
 /** Every directory name detection (`isNonProductPath`) treats as non-product: the fixture and test names, as before spec 100. */
 export const NON_PRODUCT_DIRS = names([...FIXTURE_DIRS, ...TEST_DIRS].filter(n => !DETECTION_KEEPS.includes(n)));
 
+/**
+ * Where a project conventionally keeps its tests: the folders a test lookup reads
+ * (a probe list, not an ignore set; `e2e` is here and is not a test kind because
+ * it names end-to-end suites, which detection does read as product code).
+ */
+export const TEST_LOCATIONS = Object.freeze(['tests', 'test', '__tests__', 'spec', 'e2e']);
+
 /** Code that belongs to someone else (`DEFAULT_IGNORE_DIRS`' package managers, plus vendored and third_party). */
 export const VENDORED_DIRS = names(['node_modules', 'vendor', 'vendored', 'third_party', '.venv', '__pycache__']);
 
@@ -152,6 +185,19 @@ const PRECEDENCE = [
   ['vendored', VENDORED_DIRS],
   ['generated', GENERATED_DIRS],
 ];
+
+/**
+ * Build artifacts, minified bundles and declaration files by file name (what
+ * `isGeneratedPath` in `shared-source.mjs` always read): `x.min.js`, `x.bundle.js`,
+ * `x.chunk.mjs`, `x-generated.ts`, `x.d.ts`. Code only: a document is never one.
+ */
+const GENERATED_NAME_RES = [/\.min\.[cm]?js$/i, /\.(?:bundle|chunk)\.[cm]?jsx?$/i, /[.-]generated\.[a-z0-9]+$/i, /\.d\.ts$/i];
+
+/** Is this file name a generated artifact (`generated` kind by name)? `name` is a base name or a path. */
+export function isGeneratedFileName(name) {
+  const text = String(name);
+  return GENERATED_NAME_RES.some(re => re.test(text));
+}
 
 const DOCUMENTATION_DIRS = new Set(['docs', 'docs-canonical', 'docs-implementation', 'documentation', 'doc']);
 const BACKUP_DIRS = new Set(['archive', 'archived', 'backup', 'backups', 'old', 'deprecated']);
@@ -211,6 +257,12 @@ function holdsGit(root, dir) {
   return checkoutMemo.get(key);
 }
 
+/**
+ * Does this absolute directory hold its own `.git` entry? For a walker that has only the directory in hand:
+ * it is another project's checkout, not this project's files. Not cached (a walk asks once per directory).
+ */
+export function holdsOwnGit(absDir) { return existsSync(join(absDir, '.git')); }
+
 /** Forget what was learned about nested checkouts (tests that rebuild a tree). */
 export function clearFileKindCache() { checkoutMemo.clear(); }
 
@@ -232,6 +284,20 @@ function backupOf(path, segments, dirCount, wants) {
     if (DOCUMENTATION_DIRS.has(lower)) inDocs = true;
   }
   return null;
+}
+
+/**
+ * Does a documentation directory (`docs`, `docs-canonical`, `docs-implementation`, `documentation`, `doc`)
+ * hold this path, at any depth and before the first dot-directory? A backup-named document is a leftover
+ * only there; `README copy.md` in a download folder is nobody's document.
+ */
+export function inDocumentationDirectory(path) {
+  const segments = String(path).replace(/\\/g, '/').replace(/^\.\//, '').split('/').filter(Boolean);
+  for (let i = 0; i < segments.length - 1; i++) {
+    if (segments[i].startsWith('.')) return false;
+    if (DOCUMENTATION_DIRS.has(segments[i].toLowerCase())) return true;
+  }
+  return false;
 }
 
 /**
@@ -291,6 +357,10 @@ export function fileKind(path, config = {}, opts = {}) {
   }
   for (const [kind] of PRECEDENCE) {
     if (first.has(kind)) return { kind, segment: first.get(kind), reason: `below a directory named \`${first.get(kind)}\`` };
+  }
+  const name = segments[segments.length - 1];
+  if (!opts.asDirectory && wants('generated') && !DOC_FILE_RE.test(name) && isGeneratedFileName(name)) {
+    return { kind: 'generated', segment: name, reason: `\`${name}\` is named like a build artifact` };
   }
   return backupOf(clean, segments, dirCount, wants) || OWN;
 }

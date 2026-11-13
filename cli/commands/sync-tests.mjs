@@ -20,34 +20,27 @@
  * Zero npm dependencies — pure Node.js built-ins.
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { c } from '../shared.mjs';
-import { shouldIgnore } from '../shared-ignore.mjs';
+import { relPosix, shouldIgnore, walkFiles } from '../shared-ignore.mjs';
 
 const TEST_SPEC_DOC = 'docs-canonical/TEST-SPEC.md';
 const CODE_EXT = /\.[cm]?[jt]sx?$/;
 const TEST_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
-const WALK_SKIP = new Set(['node_modules', 'dist', 'build', 'coverage', '.git', '.next', '__pycache__', '.venv', 'vendor']);
 
 // ── On-disk discovery ──────────────────────────────────────────────────────
 
 function walkCodeFiles(projectDir, config) {
   const out = [];
-  const visit = (absDir, relDir) => {
-    let entries;
-    try { entries = readdirSync(absDir, { withFileTypes: true }); } catch { return; }
-    for (const e of entries) {
-      if (e.name.startsWith('.')) continue;
-      if (WALK_SKIP.has(e.name)) continue;
-      const relPath = relDir ? `${relDir}/${e.name}` : e.name;
-      if (e.isDirectory()) { visit(resolve(absDir, e.name), relPath); continue; }
-      if (!CODE_EXT.test(e.name)) continue;
-      if (shouldIgnore(relPath, config)) continue;
-      out.push(relPath);
-    }
-  };
-  visit(resolve(projectDir), '');
+  // The shared walker: one list of build output and package caches, dot entries skipped, a nested checkout never
+  // entered (specs/100-file-kinds).
+  walkFiles(resolve(projectDir), (abs) => {
+    if (!CODE_EXT.test(abs)) return;
+    const relPath = relPosix(projectDir, abs);
+    if (shouldIgnore(relPath, config)) return;
+    out.push(relPath);
+  });
   return out;
 }
 

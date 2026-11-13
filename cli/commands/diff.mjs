@@ -10,9 +10,8 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, extname, basename } from 'node:path';
+import { basename } from 'node:path';
 import { c } from '../shared.mjs';
-import { walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { collectEnvVars, describeLanguageCounts, grepEnvUsage } from '../shared-source.mjs';
 import { detectCodeTechnologyEvidence } from '../scanners/tech-stack.mjs';
 import { resolveDocRole } from '../shared-doc-roles.mjs';
@@ -21,17 +20,6 @@ import { resolveApiSurface } from '../validators/api-surface.mjs';
 import { collectCodeTests, documentedTestRegex, extractDocumentedTests, diffTechStack as guardDiffTechStack } from '../validators/docs-diff.mjs';
 import { scanSchemasDeep } from '../scanners/schemas.mjs';
 import { detectDocTools } from '../scanners/doc-tools.mjs';
-
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'docs-canonical', 'docs-implementation', 'templates',
-]);
-
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.rb', '.php',
-]);
 
 export function runDiff(projectDir, config, flags) {
   // v0.16-P1: headless mode for JSON output (matches guard/score/trace fix).
@@ -402,16 +390,4 @@ function diffTests(dir, config = {}) {
     onlyInCode: codeArr.filter(c => !docMatchers.some(m => matches(m, c))),
     matched: docMatchers.filter(m => codeArr.some(c => matches(m, c))).map(m => m.original),
   };
-}
-
-// ── Utilities ──────────────────────────────────────────────────────────────
-
-// v0.29 consolidation: traversal delegates to the shared canonical walker
-// (this copy was hiding in commands/, missed by the first validator sweep).
-function getFilesRecursive(dir) {
-  const results = [];
-  sharedWalkFiles(dir, (fullPath) => {
-    if (CODE_EXTENSIONS.has(extname(fullPath))) results.push(fullPath);
-  }, { ignoreDirs: IGNORE_DIRS });
-  return results;
 }

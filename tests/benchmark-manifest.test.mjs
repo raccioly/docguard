@@ -46,7 +46,7 @@ describe('benchmark manifest contract', () => {
   it('publishes a reviewed finite baseline with confidence limits and unsupported evidence', () => {
     const baseline = JSON.parse(readFileSync(resolve('benchmarks/baseline.json'), 'utf8'));
     assert.equal(baseline.review.status, 'reviewed');
-    assert.equal(baseline.core.metrics.aggregate.cases, 34);
+    assert.equal(baseline.core.metrics.aggregate.cases, 36);
     assert.equal(baseline.core.metrics.aggregate.unsupportedCases, 1);
     assert.ok(baseline.core.metrics.aggregate.confidence95.precision.lower < 1);
     assert.ok(baseline.core.metrics.aggregate.confidence95.falsePositiveCaseRate.upper > 0);

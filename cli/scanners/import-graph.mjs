@@ -14,18 +14,15 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, dirname } from 'node:path';
-import { shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
+import { DEFAULT_IGNORE_DIRS, shouldIgnore, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { getWorkspaceDirs, languageOf } from '../shared-source.mjs';
 import { astTierAvailable, parseJsTs, walk } from './js-ast.mjs';
 import { extractPythonFiles } from './py-ast.mjs';
 import { createAliasResolver } from './ts-paths.mjs';
 
-const IGNORE_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build',
-  'coverage', '.cache', '__pycache__', '.venv', 'vendor',
-  'templates', 'configs', 'Research', 'docs-canonical', 'docs-implementation',
-  'target', '.gradle',
-]);
+// The shared build-output and package-cache set, plus the folders this graph does not read as code: configuration,
+// research notes and DocGuard's own documents. Templates are a file kind (specs/100-file-kinds), asked below.
+const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'configs', 'Research', 'docs-canonical', 'docs-implementation']);
 
 export const JS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx']);
 
@@ -519,7 +516,7 @@ export function getFilesRecursive(dir, config, projectDir) {
       if (shouldIgnore(relPath, config)) return;
     }
     results.push(fullPath);
-  }, { ignoreDirs: IGNORE_DIRS });
+  }, { ignoreDirs: IGNORE_DIRS, root: projectDir || dir, config: config || {}, skipKinds: ['template'] });
   return results;
 }
 

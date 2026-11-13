@@ -11,8 +11,9 @@ import { roleDocument } from '../shared-doc-role-hint.mjs';
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, relative, resolve } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
+import { walkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
@@ -462,26 +463,20 @@ function globPartToRegex(part) {
   return new RegExp(`^${escaped}$`);
 }
 
-/** Recursively check if a directory contains test files */
+/**
+ * Does the tree below `dir` hold a test file? The shared walker skips build output, package caches, dot entries
+ * and nested checkouts (specs/100-file-kinds): a test of another project is not this project's.
+ */
 function hasTestFilesRecursive(dir) {
-  const ignore = new Set(['node_modules', '.git', 'dist', 'build', 'coverage']);
-  let entries;
-  try { entries = readdirSync(dir); } catch { return false; }
-  for (const entry of entries) {
-    if (ignore.has(entry) || entry.startsWith('.')) continue;
-    const full = resolve(dir, entry);
-    try {
-      const s = statSync(full);
-      if (s.isDirectory()) {
-        if (entry === '__tests__' || entry === '__test__') return true;
-        if (hasTestFilesRecursive(full)) return true;
-      } else if (/\.(test|spec)\.[^.]+$/.test(entry)
-        // Go, pytest and Django test files are tests too; missing them reported
-        // "no test files" for projects that have them (docguard.generated-docs-consistency#FR-010).
-        || /_test\.go$|^test_[^/]+\.py$|_test\.py$|^tests\.py$/.test(entry)) {
-        return true;
-      }
-    } catch { continue; }
-  }
-  return false;
+  let found = false;
+  walkFiles(dir, (full) => {
+    if (found) return;
+    const entry = basename(full);
+    if (/(^|[\\/])__tests?__[\\/]/.test(relative(dir, full))
+      || /\.(test|spec)\.[^.]+$/.test(entry)
+      // Go, pytest and Django test files are tests too; missing them reported
+      // "no test files" for projects that have them (docguard.generated-docs-consistency#FR-010).
+      || /_test\.go$|^test_[^/]+\.py$|_test\.py$|^tests\.py$/.test(entry)) found = true;
+  });
+  return found;
 }
