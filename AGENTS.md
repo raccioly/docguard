@@ -270,28 +270,24 @@ so this is the check that catches it.
 
 This suite runs on `node --test`, which ships no `json` reporter, while TestGuard
 reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
-them:
+them, and `testguard.config.json` records how the tests run (the reporter command and
+`node_modules`), so the commands are plain:
 
 ```bash
 # the claims a change can affect (faults run in parallel by default)
-npx testguard-cli@0.25.0 probe --changed origin/main --confirm 3 \
-  --node-modules "$PWD/node_modules" \
-  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+npx testguard-cli@0.26.0 probe --changed origin/main
 
 # everything (nightly or before a release): the same without --changed; never --serial
-npx testguard-cli@0.25.0 probe --confirm 3 \
-  --node-modules "$PWD/node_modules" \
-  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+npx testguard-cli@0.26.0 probe
 ```
 
-An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
+An empty `--changed` selection is not a pass: it lists the changed source files no claim covers. `probe --changed --explain` prints which claims a change selects and why, and probes nothing.
 
-On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.25.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.25.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
+On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.26.0` fails with ETARGET until the release is old enough (2026-11-20 for 0.26.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
 
-Pass an absolute reporter path: the probe runs in a scratch worktree built from
-a commit, so a relative path resolves there and untracked files do not exist.
+The reporter in `testguard.config.json` starts with `./`: Node loads a `--test-reporter` value without one as a package name and the defenders fail to load. The probe runs in a scratch worktree built from a commit, so the reporter must be a tracked file.
 
-`npx testguard-cli@0.25.0 gate --changed origin/main` reports changed source files
+`npx testguard-cli@0.26.0 gate --changed origin/main` reports changed source files
 that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them. A file the probe cannot
 observe (for example, one that only runs as a subprocess) is excused in

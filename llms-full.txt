@@ -2009,6 +2009,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-11-13
+
 ### Breaking
 
 - **Strict is now the default enforcement mode.** A project with no
@@ -2376,6 +2378,18 @@ Budget-Exempt: bytes:mcp:docguard_read_section — the finding-channels section 
 Benchmark-Rebaselined: dev-generated-security-control — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
 Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal named itself a placeholder, which Security no longer reports (spec 097 FR-010); a neutral secret-shaped literal replaces it and no metric moved
 
+### Commits
+
+- spec(097): strict by default (#637)
+- docs: pin TestGuard 0.25.0 in the probe commands (#664)
+- docs: say which labels must stay in English in the three READMEs (#647)
+- feat(role): one agent-instruction document role (spec 094) (#633)
+- docs: note the min-release-age caveat for npx testguard-cli and the Homebrew form (#638)
+- chore: TestGuard 0.24.0, parallel and change-scoped probes (#627)
+- maint: 2026-11-11 — score reads configured canonical docs (#625); claimspec re-pin (#619) (#626)
+- [jules:test-gaps] cli/commands/mcp.mjs — two exports covered (#624)
+- fix(release): publish each release to the MCP registry and backfill it (#623)
+
 ## [0.47.0] - 2026-11-10
 
 ### Added
@@ -2386,22 +2400,8 @@ Benchmark-Rebaselined: dev-generated-security-defect — the fixture's literal n
   <https://mcp.market/is-it-safe/raccioly-docguard>.
 - **The test chain follows TestGuard's dependency-closure and external-claims
   evidence** (`docguard.requirement-anchors` FR-045, FR-046). These fields come
-  from a TestGuard evidence schema that is not yet released, so the reader is
-  tolerant and legacy evidence keeps every verdict. When a record carries its
-  import closure, a changed imported module makes the test `inconclusive`
-  (`inputs-stale`, naming the file) and an `indeterminate` closure is
-  `closure-indeterminate`. When the claims were supplied from outside the
-  repository and no claims file is configured, DocGuard reads none and reports
-  `re-verified` with reason `claims-not-compared`. A `re-verified` test that
-  rested on something not checked now lists it in `notChecked` (JSON) and
-  prints in yellow, so it is no longer indistinguishable from a full pass.
 
-### Fixed
-
-- **Installed Spec Kit extensions no longer raise ANC007**
-  (`docguard.requirement-anchors` FR-044). `specify extension add` copies an
-
-<!-- truncated: 6522 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6536 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -3012,28 +3012,24 @@ so this is the check that catches it.
 
 This suite runs on `node --test`, which ships no `json` reporter, while TestGuard
 reads Jest-shape JSON. `tools/node-test-json-reporter.mjs` translates between
-them:
+them, and `testguard.config.json` records how the tests run (the reporter command and
+`node_modules`), so the commands are plain:
 
 ```bash
 # the claims a change can affect (faults run in parallel by default)
-npx testguard-cli@0.25.0 probe --changed origin/main --confirm 3 \
-  --node-modules "$PWD/node_modules" \
-  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+npx testguard-cli@0.26.0 probe --changed origin/main
 
 # everything (nightly or before a release): the same without --changed; never --serial
-npx testguard-cli@0.25.0 probe --confirm 3 \
-  --node-modules "$PWD/node_modules" \
-  --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
+npx testguard-cli@0.26.0 probe
 ```
 
-An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
+An empty `--changed` selection is not a pass: it lists the changed source files no claim covers. `probe --changed --explain` prints which claims a change selects and why, and probes nothing.
 
-On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.25.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.25.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
+On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.26.0` fails with ETARGET until the release is old enough (2026-11-20 for 0.26.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
 
-Pass an absolute reporter path: the probe runs in a scratch worktree built from
-a commit, so a relative path resolves there and untracked files do not exist.
+The reporter in `testguard.config.json` starts with `./`: Node loads a `--test-reporter` value without one as a package name and the defenders fail to load. The probe runs in a scratch worktree built from a commit, so the reporter must be a tracked file.
 
-`npx testguard-cli@0.25.0 gate --changed origin/main` reports changed source files
+`npx testguard-cli@0.26.0 gate --changed origin/main` reports changed source files
 that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them. A file the probe cannot
 observe (for example, one that only runs as a subprocess) is excused in
@@ -3045,4 +3041,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.47.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.48.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
