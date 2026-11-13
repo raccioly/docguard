@@ -6825,7 +6825,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-file-kind.mjs",
-            "line": 89
+            "line": 97
           },
           {
             "requirementId": "FR-007",

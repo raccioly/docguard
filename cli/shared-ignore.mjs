@@ -557,27 +557,8 @@ export function shouldIgnore(relPath, config, validatorKey) {
   return false;
 }
 
-/**
- * THE canonical anchored glob compiler (v0.29 consolidation).
- *
- * The repo previously carried THREE glob→regex implementations (ignore-side
- * `globToRegex` above, the old `globToMatchRegex` here, and a third private
- * copy in metrics-consistency for collection counting) with subtly different
- * feature sets — a maintenance hazard for exactly the drift class this tool
- * detects in others. This is now the single anchored compiler; the ignore-side
- * `globToRegex` deliberately stays separate because its UNanchored,
- * boundary-substring semantics ("dir" matches at any depth) are a different
- * contract, documented above, with its own bug history.
- *
- * Supports (superset of all prior anchored variants):
- *   `**\/`  → zero or more path segments   → (?:.*\/)?
- *   `**`    → any chars (incl. /)          → .*
- *   `*`     → any chars except /           → [^/]*
- *   `?`     → one char except /            → [^/]
- *   `{a,b}` → alternation (non-nested)     → (?:a|b)
- * Everything else is regex-escaped. Fully anchored: ^...$.
- *
- * @param {string} pattern - Glob pattern (e.g., "backend/**\/__tests__// Back-compat internal alias — globMatch below always used the anchored form.
+// Back-compat internal alias — globMatch below always used the anchored form.
+// compileGlob (the one anchored compiler) lives in shared-file-kind.mjs and is re-exported above.
 const globToMatchRegex = compileGlob;
 
 /**

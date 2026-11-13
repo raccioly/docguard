@@ -19,7 +19,7 @@ import { makeTempDir } from './helpers/temp-dir.mjs';
 import {
   FILE_KINDS, FIXTURE_DIRS, GENERATED_DIRS, TEMPLATE_DIRS, VENDORED_DIRS, fileKind,
 } from '../cli/shared-file-kind.mjs';
-import { DEFAULT_DETECTION_IGNORE_DIRS, isNonProductDir, isNonProductPath, isPackageSegment } from '../cli/shared-ignore.mjs';
+import { DEFAULT_DETECTION_IGNORE_DIRS, compileGlob, globMatch, isNonProductDir, isNonProductPath, isPackageSegment } from '../cli/shared-ignore.mjs';
 
 const kindOf = (path, config, opts) => fileKind(path, config, opts).kind;
 const cases = word => [word, word.toUpperCase(), word[0].toUpperCase() + word.slice(1)];
@@ -274,5 +274,14 @@ describe('FR-006 — isNonProductPath and isNonProductDir are views of the vocab
     assert.equal(isNonProductDir('src'), false);
     assert.equal(isNonProductDir('Example', {}, 'src/main/java/com'), false);
     assert.equal(isNonProductDir('example', {}, 'internal'), false);
+  });
+});
+
+describe('the glob compiler and package rule moved here but stay importable from shared-ignore', () => {
+  it('globMatch and compileGlob still work through shared-ignore', () => {
+    assert.equal(globMatch('src/a.test.ts', ['**/*.test.ts']), true);
+    assert.equal(globMatch('src/a.ts', ['**/*.test.ts']), false);
+    assert.equal(globMatch('node_modules/x/a.test.ts', ['**/*.test.ts']), false);
+    assert.ok(compileGlob('docs/{a,b}/*.md').test('docs/a/x.md'));
   });
 });

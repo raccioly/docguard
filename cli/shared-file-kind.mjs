@@ -35,7 +35,15 @@ import { join } from 'node:path';
 /** The closed list. Anything a path is not recognized as is `own`. */
 export const FILE_KINDS = Object.freeze(['own', 'template', 'fixture', 'vendored', 'generated', 'backup', 'nested-checkout']);
 
-/**\/*.test.{ts,js}")
+/**
+ * THE canonical anchored glob compiler. Fully anchored: `^...$`.
+ *   `**` followed by `/` → zero or more path segments; `**` → any chars (incl. /);
+ *   `*` → any chars except /; `?` → one char except /; `{a,b}` → alternation
+ *   (non-nested). Everything else is regex-escaped.
+ * It lives here, with the file-kind vocabulary, so this module imports no other
+ * shared module; `shared-ignore.mjs` re-exports it.
+ *
+ * @param {string} pattern - glob pattern
  * @returns {RegExp}
  */
 export function compileGlob(pattern) {
