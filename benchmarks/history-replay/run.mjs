@@ -27,7 +27,7 @@
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { agentInstructionDocs } from '../../cli/shared-agent-instructions.mjs';
 import { documentReferences } from '../../cli/scanners/doc-reviews.mjs';
@@ -41,8 +41,11 @@ export const LABEL_WINDOW_DAYS = 56;
 const MARKER_RE = /<!--\s*docguard:last-reviewed\s+(\d{4}-\d{2}-\d{2})\s*-->/;
 const DAY = 86400;
 
-const git = (cwd, args, opts = {}) => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 256 << 20, stdio: ['ignore', 'pipe', 'ignore'], ...opts });
-const tryGit = (cwd, args) => { const r = spawnSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 256 << 20 }); return r.status === 0 ? r.stdout : null; };
+// A replay reads history through throwaway worktrees; a hook from the user's git configuration (a post-checkout
+// that fails, say) must neither run nor stop it.
+const NO_HOOKS = ['-c', `core.hooksPath=${devNull}`];
+const git = (cwd, args, opts = {}) => execFileSync('git', [...NO_HOOKS, ...args], { cwd, encoding: 'utf8', maxBuffer: 256 << 20, stdio: ['ignore', 'pipe', 'ignore'], ...opts });
+const tryGit = (cwd, args) => { const r = spawnSync('git', [...NO_HOOKS, ...args], { cwd, encoding: 'utf8', maxBuffer: 256 << 20 }); return r.status === 0 ? r.stdout : null; };
 
 /** First-parent commits of `until`, oldest first: [{ sha, time }]. */
 function firstParent(repo, until) {
