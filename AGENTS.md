@@ -272,24 +272,24 @@ them:
 
 ```bash
 # the claims a change can affect (faults run in parallel by default)
-npx testguard-cli@0.24.0 probe --changed origin/main --confirm 3 \
+npx testguard-cli@0.25.0 probe --changed origin/main --confirm 3 \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 
 # everything (nightly or before a release): the same without --changed; never --serial
-npx testguard-cli@0.24.0 probe --confirm 3 \
+npx testguard-cli@0.25.0 probe --confirm 3 \
   --node-modules "$PWD/node_modules" \
   --runner-cmd "node --test --test-reporter=$PWD/tools/node-test-json-reporter.mjs --test-reporter-destination={out} {files}"
 ```
 
 An empty `--changed` selection is not a pass: it lists the changed source files no claim covers.
 
-On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.24.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.24.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
+On a machine whose `~/.npmrc` sets `min-release-age`, `npx testguard-cli@0.25.0` fails with ETARGET until the release is old enough (2026-11-19 for 0.25.0); use a Homebrew install (`brew upgrade testguard`) and run `testguard probe ...` instead.
 
 Pass an absolute reporter path: the probe runs in a scratch worktree built from
 a commit, so a relative path resolves there and untracked files do not exist.
 
-`npx testguard-cli@0.24.0 gate --changed origin/main` reports changed source files
+`npx testguard-cli@0.25.0 gate --changed origin/main` reports changed source files
 that carry no claim. It does not find bugs; it refuses to let a change land without stating
 what must be true, which is the step that surfaces them. A file the probe cannot
 observe (for example, one that only runs as a subprocess) is excused in
