@@ -21,6 +21,8 @@
  *
  * @implements docguard.test-temp-dirs#FR-001
  * @implements docguard.test-temp-dirs#FR-002
+ * @implements docguard.test-temp-dirs#FR-003
+ * @implements docguard.test-temp-dirs#FR-006
  */
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';

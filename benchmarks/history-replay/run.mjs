@@ -26,6 +26,7 @@
  * worktree under the system temp directory, removed afterwards.
  */
 import { makeTempDir } from '../../tests/helpers/temp-dir.mjs';
+// @implements docguard.test-temp-dirs#FR-004: this file's temporary directories come from the helper.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { devNull } from 'node:os';

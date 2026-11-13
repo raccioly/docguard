@@ -10,6 +10,7 @@
  * gate skips spec-kit either way, and command install is a plain file copy.
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
+// @implements docguard.test-temp-dirs#FR-004: this file's temporary directories come from the helper.
 import { describe, it, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { rmSync, existsSync } from 'node:fs';

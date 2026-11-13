@@ -17687,12 +17687,12 @@
       "path": "specs/098-test-temp-dirs/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -17702,7 +17702,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -17734,18 +17736,28 @@
           },
           {
             "path": "specs/098-test-temp-dirs/tasks.md",
-            "digest": "sha256:1658edefb8a9fd3217e4271ae16d88860bd039b3a306bfc34c1950f7d26ce447"
+            "digest": "sha256:289ee3b364754e3e27d64c71fc7b701181b7fab7b5b0d8b712e6585902211da3"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
+          "checked": 6,
           "total": 6
         },
         "implementationEvidence": [
           {
+            "requirementId": "FR-004",
+            "file": "benchmarks/history-replay/run.mjs",
+            "line": 29
+          },
+          {
             "requirementId": "FR-005",
             "file": "tools/check-temp-leaks.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tools/check-temp-leaks.mjs",
+            "line": 16
           }
         ],
         "testEvidence": [
@@ -17773,6 +17785,26 @@
             "requirementId": "FR-005",
             "file": "tests/test-temp-dirs.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/test-temp-dirs.test.mjs",
+            "line": 19
           }
         ]
       }

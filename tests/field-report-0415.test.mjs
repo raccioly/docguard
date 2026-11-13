@@ -7,6 +7,7 @@
  * deliberate and says so in its own message) and are deliberately not asserted.
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
+// @implements docguard.test-temp-dirs#FR-004: this file's temporary directories come from the helper.
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
