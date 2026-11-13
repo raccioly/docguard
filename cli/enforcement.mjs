@@ -15,6 +15,7 @@
  * @implements docguard.strict-by-default#FR-014
  * @implements docguard.strict-by-default#FR-015
  * @implements docguard.strict-by-default#FR-016
+ * @implements docguard.strict-by-default#FR-021
  */
 import { EMPTY_CAUSES, performedChecks } from './validator-coverage.mjs';
 
@@ -129,16 +130,54 @@ export function buildStrictReport(results, { baselineSuppressed = 0, lite = fals
       blocking: !lite,
     });
   }
+  for (const r of results) addUnexaminedDocuments(unexamined, r, lite);
   return {
     evaluated: !lite,
     unexamined,
     couldNotRead,
-    blocking: unexamined.filter(u => u.blocking).map(u => u.validator),
+    blocking: [...new Set(unexamined.filter(u => u.blocking).map(u => u.validator))],
     gating: [...gatingByCode].map(([code, count]) => ({ code, count })).sort((a, b) => a.code.localeCompare(b.code)),
     pending: [],
     waived,
     baselined: baselineSuppressed,
   };
+}
+
+/**
+ * A validator that examines many documents can report the ones it did not
+ * examine (`unexaminedDocuments`: `{ path, cause, reason, howToConfigure }`,
+ * Freshness under FR-021) while it performed real checks on the rest. FR-007's
+ * zero-check rule is per validator; this is the same rule per document: each
+ * listed document is one the project can resolve (cause `needs-declaration` or
+ * `needs-content`), so it blocks like an unexamined validator, and `performed`
+ * keeps the true count. A waived validator and a `--changed-only` run do not
+ * block. One entry per validator key: when the validator is itself unexamined,
+ * the documents join its entry. The entry's cause is the first document's (the
+ * validator orders them); its reason names up to three documents, then a count,
+ * and the first reason of each cause; its fix is the first document's step of
+ * each cause.
+ */
+function addUnexaminedDocuments(unexamined, r, lite) {
+  const docs = Array.isArray(r.unexaminedDocuments)
+    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content'))
+    : [];
+  if (docs.length === 0) return;
+  if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) return;
+  const names = docs.slice(0, 3).map(d => d.path).join(', ') + (docs.length > 3 ? ` and ${docs.length - 3} more` : '');
+  const firstOfEach = docs.filter((d, i) => docs.findIndex(x => x.cause === d.cause) === i);
+  const reason = `${docs.length} document(s) not examined: ${names}. ${firstOfEach.map(d => d.reason).filter(Boolean).join('. ')}`;
+  const howToConfigure = firstOfEach.map(d => d.howToConfigure).filter(Boolean).join(' ') + (docs.length > firstOfEach.length ? ' (one review per document)' : '');
+  const existing = unexamined.find(u => u.validator === r.key);
+  if (existing) {
+    existing.documents = docs.map(d => d.path);
+    existing.reason = [existing.reason, reason].filter(Boolean).join(' ');
+    existing.howToConfigure = [existing.howToConfigure, howToConfigure].filter(Boolean).join(' ');
+    return;
+  }
+  unexamined.push({
+    validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: docs[0].cause, reason, howToConfigure,
+    documents: docs.map(d => d.path), newIn: null, blocking: !lite,
+  });
 }
 
 /** The waiver form every strict failure points at (spec 084). */
@@ -152,6 +191,13 @@ export const WAIVER_FORM = '<!-- docguard:validator <key> n/a — <reason> owner
 export function adoptLines(strict) {
   const lines = ['Adopt — what strict found and how to resolve each item:'];
   for (const u of strict.unexamined.filter(u => u.blocking)) {
+    if (u.documents?.length) {
+      // A validator that examined other things and left these documents unexamined (FR-021).
+      lines.push(`  • ${u.name} did not examine ${u.documents.length} document(s)${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
+      if (u.reason) lines.push(`      ${u.reason}`);
+      if (u.howToConfigure) lines.push(`      ${u.howToConfigure}`);
+      continue;
+    }
     lines.push(`  • ${u.name} is ${u.verdict}${u.cause ? ` (${u.cause})` : ''}${u.newIn ? ` — new in v${u.newIn}` : ''}`);
     const fix = u.howToConfigure || u.reason;
     if (fix) lines.push(`      ${fix}`);

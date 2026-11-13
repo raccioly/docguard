@@ -495,11 +495,12 @@ function withDispositions(results) {
   return reported;
 }
 
-// ── Result contract (specs/097-strict-by-default FR-004 to FR-006) ───────────
+// ── Result contract (specs/097-strict-by-default FR-004 to FR-006, FR-021) ───
 // Kept apart from the checks above: it reads their outcome and adds the fields,
 // and decides nothing about a finding. An agent-instruction document that has no
-// review point yet is not counted as "applies, examined nothing" here; the
-// `empty` branch below is where that cause belongs when it is.
+// review point, or whose review no longer covers it, is a document this run did
+// not examine; it is listed in `unexaminedDocuments` (see unexaminedDocuments
+// below), whatever Freshness performed on the other documents.
 
 /**
  * Whether Freshness's kind of check belongs to the project: it compares
@@ -527,6 +528,37 @@ export function freshnessContract(dir, config, { performed, found, skipped = [],
   if (performed === 0 && !found && (facts.git ??= gitMetadataStatus(dir)).status === 'unreadable') {
     return { performed, applies: applies(dir, config, facts) };
   }
+  const documents = unexaminedDocuments(facts.unexaminedDocuments);
+  return { ...resultContract(dir, config, { performed, found, skipped, facts }), ...(documents.length ? { unexaminedDocuments: documents } : {}) };
+}
+
+/**
+ * The agent-instruction documents this run did not examine (spec 097 FR-021),
+ * each with its cause, a reason that says why, and the step that resolves it.
+ * `performed` is not touched: Freshness did examine the other documents, and a
+ * document's gap is reported on its own (enforcement reads this list).
+ *   needs-declaration  no review point at all: nothing says the document was ever checked;
+ *   needs-content      a review exists and no longer covers the document: a file it names
+ *                      changed past `freshness.referenceShare` since (FRS006's condition).
+ * Suspect reviews come first, then documents with no record, each in path order.
+ * @implements docguard.strict-by-default#FR-021
+ * @param {object[]|undefined} gaps what recordedReviewSignals recorded on the run's facts
+ */
+export function unexaminedDocuments(gaps) {
+  if (!Array.isArray(gaps)) return [];
+  const rank = { 'needs-content': 0, 'needs-declaration': 1 };
+  const fix = path => `Read ${path} against the code it describes, update it where it no longer holds, then record the review: docguard review --accept ${path} --reason "<what you checked>"`;
+  return [...gaps].sort((a, b) => rank[a.cause] - rank[b.cause] || a.path.localeCompare(b.path)).map(g => ({
+    path: g.path,
+    cause: g.cause,
+    reason: g.cause === 'needs-content'
+      ? `${g.path}: its ${g.reviewPoint.date} review no longer covers it; ${g.references.map(r => `${r.path} (${Math.round(r.share * 100)}% added since)`).join(', ')}${g.more ? ` and ${g.more} more` : ''}`
+      : `${g.path} has no review record (no docguard:last-reviewed marker and no recorded review), so nothing says it was ever checked against the code`,
+    howToConfigure: fix(g.path),
+  }));
+}
+
+function resultContract(dir, config, { performed, found, skipped, facts }) {
   return contractFields({
     performed, found, ran: `compared ${performed} document(s) with the code history`,
     decide: () => applies(dir, config, facts),

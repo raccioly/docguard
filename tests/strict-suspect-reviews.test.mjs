@@ -96,12 +96,30 @@ function guard(dir, args = []) {
   const r = spawnSync(process.execPath, [CLI, 'guard', '--dir', dir, ...args], { encoding: 'utf8', env: ENV });
   return { status: r.status, out: r.stdout, err: r.stderr };
 }
+// The same fixture on v0.47.0 (git archive of the tag), the release issue 628 was measured on.
+const TAG = 'v0.47.0';
+const tagExists = (() => { try { fixtureGit(ROOT, ['rev-parse', '--verify', '-q', `${TAG}^{commit}`]); return true; } catch { return false; } })();
+const skipNoTag = tagExists ? false : `${TAG} is not in this clone (shallow checkout); CI fetches full history`;
+function v047Guard(dir) {
+  const base = mkdtempSync(join(tmpdir(), 'docguard-v047-'));
+  temporary.push(base);
+  const tarball = join(base, '.tag.tar');
+  fixtureGit(ROOT, ['archive', '-o', tarball, TAG]);
+  assert.equal(spawnSync('tar', ['-x', '-f', tarball, '-C', base]).status, 0, 'tar extract failed');
+  return spawnSync(process.execPath, [join(base, 'cli', 'docguard.mjs'), 'guard', '--dir', dir], { encoding: 'utf8', env: ENV });
+}
+
 const guardJson = (dir) => {
   const r = guard(dir, ['--format', 'json']);
   return { status: r.status, json: JSON.parse(r.out) };
 };
 
 describe('T026 / SC-004: the issue 628 fixture', () => {
+  it('on v0.47.0 guard exits 2: the stale instructions are a warning', { skip: skipNoTag }, () => {
+    const r = v047Guard(issue628('strict'));
+    assert.equal(r.status, 2, r.stderr);
+  });
+
   it('under strict, exits 4, names AGENTS.md and the re-review step, while Freshness still performed checks', () => {
     const dir = issue628('strict');
     const { status, json } = guardJson(dir);

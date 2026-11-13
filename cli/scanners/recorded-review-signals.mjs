@@ -101,6 +101,7 @@ function reviewContext(dir, config, ignored = () => false) {
     try { pointerText.set(d.pointer.target, `${pointerText.get(d.pointer.target) || ''}\n${readFileSync(resolve(dir, d.path), 'utf8')}`); } catch { /* unreadable pointer */ }
   }
   const tracked = listTrackedFiles(dir);
+  const trackedSet = new Set(tracked || []);
   const roleSet = new Set(authored.map(d => d.path));
   const cache = new Map();
   let fpCtx = null;
@@ -145,7 +146,18 @@ function reviewContext(dir, config, ignored = () => false) {
     const { crossing, measured, complete } = evidenceFor(doc.path, content, point);
     return { path: doc.path, content, point, crossing, measured, complete };
   };
-  return { read, recorded, threshold, role, authored, vendored, pointerText, tracked, roleSet, canonical: docFiles => docFiles.filter(f => !roleSet.has(f) && !vendored.has(f)), reviewPointOf, evidenceFor, statusFor };
+  // The one definition of a document Freshness did not examine (spec 097 FR-021): a committed
+  // authored document with no review point (`needs-declaration`; an uncommitted one is FRS001's),
+  // or one whose review no longer covers it by the FRS006 rule (`needs-content`). A review point
+  // that cannot be read (shallow clone) is an observation gap, not this.
+  const gapOf = status => {
+    if (!status || tracked === null) return null;
+    if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration' } : null;
+    if (status.point.unavailable || !status.measured || !status.crossing.length) return null;
+    const { date, revision, source } = status.point;
+    return { path: status.path, cause: 'needs-content', reviewPoint: { date, revision, source }, references: status.crossing.slice(0, 3).map(r => ({ path: r.path, share: r.share })), more: Math.max(0, status.crossing.length - 3) };
+  };
+  return { read, recorded, threshold, role, authored, vendored, pointerText, tracked, roleSet, canonical: docFiles => docFiles.filter(f => !roleSet.has(f) && !vendored.has(f)), reviewPointOf, evidenceFor, statusFor, gapOf };
 }
 
 /**
@@ -166,10 +178,16 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
   if (tracked === null) return out; // git unavailable: the history-based checks above already skipped
   const canonical = ctx.canonical(docFiles);
   const describe = r => `L${r.line} ${r.path} ${pct(r.share)}${r.newSinceBase ? ' (did not exist then)' : ` (+${r.added}/−${r.deleted})`}`;
+  // What this run did not examine, for freshnessContract (spec 097 FR-021); computed here so the
+  // review evidence is measured once per run.
+  const gaps = [];
+  if (results?.facts) results.facts.unexaminedDocuments = gaps;
 
   for (const doc of authored) {
     const status = ctx.statusFor(doc);
     if (!status) continue;
+    const gap = ctx.gapOf(status);
+    if (gap) gaps.push(gap);
     const { content, point } = status;
     if (point?.unavailable) { out.push({ status: 'skip', doc: doc.path, message: point.unavailable }); continue; }
     // No review point: spec 097 reports this as Freshness applying and
@@ -249,20 +267,10 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
  * @returns {{ path: string, howToConfigure: string }[]}
  */
 export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
-  const tracked = listTrackedFiles(dir);
-  if (!tracked) return [];
-  const trackedSet = new Set(tracked);
-  const recorded = reviewsFor(dir).reviews?.documents || {};
-  const out = [];
-  for (const doc of agentInstructionDocs(dir, config).docs) {
-    if (doc.pointer || doc.vendored || !trackedSet.has(doc.path)) continue;
-    if (recorded[doc.path]?.reviewedRevision) continue;
-    let content = '';
-    try { content = readFileSync(resolve(dir, doc.path), 'utf8'); } catch { continue; }
-    if (markerDate(content)) continue;
-    out.push({ path: doc.path, howToConfigure: `Read ${doc.path} against the code, then record the review: docguard review --accept ${doc.path} --reason "<what you checked>"` });
-  }
-  return out;
+  const ctx = reviewContext(dir, config);
+  if (ctx.tracked === null) return [];
+  return ctx.authored.map(doc => ctx.gapOf(ctx.statusFor(doc))).filter(g => g?.cause === 'needs-declaration')
+    .map(({ path }) => ({ path, howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
 }
 
 /**

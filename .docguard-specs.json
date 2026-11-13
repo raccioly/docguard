@@ -13335,7 +13335,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 276
+            "line": 284
           },
           {
             "requirementId": "FR-006",
@@ -13360,7 +13360,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 248
+            "line": 266
           }
         ],
         "testEvidence": [
@@ -16352,11 +16352,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
-            "digest": "sha256:f88a6325bd944b170c0b6518b1a0c4fe27dc7a5d731552d5fb8ea80184a84102"
+            "digest": "sha256:385410caf20171e8c545694aba1afe7e11233126c5af5c5ac96ae142a360377e"
           }
         ],
         "taskCompletion": {
-          "checked": 25,
+          "checked": 27,
           "total": 40
         },
         "implementationEvidence": [
@@ -16518,7 +16518,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/freshness.mjs",
-            "line": 509
+            "line": 510
           },
           {
             "requirementId": "FR-006",
@@ -16629,6 +16629,16 @@
             "requirementId": "FR-018",
             "file": "cli/commands/upgrade.mjs",
             "line": 310
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/enforcement.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/validators/freshness.mjs",
+            "line": 544
           }
         ],
         "testEvidence": [
@@ -16708,6 +16718,11 @@
             "line": 9
           },
           {
+            "requirementId": "FR-007",
+            "file": "tests/strict-suspect-reviews.test.mjs",
+            "line": 13
+          },
+          {
             "requirementId": "FR-008",
             "file": "tests/strict-by-default.test.mjs",
             "line": 17
@@ -16733,6 +16748,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-015",
+            "file": "tests/strict-suspect-reviews.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "FR-016",
             "file": "tests/strict-by-default.test.mjs",
             "line": 20
@@ -16746,6 +16766,16 @@
             "requirementId": "FR-020",
             "file": "tests/strict-by-default.test.mjs",
             "line": 22
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/strict-suspect-reviews.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/strict-suspect-reviews.test.mjs",
+            "line": 16
           },
           {
             "requirementId": "SC-005",
