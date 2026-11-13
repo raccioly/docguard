@@ -762,11 +762,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified the one agent-instruction role, pointer and vendored-copy handling and PSR005 against the shipped ARCHITECTURE entry (spec 094) and the recorded A/B and budget run.",
+              "evidence": [
+                "cli/shared-agent-instructions.mjs",
+                "cli/validators/freshness.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/agent-instruction-role.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/shared-agent-instructions.mjs",
                 "cli/validators/freshness.mjs",
@@ -803,7 +817,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:90184776ddc79de5808d281725290f7d500d4a82673ff5567da91258efee0928"
+            "digest": "sha256:377ca96d606bc6ec24426f860c09e18fbdb0660aa30eaf42b7127768e1cd7cee"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -3630,11 +3644,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified the relocated-layout reproduction tests, the STR003 and docs surfaces, and the recorded A/B against the shipped behavior in DATA-MODEL (spec 093).",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/commands/score.mjs",
                 "cli/shared-doc-roles.mjs",
@@ -3666,7 +3693,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:cf4b61504055ede2d6b979adb04f5d72fade18934e43a8ecd94b496e2eb77129"
+            "digest": "sha256:fa2e22115e3e0f8735ae19dd80c7b3ab2a10e3e6daacb050833b3e5b04dc91aa"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
@@ -14165,11 +14192,30 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
+          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
               "reason": "Verified recorded reviews, FRS006/FRS007/FRS010, the reviews file schema and the recorded TestGuard reproduction, replay and A/B against the shipped ARCHITECTURE and DATA-MODEL text (spec 095).",
+              "evidence": [
+                "cli/commands/review.mjs",
+                "cli/scanners/doc-reviews.mjs",
+                "cli/scanners/recorded-review-signals.mjs",
+                "cli/scanners/reference-staleness.mjs",
+                "cli/validators/freshness.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/history-replay.test.mjs",
+                "tests/program-verification.test.mjs",
+                "tests/recorded-document-reviews.test.mjs",
+                "tests/review-accept-many.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+              "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
               "evidence": [
                 "cli/commands/review.mjs",
                 "cli/scanners/doc-reviews.mjs",
@@ -14215,7 +14261,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:1c67aa661176b2d45ffe48e85fd27632ef0e83ff58da4d6bca35af2c53acc36c"
+            "digest": "sha256:1bbbc7efe929f2c1ca92abd5a03c6f386f8f0c3fc452442c202c2c9c26915838"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
