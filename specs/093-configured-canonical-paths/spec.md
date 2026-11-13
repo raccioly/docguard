@@ -108,3 +108,9 @@ Verified 2026-11-11 on the branch head.
   - Project C: docQuality 0 → 80 (total 59 → 75), plus one STR003 for a SECURITY document with no Secrets Management heading.
   - Each new STR003 was checked against the document's headings by hand. Each section is genuinely absent, and the same document would get the same warning at its default path.
 - **SC-003**: The #625 reproduction (five documents under `docs/canonical/`) scores docQuality above 0 with no "file missing", and ALCOA+ Original and Available are met.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `d531756de886c5f89d64125a22a8fb07bb9aafe9` — Verified the relocated-layout reproduction tests, the STR003 and docs surfaces, and the recorded A/B against the shipped behavior in DATA-MODEL (spec 093). Evidence: `cli/commands/score.mjs`, `cli/shared-doc-roles.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/configured-canonical-paths.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/score.mjs`=`e5ba699727a1b410bf410be2a34a23ac4317e27e`, `cli/shared-doc-roles.mjs`=`40a05cf54c004426b12cdf0211b295662e5f5710`, `docs-canonical/DATA-MODEL.md`=`536919770b97c233d68a92494ee154b4dafedfe2`, `tests/configured-canonical-paths.test.mjs`=`961e81f84c01e8de1c8ea507b3253e96269f1191`, `tests/program-verification.test.mjs`=`9d469f964d8b5646bce82e396b052e5dc53ad369`.
+<!-- docguard:implementation-outcomes:end -->
