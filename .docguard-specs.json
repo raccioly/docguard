@@ -170,7 +170,7 @@
           {
             "requirementId": "FR-009",
             "file": "tests/program-verification.test.mjs",
-            "line": 70
+            "line": 86
           },
           {
             "requirementId": "SC-001",
@@ -180,12 +180,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 203
+            "line": 219
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 160
+            "line": 176
           }
         ]
       }
@@ -742,12 +742,12 @@
       "path": "specs/094-agent-instruction-role/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -757,7 +757,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -898,6 +900,16 @@
             "requirementId": "SC-001",
             "file": "tests/agent-instruction-role.test.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 241
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 242
           }
         ]
       }
@@ -1052,12 +1064,12 @@
           {
             "requirementId": "FR-007",
             "file": "tests/program-verification.test.mjs",
-            "line": 122
+            "line": 138
           },
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 218
+            "line": 234
           },
           {
             "requirementId": "SC-002",
@@ -1067,7 +1079,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 219
+            "line": 235
           }
         ]
       }
@@ -1233,7 +1245,7 @@
           {
             "requirementId": "FR-008",
             "file": "tests/program-verification.test.mjs",
-            "line": 112
+            "line": 128
           },
           {
             "requirementId": "SC-001",
@@ -1243,12 +1255,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 215
+            "line": 231
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 216
+            "line": 232
           }
         ]
       }
@@ -1899,7 +1911,7 @@
           {
             "requirementId": "FR-007",
             "file": "tests/program-verification.test.mjs",
-            "line": 52
+            "line": 68
           },
           {
             "requirementId": "SC-001",
@@ -1909,7 +1921,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 198
+            "line": 214
           }
         ]
       }
@@ -3583,12 +3595,12 @@
       "path": "specs/093-configured-canonical-paths/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -3598,7 +3610,9 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -3685,6 +3699,26 @@
             "requirementId": "FR-006",
             "file": "tests/configured-canonical-paths.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/program-verification.test.mjs",
+            "line": 40
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 239
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/configured-canonical-paths.test.mjs",
+            "line": 19
           }
         ]
       }
@@ -4325,7 +4359,7 @@
           {
             "requirementId": "FR-009",
             "file": "tests/program-verification.test.mjs",
-            "line": 87
+            "line": 103
           },
           {
             "requirementId": "SC-001",
@@ -4335,7 +4369,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 208
+            "line": 224
           },
           {
             "requirementId": "SC-003",
@@ -6396,7 +6430,7 @@
           {
             "requirementId": "FR-006",
             "file": "tests/program-verification.test.mjs",
-            "line": 141
+            "line": 157
           },
           {
             "requirementId": "SC-001",
@@ -6406,7 +6440,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 169
+            "line": 185
           },
           {
             "requirementId": "SC-003",
@@ -6607,7 +6641,7 @@
           {
             "requirementId": "FR-011",
             "file": "tests/program-verification.test.mjs",
-            "line": 60
+            "line": 76
           },
           {
             "requirementId": "FR-012",
@@ -6622,17 +6656,17 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 200
+            "line": 216
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 180
+            "line": 196
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 201
+            "line": 217
           }
         ]
       }
@@ -11507,7 +11541,7 @@
           {
             "requirementId": "FR-006",
             "file": "tests/program-verification.test.mjs",
-            "line": 131
+            "line": 147
           },
           {
             "requirementId": "SC-001",
@@ -11522,7 +11556,7 @@
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 221
+            "line": 237
           }
         ]
       }
@@ -14041,12 +14075,12 @@
       "path": "specs/095-recorded-document-reviews/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "implemented",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -14056,7 +14090,10 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
           "lastReviewedRevision": null,
@@ -14238,9 +14275,34 @@
             "line": 4
           },
           {
+            "requirementId": "FR-013",
+            "file": "tests/program-verification.test.mjs",
+            "line": 48
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/recorded-document-reviews.test.mjs",
+            "line": 263
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/recorded-document-reviews.test.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 244
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 245
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/program-verification.test.mjs",
+            "line": 246
           }
         ]
       }
@@ -15110,7 +15172,7 @@
           {
             "requirementId": "FR-005",
             "file": "tests/program-verification.test.mjs",
-            "line": 97
+            "line": 113
           },
           {
             "requirementId": "FR-006",
@@ -15130,12 +15192,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 210
+            "line": 226
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 211
+            "line": 227
           }
         ]
       }
@@ -19776,7 +19838,7 @@
           {
             "requirementId": "FR-008",
             "file": "tests/program-verification.test.mjs",
-            "line": 79
+            "line": 95
           },
           {
             "requirementId": "SC-001",
@@ -19786,12 +19848,12 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 205
+            "line": 221
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 206
+            "line": 222
           }
         ]
       }
@@ -20057,7 +20119,7 @@
           {
             "requirementId": "FR-005",
             "file": "tests/program-verification.test.mjs",
-            "line": 105
+            "line": 121
           },
           {
             "requirementId": "SC-001",
@@ -20067,7 +20129,7 @@
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 213
+            "line": 229
           },
           {
             "requirementId": "SC-003",
@@ -20327,7 +20389,7 @@
           {
             "requirementId": "FR-017",
             "file": "tests/program-verification.test.mjs",
-            "line": 40
+            "line": 56
           },
           {
             "requirementId": "SC-001",
@@ -20347,17 +20409,17 @@
           {
             "requirementId": "SC-004",
             "file": "tests/program-verification.test.mjs",
-            "line": 195
+            "line": 211
           },
           {
             "requirementId": "SC-005",
             "file": "tests/program-verification.test.mjs",
-            "line": 196
+            "line": 212
           },
           {
             "requirementId": "SC-006",
             "file": "tests/program-verification.test.mjs",
-            "line": 153
+            "line": 169
           }
         ]
       }

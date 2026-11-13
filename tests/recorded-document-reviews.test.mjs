@@ -260,6 +260,7 @@ describe('US5 — FRS009: a marker advanced without a recorded review', () => {
 });
 
 describe('FR-010 — a malformed reviews file fails, and its future fields go under extensions', () => {
+  // @req docguard.recorded-document-reviews#FR-014
   it('unknown top-level field fails as FRS010; extensions are ignored', t => {
     const dir = project(t, { grow: false, surface: false });
     write(dir, DOC_REVIEWS_PATH, JSON.stringify({ schemaVersion: 1, documents: {}, extensions: { future: true } }));

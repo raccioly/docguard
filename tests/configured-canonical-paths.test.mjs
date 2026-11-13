@@ -15,6 +15,8 @@
  * @req docguard.configured-canonical-paths#FR-004
  * @req docguard.configured-canonical-paths#FR-005
  * @req docguard.configured-canonical-paths#FR-006
+ * @req docguard.configured-canonical-paths#SC-001
+ * @req docguard.configured-canonical-paths#SC-003
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, beforeEach, afterEach } from 'node:test';
