@@ -121,7 +121,7 @@ export function validateStructure(projectDir, config) {
   const budgetCfg = config.agentInstructions || {};
   const maxBytes = Number.isInteger(budgetCfg.maxBytes) && budgetCfg.maxBytes > 0 ? budgetCfg.maxBytes : DEFAULT_INSTRUCTION_BUDGET;
   const allowances = budgetCfg.allowances && typeof budgetCfg.allowances === 'object' ? budgetCfg.allowances : {};
-  for (const chain of measureInstructionChains(projectDir)) {
+  for (const chain of measureInstructionChains(projectDir, config)) {
     total++;
     const allowance = Number.isInteger(allowances[chain.leaf]) ? allowances[chain.leaf] : null;
     const limit = allowance ?? maxBytes;

@@ -38,7 +38,7 @@
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:604f486cb1be6c290f71673fffe6bfc159d2f58e9020eff50fb3197b69e19e67",
+          "fingerprint": "sha256:38c755fe014d5c574624e15b26a4d86a6fdcf21706bff50f3e7bd300fcb8b2c8",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Re-reviewed against reanchorSpec after the batched content search: the Blobs backfill and the content-anchored skip are as documented",
+      "reason": "Re-reviewed after merging main: registry section matches reanchorSpec and the Blobs segment",
       "reviewedAt": "2026-11-13",
-      "reviewedRevision": "423d8c0bd2fc8f2d6a47e99f48a9d7818db5aca8"
+      "reviewedRevision": "5c782972dfca1b3284e56762f478c9e64e09dfa8"
     }
   }
 }

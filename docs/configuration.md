@@ -444,6 +444,53 @@ it never changes guard's exit code unless `findingSeverity.STR005` says so.
 instruction file: the chain may shrink, and growth past the allowance is
 reported.
 
+## File kinds — `fileKinds`
+
+Some files in a repository are not the project's own work: a scaffolder's
+`templates/<app>/files/AGENTS.md` is a form written into other repositories, a
+`fixtures/` project is test data, `vendor/` is someone else's code. DocGuard
+asks one question, "is this file the project's own", and answers from a closed
+list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`,
+`backup` and `nested-checkout`.
+
+- **Unknown is own.** Classifying a file as a copy removes it from checks, so
+  a file nothing recognizes stays the project's.
+- **Directory names** match as whole path segments, in any case
+  (`Templates/`, `EXAMPLES/`), and only before the first segment that starts
+  with `.`: `.claude/skills/templates/` holds files the harness loads. A package
+  segment never counts (`src/main/java/com/example`).
+  - template: `templates`, `template`, `_templates`, `__templates__`,
+    `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)`
+  - fixture: `fixtures`, `__fixtures__`, `testdata`, `__mocks__`, `mocks`,
+    `examples`, `samples`, `corpus`, `golden` and the other test-data names
+  - test (the project's own tests): `test`, `tests`, `__tests__`,
+    `test-helpers`, `spec`, `specs`; a Spec Kit `specs/012-feature/` is own
+  - `corpus` and `golden` mark copies for instruction files only: detection
+    (routes, Security's test-path context) still reads them as product
+  - vendored: `node_modules`, `vendor`, `vendored`, `third_party`; generated:
+    `dist`, `build`, `out`, `coverage`, `target`, `generated`
+- **The folder that holds the file does not count** for a file that describes
+  its own folder, an agent-instruction file: `templates/AGENTS.md` governs
+  `templates/`, and `packages/templates/AGENTS.md` governs a package.
+- **Backups** apply to documents only (`ARCHITECTURE copy.md`,
+  `ARCHITECTURE-old.md`, `*.md.bak`, or a document below `archive`, `backup`,
+  `old` or `deprecated` inside `docs/`), never to code.
+
+`fileKinds.own` lists glob patterns for files that are the project's own
+wherever they sit, such as a real package that happens to be called
+`examples`:
+
+```json
+{ "fileKinds": { "own": ["examples/billing-sdk/**"] } }
+```
+
+`.docguardignore` and `ignore` still win and remain the way to exclude a file.
+Nothing is dropped silently: `guard --format json` carries `files.kinds` (a
+count per kind, and up to 20 paths per kind of instruction files left out as
+copies), and the text output prints one line when any were left out. PSR006
+warns when a template or fixture copy shares a governing instruction file's
+name; the instruction-chain budget (STR004) does not count a copy.
+
 ## Path-scoped agent rules — `validators.pathScopedRules`
 
 The Path-Scoped-Rules validator (PSR001–PSR004) is on by default and not

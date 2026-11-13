@@ -37,6 +37,9 @@ templates/demo-fixture/
 templates/demo-fixture/**
 benchmarks/fixtures/
 benchmarks/fixtures/**
+# Agent-context benchmark projects: each one is handed to an agent as a whole
+# repository, so its instruction file must be named AGENTS.md (PSR006, spec 099).
+benchmarks/agent-context/fixtures/*/AGENTS.md  # fixture repositories need the real name (PSR006)
 # Agent-context benchmark evaluators: each one imports the agent's answer from
 # a temp project via sys.path, so they are fixtures, not this project's code.
 benchmarks/agent-context/hidden/
