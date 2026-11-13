@@ -35,7 +35,7 @@ import {
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
 import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
-import { classifyRequirements, isPlaceholder } from '../shared-requirement-definition.mjs';
+import { classifyRequirementIds, describeSkipped, hasPlaceholderSlot } from '../shared-requirement-ids.mjs';
 import { sample } from '../shared-project-evidence.mjs';
 
 export { collectRequirementIds };
@@ -136,7 +136,10 @@ const IGNORE_DIRS = new Set([
  * @implements docguard.strict-by-default#FR-006
  */
 export function applies(projectDir, config = {}) {
-  const { real, placeholders, skipped, skippedText, custom } = classifyRequirements(projectDir, config);
+  const custom = Boolean(config.traceability?.requirementPattern);
+  const all = [...collectRequirementIds(projectDir, config, requirementPatterns(config)).values()];
+  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom });
+  const skippedText = describeSkipped(skipped);
   if (real.length > 0) {
     const counted = custom ? 'ID(s) read by traceability.requirementPattern' : 'FR/NFR/SC/REQ requirement ID(s)';
     return { applies: true, evidence: `${real.length} ${counted} are declared (${sample(real.map(d => d.specId ? `${d.specId}#${d.id}` : d.id))})` };
@@ -326,8 +329,9 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   const patterns = requirementPatterns(config);
 
   // ── Step 1: Collect requirement IDs from documentation ──
-  // A template row ("System MUST [capability]") is not a requirement: it is neither traced nor reported.
-  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !isPlaceholder(def)));
+  // A template row ("System MUST [capability]") is not a requirement: it is neither traced nor reported. A bare ID with
+  // no text is still traced, as it always was.
+  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def)));
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
   const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
   const uncommittedPlannedIndex = uncommittedPlannedSpecLifecycleIndex(projectDir);
