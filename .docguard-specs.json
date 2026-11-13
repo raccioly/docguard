@@ -17707,13 +17707,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "573f82426e357a3ee0e5daa1bec0717a9f5c815e",
+          "lastReviewedRevision": "21a0b6ffa48367af221e21c2c8045d3f0a23ad3c",
           "outcomes": [
             {
               "revision": "573f82426e357a3ee0e5daa1bec0717a9f5c815e",
               "reason": "Reviewed at main after #677: npm test passes twice (exit 0, 363 s and 381 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. The 118 converted files carry a reconciliation-only @implements reference; the baseline is the revision that tags them, since a range with docs-coverage.test.mjs (raw NUL byte before) reads as binary. Wall time not re-measured before the change.",
               "evidence": [
                 "benchmarks/history-replay/run.mjs",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/test-temp-dirs.test.mjs",
+                "tools/check-temp-leaks.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "21a0b6ffa48367af221e21c2c8045d3f0a23ad3c",
+              "reason": "Reviewed at main after #677: npm test passes without any git override (exit 0, 5,006 tests, 323 s); the leak check finds 0 entries left in a fresh TMPDIR (13 before); guard has no errors. FIXTURE_GIT now turns background git maintenance off (spec 066 task T008), which removed an intermittent maintenance.lock failure in the spec 097 snapshot tests. Wall time was not measured before the change.",
+              "evidence": [
                 "docs-canonical/TEST-SPEC.md",
                 "tests/test-temp-dirs.test.mjs",
                 "tools/check-temp-leaks.mjs"
@@ -17741,7 +17752,7 @@
         "artifacts": [
           {
             "path": "specs/098-test-temp-dirs/spec.md",
-            "digest": "sha256:a80937fe0334b178ca9b803406dc095ca739714d96adddc79807b2bc08029247"
+            "digest": "sha256:6aec2ba007087adb18ebadb6654e78cab1d07169657cc08989d59c5b755339e7"
           },
           {
             "path": "specs/098-test-temp-dirs/plan.md",
