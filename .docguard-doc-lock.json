@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:7c7a31069ae89304d12576101c5b1cfba54f1a74984e5ecdebbb3f4427e3495c",
+          "fingerprint": "sha256:b65c19236baccb6d6623706626977fb7ae17c76450f8a32f5c7a227452c0e5a6",
           "tier": "ast"
         }
       },
-      "reason": "mkFinding now carries both the Security context field (097) and the freshness documentRole/staleness/surface fields (095); prose states both",
+      "reason": "Checked: the section's mkFinding contract gained one optional field, mirrors (spec 100 FR-014), described in its last paragraph; location stays a string, PARSER_TIERS unchanged.",
       "reviewedAt": "2026-11-13",
-      "reviewedRevision": "5d6342b2dbd0b1517d38129a5f30407fff87830d"
+      "reviewedRevision": "1b538a2622d05c9b96507e723079e47c1aaa7c77"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

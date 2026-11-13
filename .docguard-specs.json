@@ -866,7 +866,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 21
+            "line": 23
           }
         ],
         "testEvidence": [
@@ -2370,12 +2370,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 858
+            "line": 902
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 885
+            "line": 929
           },
           {
             "requirementId": "FR-021",
@@ -7742,7 +7742,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:f6d344e729f563a6d449cd9c742d8c16736595f793c6bfbd9c040f0cab23f093"
+            "digest": "sha256:64d0fc4e72ad8aff13165b755301e04e9a6ff88a4f3132023678496ab4726c1d"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -7750,11 +7750,11 @@
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:a314818c4dca31775ea18542681f2c00af6e0575f7abffef816d9e8bf6b0aff5"
+            "digest": "sha256:178f71c4d35dd86d7cbe8435137788de3e0b09b0ee2a388b453d5f880e349c2a"
           }
         ],
         "taskCompletion": {
-          "checked": 18,
+          "checked": 20,
           "total": 20
         },
         "implementationEvidence": [
@@ -7822,6 +7822,26 @@
             "requirementId": "FR-013",
             "file": "cli/shared-backup-documents.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/commands/guard.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-mirrors.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/shared-mirrors.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 25
           }
         ],
         "testEvidence": [
@@ -7896,9 +7916,39 @@
             "line": 9
           },
           {
+            "requirementId": "FR-013",
+            "file": "tests/file-kinds-stage2.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/mirrors.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/mirrors.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/instruction-copies.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/mirrors.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 248
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 249
           }
         ]
       }
@@ -8038,7 +8088,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1159
+            "line": 1174
           },
           {
             "requirementId": "FR-008",
@@ -9064,12 +9114,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1435
+            "line": 1452
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1445
+            "line": 1462
           },
           {
             "requirementId": "FR-006",
@@ -9269,12 +9319,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 22
+            "line": 24
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 285
+            "line": 368
           }
         ],
         "testEvidence": [
@@ -12209,7 +12259,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 20
+            "line": 22
           },
           {
             "requirementId": "FR-012",
@@ -12481,12 +12531,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 17
+            "line": 19
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 18
+            "line": 20
           },
           {
             "requirementId": "FR-005",
@@ -12501,7 +12551,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 19
+            "line": 21
           },
           {
             "requirementId": "FR-008",
@@ -17569,7 +17619,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 54
+            "line": 60
           },
           {
             "requirementId": "FR-006",
@@ -17679,7 +17729,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 228
+            "line": 230
           },
           {
             "requirementId": "FR-014",

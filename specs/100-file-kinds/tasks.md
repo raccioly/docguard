@@ -40,5 +40,5 @@
 
 ## Stage 3 (later)
 
-- [ ] T030 [US5] Mirror grouping by content hash across instruction files and skill copies; one finding naming every path (FR-014).
-- [ ] T031 Drift warnings for same-skill copies and near-identical root instruction files; `GEMINI.md` like the others (FR-015).
+- [x] T030 [US5] Mirror grouping by content hash across instruction files and skill copies; one finding naming every path (FR-014).
+- [x] T031 Drift warnings for same-skill copies and near-identical root instruction files; `GEMINI.md` like the others (FR-015).

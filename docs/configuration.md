@@ -505,9 +505,40 @@ documents left out as copies), and the text output prints one line when any were
 warns when a template or fixture copy shares a governing instruction file's
 name; the instruction-chain budget (STR004) does not count a copy.
 
+### Mirrors
+
+Some files are copies of one thing for different agent harnesses: the root
+instruction files `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` and
+`.github/copilot-instructions.md` (the same set inside one nested folder is
+compared only within that folder), and a skill or command at the same relative
+path under different agent roots (`.agent/`, `.agents/`, `.claude/`, `.codex/`,
+`.gemini/`, `.github/`, `.specify/extensions/<ext>/`). A file with the same name
+in another folder is a different document, never a mirror.
+
+- **Identical mirrors are one subject.** A finding a check would raise on each
+  copy is raised once, on the first path (`AGENTS.md`, then `CLAUDE.md`,
+  `GEMINI.md`, `.github/copilot-instructions.md`; for skills the lexically first
+  root), and names every path: `mirrors` on the finding in `--format json`, an
+  `also in:` line in text. What each harness loads, and the budgets that count
+  it, do not change. A pointer file (`@AGENTS.md`) and a symlink are not mirrors.
+- **PSR007** (warn) fires when a skill or command copy differs from its mirror,
+  and names both paths, how many lines differ and which was committed more
+  recently (or says it cannot tell). Two Spec Kit installs for different
+  harnesses differ by design and are not reported; PSR005 checks each against its
+  install manifest.
+- **PSR008** (warn) fires when two root instruction files share at least 80% of
+  their non-blank lines but are not identical, so one can say `npm` where the
+  other says `yarn`. Pointers and files written by `docguard agents --sync` are
+  not compared (`docguard agents --check` does that). Files that are simply
+  different documents share few lines and are never reported.
+
+`guard --format json` carries `files.mirrors` (groups, identical sets and the
+drift list). GEMINI.md is read for dead pointers and `@` imports like the other
+instruction files.
+
 ## Path-scoped agent rules — `validators.pathScopedRules`
 
-The Path-Scoped-Rules validator (PSR001–PSR004) is on by default and not
+The Path-Scoped-Rules validator (PSR001–PSR008) is on by default and not
 applicable when the project has no agent instruction files. **PSR003** uses
 the same `agentInstructions.maxBytes` for the bytes one harness loads for a
 path, excluding `AGENTS.md` chains (STR004's). Its allowances are keyed by

@@ -245,4 +245,7 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.recorded-document-reviews#SC-003
   // @req docguard.recorded-document-reviews#SC-004
   it('095: the TestGuard reproduction, the history replay and the A/B', () => recorded('095-recorded-document-reviews', ['SC-002', 'SC-003', 'SC-004']));
+  // @req docguard.file-kinds#SC-002
+  // @req docguard.file-kinds#SC-003
+  it('100: the A/B at each stage and the gates', () => recorded('100-file-kinds', ['SC-002', 'SC-003']));
 });
