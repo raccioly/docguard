@@ -13,7 +13,7 @@
   },
   "core": {
     "schemaVersion": 1,
-    "manifestDigest": "sha256:1f5fd1f8d8ef4d3144aba8e4deb70d79ee8c68743e76233d81eafa2916894f2e",
+    "manifestDigest": "sha256:e89a6c3df348bb1c611f4c4ab700b9168aaad7b3275734120dbe308b205f3785",
     "tool": {
       "version": "0.48.0",
       "revision": "55facec058cf689ef110528493dd933765a63a15",
@@ -68,7 +68,7 @@
         "parserTier": "not-applicable",
         "classification": "defect",
         "repairOutcome": "not_evaluated",
-        "sourceRevision": "sha256:094890dbfcdbc5bf818e02b23799ab748f9dff62ac24979970b60544167c0fd1",
+        "sourceRevision": "sha256:91d31ab5d8c63988fbd337995f0579d7eb8cd251b4c29e8a8aeea7a7470e8224",
         "configDigest": "sha256:1105619abdfae3d96f8ef47a82cb1b272680098ed9f86ee39c73a47e5d705759",
         "scope": {
           "validatorKey": "structure",
@@ -77,13 +77,13 @@
           ]
         },
         "expected": [
-          "STR008@docs/GUIDE.md.bak"
+          "STR008@docs/GUIDE copy.md"
         ],
         "forbidden": [
           "STR008@docs/GUIDE.md"
         ],
         "actual": [
-          "STR008@docs/GUIDE.md.bak"
+          "STR008@docs/GUIDE copy.md"
         ],
         "unexpected": [],
         "missing": [],

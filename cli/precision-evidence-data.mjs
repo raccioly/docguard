@@ -17,7 +17,7 @@ export const PRECISION_EVIDENCE = Object.freeze({
   "caveat": "Benchmark precision on a deliberately balanced corpus of 18 defect and 18 clean-control cases across 18 repository groups and 18 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound.",
   "minN": 5,
   "source": {
-    "manifestDigest": "sha256:1f5fd1f8d8ef4d3144aba8e4deb70d79ee8c68743e76233d81eafa2916894f2e",
+    "manifestDigest": "sha256:e89a6c3df348bb1c611f4c4ab700b9168aaad7b3275734120dbe308b205f3785",
     "toolVersion": "0.48.0",
     "toolRevision": "55facec058cf689ef110528493dd933765a63a15",
     "detectorsDigest": "sha256:7c6dfa15d4f0259b87ca8aad0fee69258f03b6d64c44d357b9e06028a0bbf564",

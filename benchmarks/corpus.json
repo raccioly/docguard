@@ -734,7 +734,7 @@
       },
       "mutations": [],
       "expected": [
-        "STR008@docs/GUIDE.md.bak"
+        "STR008@docs/GUIDE copy.md"
       ],
       "forbidden": [
         "STR008@docs/GUIDE.md"
