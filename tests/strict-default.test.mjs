@@ -67,6 +67,9 @@ const ALL_KEYS = [
 ];
 // The project's own file turns every other validator off, so the exit code is about the one under test.
 const only = (...keys) => Object.fromEntries(ALL_KEYS.map(k => [k, keys.includes(k)]));
+// Strict with every validator held pending by `asOf`: findings still resolve by FR-008, and the exit code is about them
+// (not about validators of a small fixture that have nothing to examine).
+const HELD = { mode: 'strict', asOf: '0.40' };
 const base = extra => ({ projectName: 'sd', version: '0.6', requiredFiles: { canonical: [], agentFile: [] }, ...extra });
 
 const PKG = JSON.stringify({ name: 'lib', version: '1.0.0' });
@@ -104,49 +107,50 @@ describe('T019 FR-001: an absent key is strict', () => {
   });
 });
 
-describe('T019 FR-003: every validator runs under strict, whatever the profile says', () => {
+describe('T019 FR-003: every validator runs under strict; a `false` entry is not honored', () => {
   const files = { 'package.json': PKG, 'src/index.js': 'export const x = 1;\n' };
-  it('a profile that turns validators off does not turn them off under strict', () => {
+  const ran = (json, key) => byKey(json, key).status !== 'skipped';
+
+  it('(a) a project on the starter profile runs every validator, and says which false entries it did not honor', () => {
     const dir = project(files, base({ profile: 'starter' }));
     const { json } = guardJson(dir);
-    for (const key of ['security', 'architecture', 'testSpec', 'environment', 'drift']) {
-      assert.notEqual(byKey(json, key).status, 'skipped', `${key} runs`);
-    }
-    assert.deepEqual(json.strict.disabled, [], 'nothing is disabled by the project');
-  });
-  it('under standard the same profile still turns them off', () => {
-    const dir = project(files, base({ profile: 'starter', enforcement: 'standard' }));
-    const { json } = guardJson(dir);
-    assert.equal(byKey(json, 'security').status, 'skipped');
-    assert.equal(json.strict, undefined);
+    for (const key of ['security', 'architecture', 'testSpec', 'environment', 'drift', 'freshness']) assert.ok(ran(json, key), `${key} runs`);
+    assert.ok(json.strict.ignoredDisabled.includes('testSpec') && json.strict.ignoredDisabled.includes('security'));
+    const text = guard(dir).out;
+    assert.match(text, /Not honored under strict .*"validators": false for .*security/);
+    assert.match(text, /reasoned waiver/);
+    assert.match(text, /"enforcement": "standard"/);
+    assert.match(text, /Adopt — what strict found/, 'a starter project gets an Adopt block');
   });
   it('the default (no profile key) runs Security and Architecture, which the 0.47.0 defaults left off', () => {
-    const dir = project(files, base());
-    const { json } = guardJson(dir);
-    assert.notEqual(byKey(json, 'security').status, 'skipped');
-    assert.notEqual(byKey(json, 'architecture').status, 'skipped');
+    const { json } = guardJson(project(files, base()));
+    assert.ok(ran(json, 'security') && ran(json, 'architecture'));
   });
-  it('validators.<key>: false in the project\'s own file is honored and reported on every run', () => {
-    const dir = project(files, base({ validators: { security: false, 'test-spec': false } }));
-    const { json } = guardJson(dir);
+  it('a false entry the project wrote itself (kebab-case too) is not honored either', () => {
+    const { json } = guardJson(project(files, base({ validators: { security: false, 'test-spec': false } })));
+    assert.ok(ran(json, 'security') && ran(json, 'testSpec'));
+    assert.deepEqual(json.strict.ignoredDisabled.filter(k => ['security', 'testSpec'].includes(k)).sort(), ['security', 'testSpec']);
+  });
+  it('under standard the validators block works exactly as before, and nothing is reported', () => {
+    const { json } = guardJson(project(files, base({ profile: 'starter', enforcement: 'standard', validators: { docQuality: false } })));
     assert.equal(byKey(json, 'security').status, 'skipped');
-    assert.equal(byKey(json, 'testSpec').status, 'skipped', 'the kebab-case key is read too');
-    assert.deepEqual(json.strict.disabled.map(d => d.validator).sort(), ['security', 'testSpec']);
-    assert.ok(json.strict.disabled.every(d => /disabled by configuration/.test(d.reason)));
-    const text = guard(dir).out;
-    assert.match(text, /Disabled by configuration: .*security/);
-    assert.match(text, /testSpec|Test-Spec/);
+    assert.equal(byKey(json, 'docQuality').status, 'skipped');
+    assert.equal(json.strict, undefined);
   });
-  it('a disabled Docs-Sync child follows its parent key as before', () => {
-    const dir = project(files, base({ validators: { structure: false } }));
-    const { json } = guardJson(dir);
-    assert.equal(byKey(json, 'docSections').status, 'skipped');
-    assert.ok(json.strict.disabled.some(d => d.validator === 'structure'));
+  it('a reasoned waiver is the way to switch one off on purpose', () => {
+    const waiver = '<!-- docguard:validator security n/a — fixture owner:@maintainers expires:2099-12-31 -->';
+    const { json } = guardJson(project({ ...files, 'README.md': `# r\n\n${waiver}\n` }, base()));
+    assert.equal(byKey(json, 'security').verdict, 'skipped');
+    assert.ok(json.strict.waived.some(w => w.validator === 'security'));
+  });
+  it('the compact form lists keys only', () => {
+    const r = spawnSync(process.execPath, [CLI, 'guard', '--dir', project(files, base({ profile: 'starter' })), '--format', 'json', '--compact'], { encoding: 'utf8', env: ENV });
+    const json = JSON.parse(r.stdout);
+    assert.ok((json.strict?.ignoredDisabled || []).every(k => typeof k === 'string'));
   });
   it('--changed-only does not force validators on', () => {
     const dir = project(files, base({ profile: 'starter' }));
-    const r = guard(dir, ['--changed-only', '--format', 'json']);
-    const json = JSON.parse(r.out);
+    const json = JSON.parse(guard(dir, ['--changed-only', '--format', 'json']).out);
     assert.equal(byKey(json, 'security').status, 'skipped', 'the lite set stays the lite set');
     assert.equal(json.strict.evaluated, false);
   });
@@ -182,7 +186,7 @@ describe('T020 FR-008: closed list and demotion', () => {
   });
 
   it('e2e: a secret in a product file is a warning under the strict default (exit 2), an error under standard with Security on (exit 1)', () => {
-    const strictRun = guardJson(project(LEAK, base({ validators: only('security') })));
+    const strictRun = guardJson(project(LEAK, base({ enforcement: HELD })));
     const sec = strictRun.json.findings.filter(f => /^SEC00/.test(f.code));
     assert.ok(sec.length > 0, 'the fixture produces a Security finding');
     assert.ok(sec.every(f => f.effectiveSeverity === 'warn'), 'demoted');
@@ -191,12 +195,12 @@ describe('T020 FR-008: closed list and demotion', () => {
     assert.equal(standardRun.status, 1);
   });
   it('e2e: findingSeverity high restores the failure under strict', () => {
-    const r = guardJson(project(LEAK, base({ validators: only('security'), findingSeverity: { SEC005: 'high' } })));
+    const r = guardJson(project(LEAK, base({ enforcement: HELD, findingSeverity: { SEC005: 'high' } })));
     assert.ok(r.json.findings.some(f => f.code === 'SEC005' && f.effectiveSeverity === 'error'));
     assert.equal(r.status, 1);
   });
   it('e2e: a code on the closed list fails the build under strict (a missing required file is STR001)', () => {
-    const dir = project({ 'package.json': PKG }, base({ requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: [] }, validators: only('structure') }));
+    const dir = project({ 'package.json': PKG }, base({ requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: [] }, enforcement: HELD }));
     const r = guardJson(dir);
     assert.ok(r.json.findings.some(f => f.code === 'STR001' && f.effectiveSeverity === 'error'));
     assert.equal(r.status, 1);
@@ -326,7 +330,7 @@ describe('T022 FR-012/FR-013: the additions table', () => {
 // ── T023: the baseline and the uninitialized project (FR-011, US4) ──
 describe('T023 FR-011: the baseline under strict', () => {
   const closed = { 'package.json': PKG, 'src/index.js': 'export const x = 1;\n' };
-  const needsDoc = base({ requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: [] }, validators: only('structure') });
+  const needsDoc = base({ requiredFiles: { canonical: ['docs-canonical/ARCHITECTURE.md'], agentFile: [] }, enforcement: HELD });
 
   it('--update-baseline under strict freezes the findings, which then stop failing; a new one does', () => {
     const dir = project(closed, needsDoc);
@@ -339,7 +343,7 @@ describe('T023 FR-011: the baseline under strict', () => {
     assert.equal(r.json.strict.baselined, r.json.baselineSuppressed, 'JSON carries the count under strict');
   });
   it('every strict run prints the number of baselined findings, including zero', () => {
-    const none = project(closed, base({ validators: only('structure') }));
+    const none = project(closed, base({ enforcement: HELD }));
     assert.match(guard(none).out, /0 findings baselined/);
     assert.equal(guardJson(none).json.strict.baselined, 0);
   });

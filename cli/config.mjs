@@ -279,19 +279,6 @@ function _normalizeValidatorKeys(map) {
   return out;
 }
 
-/**
- * The `validators` switches the project's OWN `.docguard.json` writes, keys normalized to
- * camelCase, or null when the project has no readable file. Strict mode needs it (FR-003):
- * the merged config cannot tell a profile's `false` from the project's own.
- */
-export function readOwnValidators(projectDir) {
-  try {
-    const raw = JSON.parse(readFileSync(resolve(projectDir, '.docguard.json'), 'utf-8'));
-    const own = _normalizeValidatorKeys(raw?.validators);
-    return own && typeof own === 'object' && !Array.isArray(own) ? own : {};
-  } catch { return null; }
-}
-
 function normalizeConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return cfg;
   const out = { ...cfg };

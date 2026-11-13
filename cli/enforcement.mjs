@@ -124,7 +124,7 @@ export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS
  */
 export function buildStrictReport(results, {
   baselineSuppressed = 0, lite = false, markers = [], enforcement = null, additions = STRICT_ADDITIONS,
-  runningVersion = null, pendingCodes = [], disabled = [],
+  runningVersion = null, pendingCodes = [], ignoredDisabled = [],
 } = {}) {
   const asOf = enforcement?.asOf ?? null;
   const pending = [];
@@ -192,7 +192,7 @@ export function buildStrictReport(results, {
       return { code, count, ...(line && isNewIn(line, runningVersion) ? { newIn: line } : {}) };
     }).sort((a, b) => a.code.localeCompare(b.code)),
     pending,
-    disabled,
+    ignoredDisabled,
     waived,
     baselined: baselineSuppressed,
   };
@@ -243,13 +243,16 @@ export function couldNotReadLines(strict) {
 }
 
 /**
- * The summary lines strict adds after the verdict counts: validators the project's own
- * file disabled (FR-003, on every run) and items held back by `asOf` (FR-013).
+ * The summary lines strict adds after the verdict counts: `validators: false` entries it
+ * did not honor (FR-003, on every run) and items held back by `asOf` (FR-013).
  */
 export function strictSummaryLines(strict) {
   const lines = [];
-  const disabled = strict?.disabled || [];
-  if (disabled.length > 0) lines.push(`Disabled by configuration: ${disabled.map(d => d.validator).join(', ')} (validators.<key>: false in .docguard.json)`);
+  const ignored = strict?.ignoredDisabled || [];
+  if (ignored.length > 0) {
+    lines.push(`Not honored under strict (these validators run): "validators": false for ${ignored.join(', ')}`);
+    lines.push('  Switch one off on purpose with a reasoned waiver (<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->) or choose "enforcement": "standard".');
+  }
   const pending = strict?.pending || [];
   if (pending.length > 0) {
     lines.push('Pending (strict since a later release; reported only, this does not change the exit code):');

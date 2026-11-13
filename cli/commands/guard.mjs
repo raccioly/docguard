@@ -5,7 +5,6 @@ import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
 import { listValidatorMarkers } from '../validator-markers.mjs';
 import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, strictSummaryLines, strictFindingContext, modeLine, strictBlocks, OFF_BY_DEFAULT_VALIDATORS } from '../enforcement.mjs';
-import { readOwnValidators } from '../config.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -340,20 +339,18 @@ export function runGuardInternal(projectDir, config) {
   const enforcement = initialized ? resolveEnforcement(config) : { mode: 'standard', asOf: null, source: 'default' };
   const strict = enforcement.mode === 'strict';
   const lite = Array.isArray(config.changedFiles);
-  // FR-003: under strict every validator runs, whatever the profile's `validators` block says.
-  // Only a `false` the project wrote in its own file (or a reasoned waiver) switches one off, and
-  // each of those is reported on every run. The pre-commit subset keeps its own validator set.
+  // FR-003 (as amended): under strict every registered validator runs. A `validators.<key>: false` entry,
+  // whether a profile or the project's own file wrote it, does not switch one off: `init` wrote most of them
+  // from a profile, so honoring them would exempt existing adopters. Each one not honored is reported on every
+  // run; a reasoned waiver or `"enforcement": "standard"` switches a validator off on purpose. The pre-commit
+  // subset keeps its own validator set.
   let validators = config.validators || {};
-  const disabled = [];
+  const ignoredDisabled = [];
   if (strict && !lite) {
-    const own = readOwnValidators(projectDir);
     validators = {};
     for (const [key, value] of Object.entries(config.validators || {})) {
-      if (value !== false) { validators[key] = value; continue; }
-      if (own === null || own[key] === false) {
-        validators[key] = false;
-        disabled.push({ validator: key, reason: `disabled by configuration (validators.${key}: false in .docguard.json)` });
-      }
+      if (value === false) ignoredDisabled.push(key);
+      else validators[key] = value;
     }
   }
   const gatingContext = strict ? strictFindingContext({ gating: deriveGatingSet(undefined, CLI_VERSION), enforcement, runningVersion: CLI_VERSION }) : null;
@@ -676,7 +673,7 @@ export function runGuardInternal(projectDir, config) {
   // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
   // the full validator set, so it never evaluates the unexamined rule (the report
   // says so with `evaluated: false`).
-  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, disabled }) : null;
+  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
