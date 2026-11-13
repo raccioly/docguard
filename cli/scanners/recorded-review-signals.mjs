@@ -155,13 +155,20 @@ function reviewContext(dir, config, ignored = () => false) {
   //     loads and the project certainly wrote. Elsewhere ownership is not established (a skill or
   //     rule a tool may have installed, with no install record): listed, never blocking.
   //   - a review that no longer covers the document by the FRS006 rule (`needs-content`). It blocks
-  //     wherever it is: a review point (recorded, or a marker the project wrote into the file) is the
-  //     project saying the document is its own.
+  //     when the review establishes that the project owns the document: any review point of a root
+  //     file (a recorded review or a docguard:last-reviewed marker), and only a recorded review of
+  //     any other file. A tool can ship a skill or rule that already carries its vendor's marker, so
+  //     a marker alone on a non-root file establishes nothing: that file is listed like one with no
+  //     review (`needs-declaration`, not blocking, `marker` set), whether or not its review is suspect.
   // A review point that cannot be read (shallow clone) is an observation gap, not this.
   const gapOf = status => {
     if (!status || tracked === null) return null;
     if (!status.point) return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: status.root, blocking: status.root } : null;
-    if (status.point.unavailable || !status.measured || !status.crossing.length) return null;
+    if (status.point.unavailable) return null;
+    if (!status.root && status.point.source === 'marker') {
+      return trackedSet.has(status.path) ? { path: status.path, cause: 'needs-declaration', root: false, blocking: false, marker: status.point.date } : null;
+    }
+    if (!status.measured || !status.crossing.length) return null;
     const { date, revision, source } = status.point;
     return { path: status.path, cause: 'needs-content', root: status.root, blocking: true, reviewPoint: { date, revision, source }, references: status.crossing.slice(0, 3).map(r => ({ path: r.path, share: r.share })), more: Math.max(0, status.crossing.length - 3) };
   };
@@ -266,20 +273,22 @@ export function recordedReviewSignals(dir, config, { ignored, docFiles, results 
 
 /**
  * Agent-instruction documents (authored, non-pointer, committed) that have
- * no review point: no `docguard:last-reviewed` marker and no recorded review.
+ * no review point (no `docguard:last-reviewed` marker and no recorded review),
+ * and non-root ones whose only review point is a marker (`marker` is its date):
+ * for a non-root file only a recorded review establishes that the project owns it.
  * Spec 097 (FR-021) reports them as unexamined with cause `needs-declaration`;
  * under strict only a `root` one blocks, and the others are listed as documents
  * whose ownership is not established. Each entry carries the command that
  * records a review. Uncommitted files are left to FRS001.
  *
  * @implements docguard.recorded-document-reviews#FR-009
- * @returns {{ path: string, root: boolean, howToConfigure: string }[]}
+ * @returns {{ path: string, root: boolean, marker?: string, howToConfigure: string }[]}
  */
 export function agentInstructionDocsWithoutReviewPoint(dir, config = {}) {
   const ctx = reviewContext(dir, config);
   if (ctx.tracked === null) return [];
   return ctx.authored.map(doc => ctx.gapOf(ctx.statusFor(doc))).filter(g => g?.cause === 'needs-declaration')
-    .map(({ path, root }) => ({ path, root, howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
+    .map(({ path, root, marker }) => ({ path, root, ...(marker ? { marker } : {}), howToConfigure: `Read ${path} against the code, then record the review: docguard review --accept ${path} --reason "<what you checked>"` }));
 }
 
 /**

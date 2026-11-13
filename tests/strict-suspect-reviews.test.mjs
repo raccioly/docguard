@@ -199,7 +199,8 @@ describe('T025a / FR-021: per-document gaps on the Freshness result', () => {
     const contract = freshnessContract(dir, config, { performed: 1, found: true, facts: results.facts });
     const fromRun = Object.fromEntries(contract.unexaminedDocuments.map(d => [d.path, `${d.cause}:${d.blocking}`]));
     const missing = agentInstructionDocsWithoutReviewPoint(dir, config).map(d => [d.path, `needs-declaration:${d.root}`]);
-    const suspect = agentInstructionReviewStatus(dir, config).filter(s => s.suspect).map(s => [s.path, 'needs-content:true']);
+    const listed = new Set(missing.map(([path]) => path));
+    const suspect = agentInstructionReviewStatus(dir, config).filter(s => s.suspect && !listed.has(s.path)).map(s => [s.path, 'needs-content:true']);
     assert.deepEqual(fromRun, Object.fromEntries([...missing, ...suspect]));
     assert.equal(fromRun['.agents/skills/sample-harness/SKILL.md'], 'needs-declaration:false');
   });
@@ -215,6 +216,25 @@ describe('T025a / FR-021: per-document gaps on the Freshness result', () => {
     assert.equal(listed.cause, 'needs-declaration');
     assert.match(listed.reason, /ownership is not established/);
     assert.match(listed.howToConfigure, /If the project wrote it.*docguard review --accept \.agents\/skills\/sample-harness\/SKILL\.md.*If a tool installed it, leave it to that tool/);
+  });
+
+  it('a non-root skill carrying a vendor-written marker, whose referenced file then changes, is listed and never blocks', () => {
+    // A tool shipped the skill with its own last-reviewed marker; the project never recorded a review of it.
+    const vendorMarked = { '.agents/skills/sample-harness/SKILL.md': `<!-- docguard:last-reviewed 2026-01-01 -->\n${HARNESS_SKILL['.agents/skills/sample-harness/SKILL.md']}` };
+    const { status, json } = guardJson(issue628('strict', { 'AGENTS.md': CURRENT_AGENTS, ...vendorMarked }));
+    assert.notEqual(status, 4, JSON.stringify(json.strict));
+    assert.ok(!json.strict.blocking.includes('freshness'));
+    // The marker-based review is suspect (FRS006 still warns), yet a marker alone establishes no ownership.
+    assert.ok(json.findings.some(f => f.code === 'FRS006' && /sample-harness/.test(f.message)));
+    const listed = json.strict.couldNotRead.find(u => u.validator === 'freshness');
+    assert.deepEqual(listed.documents, ['.agents/skills/sample-harness/SKILL.md']);
+    assert.match(listed.reason, /marker \(2026-01-01\) but no recorded review/);
+  });
+
+  it('a root file whose only review is a marker still blocks when that review no longer covers it', () => {
+    const { status, json } = guardJson(issue628('strict'));
+    assert.equal(status, 4);
+    assert.equal(json.strict.unexamined.find(u => u.validator === 'freshness').cause, 'needs-content');
   });
 
   it('a non-root document with a recorded review that no longer covers it blocks', () => {

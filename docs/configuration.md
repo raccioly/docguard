@@ -125,7 +125,7 @@ Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts
 could not read, and `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
 `documents` lists the agent-instruction files Freshness did not examine while it examined others (the validator's own
 `unexaminedDocuments`): in `unexamined` when the review no longer covers the file or a root instruction file has no review
-record, which blocks; in `couldNotRead` for any other file with no review record, which does not block. The compact form gives
+record, which blocks; in `couldNotRead` for any other file with no recorded review (a last-reviewed marker alone may be its vendor's), which does not block. The compact form gives
 `documents` as a count.
 `cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`
 or `nothing-of-this-kind`, or `null` when the validator could not observe its

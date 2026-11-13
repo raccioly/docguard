@@ -13335,7 +13335,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 293
+            "line": 302
           },
           {
             "requirementId": "FR-006",
@@ -13360,7 +13360,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/recorded-review-signals.mjs",
-            "line": 275
+            "line": 284
           }
         ],
         "testEvidence": [
@@ -16638,7 +16638,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/validators/freshness.mjs",
-            "line": 548
+            "line": 550
           }
         ],
         "testEvidence": [

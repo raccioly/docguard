@@ -538,12 +538,14 @@ export function freshnessContract(dir, config, { performed, found, skipped = [],
  * (`blocking`), a reason, and the step that resolves it. `performed` is not
  * touched: Freshness did examine the other documents, and each document's gap
  * is reported on its own (enforcement reads this list).
- *   needs-content      a review exists (recorded, or a marker the project wrote) and no longer
- *                      covers the document: a file it names changed past
- *                      `freshness.referenceShare` since (FRS006's condition). Always blocking.
- *   needs-declaration  no review point at all. Blocking for a root instruction file only; for
- *                      any other (a skill or rule a tool may have installed) ownership is not
- *                      established, so it is listed and never blocks.
+ *   needs-content      a review that establishes ownership (any review point of a root file;
+ *                      a recorded review of any other) no longer covers the document: a file
+ *                      it names changed past `freshness.referenceShare` since (FRS006's
+ *                      condition). Always blocking.
+ *   needs-declaration  no review point at all, or a non-root file whose only review point is a
+ *                      marker (a vendor may have written it). Blocking for a root instruction
+ *                      file only; for any other, ownership is not established, so it is listed
+ *                      and never blocks.
  * Order: suspect reviews, then root files without a record, then the rest, each in path order.
  * @implements docguard.strict-by-default#FR-021
  * @param {object[]|undefined} gaps what recordedReviewSignals recorded on the run's facts
@@ -569,7 +571,9 @@ export function unexaminedDocuments(gaps) {
     }
     return {
       path: g.path, cause: g.cause, blocking: false,
-      reason: `${g.path} has no review record and no install record, so DocGuard cannot tell whether the project wrote it or a tool installed it`,
+      reason: g.marker
+        ? `${g.path} carries a docguard:last-reviewed marker (${g.marker}) but no recorded review; a tool can ship a file with its vendor's marker, so only a recorded review establishes that the project owns it`
+        : `${g.path} has no review record and no install record, so DocGuard cannot tell whether the project wrote it or a tool installed it`,
       howToConfigure: `If the project wrote it, read it against the code and record the review: ${review(g.path)}. If a tool installed it, leave it to that tool.`,
     };
   });
