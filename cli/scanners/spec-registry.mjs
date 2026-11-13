@@ -462,15 +462,18 @@ export function trackedAndCleanOne(projectDir, path) {
  * a pathspec (a glob, a magic prefix, `.`/`..`, a backslash) or one the index
  * does not list falls back to the per-path answer, so the verdict is the same.
  */
-export function trackedAndCleanChecker(projectDir) {
+export function trackedAndCleanChecker(projectDir, paths = null) {
   let snapshot;
+  const isPlain = path => typeof path === 'string' && path !== '' && !/[*?[\]\\:]|^\.{1,2}(\/|$)|\/\.{1,2}(\/|$)|^\/|\/\/|\/$/.test(path);
+  // The paths this scan will ask about bound the reads, so a large repository costs what the registry names.
+  const pathspec = paths ? ['--', ...paths.filter(isPlain).map(p => `:(literal)${p}`)] : [];
   const read = () => {
     const env = { ...process.env, GIT_OPTIONAL_LOCKS: '0' };
     // All three answer relative to the project directory, which may be a
     // subdirectory of the repository (`status` would print repository paths).
-    const listed = runGit(projectDir, ['ls-files', '-z'], { env, maxBuffer: 64 * 1024 * 1024 });
-    const working = runGit(projectDir, ['diff', '--name-only', '-z', '--no-renames', '--relative'], { env, maxBuffer: 64 * 1024 * 1024 });
-    const staged = runGit(projectDir, ['diff', '--cached', '--name-only', '-z', '--no-renames', '--relative'], { env, maxBuffer: 64 * 1024 * 1024 });
+    const listed = runGit(projectDir, ['ls-files', '-z', ...pathspec], { env, maxBuffer: 32 * 1024 * 1024 });
+    const working = runGit(projectDir, ['diff', '--name-only', '-z', '--no-renames', '--relative', ...pathspec], { env, maxBuffer: 32 * 1024 * 1024 });
+    const staged = runGit(projectDir, ['diff', '--cached', '--name-only', '-z', '--no-renames', '--relative', ...pathspec], { env, maxBuffer: 32 * 1024 * 1024 });
     if ([listed, working, staged].some(r => r.error || r.status !== 0)) return null;
     return {
       tracked: new Set(listed.stdout.split('\0').filter(Boolean)),
@@ -478,7 +481,7 @@ export function trackedAndCleanChecker(projectDir) {
     };
   };
   return path => {
-    const plain = typeof path === 'string' && path !== '' && !/[*?[\]\\:]|^\.{1,2}(\/|$)|\/\.{1,2}(\/|$)|^\/|\/\/|\/$/.test(path);
+    const plain = isPlain(path) && (!paths || paths.includes(path));
     if (!plain) return trackedAndCleanOne(projectDir, path);
     if (snapshot === undefined) snapshot = read();
     if (snapshot === null || !snapshot.tracked.has(path)) return trackedAndCleanOne(projectDir, path);
@@ -489,8 +492,8 @@ export function trackedAndCleanChecker(projectDir) {
 /** Reviewed lifecycle that may defer implementation-time traceability. */
 export function trustedSpecLifecycleIndex(projectDir) {
   const trusted = new Map();
-  const trackedAndClean = trackedAndCleanChecker(projectDir);
   const loaded = readSpecRegistry(projectDir);
+  const trackedAndClean = trackedAndCleanChecker(projectDir, [SPEC_REGISTRY_PATH, ...(Array.isArray(loaded.value?.specs) ? loaded.value.specs : []).map(entry => entry?.path)]);
   if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return trusted;
   if (!trackedAndClean(SPEC_REGISTRY_PATH)) return trusted;
   for (const entry of loaded.value.specs) {
@@ -515,8 +518,8 @@ export function trustedSpecLifecycleIndex(projectDir) {
  */
 export function uncommittedPlannedSpecLifecycleIndex(projectDir) {
   const candidates = new Map();
-  const trackedAndClean = trackedAndCleanChecker(projectDir);
   const loaded = readSpecRegistry(projectDir);
+  const trackedAndClean = trackedAndCleanChecker(projectDir, [SPEC_REGISTRY_PATH, ...(Array.isArray(loaded.value?.specs) ? loaded.value.specs : []).map(entry => entry?.path)]);
   if (loaded.error || loaded.value?.schemaVersion !== SPEC_REGISTRY_SCHEMA_VERSION) return candidates;
   if (trackedAndClean(SPEC_REGISTRY_PATH)) return candidates;
   for (const entry of loaded.value.specs) {

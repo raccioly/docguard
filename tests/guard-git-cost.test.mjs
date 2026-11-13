@@ -102,10 +102,12 @@ describe('the shared feature history answers as the per-feature git questions di
     put('uncommitted.txt', 'u\n'); // untracked, and a tracked edit below
     put('README.md', '# r changed\n');
 
-    const history = createFeatureHistory(dir);
-    for (const spec of ['specs/001-alpha', 'specs/002-beta', 'specs/003-gamma', 'specs/005-gamma', 'specs/004-never-committed']) {
-      assert.deepEqual(sorted(history.touchedPaths(spec)), sorted(perFeatureReference(dir, spec)), spec);
+    const specs = ['specs/001-alpha', 'specs/002-beta', 'specs/003-gamma', 'specs/005-gamma', 'specs/004-never-committed'];
+    for (const history of [createFeatureHistory(dir), createFeatureHistory(dir, { specDirs: specs })]) {
+      for (const spec of specs) assert.deepEqual(sorted(history.touchedPaths(spec)), sorted(perFeatureReference(dir, spec)), spec);
     }
+    // A directory the history was not built for still answers.
+    assert.deepEqual(sorted(createFeatureHistory(dir, { specDirs: ['specs/001-alpha'] }).touchedPaths('specs/002-beta')), sorted(perFeatureReference(dir, 'specs/002-beta')));
   });
 
   test('a project directory below the repository root answers as the per-feature questions did', () => {
@@ -120,6 +122,30 @@ describe('the shared feature history answers as the per-feature git questions di
     assert.deepEqual(sorted(history.touchedPaths('specs/001-alpha')), sorted(perFeatureReference(project, 'specs/001-alpha')));
     assert.notEqual(history.touchedPaths('specs/001-alpha'), null);
     void dir; void git;
+  });
+
+  test('specs added late in a long history: same answers, and only the specs\' own window is read', () => {
+    const { dir, git, put, commit } = makeRepo();
+    put('README.md', '# r\n');
+    commit('baseline');
+    for (let i = 0; i < 300; i++) git('commit', '-q', '--allow-empty', '-m', `history ${i}`);
+    put('specs/001-late/spec.md', '# L\n');
+    commit('first late spec');
+    git('checkout', '-q', '-b', 'side');
+    put('specs/002-side/spec.md', '# S\n');
+    commit('side spec');
+    git('checkout', '-q', 'main');
+    for (let i = 0; i < 4; i++) git('commit', '-q', '--allow-empty', '-m', `later ${i}`);
+    git('merge', '-q', '--no-ff', '-m', 'merge side', 'side');
+    put('specs/003-last/spec.md', '# T\n'); put('src/x.js', 'x\n');
+    commit('last spec');
+
+    const specs = ['specs/001-late', 'specs/002-side', 'specs/003-last'];
+    const history = createFeatureHistory(dir, { specDirs: specs });
+    for (const spec of specs) assert.deepEqual(sorted(history.touchedPaths(spec)), sorted(perFeatureReference(dir, spec)), spec);
+    const total = Number(git('rev-list', '--count', 'HEAD').trim());
+    assert.ok(total > 300);
+    assert.ok(history.commitsRead() < 20, `read ${history.commitsRead()} of ${total} commits`);
   });
 
   test('a repository that is not a git repository answers null', () => {
@@ -190,10 +216,24 @@ describe('SPR008 over many recorded revisions', () => {
     assert.equal(counts['cat-file'], 1);
     assert.equal(counts['rev-list'], 1);
     assert.equal(counts['merge-base'], undefined);
+
+    // The rev-list answer is the discarded history, not the repository: many commits on HEAD, one off it.
+    for (let i = 0; i < 100; i++) git('commit', '-q', '--allow-empty', '-m', `h ${i}`);
+    assert.equal(danglingRevisions(dir, registry).length, 4);
   });
 });
 
 describe('the batched tracked-and-clean answer equals the per-path one', () => {
+  test('a checker told its paths reads only those, and answers the same for the rest', () => {
+    const { dir, put, commit } = makeRepo();
+    for (let i = 0; i < 30; i++) put(`other/${i}.txt`, 'x\n');
+    for (const p of ['specs/a/spec.md', 'specs/b/spec.md']) put(p, '# s\n');
+    commit('baseline');
+    put('specs/b/spec.md', '# edited\n');
+    const check = trackedAndCleanChecker(dir, ['specs/a/spec.md', 'specs/b/spec.md']);
+    for (const p of ['specs/a/spec.md', 'specs/b/spec.md', 'other/3.txt', 'specs/none.md']) assert.equal(check(p), trackedAndCleanOne(dir, p), p);
+  });
+
   test('a project directory below the repository root', () => {
     const { project, git, put, commit } = makeRepo('packages/app');
     for (const p of ['specs/a/spec.md', 'specs/b/spec.md', 'specs/c/spec.md']) put(p, '# s\n');

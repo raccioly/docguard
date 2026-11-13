@@ -2380,7 +2380,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1289
+            "line": 1326
           },
           {
             "requirementId": "FR-022",
@@ -3208,17 +3208,17 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 305
+            "line": 312
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 349
+            "line": 356
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 382
+            "line": 389
           },
           {
             "requirementId": "FR-006",
@@ -3253,12 +3253,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 264
+            "line": 271
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 306
+            "line": 313
           },
           {
             "requirementId": "FR-011",
@@ -3870,12 +3870,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1263
+            "line": 1300
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1292
+            "line": 1329
           },
           {
             "requirementId": "FR-005",
@@ -11079,12 +11079,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 548
+            "line": 551
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 549
+            "line": 552
           },
           {
             "requirementId": "FR-003",
@@ -17280,12 +17280,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1290
+            "line": 1327
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1291
+            "line": 1328
           }
         ],
         "testEvidence": [

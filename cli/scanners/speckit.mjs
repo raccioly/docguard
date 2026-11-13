@@ -1144,7 +1144,7 @@ const MAX_UNTOUCHED_FINDINGS = 10;
  * Returns null when the answer is unknowable (no git, spec never committed)
  * so the caller can stay silent rather than guess.
  */
-export function featureTouchedPaths(projectDir, specDirRel, history = createFeatureHistory(projectDir)) {
+export function featureTouchedPaths(projectDir, specDirRel, history = createFeatureHistory(projectDir, { specDirs: [specDirRel] })) {
   return history.touchedPaths(specDirRel);
 }
 
@@ -1156,25 +1156,35 @@ export function featureTouchedPaths(projectDir, specDirRel, history = createFeat
  * added the spec directory, the files changed since, the working tree) and the
  * second walked history from HEAD to that commit, so a scan cost
  * features x history: 94 features on 585 commits spent ~13 s of one 22 s guard
- * run, and the budget job (12 guard runs) hit its 6-minute bound. The answers
- * do not depend on the feature except through the introducing commit, so two
- * `git log` calls (additions, and changed files with parents) and the working
- * tree are read lazily, once, and each feature's window is computed in memory:
+ * run, and the budget job (14 guard runs) hit its 6-minute bound. The answers
+ * do not depend on the feature except through the introducing commit, so the
+ * additions are read once for all the spec directories (a pathspec, as the
+ * per-feature question had), the changed files once from the OLDEST
+ * introducing commit's window, and each feature's window is computed in memory:
  * the commits reachable from HEAD that are not ancestors-or-self of
  * `<introducing commit>^` (git's `first^..HEAD`, first parent only). A
  * commit with no parent (a root, or a shallow-clone boundary) has no `^`, so
  * its window is all of HEAD, as before.
  *
+ * The read is bounded by what the specs need, not by the repository: history
+ * older than every introducing commit is never listed, so a large repository
+ * whose specs are recent costs what the specs' own lifetime costs. The shared
+ * window is `HEAD` minus the common ancestors of the introducing commits'
+ * parents (their merge bases), which contains every feature's window.
+ *
  * Scope one history to one scan: it reads the repository when first asked and
  * never again, so a caller that changes the repository builds a new one.
+ * `commitsRead()` is the number of commits listed, for tests.
  */
-export function createFeatureHistory(projectDir) {
+export function createFeatureHistory(projectDir, { specDirs = null } = {}) {
   let loaded = null;
+  const MAX_LOG = 64 * 1024 * 1024;
   const run = (args) => {
     try {
-      return execFileSync('git', args, { cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 512 * 1024 * 1024 });
+      return execFileSync('git', args, { cwd: projectDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: MAX_LOG });
     } catch { return null; }
   };
+  const literal = dir => `:(literal)${dir.replace(/\/+$/, '')}`;
   // `git log --format=%x00<fields> --name-only` → [{ id, parents, files }], newest first.
   const parseLog = (text, withParents) => {
     const commits = [];
@@ -1185,19 +1195,43 @@ export function createFeatureHistory(projectDir) {
     }
     return commits;
   };
+  const addedUnder = (added, dir) => {
+    const prefix = `${dir.replace(/\/+$/, '')}/`;
+    let first = null;
+    for (const commit of added) if (commit.files.some(f => f.startsWith(prefix))) first = commit; // last = oldest
+    return first;
+  };
   const load = () => {
     if (loaded) return loaded;
-    loaded = { repo: isGitRepo(projectDir), added: [], commits: [], byId: new Map(), working: new Set(), readable: false };
+    loaded = { repo: isGitRepo(projectDir), added: [], commits: [], byId: new Map(), working: new Set(), readable: false, read: 0 };
     if (!loaded.repo) return loaded;
-    // --relative: paths as the project directory names them (it may sit below the repository root); --no-renames: a directory moved in is an addition, as under a pathspec.
-    const adds = run(['log', '--format=%x00%H', '--diff-filter=A', '--name-only', '--no-renames', '--relative']);
+    // --relative: paths as the project directory names them (it may sit below the repository root);
+    // --no-renames: a directory moved in is an addition, as under a pathspec.
+    const pathspec = specDirs && specDirs.length ? ['--', ...specDirs.map(literal)] : [];
+    const adds = run(['log', '--format=%x00%H', '--diff-filter=A', '--name-only', '--no-renames', '--relative', ...pathspec]);
     if (adds === null) return loaded;
-    loaded.readable = true;
     loaded.added = parseLog(adds, false);
-    const all = run(['log', '--format=%x00%H %P', '--name-only']);
+
+    // The window every feature's own window lies inside.
+    const firsts = (specDirs || []).map(dir => addedUnder(loaded.added, dir)).filter(Boolean);
+    let range = ['HEAD'];
+    if (specDirs && firsts.length) {
+      const ids = [...new Set(firsts.map(c => c.id))];
+      const parents = ids.map(id => run(['rev-parse', '--verify', '--quiet', `${id}^`]));
+      if (parents.every(p => p !== null && p.trim())) {
+        const heads = [...new Set(parents.map(p => p.trim()))];
+        const common = heads.length === 1 ? heads : (run(['merge-base', '--octopus', '--all', ...heads]) || '').split('\n').map(l => l.trim()).filter(Boolean);
+        if (common.length) range = ['HEAD', ...common.map(c => `^${c}`)];
+      }
+    } else if (specDirs) {
+      range = []; // no spec was ever committed: no window is asked for
+    }
+    const all = range.length ? run(['log', '--format=%x00%H %P', '--name-only', ...range]) : '';
     // Without the history the window is unknowable: stay silent, never read an empty window as "untouched".
-    if (all === null) { loaded.readable = false; return loaded; }
+    if (all === null) return loaded;
+    loaded.readable = true;
     loaded.commits = parseLog(all, true);
+    loaded.read = loaded.commits.length;
     loaded.byId = new Map(loaded.commits.map(c => [c.id, c]));
     // Uncommitted work counts as touched: a task can be genuinely complete in
     // the working tree before its commit lands.
@@ -1221,17 +1255,20 @@ export function createFeatureHistory(projectDir) {
     return seen;
   };
   return {
+    commitsRead() { return load().read; },
     touchedPaths(specDirRel) {
+      // A directory outside the set this history was built for gets its own bounded read.
+      if (specDirs && !specDirs.includes(specDirRel)) return createFeatureHistory(projectDir, { specDirs: [specDirRel] }).touchedPaths(specDirRel);
       const h = load();
       if (!h.repo || !h.readable) return null;
-      const dir = `${specDirRel.replace(/\/+$/, '')}/`;
-      // The oldest commit that ADDED a file under the spec directory.
-      let first = null;
-      for (const commit of h.added) if (commit.files.some(f => f.startsWith(dir))) first = commit;
+      const first = addedUnder(h.added, specDirRel);
       if (!first) return null; // spec never committed — nothing to compare against
 
-      const parent = h.byId.get(first.id)?.parents[0];
-      const excluded = parent ? ancestorsOrSelf(h.byId, parent) : new Set();
+      // The window log starts at the oldest parent, so `first`'s parent may lie outside it (it is then an
+      // ancestor of the common base, and so is everything it reaches: nothing in the log is excluded).
+      const parent = (h.byId.get(first.id) || {}).parents?.[0];
+      const info = h.byId.get(first.id);
+      const excluded = parent && info ? ancestorsOrSelf(h.byId, parent) : new Set();
       const touched = new Set(h.working);
       for (const commit of h.commits) {
         if (excluded.has(commit.id)) continue;
@@ -1293,7 +1330,7 @@ export function unobservablePaths(projectDir, paths) {
  */
 export function detectUntouchedClaims(projectDir, specs) {
   const results = [];
-  const history = createFeatureHistory(projectDir);
+  const history = createFeatureHistory(projectDir, { specDirs: specs.filter(sp => sp.hasTasks && sp.tasksPath).map(sp => relPosix(projectDir, resolve(sp.tasksPath, '..'))) });
   for (const spec of specs) {
     if (!spec.hasTasks || !spec.tasksPath) continue;
     let content;
