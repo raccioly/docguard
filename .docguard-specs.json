@@ -16140,7 +16140,7 @@
         "artifacts": [
           {
             "path": "specs/097-strict-by-default/spec.md",
-            "digest": "sha256:29f6d8a4106134d29949039d3abe89093239361ec4c182671d70fef9859f025d"
+            "digest": "sha256:a541406be489b12c66142981001f3d7b3f4ea419ad4965d7699e0fdf3fe14611"
           },
           {
             "path": "specs/097-strict-by-default/plan.md",
@@ -16148,7 +16148,11 @@
           },
           {
             "path": "specs/097-strict-by-default/tasks.md",
+<<<<<<< HEAD
             "digest": "sha256:6eb6653262e7f263b0d314c6b33c4f8aa1038626725a7e64c575dba7bfcd02c3"
+=======
+            "digest": "sha256:8e4a7676da10b432972f485ac928447b6d75c60d3d697398e766c592d991d53f"
+>>>>>>> origin/spec/097-strict-by-default
           }
         ],
         "taskCompletion": {
