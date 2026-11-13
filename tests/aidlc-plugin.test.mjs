@@ -34,7 +34,7 @@ function project(t, files) {
   return dir;
 }
 const sensor = (dir, ...args) => spawnSync(process.execPath, [CLI, 'sensor', '--aidlc', ...args], { cwd: dir, encoding: 'utf8' });
-const CONFIG = (validators) => JSON.stringify({ projectName: 's', requiredFiles: { canonical: [], agentFile: [] }, validators });
+const CONFIG = (validators) => JSON.stringify({ projectName: 's', enforcement: 'standard', requiredFiles: { canonical: [], agentFile: [] }, validators });
 const ONLY_PSR = Object.fromEntries(['structure', 'docSections', 'docsSync', 'drift', 'changelog', 'testSpec', 'environment', 'security', 'architecture', 'freshness', 'traceability', 'docsDiff', 'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking', 'schemaSync', 'specKit', 'documentLifecycle', 'specRegistry', 'docDependency', 'requirementAnchors', 'docOwnership', 'evidence', 'crossReference', 'generatedStaleness', 'surfaceSync', 'suppressions', 'diffSuspicion', 'referenceExistence', 'apiDocSmells', 'canonicalSync', 'metricsConsistency', 'decisionRecords', 'aidlc'].map(k => [k, false]));
 
 describe('US1 — the sensor contract', () => {

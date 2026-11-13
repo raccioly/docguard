@@ -89,7 +89,7 @@ function cli(dir, args, { env = {}, input = '' } = {}) {
 }
 
 const json = r => JSON.parse(r.stdout);
-const config = (extra = {}) => `${JSON.stringify({ projectName: 'fixture', version: '0.6', profile: 'standard', ...extra }, null, 2)}\n`;
+const config = (extra = {}) => `${JSON.stringify({ projectName: 'fixture', version: '0.6', profile: 'standard', enforcement: 'standard', ...extra }, null, 2)}\n`;
 
 // ── FR-001, SC-001: machine stdout holds only the artifact ─────────────────
 

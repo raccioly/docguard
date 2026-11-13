@@ -32,6 +32,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { FIXTURE_GIT, fixtureGit } from './helpers/git.mjs';
+import { isolateWithWaivers } from './helpers/strict-isolation.mjs';
 import { FIXTURES as FIXTURES_A, run as runA } from './helpers/applicability-fixtures-a.mjs';
 import { FIXTURES as FIXTURES_B, run as runB } from './helpers/applicability-fixtures-b.mjs';
 
@@ -53,7 +54,8 @@ function write(dir, path, body) {
 }
 
 /** A committed fixture project. `config` is the whole .docguard.json. */
-function project(files, config) {
+function project(inputFiles, inputConfig) {
+  const { files, config } = isolateWithWaivers(inputFiles, inputConfig);
   const dir = scratch('docguard-strict-');
   for (const [path, body] of Object.entries(files)) write(dir, path, body);
   if (config) write(dir, '.docguard.json', JSON.stringify(config, null, 2));
@@ -242,7 +244,7 @@ describe('strict: a validator that applies and examined nothing exits 4', () => 
     const { status, json } = guardJson(dir);
     assert.equal(status, 0);
     assert.deepEqual(json.strict.unexamined, []);
-    assert.deepEqual(json.strict.waived.map(w => w.validator), ['apiSurface']);
+    assert.ok(json.strict.waived.some(w => w.validator === 'apiSurface'), 'the waiver is counted');
   });
 
   it('--changed-only does not evaluate the unexamined rule and says so', () => {
@@ -664,10 +666,10 @@ describe('strict output', () => {
     const r = guard(failing());
     assert.equal(r.status, 4);
     const i = {
-      adopt: r.out.indexOf('Adopt'),
-      fix: r.out.indexOf('API-REFERENCE.md', r.out.indexOf('Adopt')),
-      waiver: r.out.indexOf('docguard:validator <key> n/a'),
-      mode: r.out.indexOf('"enforcement": "standard"'),
+      adopt: r.out.indexOf('Adopt —'),
+      fix: r.out.indexOf('API-REFERENCE.md', r.out.indexOf('Adopt —')),
+      waiver: r.out.indexOf('docguard:validator <key> n/a', r.out.indexOf('Adopt —')),
+      mode: r.out.indexOf('"enforcement": "standard"', r.out.indexOf('Adopt —')),
     };
     assert.ok(i.adopt >= 0 && i.fix > i.adopt && i.waiver > i.fix && i.mode > i.waiver, JSON.stringify(i));
     assert.match(r.out, /owner:<@handle> expires:<YYYY-MM-DD>/);
@@ -696,7 +698,7 @@ describe('strict output', () => {
   it('JSON carries enforcement and the strict block', () => {
     const { json } = guardJson(failing());
     assert.deepEqual(json.enforcement, { mode: 'strict', asOf: null, source: 'config' });
-    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'disabled', 'evaluated', 'gating', 'pending', 'unexamined', 'waived']);
+    assert.deepEqual(Object.keys(json.strict).sort(), ['baselined', 'blocking', 'couldNotRead', 'evaluated', 'gating', 'ignoredDisabled', 'pending', 'unexamined', 'waived']);
     assert.deepEqual(Object.keys(json.strict.unexamined[0]).sort(), ['blocking', 'cause', 'howToConfigure', 'name', 'newIn', 'reason', 'validator', 'verdict']);
     assert.equal(json.strict.baselined, 0);
   });
@@ -759,7 +761,9 @@ describe('upgrade: the read-only strict report', () => {
   });
 
   it('says so when strict would change nothing', () => {
-    const dir = project(NO_API, cfg(only('apiSurface')));
+    // Every other validator is waived, as an adopter would, so strict has nothing left to report.
+    const { files } = isolateWithWaivers(NO_API, { ...cfg(only('apiSurface')), enforcement: 'strict' });
+    const dir = project(files, cfg({ apiSurface: true }));
     assert.match(upgrade(dir).stdout, /Strict would change nothing for this project/);
   });
 
