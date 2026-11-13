@@ -66,3 +66,7 @@
 - `docguard rules --for <path>` keeps listing every file a harness would load, copies included: that listing is what an agent actually sees.
 - Instruction files sitting directly in a `tests/`, `examples/` or `fixtures/` folder (`tests/AGENTS.md`) keep spec 094's behavior: out of the role. PSR006 does not call them copies.
 - Detecting a copy by its content (unrendered `{{placeholders}}`). A real instruction file can document a template language; dropping it from review under a strict gate is worse than a missed warning.
+
+## Amendment 2026-11-13 (spec 100)
+
+Spec 099 was not released when it was generalized by `docguard.file-kinds` (spec 100). Its classifier and its override now come from spec 100: `instructionCopyOf`, `TEMPLATE_DIRS` and `isDeclaredGoverning` are replaced by `fileKind` in `cli/shared-file-kind.mjs`, the template vocabulary gained `starter-kit(s)` and `skeleton(s)`, and matching is case-insensitive for every directory kind. `agentInstructions.governing` was replaced by `fileKinds.own` before release; wherever FR-001 to FR-003 and the user stories say `agentInstructions.governing`, read `fileKinds.own`. PSR006 keeps its meaning.

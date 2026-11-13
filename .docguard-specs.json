@@ -7076,6 +7076,78 @@
       }
     },
     {
+      "specId": "docguard.file-kinds",
+      "path": "specs/100-file-kinds/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.file-kinds#FR-001",
+          "docguard.file-kinds#FR-002",
+          "docguard.file-kinds#FR-003",
+          "docguard.file-kinds#FR-004",
+          "docguard.file-kinds#FR-005",
+          "docguard.file-kinds#FR-006",
+          "docguard.file-kinds#FR-007",
+          "docguard.file-kinds#FR-008",
+          "docguard.file-kinds#FR-009",
+          "docguard.file-kinds#FR-010",
+          "docguard.file-kinds#FR-011",
+          "docguard.file-kinds#FR-012",
+          "docguard.file-kinds#FR-013",
+          "docguard.file-kinds#FR-014",
+          "docguard.file-kinds#FR-015",
+          "docguard.file-kinds#SC-001",
+          "docguard.file-kinds#SC-002",
+          "docguard.file-kinds#SC-003"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/100-file-kinds/spec.md",
+            "digest": "sha256:5328859d905d0d200594b3b1709f020d25daaf763939189979babd0d25971bdb"
+          },
+          {
+            "path": "specs/100-file-kinds/plan.md",
+            "digest": "sha256:1c7db24fc967ac362f1381ecff3e77158acff9c06f7ea8d51671317a68345ec0"
+          },
+          {
+            "path": "specs/100-file-kinds/tasks.md",
+            "digest": "sha256:897f935343e626ee77902469708a18e493a80b0b3592d85a8b3a1b25798c5a34"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 1,
+          "total": 19
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.first-spec-preflight",
       "path": "specs/040-spec-preflight-first-spec/spec.md",
       "reviewed": {
@@ -8422,7 +8494,7 @@
         "artifacts": [
           {
             "path": "specs/099-instruction-copies/spec.md",
-            "digest": "sha256:246684ad0a7b5dd7a5278158f539a3b00e9bbbf5565c25f3dd2fde81f14db53f"
+            "digest": "sha256:6cdd9d9fb42b928b9a5741ef4968692134699f3e5f9ef98bbfddeb224e905210"
           },
           {
             "path": "specs/099-instruction-copies/plan.md",
@@ -8459,7 +8531,38 @@
             "line": 287
           }
         ],
-        "testEvidence": []
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/instruction-copies.test.mjs",
+            "line": 12
+          }
+        ]
       }
     },
     {
