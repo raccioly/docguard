@@ -915,7 +915,7 @@ normative JSON Schema is `schemas/docguard-specs.schema.json`.
 | `specs[].reviewed.lifecycle.origin` | `generate --spec --write` | Optional. `as_built` marks a spec that records existing behaviour. Absent for forward specs, so older registries stay byte-identical |
 | `specs[].reviewed.reconciliation.lastReviewedRevision` | Human review | Exact Git revision whose doc impact was reviewed, or `null` |
 | `specs[].reviewed.reconciliation.outcomes` | Human review | Up to 20 reviewed implementation outcomes with revision, bounded rationale, evidence paths, deviations, and optional successor. Evidence paths and deviations are deduplicated and sorted (`localeCompare`); `specs complete` writes them in that order whatever order they were given in |
-| `specs/<feature>/spec.md` outcome line, `Blobs:` segment | `specs complete` | Not a registry field (a 0.48.0 reader rejects any new key there): the line ends with `` Blobs: `path`=`blob`, … `` (the git blob id of each evidence file at the reviewed revision), after the cleaned fields. A recorded revision that is not an ancestor of `HEAD` is anchored when the first-parent commit that introduced it into the registry has those blobs (`specs/101-completion-one-commit`). `specs reanchor` backfills it for a record moved by blob equality; a record without it behaves as before |
+| `specs/<feature>/spec.md` outcome line, `Blobs:` segment | `specs complete` | Not a registry field (a 0.48.0 reader rejects any new key there): the line ends with `` Blobs: `path`=`blob`, … `` (the git blob id of each evidence file at the reviewed revision), after the cleaned fields. A recorded revision that is not an ancestor of `HEAD` is anchored when the first-parent commit that introduced it into the registry has those blobs (`specs/101-completion-one-commit`). `specs reanchor` backfills it for a record moved by blob equality; a record without it behaves as before. SPR011 compares the latest outcome's blobs, except the spec's canonical documents, with `HEAD` (`specs/103-completion-upkeep`), and `specs complete --stale` writes a new outcome for every spec it flags; a file with an uncommitted tag-only edit records the blob of its working-tree content. `specs complete --write` also moves the spec's `**Status**:` header from a draft value to `Active` |
 | `specs[].reviewed.reconciliation.outcomes[].reanchoredFrom` | `specs reanchor` | Optional: the discarded revision an outcome was recorded at, and `method` — `blob-equal` (evidence compared) or `attested` (with a `reason`, and `differing` evidence paths when the target's bytes differ). Serialized only when set |
 | `specs[].reviewed.reconciliation.outcomes[].narrowedFrom` | `specs complete` | Optional: the review reconciled from a newer `--since` because the recorded revision's range exceeded the diff budgets even when read in batches — `revision` (the recorded one), `since`, `skippedCommits` (not reconciled) and `reason` (the budget). Serialized only when set |
 | `specs[].intent.requirements` | Projection | `specId#requirementId` identities parsed from the active spec |
@@ -2048,6 +2048,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`guard` no longer asks git once per spec, so the CI budget job fits its 6-minute bound again (spec 031 SC-002, amended).** SPK010 ran three git processes per spec (one walking history), SPR008 two per recorded revision and the registry checks three per spec path, so a guard run cost specs x history: 6 s at 31 specs, 22 s at 93, and the budget job (12 guard runs) went from about 80 s to about 370 s and was cancelled at its bound. Each answer is now read once per scan (two `git log` calls, one index listing and two diffs, one `cat-file` and one `rev-list` for the recorded revisions); a guard run on this repository takes about 6 s locally (on the CI runner the budget job's head guard fell from 23 s to 16 s), the local A/B about 135 s, and the findings are identical. The reads are bounded by what the specs and the registry name, not by the repository: history older than the oldest spec's introducing commit is never listed, the registry checks are limited to the registry's own paths, and the recorded-revision check lists only the history a squash merge discarded. `tests/guard-git-cost.test.mjs` pins the equivalence with the per-spec answers (merge commits included) and the git process count.
 - **The anchor lock merges cleanly: two lines for one link, left by a union
   merge or rebase, are resolved instead of refused (spec 102,
   `docguard.anchor-lock-merge`).** This change REMOVES findings and moves one.
@@ -2416,8 +2417,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-
-<!-- truncated: 6730 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6731 more lines — read CHANGELOG.md directly -->
 
 ---
 

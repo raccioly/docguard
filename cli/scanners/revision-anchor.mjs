@@ -93,10 +93,51 @@ export function recordedRevisions(spec) {
  */
 export function danglingRevisions(projectDir, registry) {
   const out = [];
+  // Specs completed in one commit record the same revision, so ask git once per
+  // distinct revision. Past a few revisions, two processes each is still the
+  // cost (74 for 37 revisions here): one `cat-file --batch-check` says which
+  // resolve to a commit and one `rev-list ^HEAD` names those that
+  // `merge-base --is-ancestor <revision> HEAD` would refuse.
+  const verdicts = new Map();
+  const distinct = [...new Set((registry?.specs || []).flatMap(recordedRevisions))];
+  if (distinct.length > 2) {
+    const resolvable = distinct.filter(revision => REVISION_RE.test(revision));
+    const peeled = new Map();
+    const checked = resolvable.length === 0 ? null : runGit(projectDir, ['cat-file', '--batch-check'], {
+      operation: 'git cat-file (revision anchor)', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024,
+      input: `${resolvable.map(revision => `${revision}^{commit}`).join('\n')}\n`,
+    });
+    const lines = checked && checked.status === 0 && !checked.error ? checked.stdout.split('\n') : null;
+    if (lines) {
+      resolvable.forEach((revision, index) => {
+        const [id, type] = (lines[index] || '').split(' ');
+        if (type === 'commit' && REVISION_RE.test(id)) peeled.set(revision, id);
+      });
+    }
+    // `rev-list ^HEAD <commits>` lists only commits reachable from those and not from HEAD, so a
+    // revision is an ancestor of HEAD exactly when it is absent from the answer. Its size is the
+    // history a squash merge discarded, not the repository's.
+    const commits = [...new Set(peeled.values())];
+    const off = !lines ? null : commits.length === 0 ? { status: 0, stdout: '' }
+      : runGit(projectDir, ['rev-list', '^HEAD', ...commits], { operation: 'git rev-list (revision anchor)', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024 });
+    if (lines && off && off.status === 0 && !off.error) {
+      const offHistory = new Set(off.stdout.split('\n').filter(Boolean));
+      for (const revision of distinct) {
+        const commit = peeled.get(revision);
+        verdicts.set(revision, !commit ? 'missing' : offHistory.has(commit) ? 'not-ancestor' : null);
+      }
+    }
+  }
+  const verdict = revision => {
+    if (!verdicts.has(revision)) {
+      verdicts.set(revision, !revisionResolves(projectDir, revision) ? 'missing' : !isAncestorOf(projectDir, revision) ? 'not-ancestor' : null);
+    }
+    return verdicts.get(revision);
+  };
   for (const spec of registry?.specs || []) {
     for (const revision of recordedRevisions(spec)) {
-      if (!revisionResolves(projectDir, revision)) out.push({ specId: spec.specId, revision, reason: 'missing' });
-      else if (!isAncestorOf(projectDir, revision)) out.push({ specId: spec.specId, revision, reason: 'not-ancestor' });
+      const reason = verdict(revision);
+      if (reason) out.push({ specId: spec.specId, revision, reason });
     }
   }
   return out;

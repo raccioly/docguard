@@ -2380,7 +2380,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1223
+            "line": 1326
           },
           {
             "requirementId": "FR-022",
@@ -3208,17 +3208,17 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 342
+            "line": 383
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 406
+            "line": 447
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 439
+            "line": 480
           },
           {
             "requirementId": "FR-006",
@@ -3253,12 +3253,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 301
+            "line": 342
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 343
+            "line": 384
           },
           {
             "requirementId": "FR-011",
@@ -3728,7 +3728,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 382
+            "line": 423
           },
           {
             "requirementId": "FR-005",
@@ -3768,12 +3768,12 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 117
+            "line": 158
           },
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 230
+            "line": 271
           },
           {
             "requirementId": "FR-009",
@@ -3793,7 +3793,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 253
+            "line": 294
           },
           {
             "requirementId": "FR-010",
@@ -4171,12 +4171,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1197
+            "line": 1300
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1226
+            "line": 1329
           },
           {
             "requirementId": "FR-005",
@@ -11380,12 +11380,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 514
+            "line": 551
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/spec-registry.mjs",
-            "line": 515
+            "line": 552
           },
           {
             "requirementId": "FR-003",
@@ -12216,20 +12216,20 @@
         "artifacts": [
           {
             "path": "specs/031-non-regression-budgets/spec.md",
-            "digest": "sha256:d36a0c047bfff2de425e22715e1634f8185933566d1af883943cd689433fe00f"
+            "digest": "sha256:1ec277f7e053948fd8081628126ca7ae3be1fbcf1821f6f984699a372139f284"
           },
           {
             "path": "specs/031-non-regression-budgets/plan.md",
-            "digest": "sha256:83153488d5de2efa8a8df0322ebbfc5ff9f7d4c8b6dd4e2d57fb34d9ec3bb18b"
+            "digest": "sha256:9a838b590d553acd990174f22765ebf9aa39d86eff738cebb9bfabf7d903925b"
           },
           {
             "path": "specs/031-non-regression-budgets/tasks.md",
-            "digest": "sha256:47c4c44ed4d87287da529bd14569581f66f1e00828f433805a628ad20c4da8ac"
+            "digest": "sha256:82ab95f6882d276b95bce2c30868af13da6792429aeba68bf584b4c69b44b0d4"
           }
         ],
         "taskCompletion": {
-          "checked": 5,
-          "total": 5
+          "checked": 6,
+          "total": 6
         },
         "implementationEvidence": [
           {
@@ -12308,6 +12308,11 @@
             "requirementId": "SC-002",
             "file": "tests/budget.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/guard-git-cost.test.mjs",
+            "line": 12
           },
           {
             "requirementId": "SC-003",
@@ -17576,12 +17581,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1224
+            "line": 1327
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1225
+            "line": 1328
           }
         ],
         "testEvidence": [

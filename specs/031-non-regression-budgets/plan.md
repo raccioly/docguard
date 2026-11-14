@@ -20,7 +20,9 @@ runs per tree, and writes the summary table.
 **Primary Dependencies**: none new
 **Testing**: `node:test` against synthetic reports, plus one real measure of
 the current tree
-**Constraints**: the job stays within 3 minutes (SC-002). MCP responses are
+**Constraints**: the job stays within 3 minutes (SC-002; 2026-11-13: it had
+grown to 6 minutes at 93 specs because guard asked git per spec, and is back to
+about 135 s after guard read those answers once per scan). MCP responses are
 read over stdio with fixed JSON-RPC requests.
 
 ## Constitution Check
