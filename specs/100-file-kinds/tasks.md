@@ -42,3 +42,4 @@
 
 - [x] T030 [US5] Mirror grouping by content hash across instruction files and skill copies; one finding naming every path (FR-014).
 - [x] T031 Drift warnings for same-skill copies and near-identical root instruction files; `GEMINI.md` like the others (FR-015).
+- [x] T032 The mirror benchmark pair adds benchmark runtime; main's shared corpus run (`tests/helpers/benchmark-subset.mjs`, `tests/benchmark-runner.test.mjs`, `tests/benchmark-baseline.test.mjs`) keeps the suite inside its ceiling, and the pair runs inside it.
