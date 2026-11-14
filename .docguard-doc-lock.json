@@ -27,9 +27,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Checked: mkFinding is byte-identical to main again; mirrors is added to a finding after construction, described in the paragraph after the section.",
+      "reason": "Checked: the section is unchanged; mirror findings have their own heading after it.",
       "reviewedAt": "2026-11-14",
-      "reviewedRevision": "2248affb2f98bb1a1c99a54ab383cba22a9005c8"
+      "reviewedRevision": "0af9a59d8287c8fe257215211a3035f21173ea6a"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

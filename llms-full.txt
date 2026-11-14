@@ -1149,7 +1149,7 @@ escapes and a leading-`/` root anchor; a middle slash does not anchor and a
 leading `!` is literal ([pattern syntax](../docs/configuration.md), "Excluding paths").
 
 
-<!-- truncated: 325 more lines — read docs-canonical/DATA-MODEL.md directly -->
+<!-- truncated: 327 more lines — read docs-canonical/DATA-MODEL.md directly -->
 
 ---
 

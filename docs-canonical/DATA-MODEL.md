@@ -538,6 +538,8 @@ A finding answers three independent questions, one field each. A single `confide
 Freshness findings about a role document may add `documentRole`, `staleness` and `surface` (see Recorded Document Reviews).
 <!-- /docguard:section -->
 
+## Mirror findings
+
 A finding raised on identical mirror copies (`AGENTS.md` beside `CLAUDE.md`, a skill under two agent roots) is one finding on the first path in report order and carries `mirrors`: every path that had it, in the same order (`location` stays a string, spec 100 FR-014); PSR007 and PSR008 carry `mirrors` too, listing every copy on either side of the drift. Guard JSON adds `files.mirrors: { groups, identical, renderings, drift[{ code, paths, mirrors, lines, newer, similarity? }], driftMore? }` beside `files.kinds` (absent on the `--changed-only` path).
 
 ## Route records and the plan's parser tiers
