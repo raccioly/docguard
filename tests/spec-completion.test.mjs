@@ -192,9 +192,9 @@ describe('Spec completion transaction', () => {
     assert.ok(!result.blockers.some(issue => /source implementation annotation/.test(issue.message)));
   });
 
-  it('blocks incomplete tasks and dirty tracked evidence', t => {
+  it('blocks incomplete tasks and a dirty tracked file that is not the spec\'s evidence', t => {
     const dir = fixture(t, { checked: false });
-    write(dir, 'packages/api/src/feature.js', 'export const feature = false;\n');
+    write(dir, 'CHANGELOG.md', '# Changelog\n\nedited\n');
     const result = planSpecCompletion(dir, {}, {
       id: 'acme.feature', since: 'HEAD',
     }, { guardResult: passingGuard });
