@@ -332,6 +332,8 @@ Validation, `trace --features`, and the spec registry share definition parsing a
 Completion also supports reviewed maintenance of a verified or released living spec. It reconciles from the prior reviewed revision, reading a range past the per-call diff budget in bounded batches, and appends a status-preserving outcome when a linked source, test, canonical document, or decision changed. A newer `--since` replaces that revision only when its range exceeds the budgets even in batches, and the outcome then records the commits it did not reconcile as `narrowedFrom`. Eligibility comes exclusively from those reviewable changes; generated registry, active-context, and implementation-outcome updates are excluded. The completing spec's own failing requirement anchors (ANC001/ANC003 under `anchors.failOn`) do not count toward SPC007; completion lists them with their accept commands, because completing is how those links get reviewed.
 
 A completion also records the git blob of every evidence file on its outcome line in the spec (`Blobs:`), written in the same transaction as the registry. A recorded revision that a squash merge or a rebase made unreachable is anchored by those blobs when the first-parent commit that introduced it into the registry has them (`revision-anchor.mjs#locateContentAnchor`, one `git log -S` over the registry and one `git ls-tree`; only the landing commit is cached under `.docguard/`). That commit is also the next completion's diff base. The registry keeps its closed key set, so a 0.48.0 reader loads it unchanged; the spec's own task list is a lifecycle file for its completion, so the tick, the record and the outcome land in one commit (`specs/101-completion-one-commit`).
+
+The Spec-Registry validator also compares a closed spec's latest record with `HEAD` (`scanners/stale-completions.mjs`, SPR011, `specs/103-completion-upkeep`): one `git cat-file --batch-check` over every recorded implementation and test blob, the spec's canonical documents left out, and a record without blobs not judged. It reads only `HEAD`'s tree, so it works in a shallow clone. `specs complete --stale` (`completeStale` in `commands/specs.mjs`) closes every flagged spec in one `commitFileTransaction` after planning each against one guard run and one reconciliation per distinct base; a blocked spec means nothing is written. The clean-tree check of `complete` (`nonLifecycleChanges`) also accepts an uncommitted change that only adds the completing spec's own `@implements` or `@req` tags, and a change confined to the spec's `**Status**:` header.
 <!-- /docguard:section -->
 
 
@@ -549,6 +551,14 @@ dangling revisions from different merges, add `--from <revision>` so each is
 attested to its own merge. The next `specs complete` takes the landing commit as
 its diff base, so `--since` is needed only when no commit carries the evidence.
 
+A pull request that edits a closed spec's evidence files needs the spec closed again in the same pull request, and the gate says so: on the merge ref the commit that
+landed the record is the main branch's squash commit, whose files match the record, so
+SPR008 cannot see the edit, and `SPR011` (a warning, which strict fails on) compares the
+record's blobs with `HEAD`'s files instead (`specs/103-completion-upkeep`). It reads only
+`HEAD`'s tree, so a shallow clone is enough, and it skips the spec's canonical
+documents. `docguard specs complete --stale --reason "<text>" --write` closes every
+flagged spec in one transaction; commit its result with the change.
+
 Under squash merges, run completions on a branch whose HEAD is the default
 branch's tip when a record carries no evidence blobs (one written before they
 were recorded): every outcome then records a revision that stays on the default
@@ -731,16 +741,8 @@ node benchmarks/run.mjs --baseline benchmarks/baseline.json
 
 Run the full pinned public corpus in a separate trusted, network-enabled job when detector or scanner behavior changes:
 
-```sh
-node benchmarks/run.mjs --external --baseline benchmarks/baseline.json
-```
 
-Treat a core comparison failure as a quality regression. In the network-free run the pinned public baseline cases were not selected; they appear under `comparison.core.outOfSelection` and are not regressions. The loader validates the baseline envelope before the run starts and refuses one whose metrics or caveat no longer match its cases. Persisted runtime snapshots stay advisory even when environment labels match. Apply the 20-percent gate only to at least five controlled samples from the same paired comparison session. Updating the baseline is a reviewed change: inspect every added or removed case, label, unsupported result, and confidence limit before using `--replace-baseline`.
-
-## Pre-commit hook (no GitHub Actions required)
-
-
-<!-- truncated: 28 more lines — read docs-canonical/CI-RECIPES.md directly -->
+<!-- truncated: 36 more lines — read docs-canonical/CI-RECIPES.md directly -->
 
 ---
 
@@ -2023,6 +2025,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A closed spec whose evidence changed is reported (new `SPR011`, a warning), and one command closes every such spec again (spec 103, `docguard.completion-upkeep`).** This change ADDS a warning, which a strict gate fails on, and one command; no existing finding changes.
+  - **`SPR011`** (validator `specRegistry`, warn, not inline-suppressible): a `verified` or `released` spec whose latest outcome records evidence blobs, and whose implementation or test file is different at `HEAD` or gone. SPR008 cannot see this on a pull request's merge ref, because the commit that landed the record is the main branch's squash commit, whose files match; it showed only for a developer who merged main into a branch. The spec's canonical documents are not compared byte for byte, a record written before blobs existed is not judged, and only `HEAD`'s tree is read (one `git cat-file --batch-check`), so a shallow clone works. Replaying the last 30 squash commits on this repository, the median commit would need 2 specs closed again (8 among the 19 commits that change any evidence; mean 9.7 without canonical documents, 27.2 with them), which is why canonical documents are left out. Nothing is flagged on the tip of main.
+  - **`docguard specs complete --stale --reason <text> [--write]`** closes every spec SPR011 flags, each as a maintenance completion that keeps its canonical documents and persistence, in one transaction: one guard run and one reconciliation per distinct base for the whole batch, and nothing written, with every blocker listed by spec, when one spec is blocked. The finding's message names the command.
+  - Issue 684, the first use of the one-commit flow: `complete` accepts uncommitted edits that only add the completing spec's own `@implements` and `@req` tags (the recorded blobs are the working-tree content), so tagging and closing land in one commit; `complete --write` prints the registry fields, the outcome line and the number of blobs it wrote, and moves the spec's `**Status**:` header from a draft value to `Active`; SPC006 names the newest commit that touched an unresolved file; an unknown `--id` lists the closest recorded IDs; SPC004's help and `AGENTS.md` describe the `describes()` and `recorded()` pattern for requirements with no code target. A branch that merged main can run `complete` without `--since`: the commit that carries the reviewed files is found through the merge's second parent. Not changed: the wide-range slowness (the guard run, about 25 s here, dominates; the reconciliation of 150 commits adds under 3 s), which the budget work in guard owns.
+
 ### Changed
 
 - **Every validator and command asks the one file-kind rule; copies of files no longer stand in for this project's own or hide them (spec 100, Stage 2, `docguard.file-kinds`).** The 27 private directory-name lists and unclassified walks that Stage 1 left on an allowlist now ask `fileKind` (or the shared walker, which asks it); the registry test's allowlist is empty and keeps one reasoned exemption, Security, which reads every kind. This change REMOVES findings on copies and ADDS one finding code.
@@ -2407,15 +2416,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **The compact guard response carries the result contract by exception.** The
-  MCP `docguard_guard` default and `guard --format json --compact` had grown by
-  27 KB on the fixture the budget measures once every validator reported
-  `performed`, `applies`, a cause and a fix. The compact form now drops
-  `performed`, `applies` and `applicability.before`, keeps `emptyCause` where a
-  validator examined nothing, keeps `howToConfigure` only where it applies and is
-  empty, states the sentence of every validator that has nothing to check once,
 
-<!-- truncated: 6723 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6730 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2952,7 +2954,24 @@ extensions/spec-kit-docguard/
   not change those evidence files after your last `specs complete`; if it did,
   merge the base in and run `specs complete` again before merging. Run
   `docguard specs reanchor` only for a record guard reports as SPR008
-  (`specs/101-completion-one-commit`).
+  (`specs/101-completion-one-commit`). Adding the `@implements`/`@req` tags for
+  the spec being completed does not need a commit of its own: run `specs --write`
+  after tagging and `complete` accepts those edits (any other edit still blocks).
+- **A change to a closed spec's evidence closes the spec again, in the same pull
+  request.** Guard reports SPR011 (a warning, so strict gates fail on it) when
+  an implementation or test file a `verified` spec recorded has changed since
+  its last review; canonical documents are not compared. Run `docguard specs
+  complete --stale --reason "<what changed and what you reviewed>" --write`: it
+  closes every flagged spec in one transaction, keeps each spec's canonical
+  documents and persistence, and writes nothing when one is blocked. Commit it
+  with the change (`specs/103-completion-upkeep`).
+- **A requirement with no code target (documentation, a one-time outcome) takes
+  evidence from a test that checks the result.** Use `describes()` (each named
+  document carries the terms the requirement asks for) and `recorded()` (the
+  spec's Verification Notes answer each measured criterion) as
+  `tests/program-verification.test.mjs` does, and tag the test `@req
+  <specId>#<requirement>`; put it in a test file of its own, because every spec
+  tagged in a file is re-flagged by SPR011 when that file changes.
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

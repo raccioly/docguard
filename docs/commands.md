@@ -576,6 +576,34 @@ blobs, and the next `complete` takes that commit as its diff base. Guard reports
 **SPR010** for a current spec that is `verified` or `released` with no recorded
 outcome, and `specs --check` lists such specs.
 
+Guard reports **SPR011** (a warning, which a strict gate fails on) for a
+`verified` or `released` spec whose latest outcome records blobs and whose
+implementation or test files are different at `HEAD`, or gone
+(`specs/103-completion-upkeep`). SPR008 cannot see this on a pull request's
+merge ref: the commit that landed the record is the main branch's squash commit,
+whose files match. The spec's canonical documents are not compared (Freshness and
+requirement anchors cover them), and a record written before blobs existed is not
+judged. `docguard specs complete --stale --reason "<text>" --write` closes every
+flagged spec again in one transaction, each as a maintenance completion that keeps
+its canonical documents and persistence: it plans all of them against one guard
+run and one reconciliation per distinct base, writes the registry, the active
+context and every spec together, and writes nothing, listing each blocker with its
+spec, when one spec is blocked. It takes no `--id`, `--since`, `--canonical-doc`,
+`--persistence` or `--successor`, and reports CURRENT when nothing drifted.
+
+`specs complete --write` prints what it wrote (the registry fields, the outcome
+line, how many evidence blobs it recorded) and moves the spec's `**Status**:`
+header from a draft value to `Active`; both are lines completion writes, so
+neither blocks the next run. Uncommitted edits that only add `@implements` or
+`@req` tags for the completing spec's own requirements do not block either, and
+the blobs recorded for those files are their working-tree content, so tagging and
+closing land in one commit. A requirement with no code target (a documentation
+requirement, a one-time measurement) takes its evidence from a test that checks
+the result, in the form of `describes()` and `recorded()` in
+`tests/program-verification.test.mjs`. An unknown `--id` lists the closest recorded
+IDs. When SPC006 lists unresolved changed files, it also names the newest commit
+that touched any of them.
+
 `specs reanchor` repairs a recorded revision that a squash merge discarded
 and whose blobs were not recorded, or whose evidence changed
 (guard reports it as **SPR008**). It finds the first commit on HEAD's

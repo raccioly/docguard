@@ -208,6 +208,14 @@ dangling revisions from different merges, add `--from <revision>` so each is
 attested to its own merge. The next `specs complete` takes the landing commit as
 its diff base, so `--since` is needed only when no commit carries the evidence.
 
+A pull request that edits a closed spec's evidence files needs the spec closed again in the same pull request, and the gate says so: on the merge ref the commit that
+landed the record is the main branch's squash commit, whose files match the record, so
+SPR008 cannot see the edit, and `SPR011` (a warning, which strict fails on) compares the
+record's blobs with `HEAD`'s files instead (`specs/103-completion-upkeep`). It reads only
+`HEAD`'s tree, so a shallow clone is enough, and it skips the spec's canonical
+documents. `docguard specs complete --stale --reason "<text>" --write` closes every
+flagged spec in one transaction; commit its result with the change.
+
 Under squash merges, run completions on a branch whose HEAD is the default
 branch's tip when a record carries no evidence blobs (one written before they
 were recorded): every outcome then records a revision that stays on the default

@@ -22,6 +22,9 @@
  * @implements docguard.completion-one-commit#FR-006
  * @implements docguard.completion-one-commit#FR-007
  * @implements docguard.completion-one-commit#FR-009
+ * @implements docguard.completion-upkeep#FR-007
+ * @implements docguard.completion-upkeep#FR-009
+ * @implements docguard.completion-upkeep#FR-011
  */
 
 import { randomUUID } from 'node:crypto';
@@ -102,13 +105,34 @@ export function danglingRevisions(projectDir, registry) {
 /** A task list with every checkbox read as unchecked: equal for two lists that differ only by ticks. */
 const uncheckedTasks = text => String(text).replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[[ xX]\]/gm, '$1[ ]');
 
+const escapeRe = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// A line that holds only comment openers and closers: what is left of a tag line once its tag is removed.
+const COMMENT_ONLY = /^(?:\s|\/\*+|\*+\/?|\/\/+|#+|<!--|-->)*$/;
+
+/**
+ * Whether `current` differs from `committed` only by `@implements` or `@req`
+ * tags for `specId`'s own requirements, and has no fewer of them. Every tag of
+ * that spec, and every line left empty by removing one, is dropped from both
+ * texts before they are compared, so any other edit still differs.
+ * @implements docguard.completion-upkeep#FR-007
+ */
+export function tagOnlyChange(committed, current, specId) {
+  const tag = new RegExp(`@(?:implements|req)[ \\t]+(?:${escapeRe(specId)}#[A-Za-z0-9_.-]+[, \\t]*)+`, 'g');
+  const count = text => (String(text).match(tag) || []).length;
+  const normal = text => String(text).replace(tag, '').split('\n').map(line => line.replace(/\s+$/, '')).filter(line => !COMMENT_ONLY.test(line)).join('\n');
+  return count(current) >= count(committed) && normal(committed) === normal(current);
+}
+
+/** A spec with its `**Status**:` header and its outcomes block neutralized: what completion itself writes. */
+const withoutCompletionWrites = text => stripImplementationOutcomes(text).replace(/^\*\*Status\*\*:.*$/m, '**Status**:');
+
 /**
  * Tracked changes other than the lifecycle files completion itself writes:
  * the registry, the active context, and spec files whose change is confined
  * to the implementation-outcomes block.
  * @returns {string[]|null} changed paths, or null when git cannot answer
  */
-export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [], tickOnlyPaths = [] }) {
+export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [], tickOnlyPaths = [], tagSpecId = null }) {
   // DocGuard's own .docguard/ state is never a change (docguard.read-only-commands#FR-006).
   const status = git(projectDir, ['status', '--porcelain=v1', '-z', '--untracked-files=no', ...OWN_STATE_PATHSPEC]);
   if (!status.ok) return null;
@@ -135,8 +159,17 @@ export function nonLifecycleChanges(projectDir, { registryPath, contextPath, spe
       const committed = git(projectDir, ['show', `HEAD:${path}`]);
       let current = null;
       try { current = readFileSync(resolve(projectDir, path), 'utf8'); } catch { /* deleted or unreadable */ }
+      // docguard.completion-upkeep#FR-011: the Status header is one of the lines completion writes.
       if (committed.ok && current !== null
-        && stripImplementationOutcomes(committed.out) === stripImplementationOutcomes(current)) continue;
+        && withoutCompletionWrites(committed.out) === withoutCompletionWrites(current)) continue;
+    }
+    // docguard.completion-upkeep#FR-007: adding the completing spec's own requirement tags is part of
+    // closing it, so tagging and closing can land in one commit. Any other edit of the file is not.
+    if (tagSpecId && !specs.has(path) && !code.includes('D') && !code.includes('R') && !code.includes('A')) {
+      const committed = git(projectDir, ['show', `HEAD:${path}`]);
+      let current = null;
+      try { current = readFileSync(resolve(projectDir, path), 'utf8'); } catch { /* deleted or unreadable */ }
+      if (committed.ok && current !== null && tagOnlyChange(committed.out, current, tagSpecId)) continue;
     }
     changed.push(path);
   }
@@ -188,6 +221,44 @@ export function evidenceBlobsAt(projectDir, commit, paths) {
     if (type === 'blob' && path in out) out[path] = id;
   }
   return out;
+}
+
+/**
+ * Like {@link evidenceBlobsAt}, but a file with an uncommitted change (only a tag
+ * line, by the time this runs) gets the blob of its working-tree content, which is
+ * what the commit that follows will hold.
+ * @implements docguard.completion-upkeep#FR-007
+ */
+export function evidenceBlobsInTree(projectDir, commit, paths) {
+  const out = evidenceBlobsAt(projectDir, commit, paths);
+  if (!paths.length) return out;
+  const dirty = git(projectDir, ['diff', '--name-only', '-z', 'HEAD', '--', ...paths.map(path => `:(literal)${path}`)]);
+  const changed = dirty.out.split('\0').filter(path => path && path in out && existsOnDisk(projectDir, path));
+  if (!changed.length) return out;
+  const r = runGit(projectDir, ['hash-object', '--stdin-paths'], {
+    operation: 'git hash-object (completion blobs)', stdio: ['pipe', 'pipe', 'ignore'], input: `${changed.join('\n')}\n`,
+  });
+  const ids = r.status === 0 && !r.error ? r.stdout.split('\n') : [];
+  changed.forEach((path, index) => { if (REVISION_RE.test(ids[index] || '')) out[path] = ids[index]; });
+  return out;
+}
+
+function existsOnDisk(projectDir, path) {
+  try { return lstatSync(resolve(projectDir, path)).isFile(); } catch { return false; }
+}
+
+/**
+ * The newest commit in `since..HEAD` that touched any of `paths` (at most 200 are
+ * asked about), or null when there is none or it is HEAD itself. One bounded `git log`.
+ * @implements docguard.completion-upkeep#FR-009
+ */
+export function lastCommitTouching(projectDir, since, paths) {
+  if (!paths.length) return null;
+  const r = git(projectDir, ['log', '-n1', '--format=%H', `${since}..HEAD`, '--', ...paths.slice(0, 200).map(path => `:(literal)${path}`)]);
+  const sha = r.ok ? r.out.trim() : '';
+  if (!REVISION_RE.test(sha)) return null;
+  const head = git(projectDir, ['rev-parse', 'HEAD']).out.trim();
+  return sha === head ? null : sha;
 }
 
 const ANCHOR_CACHE = `${STATE_DIR}/revision-anchors.json`;
@@ -299,6 +370,26 @@ export function locateContentAnchors(projectDir, items, { registryPath }) {
     out.set(item.key, { commit: landings.get(item.revision), differing });
   }
   return out;
+}
+
+/**
+ * A commit anywhere in HEAD's ancestry (not only its first-parent chain) whose registry
+ * change introduced `revision` and whose files are exactly the reviewed blobs. A branch
+ * that merged main sees main's squash commit only through the merge's second parent, so
+ * the first-parent search above finds the merge commit instead, whose files already
+ * carry the branch's own later edits.
+ * @returns {string|null}
+ * @implements docguard.completion-upkeep#FR-004
+ */
+export function reviewedCommitOnHistory(projectDir, revision, blobs, { registryPath, limit = 20 }) {
+  if (!REVISION_RE.test(revision || '')) return null;
+  const log = git(projectDir, ['log', '--reverse', `--max-count=${limit}`, '--format=%H', `-G${revision}`, 'HEAD', '--', registryPath]);
+  const paths = Object.keys(blobs);
+  for (const commit of log.out.split('\n').map(line => line.trim()).filter(line => REVISION_RE.test(line))) {
+    const at = evidenceBlobsAt(projectDir, commit, paths);
+    if (paths.every(path => at[path] === blobs[path])) return commit;
+  }
+  return null;
 }
 
 function readSpecContent(projectDir, spec) {

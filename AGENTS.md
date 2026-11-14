@@ -196,7 +196,24 @@ extensions/spec-kit-docguard/
   not change those evidence files after your last `specs complete`; if it did,
   merge the base in and run `specs complete` again before merging. Run
   `docguard specs reanchor` only for a record guard reports as SPR008
-  (`specs/101-completion-one-commit`).
+  (`specs/101-completion-one-commit`). Adding the `@implements`/`@req` tags for
+  the spec being completed does not need a commit of its own: run `specs --write`
+  after tagging and `complete` accepts those edits (any other edit still blocks).
+- **A change to a closed spec's evidence closes the spec again, in the same pull
+  request.** Guard reports SPR011 (a warning, so strict gates fail on it) when
+  an implementation or test file a `verified` spec recorded has changed since
+  its last review; canonical documents are not compared. Run `docguard specs
+  complete --stale --reason "<what changed and what you reviewed>" --write`: it
+  closes every flagged spec in one transaction, keeps each spec's canonical
+  documents and persistence, and writes nothing when one is blocked. Commit it
+  with the change (`specs/103-completion-upkeep`).
+- **A requirement with no code target (documentation, a one-time outcome) takes
+  evidence from a test that checks the result.** Use `describes()` (each named
+  document carries the terms the requirement asks for) and `recorded()` (the
+  spec's Verification Notes answer each measured criterion) as
+  `tests/program-verification.test.mjs` does, and tag the test `@req
+  <specId>#<requirement>`; put it in a test file of its own, because every spec
+  tagged in a file is re-flagged by SPR011 when that file changes.
 - **PR-first workflow — no direct-to-main commits.** Create a branch (`git checkout -b <type>/<slug>`), push, `gh pr create`, let CI run, self-review, squash-merge. Tag releases only after merge on `main`. The only acceptable direct-to-main: typo fixes in comments or README badge URLs.
 - Never commit without updating CHANGELOG.md
 - Regenerate checked-in generated files in the same change; each has a drift test

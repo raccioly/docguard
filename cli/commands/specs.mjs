@@ -19,6 +19,14 @@
  * @implements docguard.completion-one-commit#FR-008
  * @implements docguard.completion-one-commit#FR-011
  * @implements docguard.completion-one-commit#FR-012
+ * @implements docguard.completion-upkeep#FR-004
+ * @implements docguard.completion-upkeep#FR-005
+ * @implements docguard.completion-upkeep#FR-006
+ * @implements docguard.completion-upkeep#FR-007
+ * @implements docguard.completion-upkeep#FR-009
+ * @implements docguard.completion-upkeep#FR-010
+ * @implements docguard.completion-upkeep#FR-011
+ * @implements docguard.completion-upkeep#FR-012
  */
 
 import { createHash } from 'node:crypto';
@@ -27,8 +35,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
-import { appendImplementationOutcome, readOutcomeBlobs, rewriteOutcomeRevision, writeOutcomeBlobs } from '../writers/spec-outcomes.mjs';
-import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceDifferences, findAnchor, isAncestorOf, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, strandedRevisions } from '../scanners/revision-anchor.mjs';
+import { appendImplementationOutcome, markSpecActive, readOutcomeBlobs, readSpecStatus, rewriteOutcomeRevision, writeOutcomeBlobs } from '../writers/spec-outcomes.mjs';
+import { staleCompletions } from '../scanners/stale-completions.mjs';
+import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceBlobsInTree, evidenceDifferences, findAnchor, isAncestorOf, lastCommitTouching, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, reviewedCommitOnHistory, strandedRevisions } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { canonicalOutcome, PERSISTENCE_VALUES, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, unrecordedCompletions, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -57,13 +66,44 @@ function headRevision(projectDir) {
 // Completion may run several times against one revision before a single
 // commit: the registry, the active context and outcome blocks it writes do
 // not count as changes (docguard.completion-revision-anchoring#FR-001).
-function blockingChanges(projectDir, registry, ownTaskLists = []) {
+function blockingChanges(projectDir, registry, ownTaskLists = [], tagSpecId = null) {
   return nonLifecycleChanges(projectDir, {
     registryPath: SPEC_REGISTRY_PATH,
     contextPath: CONTEXT_PATH,
     specPaths: (registry?.specs || []).map(spec => spec.path),
     tickOnlyPaths: ownTaskLists,
+    tagSpecId,
   });
+}
+
+function editDistance(a, b) {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let diagonal = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const above = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diagonal = above;
+    }
+  }
+  return row[b.length];
+}
+
+/**
+ * "Unknown spec ID", with the closest recorded IDs when there are any.
+ * @implements docguard.completion-upkeep#FR-012
+ */
+function unknownSpecMessage(id, specs) {
+  const base = `Unknown spec ID: ${id || '<missing>'}.`;
+  if (!id) return base;
+  const wanted = String(id).toLowerCase();
+  const near = (specs || []).map(entry => entry.specId)
+    .map(candidate => ({ candidate, distance: editDistance(wanted, candidate.toLowerCase()), contains: candidate.toLowerCase().includes(wanted) || wanted.includes(candidate.toLowerCase()) }))
+    .filter(item => item.contains || item.distance <= Math.max(3, Math.floor(wanted.length / 4)))
+    .sort((a, b) => a.distance - b.distance || a.candidate.localeCompare(b.candidate))
+    .slice(0, 3).map(item => `\`${item.candidate}\``);
+  return near.length ? `${base} Did you mean ${near.join(', ')}?` : base;
 }
 
 /** The completing spec's own task list: ticking it is part of closing the spec (docguard.completion-one-commit#FR-001). */
@@ -139,15 +179,31 @@ function completionTransition(spec) {
 
 
 /** The completing spec's anchor findings that fail guard under its policy (FR-029). */
-function ownFailingAnchors(projectDir, config, specId) {
+function ownFailingAnchors(projectDir, config, specId, shared = null) {
   if (!anchorsActivated(projectDir, config)) return [];
-  const status = computeAnchorStatus(projectDir, config);
+  // docguard.completion-upkeep#FR-006: the anchor status is the same for every spec of a batch.
+  const status = shared ? (shared.anchorStatus ||= computeAnchorStatus(projectDir, config)) : computeAnchorStatus(projectDir, config);
   const policy = failOnPolicy(config);
   return status.problems
     .filter(p => isFailingProblem(p, policy) && typeof p.requirement === 'string' && p.requirement.startsWith(`${specId}#`))
     .map(p => ({ code: p.code, requirement: p.requirement, file: p.file, key: p.key,
       acceptCommand: p.code === 'ANC003' ? `docguard anchors accept --remove '${p.key}' --reason "…"` : `docguard anchors accept --link '${p.key}' --reason "<what you checked>"` }));
 }
+/**
+ * What to say after the list of unresolved files: the newest commit that touched any of
+ * them, and what choosing it as the baseline skips.
+ * @implements docguard.completion-upkeep#FR-009
+ */
+function resolvingRefHint(projectDir, since, paths, hasRecordedReview) {
+  const culprit = lastCommitTouching(projectDir, since, paths);
+  if (!culprit) return ' No commit after the baseline would leave them out: annotate them, or list them under `reviewed.scope.assetPaths`.';
+  const skipped = commitsBetween(projectDir, since, culprit);
+  const where = `The earliest ref after which none of them changes is ${culprit.slice(0, 12)}${skipped === null ? '' : ` (it skips ${skipped} commit(s) of the range)`}`;
+  return hasRecordedReview
+    ? ` ${where}; a newer --since is accepted only when the range is too large to read, so annotate them or list them under \`reviewed.scope.assetPaths\` instead.`
+    : ` ${where}: \`--since ${culprit.slice(0, 12)}\` leaves none unresolved, or annotate them or list them under \`reviewed.scope.assetPaths\`.`;
+}
+
 /**
  * Whether `--since` may stand in for a spec's recorded review revision. The
  * same revision or an older one only widens the review. A newer one skips
@@ -191,6 +247,13 @@ function recordedBase(projectDir, spec, revision) {
   const found = contentAnchor(projectDir, spec, revision, { registryPath: SPEC_REGISTRY_PATH });
   if (!found.hasBlobs) return null;
   if (found.anchored) return { commit: found.commit };
+  // docguard.completion-upkeep#FR-004: a branch that merged main reaches main's squash commit only
+  // through the merge's second parent, and that commit still has the reviewed files.
+  try {
+    const blobs = readOutcomeBlobs(readFileSync(resolve(projectDir, spec.path), 'utf8'), revision);
+    const reached = blobs && reviewedCommitOnHistory(projectDir, revision, blobs, { registryPath: SPEC_REGISTRY_PATH });
+    if (reached) return { commit: reached };
+  } catch { /* the spec cannot be read: the record is lost, as before */ }
   return { lost: true, differing: found.differing };
 }
 
@@ -203,15 +266,16 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   if (spec) blockers.push(...applyReviewedScope(projectDir, spec, flags).problems);
   if (!flags.id) blockers.push({ code: 'SPC001', message: 'Completion requires --id <spec-id>.' });
   if (!loaded.exists || loaded.error || !projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before completion.' });
-  if (!spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
+  if (!spec) blockers.push({ code: 'SPC001', message: unknownSpecMessage(flags.id, projection.registry.specs) });
   if (!revision) blockers.push({ code: 'SPC001', message: 'Completion requires a resolvable Git HEAD.' });
-  const changed = blockingChanges(projectDir, projection.registry, ownTaskLists(spec));
+  const changed = blockingChanges(projectDir, projection.registry, ownTaskLists(spec), spec?.specId || null);
   if (changed === null || changed.length) {
-    blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions, and ticked boxes in this spec's own task list, are allowed); changed: ${describeChanges(changed)}.` });
+    blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions, ticked boxes in this spec's own task list, and added @implements/@req tags for this spec's own requirements are allowed); changed: ${describeChanges(changed)}.` });
   }
 
   let reconcile = null;
   let narrowedFrom = null;
+  let since = null;
   if (spec) {
     const maintenance = ['verified', 'released'].includes(spec.reviewed.lifecycle.delivery)
       && spec.reviewed.lifecycle.persistenceModel === 'living';
@@ -251,7 +315,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     // same evidence; with none, a person names the base.
     const anchor = recordedRevision ? recordedBase(projectDir, spec, recordedRevision) : null;
     const baseRevision = anchor?.commit || recordedRevision;
-    const since = flags.since || (anchor?.lost ? null : baseRevision);
+    since = flags.since || (anchor?.lost ? null : baseRevision);
     const runtime = { diffLimits: options.diffLimits };
     const baseline = since && recordedRevision && flags.since && !anchor?.lost
       ? reviewBaseline(projectDir, config, spec, flags.since, runtime, anchor?.commit || null) : {};
@@ -261,10 +325,13 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     } else if (!since) blockers.push({ code: 'SPC006', message: 'Completion requires --since <review-baseline> for the first reconciliation.' });
     else if (baseline.blocker) blockers.push(baseline.blocker);
     else {
-      reconcile = buildReconciliationPlan(projectDir, config, since, runtime);
+      // docguard.completion-upkeep#FR-006: one reconciliation per distinct base, however many specs share it.
+      const cache = options.shared?.reconcile;
+      reconcile = cache?.get(since) || buildReconciliationPlan(projectDir, config, since, runtime);
+      if (cache && !cache.has(since)) { cache.set(since, reconcile); options.shared.stats.reconciliations++; }
       if (reconcile.status === 'UNSUPPORTED' || reconcile.status === 'BLOCKED') blockers.push({ code: 'SPC006', message: 'Reconciliation coverage is unsupported or blocked.' });
       const unresolved = reconcile.classifications.filter(item => item.disposition === 'unsupported_or_ambiguous');
-      if (unresolved.length) blockers.push({ code: 'SPC006', message: `Unresolved changed files: ${unresolved.map(item => item.path).join(', ')}.` });
+      if (unresolved.length) blockers.push({ code: 'SPC006', message: `Unresolved changed files: ${unresolved.map(item => item.path).join(', ')}.${resolvingRefHint(projectDir, since, unresolved.map(item => item.path), Boolean(recordedRevision))}` });
       if (maintenance) {
         const reviewable = reconcile.classifications.filter(item =>
           item.specs.includes(spec.specId)
@@ -276,16 +343,18 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
     }
   }
   const guard = options.guardResult || runGuardInternal(projectDir, config);
+  if (options.shared && !options.guardResult) options.shared.stats.guardRuns++;
   // docguard.requirement-anchors#FR-029: a spec's own failing anchor findings
   // never block its completion; completing is how they get reviewed. They are
   // listed instead, with their accept commands. Another spec's still count.
-  const anchorFindings = spec ? ownFailingAnchors(projectDir, config, spec.specId) : [];
+  const anchorFindings = spec ? ownFailingAnchors(projectDir, config, spec.specId, options.shared) : [];
   const guardErrors = Math.max(0, (guard.errors || 0) - anchorFindings.length);
   if (guardErrors > 0) blockers.push({ code: 'SPC007', message: `Guard has ${guardErrors} error(s).` });
   return {
     status: blockers.length ? 'BLOCKED' : 'READY',
     specId: flags.id || null,
     revision,
+    since,
     transition: completionTransition(spec),
     blockers,
     anchorFindings,
@@ -302,22 +371,17 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   };
 }
 
-export function completeSpec(projectDir, config, flags, options = {}) {
-  const plan = planSpecCompletion(projectDir, config, flags, options);
-  if (plan.status !== 'READY') return { command: 'complete', ...plan, applied: false };
-  if (!flags.write) return { command: 'complete', ...plan, applied: false };
-  const reason = String(flags.reason || '').replace(/\s+/g, ' ').trim();
-  if (!reason || reason.length > 500) throw new Error('Completion --write requires --reason with 1-500 characters.');
-  const projection = projectSpecRegistry(projectDir, config);
-  const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
-  applyReviewedScope(projectDir, spec, flags);
+/**
+ * Build one completion in memory: the spec's new text, its outcome and the registry entry's
+ * new reviewed state. The registry is `projection.registry`, shared by every completion
+ * of a batch; nothing is written here.
+ * @implements docguard.completion-upkeep#FR-005
+ * @implements docguard.completion-upkeep#FR-010
+ */
+function prepareCompletion(projectDir, projection, plan, { reason, successorId = null, deviations = [], scopeChanged = false }) {
+  const spec = projection.registry.specs.find(entry => entry.specId === plan.specId);
   const specPath = resolve(projectDir, spec.path);
-  const successor = flags.successor
-    ? projection.registry.specs.find(entry => entry.specId === flags.successor) : null;
-  if (flags.successor && (!successor || successor.reviewed.lifecycle.context !== 'current'
-    || successor.reviewed.lifecycle.approval !== 'approved')) {
-    throw new Error('Completion successor must be an approved current spec ID.');
-  }
+  const before = { delivery: spec.reviewed.lifecycle.delivery, status: readSpecStatus(readFileSync(specPath, 'utf8')) };
   // The outcome is built in the form the transaction's validation re-projects
   // (docguard.completion-revision-anchoring#FR-007): deviations are compared
   // after whitespace normalization, then deduplicated and sorted.
@@ -325,8 +389,8 @@ export function completeSpec(projectDir, config, flags, options = {}) {
     revision: plan.revision,
     reason,
     evidence: plan.evidence,
-    deviations: (flags.deviations || []).map(item => String(item).replace(/\s+/g, ' ').trim()).filter(Boolean),
-    successor: flags.successor || null,
+    deviations: deviations.map(item => String(item).replace(/\s+/g, ' ').trim()).filter(Boolean),
+    successor: successorId,
     ...(plan.narrowedFrom ? { narrowedFrom: plan.narrowedFrom } : {}),
   });
   if (outcome.deviations.length > 20 || outcome.deviations.some(item => item.length > 500)) {
@@ -334,20 +398,41 @@ export function completeSpec(projectDir, config, flags, options = {}) {
   }
   // docguard.completion-one-commit#FR-005: the blob of every evidence file at the revision
   // reviewed, so the record is anchored by content, not only by a commit id a squash discards.
-  const evidenceBlobs = evidenceBlobsAt(projectDir, plan.revision, outcome.evidence);
+  // docguard.completion-upkeep#FR-007: a file whose uncommitted change only adds tags carries the
+  // blob of the content the commit will hold.
+  const evidenceBlobs = evidenceBlobsInTree(projectDir, plan.revision, outcome.evidence);
   const blobsComplete = outcome.evidence.length > 0 && outcome.evidence.every(path => evidenceBlobs[path]);
-  const specContent = appendImplementationOutcome(readFileSync(specPath, 'utf8'), { ...outcome, ...(blobsComplete ? { evidenceBlobs } : {}) });
+  const appended = appendImplementationOutcome(readFileSync(specPath, 'utf8'), { ...outcome, ...(blobsComplete ? { evidenceBlobs } : {}) });
+  // docguard.completion-upkeep#FR-011: a closed spec is no longer a draft.
+  const specContent = markSpecActive(appended);
   if (spec.reviewed.lifecycle.delivery !== 'released') spec.reviewed.lifecycle.delivery = 'verified';
   spec.reviewed.reconciliation.lastReviewedRevision = plan.revision;
   spec.reviewed.reconciliation.outcomes = [...spec.reviewed.reconciliation.outcomes, outcome].slice(-20);
   const artifact = spec.observed.artifacts.find(item => item.path === spec.path);
   if (artifact) artifact.digest = digest(specContent);
+  const written = {
+    specId: plan.specId,
+    spec: spec.path,
+    registryFields: [
+      `reviewed.lifecycle.delivery ${before.delivery === spec.reviewed.lifecycle.delivery ? `stays ${before.delivery}` : `${before.delivery} -> ${spec.reviewed.lifecycle.delivery}`}`,
+      `reviewed.reconciliation.lastReviewedRevision ${plan.revision.slice(0, 12)}`,
+      `reviewed.reconciliation.outcomes (${spec.reviewed.reconciliation.outcomes.length} recorded)`,
+      ...(scopeChanged ? ['reviewed.scope.canonicalDocs / reviewed.lifecycle.persistenceModel (from the flags)'] : []),
+    ],
+    outcomeLine: `- \`${plan.revision.slice(0, 12)}\`: ${outcome.evidence.length} evidence file(s)${outcome.deviations.length ? `, ${outcome.deviations.length} accepted deviation(s)` : ''}`,
+    blobs: blobsComplete ? outcome.evidence.length : 0,
+    status: before.status !== readSpecStatus(specContent) ? `${before.status} -> ${readSpecStatus(specContent)}` : null,
+  };
+  return { specPath, specContent, outcome, blobsComplete, written };
+}
+
+function commitCompletions(projectDir, config, projection, prepared, revision) {
   projection.registry.schemaVersion = 2;
   const registryContent = `${JSON.stringify(projection.registry, null, 2)}\n`;
-  const contextContent = serializeLifecycleContext(projectDir, projection.registry, plan.revision);
+  const contextContent = serializeLifecycleContext(projectDir, projection.registry, revision);
   ensureStateDir(projectDir);
   commitFileTransaction([
-    { path: specPath, content: specContent },
+    ...prepared.map(item => ({ path: item.specPath, content: item.specContent })),
     { path: resolve(projectDir, SPEC_REGISTRY_PATH), content: registryContent },
     { path: resolve(projectDir, CONTEXT_PATH), content: contextContent },
   ], {
@@ -355,18 +440,90 @@ export function completeSpec(projectDir, config, flags, options = {}) {
       const next = projectSpecRegistry(projectDir, config);
       if (next.issues.length || !next.current) throw new Error('completed registry does not match the resulting repository');
       const context = JSON.parse(readFileSync(resolve(projectDir, CONTEXT_PATH), 'utf8'));
-      if (context.generatedFrom !== plan.revision) throw new Error('active context revision mismatch');
+      if (context.generatedFrom !== revision) throw new Error('active context revision mismatch');
     },
   });
-  // A revision a squash merge will discard cannot anchor the next
-  // reconciliation (docguard.completion-revision-anchoring#FR-004).
-  const warnings = [];
-  if (reachableFromDefaultBranch(projectDir) === false) {
-    warnings.push(blobsComplete
-      ? `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, but the record stays anchored by the evidence blobs it carries, so no second commit is needed unless the evidence changes before it lands.`
-      : `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, and this record carries no evidence blobs to anchor it by. Complete on a branch at the default branch's tip, or run \`docguard specs reanchor --id ${plan.specId} --write\` after merging.`);
+}
+
+/** A revision a squash merge will discard cannot anchor the next reconciliation (docguard.completion-revision-anchoring#FR-004). */
+function squashWarnings(projectDir, plan, blobsComplete) {
+  if (reachableFromDefaultBranch(projectDir) !== false) return [];
+  return [blobsComplete
+    ? `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, but the record stays anchored by the evidence blobs it carries, so no second commit is needed unless the evidence changes before it lands.`
+    : `HEAD ${plan.revision.slice(0, 12)} is not on the remote default branch; a squash merge will discard it, and this record carries no evidence blobs to anchor it by. Complete on a branch at the default branch's tip, or run \`docguard specs reanchor --id ${plan.specId} --write\` after merging.`];
+}
+
+export function completeSpec(projectDir, config, flags, options = {}) {
+  if (flags.stale) return completeStale(projectDir, config, flags, options);
+  const plan = planSpecCompletion(projectDir, config, flags, options);
+  if (plan.status !== 'READY') return { command: 'complete', ...plan, applied: false };
+  if (!flags.write) return { command: 'complete', ...plan, applied: false };
+  const reason = String(flags.reason || '').replace(/\s+/g, ' ').trim();
+  if (!reason || reason.length > 500) throw new Error('Completion --write requires --reason with 1-500 characters.');
+  const projection = projectSpecRegistry(projectDir, config);
+  const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
+  const scope = applyReviewedScope(projectDir, spec, flags);
+  const successor = flags.successor
+    ? projection.registry.specs.find(entry => entry.specId === flags.successor) : null;
+  if (flags.successor && (!successor || successor.reviewed.lifecycle.context !== 'current'
+    || successor.reviewed.lifecycle.approval !== 'approved')) {
+    throw new Error('Completion successor must be an approved current spec ID.');
   }
-  return { command: 'complete', ...plan, status: 'VERIFIED', applied: true, outcome, warnings };
+  const prepared = prepareCompletion(projectDir, projection, plan, {
+    reason, successorId: flags.successor || null, deviations: flags.deviations || [], scopeChanged: scope.changed,
+  });
+  commitCompletions(projectDir, config, projection, [prepared], plan.revision);
+  return { command: 'complete', ...plan, status: 'VERIFIED', applied: true, outcome: prepared.outcome, written: [prepared.written], warnings: squashWarnings(projectDir, plan, prepared.blobsComplete) };
+}
+
+/**
+ * Close again every spec SPR011 flags, in one transaction: each as a maintenance completion
+ * that keeps the spec's canonical documents and persistence. Every spec is planned first,
+ * against one guard run and one reconciliation per distinct base; when any is blocked,
+ * nothing is written and every blocker is listed with its spec.
+ * @implements docguard.completion-upkeep#FR-004
+ * @implements docguard.completion-upkeep#FR-005
+ * @implements docguard.completion-upkeep#FR-006
+ */
+export function completeStale(projectDir, config, flags, options = {}) {
+  const named = ['id', 'since', 'persistence', 'successor'].filter(key => flags[key] !== undefined && flags[key] !== null)
+    .concat(flags.canonicalDocs?.length ? ['canonical-doc'] : []);
+  if (named.length) throw new Error(`--stale closes every spec that drifted and keeps each spec's recorded scope; it does not take ${named.map(key => `--${key}`).join(', ')}.`);
+  const projection = projectSpecRegistry(projectDir, config);
+  const stale = staleCompletions(projectDir, projection.registry);
+  const stats = { specs: stale.length, guardRuns: 0, reconciliations: 0, bases: 0 };
+  const base = { command: 'complete', mode: 'stale', revision: headRevision(projectDir), stats, applied: false };
+  if (!stale.length) return { ...base, status: 'CURRENT', specs: [], blockers: [] };
+  const guardResult = options.guardResult || runGuardInternal(projectDir, config);
+  stats.guardRuns = options.guardResult ? 0 : 1;
+  const shared = { reconcile: new Map(), anchorStatus: null, stats };
+  const plans = stale.map(item => ({
+    item,
+    plan: planSpecCompletion(projectDir, config, { id: item.specId }, { ...options, guardResult, shared }),
+  }));
+  stats.bases = new Set(plans.map(({ plan }) => plan.since).filter(Boolean)).size;
+  // A blocker that does not depend on the spec (guard has errors) is listed once.
+  const seen = new Set();
+  const blockers = plans.flatMap(({ plan }) => plan.blockers.map(blocker => ({ specId: plan.specId, ...blocker })))
+    .filter(blocker => {
+      if (blocker.code !== 'SPC007') return true;
+      if (seen.has(blocker.message)) return false;
+      seen.add(blocker.message);
+      return true;
+    });
+  const specs = plans.map(({ item, plan }) => ({ specId: item.specId, files: item.files, removed: item.removed, transition: plan.transition, since: plan.since, status: plan.status }));
+  const result = { ...base, specs, blockers, anchorFindings: plans.flatMap(({ plan }) => plan.anchorFindings || []), guard: plans[0].plan.guard };
+  if (blockers.length) return { ...result, status: 'BLOCKED' };
+  if (!flags.write) return { ...result, status: 'READY' };
+  const reason = String(flags.reason || '').replace(/\s+/g, ' ').trim();
+  if (!reason || reason.length > 500) throw new Error('Completion --write requires --reason with 1-500 characters.');
+  const prepared = plans.map(({ plan }) => prepareCompletion(projectDir, projection, plan, { reason }));
+  const revision = plans[0].plan.revision;
+  commitCompletions(projectDir, config, projection, prepared, revision);
+  return {
+    ...result, status: 'VERIFIED', applied: true, written: prepared.map(item => item.written),
+    warnings: squashWarnings(projectDir, plans[0].plan, prepared.every(item => item.blobsComplete)),
+  };
 }
 
 /**
@@ -379,7 +536,7 @@ export function reanchorSpec(projectDir, config, flags) {
   const projection = projectSpecRegistry(projectDir, config);
   const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
   const blockers = [...projection.issues];
-  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
+  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: unknownSpecMessage(flags.id, projection.registry.specs) });
   if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before re-anchoring.' });
   const changed = blockingChanges(projectDir, projection.registry);
   if (changed === null || changed.length) blockers.push({ code: 'SPC001', message: `Re-anchoring requires a clean tracked working tree; changed: ${describeChanges(changed)}.` });
@@ -497,7 +654,7 @@ export function approveSpec(projectDir, config, flags = {}) {
   const projection = projectSpecRegistry(projectDir, config);
   const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
   const blockers = [...projection.issues];
-  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: `Unknown spec ID: ${flags.id || '<missing>'}.` });
+  if (!flags.id || !spec) blockers.push({ code: 'SPC001', message: unknownSpecMessage(flags.id, projection.registry.specs) });
   if (!projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before approval; run `docguard specs --write` first.' });
   if (spec && spec.reviewed.lifecycle.context !== 'current') blockers.push({ code: 'SPC001', message: `Spec ${spec.specId} is retired; only a current spec can be approved.` });
   const scope = spec ? applyReviewedScope(projectDir, spec, flags) : { problems: [], changed: false };
@@ -543,9 +700,27 @@ function printIssues(issues) {
 
 function printResult(result) {
   if (result.command === 'complete') {
-    console.log(`Spec completion: ${result.status}`);
-    console.log(`${result.specId || '<missing>'}: ${result.transition || 'no transition (unknown spec)'}`);
-    if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
+    console.log(`Spec completion${result.mode === 'stale' ? ' (--stale)' : ''}: ${result.status}`);
+    if (result.mode === 'stale') {
+      for (const item of result.specs || []) console.log(`${item.specId}: ${item.transition || 'no transition'}; changed since its review: ${item.files.join(', ')}`);
+      if (result.status === 'CURRENT') console.log('No closed spec has an evidence file that differs from its last review.');
+      if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: issue.specId || SPEC_REGISTRY_PATH, ...issue })));
+      if (result.status === 'BLOCKED') console.log('Nothing was written: close the blocked specs one by one, or fix the blockers above and run again.');
+      if (result.status === 'READY') console.log('Run again with --write --reason <text> to close them in one transaction.');
+    } else {
+      console.log(`${result.specId || '<missing>'}: ${result.transition || 'no transition (unknown spec)'}`);
+      if (result.blockers?.length) printIssues(result.blockers.map(issue => ({ path: result.specId || SPEC_REGISTRY_PATH, ...issue })));
+    }
+    if (result.applied && result.written?.length) {
+      // docguard.completion-upkeep#FR-010: say what changed, so nobody needs `git diff` to find out.
+      console.log(`Wrote ${SPEC_REGISTRY_PATH}, ${CONTEXT_PATH} and ${result.written.length} spec file(s):`);
+      for (const item of result.written) {
+        console.log(`  ${item.specId} (${item.spec})`);
+        for (const field of item.registryFields) console.log(`    registry: ${field}`);
+        console.log(`    outcome line ${item.outcomeLine}; ${item.blobs} evidence blobs recorded${item.blobs ? '' : ' (this record has none, so it is anchored by commit only)'}`);
+        if (item.status) console.log(`    **Status**: ${item.status}`);
+      }
+    }
     for (const warning of result.warnings || []) console.log(`  ⚠ ${warning}`);
     if (result.narrowedFrom) {
       const n = result.narrowedFrom;
