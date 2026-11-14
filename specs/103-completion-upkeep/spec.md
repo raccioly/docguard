@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-13
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.completion-upkeep`
 
@@ -91,3 +91,9 @@ Among the 19 commits that change any evidence the median is 8 specs. Counting ca
 - A tag-line exemption for other specs' tags: measured at no effect.
 - Exempting shared hub files from SPR011: the replay shows they cause most of the count, and that decision stays with the owner.
 - Accepting uncommitted changes to the anchor lock in `complete`.
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `355eb1715c51e4fc9cdbbe46771c86b13da77fe8` — Spec 103 reviewed: SPR011 compares the latest recorded evidence blobs with HEAD (canonical documents left out, measured on the last 30 squash commits); specs complete --stale closes every flagged spec in one transaction against one guard run; tag-only edits, working-tree blobs, the written summary, the Status header, the did-you-mean and earliest-ref hints and the SPC004 recipe are in; the wide-range slowness is the guard run and is not changed. Nothing is flagged on main's tip. Evidence: `cli/commands/specs.mjs`, `cli/scanners/revision-anchor.mjs`, `cli/scanners/stale-completions.mjs`, `cli/validators/spec-registry.mjs`, `cli/writers/spec-outcomes.mjs`, `docs-canonical/ARCHITECTURE.md`, `docs-canonical/CI-RECIPES.md`, `tests/completion-upkeep.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/specs.mjs`=`6ce7761477c752306fde3c3cbc8c8db38f4b522b`, `cli/scanners/revision-anchor.mjs`=`df4a36b5bcfa2824d2d0c5c1918ed166c018d5a8`, `cli/scanners/stale-completions.mjs`=`8b18b5d7062e8c1ffac4b187d5144ea331b80d6a`, `cli/validators/spec-registry.mjs`=`050036271ee56914f6299c1cb0f8471ef2e44c0f`, `cli/writers/spec-outcomes.mjs`=`89fd6dcaf24766303d0590486b75c76f43830454`, `docs-canonical/ARCHITECTURE.md`=`0219a5ea940932abeeffb081e25d63582012d3d9`, `docs-canonical/CI-RECIPES.md`=`9044bdf3a34145a010e5340c59b095109ecf02c8`, `tests/completion-upkeep.test.mjs`=`5b2f184beeaa00a9140868e6981cf8260e67da1a`.
+<!-- docguard:implementation-outcomes:end -->

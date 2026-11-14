@@ -3642,7 +3642,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "in_progress",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -3662,8 +3662,25 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
+          "outcomes": [
+            {
+              "revision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
+              "reason": "Spec 103 reviewed: SPR011 compares the latest recorded evidence blobs with HEAD (canonical documents left out, measured on the last 30 squash commits); specs complete --stale closes every flagged spec in one transaction against one guard run; tag-only edits, working-tree blobs, the written summary, the Status header, the did-you-mean and earliest-ref hints and the SPC004 recipe are in; the wide-range slowness is the guard run and is not changed. Nothing is flagged on main's tip.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -3691,7 +3708,7 @@
         "artifacts": [
           {
             "path": "specs/103-completion-upkeep/spec.md",
-            "digest": "sha256:a38c27aef3047bd474b84bc2f90b36c9ab8e83de42cbf3b836c25bd600414324"
+            "digest": "sha256:2cded3a96dd16beaacb9c553e1e8e8a6c2071a31db89eb015cdab9160c7f1e97"
           },
           {
             "path": "specs/103-completion-upkeep/plan.md",
