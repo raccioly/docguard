@@ -7834,7 +7834,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:3d185b089106a6a33dc1f4002497b25c928c0a2d619b969ac6b665bce5361d93"
+            "digest": "sha256:c0b5ae258c35f7cd52f3627f74dc01704b82d59e6a47624de9575a56708571f7"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
