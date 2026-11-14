@@ -34,7 +34,7 @@ import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
 import { backupDocuments } from '../shared-backup-documents.mjs';
-import { collapseMirrorFindings, identicalClusters, mirrorDrift } from '../shared-mirrors.mjs';
+import { collapseMirrorFindings, identicalClusters, MIRROR_DRIFT_CODES, mirrorDrift } from '../shared-mirrors.mjs';
 import { precisionEvidenceBlock, deriveGatingSet } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
@@ -408,9 +408,6 @@ export function computeFileKinds(projectDir, config) {
   }
   return { counts: ordered, excluded, ...(Object.keys(excludedMore).length ? { excludedMore } : {}) };
 }
-
-/** Drift findings name both sides in their message; their `mirrors` lists the copies involved, so the text shows no `also in:` line. */
-const MIRROR_DRIFT_CODES = new Set(['PSR007', 'PSR008']);
 
 /** Most drift entries listed in `files.mirrors.drift`. */
 export const MAX_MIRROR_DRIFT_LISTED = 50;

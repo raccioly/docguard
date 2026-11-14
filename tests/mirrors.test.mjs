@@ -301,3 +301,27 @@ describe('the pieces', () => {
     assert.match(r.stdout, /PSR007/);
   });
 });
+
+describe('mirrors in SARIF and JUnit', () => {
+  const data = {
+    project: 'fx', timestamp: '2026-11-13T00:00:00.000Z', status: 'WARN', effectiveErrors: 0, effectiveWarnings: 1,
+    validators: [{ name: 'Path-Scoped-Rules', key: 'pathScopedRules', status: 'warn', findings: [] }],
+    findings: [{
+      code: 'PSR002', validator: 'pathScopedRules', severity: 'warn', message: 'AGENTS.md:4 points at docs/MISSING.md, which does not exist',
+      location: 'AGENTS.md:4', suggestion: null, mirrors: ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'],
+    }],
+  };
+  data.validators[0].findings = data.findings;
+
+  it('SARIF lists the other mirror paths as relatedLocations', async () => {
+    const { toSarif } = await import('../cli/writers/sarif.mjs');
+    const [result] = toSarif(data, { projectDir: '/tmp/proj' }).runs[0].results;
+    assert.deepEqual(result.relatedLocations.map(r => r.physicalLocation.artifactLocation.uri), ['CLAUDE.md', '.github/copilot-instructions.md']);
+  });
+
+  it('JUnit keeps the other mirror paths in the failure text', async () => {
+    const { toJUnit } = await import('../cli/writers/junit.mjs');
+    const xml = toJUnit(data);
+    assert.match(xml, /\[also in: CLAUDE\.md, \.github\/copilot-instructions\.md\]/);
+  });
+});

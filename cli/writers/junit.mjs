@@ -27,11 +27,15 @@ function esc(s) {
     .replace(/'/g, '&apos;');
 }
 
+import { MIRROR_DRIFT_CODES } from '../shared-mirrors.mjs';
+
 function findingLine(f) {
   const code = f.code ? `[${f.code}] ` : '';
   const loc = f.location ? ` (${f.location})` : '';
   const ctx = f.context ? ` [context: ${f.context}]` : '';
-  return `${code}${f.message}${loc}${ctx}`;
+  // docguard.file-kinds#FR-014: identical mirrors carry one finding; the other paths stay in the failure text.
+  const also = Array.isArray(f.mirrors) && f.mirrors.length > 1 && !MIRROR_DRIFT_CODES.has(f.code) ? ` [also in: ${f.mirrors.slice(1).join(', ')}]` : '';
+  return `${code}${f.message}${loc}${ctx}${also}`;
 }
 
 /**

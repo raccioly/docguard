@@ -33,6 +33,9 @@ import { buildIgnoreFilter, loadDocguardIgnore, relPosix, walkFiles } from './sh
 import { agentInstructionDocs, instructionLeftOut, ROOT_AGENT_FILES } from './shared-agent-instructions.mjs';
 import { fileKind } from './shared-file-kind.mjs';
 
+/** Drift findings name both sides in their message; their `mirrors` lists the copies involved, so no "also in" line is added for them. */
+export const MIRROR_DRIFT_CODES = new Set(['PSR007', 'PSR008']);
+
 /** Instruction files in the order a mirror group reports them: the first is the one a finding is raised on. */
 export const MIRROR_INSTRUCTION_ORDER = Object.freeze(ROOT_AGENT_FILES.filter(name => name !== 'AGENTS.override.md'));
 

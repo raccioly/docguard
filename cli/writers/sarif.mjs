@@ -150,6 +150,10 @@ export function toSarif(guardData, opts = {}) {
       if (loc.line) physicalLocation.region = { startLine: loc.line };
       result.locations = [{ physicalLocation }];
     }
+    // docguard.file-kinds#FR-014: the other paths of identical mirrors (or both sides of a drift) are related locations.
+    if (Array.isArray(f.mirrors) && f.mirrors.length > 1) {
+      result.relatedLocations = f.mirrors.slice(1).map((path, id) => ({ id, physicalLocation: { artifactLocation: { uri: String(path).replace(/\\/g, '/'), uriBaseId: 'SRCROOT' } }, message: { text: 'mirror of the finding' } }));
+    }
     // Every channel, on every result. Emitting `confidence` only when it was
     // 'low' left a consumer unable to tell a high-confidence finding from one
     // whose field was absent, and `disposition` was dropped entirely — so a
