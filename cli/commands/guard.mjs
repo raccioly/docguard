@@ -1,6 +1,8 @@
 import { compactGuardResult } from '../shared-guard-json.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { fileKind, FILE_KINDS } from '../shared-file-kind.mjs';
+import { readSpecRegistry } from '../scanners/spec-registry.mjs';
+import { evidenceHubs, HUB_THRESHOLD } from '../scanners/stale-completions.mjs';
 import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarizeVerdicts } from '../validator-coverage.mjs';
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
@@ -791,6 +793,11 @@ export function runGuardInternal(projectDir, config) {
   if (!lite) {
     try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
     try { files = { kinds: computeFileKinds(projectDir, config) }; } catch { files = null; }
+    // docguard.completion-upkeep#FR-018: the evidence files SPR011 does not byte-compare, because this many closed specs share them.
+    try {
+      const loaded = readSpecRegistry(projectDir);
+      if (loaded.value) files = { ...(files || {}), completionHubs: { threshold: HUB_THRESHOLD, files: evidenceHubs(loaded.value) } };
+    } catch { /* visibility only: a registry that cannot be read is reported elsewhere */ }
     try {
       const claims = extractSemanticClaims(projectDir, config);
       const scoped = coverSemanticClaims(claims, evidence);
