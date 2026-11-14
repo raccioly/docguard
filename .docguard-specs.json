@@ -7716,7 +7716,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "ad3f1a899c210de0e14d77a755caeda08ae48d5b",
+          "lastReviewedRevision": "1d6f54c2a058a88767577c730ae5f422db2ff7d5",
           "outcomes": [
             {
               "revision": "9a60d928587fcb025305625caa437ae792d65c90",
@@ -7949,6 +7949,36 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "1d6f54c2a058a88767577c730ae5f422db2ff7d5",
+              "reason": "Re-verified after merging main (benchmark suites share one corpus run); behavior unchanged.",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -7979,7 +8009,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:6237835a720fb35bb309948e7a72e5e0e0a7ca7696673ef305982603b3f93d6c"
+            "digest": "sha256:e2e86710be3ab1bfd8603f80b78e6f911b6c0444020ff970cfde526fbfbae87a"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
