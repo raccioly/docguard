@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:5d41e026af192e7d6fe44b10243e463350be18ff95c8bac4d59363e00f9f5c89",
+          "fingerprint": "sha256:2d3b362b27cf1d06be2ad5b24d06ccf236dde090e419d23f80819abdb1c8c6a2",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Reviewed the requirement-identity section against planSpecCompletion after spec 101: the content anchor and the one-commit flow are described",
-      "reviewedAt": "2026-11-13",
-      "reviewedRevision": "9fea8e56b6143654daf25117bb969b01dfcec9b3"
+      "reason": "Reviewed against planSpecCompletion after spec 103: the tag-only edit, the Status header and the --stale batch are described",
+      "reviewedAt": "2026-11-14",
+      "reviewedRevision": "d7bd64373403f4f7614aae6fbb2e104a2616205e"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -34,11 +34,11 @@
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
         "cli/commands/specs.mjs#completeSpec": {
-          "fingerprint": "sha256:b49950eb82dbf892629ecfb917431561a1c8619bbdcdec75f7ec9714cccd5f2f",
+          "fingerprint": "sha256:ea068bf58fc92cd5f2c24feacee6ffccbee1c1aafdb4adb935cbd25a2fa39734",
           "tier": "ast"
         },
         "cli/commands/specs.mjs#reanchorSpec": {
-          "fingerprint": "sha256:38c755fe014d5c574624e15b26a4d86a6fdcf21706bff50f3e7bd300fcb8b2c8",
+          "fingerprint": "sha256:a53644723787436a682e85aad2caaf312e9dfbb506a2778b1773344446525183",
           "tier": "ast"
         },
         "schemas/docguard-specs.schema.json": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Re-reviewed after merging main: registry section matches reanchorSpec and the Blobs segment",
-      "reviewedAt": "2026-11-13",
-      "reviewedRevision": "5c782972dfca1b3284e56762f478c9e64e09dfa8"
+      "reason": "Reviewed against completeSpec and reanchorSpec after spec 103: SPR011, --stale, working-tree blobs and the Status header are described",
+      "reviewedAt": "2026-11-14",
+      "reviewedRevision": "d7bd64373403f4f7614aae6fbb2e104a2616205e"
     }
   }
 }
