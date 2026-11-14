@@ -27,9 +27,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Checked: the section's mkFinding contract gained one optional field, mirrors (spec 100 FR-014), described in its last paragraph; location stays a string, PARSER_TIERS unchanged.",
-      "reviewedAt": "2026-11-13",
-      "reviewedRevision": "1b538a2622d05c9b96507e723079e47c1aaa7c77"
+      "reason": "Checked: the section is back to its original prose; mirrors is described in a paragraph after it.",
+      "reviewedAt": "2026-11-14",
+      "reviewedRevision": "7e1265f6d3390622a8b4259910d07664a1814fdd"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {

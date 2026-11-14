@@ -535,8 +535,10 @@ A finding answers three independent questions, one field each. A single `confide
 `location` is always a string (`path` or `path:line`) or `null`. A detector that supplies `{ file, line }` is normalized at construction. Under the previous contract such findings rendered as `[object Object]`, and the SARIF location parser dropped them, so six codes reached GitHub Code Scanning with no file annotation at all.
 `context` is a classification, never a level: a `test-path` finding (a test, fixture, example or mock path) keeps the severity it had, and `isGatingEligible` returns false for it so it can never count toward failing a build under strict (`docguard.strict-by-default#FR-010`). The field is absent on every other finding.
 
-Freshness findings about a role document may add `documentRole`, `staleness` and `surface` (see Recorded Document Reviews). A finding raised on identical mirror copies (`AGENTS.md` beside `CLAUDE.md`, a skill under two agent roots) is one finding on the first path in report order and carries `mirrors`: every path that had it, in the same order (`location` stays a string, spec 100 FR-014); PSR007 and PSR008 carry `mirrors` too, listing every copy on either side of the drift. Guard JSON adds `files.mirrors: { groups, identical, renderings, drift[{ code, paths, mirrors, lines, newer, similarity? }], driftMore? }` beside `files.kinds` (absent on the `--changed-only` path).
+Freshness findings about a role document may add `documentRole`, `staleness` and `surface` (see Recorded Document Reviews).
 <!-- /docguard:section -->
+
+A finding raised on identical mirror copies (`AGENTS.md` beside `CLAUDE.md`, a skill under two agent roots) is one finding on the first path in report order and carries `mirrors`: every path that had it, in the same order (`location` stays a string, spec 100 FR-014); PSR007 and PSR008 carry `mirrors` too, listing every copy on either side of the drift. Guard JSON adds `files.mirrors: { groups, identical, renderings, drift[{ code, paths, mirrors, lines, newer, similarity? }], driftMore? }` beside `files.kinds` (absent on the `--changed-only` path).
 
 ## Route records and the plan's parser tiers
 
