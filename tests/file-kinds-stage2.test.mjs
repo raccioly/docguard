@@ -7,6 +7,7 @@
  *
  * @req docguard.file-kinds#FR-005
  * @req docguard.file-kinds#FR-012
+ * @req docguard.file-kinds#FR-013
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

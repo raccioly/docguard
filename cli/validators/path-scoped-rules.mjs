@@ -8,6 +8,8 @@
  *   PSR004  a scope DocGuard or the harness cannot read
  *   PSR005  a vendored instruction copy differs from what its installer recorded
  *   PSR006  a template, test, fixture or example copy shares an instruction file's name
+ *   PSR007  a skill or command exists at the same relative path under two agent roots and the copies differ
+ *   PSR008  two root instruction files share most of their lines but are not identical
  *
  * Guard evaluates tracked files, so a laptop with untracked or ignored files
  * gets the same answer as CI. Instruction files under test, fixture and
@@ -20,12 +22,14 @@
  * @implements docguard.output-ux#FR-011
  * @implements docguard.agent-instruction-role#FR-007
  * @implements docguard.instruction-copies#FR-003
+ * @implements docguard.file-kinds#FR-015
  */
 
-import { basename, posix } from 'node:path';
+import { lstatSync, readFileSync } from 'node:fs';
+import { basename, posix, resolve } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import {
-  applicableFor, HARNESSES, instructionScopes, MAX_INSTRUCTION_FILES, safeProjectPath,
+  applicableFor, HARNESSES, instructionScopes, MAX_INSTRUCTION_FILES, resolveClaudeImports, safeProjectPath,
 } from '../scanners/instruction-scopes.mjs';
 import { extractInstructionPointers, safePointerPath } from '../scanners/instruction-audit.mjs';
 import { readFrontmatter } from '../scanners/frontmatter.mjs';
@@ -34,6 +38,8 @@ import { buildIgnoreFilter, loadDocguardIgnore, walkFiles, relPosix } from '../s
 import { gitIgnoredPaths, listTrackedFiles } from '../shared-git.mjs';
 import { agentInstructionDocs, fileSha256, instructionLeftOut, ROOT_AGENT_FILES } from '../shared-agent-instructions.mjs';
 import { fileKind, INSTRUCTION_COPY } from '../shared-file-kind.mjs';
+import { mirrorDate, mirrorDrift } from '../shared-mirrors.mjs';
+import { readAgentSurface } from '../agent-surface.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
 const HARNESS_NAMES = { codex: 'Codex', claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot', openhands: 'OpenHands' };
@@ -41,6 +47,7 @@ const MAX_POINTER_FINDINGS = 50;
 const SKILL_DIRS_RE = /^(\.\/)?(scripts|references|assets)\//;
 
 const MAX_COPY_FINDINGS = 50;
+const MAX_DRIFT_FINDINGS = 50;
 
 const NOTHING_HOW = 'Nothing to configure unless an agent-instruction file carries something to check: a path scope (a `globs:`, `paths:` or `applyTo:` field), a path pointer (`docs/ARCHITECTURE.md`, `@docs/guide.md`), a vendored Spec Kit copy, or a template or fixture copy that shares an instruction file\'s name. Path-Scoped-Rules reads AGENTS.md, CLAUDE.md, .claude/rules, .cursor/rules, .github/instructions and the other files of the agent-instruction role.';
 
@@ -76,7 +83,11 @@ export function validatePathScopedRules(projectDir, config = {}) {
   const entries = all.filter(e => !instructionLeftOut(e.file, config));
   const role = agentInstructionDocs(projectDir, config);
   const copies = instructionCopies(projectFiles, config);
-  if (entries.length === 0 && copies.length === 0 && !role.docs.some(d => d.vendored?.hashes?.length)) {
+  // docguard.file-kinds#FR-015: mirrors that differ are something to examine even when no file carries a scope or pointer.
+  const drift = mirrorDrift(projectDir, config);
+  const gemini = geminiEntries(projectDir, projectFiles, config);
+  if (entries.length === 0 && copies.length === 0 && drift.skills.length === 0 && drift.instructions.length === 0 && gemini.length === 0
+    && !role.docs.some(d => d.vendored?.hashes?.length)) {
     return {
       ...resultFromFindings([], { passed: 0, total: 0 }), applicable: false, note: 'no agent instruction files',
       ...contractFields({
@@ -129,6 +140,9 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
 
   // ── PSR002: pointers that resolve to nothing ──
+  // GEMINI.md is an instruction file every Gemini CLI session loads, and it carries pointers and `@` imports
+  // like the others, so it is read for them (docguard.file-kinds#FR-014). It has no scope and no budget here.
+  const pointerSources = [...entries, ...gemini];
   const fileSet = new Set(allFiles);
   const dirSet = new Set();
   for (const f of allFiles) {
@@ -136,7 +150,7 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
   const exists = p => fileSet.has(p) || dirSet.has(p);
   const unresolved = [];
-  const pointerFiles = [...new Map(entries.filter(e => !e.generated && e.scope !== 'not-loaded').map(e => [e.file, e])).values()];
+  const pointerFiles = [...new Map(pointerSources.filter(e => !e.generated && e.scope !== 'not-loaded').map(e => [e.file, e])).values()];
   for (const e of pointerFiles) {
     const dir = e.file.includes('/') ? e.file.slice(0, e.file.lastIndexOf('/')) : '';
     const skill = /(^|\/)SKILL\.md$/.test(e.file);
@@ -158,7 +172,7 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
   // docguard.output-ux#FR-011: a Claude Code `@path` import that names nothing.
   const missingImports = new Map();
-  for (const e of entries) {
+  for (const e of pointerSources) {
     if (e.generated || e.scope === 'not-loaded') continue;
     for (const m of e.missingImports || []) {
       const key = `${m.from}\0${m.line}\0${m.path}`;
@@ -258,13 +272,43 @@ export function validatePathScopedRules(projectDir, config = {}) {
   }
   if (copyFindings > MAX_COPY_FINDINGS) limitations.push(`${copyFindings - MAX_COPY_FINDINGS} more instruction copies not listed`);
 
+  // ── PSR007 / PSR008: mirrors that differ (docguard.file-kinds#FR-015) ──
+  // The working-tree fallback is already said once above (`tracked === null`).
+  limitations.push(...drift.limitations.filter(l => !/^git unavailable/.test(l)));
+  let driftFindings = 0;
+  const lineWord = n => `${n} line${n === 1 ? '' : 's'}`;
+  for (const d of drift.skills) {
+    total++;
+    if (++driftFindings > MAX_DRIFT_FINDINGS) continue;
+    const [a, b] = d.paths;
+    const what = /(^|\/)commands\//.test(a) ? 'command' : 'skill';
+    findings.push({ ...mkFinding({
+      code: 'PSR007', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
+      message: `${a} and ${b} are the same ${what} under different agent roots, and ${d.lines === 1 ? '1 line differs' : `${d.lines} lines differ`}; ${newerText(d)}${installerText(d.vendored, docguardRoots(projectDir))}`,
+      location: a,
+      suggestion: { kind: 'review', text: `Make one copy the source and refresh or delete the others.${refreshAdvice(d.vendored, docguardRoots(projectDir))} If the copies are meant to differ, list one in .docguardignore` },
+    }), mirrors: d.mirrors });
+  }
+  for (const d of drift.instructions) {
+    total++;
+    if (++driftFindings > MAX_DRIFT_FINDINGS) continue;
+    const [a, b] = d.paths;
+    findings.push({ ...mkFinding({
+      code: 'PSR008', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
+      message: `${a} and ${b} share ${Math.floor(d.ratio * 100)}% of their lines but are not identical (${lineWord(d.lines)} differ); each agent follows only the file its harness loads, so they can contradict each other; ${newerText(d)}`,
+      location: a,
+      suggestion: { kind: 'review', text: `Keep one file as the source and make the other import it (@${basename(a)}) or generate it with \`docguard agents --sync\`` },
+    }), mirrors: d.mirrors });
+  }
+  if (driftFindings > MAX_DRIFT_FINDINGS) limitations.push(`${driftFindings - MAX_DRIFT_FINDINGS} more mirror drifts not listed`);
+
   const passed = Math.max(0, total - findings.length);
   const result = {
     ...resultFromFindings(findings, { passed, total }),
     ...contractFields({
       performed: total,
       found: findings.length > 0,
-      ran: `${total} scope, pointer, import, vendored-copy and same-name-copy check(s) over ${instructionFiles.length} instruction file(s)`,
+      ran: `${total} scope, pointer, import, vendored-copy, same-name-copy and mirror check(s) over ${instructionFiles.length} instruction file(s)`,
       decide: () => ({ applies: false, evidence: `${entries.length} agent-instruction file(s) but none carries a path scope, a path pointer, an @import or a vendored copy, and no copy shares an instruction file's name` }),
       empty: d => ({ emptyCause: 'nothing-of-this-kind', note: `Path-Scoped-Rules read ${entries.length} instruction file(s) and found nothing to check: ${d.evidence}.`, howToConfigure: NOTHING_HOW }),
     }),
@@ -272,6 +316,71 @@ export function validatePathScopedRules(projectDir, config = {}) {
   if (limitations.length) result.applicability = { status: 'partial', reason: limitations.join('; ') };
   result.instructionFiles = instructionFiles.length;
   return result;
+}
+
+/** Which of two mirrors is newer, as a clause; says so when git cannot tell. */
+function newerText(d) {
+  return d.newer ? `${d.newer.path} is newer (${mirrorDate(d.newer.at)})` : 'which is newer is unknown (git has no usable history for them)';
+}
+
+/** The folders `docguard upgrade --apply` and `docguard init` write DocGuard's skills and commands into for this project. */
+function docguardRoots(projectDir) {
+  try {
+    const surface = readAgentSurface(projectDir);
+    return [surface.skillsDir, surface.commandsDir].filter(Boolean);
+  } catch { return []; }
+}
+
+const underRoot = (path, roots) => roots.some(r => path.startsWith(`${r}/`));
+const UPGRADE = '`docguard upgrade --apply --schema-only`';
+
+/** What refreshes one DocGuard-installed copy: the command for the folder DocGuard writes, else the honest alternatives. */
+function docguardRefresh(path, roots) {
+  if (underRoot(path, roots)) return `${path} is in a folder DocGuard writes for this project: ${UPGRADE} rewrites it from the running DocGuard (use a DocGuard at least as new as the newer copy)`;
+  const where = roots.length ? `DocGuard writes only ${roots.join(' and ')} for this project` : 'DocGuard does not write a skills folder for this project';
+  return `${path} is not written by any DocGuard command here (${where}): copy the newer file over it, delete it, or refresh it with the tool that installed it`;
+}
+
+/** A sentence naming what refreshes each installed copy of a pair, or empty. Each copy has its own installer. */
+function installerText(vendored, roots) {
+  const notes = Object.entries(vendored || {}).map(([path, v]) => {
+    const source = v.source || '';
+    if (source.startsWith('docguard')) return docguardRefresh(path, roots);
+    if (source.startsWith('spec-kit-extension')) return `${path} was installed by a Spec Kit extension (reinstall the extension to refresh it)`;
+    if (source.startsWith('spec-kit')) return `${path} was installed by a Spec Kit integration (reinstalling the integration refreshes it)`;
+    if (source.startsWith('generated:')) return `${path} was generated by ${source.slice('generated:'.length)} (re-running it refreshes the file)`;
+    return `${path} was written by an installer (re-running it refreshes the file)`;
+  });
+  return notes.length ? `. ${notes.join('; ')}` : '';
+}
+
+/** The suggestion's refresh sentence: only commands that exist. */
+function refreshAdvice(vendored, roots) {
+  const dg = Object.entries(vendored || {}).filter(([, v]) => (v.source || '').startsWith('docguard'));
+  if (!dg.length) return '';
+  const inRoot = dg.filter(([p]) => underRoot(p, roots)).map(([p]) => p);
+  const outside = dg.filter(([p]) => !underRoot(p, roots)).map(([p]) => p);
+  return `${inRoot.length ? ` Run ${UPGRADE} to rewrite ${inRoot.join(', ')}.` : ''}${outside.length ? ` ${outside.join(', ')} ${outside.length === 1 ? 'is' : 'are'} not written by a DocGuard command here: copy the newer file over ${outside.length === 1 ? 'it' : 'them'} or delete ${outside.length === 1 ? 'it' : 'them'}.` : ''}`;
+}
+
+/**
+ * GEMINI.md files read for pointers and imports only. Gemini CLI loads one per folder, so each is an
+ * instruction file like AGENTS.md; DocGuard keeps no scope or budget for it (it is no harness here).
+ */
+function geminiEntries(projectDir, files, config) {
+  const out = [];
+  for (const file of files) {
+    if (basename(file) !== 'GEMINI.md' || (file.includes('/') && instructionLeftOut(file, config))) continue;
+    let content;
+    try {
+      const abs = resolve(projectDir, file);
+      if (!lstatSync(abs).isFile()) continue;
+      content = readFileSync(abs, 'utf-8');
+    } catch { continue; }
+    const { missing } = resolveClaudeImports(projectDir, file, content);
+    out.push({ file, kind: 'gemini-memory', content, generated: content.includes('docguard:agents-sync'), scope: 'always', missingImports: missing.length ? missing : undefined });
+  }
+  return out;
 }
 
 /**

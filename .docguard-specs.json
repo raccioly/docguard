@@ -866,7 +866,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 21
+            "line": 23
           }
         ],
         "testEvidence": [
@@ -2370,12 +2370,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 865
+            "line": 906
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 892
+            "line": 933
           },
           {
             "requirementId": "FR-021",
@@ -3059,7 +3059,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "b265e5de432734421a891a794893cf4fda6c19b7",
+          "lastReviewedRevision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
@@ -3162,6 +3162,23 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
+              "reason": "Maintenance: spec 100 stage 3 added Mirrors text to ARCHITECTURE and DATA-MODEL; one-commit completion behavior is unchanged.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3190,7 +3207,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:d3e29bc9eb104ce16d24ccd9e241ce50e55ec8736d3d6be8f2e4f3fa7dfe0128"
+            "digest": "sha256:decfda042db51a1bb51060c62c5c60820a687418e22ace281200976a9b50aac7"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
@@ -3696,7 +3713,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
+          "lastReviewedRevision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
           "outcomes": [
             {
               "revision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
@@ -3745,6 +3762,22 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
+              "reason": "Maintenance: spec 100 stage 3 added a Mirrors row to ARCHITECTURE; completion-upkeep behavior is unchanged.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3779,7 +3812,7 @@
         "artifacts": [
           {
             "path": "specs/103-completion-upkeep/spec.md",
-            "digest": "sha256:c139e08b9cb5141f63615f8b71d5a008222903d918f34da731c56aa17dddf530"
+            "digest": "sha256:5c4132e461e1fb60eebcb1273315f72d81d5e608f69ccd05139c3973980b0668"
           },
           {
             "path": "specs/103-completion-upkeep/plan.md",
@@ -8170,12 +8203,12 @@
       "path": "specs/100-file-kinds/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -8185,11 +8218,46 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/DATA-MODEL.md",
+            "docs-canonical/TEST-SPEC.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "c297b588418dbdece3ee2321568af081dd843fa5",
+          "outcomes": [
+            {
+              "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
+              "reason": "Re-verified after merging main (completion upkeep, shared benchmark run); behavior unchanged.",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -8218,7 +8286,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:f6d344e729f563a6d449cd9c742d8c16736595f793c6bfbd9c040f0cab23f093"
+            "digest": "sha256:c7a1c08026bdb6611713a9485f46cbf0e123ef133dfff3ab8891f0d7f99cebe2"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -8226,12 +8294,12 @@
           },
           {
             "path": "specs/100-file-kinds/tasks.md",
-            "digest": "sha256:a314818c4dca31775ea18542681f2c00af6e0575f7abffef816d9e8bf6b0aff5"
+            "digest": "sha256:92f9ff78e017251ce7ac72db5045861b06fbaf6f0af25b64ee9b8dd756d7a146"
           }
         ],
         "taskCompletion": {
-          "checked": 18,
-          "total": 20
+          "checked": 21,
+          "total": 21
         },
         "implementationEvidence": [
           {
@@ -8298,6 +8366,26 @@
             "requirementId": "FR-013",
             "file": "cli/shared-backup-documents.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/commands/guard.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/shared-mirrors.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/shared-mirrors.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/validators/path-scoped-rules.mjs",
+            "line": 25
           }
         ],
         "testEvidence": [
@@ -8372,9 +8460,44 @@
             "line": 9
           },
           {
+            "requirementId": "FR-013",
+            "file": "tests/file-kinds-stage2.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/mirrors.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/mirrors.test.mjs",
+            "line": 7
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/instruction-copies.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/mirrors.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 248
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/helpers/benchmark-subset.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/program-verification.test.mjs",
+            "line": 249
           }
         ]
       }
@@ -8514,7 +8637,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1165
+            "line": 1180
           },
           {
             "requirementId": "FR-008",
@@ -9540,12 +9663,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1441
+            "line": 1456
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1451
+            "line": 1466
           },
           {
             "requirementId": "FR-006",
@@ -9745,12 +9868,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 22
+            "line": 24
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 285
+            "line": 394
           }
         ],
         "testEvidence": [
@@ -12690,7 +12813,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 20
+            "line": 22
           },
           {
             "requirementId": "FR-012",
@@ -12962,12 +13085,12 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 17
+            "line": 19
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 18
+            "line": 20
           },
           {
             "requirementId": "FR-005",
@@ -12982,7 +13105,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 19
+            "line": 21
           },
           {
             "requirementId": "FR-008",
@@ -18050,7 +18173,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 54
+            "line": 61
           },
           {
             "requirementId": "FR-006",
@@ -18160,7 +18283,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 230
+            "line": 232
           },
           {
             "requirementId": "FR-014",

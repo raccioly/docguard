@@ -54,6 +54,9 @@
  *                                       at run time; 'not-applicable' for doc-only findings.
  * @property {string}      message       Concise, NO ansi colour.
  * @property {string|null} location      'path:line' or 'path'. Always a string or null.
+ * @property {string[]} [mirrors]       Present only for mirror copies (AGENTS.md, CLAUDE.md, a skill under two agent roots), in report
+ *                                       order with `location` first: every path that carries the same finding when identical copies
+ *                                       collapse into one; for PSR007 and PSR008, every copy on either side of the drift.
  * @property {Suggestion|null} suggestion
  * @property {boolean}     reportable    Surface in `docguard feedback`: true when the code is
  *                                       unmeasured OR confidence is low — so the feedback
@@ -891,6 +894,18 @@ export const CODES = {
     validator: 'pathScopedRules',
     title: 'Instruction-file copy shares the real file\'s name',
     help: 'A file named like one of this project\'s instruction files (`AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` or a `requiredFiles.agentFile`) is a copy for another project, and a file that governs this project has the same name. An agent searching the repository for that name may read whichever it finds first, and Codex and Claude Code load a nested `AGENTS.md` or `CLAUDE.md` when they work in its folder. A copy sits below a template directory (`templates`, `template`, `_templates`, `__templates__`, `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)`, in any case; high confidence) or below a test, fixture or example directory (low confidence: a fixture project may need the name). The folder that holds the file does not count, so `templates/AGENTS.md` and `packages/templates/AGENTS.md` govern their folders, and monorepo package files such as `packages/api/AGENTS.md` are never reported; nor are files under a dot-directory segment (`.cursor/rules/templates/`). Rename the copy (`AGENTS.md.template`) and have the scaffolder or test drop the suffix when it writes the file out, or list a fixture in `.docguardignore` with a reason. If the file does govern its folder, list it in `fileKinds.own`. Template copies are also left out of the agent-instruction role, so Freshness never reviews them and the instruction-chain budget (STR004) does not count them (specs 099 and 100); `guard --format json` lists every file left out under `files.kinds.excluded`.',
+    suppress: null,
+  },
+  PSR007: {
+    validator: 'pathScopedRules',
+    title: 'Mirrored skill or command copies differ',
+    help: 'The same skill or command exists at the same relative path under two agent roots (`.agent/`, `.agents/`, `.claude/`, `.codex/`, `.gemini/`, `.github/` or an installed extension folder `.specify/extensions/<ext>/`), for example `.claude/skills/x/SKILL.md` and `.agents/skills/x/SKILL.md`, and the two files differ. Each harness loads only its own copy, so the harnesses are running different procedures under one name. The message names both paths, how many lines differ and which was committed more recently (or says it cannot tell, as in a shallow clone). A copy that DocGuard installed is refreshed by `docguard upgrade --apply --schema-only` only in the one folder DocGuard writes for the project (the skills folder of the detected agent); the message says which copy that is, and for any other folder says no DocGuard command writes it (copy the newer file over it, or delete it). Copies that differ by design are not reported: two Spec Kit installs for different harnesses (each is checked against its own install manifest by PSR005) and renderings of one generated file that differ only in the harness the generator header names. Files that merely share a name in different folders are different documents, never mirrors. Make one copy the source and refresh or delete the others, or list a copy that is meant to differ in `.docguardignore`. `guard --format json` carries `mirrors` on the finding and `files.mirrors` for the whole project.',
+    suppress: null,
+  },
+  PSR008: {
+    validator: 'pathScopedRules',
+    title: 'Root instruction files nearly match but disagree',
+    help: 'Two of the root instruction files `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` and `.github/copilot-instructions.md` (or the same set inside one nested folder) share at least 80% of their non-blank lines and are not identical, so they are hand-written copies that drifted: one can say `npm` where the other says `yarn`, and each agent follows only the file its harness loads. A pointer file (a body of at most 6 lines that imports the other file) and a file written by `docguard agents --sync` are not compared here (`docguard agents --check` compares those). Two files that are simply different documents share few lines and are never reported. Keep one file as the source and make the other import it (`@AGENTS.md`) or generate it with `docguard agents --sync`.',
     suppress: null,
   },
   SPR008: {

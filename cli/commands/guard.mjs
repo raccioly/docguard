@@ -13,6 +13,7 @@ import { applyDocRoles } from '../shared-doc-roles.mjs';
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
  * @implements docguard.output-ux#FR-001 {scope=file}
  * @implements docguard.output-ux#FR-008 {scope=file}
+ * @implements docguard.file-kinds#FR-014 {scope=file}
  * Guard Command — Validate project against its canonical documentation
  * Runs all enabled validators and reports results.
  *
@@ -35,6 +36,7 @@ import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
 import { backupDocuments } from '../shared-backup-documents.mjs';
+import { collapseMirrorFindings, identicalClusters, MIRROR_DRIFT_CODES, mirrorDrift } from '../shared-mirrors.mjs';
 import { precisionEvidenceBlock, deriveGatingSet } from '../precision-evidence.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve as resolvePath, relative as relativePath } from 'node:path';
@@ -258,6 +260,7 @@ function renderableItems(v) {
       suggestion: f.suggestion,
       location: f.location,
       staleness: f.staleness,
+      mirrors: f.mirrors,
     }));
   }
   return [
@@ -406,6 +409,26 @@ export function computeFileKinds(projectDir, config) {
     else excludedMore.backup = (excludedMore.backup || 0) + 1;
   }
   return { counts: ordered, excluded, ...(Object.keys(excludedMore).length ? { excludedMore } : {}) };
+}
+
+/** Most drift entries listed in `files.mirrors.drift`. */
+export const MAX_MIRROR_DRIFT_LISTED = 50;
+
+/**
+ * Mirrors (specs/100-file-kinds FR-014, FR-015): how many groups of copies the project holds, how many sets are
+ * identical, and the pairs that differ. `drift` lists what PSR007 and PSR008 report; `renderings` counts skill
+ * pairs that differ by design and are not reported.
+ */
+export function computeFileMirrors(projectDir, config) {
+  const d = mirrorDrift(projectDir, config);
+  const drift = [
+    ...d.skills.map(x => ({ code: 'PSR007', paths: x.paths, mirrors: x.mirrors, lines: x.lines, newer: x.newer?.path || null })),
+    ...d.instructions.map(x => ({ code: 'PSR008', paths: x.paths, mirrors: x.mirrors, lines: x.lines, similarity: Math.round(x.ratio * 100) / 100, newer: x.newer?.path || null })),
+  ];
+  return {
+    groups: d.groups, identical: d.identical, renderings: d.renderings.length,
+    drift: drift.slice(0, MAX_MIRROR_DRIFT_LISTED), ...(drift.length > MAX_MIRROR_DRIFT_LISTED ? { driftMore: drift.length - MAX_MIRROR_DRIFT_LISTED } : {}),
+  };
 }
 
 /** One text line when instruction files or documents were left out as copies, or null. */
@@ -606,6 +629,24 @@ export function runGuardInternal(projectDir, config) {
 
   const runGaps = closeObservations();
 
+  // ── Mirrors (specs/100-file-kinds FR-014) ──
+  // A finding a validator raised on each of several identical copies (AGENTS.md, CLAUDE.md and the Copilot file; a
+  // skill under two agent roots) is one finding on the first path, listing every path. It runs before the baseline,
+  // so a baseline that froze the copies shows the extra ones as no longer occurring, and on the pre-commit subset too.
+  // The kept finding's message and location are the ones the validator wrote, so its baseline fingerprint is unchanged.
+  let mirrorClusters = null;
+  for (const r of results) {
+    if (!Array.isArray(r.findings) || r.findings.length < 2 || r.errors.length + r.warnings.length !== r.findings.length) continue;
+    try { mirrorClusters ??= identicalClusters(projectDir, config); } catch { mirrorClusters = []; }
+    const { findings: kept, removed } = collapseMirrorFindings(r.findings, mirrorClusters);
+    if (removed === 0 && kept.every((f, i) => f === r.findings[i])) continue;
+    r.findings = kept;
+    r.errors = kept.filter(f => f.severity === 'error').map(f => f.message);
+    r.warnings = kept.filter(f => f.severity !== 'error').map(f => f.message);
+    r.total = r.passed + kept.length;
+    Object.assign(r, classifyResult(r));
+  }
+
   // ── Adoption baseline (v0.33) ──
   // If the repo committed `.docguard.baseline.json`, findings frozen at
   // adoption time are suppressed BEFORE any tally — so exit codes, severity
@@ -792,7 +833,7 @@ export function runGuardInternal(projectDir, config) {
   const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
   if (!lite) {
     try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
-    try { files = { kinds: computeFileKinds(projectDir, config) }; } catch { files = null; }
+    try { files = { kinds: computeFileKinds(projectDir, config), mirrors: computeFileMirrors(projectDir, config) }; } catch { files = null; }
     // docguard.completion-upkeep#FR-018: the evidence files SPR011 does not byte-compare, because this many closed specs share them.
     try {
       const loaded = readSpecRegistry(projectDir);
@@ -1172,6 +1213,10 @@ export function runGuard(projectDir, config, flags) {
       const disp = item.disposition === 'escalate' && item.confidence !== 'low'
         ? ` ${c.dim}(review — signal, not a verdict)${c.reset}` : '';
       console.log(`     ${mark} ${codeTag}${item.message}${c.reset}${conf}${disp}`);
+      // docguard.file-kinds#FR-014: identical mirrors carry one finding; say where else it applies.
+      if (Array.isArray(item.mirrors) && item.mirrors.length > 1 && !MIRROR_DRIFT_CODES.has(item.code)) {
+        console.log(`       ${c.dim}also in: ${item.mirrors.slice(1).join(', ')}${c.reset}`);
+      }
       if (item.suggestion?.text) {
         console.log(`       ${c.cyan}→${c.reset} ${c.dim}${item.suggestion.text}${c.reset}`);
         if (item.suggestion.command) {

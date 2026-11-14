@@ -742,6 +742,48 @@
       "oppositeControl": "dev-backup-docs-control"
     },
     {
+      "id": "dev-mirror-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-mirrors",
+      "causalFamily": "mirror-drift",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/mirror-control" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR007", "PSR008"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "PSR007@.agent/commands/release.md",
+        "PSR007@docs/release.md",
+        "PSR007@.agents/skills/sec/SKILL.md",
+        "PSR008@AGENTS.md",
+        "PSR008@CLAUDE.md",
+        "PSR008@GEMINI.md"
+      ],
+      "oppositeControl": "dev-mirror-defect"
+    },
+    {
+      "id": "dev-mirror-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-mirrors",
+      "causalFamily": "mirror-drift",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/mirror-defect" },
+      "scope": { "validatorKey": "pathScopedRules", "codes": ["PSR007", "PSR008"] },
+      "config": { "profile": "starter", "diskCache": false, "validators": { "pathScopedRules": true } },
+      "mutations": [],
+      "expected": [
+        "PSR007@.agent/commands/release.md",
+        "PSR008@AGENTS.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "dev-mirror-control"
+    },
+    {
       "id": "eval-vendored-instruction-control",
       "split": "evaluation",
       "repositoryGroup": "synthetic-agent-instructions-heldout",

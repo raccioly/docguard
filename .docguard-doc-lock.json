@@ -27,9 +27,9 @@
           "tier": "ast"
         }
       },
-      "reason": "mkFinding now carries both the Security context field (097) and the freshness documentRole/staleness/surface fields (095); prose states both",
-      "reviewedAt": "2026-11-13",
-      "reviewedRevision": "5d6342b2dbd0b1517d38129a5f30407fff87830d"
+      "reason": "Checked: the section is unchanged; mirror findings have their own heading after it.",
+      "reviewedAt": "2026-11-14",
+      "reviewedRevision": "0af9a59d8287c8fe257215211a3035f21173ea6a"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
