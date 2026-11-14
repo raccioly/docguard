@@ -58,7 +58,10 @@ export function parseSections(content) {
   return inspectSections(content).sections;
 }
 
-/** Parse sections and retain malformed-marker evidence for write authorization. */
+/**
+ * Parse sections and retain malformed-marker evidence for write authorization.
+ * @implements docguard.document-languages#FR-002
+ */
 export function inspectSections(content) {
   const lines = String(content).split('\n');
   const sections = [];
@@ -83,9 +86,15 @@ export function inspectSections(content) {
     }
     const om = line.match(OPEN_RE);
     if (om) {
+      // A comment with no `id=` (the `n/a` marker, a bare id) names a section
+      // but does not open a bounded block: it has nothing to close, so it
+      // neither abandons an open block nor leaves one open
+      // (docguard.document-languages#FR-002).
+      const attrs = parseAttrs(om[1] || '');
+      if (!Object.hasOwn(attrs, 'id')) continue;
       // Abandon any still-open (malformed) section; start fresh here.
       if (open !== null) issues.push({ code: 'nested-or-unclosed', line: open.openLine + 1 });
-      open = { attrs: parseAttrs(om[1] || ''), openLine: i };
+      open = { attrs, openLine: i };
     }
   }
   if (open !== null) issues.push({ code: 'unclosed', line: open.openLine + 1 });

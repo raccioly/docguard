@@ -5992,15 +5992,32 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:a920e76c0f89f8daf31c43355fa0e00f49796e7625f8a052f598964e03be486a"
+            "digest": "sha256:bb42493e2672cf477c9e3658ca3c2afea84388a0c44ede45ace5e18847f78855"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 3,
           "total": 43
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-002",
+            "file": "cli/writers/sections.mjs",
+            "line": 63
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/document-languages-compat.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/document-languages-sections.test.mjs",
+            "line": 6
+          }
+        ]
       }
     },
     {
@@ -11440,7 +11457,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/writers/sections.mjs",
-            "line": 103
+            "line": 112
           },
           {
             "requirementId": "FR-010",
