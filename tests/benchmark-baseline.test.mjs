@@ -1,10 +1,11 @@
 import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { spawnSync } from 'node:child_process';
+import { writeSubsetManifest } from './helpers/benchmark-subset.mjs';
 
 /**
  * @req docguard.precision-evidence-loop#FR-009
@@ -173,11 +174,21 @@ describe('benchmark run provenance', () => {
     assert.equal(candidate.review.status, 'candidate');
     assert.equal(candidate.review.caveat, benchmarkCaveat(report.core.cases));
 
-    const compared = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', target], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+    // The candidate came from a run of the whole development split, which therefore covers every
+    // case the candidate holds. A fresh run over a few of those cases (two defect/control pairs)
+    // must compare clean against it; the cases it did not select are reported as out of selection,
+    // not as regressions. Re-running the whole split here would only repeat the run above.
+    assert.deepEqual(report.selection.caseIds, candidate.core.cases.map(item => item.id));
+    const subset = join(dir, 'subset');
+    mkdirSync(subset);
+    const ids = ['dev-js-security-control', 'dev-js-security-defect', 'dev-go-todo-control', 'dev-go-todo-defect'];
+    const manifest = writeSubsetManifest(subset, ids);
+    const compared = spawnSync(process.execPath, [RUN, '--manifest', manifest, '--split', 'development', '--baseline', target], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
     assert.equal(compared.status, 0, compared.stderr);
     const comparison = JSON.parse(compared.stdout).comparison;
     assert.equal(comparison.core.status, 'PASS');
-    assert.deepEqual(comparison.core.outOfSelection, []);
+    assert.deepEqual(comparison.core.regressions, []);
+    assert.deepEqual([...comparison.core.outOfSelection].sort(), candidate.core.cases.map(item => item.id).filter(id => !ids.includes(id)));
     assert.equal(comparison.baseline.review.measures, BASELINE_MEASURES);
   });
 
@@ -193,15 +204,20 @@ describe('benchmark run provenance', () => {
     const notes = join(dir, 'notes.md');
     writeFileSync(notes, 'Benchmark-Rebaselined: dev-generated-security-control \u2014 the fixture literal was replaced; no metric moved\n');
     const options = { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 };
-    const plain = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path], options);
+    // The rebaselined case is the only case these runs need; they run it from a manifest holding it.
+    const subset = join(dir, 'subset');
+    mkdirSync(subset);
+    const manifest = writeSubsetManifest(subset, ['dev-generated-security-control']);
+    const selection = ['--manifest', manifest, '--split', 'development'];
+    const plain = spawnSync(process.execPath, [RUN, ...selection, '--baseline', path], options);
     assert.equal(plain.status, 1);
     assert.deepEqual(JSON.parse(plain.stdout).comparison.core.regressions.map(item => item.kind), ['case-evidence-changed']);
-    const acknowledged = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path, '--acknowledge-file', notes], options);
+    const acknowledged = spawnSync(process.execPath, [RUN, ...selection, '--baseline', path, '--acknowledge-file', notes], options);
     assert.equal(acknowledged.status, 0, acknowledged.stderr);
     const core = JSON.parse(acknowledged.stdout).comparison.core;
     assert.equal(core.status, 'PASS');
     assert.deepEqual(core.rebaselined.map(item => item.id), ['dev-generated-security-control']);
-    const missing = spawnSync(process.execPath, [RUN, '--split', 'development', '--baseline', path, '--acknowledge-file', join(dir, 'absent.md')], options);
+    const missing = spawnSync(process.execPath, [RUN, ...selection, '--baseline', path, '--acknowledge-file', join(dir, 'absent.md')], options);
     assert.equal(missing.status, 1);
     assert.equal(JSON.parse(missing.stderr).status, 'ERROR');
   });

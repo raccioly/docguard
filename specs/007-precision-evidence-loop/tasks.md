@@ -51,3 +51,7 @@
 
 - [x] T027 Author an ARC001 defect/clean-control pair on statically analysable Python imports, labels written from the fixture source before the corpus is run.
 - [x] T028 Re-adjudicate and regenerate the reviewed baseline and the shipped per-code evidence so ARC001 reports `measured` instead of `not-measured`.
+
+## Phase 8: Test cost
+
+- [x] T029 (2026-11-13) The benchmark suites run the corpus once and leave headroom under the 100-second test ceiling: `tests/benchmark-runner.test.mjs` computes one real run of the whole corpus and every verdict assertion reads it; the determinism, retained-root, comparison and `--acknowledge-file` checks run a few real cases of the same corpus (`tests/helpers/benchmark-subset.mjs`) instead of the whole corpus again. `benchmarks/run.mjs` and the CI full-corpus gate are unchanged.
