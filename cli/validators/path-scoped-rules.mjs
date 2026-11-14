@@ -281,25 +281,23 @@ export function validatePathScopedRules(projectDir, config = {}) {
     if (++driftFindings > MAX_DRIFT_FINDINGS) continue;
     const [a, b] = d.paths;
     const what = /(^|\/)commands\//.test(a) ? 'command' : 'skill';
-    findings.push(mkFinding({
+    findings.push({ ...mkFinding({
       code: 'PSR007', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
       message: `${a} and ${b} are the same ${what} under different agent roots, and ${d.lines === 1 ? '1 line differs' : `${d.lines} lines differ`}; ${newerText(d)}${installerText(d.vendored)}`,
       location: a,
-      mirrors: d.mirrors,
       suggestion: { kind: 'review', text: `Make one copy the source and refresh or delete the others. ${Object.values(d.vendored || {}).some(v => (v.source || '').startsWith('docguard')) ? 'Run `docguard upgrade` to refresh a DocGuard-installed copy. ' : ''}If the copies are meant to differ, list one in .docguardignore` },
-    }));
+    }), mirrors: d.mirrors });
   }
   for (const d of drift.instructions) {
     total++;
     if (++driftFindings > MAX_DRIFT_FINDINGS) continue;
     const [a, b] = d.paths;
-    findings.push(mkFinding({
+    findings.push({ ...mkFinding({
       code: 'PSR008', validator: 'pathScopedRules', severity: 'warn', disposition: 'escalate', confidence: 'high',
       message: `${a} and ${b} share ${Math.floor(d.ratio * 100)}% of their lines but are not identical (${lineWord(d.lines)} differ); each agent follows only the file its harness loads, so they can contradict each other; ${newerText(d)}`,
       location: a,
-      mirrors: d.mirrors,
       suggestion: { kind: 'review', text: `Keep one file as the source and make the other import it (@${basename(a)}) or generate it with \`docguard agents --sync\`` },
-    }));
+    }), mirrors: d.mirrors });
   }
   if (driftFindings > MAX_DRIFT_FINDINGS) limitations.push(`${driftFindings - MAX_DRIFT_FINDINGS} more mirror drifts not listed`);
 

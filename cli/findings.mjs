@@ -1364,8 +1364,6 @@ export function mkFinding(f) {
     ...(typeof f.documentRole === 'string' ? { documentRole: f.documentRole } : {}),
     ...(f.staleness && typeof f.staleness === 'object' ? { staleness: f.staleness } : {}),
     ...(f.surface && typeof f.surface === 'object' ? { surface: f.surface } : {}),
-    // docguard.file-kinds#FR-014: every path of identical mirrors that carry this finding, in report order.
-    ...(Array.isArray(f.mirrors) && f.mirrors.length > 1 && f.mirrors.every(m => typeof m === 'string') ? { mirrors: [...f.mirrors] } : {}),
   };
 }
 

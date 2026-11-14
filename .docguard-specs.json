@@ -9235,12 +9235,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1452
+            "line": 1450
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1462
+            "line": 1460
           },
           {
             "requirementId": "FR-006",
@@ -9445,7 +9445,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 368
+            "line": 366
           }
         ],
         "testEvidence": [

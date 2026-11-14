@@ -23,13 +23,13 @@
           "tier": "ast"
         },
         "cli/findings.mjs#mkFinding": {
-          "fingerprint": "sha256:b65c19236baccb6d6623706626977fb7ae17c76450f8a32f5c7a227452c0e5a6",
+          "fingerprint": "sha256:7c7a31069ae89304d12576101c5b1cfba54f1a74984e5ecdebbb3f4427e3495c",
           "tier": "ast"
         }
       },
-      "reason": "Checked: the section is back to its original prose; mirrors is described in a paragraph after it.",
+      "reason": "Checked: mkFinding is byte-identical to main again; mirrors is added to a finding after construction, described in the paragraph after the section.",
       "reviewedAt": "2026-11-14",
-      "reviewedRevision": "7e1265f6d3390622a8b4259910d07664a1814fdd"
+      "reviewedRevision": "2248affb2f98bb1a1c99a54ab383cba22a9005c8"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
