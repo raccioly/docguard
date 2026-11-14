@@ -3059,7 +3059,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "0cdebdb13e07577c47e4d9a97cc74ae411953713",
+          "lastReviewedRevision": "aad9d1e0e0c8250da336b0405610a5a1daac4711",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
@@ -3111,6 +3111,23 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "aad9d1e0e0c8250da336b0405610a5a1daac4711",
+              "reason": "Reviewed spec 101 against spec 103's edits: the clean-tree rule gains tag-only edits and the Status header, evidence blobs are also read by SPR011 and recorded from the working tree, and a branch that merged main finds the reviewed commit through any ancestry path; the one-commit flow, SPR008 and SPR010 behave as before",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3139,7 +3156,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:57a28d4ce24e3787cc07c5cc968418048e37dadba954a3ccc40d9b9e4dcf5fbf"
+            "digest": "sha256:c605bed4ca1ec0b786b5a960ddaff3d778ae9826957cd7804111cc0051e86793"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
