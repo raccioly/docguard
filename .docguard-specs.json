@@ -8184,6 +8184,11 @@
           },
           {
             "requirementId": "SC-003",
+            "file": "tests/helpers/benchmark-subset.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
             "line": 249
           }

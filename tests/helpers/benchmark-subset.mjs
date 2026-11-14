@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
  * the whole corpus. The cases are the committed ones, unedited, so a run over them is a real
  * benchmark run; only the number of cases differs. Tests that prove the full corpus keep
  * running `benchmarks/corpus.json` itself.
+ * @req docguard.file-kinds#SC-003
  * @param {string} directory empty directory that receives `corpus.json` and `fixtures/`
  * @param {string[]} ids case IDs to carry over
  * @returns {string} path of the written manifest
