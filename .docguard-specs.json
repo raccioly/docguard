@@ -5917,6 +5917,93 @@
       }
     },
     {
+      "specId": "docguard.document-languages",
+      "path": "specs/104-document-languages/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.document-languages#FR-001",
+          "docguard.document-languages#FR-002",
+          "docguard.document-languages#FR-003",
+          "docguard.document-languages#FR-004",
+          "docguard.document-languages#FR-005",
+          "docguard.document-languages#FR-006",
+          "docguard.document-languages#FR-007",
+          "docguard.document-languages#FR-008",
+          "docguard.document-languages#FR-009",
+          "docguard.document-languages#FR-010",
+          "docguard.document-languages#FR-011",
+          "docguard.document-languages#FR-012",
+          "docguard.document-languages#FR-013",
+          "docguard.document-languages#FR-014",
+          "docguard.document-languages#FR-015",
+          "docguard.document-languages#FR-016",
+          "docguard.document-languages#FR-017",
+          "docguard.document-languages#FR-018",
+          "docguard.document-languages#FR-019",
+          "docguard.document-languages#FR-020",
+          "docguard.document-languages#FR-021",
+          "docguard.document-languages#FR-022",
+          "docguard.document-languages#FR-023",
+          "docguard.document-languages#FR-024",
+          "docguard.document-languages#FR-025",
+          "docguard.document-languages#FR-026",
+          "docguard.document-languages#SC-001",
+          "docguard.document-languages#SC-002",
+          "docguard.document-languages#SC-003",
+          "docguard.document-languages#SC-004",
+          "docguard.document-languages#SC-005",
+          "docguard.document-languages#SC-006",
+          "docguard.document-languages#SC-007"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/104-document-languages/spec.md",
+            "digest": "sha256:55733de715f70c1bb0dda10d69b613ce6ae149b36dcf604a64c5470bf5e34b11"
+          },
+          {
+            "path": "specs/104-document-languages/plan.md",
+            "digest": "sha256:02b3feff3881c2cfb318a332076eeb7bd02f4131522903f44696384b1d89fb9a"
+          },
+          {
+            "path": "specs/104-document-languages/tasks.md",
+            "digest": "sha256:a920e76c0f89f8daf31c43355fa0e00f49796e7625f8a052f598964e03be486a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 43
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.document-lifecycle",
       "path": "specs/006-document-lifecycle/spec.md",
       "reviewed": {
