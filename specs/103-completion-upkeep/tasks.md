@@ -7,7 +7,7 @@
 
 - [x] T001 U5: replay the last 30 squash commits on main; record the distribution with and without canonical documents and the tag-line exemption (spec "Measured before the warning was wired in").
 - [x] T002 Run the proposed check on main's tip: it flags nothing.
-- [x] T003 `tests/completion-upkeep.test.mjs`: the pull-request fixture, the batch, the blocked batch, the tag-only edit, and one test per friction point; run it on main's code and record which tests fail (13 of 18).
+- [x] T003 `tests/completion-upkeep.test.mjs`: the pull-request fixture, the batch, the blocked batch, the tag-only edit, and one test per friction point; run it on main's code and record which tests fail (13 of 18; the tests for FR-014 and SC-003 were added later and never ran on main).
 
 ## Phase 2: Implementation
 

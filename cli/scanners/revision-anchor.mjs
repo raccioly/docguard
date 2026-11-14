@@ -147,21 +147,32 @@ export function danglingRevisions(projectDir, registry) {
 const uncheckedTasks = text => String(text).replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[[ xX]\]/gm, '$1[ ]');
 
 const escapeRe = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-// A line that holds only comment openers and closers: what is left of a tag line once its tag is removed.
-const COMMENT_ONLY = /^(?:\s|\/\*+|\*+\/?|\/\/+|#+|<!--|-->)*$/;
+const MARK = '\u0000';
 
 /**
  * Whether `current` differs from `committed` only by `@implements` or `@req`
- * tags for `specId`'s own requirements, and has no fewer of them. Every tag of
- * that spec, and every line left empty by removing one, is dropped from both
- * texts before they are compared, so any other edit still differs.
+ * tags for `specId`'s own requirements, and adds at least one. Each tag of that
+ * spec is replaced by a marker in both texts; then a comment block that held
+ * nothing but markers, and a line that held nothing but a marker and a comment
+ * opener, are removed, and a marker that ended a code line is dropped with the
+ * comment opener before it. Whatever is left must be identical, so a blank line,
+ * a deleted `*\/`, an edited statement or any other change still differs.
  * @implements docguard.completion-upkeep#FR-007
  */
 export function tagOnlyChange(committed, current, specId) {
   const tag = new RegExp(`@(?:implements|req)[ \\t]+(?:${escapeRe(specId)}#[A-Za-z0-9_.-]+[, \\t]*)+`, 'g');
   const count = text => (String(text).match(tag) || []).length;
-  const normal = text => String(text).replace(tag, '').split('\n').map(line => line.replace(/\s+$/, '')).filter(line => !COMMENT_ONLY.test(line)).join('\n');
-  return count(current) >= count(committed) && normal(committed) === normal(current);
+  const normal = text => String(text).replace(tag, MARK)
+    .replace(/\/\*+(?:[\s*]|\u0000)*\*\//g, block => (block.includes(MARK) ? MARK : block))
+    .split('\n')
+    .flatMap(line => {
+      if (!line.includes(MARK)) return [line];
+      const rest = line.split(MARK).join('');
+      if (/^[ \t]*(?:\/\/+|#+|\*+)?[ \t]*$/.test(rest)) return []; // the line held only the tag
+      return [rest.replace(/[ \t]*(?:\/\/+|#+)[ \t]*$/, '').replace(/[ \t]+$/, '')];
+    })
+    .join('\n');
+  return count(current) > count(committed) && normal(committed) === normal(current);
 }
 
 /** A spec with its `**Status**:` header and its outcomes block neutralized: what completion itself writes. */
@@ -420,13 +431,14 @@ export function locateContentAnchors(projectDir, items, { registryPath }) {
  * the first-parent search above finds the merge commit instead, whose files already
  * carry the branch's own later edits.
  * @returns {string|null}
- * @implements docguard.completion-upkeep#FR-004
+ * @implements docguard.completion-upkeep#FR-015
  */
 export function reviewedCommitOnHistory(projectDir, revision, blobs, { registryPath, limit = 20 }) {
   if (!REVISION_RE.test(revision || '')) return null;
-  const log = git(projectDir, ['log', '--reverse', `--max-count=${limit}`, '--format=%H', `-G${revision}`, 'HEAD', '--', registryPath]);
+  // `--max-count` applies before `--reverse`, so the oldest `limit` are taken here, after git has answered.
+  const log = git(projectDir, ['log', '--reverse', '--format=%H', `-G${revision}`, 'HEAD', '--', registryPath]);
   const paths = Object.keys(blobs);
-  for (const commit of log.out.split('\n').map(line => line.trim()).filter(line => REVISION_RE.test(line))) {
+  for (const commit of log.out.split('\n').map(line => line.trim()).filter(line => REVISION_RE.test(line)).slice(0, limit)) {
     const at = evidenceBlobsAt(projectDir, commit, paths);
     if (paths.every(path => at[path] === blobs[path])) return commit;
   }

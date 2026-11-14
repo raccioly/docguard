@@ -8,7 +8,7 @@
 
 **Spec ID**: `docguard.completion-upkeep`
 
-**Lineage**: Amends `docguard.completion-one-commit` (spec 101: FR-001 the clean-tree rule gains tag-only edits, FR-005 the evidence blobs are also read after landing), which amended `docguard.completion-revision-anchoring` (spec 028). Each carries a dated amendment note. Closes the first-use report in issue 684. Numbers 100 and 102 belong to other branches.
+**Lineage**: Amends `docguard.completion-one-commit` (spec 101: FR-001 the clean-tree rule gains tag-only edits, FR-005 the evidence blobs are also read after landing, FR-007 the diff base is also searched in the rest of HEAD's ancestry), which amended `docguard.completion-revision-anchoring` (spec 028). Each carries a dated amendment note. Closes the first-use report in issue 684. Numbers 100 and 102 belong to other branches.
 
 **Input**: "A pull request that edits a completed spec's evidence files without closing the spec again is invisible to CI: on the merge ref the record landed with the main branch's squash commit, so its blobs match and SPR008 stays silent. The drift appears only for a developer who merges main into a branch. Guard should warn about it, and one command should close every spec that drifted. Also fix the friction in issue 684."
 
@@ -20,15 +20,15 @@
 
 ### Measured before the warning was wired in
 
-Replay of the last 30 squash commits on main, each against its parent. A spec is counted when its latest outcome was not rewritten by that commit and the commit changed one of the files that outcome lists.
+Replay of the 30 squash commits on main that end at the performance change merged on 2026-11-13, each against its parent. A spec is counted when its latest outcome was not rewritten by that commit and the commit changed one of the files that outcome lists. One run of one script produced every figure below.
 
 | Counted evidence | Median specs per commit | Mean | Max | Commits with more than 3 | Commits with none |
 |---|---|---|---|---|---|
-| All evidence, canonical documents included | 2 | 27.2 | 85 | 13 of 30 | 11 |
-| Without the spec's canonical documents | 2 | 9.7 | 81 | 12 of 30 | 11 |
-| Without them, and without edits that only touch tag lines of other specs | 2 | 9.7 | 81 | 12 of 30 | 11 |
+| All evidence, canonical documents included | 2 | 27.4 | 85 | 14 of 30 | 10 |
+| Without the spec's canonical documents | 2 | 9.9 | 81 | 13 of 30 | 10 |
+| Without them, and without edits that only touch tag lines of other specs | 2 | 9.9 | 81 | 13 of 30 | 10 |
 
-Among the 19 commits that change any evidence the median is 8 specs. Counting canonical documents byte for byte nearly triples the mean (27.2 against 9.7): one edit to `ARCHITECTURE.md` would flag every spec that lists it. Excluding tag-only edits changes nothing (0 of 30 commits). The files that flag most are shared hubs: `cli/findings.mjs` (28 spec-commit pairs), `tests/program-verification.test.mjs` (23), `cli/docguard.mjs` (15). Only four records carry blobs today (093, 094, 095, 101), so as specified the warning would have flagged none of those 30 commits and flags no spec on the tip of main; the table is the steady state each `--stale` run moves the repository toward.
+Among the 20 commits that change any evidence the median is 10 specs without canonical documents (51 with them). Counting canonical documents byte for byte nearly triples the mean (27.4 against 9.9): one edit to `ARCHITECTURE.md` would flag every spec that lists it. Excluding tag-only edits changes nothing (0 of 30 commits). The files that flag most are shared hubs: `cli/findings.mjs` (28 spec-commit pairs), `tests/program-verification.test.mjs` (23), `cli/docguard.mjs` (15). Only four records carry blobs today (093, 094, 095, 101), so as specified the warning would have flagged none of those 30 commits and flags no spec on the tip of main; the table is the steady state each `--stale` run moves the repository toward.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -61,8 +61,8 @@ Among the 19 commits that change any evidence the median is 8 specs. Counting ca
 - **FR-003**: SPR011 MUST read only `HEAD`'s tree, with one `git cat-file --batch-check` for every spec, so it works in a shallow clone and adds a constant number of git calls. When git cannot answer, it MUST report nothing.
 - **FR-004**: `docguard specs complete --stale --reason <text> [--write]` MUST close again every spec SPR011 flags, each as a maintenance completion that keeps its recorded `canonicalDocs` and `persistenceModel`. It MUST refuse `--id`, `--since`, `--canonical-doc`, `--persistence` and `--successor`, and report CURRENT, writing nothing, when no spec is flagged.
 - **FR-005**: `--stale` MUST plan every spec before writing anything, against one guard run, and write the registry, the active context and every spec in one transaction. When any spec is blocked it MUST write nothing and list every blocker with its spec ID.
-- **FR-006**: Planning several completions MUST compute the reconciliation once per distinct base revision and the anchor status once, so the cost does not grow with the number of specs sharing a base.
-- **FR-007** *(amends spec 101 FR-001)*: `specs complete` MUST NOT be blocked by an uncommitted change that only adds `@implements` or `@req` tags for requirements of the spec being completed. Any other edit MUST still block with SPC001. The blob recorded for such a file MUST be the working-tree content, so that after the commit neither SPR008 nor SPR011 fires.
+- **FR-006**: Planning several completions MUST run guard once, project the registry once, compute the reconciliation once per distinct base revision and the anchor status once. What remains per spec (the recorded-base lookup and the evidence blobs) grows with the number of specs; the plan states the measured slope.
+- **FR-007** *(amends spec 101 FR-001)*: `specs complete` MUST NOT be blocked by an uncommitted change that adds at least one `@implements` or `@req` tag for a requirement of the spec being completed and changes nothing else (not a blank line, not a closing comment marker, not a statement). Any other edit MUST still block with SPC001. The blob recorded for such a file MUST be the working-tree content, so that after the commit neither SPR008 nor SPR011 fires.
 - **FR-008**: SPC004's help text and `AGENTS.md` MUST describe the pattern for a requirement with no code target (a documentation requirement, a one-time outcome): a test that asserts the document's terms (`describes()`) or the recorded result in the spec's Verification Notes (`recorded()`), tagged `@req`, as `tests/program-verification.test.mjs` does.
 - **FR-009**: SPC006's "Unresolved changed files" message MUST name the earliest commit after which no unresolved file remains, found with one bounded `git log`, and say what choosing it skips.
 - **FR-010**: `specs complete --write` MUST print what it wrote: the registry fields it changed, the outcome line and the number of evidence blobs recorded. `--format json` carries the same.
@@ -70,12 +70,14 @@ Among the 19 commits that change any evidence the median is 8 specs. Counting ca
 - **FR-012**: An unknown spec ID in `complete`, `approve` and `reanchor` MUST list the closest recorded IDs (at most three).
 - **FR-013**: SPR011 MUST be registered with a title and help (`docguard explain`), in the generated findings reference and in `docs/commands.md`, and `CHANGELOG.md` MUST say it adds a warning to strict.
 - **FR-014**: Wide-range completion MUST NOT run guard or the reconciliation once per spec (FR-005, FR-006); the plan records what made a wide range slow and what changed.
+- **FR-015** *(amends spec 101 FR-007)*: When a spec's recorded revision is not an ancestor of `HEAD` and the first-parent search finds no commit that carries its blobs, `specs complete` (with or without `--stale`) MUST look in the rest of `HEAD`'s ancestry for the commit whose registry change introduced the revision and whose files are the recorded blobs, and use it as the diff base, so that a branch that merged the base branch does not need `--since`. The oldest twenty candidates are checked. Only when none matches does the record count as lost and `--since` stays required.
+- **FR-016**: `specs complete --stale` MUST NOT be blocked by a tick-only change (checkbox state) to any spec's `tasks.md`, so the person who ticks the last task of their own spec can close the batch in the same tree.
 
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: The pull-request fixture of User Story 1 reports SPR011 on this version and nothing on main's code (where the check does not exist); after `specs complete --stale --write` guard is clean, and a squash of the branch onto main stays clean.
 - **SC-002**: A batch with one blocked spec writes no byte.
-- **SC-003**: SPR011 flags nothing on the tip of main, and this specification is closed with its own `--stale` run for every spec whose evidence it edits.
+- **SC-003**: SPR011 flags nothing on the tip of main, and this specification is closed with the flow it describes, with a `--stale` run for every spec whose evidence it edits.
 
 ## Edge Cases
 

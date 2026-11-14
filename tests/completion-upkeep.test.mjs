@@ -22,6 +22,8 @@
  * @req docguard.completion-upkeep#FR-012
  * @req docguard.completion-upkeep#FR-013
  * @req docguard.completion-upkeep#FR-014
+ * @req docguard.completion-upkeep#FR-015
+ * @req docguard.completion-upkeep#FR-016
  * @req docguard.completion-upkeep#SC-001
  * @req docguard.completion-upkeep#SC-002
  * @req docguard.completion-upkeep#SC-003
@@ -33,6 +35,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { tagOnlyChange } from '../cli/scanners/revision-anchor.mjs';
 import { fixtureGit } from './helpers/git.mjs';
 import { makeTempDir } from './helpers/temp-dir.mjs';
 
@@ -71,7 +74,8 @@ function adopter(t, names = ['alpha']) {
   put(dir, 'CHANGELOG.md', '# Changelog\n\n## [Unreleased]\n');
   put(dir, 'DRIFT-LOG.md', '# Drift\n');
   put(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n');
-  names.forEach((name, i) => {
+  names.forEach(name => {
+    const i = ['alpha', 'beta', 'gamma'].indexOf(name);
     put(dir, `specs/00${i + 1}-${name}/spec.md`, `# ${name}\n\n**Status**: Draft\n\n**Spec ID**: \`acme.${name}\`\n\n- **FR-001**: ${name} MUST work.\n`);
     put(dir, `specs/00${i + 1}-${name}/tasks.md`, '# Tasks\n\n- [x] T1 Build.\n- [ ] T2 Verify.\n');
     put(dir, `src/${name}.js`, `/** @implements acme.${name}#FR-001 */\nexport const ${name} = 1;\n`);
@@ -89,7 +93,7 @@ function adopter(t, names = ['alpha']) {
 }
 
 const tickOf = (dir, name) => {
-  const path = `specs/00${['alpha', 'beta'].indexOf(name) + 1}-${name}/tasks.md`;
+  const path = `specs/00${['alpha', 'beta', 'gamma'].indexOf(name) + 1}-${name}/tasks.md`;
   put(dir, path, read(dir, path).replace('- [ ] T2', '- [x] T2'));
 };
 
@@ -115,8 +119,8 @@ const squashOntoMain = (dir, branch, message) => {
  * merged; another branch, cut before that squash, edits their implementation
  * files; guard runs on the merge of that branch into main.
  */
-function mergeRef(t, { names = ['alpha'], edit = ['alpha'] } = {}) {
-  const dir = adopter(t, names);
+function mergeRef(t, { names = ['alpha'], edit = ['alpha'], open = [] } = {}) {
+  const dir = adopter(t, [...names, ...open]);
   const base = git(dir, ['rev-parse', 'HEAD']);
   git(dir, ['checkout', '-q', '-b', 'closer']);
   put(dir, 'FEATURE.md', '# Feature work on the PR branch\n');
@@ -238,6 +242,31 @@ describe('US2: one command closes every spec that drifted (FR-004, FR-005, FR-00
     assert.match(json(named).error, /--stale/);
   });
 
+  it('a branch that merged main closes a spec again without --since (FR-015)', t => {
+    const { dir } = mergeRef(t, { edit: ['alpha'] });
+    git(dir, ['checkout', '-q', 'editor']);
+    git(dir, ['merge', '-q', '-m', 'merge main', 'main']);
+    const dry = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--format', 'json']));
+    assert.equal(dry.status, 'READY', JSON.stringify(dry.blockers));
+    const done = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--reason', 'Reviewed the edit', '--write', '--format', 'json']));
+    assert.equal(done.status, 'VERIFIED');
+  });
+
+  it('--stale is not blocked by ticking the last task of another spec in the same tree (FR-016)', t => {
+    const { dir } = mergeRef(t, { edit: ['alpha'], open: ['gamma'] });
+    git(dir, ['checkout', '-q', 'editor']);
+    git(dir, ['merge', '-q', '-m', 'merge main', 'main']);
+    tickOf(dir, 'gamma');
+    assert.equal(run(dir, ['specs', '--write']).status, 0);
+    const dry = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
+    assert.equal(dry.status, 'READY', JSON.stringify(dry.blockers));
+    put(dir, 'specs/003-gamma/tasks.md', '# Tasks\n\n- [x] T1 Build.\n- [ ] T2 Verify.\n\nA note.\n');
+    assert.equal(run(dir, ['specs', '--write']).status, 0);
+    const refused = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
+    assert.equal(refused.status, 'BLOCKED', 'only a tick is allowed');
+    assert.ok(refused.blockers.some(b => b.code === 'SPC001'));
+  });
+
   it('plans against one reconciliation per distinct base (FR-006)', t => {
     const { dir } = mergeRef(t, { names: ['alpha', 'beta'], edit: ['alpha', 'beta'] });
     git(dir, ['checkout', '-q', 'editor']);
@@ -288,6 +317,43 @@ describe('US3: tagging and closing take one commit (FR-007)', () => {
     put(dir, 'tests/alpha.test.js', '/** @req acme.alpha#FR-001 */\n/** @req acme.other#FR-009 */\ntest("alpha", () => {});\n');
     const refused = run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--since', 'HEAD~1', '--reason', 'x', '--format', 'json']);
     assert.ok(json(refused).blockers.some(b => b.code === 'SPC001'), refused.out);
+  });
+});
+
+describe('tagOnlyChange accepts the addition of the spec\'s own tags and nothing else (FR-007)', () => {
+  const only = (committed, current) => tagOnlyChange(committed, current, 'acme.alpha');
+  it('accepts a tag line, a tag block, a tag inside a described block, an inline tag and several tags', () => {
+    assert.ok(only('test(1)\n', '/** @req acme.alpha#FR-001 */\ntest(1)\n'));
+    assert.ok(only('x\n', '/**\n * @implements acme.alpha#FR-001\n */\nx\n'));
+    assert.ok(only('/**\n * Does x.\n */\nx\n', '/**\n * Does x.\n * @implements acme.alpha#FR-001\n */\nx\n'));
+    assert.ok(only('x = 1;\n', 'x = 1; // @req acme.alpha#FR-001\n'));
+    assert.ok(only('a: 1\n', '# @implements acme.alpha#FR-001\na: 1\n'));
+    assert.ok(only('x\n', '/** @implements acme.alpha#FR-001, acme.alpha#FR-002 */\nx\n'));
+  });
+  it('rejects an edit that adds no tag, however small', () => {
+    assert.ok(!only('x\n', 'x\n\n'), 'a blank line');
+    assert.ok(!only('/* note\n*/\nrun();\n', '/* note\nrun();\n'), 'a deleted closing marker comments out code');
+  });
+  it('rejects a tag added together with any other change', () => {
+    assert.ok(!only('/* note\n*/\nrun();\n', '/* note\nrun(); // @req acme.alpha#FR-001\n'), 'a deleted closing marker');
+    assert.ok(!only('run();\n', '/* @req acme.alpha#FR-001\nrun();\n'), 'an unbalanced opening marker');
+    assert.ok(!only('test(1)\n', '/** @req acme.alpha#FR-001 */\ntest(2)\n'), 'an edited statement');
+    assert.ok(!only('x\n', '/** @req acme.alpha#FR-001 */\n\nx\n'), 'a blank line');
+    assert.ok(!only('x\n', '/** @req acme.other#FR-001 */\nx\n'), 'another spec\'s tag');
+    assert.ok(!only('/** @req acme.alpha#FR-001 */\nx\n', 'x\n'), 'a removed tag');
+  });
+  it('blocks a completion on a tag-less blank-line edit and on an unbalanced comment opener', t => {
+    const dir = adopter(t);
+    put(dir, 'tests/alpha.test.js', 'run();\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'plain test']);
+    assert.equal(run(dir, ['specs', '--write']).status, 0);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'registry']);
+    tickOf(dir, 'alpha');
+    for (const edited of ['run();\n\n', '/* @req acme.alpha#FR-001\nrun();\n']) {
+      put(dir, 'tests/alpha.test.js', edited);
+      const refused = run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--since', 'HEAD~2', '--reason', 'x', '--format', 'json']);
+      assert.ok(json(refused).blockers.some(b => b.code === 'SPC001' && /tests\/alpha\.test\.js/.test(b.message)), refused.out);
+    }
   });
 });
 

@@ -27,6 +27,8 @@
  * @implements docguard.completion-upkeep#FR-010
  * @implements docguard.completion-upkeep#FR-011
  * @implements docguard.completion-upkeep#FR-012
+ * @implements docguard.completion-upkeep#FR-015
+ * @implements docguard.completion-upkeep#FR-016
  */
 
 import { createHash } from 'node:crypto';
@@ -258,7 +260,8 @@ function recordedBase(projectDir, spec, revision) {
 }
 
 export function planSpecCompletion(projectDir, config, flags, options = {}) {
-  const projection = projectSpecRegistry(projectDir, config);
+  // docguard.completion-upkeep#FR-006: a batch projects the registry once.
+  const projection = options.shared?.projection || projectSpecRegistry(projectDir, config);
   const loaded = readSpecRegistry(projectDir);
   const revision = headRevision(projectDir);
   const spec = projection.registry.specs.find(entry => entry.specId === flags.id);
@@ -268,7 +271,10 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   if (!loaded.exists || loaded.error || !projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before completion.' });
   if (!spec) blockers.push({ code: 'SPC001', message: unknownSpecMessage(flags.id, projection.registry.specs) });
   if (!revision) blockers.push({ code: 'SPC001', message: 'Completion requires a resolvable Git HEAD.' });
-  const changed = blockingChanges(projectDir, projection.registry, ownTaskLists(spec), spec?.specId || null);
+  // docguard.completion-upkeep#FR-016: a batch takes tick-only edits of any spec's task list, because the person
+  // closing the batch is usually ticking the last task of their own spec in the same tree.
+  const tickLists = options.shared?.anyTaskTicks ? projection.registry.specs.flatMap(ownTaskLists) : ownTaskLists(spec);
+  const changed = blockingChanges(projectDir, projection.registry, tickLists, spec?.specId || null);
   if (changed === null || changed.length) {
     blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions, ticked boxes in this spec's own task list, and added @implements/@req tags for this spec's own requirements are allowed); changed: ${describeChanges(changed)}.` });
   }
@@ -496,7 +502,7 @@ export function completeStale(projectDir, config, flags, options = {}) {
   if (!stale.length) return { ...base, status: 'CURRENT', specs: [], blockers: [] };
   const guardResult = options.guardResult || runGuardInternal(projectDir, config);
   stats.guardRuns = options.guardResult ? 0 : 1;
-  const shared = { reconcile: new Map(), anchorStatus: null, stats };
+  const shared = { reconcile: new Map(), anchorStatus: null, stats, projection, anyTaskTicks: true };
   const plans = stale.map(item => ({
     item,
     plan: planSpecCompletion(projectDir, config, { id: item.specId }, { ...options, guardResult, shared }),

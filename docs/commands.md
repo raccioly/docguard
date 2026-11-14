@@ -589,7 +589,10 @@ its canonical documents and persistence: it plans all of them against one guard
 run and one reconciliation per distinct base, writes the registry, the active
 context and every spec together, and writes nothing, listing each blocker with its
 spec, when one spec is blocked. It takes no `--id`, `--since`, `--canonical-doc`,
-`--persistence` or `--successor`, and reports CURRENT when nothing drifted.
+`--persistence` or `--successor`, and reports CURRENT when nothing drifted. A
+tick of any spec's last task in the same tree does not block it. A branch that
+merged the base branch needs no `--since` for `complete` or `--stale`: the commit
+that carries the reviewed files is found through the merge's second parent.
 
 `specs complete --write` prints what it wrote (the registry fields, the outcome
 line, how many evidence blobs it recorded) and moves the spec's `**Status**:`
