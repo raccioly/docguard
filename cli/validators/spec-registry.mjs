@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { assetPathCovers, projectSpecRegistry, SPEC_REGISTRY_PATH, unrecordedCompletions } from '../scanners/spec-registry.mjs';
 import { checkAsBuiltSync, isPatternTier } from '../scanners/as-built.mjs';
 import { isShallowRepository, strandedRevisions } from '../scanners/revision-anchor.mjs';
+import { staleCompletions, describeFiles, STALE_COMMAND } from '../scanners/stale-completions.mjs';
 import { gitMetadataStatus, listTrackedFiles } from '../shared-git.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { explainPaddedEmpty } from '../shared-project-evidence.mjs';
@@ -26,6 +27,8 @@ export function applies(projectDir, config = {}, projection = projectSpecRegistr
  * @implements docguard.asset-path-attribution#FR-003
  * @implements docguard.completion-one-commit#FR-006
  * @implements docguard.completion-one-commit#FR-011
+ * @implements docguard.completion-upkeep#FR-001
+ * @implements docguard.completion-upkeep#FR-003
  */
 export function validateSpecRegistry(projectDir, config = {}) {
   const projection = projectSpecRegistry(projectDir, config);
@@ -224,6 +227,27 @@ export function validateSpecRegistry(projectDir, config = {}) {
         command: `docguard specs complete --id ${specId}`,
       },
     }));
+  }
+  // SPR011 (docguard.completion-upkeep#FR-001): a closed spec whose implementation or
+  // test files differ from the blobs its last review recorded. SPR008 cannot see this on
+  // a pull request's merge ref, where the record landed with main's squash commit.
+  if (gitMetadataStatus(projectDir).status === 'ok') {
+    for (const stale of staleCompletions(projectDir, projection.registry)) {
+      findings.push(mkFinding({
+        code: 'SPR011',
+        validator: 'specRegistry',
+        severity: 'warn',
+        confidence: 'high',
+        disposition: 'escalate',
+        message: `${stale.specId}: its evidence changed after the last review (${describeFiles(stale.files, stale.removed)}), so the recorded completion no longer describes the code; close it again with \`${STALE_COMMAND}\``,
+        location: stale.path,
+        suggestion: {
+          kind: 'review',
+          text: `Review the change against ${stale.specId}'s requirements, then run \`${STALE_COMMAND}\`; it closes every spec that drifted in one commit, keeping each spec's canonical documents and persistence.`,
+          command: 'docguard specs complete --stale',
+        },
+      }));
+    }
   }
   // Every detected specification was examined, at least for its Spec ID: one that has none yields a finding
   // (SPR002) and is not in the registry, so counting only the registry would report zero checks beside findings

@@ -920,6 +920,12 @@ export const CODES = {
     help: 'A current spec\'s delivery is `verified` or `released`, but its registry entry records no reconciliation outcome. `specs approve` cannot set those states and `specs complete` always records an outcome with them, so the state was set by hand (or the spec predates outcomes): no review is on record, and a verified living spec is excluded from the lifecycle review signal DLC002. Record the review with `docguard specs complete --id <spec-id> --since <ref> --reason <text> --write`, which also says which evidence files were reviewed. This is an escalation: DocGuard knows no review was recorded, not that none happened.',
     suppress: null,
   },
+  SPR011: {
+    validator: 'specRegistry',
+    title: 'Closed spec whose evidence changed after its review',
+    help: 'A current spec is `verified` or `released`, and an implementation or test file its latest completion recorded (the `Blobs:` segment of its outcome line in the spec) is different at HEAD, or is gone. The record no longer describes the code. SPR008 cannot see this on a pull request\'s merge ref, because the commit that landed the record is the main branch\'s squash commit, whose files match the record; only a developer who merged main into the branch saw it. The spec\'s canonical documents are not compared byte for byte (Freshness and requirement anchors cover them), nor is a hub file that four or more closed specs list as evidence (the per-link anchor lock keeps watching it; guard JSON lists the hubs under `files.completionHubs`), and a record written before blobs existed is not judged. `specs complete` takes an uncommitted edit of the spec\'s evidence files and records their working-tree blobs, so the edit and the completion land in one commit and a gate on every commit never sees this warning. Review the change against the spec\'s requirements, then run `docguard specs complete --stale --reason <text> --write`: it closes every spec that drifted, in one transaction, keeping each spec\'s canonical documents and persistence, and writes nothing, listing each blocker, if one spec cannot be closed. It is a warning, so a strict gate fails on it; it cannot be suppressed inline. This is an escalation: DocGuard knows the files changed, not whether the spec is still met.',
+    suppress: null,
+  },
   SPR009: {
     validator: 'specRegistry',
     title: 'Asset path covers no file',
@@ -1192,7 +1198,7 @@ export const BLOCKER_CODES = { __proto__: null,
   SPC004: {
     command: 'docguard specs complete',
     title: 'Requirement evidence missing',
-    help: 'Completion needs at least one source file annotated `@implements <specId>#<requirement>`, at least one test annotated `@req <specId>#<requirement>`, and implementation or test evidence for every requirement the spec declares. Add the annotations, then run `docguard specs --write`. Bare `FR-001` references do not count: the same local ID appears in many specs.',
+    help: 'Completion needs at least one source file annotated `@implements <specId>#<requirement>`, at least one test annotated `@req <specId>#<requirement>`, and implementation or test evidence for every requirement the spec declares. Add the annotations, then run `docguard specs --write`. Bare `FR-001` references do not count: the same local ID appears in many specs. A requirement with no code target (a documentation requirement, a one-time outcome such as an A/B run or a budget run) takes its evidence from a test that checks the result: `describes()` asserts that each named document carries the terms the requirement asks for, and `recorded()` asserts that the spec\'s Verification Notes answer each measured criterion; tag that test `@req <specId>#<requirement>`, as `tests/program-verification.test.mjs` does for specs 081 to 095.',
   },
   SPC005: {
     command: 'docguard specs complete',

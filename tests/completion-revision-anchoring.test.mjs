@@ -102,12 +102,20 @@ describe('several completions share one revision and one commit (FR-001, SC-001)
     assert.equal(projectSpecRegistry(dir).current, true);
   });
 
-  it('a change outside the lifecycle files still blocks', t => {
+  it('a change outside the lifecycle files and the spec\'s own evidence still blocks', t => {
+    const dir = fixture(t);
+    write(dir, 'src/beta.js', '/** @implements acme.beta#FR-001 */\nexport const beta = 2;\n');
+    const plan = completeSpec(dir, {}, { id: 'acme.alpha', since: 'HEAD~1' }, { guardResult: passingGuard });
+    assert.equal(plan.status, 'BLOCKED');
+    assert.match(plan.blockers.find(b => b.code === 'SPC001').message, /changed: src\/beta\.js/);
+  });
+
+  // docguard.completion-upkeep#FR-017 (amends the clean-tree rule): the spec's own committed evidence files may be modified.
+  it('an uncommitted edit of the spec\'s own evidence file does not block', t => {
     const dir = fixture(t);
     write(dir, 'src/alpha.js', '/** @implements acme.alpha#FR-001 */\nexport const alpha = 2;\n');
     const plan = completeSpec(dir, {}, { id: 'acme.alpha', since: 'HEAD~1' }, { guardResult: passingGuard });
-    assert.equal(plan.status, 'BLOCKED');
-    assert.match(plan.blockers.find(b => b.code === 'SPC001').message, /changed: src\/alpha\.js/);
+    assert.ok(!plan.blockers.some(b => b.code === 'SPC001' && /clean tracked/.test(b.message)), JSON.stringify(plan.blockers));
   });
 
   it('a spec prose edit outside the outcomes block still blocks', t => {

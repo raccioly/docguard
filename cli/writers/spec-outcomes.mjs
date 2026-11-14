@@ -2,6 +2,7 @@
  * Append a bounded, machine-owned outcome index without rewriting spec intent.
  * @implements docguard.document-lifecycle#FR-016
  * @implements docguard.completion-one-commit#FR-005
+ * @implements docguard.completion-upkeep#FR-011
  */
 
 const START = '<!-- docguard:implementation-outcomes:start -->';
@@ -101,4 +102,24 @@ export function rewriteOutcomeRevision(content, from, to) {
   const block = content.slice(start, end);
   const next = block.split('\n').map(line => (line.startsWith(`- \`${from}\``) ? `- \`${to}\`${line.slice(from.length + 4)}` : line)).join('\n');
   return content.slice(0, start) + next + content.slice(end);
+}
+
+// Only a value that says the spec is not done is rewritten. A completed-like value (Active, Implemented,
+// Complete, Superseded, As-built, ...) is never touched. Among this repository's closed specs the
+// deliberately set values are Active (33) and Implemented (2); Draft (57) is the value nobody updated.
+const DRAFT_STATUS = /^(\*\*Status\*\*:[ \t]*)(?:Draft|In Progress|Planned|Proposed|WIP)[ \t]*$/im;
+
+/**
+ * The spec with its `**Status**:` header set to `Active` when it still reads a
+ * draft value, and every other byte unchanged; any other value (Implemented,
+ * Complete, Superseded, As-built) is left alone.
+ * @implements docguard.completion-upkeep#FR-011
+ */
+export function markSpecActive(content) {
+  return DRAFT_STATUS.test(content) ? content.replace(DRAFT_STATUS, '$1Active') : content;
+}
+
+/** The status the header carries, or null. */
+export function readSpecStatus(content) {
+  return (/^\*\*Status\*\*:[ \t]*(.+?)[ \t]*$/m.exec(content) || [])[1] || null;
 }

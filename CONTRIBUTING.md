@@ -146,7 +146,9 @@ git add -A && git commit
 ```
 
 `specs approve` takes the same `--canonical-doc` (repeatable) and `--persistence`
-flags. Ticking boxes in the completing spec's own `tasks.md` does not block
+flags. If your change edits the evidence of specs that are already closed, guard
+reports SPR011 for each; `docguard specs complete --stale --reason "<text>" --write`
+closes them all again in one transaction (`specs/103-completion-upkeep`). Ticking boxes in the completing spec's own `tasks.md` does not block
 `complete`; any other change to it does. The record carries the git blob of every
 evidence file, so a squash merge or a rebase does not strand it: there is no
 second "reanchor" commit. Run `docguard specs reanchor --id <spec-id> --write`

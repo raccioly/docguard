@@ -1604,7 +1604,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 24
+            "line": 25
           }
         ],
         "testEvidence": [
@@ -1760,7 +1760,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 26
+            "line": 27
           }
         ],
         "testEvidence": [
@@ -2370,12 +2370,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 899
+            "line": 906
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 926
+            "line": 933
           },
           {
             "requirementId": "FR-021",
@@ -3059,7 +3059,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "0cdebdb13e07577c47e4d9a97cc74ae411953713",
+          "lastReviewedRevision": "b265e5de432734421a891a794893cf4fda6c19b7",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
@@ -3111,6 +3111,57 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "aad9d1e0e0c8250da336b0405610a5a1daac4711",
+              "reason": "Reviewed spec 101 against spec 103's edits: the clean-tree rule gains tag-only edits and the Status header, evidence blobs are also read by SPR011 and recorded from the working tree, and a branch that merged main finds the reviewed commit through any ancestry path; the one-commit flow, SPR008 and SPR010 behave as before",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "4304055c63bb94d21901aa9b0b8e1204ea7aca93",
+              "reason": "Reviewed specs 101 and 103 against the stricter tag-only rule (a tag must be added and nothing else may change), the any-ancestry search of the oldest twenty candidates (FR-015, amending 101 FR-007), the shared projection and task ticks in a batch (FR-016) and the new tests; the one-commit flow, SPR008, SPR010 and SPR011 behave as specified",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "b265e5de432734421a891a794893cf4fda6c19b7",
+              "reason": "Reviewed spec 101 against spec 103's final edits to its evidence: the clean-tree rule takes the spec's committed evidence files (FR-017), tag-only edits must add a tag, the Status header is rewritten only from a draft value, and the any-ancestry search; the one-commit flow, SPR008 and SPR010 behave as before",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3139,7 +3190,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:2b73444df11616d9ff3573991eca33b86c940ec7be020876fc9ddefacf28e286"
+            "digest": "sha256:d3e29bc9eb104ce16d24ccd9e241ce50e55ec8736d3d6be8f2e4f3fa7dfe0128"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
@@ -3173,7 +3224,7 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/specs.mjs",
-            "line": 80
+            "line": 129
           },
           {
             "requirementId": "FR-003",
@@ -3183,7 +3234,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 81
+            "line": 130
           },
           {
             "requirementId": "FR-004",
@@ -3208,22 +3259,22 @@
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 312
+            "line": 416
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 356
+            "line": 481
           },
           {
             "requirementId": "FR-006",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 389
+            "line": 514
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 27
+            "line": 28
           },
           {
             "requirementId": "FR-007",
@@ -3233,7 +3284,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/specs.mjs",
-            "line": 187
+            "line": 252
           },
           {
             "requirementId": "FR-007",
@@ -3253,12 +3304,12 @@
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 271
+            "line": 375
           },
           {
             "requirementId": "FR-009",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 313
+            "line": 417
           },
           {
             "requirementId": "FR-011",
@@ -3273,7 +3324,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 28
+            "line": 29
           },
           {
             "requirementId": "FR-012",
@@ -3477,7 +3528,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/writers/spec-outcomes.mjs",
-            "line": 86
+            "line": 87
           },
           {
             "requirementId": "FR-002",
@@ -3487,12 +3538,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 25
+            "line": 26
           },
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 376
+            "line": 558
           },
           {
             "requirementId": "FR-003",
@@ -3502,7 +3553,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/writers/spec-outcomes.mjs",
-            "line": 95
+            "line": 96
           },
           {
             "requirementId": "FR-007",
@@ -3522,7 +3573,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/commands/specs.mjs",
-            "line": 157
+            "line": 222
           },
           {
             "requirementId": "FR-009",
@@ -3615,6 +3666,431 @@
             "requirementId": "SC-005",
             "file": "tests/completion-revision-anchoring.test.mjs",
             "line": 23
+          }
+        ]
+      }
+    },
+    {
+      "specId": "docguard.completion-upkeep",
+      "path": "specs/103-completion-upkeep/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/CI-RECIPES.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
+          "outcomes": [
+            {
+              "revision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
+              "reason": "Spec 103 reviewed: SPR011 compares the latest recorded evidence blobs with HEAD (canonical documents left out, measured on the last 30 squash commits); specs complete --stale closes every flagged spec in one transaction against one guard run; tag-only edits, working-tree blobs, the written summary, the Status header, the did-you-mean and earliest-ref hints and the SPC004 recipe are in; the wide-range slowness is the guard run and is not changed. Nothing is flagged on main's tip.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "4304055c63bb94d21901aa9b0b8e1204ea7aca93",
+              "reason": "Reviewed specs 101 and 103 against the stricter tag-only rule (a tag must be added and nothing else may change), the any-ancestry search of the oldest twenty candidates (FR-015, amending 101 FR-007), the shared projection and task ticks in a batch (FR-016) and the new tests; the one-commit flow, SPR008, SPR010 and SPR011 behave as specified",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
+              "reason": "Reviewed spec 103 against its review fixes: uncommitted evidence edits recorded with working-tree blobs (FR-017), hub files not byte-compared with the replayed distributions in the spec (FR-018), ticks limited to the batch (FR-016), only draft Status values rewritten (FR-011), and the fallback tests for FR-015; the one-commit flow, SPR008 and SPR010 are unchanged",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.completion-upkeep#FR-001",
+          "docguard.completion-upkeep#FR-002",
+          "docguard.completion-upkeep#FR-003",
+          "docguard.completion-upkeep#FR-004",
+          "docguard.completion-upkeep#FR-005",
+          "docguard.completion-upkeep#FR-006",
+          "docguard.completion-upkeep#FR-007",
+          "docguard.completion-upkeep#FR-008",
+          "docguard.completion-upkeep#FR-009",
+          "docguard.completion-upkeep#FR-010",
+          "docguard.completion-upkeep#FR-011",
+          "docguard.completion-upkeep#FR-012",
+          "docguard.completion-upkeep#FR-013",
+          "docguard.completion-upkeep#FR-014",
+          "docguard.completion-upkeep#FR-015",
+          "docguard.completion-upkeep#FR-016",
+          "docguard.completion-upkeep#FR-017",
+          "docguard.completion-upkeep#FR-018",
+          "docguard.completion-upkeep#SC-001",
+          "docguard.completion-upkeep#SC-002",
+          "docguard.completion-upkeep#SC-003",
+          "docguard.completion-upkeep#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/103-completion-upkeep/spec.md",
+            "digest": "sha256:c139e08b9cb5141f63615f8b71d5a008222903d918f34da731c56aa17dddf530"
+          },
+          {
+            "path": "specs/103-completion-upkeep/plan.md",
+            "digest": "sha256:18fc96ea81f12f3e158f8abcd52d47faaf7712efe6edc8a99b1ee43cd1e3798f"
+          },
+          {
+            "path": "specs/103-completion-upkeep/tasks.md",
+            "digest": "sha256:6b1b898c56db0cb72773c22343a75ac0c1fb77d8b2c00bb7c6f383dbf1ae9054"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 12,
+          "total": 12
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/spec-registry.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/specs.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/commands/specs.mjs",
+            "line": 505
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/specs.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/specs.mjs",
+            "line": 399
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/commands/specs.mjs",
+            "line": 506
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/specs.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/commands/specs.mjs",
+            "line": 507
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/commands/specs.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 161
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 287
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/specs.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/commands/specs.mjs",
+            "line": 204
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 327
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/specs.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/commands/specs.mjs",
+            "line": 400
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/commands/specs.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/spec-outcomes.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/writers/spec-outcomes.mjs",
+            "line": 116
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/specs.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/commands/specs.mjs",
+            "line": 104
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/commands/specs.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 456
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "cli/commands/specs.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/commands/specs.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/revision-anchor.mjs",
+            "line": 306
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/scanners/stale-completions.mjs",
+            "line": 55
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 22
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 23
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 24
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 25
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 26
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 29
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 30
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 31
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 32
           }
         ]
       }
@@ -6947,7 +7423,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/guard.mjs",
-            "line": 11
+            "line": 13
           },
           {
             "requirementId": "FR-010",
@@ -7694,12 +8170,12 @@
       "path": "specs/100-file-kinds/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "approved",
-          "delivery": "verified",
+          "approval": "draft",
+          "delivery": "planned",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": "living"
+          "persistenceModel": null
         },
         "relations": {
           "extends": [],
@@ -7709,278 +8185,11 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": [
-            "docs-canonical/ARCHITECTURE.md",
-            "docs-canonical/DATA-MODEL.md",
-            "docs-canonical/TEST-SPEC.md"
-          ]
+          "canonicalDocs": []
         },
         "reconciliation": {
-          "lastReviewedRevision": "1d6f54c2a058a88767577c730ae5f422db2ff7d5",
-          "outcomes": [
-            {
-              "revision": "9a60d928587fcb025305625caa437ae792d65c90",
-              "reason": "Verified the file-kind classifier, fileKinds.own, the files.kinds report, every validator asking the shared rule, STR008, and the mirror rules (identical mirrors collapse to one finding, PSR007 and PSR008 drift, GEMINI.md read for pointers) against the shipped ARCHITECTURE, DATA-MODEL and TEST-SPEC entries, the three stages' A/B runs and the benchmark pairs.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "ec33492b1735353a7b6d053225afd1caca3084aa",
-              "reason": "Re-verified after merging main: mirrors also reach SARIF and JUnit; the file-kind, mirror and drift rules are otherwise unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "67ad58b0d33d71b3ace76101ac5a67e2c50643f3",
-              "reason": "Re-verified: the mirrors paragraph moved out of the finding-channels section; behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "c17c4691e2787764629fc325a50c74d4afffa79e",
-              "reason": "Re-verified: the mirror benchmark is one pair (PSR007 and PSR008); behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "f7817912e6ad7f3950e3ca4a9559080e84e258be",
-              "reason": "Re-verified: mirrors is attached after mkFinding; behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "d8cefd19835ccba8b2d300c90fb75dd179247b8b",
-              "reason": "Re-verified with the final detector digest; behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "0bf7a7845fd1ac25494a5ae6449d11d1a5eef3ba",
-              "reason": "Re-verified: mirror findings documented under their own heading; behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "ad3f1a899c210de0e14d77a755caeda08ae48d5b",
-              "reason": "Re-verified: PSR007 advice names only existing commands; behavior otherwise unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            },
-            {
-              "revision": "1d6f54c2a058a88767577c730ae5f422db2ff7d5",
-              "reason": "Re-verified after merging main (benchmark suites share one corpus run); behavior unchanged.",
-              "evidence": [
-                "cli/commands/guard.mjs",
-                "cli/commands/sync-tests.mjs",
-                "cli/scanners/agent-instructions.mjs",
-                "cli/scanners/doc-tools.mjs",
-                "cli/scanners/frontend.mjs",
-                "cli/scanners/iac.mjs",
-                "cli/shared-backup-documents.mjs",
-                "cli/shared-file-kind.mjs",
-                "cli/shared-mirrors.mjs",
-                "cli/shared-test-cases.mjs",
-                "cli/validators/path-scoped-rules.mjs",
-                "docs-canonical/ARCHITECTURE.md",
-                "docs-canonical/DATA-MODEL.md",
-                "docs-canonical/TEST-SPEC.md",
-                "tests/file-kinds-detection.test.mjs",
-                "tests/file-kinds-registry.test.mjs",
-                "tests/file-kinds-stage2.test.mjs",
-                "tests/file-kinds.test.mjs",
-                "tests/helpers/benchmark-subset.mjs",
-                "tests/instruction-copies.test.mjs",
-                "tests/mirrors.test.mjs",
-                "tests/program-verification.test.mjs"
-              ],
-              "deviations": [],
-              "successor": null
-            }
-          ]
+          "lastReviewedRevision": null,
+          "outcomes": []
         }
       },
       "intent": {
@@ -8093,7 +8302,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 14
+            "line": 16
           },
           {
             "requirementId": "FR-014",
@@ -8340,7 +8549,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 494
+            "line": 676
           },
           {
             "requirementId": "FR-006",
@@ -8360,7 +8569,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1174
+            "line": 1180
           },
           {
             "requirementId": "FR-008",
@@ -8385,7 +8594,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/scanners/revision-anchor.mjs",
-            "line": 54
+            "line": 58
           }
         ],
         "testEvidence": [
@@ -9386,12 +9595,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1450
+            "line": 1456
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1460
+            "line": 1466
           },
           {
             "requirementId": "FR-006",
@@ -11396,7 +11605,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 23
+            "line": 24
           },
           {
             "requirementId": "FR-002",
@@ -11774,7 +11983,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/docguard.mjs",
-            "line": 771
+            "line": 772
           },
           {
             "requirementId": "FR-006",
@@ -12456,7 +12665,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/commands/guard.mjs",
-            "line": 12
+            "line": 14
           },
           {
             "requirementId": "FR-002",
@@ -12501,7 +12710,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/guard.mjs",
-            "line": 13
+            "line": 15
           },
           {
             "requirementId": "FR-009",
@@ -14202,7 +14411,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/docguard.mjs",
-            "line": 987
+            "line": 991
           },
           {
             "requirementId": "FR-001",
@@ -14212,17 +14421,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/docguard.mjs",
-            "line": 988
+            "line": 992
           },
           {
             "requirementId": "FR-003",
             "file": "cli/docguard.mjs",
-            "line": 989
+            "line": 993
           },
           {
             "requirementId": "FR-004",
             "file": "cli/docguard.mjs",
-            "line": 990
+            "line": 994
           },
           {
             "requirementId": "FR-005",
@@ -17916,7 +18125,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/spec-registry.mjs",
-            "line": 15
+            "line": 16
           },
           {
             "requirementId": "FR-006",
@@ -18006,7 +18215,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 230
+            "line": 232
           },
           {
             "requirementId": "FR-014",
@@ -18728,7 +18937,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/docguard.mjs",
-            "line": 1078
+            "line": 1082
           },
           {
             "requirementId": "FR-011",

@@ -438,6 +438,7 @@ const PRIVATE_GIT_CALLS = {
   'cli/scanners/doc-deps.mjs': { runGit: 'gap' },
   'cli/scanners/reconciliation.mjs': { 'rev-parse': 'silent: an unknown ref is reported by reconciliation as its own blocker', 'ls-files': 'silent: an unknown answer keeps the directory as present, the conservative side' },
   'cli/scanners/revision-anchor.mjs': { runGit: 'gap' },
+  'cli/scanners/stale-completions.mjs': { runGit: 'gap' },
   'cli/scanners/semantic-claims.mjs': { 'rev-parse': 'silent: evidence provenance only; null records no revision', status: 'silent: evidence provenance only; dirty stays unknown' },
   'cli/scanners/spec-first.mjs': { args: 'silent: spec-first reports an unreadable range as inconclusive (exit 2), spec 015' },
   'cli/scanners/spec-registry.mjs': { runGit: 'gap', 'ls-files': 'silent: an asset path git cannot confirm tracked and clean is not attributed', diff: 'silent: an asset path git cannot confirm tracked and clean is not attributed' },
