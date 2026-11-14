@@ -3699,11 +3699,11 @@
           },
           {
             "path": "specs/103-completion-upkeep/tasks.md",
-            "digest": "sha256:c9cc06179987176cab2956ea5b41fb6feb2c7f88a535cc4a3752451b40178158"
+            "digest": "sha256:6b65e92c239c73e7d93f098065ad137d1e36036de25fc22bdd521cd6e08a9740"
           }
         ],
         "taskCompletion": {
-          "checked": 8,
+          "checked": 12,
           "total": 12
         },
         "implementationEvidence": [
@@ -3933,6 +3933,11 @@
             "requirementId": "SC-002",
             "file": "tests/completion-upkeep.test.mjs",
             "line": 26
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/completion-upkeep.test.mjs",
+            "line": 27
           }
         ]
       }

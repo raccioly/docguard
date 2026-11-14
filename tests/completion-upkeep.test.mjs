@@ -24,6 +24,7 @@
  * @req docguard.completion-upkeep#FR-014
  * @req docguard.completion-upkeep#SC-001
  * @req docguard.completion-upkeep#SC-002
+ * @req docguard.completion-upkeep#SC-003
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -360,5 +361,14 @@ describe('US4: the first-use friction (FR-008 to FR-012)', () => {
   it('the plan records what made a wide range slow and what changed (FR-014)', () => {
     const plan = readFileSync(join(ROOT, 'specs/103-completion-upkeep/plan.md'), 'utf8');
     for (const term of ['Why a wide range is slow', 'one guard run', 'one reconciliation per distinct base']) assert.ok(plan.includes(term), `plan.md should say ${JSON.stringify(term)}`);
+  });
+
+  it('this specification is closed with the flow it describes, and the spec it amends was closed again with --stale (SC-003)', () => {
+    const registry = JSON.parse(readFileSync(join(ROOT, REGISTRY), 'utf8'));
+    const own = registry.specs.find(spec => spec.specId === 'docguard.completion-upkeep');
+    assert.equal(own.reviewed.lifecycle.delivery, 'verified');
+    assert.match(readFileSync(join(ROOT, own.path), 'utf8'), / Blobs: /);
+    const amended = registry.specs.find(spec => spec.specId === 'docguard.completion-one-commit');
+    assert.ok(amended.reviewed.reconciliation.outcomes.some(outcome => /spec 103/.test(outcome.reason)), 'spec 101 records its re-close for spec 103');
   });
 });

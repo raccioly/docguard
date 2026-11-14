@@ -19,7 +19,7 @@
 
 ## Phase 3: Verification
 
-- [ ] T009 Amend specs 101 (FR-001, FR-005) with dated notes; `anchors accept`; `specs --write`; `npm run llms`; `npm run docs:reference`.
-- [ ] T010 `npm test`, the CI lint, `docguard guard`, the benchmark, the two completion test files.
-- [ ] T011 Dogfood: close this spec with the one-commit flow, and every other spec whose evidence this change edited with `specs complete --stale`.
-- [ ] T012 Scrub check; pull request; CI.
+- [x] T009 Amend specs 101 (FR-001, FR-005) with dated notes; `anchors accept`; `specs --write`; `npm run llms`; `npm run docs:reference`.
+- [x] T010 `npm test`, the CI lint, `docguard guard`, the benchmark, the two completion test files.
+- [x] T011 Dogfood: close this spec with the one-commit flow, and every other spec whose evidence this change edited with `specs complete --stale`.
+- [x] T012 Scrub check; pull request; CI.
