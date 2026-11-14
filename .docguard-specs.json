@@ -5984,20 +5984,20 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:a23a8539b51e5ef06149d2ce1e14a0548009766ecc37d6d5888cbee42e0ab12f"
+            "digest": "sha256:55733de715f70c1bb0dda10d69b613ce6ae149b36dcf604a64c5470bf5e34b11"
           },
           {
             "path": "specs/104-document-languages/plan.md",
-            "digest": "sha256:eb875763f91ff3fb88d4ce0c8a9e9ab76c1ea465628df081759694d1f3ad51e0"
+            "digest": "sha256:02b3feff3881c2cfb318a332076eeb7bd02f4131522903f44696384b1d89fb9a"
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:649794a0e581f1e86bdad8679d9f504d45c2d8c9cca2b3d4a87092a8dd7c329a"
+            "digest": "sha256:a920e76c0f89f8daf31c43355fa0e00f49796e7625f8a052f598964e03be486a"
           }
         ],
         "taskCompletion": {
           "checked": 0,
-          "total": 42
+          "total": 43
         },
         "implementationEvidence": [],
         "testEvidence": []

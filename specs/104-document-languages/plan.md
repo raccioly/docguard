@@ -4,25 +4,26 @@
 
 ## Summary
 
-Labels become ids. One registry owns every section id, its English label and the per-language aliases; one resolver answers "does this heading satisfy id X" for every validator, so STR003, ENV001, ENV002, the Score, Test-Spec, DCV005, CHG001, DEC001 and the Spec Kit checks stop keeping their own English strings. A heading marker, `<!-- docguard:heading <id> -->`, is the language-neutral form; `language` in `.docguard.json` selects built-in aliases for `pt` and `es`. Text metrics run only for languages with word lists and are otherwise reported as skipped. A check that cannot judge a document because of its language reports `couldNotRead`.
+Labels become ids. One registry owns every section id, its English label and the per-language aliases; one resolver answers "does this heading satisfy id X" for every validator, so STR003, ENV001, ENV002, the Score, Test-Spec, DCV005, CHG001, DEC001 and the Spec Kit checks stop keeping their own English strings. A heading marker, `<!-- docguard:heading <id> -->`, is the language-neutral form; `docs.language` in `.docguard.json` selects built-in aliases for `pt` and `es`. Text metrics that depend on English word lists are skipped and reported as skipped for every other language. A check that cannot judge a document because of its language reports `couldNotRead`.
 
 | FR | Stage | Change |
 |---|---|---|
 | FR-001 | 0 | Compatibility test against the v0.48.0 tag (new keys and marker are inert there). |
 | FR-002 | 0 | `cli/writers/sections.mjs`: an open marker without `id=` does not open a bounded block; `docguard:heading` never matches the grammar. |
 | FR-003 to FR-005 | 1 | New `cli/shared-labels.mjs` (closed id registry, aliases per primary subtag, the marker reader, the resolver). `cli/authoring-contract.mjs` carries an `id` per section. |
-| FR-006, FR-007 | 1 | `cli/shared.mjs` keeps the legacy normalizer and gains the Unicode-aware one; `cli/config.mjs` reads `language` and `labelAliases`; `schemas/docguard-config.schema.json`. |
-| FR-008 to FR-011 | 1 | `docHasSection`, `findSectionHeading`, `upsertSection`, `structure.mjs` (STR003, STR007), `environment.mjs`, `score.mjs`, `test-spec.mjs`, `sync-tests.mjs`, `docs-coverage.mjs` (DCV005); STR009 in `findings.mjs`. |
-| FR-012 to FR-016 | 2 | `changelog.mjs`, `fix.mjs`, `mechanical.mjs`, `score.mjs`; `decision-records.mjs`; `lifecycle-status.mjs`; `scanners/speckit.mjs`; `shared-requirement-ids.mjs`. |
-| FR-017 to FR-022 | 3 | `doc-quality.mjs` (capability table, Unicode tokenizer, skip report), new `cli/shared-language-detect.mjs`, `validator-coverage.mjs` (cause), `enforcement.mjs` (routing), `shared-guard-json.mjs`, `guard.mjs` (text line), the four English-prose validators. |
-| FR-023, FR-024 | 4 | `writers/doc-generators.mjs`, `scanners/memory-plan.mjs`, `scanners/as-built.mjs`, `shared-scaffold.mjs`; `explain.mjs`, `findings.mjs` help, the generated reference page, README. |
+| FR-006, FR-007 | 1 | `cli/shared.mjs` keeps the legacy normalizer and gains the Unicode, accent-folding one for a non-English `docs.language`; `cli/config.mjs` reads `docs.language` and `docs.labelAliases` beside `docs.roles`; `schemas/docguard-config.schema.json`. |
+| FR-008 to FR-011 | 1 | `docHasSection`, `findSectionHeading`, `upsertSection` (**this stage makes `generate --write` and `sync` respect `docs.language`: the alias heading plus the id marker, never an English heading in a translated document**), `structure.mjs` (STR003, STR007), `environment.mjs`, `score.mjs`, `test-spec.mjs`, `sync-tests.mjs`, `docs-coverage.mjs` (DCV005); STR009 in `findings.mjs`. |
+| FR-012 to FR-016 | 2 | `changelog.mjs`, `fix.mjs`, `mechanical.mjs` (**this stage makes `fix --write` respect `docs.language`: `## [<alias>]` plus the marker**), `score.mjs`; `decision-records.mjs` (front-matter `status:` and aliases); `lifecycle-status.mjs`; `scanners/speckit.mjs`; `shared-requirement-ids.mjs`. |
+| FR-017 to FR-022 | 3 | `doc-quality.mjs` (skip table, Unicode tokenizer, skip report), per-document language from naming (`cli/shared-labels.mjs`), `validator-coverage.mjs` (cause), `enforcement.mjs` (routing), `shared-guard-json.mjs`, `guard.mjs` (text line), the three English-prose validators. No content detector (Decision 5). |
+| FR-023, FR-024 | 4 | `init` and `generate` write the alias heading plus the id marker (the scaffold; **with Stages 1 and 2, no writer puts an English heading into a translated document**): `writers/doc-generators.mjs`, `scanners/memory-plan.mjs`, `scanners/as-built.mjs`, `shared-scaffold.mjs`; `explain.mjs`, `findings.mjs` help, the generated reference page, README. |
+| FR-020 | 5 | NFC heading comparison for all languages, gated on the English A/B (T043). |
 | FR-025, FR-026 | 5 | Three fixture projects, the A/B, the closing documents. |
 
 ## Technical Context
 
-- **Language/runtime**: JavaScript (ES modules), Node.js 18+. No new dependency. `Intl` and `String.prototype.normalize` (both in Node) supply Unicode folding; the language detector is a closed stop-word table in the repository.
+- **Language/runtime**: JavaScript (ES modules), Node.js 18+. No new dependency. `Intl` and `String.prototype.normalize` (both in Node) supply Unicode folding. There is no language detector: a document's language comes from configuration and explicit naming.
 - **Existing code this builds on**: `docHasSection` and `findSectionHeading` (`cli/shared.mjs`), the N/A marker and slug in `cli/validators/structure.mjs`, `CANONICAL_SECTIONS` (`cli/authoring-contract.mjs`), `EMPTY_CAUSES` and `buildStrictReport`/`addUnexaminedDocuments` (`cli/validator-coverage.mjs`, `cli/enforcement.mjs`), `parseSections` and `upsertSection` (`cli/writers/sections.mjs`), the `docguard:quality`, `docguard:spec-id` and `docguard:spec-type` marker readers.
-- **Constraints**: no finding changes without `language` (FR-006, SC-004); a skip is never a number (FR-017); `couldNotRead` never changes the exit code (FR-019); closed vocabularies are registered once and tested for exactness in both directions, as spec 100's registry test is.
+- **Constraints**: no finding changes without `docs.language` (FR-006, SC-004); a skip is never a number (FR-017); `couldNotRead` never changes the exit code (FR-019); closed vocabularies are registered once and tested for exactness in both directions, as spec 100's registry test is.
 - **Testing**: `node --test` files in `tests/`; fixtures as committed projects under `tests/fixtures/languages/<tag>/`; v0.48.0 from a `git archive` copy in a temporary directory (spec 097 T001 is the pattern); hermetic A/B (fresh copy per CLI, no concurrent load).
 - **Decision (D6 and spec 097)**: the new keys and the marker are inert on v0.48.0 (measured), so they ship with the feature, not in a release before it.
 
@@ -30,21 +31,21 @@ Labels become ids. One registry owns every section id, its English label and the
 
 One pull request each, in order. Tests are written first in every stage and shown red before the change.
 
-- **Stage 0 — compatibility and the parser fix.** FR-001, FR-002. Small, and independent of the rest. Open question Q10 asks whether it ships alone before the spec is approved.
-- **Stage 1 — structure.** FR-003 to FR-011. The registry, the marker, `language`, `labelAliases`, the resolver, STR003 and its siblings, STR009. After it, the Problem table's headings and Test-Spec rows are green for `pt-BR`.
+- **Stage 0 — the parser fix and the compatibility test.** FR-001, FR-002. Ships first as its own pull request, before the rest, because FR-002 is a latent bug on its own (Decision 10).
+- **Stage 1 — structure.** FR-003 to FR-011. The registry, the marker, `docs.language`, `docs.labelAliases`, the resolver, STR003 and its siblings, STR009. After it, the Problem table's headings and Test-Spec rows are green for `pt-BR`.
 - **Stage 2 — changelog, decisions, lifecycle, Spec Kit.** FR-012 to FR-016. Each validator's English strings move to the registry.
-- **Stage 3 — metrics and strict.** FR-017 to FR-022. The only stage that touches `enforcement.mjs`; it needs the Stage 1 resolver and the Stage 2 registry entries for the detector's per-document language.
+- **Stage 3 — metrics and strict.** FR-017 to FR-022. The only stage that touches `enforcement.mjs`; it needs the Stage 1 resolver and the Stage 2 registry entries.
 - **Stage 4 — generators and explain.** FR-023, FR-024. New projects start language-ready.
-- **Stage 5 — measurement and closing.** FR-025, FR-026, the final documents, the spec's move to `Implemented`.
+- **Stage 5 — measurement and closing.** FR-020 (NFC, gated), FR-025, FR-026, the final documents, the spec's move to `Implemented`.
 
 ## Project Structure
 
 ```
 cli/shared-labels.mjs               new: id registry, aliases per subtag, marker reader, resolver
-cli/shared-language-detect.mjs      new: stop-word table, per-document detector (skip only)
+
 cli/authoring-contract.mjs          id per section; sectionsFor and requiredSectionMap carry ids
 cli/shared.mjs                      docHasSection, findSectionHeading call the resolver; two normalizers
-cli/config.mjs                      language, labelAliases
+cli/config.mjs                      docs.language, docs.labelAliases
 cli/validators/structure.mjs        STR003, STR007 through the resolver; STR009
 cli/validators/environment.mjs      ENV001, ENV002 through the resolver
 cli/validators/test-spec.mjs        map heading through the resolver (and sync-tests.mjs)
@@ -66,7 +67,7 @@ cli/enforcement.mjs                 couldNotRead routing at validator and docume
 cli/shared-guard-json.mjs           the new cause in strict.couldNotRead
 cli/commands/{guard,score,fix,explain}.mjs, cli/findings.mjs
                                     text line, score, fix, help
-schemas/docguard-config.schema.json language, labelAliases
+schemas/docguard-config.schema.json docs.language, docs.labelAliases
 tests/document-languages-*.test.mjs new, one per stage
 tests/fixtures/languages/{pt-BR,es,de}/   committed fixture projects
 docs/languages.md                   new: the closed id list, the marker, the sets, how to extend
@@ -74,10 +75,10 @@ docs/languages.md                   new: the closed id list, the marker, the set
 
 ## Risks
 
-- **Aliases are wrong or incomplete.** A native review in Stage 1 (Open question Q4 for metrics), and the message of every label finding names the marker, which always works.
+- **Aliases are wrong or incomplete.** A native review in Stage 1 (T033 for the metric word lists), and the message of every label finding names the marker, which always works.
 - **The resolver changes an English result.** The legacy normalizer stays on the English path; SC-004 and the A/B are the gate, and the Stage 1 PR carries the English A/B before Stage 2 starts.
 - **A skip hides a real problem.** A skip is never silent: it is reported per document and per validator (FR-017, FR-019, FR-022).
-- **Detector false positives.** It is used only to skip, abstains on a small margin, and never touches structure (FR-020).
+- **Per-document language from a file name is wrong.** It applies only when `docs.language` is set, only for an explicit `<name>.<lang>.md` or `i18n/<lang>/`, `locales/<lang>/` segment, and never from content (FR-021).
 - **The new empty cause leaks into the exit code.** Stage 3 tests assert that no run that only adds `language-not-supported` changes the exit code on any fixture.
 - **Private repositories in the A/B.** Their names never reach a tracked file, a commit or a pull request; results are written as "a project with X".
 
