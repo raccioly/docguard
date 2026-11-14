@@ -104,12 +104,15 @@ export function rewriteOutcomeRevision(content, from, to) {
   return content.slice(0, start) + next + content.slice(end);
 }
 
-const DRAFT_STATUS = /^(\*\*Status\*\*:[ \t]*)(?:Draft|In Progress|Implemented|Planned)[ \t]*$/im;
+// Only a value that says the spec is not done is rewritten. A completed-like value (Active, Implemented,
+// Complete, Superseded, As-built, ...) is never touched. Among this repository's closed specs the
+// deliberately set values are Active (33) and Implemented (2); Draft (57) is the value nobody updated.
+const DRAFT_STATUS = /^(\*\*Status\*\*:[ \t]*)(?:Draft|In Progress|Planned|Proposed|WIP)[ \t]*$/im;
 
 /**
  * The spec with its `**Status**:` header set to `Active` when it still reads a
- * draft value, and every other byte unchanged; any other value (Superseded,
- * As-built) is left alone.
+ * draft value, and every other byte unchanged; any other value (Implemented,
+ * Complete, Superseded, As-built) is left alone.
  * @implements docguard.completion-upkeep#FR-011
  */
 export function markSpecActive(content) {

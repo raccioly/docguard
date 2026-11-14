@@ -25,6 +25,7 @@
  * @implements docguard.completion-upkeep#FR-007
  * @implements docguard.completion-upkeep#FR-009
  * @implements docguard.completion-upkeep#FR-011
+ * @implements docguard.completion-upkeep#FR-017
  */
 
 import { randomUUID } from 'node:crypto';
@@ -184,12 +185,13 @@ const withoutCompletionWrites = text => stripImplementationOutcomes(text).replac
  * to the implementation-outcomes block.
  * @returns {string[]|null} changed paths, or null when git cannot answer
  */
-export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [], tickOnlyPaths = [], tagSpecId = null }) {
+export function nonLifecycleChanges(projectDir, { registryPath, contextPath, specPaths = [], tickOnlyPaths = [], tagSpecId = null, evidencePaths = [] }) {
   // DocGuard's own .docguard/ state is never a change (docguard.read-only-commands#FR-006).
   const status = git(projectDir, ['status', '--porcelain=v1', '-z', '--untracked-files=no', ...OWN_STATE_PATHSPEC]);
   if (!status.ok) return null;
   const specs = new Set(specPaths);
   const tickOnly = new Set(tickOnlyPaths);
+  const evidence = new Set(evidencePaths);
   const entries = status.out.split('\0').filter(Boolean);
   const changed = [];
   for (let i = 0; i < entries.length; i++) {
@@ -215,6 +217,9 @@ export function nonLifecycleChanges(projectDir, { registryPath, contextPath, spe
       if (committed.ok && current !== null
         && withoutCompletionWrites(committed.out) === withoutCompletionWrites(current)) continue;
     }
+    // docguard.completion-upkeep#FR-017: an uncommitted edit of an implementation or test file the completing
+    // spec lists as evidence is what the completion reviews; it lands in the same commit as the record.
+    if (evidence.has(path) && !code.includes('D') && !code.includes('R') && !code.includes('A')) continue;
     // docguard.completion-upkeep#FR-007: adding the completing spec's own requirement tags is part of
     // closing it, so tagging and closing can land in one commit. Any other edit of the file is not.
     if (tagSpecId && !specs.has(path) && !code.includes('D') && !code.includes('R') && !code.includes('A')) {
@@ -283,15 +288,32 @@ export function evidenceBlobsAt(projectDir, commit, paths) {
  */
 export function evidenceBlobsInTree(projectDir, commit, paths) {
   const out = evidenceBlobsAt(projectDir, commit, paths);
-  if (!paths.length) return out;
+  for (const [path, id] of workingTreeBlobs(projectDir, paths)) out[path] = id;
+  return out;
+}
+
+/** The paths among `paths` whose tracked content differs from HEAD (staged or not) and that still exist on disk. */
+export function modifiedPaths(projectDir, paths) {
+  if (!paths.length) return [];
+  const wanted = new Set(paths);
   const dirty = git(projectDir, ['diff', '--name-only', '-z', 'HEAD', '--', ...paths.map(path => `:(literal)${path}`)]);
-  const changed = dirty.out.split('\0').filter(path => path && path in out && existsOnDisk(projectDir, path));
+  return dirty.out.split('\0').filter(path => path && wanted.has(path) && existsOnDisk(projectDir, path));
+}
+
+/**
+ * path -> blob id of the working-tree content, for each of `paths` that has an uncommitted change:
+ * what the commit that follows will hold.
+ * @implements docguard.completion-upkeep#FR-017
+ */
+export function workingTreeBlobs(projectDir, paths) {
+  const changed = modifiedPaths(projectDir, paths);
+  const out = new Map();
   if (!changed.length) return out;
   const r = runGit(projectDir, ['hash-object', '--stdin-paths'], {
     operation: 'git hash-object (completion blobs)', stdio: ['pipe', 'pipe', 'ignore'], input: `${changed.join('\n')}\n`,
   });
   const ids = r.status === 0 && !r.error ? r.stdout.split('\n') : [];
-  changed.forEach((path, index) => { if (REVISION_RE.test(ids[index] || '')) out[path] = ids[index]; });
+  changed.forEach((path, index) => { if (REVISION_RE.test(ids[index] || '')) out.set(path, ids[index]); });
   return out;
 }
 

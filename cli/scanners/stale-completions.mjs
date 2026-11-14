@@ -17,12 +17,15 @@
  * @implements docguard.completion-upkeep#FR-001
  * @implements docguard.completion-upkeep#FR-002
  * @implements docguard.completion-upkeep#FR-003
+ * @implements docguard.completion-upkeep#FR-017
+ * @implements docguard.completion-upkeep#FR-018
  */
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { readOutcomeBlobs } from '../writers/spec-outcomes.mjs';
 import { runGit } from '../shared-git.mjs';
+import { workingTreeBlobs } from './revision-anchor.mjs';
 
 const OBJECT_ID = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 export const STALE_COMMAND = 'docguard specs complete --stale --reason "<what changed and what you reviewed>" --write';
@@ -45,12 +48,43 @@ function blobsAtHead(projectDir, paths) {
 }
 
 /**
+ * A file that this many current closed specs list as evidence is a hub: many specs share it, so a
+ * byte comparison would flag all of them for one edit, and a completion stops meaning a review.
+ * Measured on this repository's last 30 squash commits (specs/103-completion-upkeep): 289 of 393
+ * evidence files belong to one spec, 78 to two or three, 26 to four or more.
+ * @implements docguard.completion-upkeep#FR-018
+ */
+export const HUB_THRESHOLD = 4;
+
+const isClosed = spec => spec.reviewed?.lifecycle?.context === 'current' && ['verified', 'released'].includes(spec.reviewed?.lifecycle?.delivery);
+
+/** path -> how many current closed specs list it in their latest outcome's evidence, canonical documents aside. */
+export function evidenceSpecCounts(registry) {
+  const counts = new Map();
+  for (const spec of registry?.specs || []) {
+    if (!isClosed(spec)) continue;
+    const latest = (spec.reviewed?.reconciliation?.outcomes || []).at(-1);
+    if (!latest) continue;
+    const canonical = new Set(spec.reviewed?.scope?.canonicalDocs || []);
+    for (const path of latest.evidence || []) if (!canonical.has(path)) counts.set(path, (counts.get(path) || 0) + 1);
+  }
+  return counts;
+}
+
+/** The hub files, most shared first: `[{ path, specs }]`. */
+export function evidenceHubs(registry, threshold = HUB_THRESHOLD) {
+  return [...evidenceSpecCounts(registry)].filter(([, specs]) => specs >= threshold)
+    .map(([path, specs]) => ({ path, specs })).sort((a, b) => b.specs - a.specs || a.path.localeCompare(b.path));
+}
+
+/**
  * @param {string} projectDir
  * @param {{ specs: object[] }} registry
  * @returns {Array<{ specId: string, path: string, revision: string, files: string[], removed: string[] }>}
  *   one entry per spec with a changed implementation or test evidence file
  */
-export function staleCompletions(projectDir, registry) {
+export function staleCompletions(projectDir, registry, { workingTree = false } = {}) {
+  const hubs = new Set(evidenceHubs(registry).map(hub => hub.path));
   const judged = [];
   for (const spec of registry?.specs || []) {
     if (spec.reviewed?.lifecycle?.context !== 'current') continue;
@@ -62,12 +96,14 @@ export function staleCompletions(projectDir, registry) {
     const blobs = readOutcomeBlobs(content, latest.revision);
     if (!blobs) continue;
     const canonical = new Set(spec.reviewed?.scope?.canonicalDocs || []);
-    const compared = Object.entries(blobs).filter(([path]) => !canonical.has(path));
+    const compared = Object.entries(blobs).filter(([path]) => !canonical.has(path) && !hubs.has(path));
     if (compared.length) judged.push({ spec, revision: latest.revision, compared });
   }
   if (!judged.length) return [];
   const now = blobsAtHead(projectDir, [...new Set(judged.flatMap(item => item.compared.map(([path]) => path)))]);
   if (!now) return [];
+  // docguard.completion-upkeep#FR-017: `specs complete` reads the files as they are about to be committed.
+  if (workingTree) for (const [path, id] of workingTreeBlobs(projectDir, [...now.keys()])) now.set(path, id);
   const stale = [];
   for (const { spec, revision, compared } of judged) {
     const changed = compared.filter(([path, id]) => now.get(path) !== id).map(([path]) => path).sort();

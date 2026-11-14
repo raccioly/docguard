@@ -202,7 +202,9 @@ extensions/spec-kit-docguard/
 - **A change to a closed spec's evidence closes the spec again, in the same pull
   request.** Guard reports SPR011 (a warning, so strict gates fail on it) when
   an implementation or test file a `verified` spec recorded has changed since
-  its last review; canonical documents are not compared. Run `docguard specs
+  its last review; canonical documents and hub files (four or more specs list
+  them) are not compared. Do not commit the edit first: run the command with the
+  edit uncommitted and commit both together, so a gate on every commit stays clean. Run `docguard specs
   complete --stale --reason "<what changed and what you reviewed>" --write`: it
   closes every flagged spec in one transaction, keeps each spec's canonical
   documents and persistence, and writes nothing when one is blocked. Commit it

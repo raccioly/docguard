@@ -29,6 +29,7 @@
  * @implements docguard.completion-upkeep#FR-012
  * @implements docguard.completion-upkeep#FR-015
  * @implements docguard.completion-upkeep#FR-016
+ * @implements docguard.completion-upkeep#FR-017
  */
 
 import { createHash } from 'node:crypto';
@@ -39,7 +40,7 @@ import { commitFileTransaction } from '../writers/file-transaction.mjs';
 import { ensureStateDir } from '../writers/state-dir.mjs';
 import { appendImplementationOutcome, markSpecActive, readOutcomeBlobs, readSpecStatus, rewriteOutcomeRevision, writeOutcomeBlobs } from '../writers/spec-outcomes.mjs';
 import { staleCompletions } from '../scanners/stale-completions.mjs';
-import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceBlobsInTree, evidenceDifferences, findAnchor, isAncestorOf, lastCommitTouching, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, reviewedCommitOnHistory, strandedRevisions } from '../scanners/revision-anchor.mjs';
+import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceBlobsInTree, evidenceDifferences, findAnchor, isAncestorOf, lastCommitTouching, modifiedPaths, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, reviewedCommitOnHistory, strandedRevisions } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
 import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
 import { canonicalOutcome, PERSISTENCE_VALUES, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, unrecordedCompletions, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
@@ -68,14 +69,20 @@ function headRevision(projectDir) {
 // Completion may run several times against one revision before a single
 // commit: the registry, the active context and outcome blocks it writes do
 // not count as changes (docguard.completion-revision-anchoring#FR-001).
-function blockingChanges(projectDir, registry, ownTaskLists = [], tagSpecId = null) {
+function blockingChanges(projectDir, registry, ownTaskLists = [], tagSpecId = null, evidencePaths = []) {
   return nonLifecycleChanges(projectDir, {
     registryPath: SPEC_REGISTRY_PATH,
     contextPath: CONTEXT_PATH,
     specPaths: (registry?.specs || []).map(spec => spec.path),
     tickOnlyPaths: ownTaskLists,
     tagSpecId,
+    evidencePaths,
   });
+}
+
+/** The implementation and test files a spec's registry entry lists as evidence now. */
+function evidenceFilesOf(spec) {
+  return sortedUnique([...(spec?.observed?.implementationEvidence || []), ...(spec?.observed?.testEvidence || [])].map(item => item.file));
 }
 
 function editDistance(a, b) {
@@ -271,10 +278,18 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
   if (!loaded.exists || loaded.error || !projection.current) blockers.push({ code: 'SPC001', message: 'Committed registry must be current before completion.' });
   if (!spec) blockers.push({ code: 'SPC001', message: unknownSpecMessage(flags.id, projection.registry.specs) });
   if (!revision) blockers.push({ code: 'SPC001', message: 'Completion requires a resolvable Git HEAD.' });
-  // docguard.completion-upkeep#FR-016: a batch takes tick-only edits of any spec's task list, because the person
-  // closing the batch is usually ticking the last task of their own spec in the same tree.
-  const tickLists = options.shared?.anyTaskTicks ? projection.registry.specs.flatMap(ownTaskLists) : ownTaskLists(spec);
-  const changed = blockingChanges(projectDir, projection.registry, tickLists, spec?.specId || null);
+  // docguard.completion-upkeep#FR-016: a batch takes tick-only edits of the task lists of the specs in the batch, because the
+  // person closing it is usually ticking the last task of one of them in the same tree.
+  const batch = options.shared?.batchSpecIds;
+  const tickLists = batch ? projection.registry.specs.filter(entry => batch.has(entry.specId)).flatMap(ownTaskLists) : ownTaskLists(spec);
+  // docguard.completion-upkeep#FR-017: so is an uncommitted edit of an implementation or test file the batch (or the
+  // spec) lists as evidence: the code change and the completion that reviews it land in one commit.
+  // Only files that are evidence in the committed registry: an edit that makes a file evidence (adds its first tag) is
+  // judged by the tag-only rule, not waved through.
+  const committedSpec = (loaded.value?.specs || []).find(entry => entry.specId === spec?.specId);
+  const evidenceFiles = options.shared?.evidencePaths || evidenceFilesOf(committedSpec);
+  const changed = blockingChanges(projectDir, projection.registry, tickLists, spec?.specId || null, evidenceFiles);
+  const dirtyEvidence = modifiedPaths(projectDir, evidenceFilesOf(committedSpec));
   if (changed === null || changed.length) {
     blockers.push({ code: 'SPC001', message: `Completion requires a clean tracked working tree at the recorded revision (lifecycle files written by earlier completions, ticked boxes in this spec's own task list, and added @implements/@req tags for this spec's own requirements are allowed); changed: ${describeChanges(changed)}.` });
   }
@@ -342,7 +357,7 @@ export function planSpecCompletion(projectDir, config, flags, options = {}) {
         const reviewable = reconcile.classifications.filter(item =>
           item.specs.includes(spec.specId)
           && ['source', 'test', 'canonical_doc', 'decision'].includes(item.kind));
-        if (revision === spec.reviewed.reconciliation.lastReviewedRevision || reviewable.length === 0) {
+        if (revision === spec.reviewed.reconciliation.lastReviewedRevision || (reviewable.length === 0 && dirtyEvidence.length === 0)) {
           blockers.push({ code: 'SPC006', message: 'Living-spec maintenance requires a new linked source, test, canonical-document, or decision change since the last reviewed revision.' });
         }
       }
@@ -496,13 +511,17 @@ export function completeStale(projectDir, config, flags, options = {}) {
     .concat(flags.canonicalDocs?.length ? ['canonical-doc'] : []);
   if (named.length) throw new Error(`--stale closes every spec that drifted and keeps each spec's recorded scope; it does not take ${named.map(key => `--${key}`).join(', ')}.`);
   const projection = projectSpecRegistry(projectDir, config);
-  const stale = staleCompletions(projectDir, projection.registry);
+  const stale = staleCompletions(projectDir, projection.registry, { workingTree: true });
   const stats = { specs: stale.length, guardRuns: 0, reconciliations: 0, bases: 0 };
   const base = { command: 'complete', mode: 'stale', revision: headRevision(projectDir), stats, applied: false };
   if (!stale.length) return { ...base, status: 'CURRENT', specs: [], blockers: [] };
   const guardResult = options.guardResult || runGuardInternal(projectDir, config);
   stats.guardRuns = options.guardResult ? 0 : 1;
-  const shared = { reconcile: new Map(), anchorStatus: null, stats, projection, anyTaskTicks: true };
+  const members = new Set(stale.map(item => item.specId));
+  const shared = {
+    reconcile: new Map(), anchorStatus: null, stats, projection, batchSpecIds: members,
+    evidencePaths: sortedUnique((readSpecRegistry(projectDir).value?.specs || []).filter(entry => members.has(entry.specId)).flatMap(evidenceFilesOf)),
+  };
   const plans = stale.map(item => ({
     item,
     plan: planSpecCompletion(projectDir, config, { id: item.specId }, { ...options, guardResult, shared }),

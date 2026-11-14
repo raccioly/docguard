@@ -582,15 +582,19 @@ implementation or test files are different at `HEAD`, or gone
 (`specs/103-completion-upkeep`). SPR008 cannot see this on a pull request's
 merge ref: the commit that landed the record is the main branch's squash commit,
 whose files match. The spec's canonical documents are not compared (Freshness and
-requirement anchors cover them), and a record written before blobs existed is not
-judged. `docguard specs complete --stale --reason "<text>" --write` closes every
+requirement anchors cover them), nor is a hub file that four or more closed specs
+list as evidence (guard JSON lists them under `files.completionHubs`; the anchor
+lock keeps watching their linked code), and a record written before blobs existed
+is not judged. `docguard specs complete --stale --reason "<text>" --write` closes every
 flagged spec again in one transaction, each as a maintenance completion that keeps
 its canonical documents and persistence: it plans all of them against one guard
 run and one reconciliation per distinct base, writes the registry, the active
 context and every spec together, and writes nothing, listing each blocker with its
 spec, when one spec is blocked. It takes no `--id`, `--since`, `--canonical-doc`,
-`--persistence` or `--successor`, and reports CURRENT when nothing drifted. A
-tick of any spec's last task in the same tree does not block it. A branch that
+`--persistence` or `--successor`, and reports CURRENT when nothing drifted. `complete` (with `--id` or `--stale`) takes uncommitted edits of the spec's evidence
+files and records their working-tree blobs, so the code change and its completion
+are one commit and a gate on every commit passes at each one. A
+tick of the last task of a spec in the batch does not block it. A branch that
 merged the base branch needs no `--since` for `complete` or `--stale`: the commit
 that carries the reviewed files is found through the merge's second parent.
 

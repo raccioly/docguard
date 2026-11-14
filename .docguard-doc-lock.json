@@ -4,7 +4,7 @@
     "docs-canonical/ARCHITECTURE.md#requirement-identity": {
       "dependencies": {
         "cli/commands/specs.mjs#planSpecCompletion": {
-          "fingerprint": "sha256:4e0552dda85b12a467ddc9c97453ad6fd66ec87f4462a2db8ef860613929bc41",
+          "fingerprint": "sha256:d8df10ddb81575f1880dac2bb29599875ba84f3228c70f6b78ac28f972cdf34e",
           "tier": "ast"
         },
         "cli/shared-requirements.mjs#collectRequirementIdsFromContent": {
@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Reviewed against planSpecCompletion after the spec 103 review fixes: the batch tick allowance, the shared projection and the any-ancestry fallback are described",
+      "reason": "Reviewed against planSpecCompletion after the hub and evidence-edit changes of spec 103",
       "reviewedAt": "2026-11-14",
-      "reviewedRevision": "304d48f44a47c21a89429780769497dc5cca43d3"
+      "reviewedRevision": "3a14be978988a2080943c4f48e84dab19c70cffc"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Reviewed against completeSpec and reanchorSpec after spec 103: SPR011, --stale, working-tree blobs and the Status header are described",
+      "reason": "Reviewed against completeSpec after spec 103's review fixes; the Blobs row and Status header are unchanged in meaning",
       "reviewedAt": "2026-11-14",
-      "reviewedRevision": "d7bd64373403f4f7614aae6fbb2e104a2616205e"
+      "reviewedRevision": "3a14be978988a2080943c4f48e84dab19c70cffc"
     }
   }
 }

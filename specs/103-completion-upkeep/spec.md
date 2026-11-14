@@ -28,7 +28,24 @@ Replay of the 30 squash commits on main that end at the performance change merge
 | Without the spec's canonical documents | 2 | 9.9 | 81 | 13 of 30 | 10 |
 | Without them, and without edits that only touch tag lines of other specs | 2 | 9.9 | 81 | 13 of 30 | 10 |
 
-Among the 20 commits that change any evidence the median is 10 specs without canonical documents (51 with them). Counting canonical documents byte for byte nearly triples the mean (27.4 against 9.9): one edit to `ARCHITECTURE.md` would flag every spec that lists it. Excluding tag-only edits changes nothing (0 of 30 commits). The files that flag most are shared hubs: `cli/findings.mjs` (28 spec-commit pairs), `tests/program-verification.test.mjs` (23), `cli/docguard.mjs` (15). Only four records carry blobs today (093, 094, 095, 101), so as specified the warning would have flagged none of those 30 commits and flags no spec on the tip of main; the table is the steady state each `--stale` run moves the repository toward.
+Among the 20 commits that change any evidence the median is 10 specs without canonical documents (51 with them). Counting canonical documents byte for byte nearly triples the mean (27.4 against 9.9): one edit to `ARCHITECTURE.md` would flag every spec that lists it. Excluding tag-only edits changes nothing (0 of 30 commits). Only four records carry blobs today (093, 094, 095, 101), so as specified the warning would have flagged none of those 30 commits and flags no spec on the tip of main; the table is the steady state each `--stale` run moves the repository toward.
+
+#### Hub files
+
+A median of 10 over the commits that change evidence is too high: a completion re-closed that often stops meaning a review. The files that cause it are shared by many specs. Specs per evidence file (latest outcomes, canonical documents aside, 393 files): 289 belong to one spec, 78 to two or three, 24 to four to seven, 1 to eight to fourteen, 1 to fifteen or more (`tests/program-verification.test.mjs`, 15; then `cli/scanners/routes.mjs`, 8). Two narrower rules were replayed on the same 30 commits (median over the commits that change evidence, mean over all 30, max, commits over 3):
+
+| Rule | Evidence-changing commits | Median | Mean | Max | Over 3 |
+|---|---|---|---|---|---|
+| none (canonical documents excluded) | 20 | 10 | 9.9 | 81 | 13 |
+| (a) a file shared by 4 or more specs is not compared | 18 | **3** | 6.5 | 80 | 7 |
+| (a) 5 or more | 18 | 5 | 7.8 | 80 | 11 |
+| (a) 6 or more | 18 | 7 | 8.7 | 81 | 11 |
+| (a) 10 or more | 18 | 8 | 9.2 | 81 | 11 |
+| (b) a file shared by 4 or more specs counts for a spec only when that spec's anchor in it is suspect (ANC001 or ANC002 against the lock as it was before the commit) | 18 | 6 | 7.8 | 80 | 11 |
+| (b) 6 or more | 18 | 8 | 8.8 | 81 | 11 |
+| (b) 10 or more | 18 | 8 | 9.2 | 81 | 11 |
+
+Rule (a) with a threshold of 4 is the only one that brings the median to 3. It is shipped (FR-018); 26 of 393 files (6.6%) are hubs. What it does not hide: the per-link anchor lock still reports a hub's linked code that changed (ANC001), and guard JSON lists the hubs (`files.completionHubs`). What it does hide: in a project that does not use the anchor lock, an edit of a hub flags no spec. Rule (b) was not shipped: it leaves the median at 6, and it ties SPR011 to a lock that a project may not keep. The maximum (80) is a repository-wide test sweep, where every spec's own test files changed: a real change to each of those specs.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -57,7 +74,7 @@ Among the 20 commits that change any evidence the median is 10 specs without can
 ## Requirements *(mandatory)*
 
 - **FR-001** *(amends spec 101 FR-005, FR-006)*: The Spec-Registry validator MUST emit SPR011 (warn, not inline-suppressible) for each current spec whose delivery is `verified` or `released` and whose latest outcome carries evidence blobs, when the blob at `HEAD` of any of those files differs from the recorded one, or the file is gone. The message MUST name the spec, each changed file (at most five, then a count) and the command that closes it again. Only the latest outcome is judged.
-- **FR-002**: SPR011 MUST NOT compare the spec's canonical documents (`reviewed.scope.canonicalDocs`), and MUST NOT judge an outcome that records no blobs. A file whose only change is to tag lines for other specs is compared like any other: the replay measured no effect (0 of 30 commits), so that exemption is not built.
+- **FR-002**: SPR011 MUST NOT compare the spec's canonical documents (`reviewed.scope.canonicalDocs`) or a hub file (FR-018), and MUST NOT judge an outcome that records no blobs. A file whose only change is to tag lines for other specs is compared like any other: the replay measured no effect (0 of 30 commits), so that exemption is not built.
 - **FR-003**: SPR011 MUST read only `HEAD`'s tree, with one `git cat-file --batch-check` for every spec, so it works in a shallow clone and adds a constant number of git calls. When git cannot answer, it MUST report nothing.
 - **FR-004**: `docguard specs complete --stale --reason <text> [--write]` MUST close again every spec SPR011 flags, each as a maintenance completion that keeps its recorded `canonicalDocs` and `persistenceModel`. It MUST refuse `--id`, `--since`, `--canonical-doc`, `--persistence` and `--successor`, and report CURRENT, writing nothing, when no spec is flagged.
 - **FR-005**: `--stale` MUST plan every spec before writing anything, against one guard run, and write the registry, the active context and every spec in one transaction. When any spec is blocked it MUST write nothing and list every blocker with its spec ID.
@@ -66,17 +83,20 @@ Among the 20 commits that change any evidence the median is 10 specs without can
 - **FR-008**: SPC004's help text and `AGENTS.md` MUST describe the pattern for a requirement with no code target (a documentation requirement, a one-time outcome): a test that asserts the document's terms (`describes()`) or the recorded result in the spec's Verification Notes (`recorded()`), tagged `@req`, as `tests/program-verification.test.mjs` does.
 - **FR-009**: SPC006's "Unresolved changed files" message MUST name the earliest commit after which no unresolved file remains, found with one bounded `git log`, and say what choosing it skips.
 - **FR-010**: `specs complete --write` MUST print what it wrote: the registry fields it changed, the outcome line and the number of evidence blobs recorded. `--format json` carries the same.
-- **FR-011**: `specs complete --write` MUST set the spec's `**Status**:` header to `Active` when it reads `Draft`, `In Progress`, `Implemented` or `Planned`, and leave any other value. The clean-tree check MUST ignore a change confined to that line, as it ignores the outcomes block.
+- **FR-011**: `specs complete --write` MUST set the spec's `**Status**:` header to `Active` when it reads `Draft`, `In Progress`, `Planned`, `Proposed` or `WIP`, and leave any other value, so a completed-like value (`Active`, `Implemented`, `Complete`) is never rewritten. Among this repository's closed specs the deliberately set values are `Active` (33) and `Implemented` (2); `Draft` (57) is the value nobody updated. The clean-tree check MUST ignore a change confined to that line, as it ignores the outcomes block.
 - **FR-012**: An unknown spec ID in `complete`, `approve` and `reanchor` MUST list the closest recorded IDs (at most three).
 - **FR-013**: SPR011 MUST be registered with a title and help (`docguard explain`), in the generated findings reference and in `docs/commands.md`, and `CHANGELOG.md` MUST say it adds a warning to strict.
 - **FR-014**: Wide-range completion MUST NOT run guard or the reconciliation once per spec (FR-005, FR-006); the plan records what made a wide range slow and what changed.
 - **FR-015** *(amends spec 101 FR-007)*: When a spec's recorded revision is not an ancestor of `HEAD` and the first-parent search finds no commit that carries its blobs, `specs complete` (with or without `--stale`) MUST look in the rest of `HEAD`'s ancestry for the commit whose registry change introduced the revision and whose files are the recorded blobs, and use it as the diff base, so that a branch that merged the base branch does not need `--since`. The oldest twenty candidates are checked. Only when none matches does the record count as lost and `--since` stays required.
-- **FR-016**: `specs complete --stale` MUST NOT be blocked by a tick-only change (checkbox state) to any spec's `tasks.md`, so the person who ticks the last task of their own spec can close the batch in the same tree.
+- **FR-016**: `specs complete --stale` MUST NOT be blocked by a tick-only change (checkbox state) to the `tasks.md` of a spec in the batch, so the person who ticks the last task of a spec can close the batch in the same tree. A tick in a spec outside the batch MUST still block with SPC001.
+- **FR-017** *(amends spec 101 FR-001)*: `specs complete --id` and `--stale` MUST NOT be blocked by an uncommitted modification of an implementation or test file that the completing spec (or a spec of the batch) lists as evidence in the committed registry, and MUST record the blob of its working-tree content. `--stale` MUST judge drift against that working-tree content, and a maintenance completion MUST count such a modification as the new linked change it requires. The code edit and the completion that reviews it therefore land in one commit, and a gate that runs guard on every commit and fails on warnings passes at every commit of the branch and after the squash. Any other modification, and a modification of a file that is not committed evidence, MUST still block with SPC001 (a new tag is judged by FR-007).
+- **FR-018**: A file that at least four current closed specs list in their latest outcome's evidence (`HUB_THRESHOLD`; canonical documents aside) is a hub: SPR011 MUST NOT byte-compare it. Guard JSON MUST list the hubs, with their spec counts, under `files.completionHubs`. The per-link anchor lock (spec 070) keeps watching a hub's linked code.
 
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: The pull-request fixture of User Story 1 reports SPR011 on this version and nothing on main's code (where the check does not exist); after `specs complete --stale --write` guard is clean, and a squash of the branch onto main stays clean.
 - **SC-002**: A batch with one blocked spec writes no byte.
+- **SC-004**: Spec 101's per-commit loop passes with an evidence edit: a closed spec, a branch whose last commit edits one of its implementation files and closes it again, guard clean at every commit and after the squash, for `--id` and `--stale`; the test fails without FR-017.
 - **SC-003**: SPR011 flags nothing on the tip of main, and this specification is closed with the flow it describes, with a `--stale` run for every spec whose evidence it edits.
 
 ## Edge Cases
@@ -91,7 +111,6 @@ Among the 20 commits that change any evidence the median is 10 specs without can
 
 - Comparing canonical documents byte for byte (Freshness and requirement anchors cover them).
 - A tag-line exemption for other specs' tags: measured at no effect.
-- Exempting shared hub files from SPR011: the replay shows they cause most of the count, and that decision stays with the owner.
 - Accepting uncommitted changes to the anchor lock in `complete`.
 
 <!-- docguard:implementation-outcomes:start -->

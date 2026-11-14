@@ -24,9 +24,12 @@
  * @req docguard.completion-upkeep#FR-014
  * @req docguard.completion-upkeep#FR-015
  * @req docguard.completion-upkeep#FR-016
+ * @req docguard.completion-upkeep#FR-017
+ * @req docguard.completion-upkeep#FR-018
  * @req docguard.completion-upkeep#SC-001
  * @req docguard.completion-upkeep#SC-002
  * @req docguard.completion-upkeep#SC-003
+ * @req docguard.completion-upkeep#SC-004
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -62,7 +65,7 @@ const codes = findings => findings.map(f => f.code).sort();
 const entry = (dir, id) => JSON.parse(read(dir, REGISTRY)).specs.find(s => s.specId === id);
 
 /** A repository whose specs are approved and in progress, and whose gate runs strict. */
-function adopter(t, names = ['alpha']) {
+function adopter(t, names = ['alpha'], { shared = false } = {}) {
   const dir = makeTempDir('dg-upkeep-', t);
   git(dir, ['init', '-q', '-b', 'main']);
   git(dir, ['config', 'user.email', 't@example.com']);
@@ -75,12 +78,14 @@ function adopter(t, names = ['alpha']) {
   put(dir, 'DRIFT-LOG.md', '# Drift\n');
   put(dir, 'docs-canonical/ARCHITECTURE.md', '# Architecture\n');
   names.forEach(name => {
-    const i = ['alpha', 'beta', 'gamma'].indexOf(name);
+    const i = ['alpha', 'beta', 'gamma', 'delta'].indexOf(name);
     put(dir, `specs/00${i + 1}-${name}/spec.md`, `# ${name}\n\n**Status**: Draft\n\n**Spec ID**: \`acme.${name}\`\n\n- **FR-001**: ${name} MUST work.\n`);
     put(dir, `specs/00${i + 1}-${name}/tasks.md`, '# Tasks\n\n- [x] T1 Build.\n- [ ] T2 Verify.\n');
     put(dir, `src/${name}.js`, `/** @implements acme.${name}#FR-001 */\nexport const ${name} = 1;\n`);
     put(dir, `tests/${name}.test.js`, `/** @req acme.${name}#FR-001 */\ntest("${name}", () => {});\n`);
   });
+  // One file every spec lists as evidence: a hub.
+  if (shared) put(dir, 'src/shared.js', `${names.map(name => `/** @implements acme.${name}#FR-001 */`).join('\n')}\nexport const shared = 1;\n`);
   git(dir, ['add', '-A']);
   assert.equal(run(dir, ['specs', '--write']).status, 0);
   for (const name of names) {
@@ -93,7 +98,7 @@ function adopter(t, names = ['alpha']) {
 }
 
 const tickOf = (dir, name) => {
-  const path = `specs/00${['alpha', 'beta', 'gamma'].indexOf(name) + 1}-${name}/tasks.md`;
+  const path = `specs/00${['alpha', 'beta', 'gamma', 'delta'].indexOf(name) + 1}-${name}/tasks.md`;
   put(dir, path, read(dir, path).replace('- [ ] T2', '- [x] T2'));
 };
 
@@ -119,8 +124,8 @@ const squashOntoMain = (dir, branch, message) => {
  * merged; another branch, cut before that squash, edits their implementation
  * files; guard runs on the merge of that branch into main.
  */
-function mergeRef(t, { names = ['alpha'], edit = ['alpha'], open = [] } = {}) {
-  const dir = adopter(t, [...names, ...open]);
+function mergeRef(t, { names = ['alpha'], edit = ['alpha'], open = [], shared = false } = {}) {
+  const dir = adopter(t, [...names, ...open], { shared });
   const base = git(dir, ['rev-parse', 'HEAD']);
   git(dir, ['checkout', '-q', '-b', 'closer']);
   put(dir, 'FEATURE.md', '# Feature work on the PR branch\n');
@@ -252,19 +257,22 @@ describe('US2: one command closes every spec that drifted (FR-004, FR-005, FR-00
     assert.equal(done.status, 'VERIFIED');
   });
 
-  it('--stale is not blocked by ticking the last task of another spec in the same tree (FR-016)', t => {
+  it('--stale accepts a tick in a spec of the batch, and still blocks a tick in a spec outside it (FR-016)', t => {
     const { dir } = mergeRef(t, { edit: ['alpha'], open: ['gamma'] });
     git(dir, ['checkout', '-q', 'editor']);
     git(dir, ['merge', '-q', '-m', 'merge main', 'main']);
+    put(dir, 'specs/001-alpha/tasks.md', read(dir, 'specs/001-alpha/tasks.md').replace('- [x] T2', '- [ ] T2'));
+    assert.equal(run(dir, ['specs', '--write']).status, 0);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'reopen the last task of alpha']);
+    tickOf(dir, 'alpha');
+    assert.equal(run(dir, ['specs', '--write']).status, 0);
+    const inBatch = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
+    assert.equal(inBatch.status, 'READY', JSON.stringify(inBatch.blockers));
     tickOf(dir, 'gamma');
     assert.equal(run(dir, ['specs', '--write']).status, 0);
-    const dry = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
-    assert.equal(dry.status, 'READY', JSON.stringify(dry.blockers));
-    put(dir, 'specs/003-gamma/tasks.md', '# Tasks\n\n- [x] T1 Build.\n- [ ] T2 Verify.\n\nA note.\n');
-    assert.equal(run(dir, ['specs', '--write']).status, 0);
-    const refused = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
-    assert.equal(refused.status, 'BLOCKED', 'only a tick is allowed');
-    assert.ok(refused.blockers.some(b => b.code === 'SPC001'));
+    const outside = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
+    assert.equal(outside.status, 'BLOCKED');
+    assert.ok(outside.blockers.some(b => b.code === 'SPC001' && /003-gamma/.test(b.message)), JSON.stringify(outside.blockers));
   });
 
   it('plans against one reconciliation per distinct base (FR-006)', t => {
@@ -436,5 +444,147 @@ describe('US4: the first-use friction (FR-008 to FR-012)', () => {
     assert.match(readFileSync(join(ROOT, own.path), 'utf8'), / Blobs: /);
     const amended = registry.specs.find(spec => spec.specId === 'docguard.completion-one-commit');
     assert.ok(amended.reviewed.reconciliation.outcomes.some(outcome => /spec 103/.test(outcome.reason)), 'spec 101 records its re-close for spec 103');
+  });
+});
+
+/** guard at every commit of `dir`, in a clone: the codes of the DLC, SPC and SPR family found at each. */
+function perCommitGate(t, dir) {
+  const clone = makeTempDir('dg-upkeep-gate-', t);
+  git(clone, ['clone', '-q', '--no-hardlinks', dir, '.']);
+  return git(dir, ['rev-list', '--reverse', 'main..HEAD']).split('\n').filter(Boolean).map(sha => {
+    git(clone, ['checkout', '-q', sha]);
+    return [sha.slice(0, 7), codes(family(clone))];
+  });
+}
+
+describe('US5: the code edit and the completion land in one commit, and a per-commit gate never fails (FR-017, SC-004)', () => {
+  /** alpha is closed on main; a branch does unrelated work, then edits src/alpha.js, uncommitted. */
+  function closedThenEdited(t, extra = []) {
+    const dir = adopter(t, ['alpha', ...extra]);
+    const base = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', '-b', 'closer']);
+    closeEach(dir, ['alpha'], base);
+    squashOntoMain(dir, 'closer', 'squash: close alpha');
+    git(dir, ['checkout', '-q', '-b', 'edit', 'main']);
+    put(dir, 'NOTES.md', '# Notes\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'unrelated work']);
+    put(dir, 'src/alpha.js', `${read(dir, 'src/alpha.js')}export const alphaTwo = 2;\n`);
+    return dir;
+  }
+  const reason = ['--reason', 'Reviewed the edit', '--write', '--format', 'json'];
+
+  it('complete --id takes the uncommitted edit; every commit of the branch passes guard; so does the squash', t => {
+    const dir = closedThenEdited(t);
+    const done = run(dir, ['specs', 'complete', '--id', 'acme.alpha', ...reason]);
+    assert.equal(json(done).status, 'VERIFIED', done.out + done.err);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'edit alpha and close it again']);
+    const gate = perCommitGate(t, dir);
+    assert.equal(gate.length, 2);
+    assert.deepEqual(gate.filter(([, found]) => found.length), [], 'warnings as failures: no DLC, SPC or SPR finding at any commit');
+    squashOntoMain(dir, 'edit', 'squash: edit alpha');
+    assert.deepEqual(codes(family(dir)), []);
+  });
+
+  it('complete --stale finds the uncommitted edit and closes it in the same commit', t => {
+    const dir = closedThenEdited(t);
+    const dry = json(run(dir, ['specs', 'complete', '--stale', '--reason', 'x', '--format', 'json']));
+    assert.equal(dry.status, 'READY', JSON.stringify(dry.blockers));
+    assert.deepEqual(dry.specs.map(item => item.specId), ['acme.alpha']);
+    assert.equal(json(run(dir, ['specs', 'complete', '--stale', ...reason])).status, 'VERIFIED');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'edit alpha and close it again']);
+    assert.deepEqual(perCommitGate(t, dir).filter(([, found]) => found.length), []);
+    squashOntoMain(dir, 'edit', 'squash: edit alpha');
+    assert.deepEqual(codes(family(dir)), []);
+  });
+
+  it('an edit of a file that is not the spec\'s evidence still blocks with SPC001', t => {
+    const dir = closedThenEdited(t);
+    put(dir, 'README.md', '# Fixture, edited\n');
+    const refused = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--reason', 'x', '--format', 'json']));
+    assert.ok(refused.blockers.some(b => b.code === 'SPC001' && /README\.md/.test(b.message)), JSON.stringify(refused.blockers));
+  });
+});
+
+describe('US6: a file shared by many specs is not byte-compared (FR-018)', () => {
+  const four = ['alpha', 'beta', 'gamma', 'delta'];
+
+  it('an edit of a hub flags nobody, an edit of one spec\'s own file flags that spec, and guard JSON names the hubs', t => {
+    const { dir } = mergeRef(t, { names: four, edit: ['shared'], shared: true });
+    assert.deepEqual(codes(family(dir)).filter(code => code === 'SPR011'), [], 'src/shared.js is evidence of four specs');
+    const report = json(run(dir, ['guard', '--format', 'json']));
+    const hubs = report.files.completionHubs;
+    assert.equal(hubs.threshold, 4);
+    assert.deepEqual(hubs.files.map(hub => [hub.path, hub.specs]), [['src/shared.js', 4]]);
+    git(dir, ['checkout', '-q', 'editor']);
+    put(dir, 'src/beta.js', `${read(dir, 'src/beta.js')}export const betaTwo = 2;\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'edit beta']);
+    git(dir, ['checkout', '-q', 'merge-ref']);
+    git(dir, ['merge', '--no-ff', '-q', '-m', 'merge again', 'editor']);
+    const flagged = family(dir).filter(f => f.code === 'SPR011');
+    assert.equal(flagged.length, 1);
+    assert.match(flagged[0].message, /acme\.beta/);
+  });
+});
+
+describe('FR-015: the any-ancestry search cannot pick a base reachable only through an unrelated branch', () => {
+  it('picks the commit that carries the reviewed files, not an unrelated side branch merged into main', t => {
+    const dir = adopter(t);
+    const base = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', '-b', 'side']);
+    put(dir, 'SIDE.md', '# A side branch that never saw the completion\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'side work']);
+    const side = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', 'main']);
+    git(dir, ['merge', '--no-ff', '-q', '-m', 'merge side', 'side']);
+    git(dir, ['checkout', '-q', '-b', 'closer', base]);
+    put(dir, 'FEATURE.md', '# Feature work\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'feature work on the PR branch']);
+    closeEach(dir, ['alpha'], base);
+    git(dir, ['checkout', '-q', 'main']);
+    git(dir, ['merge', '--squash', '-q', 'closer']);
+    git(dir, ['commit', '-qm', 'squash: close alpha']);
+    const landing = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', '-b', 'editor', base]);
+    put(dir, 'src/alpha.js', `${read(dir, 'src/alpha.js')}export const alphaTwo = 2;\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'edit alpha']);
+    git(dir, ['merge', '-q', '-m', 'merge main', 'main']);
+    const plan = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--format', 'json']));
+    assert.equal(plan.status, 'READY', JSON.stringify(plan.blockers));
+    assert.equal(plan.since, landing, 'the diff base is the squash commit that carries the reviewed files');
+    assert.notEqual(plan.since, side);
+  });
+
+  it('a record whose reviewed files are in no commit of this history stays lost, and --since stays required', t => {
+    const dir = adopter(t);
+    const base = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', '-b', 'closer']);
+    put(dir, 'FEATURE.md', '# Feature work\n');
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'feature work on the PR branch']);
+    closeEach(dir, ['alpha'], base);
+    const closed = git(dir, ['rev-parse', 'HEAD']);
+    git(dir, ['checkout', '-q', '-b', 'other', base]);
+    put(dir, 'src/alpha.js', `${read(dir, 'src/alpha.js')}export const alphaTwo = 2;\n`);
+    git(dir, ['add', '-A']); git(dir, ['commit', '-qm', 'edit alpha on a branch that never saw the completion']);
+    // The record arrives with a file change the reviewed blobs do not have: only the closing commit's registry, not its files.
+    git(dir, ['checkout', closed, '--', REGISTRY, 'specs/001-alpha']);
+    git(dir, ['commit', '-qm', 'bring in the record without its files']);
+    const plan = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--format', 'json']));
+    assert.ok(plan.blockers.some(b => b.code === 'SPC006' && /--since/.test(b.message)), JSON.stringify(plan.blockers));
+  });
+});
+
+describe('FR-011: a status that is not a draft value is never rewritten', () => {
+  it('Implemented, Complete and Active stay as they are', t => {
+    for (const value of ['Implemented', 'Complete', 'Active']) {
+      const dir = adopter(t);
+      put(dir, 'specs/001-alpha/spec.md', read(dir, 'specs/001-alpha/spec.md').replace('**Status**: Draft', `**Status**: ${value}`));
+      assert.equal(run(dir, ['specs', '--write']).status, 0);
+      git(dir, ['add', '-A']); git(dir, ['commit', '-qm', `status ${value}`]);
+      tickOf(dir, 'alpha');
+      assert.equal(run(dir, ['specs', '--write']).status, 0);
+      const done = json(run(dir, ['specs', 'complete', '--id', 'acme.alpha', '--since', 'HEAD~2', '--reason', 'Reviewed', '--write', '--format', 'json']));
+      assert.equal(done.status, 'VERIFIED', JSON.stringify(done.blockers));
+      assert.match(read(dir, 'specs/001-alpha/spec.md'), new RegExp(`\\*\\*Status\\*\\*: ${value}`));
+    }
   });
 });

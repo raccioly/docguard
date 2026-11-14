@@ -213,7 +213,7 @@ landed the record is the main branch's squash commit, whose files match the reco
 SPR008 cannot see the edit, and `SPR011` (a warning, which strict fails on) compares the
 record's blobs with `HEAD`'s files instead (`specs/103-completion-upkeep`). It reads only
 `HEAD`'s tree, so a shallow clone is enough, and it skips the spec's canonical
-documents. `docguard specs complete --stale --reason "<text>" --write` closes every
+documents and hub files (four or more specs list them). A gate that runs guard on every commit and fails on warnings stays clean when the edit is not committed first: run `specs complete` with the evidence edit uncommitted and commit both together. `docguard specs complete --stale --reason "<text>" --write` closes every
 flagged spec in one transaction; commit its result with the change.
 
 Under squash merges, run completions on a branch whose HEAD is the default
