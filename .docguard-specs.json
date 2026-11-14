@@ -7950,7 +7950,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:8b8c99588e7450d6af59dfa5ea03d50058e697f51c49a7485d0c730a7f7dcef0"
+            "digest": "sha256:052d84cccdf394c6a74bb1580597d72fcaa7ca87a8d0b0ea7fb5bcc9b4551773"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -9532,7 +9532,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 366
+            "line": 394
           }
         ],
         "testEvidence": [
@@ -17832,7 +17832,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/path-scoped-rules.mjs",
-            "line": 60
+            "line": 61
           },
           {
             "requirementId": "FR-006",
