@@ -11,7 +11,7 @@ import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 import { fixtureGit } from './helpers/git.mjs';
@@ -169,6 +169,34 @@ describe('FR-015: mirrors that differ are drift', () => {
     const dir = repo(t, { '.agent/skills/docguard-guard/SKILL.md': body('0.20'), '.claude/skills/docguard-guard/SKILL.md': body('0.46') });
     const [hit] = findings(dir, 'PSR007');
     assert.match(hit.message, /docguard upgrade/);
+  });
+
+  describe('the refresh the suggestion names is a command that exists and clears the finding', () => {
+    const bundled = readFileSync(resolve('extensions/spec-kit-docguard/skills/docguard-fix/SKILL.md'), 'utf8');
+    const claudeProject = (t, claudeBody, agentsBody) => repo(t, {
+      '.specify/integration.json': JSON.stringify({ integration: 'claude' }),
+      '.specify/integrations/claude.manifest.json': JSON.stringify({ integration: 'claude', version: '1.0.13', files: {} }),
+      '.claude/skills/docguard-fix/SKILL.md': claudeBody, '.agents/skills/docguard-fix/SKILL.md': agentsBody,
+    });
+
+    it('a stale copy in the folder DocGuard writes: the named command rewrites it and PSR007 is gone', t => {
+      const dir = claudeProject(t, `${bundled}\nstale line\n`, bundled);
+      const [hit] = findings(dir, 'PSR007');
+      assert.ok(hit);
+      assert.match(hit.message, /\.claude\/skills\/docguard-fix\/SKILL\.md is in a folder DocGuard writes for this project: `docguard upgrade --apply --schema-only` rewrites it/);
+      const run = spawnSync(process.execPath, [CLI, 'upgrade', '--apply', '--schema-only'], { cwd: dir, encoding: 'utf8' });
+      assert.equal(run.status, 0, run.stderr);
+      fixtureGit(dir, ['add', '-A']);
+      assert.deepEqual(findings(dir, 'PSR007'), []);
+    });
+
+    it('a stale copy in a folder no DocGuard command writes: the text says so and names no command for it', t => {
+      const dir = claudeProject(t, bundled, `${bundled}\nstale line\n`);
+      const [hit] = findings(dir, 'PSR007');
+      assert.match(hit.message, /\.agents\/skills\/docguard-fix\/SKILL\.md is not written by any DocGuard command here \(DocGuard writes only \.claude\/skills for this project\)/);
+      assert.match(hit.suggestion.text, /copy the newer file over it or delete it/);
+      assert.doesNotMatch(hit.suggestion.text, /Run `docguard upgrade[^`]*` to rewrite \.agents/);
+    });
   });
 
   it('each copy names its own installer: an extension copy is refreshed by the extension, not by docguard upgrade', t => {
