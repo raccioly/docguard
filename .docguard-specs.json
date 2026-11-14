@@ -3059,7 +3059,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "b265e5de432734421a891a794893cf4fda6c19b7",
+          "lastReviewedRevision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
           "outcomes": [
             {
               "revision": "cf765a3311c23e38a008f027666bf045c5b16314",
@@ -3162,6 +3162,23 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
+              "reason": "Maintenance: spec 100 stage 3 added Mirrors text to ARCHITECTURE and DATA-MODEL; one-commit completion behavior is unchanged.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/spec-registry.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/spec-completion-one-commit.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3190,7 +3207,7 @@
         "artifacts": [
           {
             "path": "specs/101-completion-one-commit/spec.md",
-            "digest": "sha256:d3e29bc9eb104ce16d24ccd9e241ce50e55ec8736d3d6be8f2e4f3fa7dfe0128"
+            "digest": "sha256:decfda042db51a1bb51060c62c5c60820a687418e22ace281200976a9b50aac7"
           },
           {
             "path": "specs/101-completion-one-commit/plan.md",
@@ -3696,7 +3713,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
+          "lastReviewedRevision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
           "outcomes": [
             {
               "revision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
@@ -3745,6 +3762,22 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "4a56e6ede25f14582dcf15482c46dc4d4d7b4c52",
+              "reason": "Maintenance: spec 100 stage 3 added a Mirrors row to ARCHITECTURE; completion-upkeep behavior is unchanged.",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -3779,7 +3812,7 @@
         "artifacts": [
           {
             "path": "specs/103-completion-upkeep/spec.md",
-            "digest": "sha256:c139e08b9cb5141f63615f8b71d5a008222903d918f34da731c56aa17dddf530"
+            "digest": "sha256:5c4132e461e1fb60eebcb1273315f72d81d5e608f69ccd05139c3973980b0668"
           },
           {
             "path": "specs/103-completion-upkeep/plan.md",
