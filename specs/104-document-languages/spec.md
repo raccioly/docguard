@@ -27,7 +27,7 @@ A warning that cannot be cleared fails builds that run guard with warnings as fa
 | Input | Result on v0.48.0 |
 |---|---|
 | `## Visão geral do sistema` for `## System Overview` (also Tech Stack, Component Map, Test Categories, Coverage Rules) | STR003 per section |
-| `## Mapa de fontes para testes` for the Source-to-Test Map | No STR003 (the section is not required), but Test-Spec is `empty` with cause `needs-declaration` and is listed in `strict.unexamined`, so the run exits **4** |
+| `## Mapa de fontes para testes` for the Source-to-Test Map | No STR003 (the section is not required), but Test-Spec goes from `pass` (control: the same project with the English `## Source-to-Test Map` and one real row) to `empty` with cause `needs-declaration`, and joins `strict.unexamined`, which makes a strict run exit **4** |
 | `## Requisitos funcionais`, `## Feito quando` | SPK003 for `User Scenarios`, `Requirements`, `Success Criteria` |
 | `## Resumo`, `## Contexto técnico`, `## Estrutura do projeto` in `plan.md` | SPK004 for `Summary`, `Technical Context`, `Project Structure` |
 | `## Fase 1: Preparação` in `tasks.md` | SPK005 |
@@ -36,7 +36,7 @@ A warning that cannot be cleared fails builds that run guard with warnings as fa
 | `## Instalação`, `## Uso`, `## Licença` in `README.md` | DCV005 three times (the check searches for the substrings `install`, `usage`, `license` anywhere in the file) |
 | Portuguese prose scored by Doc-Quality | A number built on English word lists and a tokenizer that turns `não` into the tokens `n` and `o` |
 
-What already works: `FR-001` and `SC-001` ids inside Portuguese sentences, and accented text in headings that nothing looks for. Anchors with accents did not produce a false Cross-Reference finding (both sides of the comparison use the same ASCII-only slug), although that slug maps different accented words to the same anchor.
+What already works: `FR-001` and `SC-001` ids inside Portuguese sentences, and accented text in headings that nothing looks for. A link to an accented heading anchor (`#visão-geral-do-sistema`) did not produce a false Cross-Reference finding, while a control link to a missing anchor in the same README did (XRF002), so the check ran. Both sides of the comparison use the same ASCII-only slug; that slug can map different accented words to the same anchor, which this spec does not address.
 
 ### R1. Inventory: every place the CLI matches an English label or English words
 
@@ -54,7 +54,7 @@ Consequence key: **FALSE** a finding on a correct non-English document; **BLOCK*
 | `cli/commands/score.mjs:779,1090-1096` | Required sections, `## Layer Boundaries`, `## Component Map`, `## External Dependencies`, `## Revision History` | Score (Doc Quality dimension) | NUM |
 | `cli/commands/score.mjs:1069-1070`, `cli/commands/fix.mjs:515` | `[Unreleased]` as a substring; `fix` then reports an empty changelog | Score, Fix | NUM, FALSE |
 | `cli/commands/score-dora.mjs:200` | `must not never do not always` and a heading with `rules boundary guardrail` | Score (DORA AI stance) | NUM |
-| `cli/validators/test-spec.mjs:98` | `(?:Service|Source)[- ]to[- ]Test Map` heading; the same in `cli/commands/sync-tests.mjs:96` | Test-Spec TSP001 to TSP007 | BLOCK, measured (`empty`, `needs-declaration`, exit 4) |
+| `cli/validators/test-spec.mjs:98` | `(?:Service|Source)[- ]to[- ]Test Map` heading; the same in `cli/commands/sync-tests.mjs:96` | Test-Spec TSP001 to TSP007 | BLOCK, measured against an English control (`pass` with the English heading; `empty`, `needs-declaration` with the Portuguese one) |
 | `cli/validators/docs-coverage.mjs:519-531` | `install`, `usage`, `license`, `licence` as substrings of the whole README | Docs-Coverage DCV005 | FALSE, measured |
 | `cli/validators/changelog.mjs:71,78` | `[Unreleased]` and `[unreleased]` as a substring anywhere in the file | Changelog CHG001 | FALSE, measured |
 | `cli/validators/decision-records.mjs:33-34,56-59` | `STATUS` (five words) and `SYNONYM` (`approved`, `draft`, `proposal`, `obsolete`, `replaced`) | Decision-Records DEC001 | FALSE, measured |
@@ -98,7 +98,7 @@ Not matched by language and therefore unchanged: TODO tracking (`TODO`, `FIXME` 
 - **`docs.roles` (spec 093)** says which file fills a role; it carries nothing about language and stays as it is. **`requiredFiles`** names files, not labels. `requiredSections` (profile or config) names English headings; it gains the same resolver.
 - **Spec Kit.** `.specify/templates/` carries English templates and no locale mechanism (read from this repository's `.specify/templates/*.md`; no network access was used). So a team that writes `## Requisitos` is outside Spec Kit's template. DocGuard's SPK checks are DocGuard's own reading of Spec Kit's structure, so aliasing them does not conflict with Spec Kit.
 - **Translated READMEs.** `README.pt-BR.md` and `README.es.md` are read by no validator today (the README checks open `README.md` by name; guard on this repository reports nothing for them).
-- **Backwards compatibility of the new keys.** Measured on a `git archive` of the v0.48.0 tag: a `.docguard.json` with `language`, `docs.language` and `labelAliases`, and a document carrying `<!-- docguard:heading tech-stack -->`, loads, runs `guard` and `generate --plan --write` with an empty stderr and exactly the findings of the same project without them. The schema's top level has `additionalProperties: true`. The new keys can ship with the feature; no release that only accepts them is needed (unlike `enforcement` in spec 097). Task T001 pins this against the tag.
+- **Backwards compatibility of the new keys.** Measured on a `git archive` of the v0.48.0 tag: a `.docguard.json` with `language`, `docs.language` (tried only to keep Open question Q1 open) and `labelAliases`, and a document carrying `<!-- docguard:heading tech-stack -->`, loads, runs `guard` and `generate --plan --write` with an empty stderr and exactly the findings of the same project without them. The schema's top level has `additionalProperties: true`. The new keys can ship with the feature; no release that only accepts them is needed (unlike `enforcement` in spec 097). Task T001 pins this against the tag.
 
 ### R3. Translations (spec 100's out-of-scope line)
 
@@ -289,7 +289,7 @@ A team writes its documents in Brazilian Portuguese.
 
 Stage 0 (compatibility and parser):
 
-- **FR-001**: A `.docguard.json` carrying `language`, `docs.language` and `labelAliases`, and a document carrying `<!-- docguard:heading <id> -->`, MUST load, run `guard` and `generate --plan --write` with the v0.48.0 CLI with no configuration error and the same findings as the same project without them. A test MUST pin this against the v0.48.0 tag from a `git archive` copy.
+- **FR-001**: A `.docguard.json` carrying `language` and `labelAliases`, and a document carrying `<!-- docguard:heading <id> -->`, MUST load, run `guard` and `generate --plan --write` with the v0.48.0 CLI with no configuration error and the same findings as the same project without them. A test MUST pin this against the v0.48.0 tag from a `git archive` copy.
 - **FR-002**: `inspectSections` MUST treat a `docguard:section` comment that has no `id=` attribute (an `n/a` marker, a bare id) as not opening a bounded block, so it produces no `nested-or-unclosed` issue and does not block `assertOwnedCodeSection`. `docguard:heading` MUST NOT match the section grammar.
 
 Stage 1 (structure):
@@ -298,7 +298,7 @@ Stage 1 (structure):
 - **FR-004**: A heading satisfies id `X` when the next non-blank line under it, outside a fence and outside any other comment block, is `<!-- docguard:heading X -->`. One function MUST read the marker and every consumer MUST call it.
 - **FR-005**: A required section MUST be satisfied, in this order, by: a matching `docguard:heading` marker; the English label or an English synonym as today; an alias of the configured language; an alias from `labelAliases`. English MUST always be accepted. A section marked `n/a` with a reason (spec 084) keeps its meaning.
 - **FR-006**: With `language` absent or `en`, label normalization MUST be the legacy normalization, so no finding changes. With another `language`, normalization MUST fold case and diacritics (NFD, strip combining marks) and keep Unicode letters and digits (`\p{L}`, `\p{N}`), and drop a leading section number as today.
-- **FR-007**: `language` (a BCP 47 tag) and `labelAliases` (id to array of strings; decision status keys `decision-status.<meaning>`) MUST be read by `cli/config.mjs` and described in `schemas/docguard-config.schema.json`. A tag is resolved by its primary subtag. An invalid tag MUST be reported and treated as absent. `docs.language` is reserved as an alias of `language` pending Open question Q1.
+- **FR-007**: `language` (a BCP 47 tag) and `labelAliases` (id to array of strings; decision status keys `decision-status.<meaning>`) MUST be read by `cli/config.mjs` and described in `schemas/docguard-config.schema.json`. A tag is resolved by its primary subtag. An invalid tag MUST be reported and treated as absent. The key name is Open question Q1.
 - **FR-008**: `docHasSection` and `findSectionHeading` MUST resolve through the registry. STR003, STR007, ENV001, ENV002, the Score's section checks, the Test-Spec map heading (`source-to-test-map` and the older `service-to-test-map`), and DCV005's README sections MUST call them. `upsertSection` MUST find its host heading through them and MUST NOT write an English heading above a block when the host exists under any accepted form.
 - **FR-009**: A new finding, STR009 (the next free STR code at build time), MUST report an unknown id, a duplicate id in one document, a marker whose heading carries a different English label, and a misplaced marker that names a valid id. It is a warning and is registered in `findings.mjs` with help text.
 - **FR-010**: STR003, STR007, SPK003 to SPK005 and DCV005 messages under a configured language MUST name the accepted heading forms and the marker.

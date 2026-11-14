@@ -5984,15 +5984,15 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:457677a406bd26e14a339f8ccd1f4eadb0465a7dfc627ecd72cf77fd66fb75ee"
+            "digest": "sha256:a23a8539b51e5ef06149d2ce1e14a0548009766ecc37d6d5888cbee42e0ab12f"
           },
           {
             "path": "specs/104-document-languages/plan.md",
-            "digest": "sha256:4fa53b39caf46a7e8da9550418ad91232f3f196b2b60982083475b08ad4fbb6b"
+            "digest": "sha256:eb875763f91ff3fb88d4ce0c8a9e9ab76c1ea465628df081759694d1f3ad51e0"
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:716eb34299f06ff876a835b3786b738b4047e86485769e392a40627a3bba7ecf"
+            "digest": "sha256:649794a0e581f1e86bdad8679d9f504d45c2d8c9cca2b3d4a87092a8dd7c329a"
           }
         ],
         "taskCompletion": {

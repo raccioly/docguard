@@ -9,7 +9,7 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ### Phase 1: Tests first
 
-- [ ] T001 `tests/document-languages-compat.test.mjs`: from a `git archive` copy of the v0.48.0 tag, load a configuration that carries `language`, `docs.language` and `labelAliases`, with a document carrying `<!-- docguard:heading tech-stack -->`; guard and `generate --plan --write` run with empty stderr and the findings of the same project without them (FR-001). If this fails, stop and report: the keys must ship first in a release that only accepts them.
+- [ ] T001 `tests/document-languages-compat.test.mjs`: from a `git archive` copy of the v0.48.0 tag, load a configuration that carries `language` and `labelAliases`, with a document carrying `<!-- docguard:heading tech-stack -->`; guard and `generate --plan --write` run with empty stderr and the findings of the same project without them (FR-001). If this fails, stop and report: the keys must ship first in a release that only accepts them.
 - [ ] T002 [US4] `tests/document-languages-sections.test.mjs`: a lone `<!-- docguard:section x n/a — reason -->` and a lone bare id marker produce no `nested-or-unclosed` issue and do not make `assertOwnedCodeSection` throw; `<!-- docguard:heading x -->` is never parsed as a section marker (FR-002).
 
 ### Phase 2: Implementation

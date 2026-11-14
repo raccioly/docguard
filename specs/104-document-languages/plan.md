@@ -44,7 +44,7 @@ cli/shared-labels.mjs               new: id registry, aliases per subtag, marker
 cli/shared-language-detect.mjs      new: stop-word table, per-document detector (skip only)
 cli/authoring-contract.mjs          id per section; sectionsFor and requiredSectionMap carry ids
 cli/shared.mjs                      docHasSection, findSectionHeading call the resolver; two normalizers
-cli/config.mjs                      language, labelAliases, docs.language
+cli/config.mjs                      language, labelAliases
 cli/validators/structure.mjs        STR003, STR007 through the resolver; STR009
 cli/validators/environment.mjs      ENV001, ENV002 through the resolver
 cli/validators/test-spec.mjs        map heading through the resolver (and sync-tests.mjs)
