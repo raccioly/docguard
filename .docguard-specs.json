@@ -3679,7 +3679,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "4304055c63bb94d21901aa9b0b8e1204ea7aca93",
+          "lastReviewedRevision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
           "outcomes": [
             {
               "revision": "355eb1715c51e4fc9cdbbe46771c86b13da77fe8",
@@ -3700,6 +3700,22 @@
             {
               "revision": "4304055c63bb94d21901aa9b0b8e1204ea7aca93",
               "reason": "Reviewed specs 101 and 103 against the stricter tag-only rule (a tag must be added and nothing else may change), the any-ancestry search of the oldest twenty candidates (FR-015, amending 101 FR-007), the shared projection and task ticks in a batch (FR-016) and the new tests; the one-commit flow, SPR008, SPR010 and SPR011 behave as specified",
+              "evidence": [
+                "cli/commands/specs.mjs",
+                "cli/scanners/revision-anchor.mjs",
+                "cli/scanners/stale-completions.mjs",
+                "cli/validators/spec-registry.mjs",
+                "cli/writers/spec-outcomes.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/CI-RECIPES.md",
+                "tests/completion-upkeep.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "77bc5f2c5330d2a3f7639ff8d0568c3a98ce43f5",
+              "reason": "Reviewed spec 103 against its review fixes: uncommitted evidence edits recorded with working-tree blobs (FR-017), hub files not byte-compared with the replayed distributions in the spec (FR-018), ticks limited to the batch (FR-016), only draft Status values rewritten (FR-011), and the fallback tests for FR-015; the one-commit flow, SPR008 and SPR010 are unchanged",
               "evidence": [
                 "cli/commands/specs.mjs",
                 "cli/scanners/revision-anchor.mjs",
@@ -3746,7 +3762,7 @@
         "artifacts": [
           {
             "path": "specs/103-completion-upkeep/spec.md",
-            "digest": "sha256:b825702c4c61102a2b502e0bb245b47e1d25b0bdab117e819847f94c994004ff"
+            "digest": "sha256:c139e08b9cb5141f63615f8b71d5a008222903d918f34da731c56aa17dddf530"
           },
           {
             "path": "specs/103-completion-upkeep/plan.md",
