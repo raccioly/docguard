@@ -7716,7 +7716,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "0bf7a7845fd1ac25494a5ae6449d11d1a5eef3ba",
+          "lastReviewedRevision": "ad3f1a899c210de0e14d77a755caeda08ae48d5b",
           "outcomes": [
             {
               "revision": "9a60d928587fcb025305625caa437ae792d65c90",
@@ -7920,6 +7920,35 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "ad3f1a899c210de0e14d77a755caeda08ae48d5b",
+              "reason": "Re-verified: PSR007 advice names only existing commands; behavior otherwise unchanged.",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -7950,7 +7979,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:052d84cccdf394c6a74bb1580597d72fcaa7ca87a8d0b0ea7fb5bcc9b4551773"
+            "digest": "sha256:6237835a720fb35bb309948e7a72e5e0e0a7ca7696673ef305982603b3f93d6c"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
