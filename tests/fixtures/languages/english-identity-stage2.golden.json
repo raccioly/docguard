@@ -1,0 +1,2524 @@
+{
+  "pure": {
+    "statuses": [
+      "accepted",
+      "accepted",
+      "accepted",
+      "proposed",
+      "proposed",
+      "deprecated",
+      "superseded",
+      "aceito",
+      "en",
+      "done",
+      null,
+      null
+    ],
+    "parsed": {
+      "records": [
+        {
+          "n": 1,
+          "title": "a",
+          "status": "aceito",
+          "raw": "Aceito",
+          "line": 3,
+          "supersedes": [],
+          "supersededBy": [],
+          "file": "ADR.md",
+          "at": 1
+        },
+        {
+          "n": 2,
+          "title": "b",
+          "status": "accepted",
+          "raw": "Accepted",
+          "line": 9,
+          "supersedes": [
+            1
+          ],
+          "supersededBy": [],
+          "file": "ADR.md",
+          "at": 7
+        }
+      ],
+      "index": [
+        {
+          "n": 2,
+          "status": "accepted",
+          "file": "ADR.md",
+          "line": 15
+        }
+      ]
+    },
+    "lifecycle": [
+      "Archived",
+      "Active",
+      "Deprecated",
+      null,
+      null,
+      "quo",
+      null
+    ],
+    "retired": [
+      "archived",
+      "deprecated",
+      "obsolete",
+      "superseded"
+    ],
+    "placeholders": [
+      [
+        true,
+        true
+      ],
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        false
+      ],
+      [
+        true,
+        true
+      ],
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        false
+      ]
+    ]
+  },
+  "changelog-bracketed": {
+    "changelog": {
+      "passed": 2,
+      "total": 2,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 100,
+    "fixInsert": {
+      "result": {
+        "applied": false
+      },
+      "written": "# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "changelog-lowercase": {
+    "changelog": {
+      "passed": 2,
+      "total": 2,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 100,
+    "fixInsert": {
+      "result": {
+        "applied": false
+      },
+      "written": "# Changelog\n\n## [unreleased]\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "changelog-bare-heading": {
+    "changelog": {
+      "passed": 1,
+      "total": 2,
+      "findings": [
+        [
+          "CHG001",
+          "CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`",
+          "CHANGELOG.md"
+        ]
+      ]
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 70,
+    "fixInsert": {
+      "result": {
+        "applied": true,
+        "detail": "CHANGELOG.md: added ## [Unreleased]"
+      },
+      "written": "# Changelog\n\n## Unreleased\n\n## [Unreleased]\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "changelog-none": {
+    "changelog": {
+      "passed": 1,
+      "total": 2,
+      "findings": [
+        [
+          "CHG001",
+          "CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`",
+          "CHANGELOG.md"
+        ]
+      ]
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 70,
+    "fixInsert": {
+      "result": {
+        "applied": true,
+        "detail": "CHANGELOG.md: added ## [Unreleased]"
+      },
+      "written": "# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "changelog-no-versions": {
+    "changelog": {
+      "passed": 0,
+      "total": 2,
+      "findings": [
+        [
+          "CHG001",
+          "CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`",
+          "CHANGELOG.md"
+        ],
+        [
+          "CHG002",
+          "CHANGELOG.md: no version sections found (expected ## [version] format)",
+          "CHANGELOG.md"
+        ]
+      ]
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 40,
+    "fixInsert": {
+      "result": {
+        "applied": true,
+        "detail": "CHANGELOG.md: added ## [Unreleased]"
+      },
+      "written": "# Changelog\n\n## [Unreleased]\n\n\nNothing yet.\n"
+    }
+  },
+  "changelog-substring": {
+    "changelog": {
+      "passed": 2,
+      "total": 2,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 100,
+    "fixInsert": {
+      "result": {
+        "applied": false
+      },
+      "written": "# Changelog\n\nSee [Unreleased] work in the tracker.\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "changelog-marker-restating": {
+    "changelog": {
+      "passed": 2,
+      "total": 2,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 100,
+    "fixInsert": {
+      "result": {
+        "applied": false
+      },
+      "written": "# Changelog\n\n## [Unreleased]\n<!-- docguard:heading unreleased -->\n\n## [1.0.0] - 2026-01-01\n"
+    }
+  },
+  "decisions-single-file": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 6,
+      "total": 11,
+      "applicable": true,
+      "findings": [
+        [
+          "DEC001",
+          "ADR-002 (docs-canonical/ADR.md:7) has no status",
+          "docs-canonical/ADR.md:7"
+        ],
+        [
+          "DEC001",
+          "ADR-003 status \"Done\" is not proposed, accepted, rejected, deprecated or superseded",
+          "docs-canonical/ADR.md:13"
+        ],
+        [
+          "DEC002",
+          "ADR-007 links to ADR-099, which no decision record defines",
+          "docs-canonical/ADR.md:30"
+        ],
+        [
+          "DEC005",
+          "The index says ADR-004 is rejected; its record says accepted",
+          "docs-canonical/ADR.md:44"
+        ],
+        [
+          "DEC002",
+          "The index lists ADR-042, which no decision record defines",
+          "docs-canonical/ADR.md:45"
+        ]
+      ]
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "ARCHITECTURE.md — required but missing, no traceability possible",
+          "docs-canonical/ARCHITECTURE.md"
+        ],
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "decisions-front-matter": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 3,
+      "total": 5,
+      "applicable": true,
+      "findings": [
+        [
+          "DEC001",
+          "ADR-002 status \"Wibble\" is not proposed, accepted, rejected, deprecated or superseded",
+          "docs/adr/0002-use-z.md:2"
+        ],
+        [
+          "DEC003",
+          "ADR-005 says it is superseded by ADR-003, but ADR-003 does not say it supersedes ADR-005",
+          "docs/adr/0003-use-x.md:1"
+        ]
+      ]
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 5,
+      "candidates": [
+        {
+          "code": "DLC001",
+          "path": "docs/adr/0001-use-y.md",
+          "confidence": "high",
+          "status": "superseded",
+          "reason": "explicit lifecycle status: superseded"
+        },
+        {
+          "code": "DLC001",
+          "path": "docs/adr/0004-use-w.md",
+          "confidence": "high",
+          "status": "obsolete",
+          "reason": "explicit lifecycle status: obsolete"
+        }
+      ],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "decisions-questions-terminal": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 1,
+      "total": 2,
+      "applicable": true,
+      "findings": [
+        [
+          "DEC006",
+          "specs/002-b/spec.md:7 — question has no answer: what?",
+          "specs/002-b/spec.md:7"
+        ]
+      ]
+    },
+    "speckit": {
+      "passed": 1,
+      "total": 4,
+      "findings": [
+        [
+          "SPK002",
+          "Spec Kit artifacts found but .specify/ directory missing. Run `specify init` to create standard structure",
+          ".specify"
+        ],
+        [
+          "SPK003",
+          "specs/001-a/spec.md: Missing mandatory section: \"User Scenarios\" (spec-kit spec-template.md)",
+          "specs/001-a/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-a/spec.md: Missing mandatory section: \"Requirements\" (spec-kit spec-template.md)",
+          "specs/001-a/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-a/spec.md: Missing mandatory section: \"Success Criteria\" (spec-kit spec-template.md)",
+          "specs/001-a/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-a/spec.md: No requirement IDs found (expected FR-001, REQ-001, etc.)",
+          "specs/001-a/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-a/spec.md: No success criteria IDs found (expected SC-001, SC-002, etc.)",
+          "specs/001-a/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-b/spec.md: Missing mandatory section: \"User Scenarios\" (spec-kit spec-template.md)",
+          "specs/002-b/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-b/spec.md: Missing mandatory section: \"Requirements\" (spec-kit spec-template.md)",
+          "specs/002-b/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-b/spec.md: Missing mandatory section: \"Success Criteria\" (spec-kit spec-template.md)",
+          "specs/002-b/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-b/spec.md: No requirement IDs found (expected FR-001, REQ-001, etc.)",
+          "specs/002-b/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-b/spec.md: No success criteria IDs found (expected SC-001, SC-002, etc.)",
+          "specs/002-b/spec.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 3,
+      "candidates": [
+        {
+          "code": "DLC001",
+          "path": "specs/001-a/spec.md",
+          "confidence": "high",
+          "status": "Superseded",
+          "reason": "explicit lifecycle status: Superseded"
+        }
+      ],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "ARCHITECTURE.md — required but missing, no traceability possible",
+          "docs-canonical/ARCHITECTURE.md"
+        ],
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "lifecycle-statuses": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 7,
+      "candidates": [
+        {
+          "code": "DLC001",
+          "path": "docs/a.md",
+          "confidence": "high",
+          "status": "Archived",
+          "reason": "explicit lifecycle status: Archived"
+        },
+        {
+          "code": "DLC001",
+          "path": "docs/b.md",
+          "confidence": "high",
+          "status": "superseded",
+          "reason": "explicit lifecycle status: superseded"
+        },
+        {
+          "code": "DLC001",
+          "path": "docs/e.md",
+          "confidence": "high",
+          "status": "Deprecated",
+          "reason": "explicit lifecycle status: Deprecated"
+        },
+        {
+          "code": "DLC002",
+          "path": "docs/f.md",
+          "confidence": "review",
+          "status": "Complete",
+          "reason": "artifact maturity is Complete; verify persistence policy and backreferences before retirement"
+        }
+      ],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "speckit-complete": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 5,
+      "total": 7,
+      "findings": [
+        [
+          "SPK007",
+          "constitution.md exists but no AGENTS.md found. Create one for AI agent rules",
+          "AGENTS.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/plan.md names neither its upstream (spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/tasks.md names neither its upstream (plan.md or spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/tasks.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 2,
+      "findings": [
+        [
+          "TRC004",
+          "Requirement FR-001 (specs/001-thing/spec.md:13) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-thing/spec.md:13"
+        ],
+        [
+          "TRC004",
+          "Requirement SC-001 (specs/001-thing/spec.md:18) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-thing/spec.md:18"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "speckit-missing": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 2,
+      "total": 7,
+      "findings": [
+        [
+          "SPK003",
+          "specs/001-thing/spec.md: Missing mandatory section: \"User Scenarios\" (spec-kit spec-template.md)",
+          "specs/001-thing/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-thing/spec.md: Missing mandatory section: \"Requirements\" (spec-kit spec-template.md)",
+          "specs/001-thing/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-thing/spec.md: Missing mandatory section: \"Success Criteria\" (spec-kit spec-template.md)",
+          "specs/001-thing/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/001-thing/spec.md: No success criteria IDs found (expected SC-001, SC-002, etc.)",
+          "specs/001-thing/spec.md"
+        ],
+        [
+          "SPK004",
+          "specs/001-thing/plan.md: Missing mandatory section: \"Summary\" (spec-kit plan-template.md)",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK004",
+          "specs/001-thing/plan.md: Missing mandatory section: \"Technical Context\" (spec-kit plan-template.md)",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK004",
+          "specs/001-thing/plan.md: Missing mandatory section: \"Project Structure\" (spec-kit plan-template.md)",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK005",
+          "specs/001-thing/tasks.md: No phased task breakdown found (expected \"Phase 1:\", \"Phase 2:\", etc.)",
+          "specs/001-thing/tasks.md"
+        ],
+        [
+          "SPK007",
+          "constitution.md exists but no AGENTS.md found. Create one for AI agent rules",
+          "AGENTS.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/plan.md names neither its upstream (spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/tasks.md names neither its upstream (plan.md or spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/tasks.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "TRC004",
+          "Requirement FR-001 (specs/001-thing/spec.md:9) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-thing/spec.md:9"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "speckit-deep-headings": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 5,
+      "total": 7,
+      "findings": [
+        [
+          "SPK007",
+          "constitution.md exists but no AGENTS.md found. Create one for AI agent rules",
+          "AGENTS.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/plan.md names neither its upstream (spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/plan.md"
+        ],
+        [
+          "SPK015",
+          "specs/001-thing/tasks.md names neither its upstream (plan.md or spec.md) nor any requirement ID the spec defines",
+          "specs/001-thing/tasks.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 2,
+      "findings": [
+        [
+          "TRC004",
+          "Requirement FR-001 (specs/001-thing/spec.md:5) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-thing/spec.md:5"
+        ],
+        [
+          "TRC004",
+          "Requirement SC-001 (specs/001-thing/spec.md:13) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-thing/spec.md:13"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "speckit-bugfix": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 3,
+      "total": 5,
+      "findings": [
+        [
+          "SPK003",
+          "specs/002-bug/spec.md: Bugfix spec missing \"Root Cause\" — a defect spec must state its root cause and fix",
+          "specs/002-bug/spec.md"
+        ],
+        [
+          "SPK003",
+          "specs/002-bug/spec.md: Bugfix spec missing \"Fix\" — a defect spec must state its root cause and fix",
+          "specs/002-bug/spec.md"
+        ],
+        [
+          "SPK007",
+          "constitution.md exists but no AGENTS.md found. Create one for AI agent rules",
+          "AGENTS.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 3,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "speckit-terminal-spec": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 5,
+      "total": 6,
+      "findings": [
+        [
+          "SPK007",
+          "constitution.md exists but no AGENTS.md found. Create one for AI agent rules",
+          "AGENTS.md"
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [
+        {
+          "code": "DLC001",
+          "path": "specs/001-old/spec.md",
+          "confidence": "high",
+          "status": "Archived",
+          "reason": "explicit lifecycle status: Archived"
+        }
+      ],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 2,
+      "findings": [
+        [
+          "TRC004",
+          "Requirement FR-001 (specs/001-old/spec.md:13) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-old/spec.md:13"
+        ],
+        [
+          "TRC004",
+          "Requirement SC-001 (specs/001-old/spec.md:18) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "specs/001-old/spec.md:18"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "requirements-placeholders": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 9,
+      "findings": [
+        [
+          "TRC001",
+          "ARCHITECTURE.md — required but missing, no traceability possible",
+          "docs-canonical/ARCHITECTURE.md"
+        ],
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ],
+        [
+          "TRC004",
+          "Requirement FR-003 (docs-canonical/REQUIREMENTS.md:5) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "docs-canonical/REQUIREMENTS.md:5"
+        ],
+        [
+          "TRC004",
+          "Requirement FR-004 (docs-canonical/REQUIREMENTS.md:6) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "docs-canonical/REQUIREMENTS.md:6"
+        ],
+        [
+          "TRC004",
+          "Requirement FR-005 (docs-canonical/REQUIREMENTS.md:7) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "docs-canonical/REQUIREMENTS.md:7"
+        ],
+        [
+          "TRC004",
+          "Requirement FR-006 (docs-canonical/REQUIREMENTS.md:8) has no recognized test annotation or label; behavioral coverage is unknown.",
+          "docs-canonical/REQUIREMENTS.md:8"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "examples/01-express-api": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "examples/02-python-flask": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 2,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 1,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "examples/03-spec-kit-project": {
+    "changelog": {
+      "passed": 1,
+      "total": 2,
+      "findings": [
+        [
+          "CHG001",
+          "CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`",
+          "CHANGELOG.md"
+        ]
+      ]
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 2,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 70,
+    "fixInsert": {
+      "result": {
+        "applied": true,
+        "detail": "CHANGELOG.md: added ## [Unreleased]"
+      },
+      "written": "# Changelog\n\n## [Unreleased]\n\n## [1.0.0] - 2026-03-15\n\n### Added\n- Task management CLI (add, list, done)\n- JSON file-based storage\n- Status filtering\n- CDD-compliant documentation\n"
+    }
+  },
+  "benchmarks/fixtures/agent-instruction-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 1,
+      "total": 1,
+      "findings": []
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/agent-instruction-heldout": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 1,
+      "total": 1,
+      "findings": []
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/backup-docs-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/backup-docs-defect": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 3,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/generated-security-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/go-todo-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 1,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/heading-marker-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 2,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 1,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/heading-marker-defect": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 2,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 1,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/instruction-budget-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 3,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/instruction-budget-defect": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 3,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/instruction-copies-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/instruction-copies-defect": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 4,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/js-security-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/mirror-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 10,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/mirror-defect": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 5,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/monorepo-security-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/python-layered-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/python-security-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/python-unsupported": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/sparse-doc-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 2,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 1,
+      "total": 5,
+      "findings": [
+        [
+          "TRC001",
+          "DATA-MODEL.md — required but missing, no traceability possible",
+          "docs-canonical/DATA-MODEL.md"
+        ],
+        [
+          "TRC001",
+          "TEST-SPEC.md — required but missing, no traceability possible",
+          "docs-canonical/TEST-SPEC.md"
+        ],
+        [
+          "TRC001",
+          "SECURITY.md — required but missing, no traceability possible",
+          "docs-canonical/SECURITY.md"
+        ],
+        [
+          "TRC001",
+          "ENVIRONMENT.md — required but missing, no traceability possible",
+          "docs-canonical/ENVIRONMENT.md"
+        ]
+      ]
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  },
+  "benchmarks/fixtures/ts-security-control": {
+    "changelog": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "decisions": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "speckit": {
+      "passed": 0,
+      "total": 1,
+      "findings": [
+        [
+          "SPK001",
+          "No Spec Kit artifacts detected. Consider `specify init` for spec-driven development (github.com/github/spec-kit)",
+          null
+        ]
+      ]
+    },
+    "lifecycle": {
+      "scanned": 0,
+      "candidates": [],
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "error": null,
+        "unreadable": []
+      }
+    },
+    "traceability": {
+      "passed": 0,
+      "total": 0,
+      "findings": []
+    },
+    "anchors": {
+      "passed": 0,
+      "total": 0,
+      "applicable": false,
+      "findings": []
+    },
+    "scoreChangelog": 0
+  }
+}

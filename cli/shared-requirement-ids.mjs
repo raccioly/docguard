@@ -21,7 +21,14 @@
  * requirement itself: that pattern is the definition, and only placeholder rows
  * are still ignored.
  *
+ * Under a built-in `docs.language` (`pt`, `es`) the scaffold sentence shape of the
+ * language counts too: `O sistema DEVE [capacidade]` and `El sistema DEBE
+ * [capacidad]` are template rows, not requirements (spec 104 FR-016). The modal
+ * verbs are the ones the spec lists (`deve`, `devem`, `pode`, `deverá`; `debe`,
+ * `deben`, `puede`); a project with no `docs.language` is judged as before.
+ *
  * @implements docguard.strict-by-default#FR-006
+ * @implements docguard.document-languages#FR-016
  */
 
 export const REQUIREMENT_PREFIXES = Object.freeze(new Set(['FR', 'NFR', 'SC', 'REQ']));
@@ -43,7 +50,36 @@ const TEMPLATE_DOC = /(?:^|\/)templates?\/|(?:^|\/)[^/]*templates?[^/]*\.md$|(?:
 // Placeholder text: a bracket, angle or curly slot holding a word, TBD/TODO, an ellipsis, or nothing.
 // A link `[text](url)` and a task checkbox `[ ]` are not placeholders; an HTML tag is not an angle slot.
 const ANGLE_SLOT = /<(?!\/?(?:a|b|i|u|p|br|hr|em|kbd|sub|sup|code|pre|img|span|div|strong|details|summary)\b)[A-Za-z][^<>\n]*>/i;
+// The same slot for a built-in language: its tag-name lookahead is Unicode-aware, so `<ação>` is a slot and not an `<a>` tag.
+const ANGLE_SLOT_LOCAL = /<(?!\/?(?:a|b|i|u|p|br|hr|em|kbd|sub|sup|code|pre|img|span|div|strong|details|summary)(?![\p{L}\p{N}_]))\p{L}[^<>\n]*>/iu;
 const EMPTY_TEXT = /^(?:tbd|todo|tba|n\/a|\.{2,}|…)?[\s.:;,-]*$/i;
+
+// The scaffold sentence shape of a built-in language: an optional article, up to two subject words, a modal verb.
+// Unicode-aware (`deverá`, `usuários`); the word lists are the registry's modal verbs of FR-016 and the articles
+// of the same sentence shape. They are matched against what is left of a requirement once its slot is removed,
+// never against running prose.
+const LOCAL_SHAPES = Object.freeze({
+  pt: Object.freeze({ modal: ['deve', 'devem', 'pode', 'deverá'], articles: ['o', 'a', 'os', 'as', 'um', 'uma', 'cada', 'todo', 'todos', 'todas'] }),
+  es: Object.freeze({ modal: ['debe', 'deben', 'puede'], articles: ['el', 'la', 'los', 'las', 'un', 'una', 'cada', 'todo', 'todos', 'todas'] }),
+});
+const EDGE_BEFORE = '(?<![\\p{L}\\p{N}_])';
+const EDGE_AFTER = '(?![\\p{L}\\p{N}_])';
+const SHAPE_CACHE = new Map();
+
+/** The regexes of a label context's built-in language, or null (English, no language, a language with no set). */
+function localShape(labels) {
+  const language = labels?.builtin ? labels.language : null;
+  if (!language || !LOCAL_SHAPES[language]) return null;
+  if (!SHAPE_CACHE.has(language)) {
+    const { modal, articles } = LOCAL_SHAPES[language];
+    const alt = modal.join('|');
+    SHAPE_CACHE.set(language, {
+      modal: new RegExp(`${EDGE_BEFORE}(?:${alt})${EDGE_AFTER}`, 'iu'),
+      scaffold: new RegExp(`^(?:(?:${articles.join('|')})\\s+)?(?:[\\p{L}][\\p{L}\\p{N}_-]*\\s+){0,2}(?:${alt})$`, 'iu'),
+    });
+  }
+  return SHAPE_CACHE.get(language);
+}
 
 /** The text of a requirement line after its ID and markup. */
 function bodyText(def) {
@@ -57,7 +93,7 @@ const MODAL = /\b(?:must|shall|should|may|will|can)\b/i;
 const SCAFFOLD = /^(?:(?:the|a|an|each|every|all)\s+)?(?:[a-z][\w-]*\s+){0,2}(?:must|shall|should|may|will|can)(?:\s+not)?(?:\s+(?:be|able|to|support|provide|allow|enable|have|include|implement)){0,3}$/i;
 
 /** Remove every slot token (balanced square and curly slots, angle slots) from `text`; returns the rest and the count removed. */
-function removeSlots(text) {
+function removeSlots(text, local = null) {
   let out = '';
   let removed = 0;
   for (let i = 0; i < text.length;) {
@@ -72,10 +108,10 @@ function removeSlots(text) {
       }
       const inner = depth === 0 && text[j] === close ? text.slice(i + 1, j) : null;
       const isLink = ch === '[' && text[j + 1] === '(';
-      if (inner !== null && /[A-Za-z]/.test(inner) && !isLink) { out += ' '; removed++; i = j + 1; continue; }
+      if (inner !== null && (/[A-Za-z]/.test(inner) || (local && /\p{L}/u.test(inner))) && !isLink) { out += ' '; removed++; i = j + 1; continue; }
     }
     if (ch === '<') {
-      const m = ANGLE_SLOT.exec(text.slice(i));
+      const m = (local ? ANGLE_SLOT_LOCAL : ANGLE_SLOT).exec(text.slice(i));
       if (m && m.index === 0) { out += ' '; removed++; i += m[0].length; continue; }
     }
     out += ch;
@@ -85,10 +121,10 @@ function removeSlots(text) {
 }
 
 /** The cell that carries the requirement: the text after the ID, or in a table row the first cell with a modal verb, else the longest. */
-function requirementCell(raw) {
+function requirementCell(raw, local = null) {
   if ((raw.match(/\|/g) || []).length < 2) return raw;
   const cells = raw.split('|').map(c => c.trim()).filter(Boolean);
-  return cells.find(c => MODAL.test(c)) || cells.sort((x, y) => y.length - x.length)[0] || '';
+  return cells.find(c => MODAL.test(c) || (local && local.modal.test(c))) || cells.sort((x, y) => y.length - x.length)[0] || '';
 }
 
 /**
@@ -98,20 +134,21 @@ function requirementCell(raw) {
  * that still states something without its slots ("The exporter MUST write {file} to the output directory") is a real
  * requirement that happens to mention a variable. A filled default row with no slot at all is filled text and counts.
  */
-export function hasPlaceholderSlot(def) {
+export function hasPlaceholderSlot(def, labels = null) {
+  const local = localShape(labels);
   // Brackets, angles and braces inside an inline code span are code, not a template slot:
   // `[Unreleased]`, `--stage [slug]`, `{ mode, asOf }`, `pending: [...]`.
   // A span that opens and does not close on this line (the sentence wraps) is code to the end of the line.
   const raw = String(def.text || '').replace(def.id, ' ').replace(/`[^`\n]*`/g, '').replace(/`.*$/, '').replace(/[*_]/g, '');
-  const { rest, removed } = removeSlots(requirementCell(raw));
+  const { rest, removed } = removeSlots(requirementCell(raw, local), local);
   if (!removed) return false;
   const left = rest.replace(/^[\s\-+>#.:)\d]*(?:\[[ xX]\]\s*)?/, '').replace(/[\s.:;,!?"'()-]+/g, ' ').trim();
-  return left === '' || SCAFFOLD.test(left);
+  return left === '' || SCAFFOLD.test(left) || (local !== null && local.scaffold.test(left));
 }
 
 /** Is this declaration a template row rather than a requirement? A slot-carried row, or no text at all. */
-export function isPlaceholderRequirement(def) {
-  if (hasPlaceholderSlot(def)) return true;
+export function isPlaceholderRequirement(def, labels = null) {
+  if (hasPlaceholderSlot(def, labels)) return true;
   if (!EMPTY_TEXT.test(bodyText(def).replace(/^(?:\[[ xX]\]|[-+*]|\d+[.)])\s*/, ''))) return false;
   // An ID line with no text may state its requirement on the lines under it (`- **SC-001**:` then an indented
   // paragraph): the scanner's block holds them, and a block with text of its own is a real requirement.
@@ -140,12 +177,12 @@ export function nonRequirementKind(def, { custom = false } = {}) {
  * @param {Array<{id: string, file?: string, text?: string}>} defs
  * @returns {{ requirements: object[], placeholders: number, skipped: Map<string, number> }}
  */
-export function classifyRequirementIds(defs, { custom = false } = {}) {
+export function classifyRequirementIds(defs, { custom = false, labels = null } = {}) {
   const requirements = [];
   const skipped = new Map();
   let placeholders = 0;
   for (const def of defs) {
-    if (isPlaceholderRequirement(def)) { placeholders++; continue; }
+    if (isPlaceholderRequirement(def, labels)) { placeholders++; continue; }
     const kind = nonRequirementKind(def, { custom });
     if (kind) skipped.set(kind, (skipped.get(kind) || 0) + 1);
     else requirements.push(def);

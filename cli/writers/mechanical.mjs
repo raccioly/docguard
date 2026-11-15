@@ -2,6 +2,7 @@
  * @implements docguard.language-repository-coverage#FR-009
  * @implements docguard.language-repository-coverage#FR-010
  * @implements docguard.language-repository-coverage#FR-011
+ * @implements docguard.document-languages#FR-012
  *
  * Mechanical Fix Registry — applies deterministic, no-LLM fixes in place.
  *
@@ -12,7 +13,7 @@
  * Fix types:
  *   - replace-count   : stale "N validators/checks" → actual count (Metrics-Consistency)
  *   - replace-version : stale version ref → current version (Metadata-Sync)
- *   - insert-changelog-unreleased : add a `## [Unreleased]` header (Changelog)
+ *   - insert-changelog-unreleased : add the unreleased header in the project's language (Changelog)
  *   - remove-endpoint : delete a documented-but-absent endpoint (API-Surface; delegated)
  *
  * Pure file edits, no LLM. Zero NPM dependencies.
@@ -46,6 +47,8 @@ import { resolve } from 'node:path';
 import { removeEndpoints, hasGeneratedMarker } from './api-reference.mjs';
 import { safeWrite } from './generate-io.mjs';
 import { assertMappedFullDocumentWrites, isMappedDocPath, mappedRolesForPath } from '../shared-doc-roles.mjs';
+import { loadConfig } from '../config.mjs';
+import { firstAlias, labelContext, unreleasedState } from '../shared-labels.mjs';
 
 function authorizeMappedWholeDocument(projectDir, config, path) {
   if (!isMappedDocPath(config, path)) return null;
@@ -122,12 +125,28 @@ function applyReplaceVersion(projectDir, fix, opts = {}) {
   return { applied: true, detail: `${fix.file}: v${fix.found} → v${fix.actual}` };
 }
 
-/** insert-changelog-unreleased: add `## [Unreleased]` after the title/intro. */
-function applyInsertChangelogUnreleased(projectDir, fix) {
+/**
+ * insert-changelog-unreleased: add the unreleased section after the title/intro.
+ *
+ * The heading is written in the project's language (spec 104 FR-012, D7):
+ * `## [<first alias>]` plus `<!-- docguard:heading unreleased -->` for a language
+ * with a built-in set, `## [Unreleased]` when `docs.language` is absent or
+ * English. A language with no set is not written at all, because the only
+ * heading DocGuard could write is English. The project's configuration is the
+ * authority, so a caller that passes none still gets it.
+ */
+function applyInsertChangelogUnreleased(projectDir, fix, opts = {}) {
   const full = resolve(projectDir, fix.file);
   if (!existsSync(full)) return { applied: false };
   const content = readFileSync(full, 'utf-8');
-  if (/\[unreleased\]/i.test(content)) return { applied: false }; // idempotent
+  const labels = labelContext(opts.config ?? loadConfig(projectDir));
+  if (/\[unreleased\]/i.test(content) || unreleasedState(content, labels) === 'present') return { applied: false }; // idempotent
+  if (labels?.unsupported) {
+    return { applied: false, skipped: `${fix.file}: docs.language "${labels.tag}" has no built-in set, so no heading is written; add the unreleased heading yourself with <!-- docguard:heading unreleased --> under it, or list it in docs.labelAliases.unreleased` };
+  }
+  const alias = firstAlias('unreleased', labels);
+  const heading = alias ? `## [${alias}]` : '## [Unreleased]';
+  const lead = alias ? [heading, '<!-- docguard:heading unreleased -->'] : [heading];
   const lines = content.split('\n');
   // Insert before the first version heading `## [x.y.z]`, else after the H1, else top.
   let idx = lines.findIndex(l => /^##\s*\[\d/.test(l));
@@ -135,10 +154,10 @@ function applyInsertChangelogUnreleased(projectDir, fix) {
     const h1 = lines.findIndex(l => /^#\s/.test(l));
     idx = h1 >= 0 ? h1 + 1 : 0;
   }
-  const block = idx > 0 && lines[idx - 1].trim() !== '' ? ['', '## [Unreleased]', ''] : ['## [Unreleased]', ''];
+  const block = idx > 0 && lines[idx - 1].trim() !== '' ? ['', ...lead, ''] : [...lead, ''];
   lines.splice(idx, 0, ...block);
   safeWrite(full, lines.join('\n'));
-  return { applied: true, detail: `${fix.file}: added ## [Unreleased]` };
+  return { applied: true, detail: `${fix.file}: added ${heading}` };
 }
 
 /** remove-endpoint: delegate to the API-REFERENCE writer (marker-gated). */

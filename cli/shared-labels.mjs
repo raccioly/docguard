@@ -244,6 +244,8 @@ export function firstAlias(id, ctx) {
  */
 export function acceptedFormsHint(id, ctx) {
   if (!ctx || !ID_SET.has(id)) return '';
+  // docs.language "en" with no aliases for the id has nothing to add: the message is the English one (FR-006).
+  if (ctx.language === 'en' && !(ctx.project[id] || []).length) return '';
   const entry = BY_ID.get(id);
   const forms = [...aliasesFor(id, ctx), ...entry.en].map(text => `"${text}"`);
   const marker = entry.kind === 'heading' ? `, or put <!-- docguard:heading ${id} --> on the line under the heading you already have` : '';
@@ -257,13 +259,17 @@ export function acceptedFormsHint(id, ctx) {
  * it to `couldNotRead` in Stage 3 (spec 104 FR-011, FR-019).
  */
 export function unsupportedEntry(file, ids, ctx) {
+  const word = ids.length > 0 && ids.every(id => BY_ID.get(id)?.kind === 'word');
   return {
     file,
     cause: 'language-not-supported',
     language: ctx.language,
     tag: ctx.tag,
     sections: [...new Set(ids)],
-    fix: `Write <!-- docguard:heading <id> --> on the line under each heading, add the heading to docs.labelAliases.<id> in .docguard.json, or ask for a built-in set for "${ctx.tag}".`,
+    what: word ? 'word' : 'heading',
+    fix: word
+      ? `Add the words to docs.labelAliases.<id> in .docguard.json (the ids: ${[...new Set(ids)].join(', ')}), write them in English, or ask for a built-in set for "${ctx.tag}".`
+      : `Write <!-- docguard:heading <id> --> on the line under each heading, add the heading to docs.labelAliases.<id> in .docguard.json, or ask for a built-in set for "${ctx.tag}".`,
   };
 }
 
@@ -278,6 +284,9 @@ export function unsupportedApplicability(entries) {
   const tag = entries[0].tag;
   const count = entries.reduce((n, entry) => n + entry.sections.length, 0);
   const files = entries.map(entry => entry.file).join(', ');
+  if (entries.every(entry => entry.what === 'word')) {
+    return { status: 'partial', reason: `language-not-supported: label(s) or word(s) in ${files} not judged, because docs.language "${tag}" has no built-in set and the words are not in docs.labelAliases` };
+  }
   return { status: 'partial', reason: `language-not-supported: ${count} required heading(s) in ${files} not judged, because docs.language "${tag}" has no built-in heading set and the headings carry no <!-- docguard:heading <id> --> marker or docs.labelAliases entry` };
 }
 
@@ -381,4 +390,146 @@ export function headingMarkerIssues(content) {
     issues.push({ kind: 'misplaced', line: marker.line + 1, id: marker.id, message: `line ${marker.line + 1}: <!-- docguard:heading ${marker.id} --> is ${where}, so it is ignored. Put it on the next non-blank line under the heading it names.` });
   }
   return issues.sort((a, b) => a.line - b.line);
+}
+
+// ── Readers for changelog, decisions, lifecycle and Spec Kit (Stage 2) ─────
+
+/** Fold case and diacritics, nothing else: `Substituído` becomes `substituido`. */
+export function foldText(text) {
+  return String(text).normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase();
+}
+
+/** The aliases of several ids, built-in set first, then the project's (empty without a context). */
+export function aliasesOfIds(ids, ctx) {
+  return ids.flatMap(id => aliasesFor(id, ctx));
+}
+
+/**
+ * Whether a document's `docguard:heading` marker names `id` on a heading. A
+ * marker is explicit, so it counts with and without `docs.language` (D6).
+ */
+export function headingMarked(content, id) {
+  if (!mentionsHeadingMarker(content)) return false;
+  return scanHeadingMarkers(content).placed.some(marker => marker.valid && marker.id === id);
+}
+
+/**
+ * How a heading of `id` is written in `content`, beyond the English label the
+ * caller's legacy rule already matched: `'marker'` for a `docguard:heading`
+ * marker under a heading, `'alias'` for a heading that equals (whole heading,
+ * folded, a leading section number and any `[` `]` dropped) an alias of the
+ * configured language or of `docs.labelAliases`, else null. English labels are
+ * not matched here: a caller keeps its legacy English rule first, so an English
+ * project (no language, or "en" with no aliases for the id) meets only the
+ * marker.
+ * @param {{ minLevel?: number, maxLevel?: number }} [levels] heading levels read (default 1 to 6)
+ * @returns {'marker'|'alias'|null}
+ */
+export function headingLabelVia(content, id, ctx, { minLevel = 1, maxLevel = 6 } = {}) {
+  if (headingMarked(content, id)) return 'marker';
+  const aliases = aliasesFor(id, ctx);
+  if (!aliases.length) return null;
+  const keys = new Set(aliases.map(foldHeading).filter(Boolean));
+  let fence = null;
+  for (const line of String(content).split('\n')) {
+    const open = FENCE_RE.exec(line);
+    if (fence) { if (open && open[1][0] === fence[0]) fence = null; continue; }
+    if (open) { fence = open[1]; continue; }
+    // Linear in the line: `foldHeading` drops a closing `#` run like any other punctuation.
+    const m = /^ {0,3}(#{1,6})[ \t]+(.*)$/.exec(line);
+    if (!m || m[1].length < minLevel || m[1].length > maxLevel) continue;
+    if (keys.has(foldHeading(m[2]))) return 'alias';
+  }
+  return null;
+}
+
+/**
+ * The state of the changelog's `unreleased` section: `present` (the legacy
+ * substring test, a marker, or an alias heading `## [<alias>]`), `unsupported`
+ * (absent, and `docs.language` has no built-in set), else `missing`.
+ * @implements docguard.document-languages#FR-012
+ */
+export function unreleasedState(content, ctx) {
+  const text = String(content);
+  if (text.includes('[Unreleased]') || text.includes('[unreleased]')) return 'present';
+  if (headingLabelVia(text, 'unreleased', ctx, { minLevel: 2 })) return 'present';
+  return ctx?.unsupported ? 'unsupported' : 'missing';
+}
+
+const STATUS_IDS = Object.freeze(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded']);
+export const DECISION_STATUS_IDS = STATUS_IDS;
+
+/**
+ * The id of a decision-status word written in the language's words or the
+ * project's, or null: the raw text is cleaned, folded, and matched against the
+ * longest alias that is the whole text or its leading words (`en desuso desde
+ * 2026` is `deprecated`). English words are the caller's legacy rule.
+ * @implements docguard.document-languages#FR-013
+ */
+export function statusIdFor(raw, ctx) {
+  if (!ctx) return null;
+  const text = foldHeading(String(raw).replace(/[*_`]/g, ' ').replace(/[^\p{L}\p{N}\s-]/gu, ' '));
+  if (!text) return null;
+  let best = null;
+  for (const id of STATUS_IDS) {
+    for (const alias of aliasesFor(id, ctx)) {
+      const key = foldHeading(alias);
+      if (key && (text === key || text.startsWith(`${key} `)) && (!best || key.length > best.key.length)) best = { id, key };
+    }
+  }
+  return best ? best.id : null;
+}
+
+/** For DEC001's message: the accepted words of the language and the project, by id. Empty without any. */
+export function statusWordsHint(ctx) {
+  if (!ctx) return '';
+  const parts = STATUS_IDS.map(id => [id, aliasesFor(id, ctx)]).filter(([, words]) => words.length).map(([id, words]) => `${id}: ${words.join(', ')}`);
+  if (!parts.length) return '';
+  return ` Accepted words for docs.language "${ctx.tag}" (English words are always accepted): ${parts.join('; ')}. Your own wording goes in docs.labelAliases.<id>.`;
+}
+
+/** The folded labels of a lifecycle or decision `Status` line: English `status` and the aliases of the language. */
+export function lifecycleLabelKeys(ctx) {
+  return new Set(['status', ...aliasesFor('lifecycle-status', ctx).map(foldHeading)]);
+}
+
+function retiredKeys(ctx) {
+  return [...new Set(aliasesOfIds(['deprecated', 'superseded'], ctx).map(foldHeading).filter(Boolean))];
+}
+
+/**
+ * Whether a lifecycle status value is a retired word of the language: the whole
+ * value, folded, equals an alias of `deprecated` or `superseded` (built-in set
+ * and `docs.labelAliases`). The English words are the caller's legacy set.
+ * @implements docguard.document-languages#FR-014
+ */
+export function isRetiredWord(status, ctx) {
+  if (!ctx || !status) return false;
+  const key = foldHeading(status);
+  return !!key && retiredKeys(ctx).includes(key);
+}
+
+/** Whether a lifecycle status value is a `superseded` word of the language (the whole value, folded). */
+export function isSupersededWord(status, ctx) {
+  if (!ctx || !status) return false;
+  const key = foldHeading(status);
+  return !!key && aliasesFor('superseded', ctx).map(foldHeading).includes(key);
+}
+
+/** Whether a status line contains a terminal word of the language (a whole-word match of an alias of `deprecated` or `superseded`). */
+export function hasTerminalWord(text, ctx) {
+  if (!ctx || !text) return false;
+  const padded = ` ${foldHeading(text)} `;
+  return retiredKeys(ctx).some(key => padded.includes(` ${key} `));
+}
+
+/**
+ * Whether a document names `Phase <n>` in the language's word (`Fase 1`), by a
+ * word of `phase` (built-in set and `docs.labelAliases`) before a number.
+ */
+export function hasPhaseWord(content, ctx) {
+  const words = aliasesFor('phase', ctx).map(foldText).filter(Boolean);
+  if (!words.length) return false;
+  const folded = foldText(content);
+  return words.some(word => new RegExp(`(?<![\\p{L}\\p{N}])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+\\d`, 'u').test(folded));
 }

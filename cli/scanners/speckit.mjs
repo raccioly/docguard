@@ -28,9 +28,8 @@ import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths, runGit } from '../shared-git.mjs';
 import { chainCoverage } from './chain-coverage.mjs';
-import { parseLifecycleStatus } from './lifecycle-status.mjs';
-
-const TERMINAL_STATUS_RE = /\b(?:superseded|retired|archived|withdrawn|obsolete|abandoned)\b/i;
+import { isTerminalStatus, parseLifecycleStatus } from './lifecycle-status.mjs';
+import { acceptedFormsHint, hasPhaseWord, headingLabelVia, idForEnglishLabel, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -216,24 +215,34 @@ export function detectSpecKit(projectDir) {
  *
  * @param {string} content - File content
  * @param {string[]} sections - Required section heading texts
- * @returns {{ found: string[], missing: string[] }}
+ * @param {object|null} [labels] `labelContext(config)` (spec 104): a section is also found by a marker or an alias
+ * @returns {{ found: string[], missing: string[], unsupported: string[] }} `unsupported`: absent under every form, in a language with no built-in set
  */
-function checkSections(content, sections) {
+function checkSections(content, sections, labels = null) {
   const found = [];
   const missing = [];
+  const unsupported = [];
 
   for (const section of sections) {
     // Match both "## Requirements" and "### Functional Requirements"
     const pattern = new RegExp(`^#{1,4}\\s+.*${section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'im');
     if (pattern.test(content)) {
       found.push(section);
-    } else {
-      missing.push(section);
+      continue;
     }
+    // spec 104 FR-015: the same section written with the marker, an alias of
+    // `docs.language` or a `docs.labelAliases` entry (a whole heading, levels 1 to 4).
+    const id = idForEnglishLabel(section);
+    if (id && headingLabelVia(content, id, labels, { minLevel: 1, maxLevel: 4 })) found.push(section);
+    else if (id && labels?.unsupported) unsupported.push(section);
+    else missing.push(section);
   }
 
-  return { found, missing };
+  return { found, missing, unsupported };
 }
+
+/** The message tail of a missing section: the accepted forms under a configured language, nothing for English. */
+const formsFor = (section, labels) => acceptedFormsHint(idForEnglishLabel(section), labels);
 
 /**
  * Validate the quality of a spec.md file against spec-kit standards.
@@ -242,9 +251,12 @@ function checkSections(content, sections) {
  *   - Has mandatory sections (User Scenarios, Requirements, Success Criteria)
  *   - Has FR-xxx requirement IDs
  *   - Has acceptance scenarios (Given/When/Then)
+ *
+ * @returns {{ issues: string[], unjudged: string[] }} `unjudged` are section ids a language with no built-in set could not be judged for
  */
-function validateSpecQuality(specPath) {
+function validateSpecQuality(specPath, labels = null) {
   const issues = [];
+  const unjudged = [];
   const content = readFileSync(specPath, 'utf-8');
 
   // Bugfix / lightweight specs document a defect (symptom → root cause → fix),
@@ -254,18 +266,20 @@ function validateSpecQuality(specPath) {
   // and we validate the bugfix-appropriate shape instead: the spec must still
   // state a Root Cause and a Fix, so it's a narrower check, not a free pass.
   if (/<!--\s*docguard:spec-type\s+(?:bugfix|lightweight|patch)\b/i.test(content)) {
-    const { missing } = checkSections(content, ['Root Cause', 'Fix']);
+    const { missing, unsupported } = checkSections(content, ['Root Cause', 'Fix'], labels);
     for (const section of missing) {
-      issues.push(`Bugfix spec missing "${section}" — a defect spec must state its root cause and fix`);
+      issues.push(`Bugfix spec missing "${section}" — a defect spec must state its root cause and fix${formsFor(section, labels)}`);
     }
-    return issues;
+    unjudged.push(...unsupported.map(idForEnglishLabel));
+    return { issues, unjudged };
   }
 
   // Check mandatory sections
-  const { missing } = checkSections(content, SPEC_MANDATORY_SECTIONS);
+  const { missing, unsupported } = checkSections(content, SPEC_MANDATORY_SECTIONS, labels);
   for (const section of missing) {
-    issues.push(`Missing mandatory section: "${section}" (spec-kit spec-template.md)`);
+    issues.push(`Missing mandatory section: "${section}" (spec-kit spec-template.md)${formsFor(section, labels)}`);
   }
+  unjudged.push(...unsupported.map(idForEnglishLabel));
 
   // Check for FR-xxx or FR-NNN requirement IDs
   const hasFRIds = /\b(FR|REQ|NFR)-\d{2,4}\b/.test(content);
@@ -279,35 +293,40 @@ function validateSpecQuality(specPath) {
     issues.push('No success criteria IDs found (expected SC-001, SC-002, etc.)');
   }
 
-  return issues;
+  return { issues, unjudged };
 }
 
 /**
  * Validate the quality of a plan.md file.
+ * @returns {{ issues: string[], unjudged: string[] }}
  */
-function validatePlanQuality(planPath) {
+function validatePlanQuality(planPath, labels = null) {
   const issues = [];
   const content = readFileSync(planPath, 'utf-8');
 
-  const { missing } = checkSections(content, PLAN_MANDATORY_SECTIONS);
+  const { missing, unsupported } = checkSections(content, PLAN_MANDATORY_SECTIONS, labels);
   for (const section of missing) {
-    issues.push(`Missing mandatory section: "${section}" (spec-kit plan-template.md)`);
+    issues.push(`Missing mandatory section: "${section}" (spec-kit plan-template.md)${formsFor(section, labels)}`);
   }
 
-  return issues;
+  return { issues, unjudged: unsupported.map(idForEnglishLabel) };
 }
 
 /**
  * Validate the quality of a tasks.md file.
+ * @returns {{ issues: string[], unjudged: string[] }}
  */
-function validateTasksQuality(tasksPath) {
+function validateTasksQuality(tasksPath, labels = null) {
   const issues = [];
+  const unjudged = [];
   const content = readFileSync(tasksPath, 'utf-8');
 
-  // Must have phased breakdown
-  const hasPhases = TASKS_MANDATORY_PATTERNS.some(p => p.test(content));
+  // Must have phased breakdown. `Phase 1` is the legacy rule; `Fase 1` (or a
+  // `docs.labelAliases.phase` word) joins it under a configured language.
+  const hasPhases = TASKS_MANDATORY_PATTERNS.some(p => p.test(content)) || hasPhaseWord(content, labels);
   if (!hasPhases) {
-    issues.push('No phased task breakdown found (expected "Phase 1:", "Phase 2:", etc.)');
+    if (labels?.unsupported) unjudged.push('phase');
+    else issues.push(`No phased task breakdown found (expected "Phase 1:", "Phase 2:", etc.)${acceptedFormsHint('phase', labels)}`);
   }
 
   // Must have task IDs
@@ -316,7 +335,7 @@ function validateTasksQuality(tasksPath) {
     issues.push('No task IDs found (expected T001, T002, etc.)');
   }
 
-  return issues;
+  return { issues, unjudged };
 }
 
 // ──── Phantom-Completion Detection (SPK008/SPK009, v0.30) ────
@@ -742,6 +761,10 @@ export function validateSpecKitIntegration(projectDir, config) {
   let passed = 0;
   let total = 0;
   let untouchedUnavailable = null;
+  // spec 104: the label context of `docs.language`; a section a language with no
+  // built-in set cannot be judged for is listed, not reported (FR-011).
+  const labels = labelContext(config);
+  const notSupported = [];
 
   const speckit = detectSpecKit(projectDir);
 
@@ -781,7 +804,8 @@ export function validateSpecKitIntegration(projectDir, config) {
       total++;
       const loc = relative(projectDir, spec.specPath);
       try {
-        const issues = validateSpecQuality(spec.specPath);
+        const { issues, unjudged } = validateSpecQuality(spec.specPath, labels);
+        if (unjudged.length) notSupported.push(unsupportedEntry(relative(projectDir, spec.specPath).replace(/\\/g, '/'), unjudged, labels));
         if (issues.length === 0) {
           passed++;
         } else {
@@ -813,7 +837,8 @@ export function validateSpecKitIntegration(projectDir, config) {
       total++;
       const loc = relative(projectDir, spec.planPath);
       try {
-        const issues = validatePlanQuality(spec.planPath);
+        const { issues, unjudged } = validatePlanQuality(spec.planPath, labels);
+        if (unjudged.length) notSupported.push(unsupportedEntry(relative(projectDir, spec.planPath).replace(/\\/g, '/'), unjudged, labels));
         if (issues.length === 0) {
           passed++;
         } else {
@@ -845,7 +870,8 @@ export function validateSpecKitIntegration(projectDir, config) {
       total++;
       const loc = relative(projectDir, spec.tasksPath);
       try {
-        const issues = validateTasksQuality(spec.tasksPath);
+        const { issues, unjudged } = validateTasksQuality(spec.tasksPath, labels);
+        if (unjudged.length) notSupported.push(unsupportedEntry(relative(projectDir, spec.tasksPath).replace(/\\/g, '/'), unjudged, labels));
         if (issues.length === 0) {
           passed++;
         } else {
@@ -992,7 +1018,7 @@ export function validateSpecKitIntegration(projectDir, config) {
       tasksText = readFileSync(spec.tasksPath, 'utf-8');
       if (spec.hasPlan && spec.planPath) planText = readFileSync(spec.planPath, 'utf-8');
     } catch { continue; }
-    if (TERMINAL_STATUS_RE.test(parseLifecycleStatus(specText) || '')) continue;
+    if (isTerminalStatus(parseLifecycleStatus(specText, labels), labels)) continue;
     const chain = chainCoverage({ spec: specText, plan: planText, tasks: tasksText });
     const specRel = relative(projectDir, spec.specPath).replace(/\\/g, '/');
     const dirRel = specRel.replace(/\/spec\.md$/, '');
@@ -1063,7 +1089,12 @@ export function validateSpecKitIntegration(projectDir, config) {
   }
 
   const result = { ...resultFromFindings(findings, { passed, total }), ...specKitContract(total, findings.length > 0) };
-  return untouchedUnavailable ? { ...result, applicability: { status: 'partial', reason: untouchedUnavailable } } : result;
+  const reasons = [untouchedUnavailable, notSupported.length ? unsupportedApplicability(notSupported).reason : null].filter(Boolean);
+  return {
+    ...result,
+    ...(notSupported.length ? { languageNotSupported: notSupported } : {}),
+    ...(reasons.length ? { applicability: { status: 'partial', reason: reasons.join('; ') } } : {}),
+  };
 }
 
 /**
@@ -1325,6 +1356,7 @@ export function unobservablePaths(projectDir, paths) {
  * @returns {Array<{spec, relPath, checkedCount, untouched: Array<{id, text, line, paths: string[]}>}>}
  * @implements docguard.calibrated-finding-channels#FR-021
  * @implements docguard.spk010-directory-claims#FR-001
+ * @implements docguard.document-languages#FR-015
  * @implements docguard.spk010-directory-claims#FR-002
  * @implements docguard.consumer-report-precision#FR-004
  */

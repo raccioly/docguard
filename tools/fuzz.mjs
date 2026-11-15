@@ -31,12 +31,13 @@ import { splitWaiverMetadata } from '../cli/waiver-metadata.mjs';
 import { extractHeadingLines, extractHeadings } from '../cli/shared-headings.mjs';
 import { inspectSections } from '../cli/writers/sections.mjs';
 import { parseCovers, coveredSections } from '../cli/scanners/doc-deps.mjs';
-import { parseLifecycleStatus } from '../cli/scanners/lifecycle-status.mjs';
+import { isRetiredStatus, isTerminalStatus, parseLifecycleStatus } from '../cli/scanners/lifecycle-status.mjs';
 import { parseApiReferenceDoc } from '../cli/scanners/api-doc.mjs';
 import { stripHtmlComments, visibleMarkdown } from '../cli/shared-html-comments.mjs';
 import { parseDocguardIgnore } from '../cli/shared-ignore.mjs';
 import { docHasSection, findSectionHeading, headingsForId } from '../cli/shared.mjs';
-import { headingMarkerIssues, labelContext, scanHeadingMarkers } from '../cli/shared-labels.mjs';
+import { hasPhaseWord, headingLabelVia, headingMarkerIssues, labelContext, scanHeadingMarkers, statusIdFor, unreleasedState } from '../cli/shared-labels.mjs';
+import { hasPlaceholderSlot } from '../cli/shared-requirement-ids.mjs';
 
 /** mulberry32: a small, fast, well-distributed 32-bit generator. */
 export function rng(seed) {
@@ -66,7 +67,8 @@ const LINE = r => {
     () => `### User Story ${r.int(12)} - ${words()} (Priority: P${r.int(4)})`,
     () => r.pick(['```', '```js', '~~~', '````']),
     () => r.pick(['<!--', '-->', '<!-- docguard:section id=x covers=src/a.js -->', '<!-- /docguard:section -->', '<!-- docguard:ignore -->']),
-    () => `**Status**: ${r.pick(['Accepted', 'Superseded by ADR-002', 'Draft', 'Retired', '', 'Proposed'])}`,
+    () => `**Status**: ${r.pick(['Accepted', 'Superseded by ADR-002', 'Draft', 'Retired', '', 'Proposed', 'Aceito', 'Substituído por ADR-002', 'En desuso', 'Obsoleto'])}`,
+    () => r.pick(['## [Não lançado]', '## [Sin publicar]', '## [Unreleased]', '## Fase 1: x', '- Substitui ADR-002', 'Estado: Obsoleto', 'O sistema DEVE [capacidade]']),
     () => `- [${r.pick(['x', ' '])}] ${r.pick(['requirements-analysis', 'code-generation', 'build-and-test'])} — ${words()}`,
     () => `[Answer]: ${r.chance(0.5) ? '' : words()}`,
     () => `| ${r.pick(['GET', 'POST', 'DELETE'])} | /${words().replace(/\s+/g, '/')} | ${words()} |`,
@@ -133,6 +135,7 @@ export function pathological() {
     'many section blocks': Array.from({ length: 2500 }, (_, i) => `<!-- docguard:section id=s${i} covers=src/a.js -->\nx\n<!-- /docguard:section -->`).join('\n'),
     'many requirement lines': Array.from({ length: 8000 }, (_, i) => `- **FR-${String(i % 999).padStart(3, '0')}**: x (FR-${String((i + 1) % 999).padStart(3, '0')} to FR-${String((i + 9) % 999).padStart(3, '0')})`).join('\n'),
     'many ADRs': Array.from({ length: 4000 }, (_, i) => `## ADR-${i}: x\n**Status**: Superseded by ADR-${i + 1}\n| ADR-${i} | Superseded |`).join('\n'),
+    'long heading line': `## ${'a '.repeat(50000)}b\n## ${' '.repeat(100000)}x\n## ${'#'.repeat(100000)}x`,
     'many heading markers': Array.from({ length: 5000 }, (_, i) => `## Heading ${i}\n<!-- docguard:heading ${i % 2 ? 'tech-stack' : 'system-overview'} -->`).join('\n'),
     'many headings': Array.from({ length: 10000 }, (_, i) => `## Heading ${i} \`code\` [link](#x)`).join('\n'),
   };
@@ -158,6 +161,12 @@ export const TARGETS = [
   { name: 'coveredSections', run: t => coveredSections(t), check: ARRAY },
   { name: 'parseCovers', run: t => parseCovers(t), check: ARRAY },
   { name: 'parseLifecycleStatus', run: t => parseLifecycleStatus(t) },
+  { name: 'parseLifecycleStatus (es)', run: t => [parseLifecycleStatus(t, labelContext({ docs: { language: 'es' } })), isRetiredStatus(t.split(/\r?\n/)[0], labelContext({ docs: { language: 'pt' } })), isTerminalStatus(t, labelContext({ docs: { language: 'pt' } }))], check: ARRAY },
+  { name: 'parseAdrFile (pt)', run: t => parseAdrFile(t, 'docs/adr.md', labelContext({ docs: { language: 'pt-BR', labelAliases: { accepted: ['Vigente'] } } })) },
+  { name: 'normalizeStatus (es)', run: t => [normalizeStatus(t.split(/\r?\n/)[0], labelContext({ docs: { language: 'es' } })), statusIdFor(t, labelContext({ docs: { language: 'pt' } }))], check: ARRAY },
+  { name: 'unreleasedState (pt)', run: t => [unreleasedState(t, labelContext({ docs: { language: 'pt-BR' } })), unreleasedState(t, labelContext({ docs: { language: 'de' } })), headingLabelVia(t, 'unreleased', labelContext({ docs: { language: 'es' } }), { minLevel: 2 }), hasPhaseWord(t, labelContext({ docs: { language: 'pt' } }))], check: ARRAY },
+  // A requirement is one line of a document, so the target reads the first lines, not a whole file.
+  { name: 'hasPlaceholderSlot (pt, es)', run: t => t.split(/\r?\n/).slice(0, 40).map(line => [hasPlaceholderSlot({ id: 'FR-001', text: line.slice(0, 2000) }, labelContext({ docs: { language: 'pt' } })), hasPlaceholderSlot({ id: 'FR-001', text: line.slice(0, 2000) }, labelContext({ docs: { language: 'es' } }))]), check: ARRAY },
   { name: 'parseApiReferenceDoc', run: t => parseApiReferenceDoc(t), check: ARRAY },
   { name: 'stripHtmlComments', run: t => stripHtmlComments(t), check: v => typeof v?.text === 'string' },
   { name: 'visibleMarkdown', run: t => visibleMarkdown(t), check: v => typeof v === 'string' },

@@ -35,6 +35,7 @@ import {
 } from '../shared-requirements.mjs';
 import { readRetirementManifest } from '../scanners/retirement-manifest.mjs';
 import { collectRequirementIds, getRequirementDocPaths } from '../scanners/requirement-docs.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { classifyRequirementIds, describeSkipped, hasPlaceholderSlot } from '../shared-requirement-ids.mjs';
 import { sample } from '../shared-project-evidence.mjs';
 
@@ -135,7 +136,7 @@ const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.amplify-hosting', '.serve
 export function applies(projectDir, config = {}) {
   const custom = Boolean(config.traceability?.requirementPattern);
   const all = [...collectRequirementIds(projectDir, config, requirementPatterns(config)).values()];
-  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom });
+  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom, labels: labelContext(config) });
   const skippedText = describeSkipped(skipped);
   if (real.length > 0) {
     const counted = custom ? 'ID(s) read by traceability.requirementPattern' : 'FR/NFR/SC/REQ requirement ID(s)';
@@ -328,7 +329,8 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   // ── Step 1: Collect requirement IDs from documentation ──
   // A template row ("System MUST [capability]") is not a requirement: it is neither traced nor reported. A bare ID with
   // no text is still traced, as it always was.
-  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def)));
+  const labels = labelContext(config);
+  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def, labels)));
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
   const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
   const uncommittedPlannedIndex = uncommittedPlannedSpecLifecycleIndex(projectDir);

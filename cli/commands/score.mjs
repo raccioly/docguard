@@ -9,7 +9,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c, sectionState } from '../shared.mjs';
-import { labelContext } from '../shared-labels.mjs';
+import { labelContext, unreleasedState } from '../shared-labels.mjs';
 import { isUneditedScaffold } from '../shared-scaffold.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
@@ -1073,12 +1073,17 @@ function calcChangelogScore(dir, config) {
   const failures = [];
   const content = readFileSync(path, 'utf-8');
 
-  if (content.includes('[Unreleased]') || content.includes('[unreleased]')) score += 30;
-  else failures.push({ issue: 'no [Unreleased] section' });
+  // The `unreleased` label is read through the registry (spec 104 FR-012). A
+  // language with no built-in set cannot judge it: the 30 points leave the
+  // numerator and the denominator alike, so a skip neither raises nor lowers it.
+  const unreleased = unreleasedState(content, labelContext(config));
+  if (unreleased === 'present') score += 30;
+  else if (unreleased === 'missing') failures.push({ issue: 'no [Unreleased] section' });
+  const possible = unreleased === 'unsupported' ? 70 : 100;
   if (/## \[[\d.]+\]/.test(content)) score += 30;
   else failures.push({ issue: 'no versioned release headings (## [x.y.z])' });
 
-  return { score: Math.min(100, score), failures };
+  return { score: Math.min(100, possible === 100 ? score : Math.round((score / possible) * 100)), failures };
 }
 
 function calcArchitectureScore(dir, config) {

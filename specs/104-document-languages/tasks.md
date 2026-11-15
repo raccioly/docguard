@@ -42,16 +42,16 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ### Phase 1: Tests first
 
-- [ ] T018 [US1] `tests/document-languages-changelog.test.mjs`: `## [Não lançado]`, `## [Sin publicar]`, a marker, and a `docs.labelAliases` entry satisfy CHG001; `fix --write` inserts `## [<first alias>]` plus the marker for `pt` and `es`, and `## [Unreleased]` with no `docs.language`; CHG002 and CHG003 unchanged (FR-012).
-- [ ] T019 [US1] `tests/document-languages-decisions.test.mjs`: the status words of the D2 table and a front-matter `status:` normalize to the five ids for `pt` and `es`, extended by `docs.labelAliases` and never replaced by it; `Substituído por ADR-003` and `Substitui: ADR-002` build links (DEC002 to DEC005); terminal words skip records; DEC001's message lists the accepted words; English unchanged (FR-013).
-- [ ] T020 [US1] `tests/document-languages-speckit.test.mjs`: a Portuguese and a Spanish `spec.md`, `plan.md`, `tasks.md` (`Fase 1`), and a bugfix spec produce no SPK003 to SPK005; `FR-` and `SC-` ids unchanged; the lifecycle label `Estado:` is read; no Spec Kit template is modified (FR-014, FR-015).
-- [ ] T021 `tests/document-languages-requirements.test.mjs`: a translated template row (`O sistema DEVE [capacidade]`, `El sistema DEBE [capacidad]`) is a placeholder and not a requirement; a filled row is a requirement; English unchanged (FR-016).
+- [x] T018 [US1] `tests/document-languages-changelog.test.mjs`: `## [Não lançado]`, `## [Sin publicar]`, a marker, and a `docs.labelAliases` entry satisfy CHG001; `fix --write` inserts `## [<first alias>]` plus the marker for `pt` and `es`, and `## [Unreleased]` with no `docs.language`; CHG002 and CHG003 unchanged (FR-012).
+- [x] T019 [US1] `tests/document-languages-decisions.test.mjs`: the status words of the D2 table and a front-matter `status:` normalize to the five ids for `pt` and `es`, extended by `docs.labelAliases` and never replaced by it; `Substituído por ADR-003` and `Substitui: ADR-002` build links (DEC002 to DEC005); terminal words skip records; DEC001's message lists the accepted words; English unchanged (FR-013).
+- [x] T020 [US1] `tests/document-languages-speckit.test.mjs`: a Portuguese and a Spanish `spec.md`, `plan.md`, `tasks.md` (`Fase 1`), and a bugfix spec produce no SPK003 to SPK005; `FR-` and `SC-` ids unchanged; the lifecycle label `Estado:` is read; no Spec Kit template is modified (FR-014, FR-015).
+- [x] T021 `tests/document-languages-requirements.test.mjs`: a translated template row (`O sistema DEVE [capacidade]`, `El sistema DEBE [capacidad]`) is a placeholder and not a requirement; a filled row is a requirement; English unchanged (FR-016).
 
 ### Phase 2: Implementation
 
-- [ ] T022 `changelog.mjs`, `fix.mjs`, `writers/mechanical.mjs`, `score.mjs` (FR-012).
-- [ ] T023 `decision-records.mjs`, `scanners/lifecycle-status.mjs`, `scanners/speckit.mjs`, `shared-requirement-ids.mjs` (FR-013 to FR-016).
-- [ ] T024 Hermetic English A/B (SC-004).
+- [x] T022 `changelog.mjs`, `fix.mjs`, `writers/mechanical.mjs`, `score.mjs` (FR-012).
+- [x] T023 `decision-records.mjs`, `scanners/lifecycle-status.mjs`, `scanners/speckit.mjs`, `shared-requirement-ids.mjs` (FR-013 to FR-016).
+- [x] T024 Hermetic English A/B (SC-004).
 
 ## Stage 3 - metrics and strict
 

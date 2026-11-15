@@ -2,6 +2,13 @@
  * Changelog Validator — Checks CHANGELOG.md has an [Unreleased] section,
  * follows Keep a Changelog format, and (per STANDARD.md) that staged code
  * changes are accompanied by a CHANGELOG update.
+ *
+ * The `[Unreleased]` label is read through the registry (spec 104 FR-012):
+ * `## [Não lançado]` or `## [Sin publicar]` under `docs.language`, a
+ * `docs.labelAliases` entry, or `<!-- docguard:heading unreleased -->` under the
+ * heading. English is unchanged.
+ *
+ * @implements docguard.document-languages#FR-012
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -9,6 +16,7 @@ import { resolve, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { acceptedFormsHint, labelContext, unreleasedState, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
 
 const CODE_EXT_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|php|cs|kt|swift)$/;
 
@@ -55,6 +63,7 @@ function changelogContract(config, performed, found) {
 export function validateChangelog(projectDir, config) {
   const findings = [];
   const fixes = [];
+  const notSupported = [];
   let passed = 0;
   let total = 0;
 
@@ -66,20 +75,28 @@ export function validateChangelog(projectDir, config) {
 
   const content = readFileSync(changelogPath, 'utf-8');
 
-  // Check for [Unreleased] section
-  total++;
-  if (content.includes('[Unreleased]') || content.includes('[unreleased]')) {
-    passed++;
+  // Check for [Unreleased] section. A language with no built-in set cannot tell
+  // a missing section from one written in that language: the file is listed as
+  // not judged, never reported as missing (spec 104 FR-011).
+  const labels = labelContext(config);
+  const state = unreleasedState(content, labels);
+  if (state === 'unsupported') {
+    notSupported.push(unsupportedEntry(config.requiredFiles.changelog, ['unreleased'], labels));
   } else {
-    findings.push(mkFinding({
-      code: 'CHG001',
-      validator: 'changelog',
-      severity: 'warn',
-      message: 'CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`',
-      location: config.requiredFiles.changelog,
-      suggestion: { kind: 'fix', text: 'Insert an [Unreleased] section', command: 'docguard fix --write' },
-    }));
-    fixes.push({ type: 'insert-changelog-unreleased', file: config.requiredFiles.changelog });
+    total++;
+    if (state === 'present') {
+      passed++;
+    } else {
+      findings.push(mkFinding({
+        code: 'CHG001',
+        validator: 'changelog',
+        severity: 'warn',
+        message: 'CHANGELOG.md: missing [Unreleased] section — fix with `docguard fix --write`' + acceptedFormsHint('unreleased', labels),
+        location: config.requiredFiles.changelog,
+        suggestion: { kind: 'fix', text: 'Insert an [Unreleased] section', command: 'docguard fix --write' },
+      }));
+      fixes.push({ type: 'insert-changelog-unreleased', file: config.requiredFiles.changelog });
+    }
   }
 
   // Check it follows Keep a Changelog format (at least has ## headers)
@@ -124,5 +141,11 @@ export function validateChangelog(projectDir, config) {
     }
   }
 
-  return { name: 'changelog', ...resultFromFindings(findings, { passed, total }), fixes, ...changelogContract(config, total, findings.length > 0) };
+  return {
+    name: 'changelog',
+    ...resultFromFindings(findings, { passed, total }),
+    fixes,
+    ...changelogContract(config, total, findings.length > 0),
+    ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}),
+  };
 }

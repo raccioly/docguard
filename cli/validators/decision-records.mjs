@@ -21,6 +21,7 @@
  * @implements docguard.decision-records#FR-005
  * @implements docguard.decision-records#FR-006
  * @implements docguard.decision-records#FR-007
+ * @implements docguard.document-languages#FR-013
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, relative, resolve } from 'node:path';
@@ -28,12 +29,15 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { aliasesFor, foldText, hasTerminalWord, labelContext, lifecycleLabelKeys, statusIdFor, statusWordsHint, unsupportedApplicability, unsupportedEntry, DECISION_STATUS_IDS } from '../shared-labels.mjs';
+import { parseLifecycleStatus } from '../scanners/lifecycle-status.mjs';
 
 const VALIDATOR = 'decisionRecords';
 const STATUS = new Set(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded']);
 const SYNONYM = { approved: 'accepted', draft: 'proposed', proposal: 'proposed', obsolete: 'deprecated', replaced: 'superseded' };
 const ADR_HOME_RE = /(?:^|\/)(?:adrs?|decisions?)\//i;
 const TERMINAL_STATUS_RE = /\b(?:superseded|retired|archived|withdrawn|obsolete|abandoned)\b/i;
+const escapeRe = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Lines with fenced code and HTML comments blanked, keeping line numbers. */
 function prose(text) {
@@ -52,11 +56,18 @@ function prose(text) {
   });
 }
 
-/** `✅ **Accepted**` → 'accepted'; unknown text is returned lowercased for the message. */
-export function normalizeStatus(raw) {
+/**
+ * `✅ **Accepted**` → 'accepted'; unknown text is returned lowercased for the message.
+ * With a label context (`docs.language`, spec 104 FR-013) a word of the language or
+ * of `docs.labelAliases` (`Aceito`, `en desuso`) resolves to the same five ids,
+ * after the English rule has had its turn.
+ */
+export function normalizeStatus(raw, labels = null) {
   const word = String(raw || '').replace(/[*_`]/g, '').replace(/[^\p{L}\s-]/gu, ' ').trim().split(/\s+/)[0]?.toLowerCase() || '';
   if (!word) return null;
-  return SYNONYM[word] || word;
+  const english = SYNONYM[word] || word;
+  if (labels && !STATUS.has(english)) return statusIdFor(raw, labels) || english;
+  return english;
 }
 
 const num = s => Number.parseInt(String(s).replace(/^0+(?=\d)/, ''), 10);
@@ -66,26 +77,65 @@ const num = s => Number.parseInt(String(s).replace(/^0+(?=\d)/, ''), 10);
 // quote or bold marker) or a status line. Prose such as "this supersedes the
 // ADR-NNN posture" is discussion, not a record of supersession.
 const LINK_LEAD = String.raw`(?:^|\n)\s*(?:[-*>]\s*)?(?:\*\*)?(?:status(?:\*\*)?\s*:?\s*(?:\*\*)?\s*(?:\w+\s*[,;—–-]\s*)?)?`;
-const linksIn = text => ({
+const legacyLinksIn = text => ({
   supersedes: [...text.matchAll(new RegExp(`${LINK_LEAD}supersedes(?:\\*\\*)?[:\\s[]*(?:ADR[-\\s]?)?(\\d{1,5})`, 'gi'))].map(m => num(m[1])),
   supersededBy: [...text.matchAll(new RegExp(`${LINK_LEAD}superseded[_\\s-]by(?:\\*\\*)?[:\\s[]*(?:ADR[-\\s]?)?(\\d{1,5})`, 'gi'))].map(m => num(m[1])),
 });
 
-function statusIn(lines, start, end) {
+/** An alias as a pattern over folded text: its words, separated by a space, `_` or `-`. */
+const aliasPattern = alias => foldText(alias).trim().split(/\s+/).filter(Boolean).map(escapeRe).join('[_\\s-]');
+
+/**
+ * The links of a record. The English words are the legacy rule; with a label
+ * context the link words of the language (`Substitui`, `Substituído por`) and of
+ * `docs.labelAliases` are read on the accent-folded text, so `Substituído por
+ * ADR-NNN` is a superseded-by link and not a supersedes link (`substitui` is a
+ * prefix of `substituido`; the number must follow the word).
+ */
+const linksIn = (text, labels = null) => {
+  const legacy = legacyLinksIn(text);
+  if (!labels) return legacy;
+  const supersedes = aliasesFor('supersedes', labels).map(aliasPattern).filter(Boolean);
+  const supersededBy = aliasesFor('superseded-by', labels).map(aliasPattern).filter(Boolean);
+  if (!supersedes.length && !supersededBy.length) return legacy;
+  const folded = foldText(text);
+  const statusWords = ['status', ...[...lifecycleLabelKeys(labels)].map(escapeRe)];
+  const lead = String.raw`(?:^|\n)\s*(?:[-*>]\s*)?(?:\*\*)?(?:(?:${[...new Set(statusWords)].join('|')})(?:\*\*)?\s*:?\s*(?:\*\*)?\s*(?:\w+\s*[,;—–-]\s*)?)?`;
+  const read = patterns => patterns.length
+    ? [...folded.matchAll(new RegExp(`${lead}(?:${patterns.join('|')})(?:\\*\\*)?[:\\s[]*(?:ADR[-\\s]?)?(\\d{1,5})`, 'gi'))].map(m => num(m[1]))
+    : [];
+  return {
+    supersedes: [...new Set([...legacy.supersedes, ...read(supersedes)])],
+    supersededBy: [...new Set([...legacy.supersededBy, ...read(supersededBy)])],
+  };
+};
+
+function statusIn(lines, start, end, labels = null) {
+  // The label of a status line is `Status`; with a label context `Situação`, `Estado` or a
+  // `docs.labelAliases.lifecycle-status` entry are read as well (accent-insensitive).
+  const keys = labels && aliasesFor('lifecycle-status', labels).length ? lifecycleLabelKeys(labels) : null;
   for (let i = start; i < end; i++) {
     // `**Status**: x`, `**Status:** x`, `Status: x`, `- Status: x`, `| Status | x |`
     const m = lines[i].match(/^\s*(?:[-*>]\s*)?(?:\*\*)?status(?:\*\*)?\s*:(?:\*\*)?\s*(.+)$/i)
       || lines[i].match(/^\s*\|\s*(?:\*\*)?status(?:\*\*)?\s*\|\s*([^|]+)\|/i);
-    if (m) return { status: normalizeStatus(m[1]), raw: m[1].trim(), line: i + 1 };
+    if (m) return { status: normalizeStatus(m[1], labels), raw: m[1].trim(), line: i + 1 };
     if (/^#{2,4}\s+status\b[^:]*$/i.test(lines[i])) {
-      for (let j = i + 1; j < end; j++) if (lines[j].trim()) return { status: normalizeStatus(lines[j]), raw: lines[j].trim(), line: j + 1 };
+      for (let j = i + 1; j < end; j++) if (lines[j].trim()) return { status: normalizeStatus(lines[j], labels), raw: lines[j].trim(), line: j + 1 };
+    }
+    if (keys) {
+      const field = /^\s*(?:[-*>]\s*)?(?:\*\*)?(\p{L}+)(?:\*\*)?\s*:(?:\*\*)?\s*(.+)$/u.exec(lines[i]) || /^\s*\|\s*(?:\*\*)?(\p{L}+)(?:\*\*)?\s*\|\s*([^|]+)\|/u.exec(lines[i]);
+      if (field && keys.has(foldText(field[1]))) return { status: normalizeStatus(field[2], labels), raw: field[2].trim(), line: i + 1 };
+      const heading = /^#{2,4}\s+(\p{L}+)(?![\p{L}\p{N}_])[^:]*$/u.exec(lines[i]);
+      if (heading && keys.has(foldText(heading[1]))) {
+        for (let j = i + 1; j < end; j++) if (lines[j].trim()) return { status: normalizeStatus(lines[j], labels), raw: lines[j].trim(), line: j + 1 };
+      }
     }
   }
   return { status: null, raw: null, line: start + 1 };
 }
 
 /** Every ADR record and index row in one file. */
-export function parseAdrFile(text, rel) {
+export function parseAdrFile(text, rel, labels = null) {
   const lines = prose(text);
   const records = [];
   const index = [];
@@ -99,7 +149,7 @@ export function parseAdrFile(text, rel) {
       // A scaffold placeholder (`## ADR-NNN: <!-- Title -->` and nothing but
       // comments) is not a decision yet.
       if (!h.title && !lines.slice(h.i + 1, end).some(l => l.trim() && !/^[-|:\s]+$/.test(l))) return;
-      records.push({ n: h.n, title: h.title, ...statusIn(lines, h.i + 1, end), ...linksIn(body), file: rel, at: h.i + 1 });
+      records.push({ n: h.n, title: h.title, ...statusIn(lines, h.i + 1, end, labels), ...linksIn(body, labels), file: rel, at: h.i + 1 });
     });
   } else {
     const name = basename(rel);
@@ -108,10 +158,16 @@ export function parseAdrFile(text, rel) {
     const fromName = (ADR_HOME_RE.test(rel) && name.match(/^(\d{1,5})[-_.]/)) || name.match(/^adr[-_ ]?(\d{1,5})\b/i);
     if (fromName) {
       const fm = text.match(/^---\n([\s\S]*?)\n---/);
-      const fmStatus = fm?.[1].match(/^status:\s*(.+)$/im);
-      const st = fmStatus ? { status: normalizeStatus(fmStatus[1]), raw: fmStatus[1].trim(), line: text.slice(0, fm.index + fm[0].indexOf(fmStatus[0])).split('\n').length } : statusIn(lines, 0, lines.length);
-      const fmLinks = fm ? linksIn(fm[1].replace(/superseded_by/g, 'superseded by')) : { supersedes: [], supersededBy: [] };
-      const body = linksIn(lines.join('\n'));
+      let fmStatus = fm?.[1].match(/^status:\s*(.+)$/im);
+      // A translated key (`estado:`, `situacao:`, or a docs.labelAliases word) is read under a label context.
+      if (fm && !fmStatus && labels && aliasesFor('lifecycle-status', labels).length) {
+        const keys = lifecycleLabelKeys(labels);
+        fmStatus = [...fm[1].matchAll(/^(\p{L}+):\s*(.+)$/gmu)].find(field => keys.has(foldText(field[1])));
+        if (fmStatus) fmStatus = Object.assign([fmStatus[0], fmStatus[2]], { index: fmStatus.index });
+      }
+      const st = fmStatus ? { status: normalizeStatus(fmStatus[1], labels), raw: fmStatus[1].trim(), line: text.slice(0, fm.index + fm[0].indexOf(fmStatus[0])).split('\n').length } : statusIn(lines, 0, lines.length, labels);
+      const fmLinks = fm ? linksIn(fm[1].replace(/superseded_by/g, 'superseded by'), labels) : { supersedes: [], supersededBy: [] };
+      const body = linksIn(lines.join('\n'), labels);
       records.push({ n: num(fromName[1]), title: (text.match(/^#\s+(.+)$/m) || [])[1] || name, ...st, supersedes: [...new Set([...fmLinks.supersedes, ...body.supersedes])], supersededBy: [...new Set([...fmLinks.supersededBy, ...body.supersededBy])], file: rel, at: 1 });
     }
   }
@@ -120,7 +176,7 @@ export function parseAdrFile(text, rel) {
     const cells = line.split('|').slice(1, -1).map(c => c.trim());
     const id = cells[0]?.match(/^ADR[-\s]?(\d{1,5})$/i);
     if (!id) return;
-    const statusCell = cells.slice(1).map(normalizeStatus).find(s => s && STATUS.has(s));
+    const statusCell = cells.slice(1).map(cell => normalizeStatus(cell, labels)).find(s => s && STATUS.has(s));
     if (statusCell) index.push({ n: num(id[1]), status: statusCell, file: rel, line: i + 1 });
   });
   return { records, index };
@@ -141,7 +197,7 @@ function adrFiles(projectDir, config) {
 }
 
 /** Unanswered questions in Spec Kit clarifications and `*questions.md` files. */
-function unansweredQuestions(projectDir) {
+function unansweredQuestions(projectDir, labels = null) {
   const out = [];
   const specs = resolve(projectDir, 'specs');
   if (existsSync(specs)) {
@@ -154,6 +210,8 @@ function unansweredQuestions(projectDir) {
       try { text = readFileSync(p, 'utf-8'); } catch { continue; }
       if (!/^##\s+Clarifications/m.test(text)) continue;
       if (TERMINAL_STATUS_RE.test((text.slice(0, 2000).match(/\*\*Status\*\*:\s*(.+)/) || [])[1] || '')) continue;
+      // A terminal word of the language (`Substituído`, `Obsoleto`, `En desuso`), under any label of the language (`Estado`, `Situação`).
+      if (labels && hasTerminalWord(parseLifecycleStatus(text.slice(0, 2000), labels), labels)) continue;
       const lines = prose(text);
       let inClar = false;
       lines.forEach((line, i) => {
@@ -190,16 +248,17 @@ function unansweredQuestions(projectDir) {
 }
 
 function gather(projectDir, config) {
+  const labels = labelContext(config);
   const records = [];
   const index = [];
   for (const full of adrFiles(projectDir, config)) {
     let text;
     try { text = readFileSync(full, 'utf-8'); } catch { continue; }
-    const parsed = parseAdrFile(text, relative(projectDir, full).replace(/\\/g, '/'));
+    const parsed = parseAdrFile(text, relative(projectDir, full).replace(/\\/g, '/'), labels);
     records.push(...parsed.records);
     index.push(...parsed.index);
   }
-  return { records, index, questions: unansweredQuestions(projectDir) };
+  return { records, index, questions: unansweredQuestions(projectDir, labels) };
 }
 
 const describeSubject = ({ records, index, questions }) => `${records.length} decision record(s), ${index.length} index row(s) and ${questions.length} unanswered question(s)`;
@@ -235,14 +294,21 @@ export function validateDecisionRecords(projectDir, config = {}) {
   const add = (code, message, location, suggestion, extra = {}) => findings.push(mkFinding({
     code, validator: VALIDATOR, severity: 'warn', confidence: 'high', disposition: 'act', message, location, suggestion: { kind: 'fix', text: suggestion }, ...extra,
   }));
+  // A language with no built-in set cannot tell an unknown status word from one written
+  // in that language: the document is listed as not judged, never reported (spec 104 FR-011).
+  const labels = labelContext(config);
+  const notSupported = new Map();
   const byN = new Map();
   for (const r of records) if (!byN.has(r.n)) byN.set(r.n, r);
   const id = n => `ADR-${String(n).padStart(3, '0')}`;
 
   for (const r of records) {
     const where = `${r.file}:${r.line}`;
-    if (!r.status) add('DEC001', `${id(r.n)} (${r.file}:${r.at}) has no status`, `${r.file}:${r.at}`, 'Add `**Status**: proposed | accepted | rejected | deprecated | superseded`');
-    else if (!STATUS.has(r.status)) add('DEC001', `${id(r.n)} status "${r.raw.replace(/[*_]/g, '').slice(0, 60)}" is not proposed, accepted, rejected, deprecated or superseded`, where, 'Use one of the five ADR statuses');
+    if (!r.status) add('DEC001', `${id(r.n)} (${r.file}:${r.at}) has no status${statusWordsHint(labels)}`, `${r.file}:${r.at}`, 'Add `**Status**: proposed | accepted | rejected | deprecated | superseded`');
+    else if (!STATUS.has(r.status)) {
+      if (labels?.unsupported) notSupported.set(r.file, true);
+      else add('DEC001', `${id(r.n)} status "${r.raw.replace(/[*_]/g, '').slice(0, 60)}" is not proposed, accepted, rejected, deprecated or superseded${statusWordsHint(labels)}`, where, 'Use one of the five ADR statuses');
+    }
     for (const target of [...r.supersedes, ...r.supersededBy]) {
       if (!byN.has(target)) add('DEC002', `${id(r.n)} links to ${id(target)}, which no decision record defines`, `${r.file}:${r.at}`, `Fix the number, or write ${id(target)}`);
     }
@@ -266,8 +332,10 @@ export function validateDecisionRecords(projectDir, config = {}) {
   for (const q of questions) add('DEC006', `${q.file}:${q.line} — question has no answer: ${q.text.slice(0, 120)}`, `${q.file}:${q.line}`, 'Answer it (and update the artifacts written on a guess), or remove the question', { disposition: 'escalate' });
 
   const total = records.length + index.length + questions.length;
+  const entries = [...notSupported.keys()].map(file => unsupportedEntry(file, DECISION_STATUS_IDS, labels));
   return {
     ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true }),
     ...contractFields({ performed: total, found: findings.length > 0, ran: `${describeSubject(found)} judged`, decide: () => applies(projectDir, config, found), empty: () => ({ note: '', howToConfigure: '' }) }),
+    ...(entries.length ? { languageNotSupported: entries, applicability: unsupportedApplicability(entries) } : {}),
   };
 }

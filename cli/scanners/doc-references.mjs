@@ -34,7 +34,8 @@ import { instructionFilesOnDisk, instructionKind, safeProjectPath } from './inst
 import { ROOT_AGENT_FILES, rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { listTrackedFiles } from '../shared-git.mjs';
 import { normalizePath } from './api-doc.mjs';
-import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
+import { parseLifecycleStatus, retiredKind } from './lifecycle-status.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { currentFileCodes } from '../sensor-cache.mjs';
 import { excerptStaleness } from './recorded-review-signals.mjs';
 
@@ -320,7 +321,7 @@ export function docsForPath(projectDir, config, path) {
   }
   const uniq = arr => [...new Map(arr.map(x => [JSON.stringify(x), x])).values()];
   const owned = ownerOf(projectDir, config, normalized);
-  const docs = referencingDocs(projectDir, [...references, ...agentInstructions].map(r => r.doc));
+  const docs = referencingDocs(projectDir, [...references, ...agentInstructions].map(r => r.doc), labelContext(config));
   return {
     path: normalized,
     exists: target.exists,
@@ -345,7 +346,7 @@ export function docsForPath(projectDir, config, path) {
  * from a sensor cache for this exact tree state, since running guard inside an
  * MCP call is too slow to be worth it; `findingsBasis` says which.
  */
-function referencingDocs(projectDir, files) {
+function referencingDocs(projectDir, files, labels = null) {
   const unique = [...new Set(files)].sort();
   if (!unique.length) return {};
   const codes = currentFileCodes(projectDir);
@@ -353,8 +354,8 @@ function referencingDocs(projectDir, files) {
   const openFindings = {};
   for (const file of unique) {
     let status = null;
-    try { status = parseLifecycleStatus(readFileSync(resolve(projectDir, file), 'utf8'))?.toLowerCase() || null; } catch { /* unreadable: no status */ }
-    if (status && status !== 'active') lifecycle[file] = status === 'superseded' ? 'superseded' : RETIRED_STATUSES.has(status) || status === 'retired' ? 'retired' : status;
+    try { status = parseLifecycleStatus(readFileSync(resolve(projectDir, file), 'utf8'), labels)?.toLowerCase() || null; } catch { /* unreadable: no status */ }
+    if (status && status !== 'active') lifecycle[file] = retiredKind(status, labels) ?? status;
     if (codes?.[file]?.length) openFindings[file] = codes[file];
   }
   return {
