@@ -4153,7 +4153,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+          "lastReviewedRevision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -4171,6 +4171,19 @@
             {
               "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
               "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
+              "reason": "Spec 104 stage 1 changed the Score section checks and the sync --tests map heading to read headings through the label registry; English behavior is unchanged (golden and differential tests, English A/B), and each spec's own tests were re-run and pass.",
               "evidence": [
                 "cli/commands/score.mjs",
                 "cli/shared-doc-roles.mjs",
@@ -4202,7 +4215,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:fa2e22115e3e0f8735ae19dd80c7b3ab2a10e3e6daacb050833b3e5b04dc91aa"
+            "digest": "sha256:393ff149a07cd0dc9203c4d83cafd1a470bb0838b4b4ec9c86226f74e7469734"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
@@ -8479,11 +8492,41 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "c297b588418dbdece3ee2321568af081dd843fa5",
+          "lastReviewedRevision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
           "outcomes": [
             {
               "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
               "reason": "Re-verified after merging main (completion upkeep, shared benchmark run); behavior unchanged.",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
+              "reason": "Spec 104 stage 1 changed the Score section checks and the sync --tests map heading to read headings through the label registry; English behavior is unchanged (golden and differential tests, English A/B), and each spec's own tests were re-run and pass.",
               "evidence": [
                 "cli/commands/guard.mjs",
                 "cli/commands/sync-tests.mjs",
@@ -8540,7 +8583,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:c7a1c08026bdb6611713a9485f46cbf0e123ef133dfff3ab8891f0d7f99cebe2"
+            "digest": "sha256:6091b15332d95503385f8ce64d0e7747f24679e8a6b589c9fd6bdf86a2c7ac78"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
