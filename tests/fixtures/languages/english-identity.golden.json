@@ -1,0 +1,2076 @@
+{
+  "exact-headings": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 10,
+      "total": 10,
+      "findings": [],
+      "performed": 10,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 10 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 3,
+      "total": 3,
+      "findings": [],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked the sections of docs-canonical/ENVIRONMENT.md and the variables the code reads against it"
+      }
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 2,
+      "total": 2,
+      "findings": [],
+      "performed": 2,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 2 row(s) of the Source-to-Test Map and journeys of docs-canonical/TEST-SPEC.md against the files on disk"
+      }
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 100,
+      "architecture": 100
+    }
+  },
+  "arc42-and-synonyms": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 10,
+      "total": 10,
+      "findings": [],
+      "performed": 10,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 10 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 3,
+      "total": 3,
+      "findings": [],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked the sections of docs-canonical/ENVIRONMENT.md and the variables the code reads against it"
+      }
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 1,
+      "total": 1,
+      "findings": [],
+      "performed": 1,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 1 row(s) of the Source-to-Test Map and journeys of docs-canonical/TEST-SPEC.md against the files on disk"
+      }
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 100,
+      "architecture": 75
+    }
+  },
+  "missing-sections": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [
+        "docs-canonical/ARCHITECTURE.md: missing section \"## System Overview\". If genuinely not applicable, add: <!-- docguard:section system-overview n/a — your reason -->",
+        "docs-canonical/ARCHITECTURE.md: missing section \"## Component Map\". If genuinely not applicable, add: <!-- docguard:section component-map n/a — your reason -->",
+        "docs-canonical/ARCHITECTURE.md: missing section \"## Tech Stack\". If genuinely not applicable, add: <!-- docguard:section tech-stack n/a — your reason -->",
+        "docs-canonical/DATA-MODEL.md: missing section \"## Entities\". If genuinely not applicable, add: <!-- docguard:section entities n/a — your reason -->",
+        "docs-canonical/SECURITY.md: missing section \"## Authentication\". If genuinely not applicable, add: <!-- docguard:section authentication n/a — your reason -->",
+        "docs-canonical/SECURITY.md: missing section \"## Secrets Management\". If genuinely not applicable, add: <!-- docguard:section secrets-management n/a — your reason -->",
+        "docs-canonical/TEST-SPEC.md: missing section \"## Coverage Rules\". If genuinely not applicable, add: <!-- docguard:section coverage-rules n/a — your reason -->",
+        "docs-canonical/ENVIRONMENT.md: missing section \"## Setup Steps\". If genuinely not applicable, add: <!-- docguard:section setup-steps n/a — your reason -->"
+      ],
+      "passed": 2,
+      "total": 10,
+      "findings": [
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## System Overview\". If genuinely not applicable, add: <!-- docguard:section system-overview n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section system-overview n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## Component Map\". If genuinely not applicable, add: <!-- docguard:section component-map n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section component-map n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## Tech Stack\". If genuinely not applicable, add: <!-- docguard:section tech-stack n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section tech-stack n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/DATA-MODEL.md: missing section \"## Entities\". If genuinely not applicable, add: <!-- docguard:section entities n/a — your reason -->",
+          "location": "docs-canonical/DATA-MODEL.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section entities n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/SECURITY.md: missing section \"## Authentication\". If genuinely not applicable, add: <!-- docguard:section authentication n/a — your reason -->",
+          "location": "docs-canonical/SECURITY.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section authentication n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/SECURITY.md: missing section \"## Secrets Management\". If genuinely not applicable, add: <!-- docguard:section secrets-management n/a — your reason -->",
+          "location": "docs-canonical/SECURITY.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section secrets-management n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/TEST-SPEC.md: missing section \"## Coverage Rules\". If genuinely not applicable, add: <!-- docguard:section coverage-rules n/a — your reason -->",
+          "location": "docs-canonical/TEST-SPEC.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section coverage-rules n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ENVIRONMENT.md: missing section \"## Setup Steps\". If genuinely not applicable, add: <!-- docguard:section setup-steps n/a — your reason -->",
+          "location": "docs-canonical/ENVIRONMENT.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section setup-steps n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 10,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 10 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [
+        "ENVIRONMENT.md: missing \"## Prerequisites\" or \"## Setup Steps\" section"
+      ],
+      "passed": 2,
+      "total": 3,
+      "findings": [
+        {
+          "code": "ENV001",
+          "validator": "environment",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "ENVIRONMENT.md: missing \"## Prerequisites\" or \"## Setup Steps\" section",
+          "location": "docs-canonical/ENVIRONMENT.md",
+          "suggestion": {
+            "kind": "fix",
+            "text": "Add a \"## Setup Steps\" (or \"## Prerequisites\") section describing how to get the project running"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked the sections of docs-canonical/ENVIRONMENT.md and the variables the code reads against it"
+      }
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [
+        "No test directory or co-located test files found. Expected: tests/, src/**/__tests__/, or src/**/*.test.* files"
+      ],
+      "passed": 0,
+      "total": 0,
+      "findings": [
+        {
+          "code": "TSP007",
+          "validator": "testSpec",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "No test directory or co-located test files found. Expected: tests/, src/**/__tests__/, or src/**/*.test.* files",
+          "location": null,
+          "suggestion": {
+            "kind": "fix",
+            "text": "Create a tests/ directory or co-located *.test.* files, then map them in TEST-SPEC.md"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 0 row(s) of the Source-to-Test Map and journeys of docs-canonical/TEST-SPEC.md against the files on disk"
+      }
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 47,
+      "architecture": 50
+    }
+  },
+  "na-markers-and-profile-sections": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [
+        "docs-canonical/SECURITY.md: missing section \"Risk Assessment\", which the active profile requires. If genuinely not applicable, add: <!-- docguard:section risk-assessment n/a — your reason -->"
+      ],
+      "passed": 5,
+      "total": 5,
+      "findings": [
+        {
+          "code": "STR007",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/SECURITY.md: missing section \"Risk Assessment\", which the active profile requires. If genuinely not applicable, add: <!-- docguard:section risk-assessment n/a — your reason -->",
+          "location": "docs-canonical/SECURITY.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section risk-assessment n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 5,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 5 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 71,
+      "architecture": 100
+    }
+  },
+  "test-spec-shapes": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 2,
+      "total": 2,
+      "findings": [],
+      "performed": 2,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 2 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [
+        "TEST-SPEC declares src/missing.js as ❌ — missing tests",
+        "Source-to-Test Map: source file `src/missing.js` not found on disk — stale entry?",
+        "Source-to-Test Map: test file `tests/missing.test.js` not found — referenced by src/missing.js"
+      ],
+      "passed": 2,
+      "total": 5,
+      "findings": [
+        {
+          "code": "TSP001",
+          "validator": "testSpec",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "TEST-SPEC declares src/missing.js as ❌ — missing tests",
+          "location": "docs-canonical/TEST-SPEC.md",
+          "suggestion": {
+            "kind": "fix",
+            "text": "Write the missing tests, then update the row status to ✅"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "TSP003",
+          "validator": "testSpec",
+          "severity": "warn",
+          "confidence": "low",
+          "disposition": "escalate",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "Source-to-Test Map: source file `src/missing.js` not found on disk — stale entry?",
+          "location": "docs-canonical/TEST-SPEC.md",
+          "suggestion": {
+            "kind": "review",
+            "text": "Update or remove the stale row if the source file moved or was deleted"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "TSP004",
+          "validator": "testSpec",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "Source-to-Test Map: test file `tests/missing.test.js` not found — referenced by src/missing.js",
+          "location": "docs-canonical/TEST-SPEC.md",
+          "suggestion": {
+            "kind": "fix",
+            "text": "Create the test file, or point the row at the actual test path"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 5,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 5 row(s) of the Source-to-Test Map and journeys of docs-canonical/TEST-SPEC.md against the files on disk"
+      }
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 67,
+      "architecture": 0
+    }
+  },
+  "test-spec-absent-map": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 2,
+      "total": 2,
+      "findings": [],
+      "performed": 2,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 2 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "docs-canonical/TEST-SPEC.md exists"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "docs-canonical/TEST-SPEC.md declares no service-to-test mappings, so Test-Spec checked no source or test file.",
+      "howToConfigure": "Add a \"## Source-to-Test Map\" table (or the older \"## Service-to-Test Map\") to docs-canonical/TEST-SPEC.md: column 1 the source, column 2 the test file, the last column the status (`| Source File | Unit Test | Status |`); `docguard explain testSpec` describes the shapes it reads."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 67,
+      "architecture": 0
+    }
+  },
+  "marker-restating-heading": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 5,
+      "total": 5,
+      "findings": [],
+      "performed": 5,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 5 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 3,
+      "total": 3,
+      "findings": [],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked the sections of docs-canonical/ENVIRONMENT.md and the variables the code reads against it"
+      }
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 100,
+      "architecture": 100
+    }
+  },
+  "examples/01-express-api": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "source reads 1 environment variable(s), for example PORT"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Environment found source reads 1 environment variable(s), for example PORT, but no docs-canonical/ENVIRONMENT.md, so it compared no variable with a document.",
+      "howToConfigure": "Create docs-canonical/ENVIRONMENT.md with a \"## Setup Steps\" section and a \"## Environment Variables\" section that lists every variable the code reads; `.env.example` entries count as documentation (`docguard generate` drafts it from the code). If the project already keeps this document under another name or in another folder, map it instead of creating a second one: `\"docs\": { \"roles\": { \"environment\": \"<path/to/your-document.md>\" } }` in .docguard.json (`docs.roles`)."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "examples/02-python-flask": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 3,
+      "total": 3,
+      "findings": [],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 3 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "source reads 1 environment variable(s), for example DATABASE_URL"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Environment found source reads 1 environment variable(s), for example DATABASE_URL, but no docs-canonical/ENVIRONMENT.md, so it compared no variable with a document.",
+      "howToConfigure": "Create docs-canonical/ENVIRONMENT.md with a \"## Setup Steps\" section and a \"## Environment Variables\" section that lists every variable the code reads; `.env.example` entries count as documentation (`docguard generate` drafts it from the code). If the project already keeps this document under another name or in another folder, map it instead of creating a second one: `\"docs\": { \"roles\": { \"environment\": \"<path/to/your-document.md>\" } }` in .docguard.json (`docs.roles`)."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 100,
+      "architecture": 55
+    }
+  },
+  "examples/03-spec-kit-project": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [
+        "docs-canonical/TEST-SPEC.md: missing section \"## Coverage Rules\". If genuinely not applicable, add: <!-- docguard:section coverage-rules n/a — your reason -->"
+      ],
+      "passed": 4,
+      "total": 5,
+      "findings": [
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/TEST-SPEC.md: missing section \"## Coverage Rules\". If genuinely not applicable, add: <!-- docguard:section coverage-rules n/a — your reason -->",
+          "location": "docs-canonical/TEST-SPEC.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section coverage-rules n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 5,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 5 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "docs-canonical/TEST-SPEC.md exists"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "docs-canonical/TEST-SPEC.md declares no service-to-test mappings, so Test-Spec checked no source or test file.",
+      "howToConfigure": "Add a \"## Source-to-Test Map\" table (or the older \"## Service-to-Test Map\") to docs-canonical/TEST-SPEC.md: column 1 the source, column 2 the test file, the last column the status (`| Source File | Unit Test | Status |`); `docguard explain testSpec` describes the shapes it reads."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 71,
+      "architecture": 55
+    }
+  },
+  "benchmarks/fixtures/agent-instruction-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/agent-instruction-heldout": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/backup-docs-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/backup-docs-defect": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/generated-security-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/go-todo-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/instruction-budget-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/instruction-budget-defect": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/instruction-copies-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/instruction-copies-defect": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/js-security-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/mirror-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/mirror-defect": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Installation\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"Usage\" section (Standard README spec)",
+        "location": "README.md"
+      },
+      {
+        "code": "DCV005",
+        "message": "README.md is missing a \"License\" section (Standard README spec)",
+        "location": "README.md"
+      }
+    ],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/monorepo-security-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/python-layered-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/python-security-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/python-unsupported": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  },
+  "benchmarks/fixtures/sparse-doc-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [
+        "docs-canonical/ARCHITECTURE.md: missing section \"## System Overview\". If genuinely not applicable, add: <!-- docguard:section system-overview n/a — your reason -->",
+        "docs-canonical/ARCHITECTURE.md: missing section \"## Component Map\". If genuinely not applicable, add: <!-- docguard:section component-map n/a — your reason -->",
+        "docs-canonical/ARCHITECTURE.md: missing section \"## Tech Stack\". If genuinely not applicable, add: <!-- docguard:section tech-stack n/a — your reason -->"
+      ],
+      "passed": 0,
+      "total": 3,
+      "findings": [
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## System Overview\". If genuinely not applicable, add: <!-- docguard:section system-overview n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section system-overview n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## Component Map\". If genuinely not applicable, add: <!-- docguard:section component-map n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section component-map n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        },
+        {
+          "code": "STR003",
+          "validator": "docSections",
+          "severity": "warn",
+          "confidence": "high",
+          "disposition": "act",
+          "evidence": {
+            "status": "not-measured"
+          },
+          "parserTier": "not-applicable",
+          "message": "docs-canonical/ARCHITECTURE.md: missing section \"## Tech Stack\". If genuinely not applicable, add: <!-- docguard:section tech-stack n/a — your reason -->",
+          "location": "docs-canonical/ARCHITECTURE.md",
+          "suggestion": {
+            "kind": "suppress",
+            "text": "Add the section, or own the absence with the inline N/A marker",
+            "pragma": "<!-- docguard:section tech-stack n/a — your reason -->"
+          },
+          "reportable": true,
+          "redactedContext": null
+        }
+      ],
+      "performed": 3,
+      "applies": {
+        "applies": true,
+        "evidence": "checked 3 required section(s) of the canonical documents that exist"
+      }
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 30
+    }
+  },
+  "benchmarks/fixtures/ts-security-control": {
+    "docSections": {
+      "name": "doc-sections",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "findings": [],
+      "performed": 0,
+      "applies": {
+        "applies": true,
+        "evidence": "every project has canonical documents (architecture, data model, security, test spec, environment) whose required sections Doc-Sections checks"
+      },
+      "emptyCause": "needs-declaration",
+      "note": "Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).",
+      "howToConfigure": "Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists."
+    },
+    "environment": {
+      "name": "environment",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no docs-canonical/ENVIRONMENT.md, no .env.example or .env.template, and no source file that reads an environment variable"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Environment found no docs-canonical/ENVIRONMENT.md, no .env template and no source that reads an environment variable, so there is nothing to document.",
+      "howToConfigure": "Nothing to configure unless the project reads environment variables: then document them in docs-canonical/ENVIRONMENT.md."
+    },
+    "testSpec": {
+      "name": "test-spec",
+      "errors": [],
+      "warnings": [],
+      "passed": 0,
+      "total": 0,
+      "performed": 0,
+      "applies": {
+        "applies": false,
+        "evidence": "no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no docs-canonical/TEST-SPEC.md"
+      },
+      "emptyCause": "nothing-of-this-kind",
+      "note": "Test-Spec found no tests and no docs-canonical/TEST-SPEC.md, so there is no test mapping to check.",
+      "howToConfigure": "Nothing to configure unless the project has tests: then map them in docs-canonical/TEST-SPEC.md."
+    },
+    "dcv005": [],
+    "score": {
+      "docQuality": 0,
+      "architecture": 0
+    }
+  }
+}
