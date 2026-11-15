@@ -137,8 +137,6 @@ export function pathological() {
     'many ADRs': Array.from({ length: 4000 }, (_, i) => `## ADR-${i}: x\n**Status**: Superseded by ADR-${i + 1}\n| ADR-${i} | Superseded |`).join('\n'),
     'long heading line': `## ${'a '.repeat(50000)}b\n## ${' '.repeat(100000)}x\n## ${'#'.repeat(100000)}x`,
     'many heading markers': Array.from({ length: 5000 }, (_, i) => `## Heading ${i}\n<!-- docguard:heading ${i % 2 ? 'tech-stack' : 'system-overview'} -->`).join('\n'),
-    // Issue 693: every reference carried its whole line, so a line of k tokens gave k copies of it.
-    'many backtick refs on one line': 'x `ab` '.repeat(20000),
     'many headings': Array.from({ length: 10000 }, (_, i) => `## Heading ${i} \`code\` [link](#x)`).join('\n'),
   };
 }

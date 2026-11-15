@@ -19,4 +19,4 @@
 
 ## Phase 4 — Follow-up
 
-- [x] T007 2026-11-15 Issue 693: `--seed 7 --cases 3000` crashed with `Invalid string length`; `backtickRefs` gave every reference its whole line, so output was quadratic in a line of many tokens. `text` is now capped at `REF_TEXT_MAX`; the harness reports an unserializable result as `oversized`; the shrunk case is a pathological input and a unit test (FR-002, FR-004)
+- [x] T007 2026-11-15 Issue 693: `--seed 7 --cases 3000` crashed with `Invalid string length`; `backtickRefs` gave every reference its whole line, so output was quadratic in a line of many tokens. `text` is now capped at `REF_TEXT_MAX`; the harness reports an unserializable result as `oversized`; a model of the shrunk case is a saved fixture (`tests/fixtures/fuzz/backtickRefs-one-line-many-tokens.txt`, replayed against its parser only) and a unit test (FR-002, FR-004)

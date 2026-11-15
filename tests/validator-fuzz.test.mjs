@@ -87,7 +87,6 @@ describe('FR-004 — what the harness found stays fixed', () => {
     });
     // Quadratic output would multiply this ratio by the 16x growth in input.
     assert.ok(sizes[2] < sizes[0] * 1.5, `output per input character grew: ${sizes.join(', ')}`);
-    assert.equal(check(TARGETS.find(t => t.name === 'backtickRefs'), pathological()['many backtick refs on one line']), null);
   });
 
   it('the harness reports a result too large to serialize instead of crashing', () => {

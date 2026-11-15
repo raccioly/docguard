@@ -21205,7 +21205,7 @@
           },
           {
             "path": "specs/088-validator-fuzz/tasks.md",
-            "digest": "sha256:25dafc5d9df80265b72cf645802279aaac8591f41a59d7bf390c3bdc0cfb206b"
+            "digest": "sha256:07630f194ae4c7c11e0ced8d9097465ed5a8a28c7c792e7199683a2cb2417e1c"
           }
         ],
         "taskCompletion": {
