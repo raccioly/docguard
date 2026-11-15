@@ -165,7 +165,8 @@ export const TARGETS = [
   { name: 'parseAdrFile (pt)', run: t => parseAdrFile(t, 'docs/adr.md', labelContext({ docs: { language: 'pt-BR', labelAliases: { accepted: ['Vigente'] } } })) },
   { name: 'normalizeStatus (es)', run: t => [normalizeStatus(t.split(/\r?\n/)[0], labelContext({ docs: { language: 'es' } })), statusIdFor(t, labelContext({ docs: { language: 'pt' } }))], check: ARRAY },
   { name: 'unreleasedState (pt)', run: t => [unreleasedState(t, labelContext({ docs: { language: 'pt-BR' } })), unreleasedState(t, labelContext({ docs: { language: 'de' } })), headingLabelVia(t, 'unreleased', labelContext({ docs: { language: 'es' } }), { minLevel: 2 }), hasPhaseWord(t, labelContext({ docs: { language: 'pt' } }))], check: ARRAY },
-  { name: 'hasPlaceholderSlot (pt)', run: t => [hasPlaceholderSlot({ id: 'FR-001', text: t }, labelContext({ docs: { language: 'pt' } })), hasPlaceholderSlot({ id: 'FR-001', text: t }, labelContext({ docs: { language: 'es' } }))], check: ARRAY },
+  // A requirement is one line of a document, so the target reads the first lines, not a whole file.
+  { name: 'hasPlaceholderSlot (pt, es)', run: t => t.split(/\r?\n/).slice(0, 40).map(line => [hasPlaceholderSlot({ id: 'FR-001', text: line.slice(0, 2000) }, labelContext({ docs: { language: 'pt' } })), hasPlaceholderSlot({ id: 'FR-001', text: line.slice(0, 2000) }, labelContext({ docs: { language: 'es' } }))]), check: ARRAY },
   { name: 'parseApiReferenceDoc', run: t => parseApiReferenceDoc(t), check: ARRAY },
   { name: 'stripHtmlComments', run: t => stripHtmlComments(t), check: v => typeof v?.text === 'string' },
   { name: 'visibleMarkdown', run: t => visibleMarkdown(t), check: v => typeof v === 'string' },
