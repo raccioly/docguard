@@ -4153,7 +4153,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
+          "lastReviewedRevision": "d66d57209b5aafec0e1a70f517f3ce3929254240",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -4193,6 +4193,19 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "d66d57209b5aafec0e1a70f517f3ce3929254240",
+              "reason": "Spec 104 stage 2: score.mjs calcChangelogScore reads the unreleased label through the registry; the English result is byte-identical (golden), the configured-canonical-paths behavior is unchanged",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -4215,7 +4228,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:393ff149a07cd0dc9203c4d83cafd1a470bb0838b4b4ec9c86226f74e7469734"
+            "digest": "sha256:d4a1afb999e184815db954e95ed99690284b2b10d17e4f7b277b9b4e948b7a6b"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
