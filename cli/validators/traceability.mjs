@@ -329,7 +329,8 @@ function validateRequirementTraceability(projectDir, config, projectFiles) {
   // ── Step 1: Collect requirement IDs from documentation ──
   // A template row ("System MUST [capability]") is not a requirement: it is neither traced nor reported. A bare ID with
   // no text is still traced, as it always was.
-  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def, labelContext(config))));
+  const labels = labelContext(config);
+  const reqIds = new Map([...collectRequirementIds(projectDir, config, patterns)].filter(([, def]) => !hasPlaceholderSlot(def, labels)));
   const retiredReqIds = loadRetiredRequirementIds(projectDir);
   const lifecycleIndex = trustedSpecLifecycleIndex(projectDir);
   const uncommittedPlannedIndex = uncommittedPlannedSpecLifecycleIndex(projectDir);

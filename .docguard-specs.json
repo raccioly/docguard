@@ -6124,7 +6124,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 449
+            "line": 450
           },
           {
             "requirementId": "FR-012",
@@ -6139,7 +6139,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 466
+            "line": 467
           },
           {
             "requirementId": "FR-013",
@@ -6154,7 +6154,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 503
+            "line": 504
           },
           {
             "requirementId": "FR-015",
@@ -9272,7 +9272,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validators/traceability.mjs",
-            "line": 531
+            "line": 532
           },
           {
             "requirementId": "FR-005",
@@ -18578,7 +18578,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/requirement-anchors.mjs",
-            "line": 122
+            "line": 123
           },
           {
             "requirementId": "FR-006",

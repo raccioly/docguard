@@ -79,6 +79,7 @@ const LOOSE_ID = /^\s{0,3}(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|\|\s
  * identifiers seen are returned by kind, so the evidence can name them.
  */
 function unreadIds(projectDir, config, patterns) {
+  const labels = labelContext(config);
   const found = new Map();
   const other = new Map();
   for (const doc of getRequirementDocPaths(projectDir, config)) {
@@ -92,7 +93,7 @@ function unreadIds(projectDir, config, patterns) {
       const m = line.match(LOOSE_ID);
       if (!m) continue;
       const def = { id: m[1], file, text: line.trim() };
-      if (isPlaceholderRequirement(def, labelContext(config))) continue;
+      if (isPlaceholderRequirement(def, labels)) continue;
       if (patterns.some(p => { p.lastIndex = 0; return p.test(m[1]); })) continue;
       const kind = nonRequirementKind(def, { custom: false });
       if (kind) { other.set(kind, [...(other.get(kind) || []), m[1]]); continue; }

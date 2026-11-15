@@ -435,7 +435,8 @@ export function headingLabelVia(content, id, ctx, { minLevel = 1, maxLevel = 6 }
     const open = FENCE_RE.exec(line);
     if (fence) { if (open && open[1][0] === fence[0]) fence = null; continue; }
     if (open) { fence = open[1]; continue; }
-    const m = /^ {0,3}(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/.exec(line);
+    // Linear in the line: `foldHeading` drops a closing `#` run like any other punctuation.
+    const m = /^ {0,3}(#{1,6})[ \t]+(.*)$/.exec(line);
     if (!m || m[1].length < minLevel || m[1].length > maxLevel) continue;
     if (keys.has(foldHeading(m[2]))) return 'alias';
   }
