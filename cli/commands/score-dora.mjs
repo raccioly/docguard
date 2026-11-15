@@ -16,7 +16,8 @@ import { listTrackedFiles, runGit } from '../shared-git.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { docLockStatus } from '../scanners/doc-deps.mjs';
 import { loadOwnership } from '../scanners/doc-ownership.mjs';
-import { parseLifecycleStatus, RETIRED_STATUSES } from '../scanners/lifecycle-status.mjs';
+import { isRetiredStatus, parseLifecycleStatus } from '../scanners/lifecycle-status.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { diffEntities, diffEnvVars, diffRoutes, diffTechStack, domainAccuracy } from './diff.mjs';
 
 export const DORA_SOURCES = Object.freeze({
@@ -136,16 +137,17 @@ function documentationItems(projectDir, config, { scores, agentRead, domains, tr
 
 /** Agent instruction lines that point at retired or superseded docs. */
 function stalePointers(projectDir, tracked, config = {}) {
+  const labels = labelContext(config);
   const retired = tracked.filter(p => /\.md$/i.test(p)).filter(p => {
-    const status = parseLifecycleStatus(read(projectDir, p) || '')?.toLowerCase();
-    return status && RETIRED_STATUSES.has(status);
+    const status = parseLifecycleStatus(read(projectDir, p) || '', labels);
+    return status && isRetiredStatus(status, labels);
   });
   const hits = [];
   // docguard.agent-instruction-role#FR-002: the role's root-level documents.
   for (const agent of rootAgentDocs(projectDir, config)) {
     const content = read(projectDir, agent);
     if (!content) continue;
-    for (const doc of retired) if (content.includes(doc)) hits.push(`${agent} points at ${doc}, which is ${parseLifecycleStatus(read(projectDir, doc)).toLowerCase()}`);
+    for (const doc of retired) if (content.includes(doc)) hits.push(`${agent} points at ${doc}, which is ${parseLifecycleStatus(read(projectDir, doc), labels).toLowerCase()}`);
   }
   return hits;
 }

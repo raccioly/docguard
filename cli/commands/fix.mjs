@@ -27,6 +27,7 @@ import { c } from '../shared.mjs';
 import { computeApiSurfaceDrift } from '../validators/api-surface.mjs';
 import { applyMechanicalFixes } from '../writers/mechanical.mjs';
 import { loadFixMemory } from '../writers/fix-memory.mjs';
+import { labelContext, unreleasedState } from '../shared-labels.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
@@ -512,7 +513,7 @@ function collectIssues(projectDir, config) {
   const changelogPath = resolve(projectDir, config.requiredFiles.changelog);
   if (existsSync(changelogPath)) {
     const content = readFileSync(changelogPath, 'utf-8');
-    if (!content.includes('[Unreleased]') && !content.includes('## [')) {
+    if (!content.includes('[Unreleased]') && !content.includes('## [') && unreleasedState(content, labelContext(config)) === 'missing') {
       issues.push({
         type: 'empty-changelog',
         severity: 'warning',

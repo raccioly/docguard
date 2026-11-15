@@ -9,7 +9,8 @@ import { dirname, resolve } from 'node:path';
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { readSpecRegistry } from './spec-registry.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
-import { parseLifecycleStatus, RETIRED_STATUSES } from './lifecycle-status.mjs';
+import { isRetiredStatus, parseLifecycleStatus } from './lifecycle-status.mjs';
+import { labelContext } from '../shared-labels.mjs';
 
 export { parseLifecycleStatus };
 
@@ -82,6 +83,8 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
     };
   }
   const tracked = new Set(inventory.files);
+  // spec 104 FR-014: the lifecycle label and the retired words of `docs.language`.
+  const labels = labelContext(config);
   const verifiedLivingSpecs = readVerifiedLivingSpecPaths(projectDir);
   const markdown = inventory.files.filter(path => /\.md$/i.test(path));
   const candidates = [];
@@ -108,9 +111,9 @@ export function scanDocumentLifecycle(projectDir, config = {}) {
       continue;
     }
     scanned++;
-    const status = parseLifecycleStatus(content);
+    const status = parseLifecycleStatus(content, labels);
     const normalizedStatus = status?.trim().toLowerCase() || null;
-    if (normalizedStatus && RETIRED_STATUSES.has(normalizedStatus)) {
+    if (normalizedStatus && isRetiredStatus(status, labels)) {
       candidates.push({
         code: 'DLC001',
         path,

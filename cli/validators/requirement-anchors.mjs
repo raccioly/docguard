@@ -24,6 +24,7 @@ import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { requirementPatterns } from '../shared-requirements.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { classifyRequirementIds, describeSkipped, isPlaceholderRequirement, nonRequirementKind } from '../shared-requirement-ids.mjs';
 import { explainPaddedEmpty, firstProductSource, sample } from '../shared-project-evidence.mjs';
 
@@ -91,7 +92,7 @@ function unreadIds(projectDir, config, patterns) {
       const m = line.match(LOOSE_ID);
       if (!m) continue;
       const def = { id: m[1], file, text: line.trim() };
-      if (isPlaceholderRequirement(def)) continue;
+      if (isPlaceholderRequirement(def, labelContext(config))) continue;
       if (patterns.some(p => { p.lastIndex = 0; return p.test(m[1]); })) continue;
       const kind = nonRequirementKind(def, { custom: false });
       if (kind) { other.set(kind, [...(other.get(kind) || []), m[1]]); continue; }
@@ -124,7 +125,7 @@ export function applies(projectDir, config = {}) {
   const patterns = requirementPatterns(config);
   const custom = Boolean(config.traceability?.requirementPattern);
   const all = [...collectRequirementIds(projectDir, config, patterns).values()];
-  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom });
+  const { requirements: real, placeholders, skipped } = classifyRequirementIds(all, { custom, labels: labelContext(config) });
   const skippedText = describeSkipped(skipped);
   const source = firstProductSource(projectDir, config);
   if (real.length === 0) {

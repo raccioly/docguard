@@ -30,6 +30,9 @@ import { validateRequirementAnchors } from '../cli/validators/requirement-anchor
 import { hasPlaceholderSlot, isPlaceholderRequirement } from '../cli/shared-requirement-ids.mjs';
 import { applyMechanicalFix } from '../cli/writers/mechanical.mjs';
 import { runScoreInternal } from '../cli/commands/score.mjs';
+import { validateDocSections } from '../cli/validators/structure.mjs';
+import { validateEnvironment } from '../cli/validators/environment.mjs';
+import { validateDocsCoverage } from '../cli/validators/docs-coverage.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const GOLDEN = join(ROOT, 'tests/fixtures/languages/english-identity-stage2.golden.json');
@@ -194,5 +197,22 @@ describe('English identity of the changelog, decision, lifecycle, Spec Kit and r
     const golden = JSON.parse(readFileSync(GOLDEN, 'utf8'));
     const actual = collect(Object.keys(golden), { language: 'en' });
     for (const name of Object.keys(golden).filter(key => key !== 'pure')) assert.deepEqual(actual[name], golden[name], `${name} changed under docs.language "en"`);
+  });
+});
+
+describe('docs.language "en" adds nothing to a Stage 1 message either (FR-006)', () => {
+  it('STR003, ENV001, ENV002 and DCV005 read the same under "en" as with no language', () => {
+    const dir = writeProject({
+      'docs-canonical/ARCHITECTURE.md': '# Arch\n\n## Overview\n\nx\n',
+      'docs-canonical/ENVIRONMENT.md': '# Env\n\nx\n',
+      'README.md': '# T\n\nJust a paragraph.\n',
+    });
+    const read = docs => {
+      const config = { ...loadConfig(dir), docs: { ...(loadConfig(dir).docs || {}), ...docs } };
+      return strip([validateDocSections(dir, config), validateEnvironment(dir, config), validateDocsCoverage(dir, config)].map(r => (r.findings || []).map(f => [f.code, f.message])));
+    };
+    const plain = read(null);
+    assert.ok(plain.flat().length > 0, 'the project has findings to compare');
+    assert.deepEqual(read({ language: 'en' }), plain);
   });
 });
