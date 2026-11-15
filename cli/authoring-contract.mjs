@@ -7,10 +7,14 @@
  * asked for "Technology Choices" where STR003 requires Tech Stack.
  *
  * Keyed by default path; consumers map a project's own file with
- * `remapDocPath`. `when` exempts a section by project type, as STR003 always
+ * `remapDocPath`. `id` is the section's stable id in the label registry
+ * (cli/shared-labels.mjs): the slug the N/A marker already used, and the word a
+ * `<!-- docguard:heading <id> -->` marker names, so a heading in any language
+ * can satisfy the section (spec 104). `when` exempts a section by project type, as STR003 always
  * has. Recommended sections are guidance only and never checked.
  *
  * @implements docguard.authoring-contract#FR-001
+ * @implements docguard.document-languages#FR-003
  */
 
 const needsDatabase = ptc => ptc.needsDatabase !== false;
@@ -18,32 +22,32 @@ const needsEnvVars = ptc => ptc.needsEnvVars !== false;
 
 export const CANONICAL_SECTIONS = Object.freeze({
   'docs-canonical/ARCHITECTURE.md': [
-    { heading: 'System Overview', required: true, write: '2-3 sentences on what the project does and who uses it' },
-    { heading: 'Component Map', required: true, write: 'a table of each module or directory and its responsibility' },
-    { heading: 'Tech Stack', required: true, write: 'the languages, frameworks and key libraries, and why each was chosen' },
-    { heading: 'Layer Boundaries', write: 'which layers may import from which' },
-    { heading: 'Data Flow', write: 'how a request or command moves through the system' },
+    { id: 'system-overview', heading: 'System Overview', required: true, write: '2-3 sentences on what the project does and who uses it' },
+    { id: 'component-map', heading: 'Component Map', required: true, write: 'a table of each module or directory and its responsibility' },
+    { id: 'tech-stack', heading: 'Tech Stack', required: true, write: 'the languages, frameworks and key libraries, and why each was chosen' },
+    { id: 'layer-boundaries', heading: 'Layer Boundaries', write: 'which layers may import from which' },
+    { id: 'data-flow', heading: 'Data Flow', write: 'how a request or command moves through the system' },
   ],
   'docs-canonical/DATA-MODEL.md': [
-    { heading: 'Entities', required: true, when: needsDatabase, whenText: 'when the project has a database', write: 'each table, collection or schema, with its fields, types and constraints' },
-    { heading: 'Relationships', write: 'how the entities reference each other' },
-    { heading: 'Indexes', write: 'every index and the query it serves' },
+    { id: 'entities', heading: 'Entities', required: true, when: needsDatabase, whenText: 'when the project has a database', write: 'each table, collection or schema, with its fields, types and constraints' },
+    { id: 'relationships', heading: 'Relationships', write: 'how the entities reference each other' },
+    { id: 'indexes', heading: 'Indexes', write: 'every index and the query it serves' },
   ],
   'docs-canonical/SECURITY.md': [
-    { heading: 'Authentication', required: true, write: 'the auth mechanism (OAuth, JWT, API key), or that there is none and why' },
-    { heading: 'Secrets Management', required: true, write: 'every secret by name (never its value) and where it is stored' },
-    { heading: 'Authorization', write: 'the roles and what each may do' },
-    { heading: 'Security Boundaries', write: 'which input is trusted and which is not' },
+    { id: 'authentication', heading: 'Authentication', required: true, write: 'the auth mechanism (OAuth, JWT, API key), or that there is none and why' },
+    { id: 'secrets-management', heading: 'Secrets Management', required: true, write: 'every secret by name (never its value) and where it is stored' },
+    { id: 'authorization', heading: 'Authorization', write: 'the roles and what each may do' },
+    { id: 'security-boundaries', heading: 'Security Boundaries', write: 'which input is trusted and which is not' },
   ],
   'docs-canonical/TEST-SPEC.md': [
-    { heading: 'Test Categories', required: true, write: 'the test framework, and the unit, integration and end-to-end suites with where each lives' },
-    { heading: 'Coverage Rules', required: true, write: 'current coverage, the target thresholds and the critical flows that must be tested' },
-    { heading: 'Test Commands', write: 'the exact commands that run each suite, and how CI runs them' },
+    { id: 'test-categories', heading: 'Test Categories', required: true, write: 'the test framework, and the unit, integration and end-to-end suites with where each lives' },
+    { id: 'coverage-rules', heading: 'Coverage Rules', required: true, write: 'current coverage, the target thresholds and the critical flows that must be tested' },
+    { id: 'test-commands', heading: 'Test Commands', write: 'the exact commands that run each suite, and how CI runs them' },
   ],
   'docs-canonical/ENVIRONMENT.md': [
-    { heading: 'Environment Variables', required: true, when: needsEnvVars, whenText: 'when the code reads any', write: 'every variable the code reads, with its purpose and default' },
-    { heading: 'Setup Steps', required: true, write: 'the prerequisites and exact commands from clone to running' },
-    { heading: 'Configuration Files', write: 'each configuration file and what it controls' },
+    { id: 'environment-variables', heading: 'Environment Variables', required: true, when: needsEnvVars, whenText: 'when the code reads any', write: 'every variable the code reads, with its purpose and default' },
+    { id: 'setup-steps', heading: 'Setup Steps', required: true, write: 'the prerequisites and exact commands from clone to running' },
+    { id: 'configuration-files', heading: 'Configuration Files', write: 'each configuration file and what it controls' },
   ],
 });
 

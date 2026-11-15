@@ -1,6 +1,6 @@
 # Test Specification
 
-<!-- docguard:version 1.5.5 -->
+<!-- docguard:version 1.5.6 -->
 <!-- docguard:status active -->
 <!-- docguard:last-reviewed 2026-11-13 -->
 
@@ -121,6 +121,8 @@ All test files live in `tests/` and match the glob `tests/*.test.mjs` — the te
 | `cli/` as a whole: no private directory-name set, no unclassified walk; the allowlist is empty and one exemption (Security) carries its reason (spec 100 FR-011, FR-012) | `tests/file-kinds-registry.test.mjs` | ✅ |
 | `cli/validators/reference-existence.mjs` (D2), `cli/shared-doc-roles.mjs` and `cli/shared-doc-role-hint.mjs` (D3, D4), `listCanonicalDocs` and `cli/commands/llms.mjs` (D6, D9), `cli/validators/todo-tracking.mjs` (D6, D8), `walkFiles` nested checkouts (T022), `cli/shared-backup-documents.mjs` and STR008 (FR-013) | `tests/file-kinds-stage2.test.mjs` | ✅ |
 | `cli/shared-mirrors.mjs` (`mirrorGroups`, `collapseMirrorFindings`, `mirrorDrift`), the collapse in `cli/commands/guard.mjs`, PSR007 and PSR008 and GEMINI.md pointers in `cli/validators/path-scoped-rules.mjs` (spec 100 FR-014, FR-015) | `tests/mirrors.test.mjs` | ✅ |
+| `cli/shared-labels.mjs` (the label registry, `labelContext`, the heading marker reader), `docHasSection` and `findSectionHeading` in `cli/shared.mjs`, `cli/authoring-contract.mjs` ids, `docs.language` and `docs.labelAliases` in `cli/config.mjs` and the config schema (spec 104 FR-003 to FR-007) | `tests/document-languages-registry.test.mjs`, `tests/config.test.mjs`, `tests/document-languages-english-identity.test.mjs` | ✅ |
+| STR003, STR007, STR009, ENV001, ENV002, DCV005, the Test-Spec map heading, the Score's section checks and `upsertSection` in a configured language, and the language-not-supported path (spec 104 FR-008 to FR-011) | `tests/document-languages-structure.test.mjs`, `tests/document-languages-writers.test.mjs` | ✅ |
 | `cli/scanners/doc-reviews.mjs`, `cli/scanners/reference-staleness.mjs`, `cli/scanners/recorded-review-signals.mjs`, `cli/commands/review.mjs` (recorded document reviews, FRS006–FRS010, spec 095) | `tests/recorded-document-reviews.test.mjs` | ✅ |
 | `benchmarks/history-replay/run.mjs` (history-replay precision for FRS006/FRS007) | `tests/history-replay.test.mjs` | ✅ |
 | `cli/scanners/fingerprint.mjs`, `cli/scanners/py-anchors.mjs` (shared fingerprints, `doclock-v0` golden, batched `python3`) | `tests/fingerprint-shared.test.mjs` | ✅ |
@@ -231,6 +233,7 @@ of empty repeats driven only by generated lifecycle artifacts.
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5.6 | 2026-11-14 | DocGuard Team | Document languages, Stage 1: required sections are read by id (`docs.language`, `docs.labelAliases`, the `docguard:heading` marker), STR009 reports a misused marker (spec 104) |
 | 1.5.5 | 2026-11-13 | DocGuard Team | File kinds, Stage 3: identical mirrors are checked once and reported once, PSR007 and PSR008 report mirrors that drifted, GEMINI.md is read for pointers (spec 100) |
 | 1.5.4 | 2026-11-13 | DocGuard Team | File kinds, Stage 2: every walker asks the shared classifier, copies no longer stand in for or hide this project's files, STR008 reports backup documents (spec 100) |
 | 1.5.3 | 2026-11-13 | DocGuard Team | File kinds: `fileKind`, `fileKinds.own`, the `files.kinds` report and the guard test against private directory-name sets (spec 100, Stage 1) |

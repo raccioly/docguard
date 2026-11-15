@@ -1898,12 +1898,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/authoring-contract.mjs",
-            "line": 13
+            "line": 16
           },
           {
             "requirementId": "FR-006",
             "file": "cli/authoring-contract.mjs",
-            "line": 66
+            "line": 70
           }
         ],
         "testEvidence": [
@@ -4231,7 +4231,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/score.mjs",
-            "line": 499
+            "line": 500
           }
         ],
         "testEvidence": [
@@ -5424,12 +5424,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared.mjs",
-            "line": 155
+            "line": 162
           },
           {
             "requirementId": "FR-001",
             "file": "cli/validators/environment.mjs",
-            "line": 139
+            "line": 144
           },
           {
             "requirementId": "FR-002",
@@ -5469,12 +5469,12 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/structure.mjs",
-            "line": 278
+            "line": 312
           },
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 767
+            "line": 772
           },
           {
             "requirementId": "FR-009",
@@ -5992,18 +5992,108 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:bb42493e2672cf477c9e3658ca3c2afea84388a0c44ede45ace5e18847f78855"
+            "digest": "sha256:eab1d75e96e638d25c526a2c71d0cbd4b4a46f3aed9a35b970037af057a45b23"
           }
         ],
         "taskCompletion": {
-          "checked": 3,
+          "checked": 17,
           "total": 43
         },
         "implementationEvidence": [
           {
             "requirementId": "FR-002",
             "file": "cli/writers/sections.mjs",
-            "line": 63
+            "line": 64
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/authoring-contract.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-labels.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-labels.mjs",
+            "line": 20
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared.mjs",
+            "line": 217
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/structure.mjs",
+            "line": 205
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared.mjs",
+            "line": 218
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/config.mjs",
+            "line": 39
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/shared-labels.mjs",
+            "line": 21
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared.mjs",
+            "line": 265
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared.mjs",
+            "line": 308
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/docs-coverage.mjs",
+            "line": 513
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/environment.mjs",
+            "line": 121
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/validators/test-spec.mjs",
+            "line": 96
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/writers/sections.mjs",
+            "line": 183
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/validators/structure.mjs",
+            "line": 206
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/validators/structure.mjs",
+            "line": 207
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/validators/environment.mjs",
+            "line": 122
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/validators/structure.mjs",
+            "line": 208
           }
         ],
         "testEvidence": [
@@ -6016,6 +6106,66 @@
             "requirementId": "FR-002",
             "file": "tests/document-languages-sections.test.mjs",
             "line": 6
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/document-languages-registry.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/document-languages-english-identity.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/config.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/document-languages-writers.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/document-languages-structure.test.mjs",
+            "line": 19
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/document-languages-english-identity.test.mjs",
+            "line": 19
           }
         ]
       }
@@ -8741,7 +8891,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1180
+            "line": 1187
           },
           {
             "requirementId": "FR-008",
@@ -8951,7 +9101,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared.mjs",
-            "line": 199
+            "line": 264
           },
           {
             "requirementId": "FR-003",
@@ -8962,6 +9112,11 @@
             "requirementId": "FR-003",
             "file": "cli/writers/doc-generators.mjs",
             "line": 16
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/writers/sections.mjs",
+            "line": 173
           },
           {
             "requirementId": "FR-004",
@@ -9767,12 +9922,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1456
+            "line": 1463
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1466
+            "line": 1473
           },
           {
             "requirementId": "FR-006",
@@ -11457,7 +11612,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/writers/sections.mjs",
-            "line": 112
+            "line": 113
           },
           {
             "requirementId": "FR-010",
@@ -12842,12 +12997,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 254
+            "line": 360
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 259
+            "line": 365
           },
           {
             "requirementId": "FR-003",
@@ -12942,7 +13097,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 219
+            "line": 248
           },
           {
             "requirementId": "FR-016",
@@ -14208,7 +14363,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 218
+            "line": 247
           },
           {
             "requirementId": "FR-011",
@@ -18222,7 +18377,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-coverage.mjs",
-            "line": 84
+            "line": 85
           },
           {
             "requirementId": "FR-006",
@@ -18247,7 +18402,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/environment.mjs",
-            "line": 92
+            "line": 93
           },
           {
             "requirementId": "FR-006",
@@ -18302,12 +18457,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 36
+            "line": 37
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 46
+            "line": 47
           },
           {
             "requirementId": "FR-006",
@@ -18322,7 +18477,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/test-spec.mjs",
-            "line": 59
+            "line": 61
           },
           {
             "requirementId": "FR-006",

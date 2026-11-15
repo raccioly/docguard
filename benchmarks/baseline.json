@@ -3,21 +3,21 @@
   "schemaVersion": 2,
   "review": {
     "status": "reviewed",
-    "reviewedAt": "2026-11-13",
+    "reviewedAt": "2026-11-14",
     "reviewer": "DocGuard maintainers",
-    "scope": "Eighteen exact defect/control pairs across thirteen synthetic and five pinned public repository groups. ARC001: a three-layer Python package whose route layer imports the model layer directly (one unsupported_syntax Python case is excluded from ratios). PSR005 (spec 094): a Spec Kit-installed skill edited after install. PSR006 (spec 099): a scaffolder template AGENTS.md below templates/<app>/files/. PSR007 and PSR008 (spec 100 stage 3, one pair): a command kept under two agent roots with a line changed, and AGENTS.md and CLAUDE.md sharing all but one line; the control holds identical copies, a shared basename, two renderings of a generated file, a pointer and a different document. STR004 (spec 100): a package AGENTS.md over a 200 byte chain budget; a template AGENTS.md is not counted. STR008: a backup copy of a document in a documentation directory.",
-    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 pair (2026-09-18), the PSR005 pairs (2026-11-12), the PSR006 pair and the STR004 pair (2026-11-13) were authored labels-first and matched their labels on the first run, except that the PSR005 evaluation pair first abstained until an early return in Path-Scoped-Rules was fixed. The STR004 control fails on the code before spec 100, where the template chain was counted. The STR008 pair (2026-11-13) was authored labels-first and matched on the first run. The PSR007 and PSR008 pair (2026-11-13) were authored labels-first, and the run was repeated with --external, where the 36 earlier cases matched their recorded results on these detectors; a first version with four cases was merged into one pair to keep the benchmark runner within its time budget.",
-    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Thirteen of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001, PSR006, PSR007, PSR008, STR004 and STR008 are each measured by a single defect/control pair in one repository group, so each point estimate is below the reporting floor and backs off to the whole-corpus tier. PSR008 has no positive example in the 21 real repositories surveyed (no two root instruction files share more than 13% of their lines), so its pair measures the detector, not its rate on real files.",
+    "scope": "Nineteen exact defect/control pairs across fourteen synthetic and five pinned public repository groups. ARC001: a three-layer Python package whose route layer imports the model layer directly (one unsupported_syntax Python case is excluded from ratios). PSR005 (spec 094): a Spec Kit-installed skill edited after install. PSR006 (spec 099): a scaffolder template AGENTS.md below templates/<app>/files/. PSR007 and PSR008 (spec 100 stage 3, one pair): a command kept under two agent roots with a line changed, and AGENTS.md and CLAUDE.md sharing all but one line; the control holds identical copies and other near misses. STR004 (spec 100): a package AGENTS.md over a 200 byte chain budget; a template AGENTS.md is not counted. STR008: a backup copy of a document in a documentation directory. STR009 (spec 104): a heading marker naming an id that is not in the closed list.",
+    "methodology": "Labels were authored from pinned source and seeded mutations before DocGuard output was reviewed. The ARC001 pair (2026-09-18), the PSR005 pairs (2026-11-12), the PSR006 pair and the STR004 pair (2026-11-13) were authored labels-first and matched their labels on the first run, except that the PSR005 evaluation pair first abstained until an early return in Path-Scoped-Rules was fixed. The STR004 control fails on the code before spec 100, where the template chain was counted. The STR008 pair (2026-11-13) was authored labels-first and matched on the first run. The PSR007 and PSR008 pair (2026-11-13) were authored labels-first, and the run was repeated with --external, where the 36 earlier cases matched their recorded results on these detectors. The STR009 pair (2026-11-14) was authored labels-first and matched on the first run, also with --external (the 39 earlier cases unchanged).",
+    "limitations": "Finite scoped cases do not establish exhaustive documentation or detector correctness. Fourteen of the tool’s finding codes are measured here; the rest carry no benchmark evidence. ARC001, PSR006, PSR007, PSR008, STR004, STR008 and STR009 are each measured by a single defect/control pair in one repository group, so each point estimate is below the reporting floor and backs off to the whole-corpus tier. PSR008 has no positive example in the 21 real repositories surveyed (no two root instruction files share more than 13% of their lines), so its pair measures the detector, not its rate on real files.",
     "measures": "benchmark-precision",
-    "caveat": "Benchmark precision on a deliberately balanced corpus of 19 defect and 19 clean-control cases across 19 repository groups and 19 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
+    "caveat": "Benchmark precision on a deliberately balanced corpus of 20 defect and 20 clean-control cases across 20 repository groups and 20 causal families. This is DocGuard's precision on labelled cases, not the probability that a finding in your repository is real; quote every ratio with its n and Wilson 95% bound."
   },
   "core": {
     "schemaVersion": 1,
-    "manifestDigest": "sha256:cbb3d005df07e3cf0803abdf475f7cde73b99d9b1c31dcd5304bdf3fb2aa6482",
+    "manifestDigest": "sha256:e8351fd392ba4ab2565499df93016f9c18f9402cbfa48f1504015172261df9df",
     "tool": {
       "version": "0.48.0",
-      "revision": "bc64786045b2111c8c4d73f90ecf66c78dde13c2",
-      "detectorsDigest": "sha256:b4d8e3a5c4e286a7c9a956faa889d980e058ffa331837c135ef60adb35844b65"
+      "revision": "0a74c26816509c2b15a597320c10ddedc9f3874a",
+      "detectorsDigest": "sha256:5bd522d45f5c317a2cc3b416a23b91506f5575702764481142d05cfcc445b479"
     },
     "cases": [
       {
@@ -258,6 +258,86 @@
           "status": "warn",
           "passed": 0,
           "total": 1,
+          "quality": "MEDIUM"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-heading-marker-control",
+        "split": "development",
+        "repositoryGroup": "synthetic-heading-markers",
+        "causalFamily": "heading-marker-misuse",
+        "parserTier": "not-applicable",
+        "classification": "clean_control",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:f576cbaa80371194995577e87b1fd673d808fa2e2626d87aae9813fc798dfbe8",
+        "configDigest": "sha256:731b108812329220e3db4bf7e14436f6e85c5955d3dc33c2fd178bfbc23ee3bd",
+        "scope": {
+          "validatorKey": "docSections",
+          "codes": [
+            "STR009"
+          ]
+        },
+        "expected": [],
+        "forbidden": [
+          "STR009@docs-canonical/ARCHITECTURE.md"
+        ],
+        "actual": [],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "pass",
+          "passed": 3,
+          "total": 3,
+          "quality": "HIGH"
+        },
+        "commandStatus": "FAIL",
+        "status": "PASS"
+      },
+      {
+        "id": "dev-heading-marker-defect",
+        "split": "development",
+        "repositoryGroup": "synthetic-heading-markers",
+        "causalFamily": "heading-marker-misuse",
+        "parserTier": "not-applicable",
+        "classification": "defect",
+        "repairOutcome": "not_evaluated",
+        "sourceRevision": "sha256:ac9afd3b736b49948798e9bb354aa7551ad54e1a2d337cd5332d6e9f1aad4a3e",
+        "configDigest": "sha256:731b108812329220e3db4bf7e14436f6e85c5955d3dc33c2fd178bfbc23ee3bd",
+        "scope": {
+          "validatorKey": "docSections",
+          "codes": [
+            "STR009"
+          ]
+        },
+        "expected": [
+          "STR009@docs-canonical/ARCHITECTURE.md"
+        ],
+        "forbidden": [],
+        "actual": [
+          "STR009@docs-canonical/ARCHITECTURE.md"
+        ],
+        "unexpected": [],
+        "missing": [],
+        "forbiddenObserved": [],
+        "abstained": false,
+        "applicability": {
+          "status": "checked",
+          "reason": "Completed the declared checks; this does not establish exhaustive language, framework, or semantic coverage.",
+          "class": "applicable"
+        },
+        "checkCoverage": {
+          "status": "warn",
+          "passed": 3,
+          "total": 3,
           "quality": "MEDIUM"
         },
         "commandStatus": "FAIL",
@@ -1597,20 +1677,20 @@
     ],
     "metrics": {
       "aggregate": {
-        "cases": 38,
-        "repositories": 19,
-        "truePositives": 20,
+        "cases": 40,
+        "repositories": 20,
+        "truePositives": 21,
         "falsePositives": 0,
         "falseNegatives": 0,
         "abstainedSupportedCases": 0,
         "unsupportedCases": 1,
-        "defectCases": 19,
-        "cleanControlCases": 19,
+        "defectCases": 20,
+        "cleanControlCases": 20,
         "cleanControlCasesWithFindings": 0,
         "repairs": {
           "accepted": 0,
           "rejected": 0,
-          "notEvaluated": 38
+          "notEvaluated": 40
         },
         "adjudicated": {
           "policyDisagreements": 0,
@@ -1620,21 +1700,21 @@
         "recall": 1,
         "falsePositivesPerRepository": 0,
         "abstentionRate": 0,
-        "unsupportedRate": 0.025641,
+        "unsupportedRate": 0.02439,
         "acceptedRepairRate": null,
         "confidence95": {
           "method": "Wilson score interval, z=1.96",
           "precision": {
-            "lower": 0.83887,
+            "lower": 0.845356,
             "upper": 1
           },
           "recall": {
-            "lower": 0.83887,
+            "lower": 0.845356,
             "upper": 1
           },
           "falsePositiveCaseRate": {
             "lower": 0,
-            "upper": 0.168184
+            "upper": 0.16113
           },
           "acceptedRepairRate": null
         }
@@ -2028,6 +2108,49 @@
           }
         },
         "synthetic-go-todo": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
+        "synthetic-heading-markers": {
           "cases": 2,
           "repositories": 1,
           "truePositives": 1,
@@ -2536,6 +2659,49 @@
             "acceptedRepairRate": null
           }
         },
+        "docSections": {
+          "cases": 2,
+          "repositories": 1,
+          "truePositives": 1,
+          "falsePositives": 0,
+          "falseNegatives": 0,
+          "abstainedSupportedCases": 0,
+          "unsupportedCases": 0,
+          "defectCases": 1,
+          "cleanControlCases": 1,
+          "cleanControlCasesWithFindings": 0,
+          "repairs": {
+            "accepted": 0,
+            "rejected": 0,
+            "notEvaluated": 2
+          },
+          "adjudicated": {
+            "policyDisagreements": 0,
+            "ambiguous": 0
+          },
+          "precision": 1,
+          "recall": 1,
+          "falsePositivesPerRepository": 0,
+          "abstentionRate": 0,
+          "unsupportedRate": 0,
+          "acceptedRepairRate": null,
+          "confidence95": {
+            "method": "Wilson score interval, z=1.96",
+            "precision": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "recall": {
+              "lower": 0.206543,
+              "upper": 1
+            },
+            "falsePositiveCaseRate": {
+              "lower": 0,
+              "upper": 0.793457
+            },
+            "acceptedRepairRate": null
+          }
+        },
         "pathScopedRules": {
           "cases": 8,
           "repositories": 4,
@@ -2840,20 +3006,20 @@
           }
         },
         "not-applicable": {
-          "cases": 14,
-          "repositories": 7,
-          "truePositives": 8,
+          "cases": 16,
+          "repositories": 8,
+          "truePositives": 9,
           "falsePositives": 0,
           "falseNegatives": 0,
           "abstainedSupportedCases": 0,
           "unsupportedCases": 0,
-          "defectCases": 7,
-          "cleanControlCases": 7,
+          "defectCases": 8,
+          "cleanControlCases": 8,
           "cleanControlCasesWithFindings": 0,
           "repairs": {
             "accepted": 0,
             "rejected": 0,
-            "notEvaluated": 14
+            "notEvaluated": 16
           },
           "adjudicated": {
             "policyDisagreements": 0,
@@ -2868,16 +3034,16 @@
           "confidence95": {
             "method": "Wilson score interval, z=1.96",
             "precision": {
-              "lower": 0.675584,
+              "lower": 0.700847,
               "upper": 1
             },
             "recall": {
-              "lower": 0.675584,
+              "lower": 0.700847,
               "upper": 1
             },
             "falsePositiveCaseRate": {
               "lower": 0,
-              "upper": 0.354339
+              "upper": 0.324416
             },
             "acceptedRepairRate": null
           }
@@ -3172,6 +3338,16 @@
         "id": "dev-mirror-defect",
         "coldMs": 324.359,
         "warmMs": 337.325
+      },
+      {
+        "id": "dev-heading-marker-control",
+        "coldMs": 426.264,
+        "warmMs": 433.377
+      },
+      {
+        "id": "dev-heading-marker-defect",
+        "coldMs": 424.009,
+        "warmMs": 426.281
       }
     ],
     "retainedRoot": null

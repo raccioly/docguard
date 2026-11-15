@@ -21,6 +21,7 @@
  */
 
 import { findSectionHeading } from '../shared.mjs';
+import { firstAlias, idForEnglishLabel } from '../shared-labels.mjs';
 
 const OPEN_RE = /^[ \t]*<!--\s*docguard:section\b([^>]*?)-->[ \t]*$/;
 const CLOSE_RE = /^[ \t]*<!--\s*\/docguard:section\s*-->[ \t]*$/;
@@ -164,14 +165,24 @@ export function replaceSection(content, id, newBody) {
  * first heading), or 'end' (default, appended).
  *
  * With `heading`, a new section is titled: when the document already has a
- * heading that satisfies it (same text or a known synonym — the init
- * template's `## Tech Stack`), the section goes directly under that heading;
- * otherwise `## <heading>` is written above the marker. The heading sits
- * outside the marker, so regeneration never rewrites it
+ * heading that satisfies it (same text, a known synonym — the init template's
+ * `## Tech Stack` — a `docguard:heading` marker, or an alias of `docs.language`),
+ * the section goes directly under that heading (after its marker, so the marker
+ * stays the next line); otherwise `## <heading>` is written above the marker. The
+ * heading sits outside the marker, so regeneration never rewrites it
  * (docguard.generated-docs-consistency#FR-003).
- * @returns {{ content: string, action: 'replaced'|'inserted'|'unchanged' }}
+ *
+ * `labels` is the project's `labelContext(config)` (spec 104 D7, FR-008). An
+ * English project (null, or `en`) gets the English heading exactly as before.
+ * For a language with a built-in set the new heading is the first alias plus
+ * `<!-- docguard:heading <id> -->`; an English heading is never written into a
+ * translated document. When the language has no set, or the heading has no alias
+ * (a generator heading outside the registry), the block is written without a
+ * heading and `languageNotSupported` names the English heading it did not write.
+ * @returns {{ content: string, action: 'replaced'|'inserted'|'unchanged', languageNotSupported?: string }}
+ * @implements docguard.document-languages#FR-008
  */
-export function upsertSection(content, id, newBody, { source = 'code', position = 'end', heading = null } = {}) {
+export function upsertSection(content, id, newBody, { source = 'code', position = 'end', heading = null, labels = null } = {}) {
   if (getSection(content, id)) {
     const r = replaceSection(content, id, newBody);
     return { content: r.content, action: r.replaced ? 'replaced' : 'unchanged' };
@@ -179,16 +190,29 @@ export function upsertSection(content, id, newBody, { source = 'code', position 
 
   let block = renderSection(id, newBody, { source });
   const lines = String(content).split('\n');
+  let languageNotSupported;
 
   if (heading) {
-    const host = findSectionHeading(content, heading);
+    const host = findSectionHeading(content, heading, labels);
     if (host >= 0) {
-      const before = lines.slice(0, host + 1);
-      const after = lines.slice(host + 1);
+      // A marker directly under the host stays the next line: the block goes after it.
+      let at = host;
+      let next = host + 1;
+      while (next < lines.length && lines[next].trim() === '') next++;
+      if (next < lines.length && /^[ \t]*<!--\s*docguard:heading\s+[A-Za-z0-9][\w-]*\s*-->[ \t]*$/.test(lines[next])) at = next;
+      const before = lines.slice(0, at + 1);
+      const after = lines.slice(at + 1);
       while (after.length && after[0].trim() === '') after.shift();
       return { content: [...before, '', block, '', ...after].join('\n'), action: 'inserted' };
     }
-    block = `## ${heading}\n\n${block}`;
+    if (!labels || labels.language === 'en') {
+      block = `## ${heading}\n\n${block}`;
+    } else {
+      const headingId = idForEnglishLabel(heading);
+      const alias = headingId ? firstAlias(headingId, labels) : null;
+      if (alias) block = `## ${alias}\n<!-- docguard:heading ${headingId} -->\n\n${block}`;
+      else languageNotSupported = heading;
+    }
   }
 
   // Insert after a named section.
@@ -198,7 +222,7 @@ export function upsertSection(content, id, newBody, { source = 'code', position 
     if (target) {
       const before = lines.slice(0, target.closeLine + 1);
       const after = lines.slice(target.closeLine + 1);
-      return { content: [...before, '', block, ...after].join('\n'), action: 'inserted' };
+      return { content: [...before, '', block, ...after].join('\n'), action: 'inserted', ...(languageNotSupported ? { languageNotSupported } : {}) };
     }
   }
 
@@ -208,11 +232,11 @@ export function upsertSection(content, id, newBody, { source = 'code', position 
     if (hIdx >= 0) {
       const before = lines.slice(0, hIdx + 1);
       const after = lines.slice(hIdx + 1);
-      return { content: [...before, '', block, ...after].join('\n'), action: 'inserted' };
+      return { content: [...before, '', block, ...after].join('\n'), action: 'inserted', ...(languageNotSupported ? { languageNotSupported } : {}) };
     }
   }
 
   // Default: append at end (single trailing newline).
   const base = String(content).replace(/\n+$/, '');
-  return { content: `${base}\n\n${block}\n`, action: 'inserted' };
+  return { content: `${base}\n\n${block}\n`, action: 'inserted', ...(languageNotSupported ? { languageNotSupported } : {}) };
 }

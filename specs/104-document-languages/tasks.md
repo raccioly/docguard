@@ -20,23 +20,23 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ### Phase 1: Tests first
 
-- [ ] T004 [US1] [US2] `tests/document-languages-structure.test.mjs`: with `docs.language: "pt-BR"`, each Portuguese heading of the D2 table satisfies its id for ARCHITECTURE, DATA-MODEL, SECURITY, TEST-SPEC and ENVIRONMENT (STR003, ENV001, ENV002); accents folded (`Visao geral`); a leading section number dropped; the same for `es` and `es-MX` (FR-005, FR-006).
-- [ ] T005 [US3] Same file: the marker satisfies an id in any language, including with `docs.language: "de"`; the marker must be the next non-blank line under the heading and not inside a fence or a larger comment (FR-004).
-- [ ] T006 [US1] Same file: `## Mapa de fontes para testes` makes Test-Spec examine its table (not `empty`); DCV005 reads `## Instalação`, `## Uso`, `## Licença`; the Score's section checks agree with STR003 (FR-008).
-- [ ] T007 [US1] Same file: a heading the set does not list gives STR003 whose message names the accepted forms and the marker; adding the marker clears it (FR-010).
-- [ ] T008 [US3] Same file: `docs.language: "de"`, no marker, German headings: no STR003, the document is reported with `language-not-supported` (the strict side is Stage 3); with markers or `docs.labelAliases` it is satisfied (FR-011).
-- [ ] T009 [US4] `tests/document-languages-english-identity.test.mjs`: with no `docs.language`, STR003, ENV001, ENV002, DCV005, Test-Spec and the Score produce byte-identical results on the existing English fixtures; the legacy normalizer is used (FR-006).
-- [ ] T010 Same file: STR009 for an unknown id, a duplicate id, a marker whose heading names another English label, and a misplaced marker; the marker wins on a conflict (FR-009).
-- [ ] T011 [US5] `tests/document-languages-writers.test.mjs`: with `docs.language: "pt-BR"`, `generate --write` and `sync` on a Portuguese document place the generated block under `## Pilha tecnológica`, and when no host exists write the Portuguese alias heading plus its marker; no English heading is ever written; for `de` with no host the block is written without a heading and `language-not-supported` is reported (FR-008).
-- [ ] T012 `tests/document-languages-registry.test.mjs`: the id list equals the authoring contract's N/A slugs; every alias belongs to exactly one id per language; the registry is closed, exact in both directions (FR-003).
-- [ ] T013 `tests/config.test.mjs` additions: `docs.language` and `docs.labelAliases` load; `pt-PT` resolves to `pt`; an invalid tag is reported and treated as absent; the schema describes both (FR-007).
+- [x] T004 [US1] [US2] `tests/document-languages-structure.test.mjs`: with `docs.language: "pt-BR"`, each Portuguese heading of the D2 table satisfies its id for ARCHITECTURE, DATA-MODEL, SECURITY, TEST-SPEC and ENVIRONMENT (STR003, ENV001, ENV002); accents folded (`Visao geral`); a leading section number dropped; the same for `es` and `es-MX` (FR-005, FR-006).
+- [x] T005 [US3] Same file: the marker satisfies an id in any language, including with `docs.language: "de"`; the marker must be the next non-blank line under the heading and not inside a fence or a larger comment (FR-004).
+- [x] T006 [US1] Same file: `## Mapa de fontes para testes` makes Test-Spec examine its table (not `empty`); DCV005 reads `## Instalação`, `## Uso`, `## Licença`; the Score's section checks agree with STR003 (FR-008).
+- [x] T007 [US1] Same file: a heading the set does not list gives STR003 whose message names the accepted forms and the marker; adding the marker clears it (FR-010).
+- [x] T008 [US3] Same file: `docs.language: "de"`, no marker, German headings: no STR003, the document is reported with `language-not-supported` (the strict side is Stage 3); with markers or `docs.labelAliases` it is satisfied (FR-011).
+- [x] T009 [US4] `tests/document-languages-english-identity.test.mjs`: with no `docs.language`, STR003, ENV001, ENV002, DCV005, Test-Spec and the Score produce byte-identical results on the existing English fixtures; the legacy normalizer is used (FR-006).
+- [x] T010 Same file: STR009 for an unknown id, a duplicate id, a marker whose heading names another English label, and a misplaced marker; the marker wins on a conflict (FR-009).
+- [x] T011 [US5] `tests/document-languages-writers.test.mjs`: with `docs.language: "pt-BR"`, `generate --write` and `sync` on a Portuguese document place the generated block under `## Pilha tecnológica`, and when no host exists write the Portuguese alias heading plus its marker; no English heading is ever written; for `de` with no host the block is written without a heading and `language-not-supported` is reported (FR-008).
+- [x] T012 `tests/document-languages-registry.test.mjs`: the id list equals the authoring contract's N/A slugs; every alias belongs to exactly one id per language; the registry is closed, exact in both directions (FR-003).
+- [x] T013 `tests/config.test.mjs` additions: `docs.language` and `docs.labelAliases` load; `pt-PT` resolves to `pt`; an invalid tag is reported and treated as absent; the schema describes both (FR-007).
 
 ### Phase 3: Implementation
 
-- [ ] T014 `cli/shared-labels.mjs` (registry, marker reader, resolver); `cli/authoring-contract.mjs` ids (FR-003, FR-004).
-- [ ] T015 `cli/shared.mjs` normalizers and `docHasSection`/`findSectionHeading`; `cli/config.mjs`; `schemas/docguard-config.schema.json` (FR-005 to FR-007).
-- [ ] T016 `structure.mjs`, `environment.mjs`, `score.mjs`, `test-spec.mjs`, `sync-tests.mjs`, `docs-coverage.mjs`, `writers/sections.mjs` `upsertSection`; STR009 in `findings.mjs` (FR-008 to FR-011).
-- [ ] T017 Hermetic English A/B on DocGuard and eight other repositories (SC-004). Stage 2 does not start until it is clean.
+- [x] T014 `cli/shared-labels.mjs` (registry, marker reader, resolver); `cli/authoring-contract.mjs` ids (FR-003, FR-004).
+- [x] T015 `cli/shared.mjs` normalizers and `docHasSection`/`findSectionHeading`; `cli/config.mjs`; `schemas/docguard-config.schema.json` (FR-005 to FR-007).
+- [x] T016 `structure.mjs`, `environment.mjs`, `score.mjs`, `test-spec.mjs`, `sync-tests.mjs`, `docs-coverage.mjs`, `writers/sections.mjs` `upsertSection`; STR009 in `findings.mjs` (FR-008 to FR-011).
+- [x] T017 Hermetic English A/B on DocGuard and eight other repositories (SC-004). Stage 2 does not start until it is clean.
 
 ## Stage 2 - changelog, decisions, lifecycle, Spec Kit
 

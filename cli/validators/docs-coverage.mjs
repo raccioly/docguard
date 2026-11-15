@@ -24,7 +24,8 @@ import { resolve, join, relative, basename, extname, isAbsolute } from 'node:pat
 import { resolveSourceRoots } from '../shared-source.mjs';
 import { fileKind, holdsOwnGit } from '../shared-file-kind.mjs';
 import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS, isDocguardOwnedDir } from '../shared-ignore.mjs';
-import { resolveDocDirs } from '../shared.mjs';
+import { headingsForId, resolveDocDirs } from '../shared.mjs';
+import { acceptedFormsHint, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -138,7 +139,8 @@ export function validateDocsCoverage(projectDir, config) {
   findings.push(...codeConfigChecks.findings);
 
   // ── Check 5: README section completeness (Standard README spec) ──
-  const readmeChecks = checkReadmeSections(projectDir);
+  const labels = labelContext(config);
+  const readmeChecks = checkReadmeSections(projectDir, labels);
   total += readmeChecks.total;
   passed += readmeChecks.passed;
   findings.push(...readmeChecks.findings);
@@ -149,7 +151,13 @@ export function validateDocsCoverage(projectDir, config) {
   passed += iacChecks.passed;
   findings.push(...iacChecks.findings);
 
-  return { ...resultFromFindings(findings, { passed, total }), ...coverageContract(projectDir, config, total, findings.length > 0, true) };
+  // spec 104: a README section the language cannot be judged for is listed, not counted.
+  const notSupported = readmeChecks.unsupported.length ? [unsupportedEntry('README.md', readmeChecks.unsupported, labels)] : [];
+  return {
+    ...resultFromFindings(findings, { passed, total }),
+    ...coverageContract(projectDir, config, total + readmeChecks.unsupported.length, findings.length > 0, true),
+    ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}),
+  };
 }
 
 // ── Check Functions ─────────────────────────────────────────────────────────
@@ -502,42 +510,52 @@ function checkCodeReferencedConfigs(projectDir, allDocContent, config = {}) {
  * Inspired by Standard README (https://github.com/RichardLitt/standard-readme)
  * and Make a README (https://www.makeareadme.com/).
  */
-function checkReadmeSections(projectDir) {
+/** @implements docguard.document-languages#FR-008 */
+function checkReadmeSections(projectDir, labels = null) {
   const findings = [];
+  const unsupported = [];
   let passed = 0;
   let total = 0;
 
   const readmePath = resolve(projectDir, 'README.md');
-  if (!existsSync(readmePath)) return { findings, passed, total };
+  if (!existsSync(readmePath)) return { findings, passed, total, unsupported };
 
   let content;
-  try { content = readFileSync(readmePath, 'utf-8'); } catch { return { findings, passed, total }; }
+  try { content = readFileSync(readmePath, 'utf-8'); } catch { return { findings, passed, total, unsupported }; }
 
   const lowerContent = content.toLowerCase();
 
   // Required sections — every well-documented project should have these
   const requiredSections = [
-    { name: 'Installation', patterns: ['install', 'getting started', 'setup', 'quickstart', 'quick start'] },
-    { name: 'Usage', patterns: ['usage', 'how to use', 'examples', 'getting started'] },
-    { name: 'License', patterns: ['license', 'licence'] },
+    { name: 'Installation', id: 'installation', patterns: ['install', 'getting started', 'setup', 'quickstart', 'quick start'] },
+    { name: 'Usage', id: 'usage', patterns: ['usage', 'how to use', 'examples', 'getting started'] },
+    { name: 'License', id: 'license', patterns: ['license', 'licence'] },
   ];
 
   // Recommended — count toward score but don't warn
   const recommendedSections = [
-    { name: 'Contributing', patterns: ['contributing', 'contribution', 'how to contribute'] },
+    { name: 'Contributing', id: 'contributing', patterns: ['contributing', 'contribution', 'how to contribute'] },
     { name: 'Description', patterns: ['## what', '## about', '## description', '## overview'] },
   ];
 
+  // spec 104: the English substring test above stays as it is; a marker or an
+  // alias of `docs.language` under a heading says the same thing by id.
+  const localized = section => section.id && headingsForId(content, section.id, labels).length > 0;
+
   for (const section of requiredSections) {
+    if (!section.patterns.some(p => lowerContent.includes(p)) && !localized(section) && labels?.unsupported) {
+      unsupported.push(section.id);
+      continue;
+    }
     total++;
-    if (section.patterns.some(p => lowerContent.includes(p))) {
+    if (section.patterns.some(p => lowerContent.includes(p)) || localized(section)) {
       passed++;
     } else {
       findings.push(mkFinding({
         code: 'DCV005',
         validator: 'docsCoverage',
         severity: 'warn',
-        message: `README.md is missing a "${section.name}" section (Standard README spec)`,
+        message: `README.md is missing a "${section.name}" section (Standard README spec)` + acceptedFormsHint(section.id, labels),
         location: 'README.md',
         suggestion: { kind: 'fix', text: `Add a "${section.name}" section to README.md` },
       }));
@@ -548,13 +566,13 @@ function checkReadmeSections(projectDir) {
   // missing = no-op. Counting missing recommended toward `total` without a
   // corresponding warning would be a silent fail (caught by B-4 nudge).
   for (const section of recommendedSections) {
-    if (section.patterns.some(p => lowerContent.includes(p))) {
+    if (section.patterns.some(p => lowerContent.includes(p)) || localized(section)) {
       total++;
       passed++;
     }
   }
 
-  return { findings, passed, total };
+  return { findings, passed, total, unsupported };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ import { CODES } from './findings.mjs';
 import { mergeIgnoreFile, normalizeIgnoreConfig } from './shared-ignore.mjs';
 import { detectProjectName, detectProjectProfile } from './scanners/project-type.mjs';
 import { resolveEnforcement } from './enforcement.mjs';
+import { readLabelConfig } from './shared-labels.mjs';
 
 // The mode resolves in one place (specs/097-strict-by-default FR-001); it lives
 // beside profile resolution for callers, and in enforcement.mjs so a module that
@@ -26,6 +27,32 @@ export { resolveEnforcement };
 
 /** Document roles a role-scoped `findingSeverity` value may name (spec 095 FR-010). */
 export const FINDING_SEVERITY_ROLES = Object.freeze(['agent-instruction', 'canonical']);
+
+const reportedLabelProblems = new Set();
+
+/**
+ * `docs.language` and `docs.labelAliases` (spec 104 FR-007). A malformed value is
+ * reported on stderr once per process and dropped, so the run continues as
+ * English only (or without that alias), as `severity` values do; it never throws.
+ * The cleaned values are written back so every later reader sees only valid ones.
+ */
+/** @implements docguard.document-languages#FR-007 */
+function applyLabelConfig(merged) {
+  const docs = merged.docs;
+  if (!docs || typeof docs !== 'object' || Array.isArray(docs)) return;
+  if (docs.language === undefined && docs.labelAliases === undefined) return;
+  const read = readLabelConfig(docs);
+  for (const problem of read.problems) {
+    if (reportedLabelProblems.has(problem)) continue;
+    reportedLabelProblems.add(problem);
+    console.error(`${c.yellow}⚠ .docguard.json: ${problem}${c.reset}`);
+  }
+  if (docs.language !== undefined && !read.language) delete docs.language;
+  if (docs.labelAliases !== undefined) {
+    if (docs.labelAliases && typeof docs.labelAliases === 'object' && !Array.isArray(docs.labelAliases)) docs.labelAliases = read.aliases;
+    else delete docs.labelAliases;
+  }
+}
 
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
@@ -161,6 +188,8 @@ export function loadConfig(projectDir) {
           }
         }
       }
+
+      applyLabelConfig(merged);
 
       // FR-001: a malformed `enforcement` is a configuration error, reported like
       // a bad findingSeverity. The key is never defaulted here, so a run can tell

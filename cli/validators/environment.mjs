@@ -21,7 +21,8 @@ import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { describeLanguageCounts, grepEnvUsage, resolveSourceRoots, summarizeTiers, tierFor } from '../shared-source.mjs';
 import { shouldIgnore } from '../shared-ignore.mjs';
-import { docHasSection } from '../shared.mjs';
+import { sectionState } from '../shared.mjs';
+import { acceptedFormsHint, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
@@ -116,6 +117,10 @@ function environmentContract(projectDir, config, performed, found) {
   });
 }
 
+/**
+ * @implements docguard.document-languages#FR-008
+ * @implements docguard.document-languages#FR-011
+ */
 export function validateEnvironment(projectDir, config) {
   const findings = [];
   let passed = 0;
@@ -137,32 +142,46 @@ export function validateEnvironment(projectDir, config) {
   // whitespace-, section-number- and synonym-tolerant), so the two validators
   // cannot disagree about the same heading.
   // @implements docguard.doc-validator-fidelity#FR-001
-  total++;
-  if (docHasSection(content, '## Setup Steps') || docHasSection(content, '## Prerequisites')) {
+  // spec 104: the same resolver with the project's label context. A section the
+  // language cannot be judged for (a `docs.language` with no built-in set) is
+  // listed in `languageNotSupported` and counted as neither passed nor failed.
+  const labels = labelContext(config);
+  const unjudged = [];
+  const setup = [sectionState(content, '## Setup Steps', labels), sectionState(content, '## Prerequisites', labels)];
+  if (setup.includes('present')) {
+    total++;
     passed++;
+  } else if (setup.includes('unsupported')) {
+    unjudged.push('setup-steps', 'prerequisites');
   } else {
+    total++;
     findings.push(mkFinding({
       code: 'ENV001',
       validator: 'environment',
       severity: 'warn',
-      message: 'ENVIRONMENT.md: missing "## Prerequisites" or "## Setup Steps" section',
+      message: 'ENVIRONMENT.md: missing "## Prerequisites" or "## Setup Steps" section' + acceptedFormsHint('setup-steps', labels) + acceptedFormsHint('prerequisites', labels),
       location: envDoc,
       suggestion: { kind: 'fix', text: 'Add a "## Setup Steps" (or "## Prerequisites") section describing how to get the project running' },
     }));
   }
 
-  total++;
-  if (docHasSection(content, '## Environment Variables')) {
-    passed++;
+  const variables = sectionState(content, '## Environment Variables', labels);
+  if (variables === 'unsupported') {
+    unjudged.push('environment-variables');
   } else {
-    findings.push(mkFinding({
-      code: 'ENV002',
-      validator: 'environment',
-      severity: 'warn',
-      message: 'ENVIRONMENT.md: missing "## Environment Variables" section',
-      location: envDoc,
-      suggestion: { kind: 'fix', text: 'Add a "## Environment Variables" section documenting each variable the app reads' },
-    }));
+    total++;
+    if (variables === 'present') {
+      passed++;
+    } else {
+      findings.push(mkFinding({
+        code: 'ENV002',
+        validator: 'environment',
+        severity: 'warn',
+        message: 'ENVIRONMENT.md: missing "## Environment Variables" section' + acceptedFormsHint('environment-variables', labels),
+        location: envDoc,
+        suggestion: { kind: 'fix', text: 'Add a "## Environment Variables" section documenting each variable the app reads' },
+      }));
+    }
   }
 
   // ── Real code-truth check: env vars USED in code but documented nowhere ──
@@ -309,5 +328,14 @@ export function validateEnvironment(projectDir, config) {
     passed++;
   }
 
-  return { name: 'environment', ...(applicability ? { applicability } : {}), ...resultFromFindings(findings, { passed, total }), ...environmentContract(projectDir, config, total, findings.length > 0) };
+  const notSupported = unjudged.length ? [unsupportedEntry(envDoc, unjudged, labels)] : [];
+  const reason = notSupported.length ? unsupportedApplicability(notSupported).reason : null;
+  return {
+    name: 'environment',
+    ...(applicability || reason ? { applicability: { status: 'partial', reason: [applicability?.reason, reason].filter(Boolean).join(' ') } } : {}),
+    ...resultFromFindings(findings, { passed, total }),
+    // A section that was read and could not be judged is a check made, not a check never made: not an empty result (spec 104 FR-011).
+    ...environmentContract(projectDir, config, total + unjudged.length, findings.length > 0),
+    ...(notSupported.length ? { languageNotSupported: notSupported } : {}),
+  };
 }

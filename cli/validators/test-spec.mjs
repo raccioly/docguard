@@ -16,6 +16,8 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { headingsForId } from '../shared.mjs';
+import { labelContext } from '../shared-labels.mjs';
 
 /**
  * The tests a project has, by the three signals Test-Spec uses: a top-level
@@ -91,11 +93,16 @@ function testSpecContract(projectDir, config, { performed, found, mapped }) {
  * ("### 2. Service-to-Test Map"), named "Source-to-Test Map" or the older "Service-to-Test Map", up to the
  * next heading of the same or a higher level.
  */
-function findMapSections(content) {
+/** @implements docguard.document-languages#FR-008 */
+function findMapSections(content, labels = null) {
   const lines = content.split('\n');
   const sections = [];
+  // spec 104: a marker or an alias of `docs.language` says the same thing as the
+  // English heading (id `source-to-test-map`). Empty for an English project.
+  const named = new Set(headingsForId(content, 'source-to-test-map', labels));
   for (let i = 0; i < lines.length; i++) {
-    const heading = /^(#{2,4})[ \t]+(?:\d+[.)]?[ \t]+)?(?:Service|Source)[- ]to[- ]Test Map\b/i.exec(lines[i]);
+    let heading = /^(#{2,4})[ \t]+(?:\d+[.)]?[ \t]+)?(?:Service|Source)[- ]to[- ]Test Map\b/i.exec(lines[i]);
+    if (!heading && named.has(i)) heading = /^(#{2,4})[ \t]/.exec(lines[i]);
     if (!heading) continue;
     let end = lines.length;
     for (let j = i + 1; j < lines.length; j++) {
@@ -137,7 +144,7 @@ export function validateTestSpec(projectDir, config) {
   // column alignment so a blank cell stays an empty string in its own slot.
   // Every section of that name is read, each with its own header row: a project that kept the old heading and
   // appended a new one has both, and the first one no longer hides the second.
-  const mapSections = findMapSections(content);
+  const mapSections = findMapSections(content, labelContext(config));
   const mapSection = mapSections.length > 0;
   for (const sectionText of mapSections) {
     const splitRow = (line) => {

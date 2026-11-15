@@ -339,6 +339,67 @@
           },
           "additionalProperties": false
         },
+        "language": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z0-9]{5,8}|\\d[A-Za-z0-9]{3}))*$",
+          "description": "The language the project's documents are written in, as a BCP 47 tag (specs/104-document-languages). It is matched by its primary subtag: pt-BR and pt-PT use the built-in pt heading set, es-MX the es set. Absent, or en, means English only, which is today's behavior. Any other valid tag (de, fr) has no built-in set: a required heading with no English form, alias or heading marker is reported as language-not-supported, never as a missing section. There is no top-level language key."
+        },
+        "labelAliases": {
+          "type": "object",
+          "description": "Extra heading labels, flat and keyed by label id (the ids are global and unique); each value is a list of strings. Aliases extend the built-in set of docs.language and never replace it, and they apply only when docs.language is set. A heading may also carry the language-neutral marker <!-- docguard:heading <id> --> on the next non-blank line, which needs neither.",
+          "propertyNames": {
+            "enum": [
+              "system-overview",
+              "component-map",
+              "tech-stack",
+              "layer-boundaries",
+              "data-flow",
+              "external-dependencies",
+              "revision-history",
+              "entities",
+              "relationships",
+              "indexes",
+              "authentication",
+              "secrets-management",
+              "authorization",
+              "security-boundaries",
+              "test-categories",
+              "coverage-rules",
+              "test-commands",
+              "source-to-test-map",
+              "environment-variables",
+              "setup-steps",
+              "prerequisites",
+              "configuration-files",
+              "installation",
+              "usage",
+              "license",
+              "contributing",
+              "user-scenarios",
+              "requirements",
+              "success-criteria",
+              "summary",
+              "technical-context",
+              "project-structure",
+              "phase",
+              "root-cause",
+              "fix",
+              "unreleased",
+              "proposed",
+              "accepted",
+              "rejected",
+              "deprecated",
+              "superseded",
+              "supersedes",
+              "superseded-by",
+              "lifecycle-status"
+            ]
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
         "dirs": {
           "type": "array",
           "items": { "type": "string" },
