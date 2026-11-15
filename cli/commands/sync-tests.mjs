@@ -25,7 +25,8 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { c } from '../shared.mjs';
+import { c, headingsForId } from '../shared.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { relPosix, shouldIgnore, walkFiles } from '../shared-ignore.mjs';
 
 const TEST_SPEC_DOC = 'docs-canonical/TEST-SPEC.md';
@@ -92,9 +93,17 @@ const splitRow = (line) => {
  * @returns {null | { headerLine, sepLine, sourceIdx, testIdxs, ncols, keep:string[],
  *                    removed:object[], ghostTests:object[], blockStart, blockEnd }}
  */
-function parseMapTable(content, projectDir) {
+function parseMapTable(content, projectDir, labels = null) {
   const sectionRe = /## (?:Service-to-Test Map|Source-to-Test Map)[\s\S]*?(?=\n## |$)/;
-  const m = sectionRe.exec(content);
+  let m = sectionRe.exec(content);
+  if (!m) {
+    // spec 104: the same section under a marker or an alias of `docs.language`.
+    const line = headingsForId(content, 'source-to-test-map', labels)[0];
+    if (line !== undefined) {
+      const index = content.split('\n').slice(0, line).reduce((n, l) => n + l.length + 1, 0);
+      m = { index, 0: /[\s\S]*?(?=\n## |$)/.exec(content.slice(index))[0] };
+    }
+  }
   if (!m) return null;
   const sectionStart = m.index;
   const sectionText = m[0];
@@ -169,7 +178,7 @@ function parseMapTable(content, projectDir) {
  * @returns {{ applicable:boolean, removed:object[], added:object[], ghostTests:object[], newContent:string|null, reason?:string }}
  */
 export function reconcileTestMap(content, projectDir, config) {
-  const parsed = parseMapTable(content, projectDir);
+  const parsed = parseMapTable(content, projectDir, labelContext(config));
   if (!parsed) {
     return { applicable: false, removed: [], added: [], ghostTests: [], newContent: null, reason: 'no Source-to-Test Map table found' };
   }

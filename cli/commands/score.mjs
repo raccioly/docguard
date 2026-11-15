@@ -8,7 +8,8 @@ import { applyDocRoles, resolveDocPath, resolveDocRole } from '../shared-doc-rol
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { c, docHasSection } from '../shared.mjs';
+import { c, sectionState } from '../shared.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { isUneditedScaffold } from '../shared-scaffold.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
@@ -743,6 +744,10 @@ function calcDocQualityScore(dir, config) {
   // docguard.authoring-contract#FR-002: the sections STR003 requires, with
   // its project-type exemptions; a separate list here had drifted from it.
   const checks = requiredSectionMap(config.projectTypeConfig || {});
+  // spec 104: the same resolver as STR003. A section that cannot be judged for
+  // the document's language is left out of the numerator and the denominator, so
+  // a skip never lowers a score and never raises one.
+  const labels = labelContext(config);
 
   let found = 0;
   let total = 0;
@@ -772,11 +777,13 @@ function calcDocQualityScore(dir, config) {
     }
 
     for (const section of sections) {
-      total++;
       // v0.24: synonym/number-tolerant (docHasSection) so arc42/C4 headings
       // count — was a literal substring check that flagged equivalent sections
       // as missing, making structured docs score worse than the skeleton.
-      if (docHasSection(content, section)) {
+      const state = sectionState(content, section, labels);
+      if (state === 'unsupported') continue;
+      total++;
+      if (state === 'present') {
         found++;
       } else {
         failures.push({ file, issue: `missing section: ${section}`, fixCmd: `docguard fix --doc ${docName}` });
@@ -1087,15 +1094,30 @@ function calcArchitectureScore(dir, config) {
   // v0.24: heading checks are synonym/number-tolerant (docHasSection) so arc42
   // ("## 5.4 Layer boundaries") and C4 ("## Building Block View") docs score
   // their real content instead of being told to add sections they have.
-  if (docHasSection(content, '## Layer Boundaries') || docHasSection(content, '## Component Map')) score += 25;
+  // spec 104: a check the language cannot be judged for leaves both what it could
+  // earn and the total it is out of (no skip, no change of the score).
+  const labels = labelContext(config);
+  let possible = 100;
+  const heading = (...names) => {
+    const states = names.map(name => sectionState(content, name, labels));
+    return states.includes('present') ? 'present' : states.includes('unsupported') ? 'unsupported' : 'missing';
+  };
+  const layers = heading('## Layer Boundaries', '## Component Map');
+  if (layers === 'present') score += 25;
+  else if (layers === 'unsupported') possible -= 25;
   else failures.push({ issue: 'no Layer Boundaries / Component Map section' });
   if (content.includes('```mermaid') || content.includes('graph ')) score += 20;
   else failures.push({ issue: 'no architecture diagram (mermaid / graph)' });
-  if (docHasSection(content, '## External Dependencies')) score += 15;
+  const external = heading('## External Dependencies');
+  if (external === 'present') score += 15;
+  else if (external === 'unsupported') possible -= 15;
   else failures.push({ issue: 'no External Dependencies section' });
-  if (docHasSection(content, '## Revision History')) score += 10;
+  const revisions = heading('## Revision History');
+  if (revisions === 'present') score += 10;
+  else if (revisions === 'unsupported') possible -= 10;
   else failures.push({ issue: 'no Revision History section' });
 
+  if (possible !== 100) score = Math.round(score * 100 / possible);
   return { score: Math.min(100, score), failures };
 }
 

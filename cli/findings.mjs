@@ -79,6 +79,7 @@
 import { readFileSync } from 'node:fs';
 import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
 import { isExpired, splitWaiverMetadata } from './waiver-metadata.mjs';
+import { headingIds } from './shared-labels.mjs';
 
 /**
  * Stable finding-code registry. `docguard explain <CODE>` reads this, and
@@ -156,7 +157,7 @@ export const CODES = {
   STR003: {
     validator: 'docSections',
     title: 'Missing required doc section',
-    help: 'A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`.',
+    help: 'A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`. A document in another language is read by id: set `docs.language` (a BCP 47 tag; `pt` and `es` ship heading sets, `docs.labelAliases` adds your own wording), or put `<!-- docguard:heading <id> -->` on the line under the heading (spec 104; `docguard explain STR009` lists the ids).',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
   STR004: {
@@ -182,13 +183,19 @@ export const CODES = {
     validator: 'docSections',
     defaultLevel: 'info',
     title: 'Section the active profile requires is missing',
-    help: 'A profile can require sections beyond the canonical ones (the `enterprise-ai` profile requires Risk Assessment and Threat Model in SECURITY.md; `requiredSections` in `.docguard.json` adds more). Add the heading, or own its absence with `<!-- docguard:section <slug> n/a — reason -->`. Informational by default (spec 082): it never changes the exit code unless `findingSeverity.STR007` says so.',
+    help: 'A profile can require sections beyond the canonical ones (the `enterprise-ai` profile requires Risk Assessment and Threat Model in SECURITY.md; `requiredSections` in `.docguard.json` adds more). Add the heading, or own its absence with `<!-- docguard:section <slug> n/a — reason -->`. Informational by default (spec 082): it never changes the exit code unless `findingSeverity.STR007` says so. A heading that is one of the canonical labels also resolves by `docs.language`, `docs.labelAliases` or a `<!-- docguard:heading <id> -->` marker, as STR003 does.',
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
   STR008: {
     validator: 'structure',
     title: 'Backup copy of a document in a documentation directory',
     help: 'A file inside a documentation directory (`docs`, `docs-canonical`, `docs-implementation`, `documentation`, `doc`, at any depth) is named like a backup of a document: `ARCHITECTURE.md.bak`, `.orig`, `.backup`, a trailing `~`, `SECURITY copy.md`, `API (1).md`, `DATA-old.md` or `DATA.old.md`. DocGuard reads no backup as a document (it is not a canonical document, not reviewed by Freshness, not read for cross-references, not listed by `docguard llms`) and never lets one stand in for a missing role document, so it is dead weight that can still mislead a reader. `docguard generate --force` and `docguard init --force` write a `.bak` beside the file they replace. Delete it (git keeps the history), add it to `.gitignore`, or, if it is a real document, rename it or list it in `fileKinds.own`. A document below an `archive/`, `old/`, `backup/` or `deprecated/` folder of a documentation directory also leaves the document role, but only the file name makes this finding: an archive is usually kept on purpose. `guard --format json` lists what was left out under `files.kinds.excluded.backup`. The finding reads tracked files only; the first ten are listed, then a count.',
+    suppress: null,
+  },
+  STR009: {
+    validator: 'docSections',
+    title: 'Heading marker that cannot work as written',
+    help: 'A `<!-- docguard:heading <id> -->` comment on the line under a heading is the language-neutral way to say which required section that heading is, whatever language it is written in (spec 104; `docs.language` in `.docguard.json` also selects built-in Portuguese and Spanish headings, and `docs.labelAliases` adds your own). This finding means a marker cannot do that: its id is not one of the closed list (`' + headingIds().join(', ') + '`), a second heading carries the same id (the first counts), its heading is the English label of a different id (the marker wins, so the other id stays unsatisfied), or it is not on the next non-blank line under a heading (after prose, inside a code fence, inside a larger comment) although it names a valid id. Fix the id, or move the marker directly under its heading. A marker in a project with no `docs.language` still satisfies its id. Advisory (a warning).',
     suppress: null,
   },
   CHG001: {
@@ -344,7 +351,7 @@ export const CODES = {
   DCV005: {
     validator: 'docsCoverage',
     title: 'README missing a standard section',
-    help: 'README.md lacks a section every well-documented project needs — Installation, Usage, or License (Standard README spec). Add the missing section.',
+    help: 'README.md lacks a section every well-documented project needs — Installation, Usage, or License (Standard README spec). Add the missing section. In another language, `docs.language` (`pt` and `es` ship the headings), `docs.labelAliases` or `<!-- docguard:heading installation -->` (or `usage`, `license`) under the heading satisfies it.',
     suppress: null,
   },
   DCV006: {
@@ -368,13 +375,13 @@ export const CODES = {
   ENV001: {
     validator: 'environment',
     title: 'Missing setup section in ENVIRONMENT.md',
-    help: 'ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted. Add a Setup Steps section describing how to get the project running from a fresh clone.',
+    help: 'ENVIRONMENT.md lacks both a Prerequisites and a Setup Steps heading. Headings match as STR003 matches them: any case, section numbers allowed, synonyms such as "Getting Started" accepted. Add a Setup Steps section describing how to get the project running from a fresh clone. In another language, `docs.language`, `docs.labelAliases` or `<!-- docguard:heading setup-steps -->` (or `prerequisites`) under the heading satisfies it, as for STR003.',
     suppress: null,
   },
   ENV002: {
     validator: 'environment',
     title: 'Missing Environment Variables section',
-    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by a word such as "Reference", "Variables" or "(.env)", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count.',
+    help: 'ENVIRONMENT.md has no Environment Variables heading (matched as STR003 matches headings: any case, section numbers allowed, synonyms such as "Env Vars" accepted; "Environment" and "Configuration" only as the whole heading or followed by a word such as "Reference", "Variables" or "(.env)", so "Configuration Files" or "Production environment" does not count). Add the section and document each variable the app reads — backticked names or a pipe table both count. In another language, `docs.language`, `docs.labelAliases` or `<!-- docguard:heading environment-variables -->` under the heading satisfies it, as for STR003.',
     suppress: null,
   },
   ENV003: {

@@ -11,6 +11,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildIgnoreFilter, loadDocguardIgnore } from './shared-ignore.mjs';
 import { codeDefaultLevel } from './findings.mjs';
+import { aliasesFor, foldHeading, idForEnglishLabel, mentionsHeadingMarker, scanHeadingMarkers } from './shared-labels.mjs';
 
 /**
  * Current .docguard.json schema version that this CLI version writes via
@@ -134,8 +135,14 @@ export const SECTION_SYNONYMS = {
   'revision history':      ['changelog', 'change history', 'history', 'revisions', 'document history', 'change log'],
 };
 
-/** Normalize a markdown heading: drop #, leading arc42-style numbers, punctuation. */
-function normalizeHeadingText(line) {
+/**
+ * Normalize a markdown heading: drop #, leading arc42-style numbers, punctuation.
+ * The legacy form keeps only `[a-z0-9]`, and an English project meets nothing
+ * else. With `unicode` (a non-English `docs.language`, spec 104 FR-006) case and
+ * diacritics are folded and Unicode letters and digits are kept.
+ */
+function normalizeHeadingText(line, unicode = false) {
+  if (unicode) return foldHeading(line);
   return line
     .replace(/^#{1,6}\s*/, '')             // strip leading #s
     .replace(/^\d+(?:\.\d+)*\.?\s+/, '')   // strip leading "5.4 " / "3. " section numbers
@@ -171,36 +178,103 @@ function synonymsOf(key) {
 }
 
 /**
+ * The headings of a document that a `docguard:heading` marker has claimed: a
+ * heading with a valid marker satisfies that id and no other, so its text is
+ * not matched against the labels of other ids (spec 104 edge case "the marker
+ * wins"). Null when the document has no valid marker, which is every document
+ * of an English project that has not adopted the marker.
+ */
+function markerClaims(content) {
+  if (!mentionsHeadingMarker(content)) return null;
+  const valid = scanHeadingMarkers(content).placed.filter(marker => marker.valid);
+  return valid.length ? valid : null;
+}
+
+/** The whole heading equals an alias of `id` (built-in set first, then the project's). */
+function aliasMatcher(id, labels) {
+  const keys = new Set(aliasesFor(id, labels).map(alias => normalizeHeadingText(alias, labels.unicode)).filter(Boolean));
+  return norm => keys.has(norm);
+}
+
+/**
+ * How a document answers a required section: `present`, `missing`, or
+ * `unsupported`, which means the section is absent under every form, the
+ * project's `docs.language` has no built-in alias set and is not English, so
+ * DocGuard cannot tell a missing section from one written in that language. A
+ * caller reports `unsupported` (never as a missing-section finding) and a marker
+ * or a `docs.labelAliases` entry resolves it (spec 104 FR-011).
+ *
+ * Resolution order (FR-005): a `docguard:heading` marker for the id on a
+ * heading; the English label or an English synonym, as today; an alias of the
+ * configured language; an alias of `docs.labelAliases`. With no `labels` (no
+ * `docs.language`) and no marker in the document this is the legacy matcher,
+ * line for line.
+ *
+ * @param {string} content markdown file contents
+ * @param {string} canonicalHeading e.g. '## Component Map' or 'Component Map'
+ * @param {object|null} [labels] the project's `labelContext(config)`
+ * @returns {'present'|'missing'|'unsupported'}
+ * @implements docguard.document-languages#FR-005
+ * @implements docguard.document-languages#FR-006
+ */
+export function sectionState(content, canonicalHeading, labels = null) {
+  const unicode = !!labels?.unicode;
+  const key = normalizeHeadingText(canonicalHeading, unicode);
+  if (!key) return 'missing';
+  const claims = markerClaims(content);
+  const id = labels || claims ? idForEnglishLabel(canonicalHeading) : null;
+  if (id && claims?.some(marker => marker.id === id)) return 'present';
+  const synonyms = synonymsOf(key);
+  const taken = claims ? new Set(claims.map(marker => marker.headingLine)) : null;
+  let headings;
+  if (taken) {
+    headings = [];
+    String(content).split('\n').forEach((line, i) => { if (!taken.has(i) && /^#{2,6}\s+.+$/.test(line)) headings.push(line); });
+  } else headings = content.match(/^#{2,6}\s+.+$/gm) || [];
+  const isAlias = labels && id ? aliasMatcher(id, labels) : null;
+  for (const line of headings) {
+    const norm = normalizeHeadingText(line, unicode);
+    if (headingNames(norm, key)) return 'present';
+    for (const phrase of synonyms) if (headingNames(norm, phrase)) return 'present';
+  }
+  if (isAlias) for (const line of headings) if (isAlias(normalizeHeadingText(line, unicode))) return 'present';
+  return labels?.unsupported && id ? 'unsupported' : 'missing';
+}
+
+/**
  * True if `content` has an H2–H6 heading equivalent to `canonicalHeading` —
  * the exact text, a known synonym, or the same text behind an arc42-style
- * section number (e.g. "## 5.4 Layer boundaries" satisfies "## Layer Boundaries").
+ * section number (e.g. "## 5.4 Layer boundaries" satisfies "## Layer Boundaries"),
+ * a marker (`<!-- docguard:heading <id> -->`), or an alias of `docs.language`.
  *
  * @param {string} content - markdown file contents
  * @param {string} canonicalHeading - e.g. '## Component Map' or 'Component Map'
+ * @param {object|null} [labels] - `labelContext(config)`; omit for English only
  */
-export function docHasSection(content, canonicalHeading) {
-  const key = normalizeHeadingText(canonicalHeading);
-  if (!key) return false;
-  const synonyms = synonymsOf(key);
-  const headings = content.match(/^#{2,6}\s+.+$/gm) || [];
-  for (const line of headings) {
-    const norm = normalizeHeadingText(line);
-    if (headingNames(norm, key)) return true;
-    for (const phrase of synonyms) if (headingNames(norm, phrase)) return true;
-  }
-  return false;
+export function docHasSection(content, canonicalHeading, labels = null) {
+  return sectionState(content, canonicalHeading, labels) === 'present';
 }
 
 /**
  * Index of the line holding the H2–H6 heading that satisfies `canonicalHeading`
  * (the same equivalence docHasSection uses), or -1. Fenced blocks are skipped.
- * An exact match wins over a containing one, which wins over a synonym, so
- * `## Environment Variables` is chosen over an earlier `## Environment Setup`.
+ * A marker wins; then an exact match wins over a containing one, which wins over
+ * a synonym, which wins over an alias, so `## Environment Variables` is chosen
+ * over an earlier `## Environment Setup`.
  * @implements docguard.generated-docs-consistency#FR-003
+ * @implements docguard.document-languages#FR-008
  */
-export function findSectionHeading(content, canonicalHeading) {
-  const key = normalizeHeadingText(canonicalHeading);
+export function findSectionHeading(content, canonicalHeading, labels = null) {
+  const unicode = !!labels?.unicode;
+  const key = normalizeHeadingText(canonicalHeading, unicode);
   if (!key) return -1;
+  const claims = markerClaims(content);
+  const id = labels || claims ? idForEnglishLabel(canonicalHeading) : null;
+  if (id && claims) {
+    const hit = claims.find(marker => marker.id === id);
+    if (hit) return hit.headingLine;
+  }
+  const taken = claims ? new Set(claims.map(marker => marker.headingLine)) : null;
   const lines = String(content).split('\n');
   const headings = [];
   let fence = null;
@@ -208,18 +282,50 @@ export function findSectionHeading(content, canonicalHeading) {
     const marker = lines[i].match(/^\s{0,3}(`{3,}|~{3,})/);
     if (fence) { if (marker && marker[1][0] === fence[0]) fence = null; continue; }
     if (marker) { fence = marker[1]; continue; }
-    if (/^#{2,6}\s+\S/.test(lines[i])) headings.push({ i, norm: normalizeHeadingText(lines[i]) });
+    if (taken?.has(i)) continue;
+    if (/^#{2,6}\s+\S/.test(lines[i])) headings.push({ i, norm: normalizeHeadingText(lines[i], unicode) });
   }
+  const isAlias = labels && id ? aliasMatcher(id, labels) : null;
   const tiers = [
     h => h.norm === key,
     h => h.norm.includes(key),
     h => synonymsOf(key).some(phrase => headingNames(h.norm, phrase)),
+    h => isAlias?.(h.norm),
   ];
   for (const test of tiers) {
     const hit = headings.find(test);
     if (hit) return hit.i;
   }
   return -1;
+}
+
+/**
+ * The lines (0-based) of the headings, outside code fences, that satisfy `id`
+ * by a marker or an alias of the configured language. English labels are not
+ * matched: a caller with its own English matcher (Test-Spec, `sync --tests`)
+ * adds this as an extra way to say the same thing, and an English project
+ * (`labels` null, no marker) gets none.
+ * @implements docguard.document-languages#FR-008
+ */
+export function headingsForId(content, id, labels = null) {
+  const claims = markerClaims(content);
+  if (!labels && !claims) return [];
+  const out = new Set();
+  for (const marker of claims || []) if (marker.id === id) out.add(marker.headingLine);
+  if (labels) {
+    const isAlias = aliasMatcher(id, labels);
+    const taken = claims ? new Set(claims.map(marker => marker.headingLine)) : null;
+    const lines = String(content).split('\n');
+    let fence = null;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^\s{0,3}(`{3,}|~{3,})/);
+      if (fence) { if (m && m[1][0] === fence[0]) fence = null; continue; }
+      if (m) { fence = m[1]; continue; }
+      if (taken?.has(i) || !/^#{1,6}\s+\S/.test(lines[i])) continue;
+      if (isAlias(normalizeHeadingText(lines[i], labels.unicode))) out.add(i);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
 }
 
 /**

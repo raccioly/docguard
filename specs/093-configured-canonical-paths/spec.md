@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Draft
+**Status**: Active
 
 **Spec ID**: `docguard.configured-canonical-paths`
 
@@ -114,4 +114,5 @@ Verified 2026-11-11 on the branch head.
 
 - `d531756de886c5f89d64125a22a8fb07bb9aafe9` — Verified the relocated-layout reproduction tests, the STR003 and docs surfaces, and the recorded A/B against the shipped behavior in DATA-MODEL (spec 093). Evidence: `cli/commands/score.mjs`, `cli/shared-doc-roles.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/configured-canonical-paths.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/score.mjs`=`e5ba699727a1b410bf410be2a34a23ac4317e27e`, `cli/shared-doc-roles.mjs`=`40a05cf54c004426b12cdf0211b295662e5f5710`, `docs-canonical/DATA-MODEL.md`=`536919770b97c233d68a92494ee154b4dafedfe2`, `tests/configured-canonical-paths.test.mjs`=`961e81f84c01e8de1c8ea507b3253e96269f1191`, `tests/program-verification.test.mjs`=`9d469f964d8b5646bce82e396b052e5dc53ad369`.
 - `46fe53c404c5db84cab8c739cd94111eb963b336` — Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass. Evidence: `cli/commands/score.mjs`, `cli/shared-doc-roles.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/configured-canonical-paths.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/score.mjs`=`193ad905e5f8d66fc78ddc980c1c15513bba9e0f`, `cli/shared-doc-roles.mjs`=`6809332af5791e6dd3b4d167f2e12d569c6e0f1f`, `docs-canonical/DATA-MODEL.md`=`536919770b97c233d68a92494ee154b4dafedfe2`, `tests/configured-canonical-paths.test.mjs`=`961e81f84c01e8de1c8ea507b3253e96269f1191`, `tests/program-verification.test.mjs`=`9d469f964d8b5646bce82e396b052e5dc53ad369`.
+- `32242623b704fd4ec6c43f011b9487442e15b8e8` — Spec 104 stage 1 changed the Score section checks and the sync --tests map heading to read headings through the label registry; English behavior is unchanged (golden and differential tests, English A/B), and each spec's own tests were re-run and pass. Evidence: `cli/commands/score.mjs`, `cli/shared-doc-roles.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/configured-canonical-paths.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/commands/score.mjs`=`6b41cde9679143550b0b28053b45514f24326a13`, `cli/shared-doc-roles.mjs`=`6809332af5791e6dd3b4d167f2e12d569c6e0f1f`, `docs-canonical/DATA-MODEL.md`=`689b15fc824043f3b22e9f82534ffbd29c7dd976`, `tests/configured-canonical-paths.test.mjs`=`961e81f84c01e8de1c8ea507b3253e96269f1191`, `tests/program-verification.test.mjs`=`b4d0b21ee869fa30ed15b394caf69f86031bc2d8`.
 <!-- docguard:implementation-outcomes:end -->

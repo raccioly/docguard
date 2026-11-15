@@ -29,6 +29,7 @@ import { detectCodeTechnologies } from '../scanners/tech-stack.mjs';
 import { detectRouteFramework } from '../validators/api-surface.mjs';
 import { collectCodeTests } from '../validators/docs-diff.mjs';
 import { assertOwnedCodeSection, getSection, replaceSection, upsertSection } from '../writers/sections.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { registerGeneratedCanonicalDocs, surfaceConfidence, writeOwnedSections } from '../writers/generate-io.mjs';
 import { detectProjectProfile } from '../scanners/project-type.mjs';
 import {
@@ -118,6 +119,10 @@ export function runGeneratePlan(projectDir, config, flags) {
   // --write: scaffold the skeleton docs with code sections + agent-task placeholders.
   if (flags.write) {
     let wrote = 0;
+    // spec 104 D7: the host heading is found through the resolver, and a heading
+    // that has to be written is written in the project's language, never in English.
+    const labels = labelContext(config);
+    const unwritten = [];
     for (const doc of plan.docs) {
       const full = resolve(projectDir, doc.path);
       const title = basename(doc.path, '.md').replace(/-/g, ' ');
@@ -147,7 +152,9 @@ export function runGeneratePlan(projectDir, config, flags) {
         // A section with a heading is titled (FR-003); one without continues
         // the section before it.
         const position = !sec.heading && prior ? `after:${prior}` : 'end';
-        content = upsertSection(content, sec.id, body, { source: sec.source, heading: sec.heading || null, position }).content;
+        const upserted = upsertSection(content, sec.id, body, { source: sec.source, heading: sec.heading || null, position, labels });
+        content = upserted.content;
+        if (upserted.languageNotSupported) unwritten.push({ doc: doc.path, heading: upserted.languageNotSupported });
       }
       // writeOwnedSections creates the parent dir (docs-implementation/ may not
       // exist yet) and keeps a .bak only when a byte a person owns would change.
@@ -163,6 +170,9 @@ export function runGeneratePlan(projectDir, config, flags) {
     }
     for (const note of plan.notes || []) {
       console.log(`  ${c.yellow}ℹ️  ${note}${c.reset}`);
+    }
+    for (const { doc, heading } of unwritten) {
+      console.log(`  ${c.yellow}ℹ️  language-not-supported: ${doc}: wrote the "${heading}" block without a heading, because docs.language "${labels.tag}" has no heading for it. Put <!-- docguard:heading <id> --> under the heading you want, or add it to docs.labelAliases.${c.reset}`);
     }
     console.log(`  ${c.dim}Now have your AI agent write the prose sections (${c.cyan}${commandHint(projectDir, readAgentSurface(projectDir), 'fix', '--doc <name>')}${c.dim} gives the prompt), then ${c.cyan}docguard guard${c.dim}.${c.reset}\n`);
     return;

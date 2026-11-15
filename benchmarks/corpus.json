@@ -742,6 +742,52 @@
       "oppositeControl": "dev-backup-docs-control"
     },
     {
+      "id": "dev-heading-marker-control",
+      "split": "development",
+      "repositoryGroup": "synthetic-heading-markers",
+      "causalFamily": "heading-marker-misuse",
+      "parserTier": "not-applicable",
+      "classification": "clean_control",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/heading-marker-control" },
+      "scope": { "validatorKey": "docSections", "codes": ["STR009"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": ["docs-canonical/ARCHITECTURE.md"], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "validators": { "docSections": true }
+      },
+      "mutations": [],
+      "expected": [],
+      "forbidden": [
+        "STR009@docs-canonical/ARCHITECTURE.md"
+      ],
+      "oppositeControl": "dev-heading-marker-defect"
+    },
+    {
+      "id": "dev-heading-marker-defect",
+      "split": "development",
+      "repositoryGroup": "synthetic-heading-markers",
+      "causalFamily": "heading-marker-misuse",
+      "parserTier": "not-applicable",
+      "classification": "defect",
+      "repairOutcome": "not_evaluated",
+      "source": { "kind": "fixture", "path": "fixtures/heading-marker-defect" },
+      "scope": { "validatorKey": "docSections", "codes": ["STR009"] },
+      "config": {
+        "profile": "starter",
+        "diskCache": false,
+        "requiredFiles": { "canonical": ["docs-canonical/ARCHITECTURE.md"], "agentFile": [], "changelog": null, "driftLog": "DRIFT-LOG.md" },
+        "validators": { "docSections": true }
+      },
+      "mutations": [],
+      "expected": [
+        "STR009@docs-canonical/ARCHITECTURE.md"
+      ],
+      "forbidden": [],
+      "oppositeControl": "dev-heading-marker-control"
+    },
+    {
       "id": "dev-mirror-control",
       "split": "development",
       "repositoryGroup": "synthetic-mirrors",

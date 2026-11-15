@@ -35,6 +35,8 @@ import { parseLifecycleStatus } from '../cli/scanners/lifecycle-status.mjs';
 import { parseApiReferenceDoc } from '../cli/scanners/api-doc.mjs';
 import { stripHtmlComments, visibleMarkdown } from '../cli/shared-html-comments.mjs';
 import { parseDocguardIgnore } from '../cli/shared-ignore.mjs';
+import { docHasSection, findSectionHeading, headingsForId } from '../cli/shared.mjs';
+import { headingMarkerIssues, labelContext, scanHeadingMarkers } from '../cli/shared-labels.mjs';
 
 /** mulberry32: a small, fast, well-distributed 32-bit generator. */
 export function rng(seed) {
@@ -82,6 +84,7 @@ const BLOCKS = [
   r => [`## ADR-${String(r.int(40)).padStart(3, '0')}: ${WORD(r)}`, `**Status**: ${r.pick(['Accepted', 'Superseded by ADR-002', 'Deprecated', 'Proposed', 'Partially superseded'])}`, r.pick([`Supersedes ADR-${r.int(40)}`, `- Superseded by: ADR-${r.int(40)}`, '']), `| ADR-${r.int(40)} | ${r.pick(['Accepted', 'Superseded'])} |`],
   r => ['## Stage Progress', ...Array.from({ length: 1 + r.int(6) }, () => `- [${r.pick([' ', 'x', '-', '?', 'R', 'S'])}] ${r.pick(['requirements-analysis', 'code-generation', 'build-and-test', 'units-generation'])} — ${WORD(r)}`)],
   r => [`<!-- docguard:section id=${r.pick(['api', 'model', 'x-1'])} covers=${r.pick(['src/a.js', 'src/a.js,src/b.py#Cls.m', ' , ,', 'src/*.ts'])} -->`, LINE(r), '<!-- /docguard:section -->'],
+  r => [`${r.pick(['##', '###'])} ${r.pick(['System Overview', 'Visão geral do sistema', 'Tech Stack', WORD(r)])}`, r.pick(['', '', 'prose']), `<!-- docguard:heading ${r.pick(['system-overview', 'tech-stack', 'nothing-real', 'phase', ''])} -->`],
   r => ['## Requirements', ...Array.from({ length: 1 + r.int(8) }, () => `- **${ID(r)}**: ${WORD(r)}`), '## Success Criteria', `- **SC-${String(r.int(9)).padStart(3, '0')}**: ${WORD(r)}`],
 ];
 
@@ -130,6 +133,7 @@ export function pathological() {
     'many section blocks': Array.from({ length: 2500 }, (_, i) => `<!-- docguard:section id=s${i} covers=src/a.js -->\nx\n<!-- /docguard:section -->`).join('\n'),
     'many requirement lines': Array.from({ length: 8000 }, (_, i) => `- **FR-${String(i % 999).padStart(3, '0')}**: x (FR-${String((i + 1) % 999).padStart(3, '0')} to FR-${String((i + 9) % 999).padStart(3, '0')})`).join('\n'),
     'many ADRs': Array.from({ length: 4000 }, (_, i) => `## ADR-${i}: x\n**Status**: Superseded by ADR-${i + 1}\n| ADR-${i} | Superseded |`).join('\n'),
+    'many heading markers': Array.from({ length: 5000 }, (_, i) => `## Heading ${i}\n<!-- docguard:heading ${i % 2 ? 'tech-stack' : 'system-overview'} -->`).join('\n'),
     'many headings': Array.from({ length: 10000 }, (_, i) => `## Heading ${i} \`code\` [link](#x)`).join('\n'),
   };
 }
@@ -158,6 +162,9 @@ export const TARGETS = [
   { name: 'stripHtmlComments', run: t => stripHtmlComments(t), check: v => typeof v?.text === 'string' },
   { name: 'visibleMarkdown', run: t => visibleMarkdown(t), check: v => typeof v === 'string' },
   { name: 'parseDocguardIgnore', run: t => parseDocguardIgnore(t, { today: '2026-11-03' }) },
+  { name: 'scanHeadingMarkers', run: t => scanHeadingMarkers(t) },
+  { name: 'headingMarkerIssues', run: t => headingMarkerIssues(t), check: ARRAY },
+  { name: 'docHasSection (pt)', run: t => [docHasSection(t, '## System Overview', labelContext({ docs: { language: 'pt-BR' } })), findSectionHeading(t, '## Tech Stack', labelContext({ docs: { language: 'de' } })), headingsForId(t, 'source-to-test-map', labelContext({ docs: { language: 'es' } }))], check: ARRAY },
 ];
 
 /** Time allowed for one call: generous, but linear in the input. */

@@ -16,7 +16,8 @@ import { resolveDocPath } from '../shared-doc-roles.mjs';
 
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
-import { docHasSection } from '../shared.mjs';
+import { sectionState } from '../shared.mjs';
+import { acceptedFormsHint, headingMarkerIssues, idForEnglishLabel, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
 import { profileSections, requiredSectionMap } from '../authoring-contract.mjs';
 import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -201,6 +202,10 @@ export function validateStructure(projectDir, config) {
 
 /**
  * Check that canonical doc files contain required sections
+ * @implements docguard.document-languages#FR-005
+ * @implements docguard.document-languages#FR-009
+ * @implements docguard.document-languages#FR-010
+ * @implements docguard.document-languages#FR-011
  */
 export function validateDocSections(projectDir, config) {
   const findings = [];
@@ -212,6 +217,12 @@ export function validateDocSections(projectDir, config) {
   // explain and the Spec Kit skill also read. DATA-MODEL's Entities and
   // ENVIRONMENT's variables are exempt for projects without them.
   const requiredSections = requiredSectionMap(ptc);
+  // spec 104: the label context of `docs.language` (null for an English project,
+  // which keeps today's matcher). A section the language cannot be judged for is
+  // listed, not counted, so it neither fails nor passes silently.
+  const labels = labelContext(config);
+  const notSupported = [];
+  let skipped = 0;
 
   for (const [defaultFile, sections] of Object.entries(requiredSections)) {
     const file = resolveDocPath(projectDir, config, defaultFile);
@@ -219,9 +230,9 @@ export function validateDocSections(projectDir, config) {
     if (!existsSync(fullPath)) continue;
 
     const content = readFileSync(fullPath, 'utf-8');
+    const unjudged = [];
 
     for (const section of sections) {
-      total++;
       // Match a real heading (H2–H6), not a substring in a TOC link or code
       // block. v0.24: synonym- and section-number-tolerant via docHasSection, so
       // arc42/C4 docs ("## 5.4 Layer boundaries", "## Building Block View")
@@ -248,9 +259,17 @@ export function validateDocSections(projectDir, config) {
       );
       const naMatch = naRe.exec(content);
       const naMeta = naMatch ? splitWaiverMetadata(naMatch[1].split('-->')[0].trim()) : null;
-      if (docHasSection(content, section)) {
+      const state = sectionState(content, section, labels);
+      const owned = naMeta && !naMeta.problem && !isExpired(naMeta.expires);
+      if (state === 'unsupported' && !owned) {
+        unjudged.push(idForEnglishLabel(section));
+        skipped++;
+        continue;
+      }
+      total++;
+      if (state === 'present') {
         passed++;
-      } else if (naMeta && !naMeta.problem && !isExpired(naMeta.expires)) {
+      } else if (owned) {
         // v0.16-P7: explicit N/A — counts as passed (the project has owned
         // the absence) and doesn't pollute the warnings list.
         passed++;
@@ -260,7 +279,8 @@ export function validateDocSections(projectDir, config) {
           validator: 'docSections',
           severity: 'warn',
           message: `${file}: missing section "${section}". ` +
-            `If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->`,
+            `If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->` +
+            acceptedFormsHint(idForEnglishLabel(section), labels),
           location: file,
           suggestion: {
             kind: 'suppress',
@@ -269,6 +289,20 @@ export function validateDocSections(projectDir, config) {
           },
         }));
       }
+    }
+
+    if (unjudged.length) notSupported.push(unsupportedEntry(file, unjudged, labels));
+
+    // STR009 (spec 104 FR-009): a heading marker that cannot work as written.
+    for (const issue of headingMarkerIssues(content)) {
+      findings.push(mkFinding({
+        code: 'STR009',
+        validator: 'docSections',
+        severity: 'warn',
+        message: `${file}: ${issue.message}`,
+        location: file,
+        suggestion: { kind: 'fix', text: 'Put <!-- docguard:heading <id> --> on the next non-blank line under the heading it names, with an id from the closed list (`docguard explain STR009`)' },
+      }));
     }
 
     // An unedited scaffold: nothing a reader wrote beyond the template. The
@@ -303,28 +337,41 @@ export function validateDocSections(projectDir, config) {
     const fullPath = resolve(projectDir, file);
     if (!existsSync(fullPath)) continue;
     const content = readFileSync(fullPath, 'utf-8');
+    const unjudged = [];
     for (const heading of headings) {
       const slug = heading.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
       const owned = new RegExp(`<!--\\s*docguard:section\\s+${slug.replace(/-/g, '[-_]')}\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]`, 'i').test(content);
-      if (docHasSection(content, `## ${heading}`) || owned) continue;
+      const state = sectionState(content, `## ${heading}`, labels);
+      if (state === 'present' || owned) continue;
+      if (state === 'unsupported') { unjudged.push(idForEnglishLabel(heading)); continue; }
       findings.push(mkFinding({
         code: 'STR007',
         validator: 'docSections',
         severity: 'warn',
-        message: `${file}: missing section "${heading}", which the active profile requires. If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->`,
+        message: `${file}: missing section "${heading}", which the active profile requires. If genuinely not applicable, add: <!-- docguard:section ${slug} n/a — your reason -->` + acceptedFormsHint(idForEnglishLabel(heading), labels),
         location: file,
         suggestion: { kind: 'suppress', text: 'Add the section, or own the absence with the inline N/A marker', pragma: `<!-- docguard:section ${slug} n/a — your reason -->` },
       }));
     }
+    if (unjudged.length) {
+      const entry = notSupported.find(n => n.file === file);
+      if (entry) entry.sections = [...new Set([...entry.sections, ...unjudged])];
+      else notSupported.push(unsupportedEntry(file, unjudged, labels));
+    }
   }
 
+  // A section that was read and could not be judged is a check DocGuard made and
+  // could not decide, not a check it never made: the validator is not empty
+  // (which strict would exit 4 on). Stage 3 routes `languageNotSupported` to
+  // `strict.couldNotRead` (spec 104 FR-019).
   return { name: 'doc-sections', ...resultFromFindings(findings, { passed, total }), ...contractFields({
-    performed: total, found: findings.length > 0, ran: `checked ${total} required section(s) of the canonical documents that exist`,
+    performed: total + skipped, found: findings.length > 0,
+    ran: `checked ${total} required section(s) of the canonical documents that exist` + (skipped ? `; ${skipped} not judged (language-not-supported)` : ''),
     decide: appliesDocSections,
     empty: () => ({
       emptyCause: 'needs-declaration',
       note: 'Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).',
       howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists.',
     }),
-  }) };
+  }), ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}) };
 }
