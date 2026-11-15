@@ -137,12 +137,20 @@ export function pathological() {
     'many ADRs': Array.from({ length: 4000 }, (_, i) => `## ADR-${i}: x\n**Status**: Superseded by ADR-${i + 1}\n| ADR-${i} | Superseded |`).join('\n'),
     'long heading line': `## ${'a '.repeat(50000)}b\n## ${' '.repeat(100000)}x\n## ${'#'.repeat(100000)}x`,
     'many heading markers': Array.from({ length: 5000 }, (_, i) => `## Heading ${i}\n<!-- docguard:heading ${i % 2 ? 'tech-stack' : 'system-overview'} -->`).join('\n'),
+    // Issue 693: every reference carried its whole line, so a line of k tokens gave k copies of it.
+    'many backtick refs on one line': 'x `ab` '.repeat(20000),
     'many headings': Array.from({ length: 10000 }, (_, i) => `## Heading ${i} \`code\` [link](#x)`).join('\n'),
   };
 }
 
 const ARRAY = v => Array.isArray(v) || v instanceof Map || v instanceof Set;
-const plain = v => JSON.stringify(v, (_, x) => (x instanceof Map ? [...x] : x instanceof Set ? [...x] : x));
+const plain = v => {
+  try { return JSON.stringify(v, (_, x) => (x instanceof Map ? [...x] : x instanceof Set ? [...x] : x)); } catch (err) {
+    // A result too large to serialize is a finding, not a crash of the harness (issue 693).
+    if (err instanceof RangeError) return null;
+    throw err;
+  }
+};
 
 /** Every target: a name, the call, and any extra property it must hold. */
 export const TARGETS = [
@@ -186,10 +194,12 @@ export function check(target, text) {
   try { first = target.run(text); } catch (err) { return { kind: 'throws', detail: String(err?.stack || err).split('\n').slice(0, 3).join(' | ') }; }
   const ms = performance.now() - start;
   if (ms > budgetMs(text)) return { kind: 'slow', detail: `${Math.round(ms)} ms for ${text.length} chars (budget ${Math.round(budgetMs(text))} ms)` };
-  if (target.check && !target.check(first)) return { kind: 'shape', detail: `unexpected result ${plain(first)?.slice(0, 200)}` };
+  const firstJson = plain(first);
+  if (firstJson === null) return { kind: 'oversized', detail: `the result for ${text.length} chars is too large to serialize: its size is not linear in the input` };
+  if (target.check && !target.check(first)) return { kind: 'shape', detail: `unexpected result ${firstJson.slice(0, 200)}` };
   let second;
   try { second = target.run(text); } catch (err) { return { kind: 'throws-second', detail: String(err) }; }
-  if (plain(first) !== plain(second)) return { kind: 'nondeterministic', detail: 'two calls on the same input disagree' };
+  if (firstJson !== plain(second)) return { kind: 'nondeterministic', detail: 'two calls on the same input disagree' };
   return null;
 }
 

@@ -21205,12 +21205,12 @@
           },
           {
             "path": "specs/088-validator-fuzz/tasks.md",
-            "digest": "sha256:7c008695770714b9fd8f0263256e78e2f2d015c67217c1facf9d08e0ad1be0e8"
+            "digest": "sha256:25dafc5d9df80265b72cf645802279aaac8591f41a59d7bf390c3bdc0cfb206b"
           }
         ],
         "taskCompletion": {
-          "checked": 6,
-          "total": 6
+          "checked": 7,
+          "total": 7
         },
         "implementationEvidence": [
           {
