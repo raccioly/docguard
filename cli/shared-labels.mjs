@@ -115,6 +115,7 @@ export function labelEntry(id) {
  */
 function englishKey(text) {
   return String(text)
+    .normalize('NFC')
     .replace(/^#{1,6}\s*/, '')
     .replace(/^\d+(?:\.\d+)*\.?\s+/, '')
     .toLowerCase()

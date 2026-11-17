@@ -5479,7 +5479,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/shared.mjs",
-            "line": 162
+            "line": 167
           },
           {
             "requirementId": "FR-001",
@@ -6078,7 +6078,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/shared.mjs",
-            "line": 217
+            "line": 222
           },
           {
             "requirementId": "FR-005",
@@ -6088,7 +6088,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared.mjs",
-            "line": 218
+            "line": 223
           },
           {
             "requirementId": "FR-007",
@@ -6103,12 +6103,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/shared.mjs",
-            "line": 265
+            "line": 270
           },
           {
             "requirementId": "FR-008",
             "file": "cli/shared.mjs",
-            "line": 308
+            "line": 313
           },
           {
             "requirementId": "FR-008",
@@ -6123,7 +6123,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/validators/test-spec.mjs",
-            "line": 96
+            "line": 99
           },
           {
             "requirementId": "FR-008",
@@ -6153,7 +6153,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 539
+            "line": 540
           },
           {
             "requirementId": "FR-012",
@@ -6168,7 +6168,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 556
+            "line": 557
           },
           {
             "requirementId": "FR-013",
@@ -6183,7 +6183,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 593
+            "line": 594
           },
           {
             "requirementId": "FR-015",
@@ -6204,6 +6204,11 @@
             "requirementId": "FR-018",
             "file": "cli/validators/doc-quality.mjs",
             "line": 33
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/shared.mjs",
+            "line": 144
           },
           {
             "requirementId": "FR-021",
@@ -6233,7 +6238,7 @@
           {
             "requirementId": "FR-024",
             "file": "cli/shared-labels.mjs",
-            "line": 645
+            "line": 646
           }
         ],
         "testEvidence": [
@@ -6348,6 +6353,11 @@
             "line": 16
           },
           {
+            "requirementId": "FR-020",
+            "file": "tests/document-languages-nfc.test.mjs",
+            "line": 12
+          },
+          {
             "requirementId": "FR-021",
             "file": "tests/document-languages-naming.test.mjs",
             "line": 13
@@ -6368,6 +6378,26 @@
             "line": 6
           },
           {
+            "requirementId": "FR-025",
+            "file": "tests/document-languages-fixtures.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/document-languages-fixtures.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/document-languages-fixtures.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/document-languages-fixtures.test.mjs",
+            "line": 14
+          },
+          {
             "requirementId": "SC-004",
             "file": "tests/document-languages-english-identity-stage2.test.mjs",
             "line": 13
@@ -6376,6 +6406,11 @@
             "requirementId": "SC-004",
             "file": "tests/document-languages-english-identity.test.mjs",
             "line": 19
+          },
+          {
+            "requirementId": "SC-006",
+            "file": "tests/document-languages-r1-coverage.test.mjs",
+            "line": 10
           }
         ]
       }
@@ -9371,7 +9406,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/shared.mjs",
-            "line": 264
+            "line": 269
           },
           {
             "requirementId": "FR-003",
@@ -13267,12 +13302,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 360
+            "line": 365
           },
           {
             "requirementId": "FR-002",
             "file": "cli/shared.mjs",
-            "line": 365
+            "line": 370
           },
           {
             "requirementId": "FR-003",

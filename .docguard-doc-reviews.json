@@ -1,0 +1,1776 @@
+{
+  "documents": {
+    "docs-canonical/ARCHITECTURE.md": {
+      "excluded": {
+        ".agent": "directory",
+        ".agents": "directory",
+        ".claude": "directory",
+        ".docguard-anchor-lock.jsonl": "DocGuard state file",
+        ".docguard-doc-lock.json": "DocGuard state file",
+        ".docguard.json": "DocGuard state file",
+        ".docguardignore": "DocGuard state file",
+        ".github": "directory",
+        ".jules": "directory",
+        "AGENTS.md": "another document (reviewed on its own)",
+        "CHANGELOG.md": "changelog, lockfile or claims/evidence data",
+        "CLAUDE.md": "another document (reviewed on its own)",
+        "benchmarks": "directory",
+        "cli": "directory",
+        "cli/commands": "directory",
+        "cli/evidence": "directory",
+        "cli/scanners": "directory",
+        "cli/validators": "directory",
+        "cli/writers": "directory",
+        "docs": "directory",
+        "docs-canonical": "directory",
+        "docs/ai-integration.md": "another document (reviewed on its own)",
+        "docs/commands.md": "another document (reviewed on its own)",
+        "docs/languages.md": "another document (reviewed on its own)",
+        "docs/reference/findings.md": "another document (reviewed on its own)",
+        "docs/reference/languages.md": "another document (reviewed on its own)",
+        "extensions": "directory",
+        "extensions/aidlc/docguard": "directory",
+        "extensions/spec-kit-docguard": "directory",
+        "glama.json": "under 20 lines",
+        "llms-full.txt": "another document (reviewed on its own)",
+        "llms.txt": "another document (reviewed on its own)",
+        "release-gate.json": "under 20 lines",
+        "schemas/claimspec/v1": "directory",
+        "schemas/docguard-evidence.schema.json": "changelog, lockfile or claims/evidence data",
+        "schemas/docguard-precision-evidence.schema.json": "changelog, lockfile or claims/evidence data",
+        "specs": "directory",
+        "specs/101-completion-one-commit": "directory",
+        "specs/103-completion-upkeep": "directory",
+        "templates": "directory",
+        "tests": "directory",
+        "tests/consumer-report-precision.test.mjs": "test, fixture or example path",
+        "tests/doc-validator-fidelity.test.mjs": "test, fixture or example path",
+        "tests/llms-bundle-drift.test.mjs": "test, fixture or example path",
+        "tests/user-docs.test.mjs": "test, fixture or example path",
+        "tools": "directory",
+        "tools/anchor-oracle": "directory"
+      },
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "references": {
+        ".gitignore": {
+          "fingerprint": "sha256:cd79dda0d7afe77526187876557a24d83db3e714a685703ec57f141eb781930a",
+          "tier": "content"
+        },
+        ".pre-commit-hooks.yaml": {
+          "fingerprint": "sha256:3e0c1c0f6dcc72bafa1177e81aa5266cf058af4235fd0da055cbe229bce028c9",
+          "tier": "content"
+        },
+        ".specify/integration.json": {
+          "fingerprint": "sha256:3b4d67bee57820af26823a2f5d5fc2426e64f62931e427ad2c5c6d25c3f0ae68",
+          "tier": "content"
+        },
+        "Dockerfile": {
+          "fingerprint": "sha256:e6b3d73c9f7428d5cd1a70e57a57702799544acd37db6eb24e234154d75a8b0d",
+          "tier": "content"
+        },
+        "benchmarks/agent-context/manifest-v3.json": {
+          "fingerprint": "sha256:61ab6dde128bfc28725014a4e91d9bcd3775a1a3a5aa8435a67cabc2dd2ab571",
+          "tier": "content"
+        },
+        "budgets.json": {
+          "fingerprint": "sha256:9ac540954a3c52d05e51e4f64a2c7f35adaf9a5cd81e89a003f8416a172497bb",
+          "tier": "content"
+        },
+        "cli/agent-surface.mjs": {
+          "fingerprint": "sha256:d2764c09215fe598770e5a30a3d53c6cc92ffdf0e8fecab47dae7c9351b15992",
+          "tier": "content"
+        },
+        "cli/assessment.mjs": {
+          "fingerprint": "sha256:2f05a7b75ceec8de1b5d299db9c49a98c35e29f87f1164f493de71e28ebc49e1",
+          "tier": "content"
+        },
+        "cli/authoring-contract.mjs": {
+          "fingerprint": "sha256:336e1af2be6d650dfc5cb1e216d61034373419eb5f479da8d882d6341e159247",
+          "tier": "content"
+        },
+        "cli/claimspec-schema.mjs": {
+          "fingerprint": "sha256:483618cb6b754db3923070310ac1ebd1f27b1bb7d179b6df0bde2942ffeb4044",
+          "tier": "content"
+        },
+        "cli/commands/agent.mjs": {
+          "fingerprint": "sha256:de4428b64cdae5d2e0e6c6f50a53284c01410be541184ae46558995aa8a278d2",
+          "tier": "content"
+        },
+        "cli/commands/anchors.mjs": {
+          "fingerprint": "sha256:7f74426519c9628a45ab91da99764ff5bcd91a304f5b4b48425b9de7a98c0ba8",
+          "tier": "content"
+        },
+        "cli/commands/ci.mjs": {
+          "fingerprint": "sha256:cd65dc99dedba549c4f9afc84c0e7544799220c312fadb912ca8895af7efbf49",
+          "tier": "content"
+        },
+        "cli/commands/diagnose.mjs": {
+          "fingerprint": "sha256:326361cbf7ef6b58dbd25985ddef81a9713c75bc05987bf654d00386e5dea092",
+          "tier": "content"
+        },
+        "cli/commands/feedback.mjs": {
+          "fingerprint": "sha256:307a85facbc9057f900d0f57fcfbbe9e7df7bede9a851a6308b2cf8862905954",
+          "tier": "content"
+        },
+        "cli/commands/generate-as-built.mjs": {
+          "fingerprint": "sha256:22dbd67379006a197c0ad13551cbabfc2bdfa26c8b85acbef2a427542f272937",
+          "tier": "content"
+        },
+        "cli/commands/guard.mjs": {
+          "fingerprint": "sha256:be9fc3d10beb5a33f998c1e307819c1339c4378d7d0803efb41c10055a213c3f",
+          "tier": "content"
+        },
+        "cli/commands/hooks.mjs": {
+          "fingerprint": "sha256:44e8c518877e56e4aff66208d12ef1efe4a576ed3a545d1f5efa919c7e759a3c",
+          "tier": "content"
+        },
+        "cli/commands/ignore.mjs": {
+          "fingerprint": "sha256:ff787dbb112c904ff0185306848d82d477a5a6e14a77d94afb44f64132847f14",
+          "tier": "content"
+        },
+        "cli/commands/impact.mjs": {
+          "fingerprint": "sha256:69d32e95a3689ed0e9d100ac91f99aa4569ba661af1d6953c6fcdbab981143af",
+          "tier": "content"
+        },
+        "cli/commands/init.mjs": {
+          "fingerprint": "sha256:d407eda81f294c207b918ef97c56e3e80f1849855c9a6a9e44f235035fad1545",
+          "tier": "content"
+        },
+        "cli/commands/mcp.mjs": {
+          "fingerprint": "sha256:9d86523f203edd98f4256202da80f2875da6b39a13206a602f1fc7e3c81bf71a",
+          "tier": "content"
+        },
+        "cli/commands/memory-aidlc.mjs": {
+          "fingerprint": "sha256:b73f0b5f7994211ad1b35869d0ad4af5b7b60aa4664604efc5e04e5f3eab3ff3",
+          "tier": "content"
+        },
+        "cli/commands/memory.mjs": {
+          "fingerprint": "sha256:c6499fe37c08a996254c066eb219bdd3d411514218380777f27855277dc1e9e7",
+          "tier": "content"
+        },
+        "cli/commands/policy.mjs": {
+          "fingerprint": "sha256:69bd6171f877b44db37004c36400fc4528c635185c19863f9e5f5fab34f2e7d5",
+          "tier": "content"
+        },
+        "cli/commands/reconcile.mjs": {
+          "fingerprint": "sha256:51b951c1f262a43dfaafee009e91a23a8bc17dea8e11feac92499b627723e29d",
+          "tier": "content"
+        },
+        "cli/commands/report.mjs": {
+          "fingerprint": "sha256:38b65628295c0c91680c92c0ffea7a7095893d3d730b3b24d73a077c527c4662",
+          "tier": "content"
+        },
+        "cli/commands/retire.mjs": {
+          "fingerprint": "sha256:dcf593bc87b0c7ddbd3f59b6c4b63e1c48802a61ed1d05bc2083135e7bd20d6b",
+          "tier": "content"
+        },
+        "cli/commands/review.mjs": {
+          "fingerprint": "sha256:76a812297d584d18f62dc5eb91ab4793a91205812cdcb795636c68748848658a",
+          "tier": "content"
+        },
+        "cli/commands/rules.mjs": {
+          "fingerprint": "sha256:5d99c7249f7b0c0af554efde0337381ec73c0a173ccbfecdd1a88ccf4d3ce3c2",
+          "tier": "content"
+        },
+        "cli/commands/score-dora.mjs": {
+          "fingerprint": "sha256:c9e29e8947e157ca55a745ab52a6008c5af5757b6d27f2a13726751d4df873c9",
+          "tier": "content"
+        },
+        "cli/commands/score.mjs": {
+          "fingerprint": "sha256:2a148cd83b51fa20057fc074da8b0e2c9e3024833031d0642f98b469a45b5eac",
+          "tier": "content"
+        },
+        "cli/commands/sensor.mjs": {
+          "fingerprint": "sha256:192a2b9080a653fb7b580e55533ed8e1141abe1506322df594f04a423a34add4",
+          "tier": "content"
+        },
+        "cli/commands/specs.mjs": {
+          "fingerprint": "sha256:0ee390da573937668b3b4b8569739ac505f826ec06c8888d6ef2432fbb69eed0",
+          "tier": "content"
+        },
+        "cli/commands/trace.mjs": {
+          "fingerprint": "sha256:aed748e79290b2a303213989a66f699708e2807facafa24f9d359b084a00e274",
+          "tier": "content"
+        },
+        "cli/commands/upgrade.mjs": {
+          "fingerprint": "sha256:9c9c910dbae371d91904eed832ae07f287d4f272803f6998be1eeb61e4d6081b",
+          "tier": "content"
+        },
+        "cli/commands/verify.mjs": {
+          "fingerprint": "sha256:72ec261b65480304c1b44985b808afa3c9183bbceb7c514b71d2b5e4e8e76308",
+          "tier": "content"
+        },
+        "cli/config.mjs": {
+          "fingerprint": "sha256:d6fdf62316d69c55b99aa5dfe1c33f56d8299206d6c1389d5aaa4fa09d58ee86",
+          "tier": "content"
+        },
+        "cli/docguard.mjs": {
+          "fingerprint": "sha256:bb186f1b356225a3ba862d083591fa1c911f43ab00a1236fff84e53bb391f81a",
+          "tier": "content"
+        },
+        "cli/enforcement.mjs": {
+          "fingerprint": "sha256:bee382eae3890d2b9669e6aaa7594e81a507e225acaa32a499c75eb5b46610c4",
+          "tier": "content"
+        },
+        "cli/ensure-skills.mjs": {
+          "fingerprint": "sha256:dc83f5de80f6f5845b79c1d0bab8bbb1542ec565affef7217f0bfa00f952de41",
+          "tier": "content"
+        },
+        "cli/feedback-fixture.mjs": {
+          "fingerprint": "sha256:bb5e01095384dcf44b77094da3d4dc39d18eac083d9878156fdddb84d1dfc92e",
+          "tier": "content"
+        },
+        "cli/findings.mjs": {
+          "fingerprint": "sha256:31bd63eb23c7440e4fb1813059da342c4d998104adf35a5bea5861b632da6d9f",
+          "tier": "content"
+        },
+        "cli/init-enforcement.mjs": {
+          "fingerprint": "sha256:e04c25bd1077cdf185a80ce70d1b94c17ee5015cfcb8f732e0311500d7f5e598",
+          "tier": "content"
+        },
+        "cli/observations.mjs": {
+          "fingerprint": "sha256:46e693dd0de809928d4a48e4b6eb50f70788ea2b1180ebf6a4afcc4eea0d61d7",
+          "tier": "content"
+        },
+        "cli/precision-evidence.mjs": {
+          "fingerprint": "sha256:d2daeb61750f6ddd661bbc63cc11a41fec34d338e549271d1bac74f1b444e5fa",
+          "tier": "content"
+        },
+        "cli/release-age.mjs": {
+          "fingerprint": "sha256:9bf9073d1ddd062d55bcb0160f84c21dc972391b24e5cf7aeea82fe0c0534e3c",
+          "tier": "content"
+        },
+        "cli/repository-root.mjs": {
+          "fingerprint": "sha256:610e6c2bd963c6b68493519de047067d408bf4d8088ea76d0504101b7abe9c5f",
+          "tier": "content"
+        },
+        "cli/required-checks.mjs": {
+          "fingerprint": "sha256:50dad08f9defb561be3a085d88f2baaa48c46a6ed70df4d8810068f48b2f0424",
+          "tier": "content"
+        },
+        "cli/scanners/agent-instructions.mjs": {
+          "fingerprint": "sha256:a514c058a12e53b4812ec31868beed07ff4964e9d27c95e455bbfc6ba14bff42",
+          "tier": "content"
+        },
+        "cli/scanners/agent-readability.mjs": {
+          "fingerprint": "sha256:8534e12708ecad35bb71d21831a288939c5401b1bd44aa3157250a6557ef7bd0",
+          "tier": "content"
+        },
+        "cli/scanners/aidlc.mjs": {
+          "fingerprint": "sha256:a49963ad20bce59fc8366d0f00448e4d888680c912451452cd4a0ccf0468f270",
+          "tier": "content"
+        },
+        "cli/scanners/anchor-cache.mjs": {
+          "fingerprint": "sha256:46007e1c06cd8ff70f61e7afceed40c9590d59b1123d0c59068332f1733ed9d6",
+          "tier": "content"
+        },
+        "cli/scanners/anchor-tags.mjs": {
+          "fingerprint": "sha256:27704f7dbdbc0a29649070c1e5eb2a4566d5c8dd9b49d9b3f1d0128d718b3b27",
+          "tier": "content"
+        },
+        "cli/scanners/anchors.mjs": {
+          "fingerprint": "sha256:8a7da0ddfcfca20973dc8278cb08ce6655817cd43b3e9da5d183bf65bc5b000d",
+          "tier": "content"
+        },
+        "cli/scanners/api-doc.mjs": {
+          "fingerprint": "sha256:bd7942d9190b035e9ac2d90e6517db7ea93848ab2ed1fbea6bc775167cef688d",
+          "tier": "content"
+        },
+        "cli/scanners/as-built.mjs": {
+          "fingerprint": "sha256:bd54b533d83b44966f2e9f587b74c2eb8d47b8feaa6a5b1bc31aa56fe42c283a",
+          "tier": "content"
+        },
+        "cli/scanners/chain-coverage.mjs": {
+          "fingerprint": "sha256:a8d0ef1f7971f81e9c7c0df72a83f103129d90743c5111a988337ef541d6884e",
+          "tier": "content"
+        },
+        "cli/scanners/doc-deps.mjs": {
+          "fingerprint": "sha256:094ff344889bc55acc91e63bfccf1034f5efba572a2cac60dd33299c4900e616",
+          "tier": "content"
+        },
+        "cli/scanners/doc-ownership.mjs": {
+          "fingerprint": "sha256:8b1fc1e180121497fb3c0c85ce8dfc654eea776ce11653ef7c6b5f1955626f85",
+          "tier": "content"
+        },
+        "cli/scanners/doc-references.mjs": {
+          "fingerprint": "sha256:0b99c4769d467f7270cee9727d2a59db7e74014101016895fe0b199eadde87b5",
+          "tier": "content"
+        },
+        "cli/scanners/doc-reviews.mjs": {
+          "fingerprint": "sha256:3770460fd2d61500ffc97ff61058c34dccfc303b63f23b6c338fa893b52b7302",
+          "tier": "content"
+        },
+        "cli/scanners/document-lifecycle.mjs": {
+          "fingerprint": "sha256:189a630e37f13ae022417bff7c4a9c0c4c6723929d516486432bd6956ed75c8c",
+          "tier": "content"
+        },
+        "cli/scanners/dotnet-routes.mjs": {
+          "fingerprint": "sha256:b13790e20b2d7b8f626e5ee78b18b1e1cfea9d11f36e85f125c9a96870b488ad",
+          "tier": "content"
+        },
+        "cli/scanners/fingerprint.mjs": {
+          "fingerprint": "sha256:6849c8d892166950a0c5a3002e6f22472b0514938929fc6235bde8875e17bc7d",
+          "tier": "content"
+        },
+        "cli/scanners/frontmatter.mjs": {
+          "fingerprint": "sha256:b7f3ccebc336981f1121c71f5beab135ebc827d41a90921855e7e139801cc120",
+          "tier": "content"
+        },
+        "cli/scanners/go-routes.mjs": {
+          "fingerprint": "sha256:461be9e9bf9392b05f6e621b418be8e0d8c57a433ea5b4db79948c38ca3fb2d7",
+          "tier": "content"
+        },
+        "cli/scanners/import-graph.mjs": {
+          "fingerprint": "sha256:f77d26a4d7282e0671f297a3ff3513125546fab11a6a5734334ac70cb7549f3f",
+          "tier": "content"
+        },
+        "cli/scanners/instruction-scopes.mjs": {
+          "fingerprint": "sha256:557bfa8e9715a5e9ba5ddf969bba38e2bd59a17f11faa7ffc13090c7116a7161",
+          "tier": "content"
+        },
+        "cli/scanners/js-ast.mjs": {
+          "fingerprint": "sha256:f0176b49e545745f3dc87bf4f5d19f23aba89bcc1c443297286a4f153de5c3f8",
+          "tier": "content"
+        },
+        "cli/scanners/js-route-support.mjs": {
+          "fingerprint": "sha256:7271517e997c0672ec8d561d938ec5d958a0b2b4c481435c6da5f853f140f3d0",
+          "tier": "content"
+        },
+        "cli/scanners/lifecycle-context.mjs": {
+          "fingerprint": "sha256:ba37d060708784f5860daac17f962729e069ff1c74dcc45fd1e3519f52ff67a8",
+          "tier": "content"
+        },
+        "cli/scanners/lifecycle-status.mjs": {
+          "fingerprint": "sha256:a66bc83a6b9b7fe7589281f130b23731164f58f457d0e8de63b7c8cb7c163d57",
+          "tier": "content"
+        },
+        "cli/scanners/memory-plan.mjs": {
+          "fingerprint": "sha256:9e9c66efc4df3b027080d6779cfe18f6bff4232629f62f9d75df3c7811ac89d3",
+          "tier": "content"
+        },
+        "cli/scanners/module-diagram.mjs": {
+          "fingerprint": "sha256:67f8c4d1e8387d2aef8d49228c1e15b311c3761d5b8d7790efd8f5aa5d362957",
+          "tier": "content"
+        },
+        "cli/scanners/nest-routes.mjs": {
+          "fingerprint": "sha256:d3b2ddc13001f8c1725b445bb51af9bd80f9693633613c3fb23d92536dcd4a52",
+          "tier": "content"
+        },
+        "cli/scanners/pages-routes.mjs": {
+          "fingerprint": "sha256:901f33a28f3e6c656d36f9d3e3d3b65f9dc77f3ed010f7e7851505113102adfe",
+          "tier": "content"
+        },
+        "cli/scanners/pattern-lexer.mjs": {
+          "fingerprint": "sha256:2bce7155c462be9ef2fb11b7b8e8e97ab9f2f9bab6d1ad3b7122b21e6cb98006",
+          "tier": "content"
+        },
+        "cli/scanners/php-routes.mjs": {
+          "fingerprint": "sha256:7a25e369acb49fd813037d37a0635c9dada1a3470ad52132772b6db8990df139",
+          "tier": "content"
+        },
+        "cli/scanners/project-type.mjs": {
+          "fingerprint": "sha256:4f32fcebcd4251633d342a89e799553a1cd204962b615730c7f50e544a44d903",
+          "tier": "content"
+        },
+        "cli/scanners/py-anchors.mjs": {
+          "fingerprint": "sha256:c3b1b9499a6c91faf516df5619ef0e0e644657e1bc19863976778b0f0084fb84",
+          "tier": "content"
+        },
+        "cli/scanners/py-ast.mjs": {
+          "fingerprint": "sha256:86b3cad58b6c4b98034792f2a34a9d9f6641b376b05e5ce0caca5e01ef2dff2b",
+          "tier": "content"
+        },
+        "cli/scanners/py-env.mjs": {
+          "fingerprint": "sha256:949fab8382fda902fddfa05bb9f621e9591dd25672428ada198b00952857233e",
+          "tier": "content"
+        },
+        "cli/scanners/py-outline.mjs": {
+          "fingerprint": "sha256:133036a4b7b74c3e4e6e53628e29a31cdb587742616a6c4fb672296d513d0c34",
+          "tier": "content"
+        },
+        "cli/scanners/py-sources.mjs": {
+          "fingerprint": "sha256:b7b2ea5db61224dbf6e5fe5c062b09f0f976c4628d09b1c9ffb926ec71e098bd",
+          "tier": "content"
+        },
+        "cli/scanners/python-models.mjs": {
+          "fingerprint": "sha256:580c82d353765e77bab960b8a746b853d4ab7fb2eb6b416413f46db12f11b461",
+          "tier": "content"
+        },
+        "cli/scanners/python-routes.mjs": {
+          "fingerprint": "sha256:dff06224fc13050226c88b79593d0e9c25dc35e1ea579730814ffebf2b099a22",
+          "tier": "content"
+        },
+        "cli/scanners/rails-routes.mjs": {
+          "fingerprint": "sha256:3aa6e165b50d497c40c168d70fc326446d62c22237beac58bfee26bd86e4f61e",
+          "tier": "content"
+        },
+        "cli/scanners/reconciliation.mjs": {
+          "fingerprint": "sha256:ffd5747178fd0cf159143ba67c5aacaac21803d11c6e68767ac2f671096d6351",
+          "tier": "content"
+        },
+        "cli/scanners/recorded-review-signals.mjs": {
+          "fingerprint": "sha256:364e8754743f0686be042bcbf4eef098daed630b8703f88c11a769a90de3fea3",
+          "tier": "content"
+        },
+        "cli/scanners/reference-staleness.mjs": {
+          "fingerprint": "sha256:71db2a4fa14a5b34729b1cb4bcd009928e4d3ee8315f7001c9591b3e7f55c285",
+          "tier": "content"
+        },
+        "cli/scanners/requirement-docs.mjs": {
+          "fingerprint": "sha256:c827eabe7aabb9af63e0fc45f526923100b9bde8880dacef964dac93171ebb62",
+          "tier": "content"
+        },
+        "cli/scanners/requirement-evidence.mjs": {
+          "fingerprint": "sha256:bc181f30f80a0ec7f48a74d146ca9a9770910e85a8d3aa34e6b4bfdb3897ec25",
+          "tier": "content"
+        },
+        "cli/scanners/revision-anchor.mjs": {
+          "fingerprint": "sha256:904a6a9288174f28d319d68a3043bb66a5ef6c5f6d8fdc33d14274048ab29c1d",
+          "tier": "content"
+        },
+        "cli/scanners/route-case.mjs": {
+          "fingerprint": "sha256:c4506e592e5e2bbe0039e891e362ccc3cfe02273e719223fea781272eee325ec",
+          "tier": "content"
+        },
+        "cli/scanners/route-lexing.mjs": {
+          "fingerprint": "sha256:01eb5f47a9c5d5b39ecefe94484ed8cfcacd19c7cb6c3e6d5324b42b44f6d810",
+          "tier": "content"
+        },
+        "cli/scanners/router-routes.mjs": {
+          "fingerprint": "sha256:d95c2831a15883ddfda7aedda46c4d2a97fb6f3bcc7fe3ede9962f81f6ba3986",
+          "tier": "content"
+        },
+        "cli/scanners/routes.mjs": {
+          "fingerprint": "sha256:aaa8ff78bf1fccfe272075b1046f688df74ee6042e936412e7dd6c186fc76f6f",
+          "tier": "content"
+        },
+        "cli/scanners/rust-routes.mjs": {
+          "fingerprint": "sha256:624290f850a9777ea1690124f9ad2f1caeb6137fd83cbc2203f5bd43d4f4edac",
+          "tier": "content"
+        },
+        "cli/scanners/schemas.mjs": {
+          "fingerprint": "sha256:3a5ed119f1523d62f7abe5f0ef9851923032919ad0d77e4303b675777e246a23",
+          "tier": "content"
+        },
+        "cli/scanners/sinatra-routes.mjs": {
+          "fingerprint": "sha256:5b8a27f6a916997c454be223d91f4328cbeed771c5d0ca0822a2cd69ea6dba9a",
+          "tier": "content"
+        },
+        "cli/scanners/spec-first.mjs": {
+          "fingerprint": "sha256:800a281bb45378f67a30e3bac392ece995fd9a1063592ad1b3eeb059fcdb07d9",
+          "tier": "content"
+        },
+        "cli/scanners/spec-registry.mjs": {
+          "fingerprint": "sha256:6d3e9438a4fca31ba81eab7d370c23922d70a9edec7dce946a7cae6d9c0f6565",
+          "tier": "content"
+        },
+        "cli/scanners/speckit.mjs": {
+          "fingerprint": "sha256:74bcf504b8020bdd2b9f9717920db4064e019ae3960adf0f3b6c57a53b0819f4",
+          "tier": "content"
+        },
+        "cli/scanners/spring-routes.mjs": {
+          "fingerprint": "sha256:e041a72b41c4b2be291744a8cc59873c76dab61d9c9f51eb371f60c08818ac91",
+          "tier": "content"
+        },
+        "cli/scanners/suppressions.mjs": {
+          "fingerprint": "sha256:b4c05e04f51226f1be7e83b7c0fad86cceacc66a4926f7d0db55f665025ce95e",
+          "tier": "content"
+        },
+        "cli/scanners/symbol-map.mjs": {
+          "fingerprint": "sha256:33ef2f0a5ad7a893a4eeadd06ca8d41c622a29ec502ede038fe9bdacfd5a7d19",
+          "tier": "content"
+        },
+        "cli/scanners/task-context.mjs": {
+          "fingerprint": "sha256:f0b5e8e8313873b34f4aed70b0fe46458ce18870685355777ba7d1654cb43f18",
+          "tier": "content"
+        },
+        "cli/scanners/tech-stack.mjs": {
+          "fingerprint": "sha256:ae2e8ed0e7e99bf049fed7e5f1cfdfdb88179bd1e8de7016324f71ef2dc5c3c1",
+          "tier": "content"
+        },
+        "cli/scanners/testguard-evidence.mjs": {
+          "fingerprint": "sha256:eceba1e0da33943f9eca6fb4569fdbc9ac1c78bbeb442209e4d8b3bfba4c19c9",
+          "tier": "content"
+        },
+        "cli/scanners/ts-anchors-child.mjs": {
+          "fingerprint": "sha256:d89ac97762446218ac93edb36c29a1b8fdf3c690d9a9ac05fb1c670b56cf0438",
+          "tier": "content"
+        },
+        "cli/scanners/ts-anchors.mjs": {
+          "fingerprint": "sha256:8cffefcaa6a33340ffef7d3aea2764821e9335e630328f90f3c97c585e30476f",
+          "tier": "content"
+        },
+        "cli/scanners/ts-decls.mjs": {
+          "fingerprint": "sha256:b0510ff6111889ed5eea211e651e35be155da93ad8550e3f10a907e7d5ec004f",
+          "tier": "content"
+        },
+        "cli/scanners/ts-paths.mjs": {
+          "fingerprint": "sha256:ec9f09aa87d9797ced6ba807e2a36b5f8e99bb95ae5fbee6a45d667afc15bee0",
+          "tier": "content"
+        },
+        "cli/scanners/worker-routes.mjs": {
+          "fingerprint": "sha256:5b5052ba3b668e2dd92119a5e5857c8c1664f736c5a8c402ca798350d074f8e6",
+          "tier": "content"
+        },
+        "cli/sensor-cache.mjs": {
+          "fingerprint": "sha256:86a6a178f0d664362675aa1648397f0d7ad5374659c729756d9ceb9a37cf0f4f",
+          "tier": "content"
+        },
+        "cli/shared-agent-instructions.mjs": {
+          "fingerprint": "sha256:28600712fbe740c64996741375e9bcc6888f5810b7bbfe7d2b8bc647fb8dca85",
+          "tier": "content"
+        },
+        "cli/shared-doc-language.mjs": {
+          "fingerprint": "sha256:ad86aa6c95f0d02cf1726cb371a772a8da6f289260cf52a67860afaf877b46f6",
+          "tier": "content"
+        },
+        "cli/shared-doc-roles.mjs": {
+          "fingerprint": "sha256:c3354c7b3f993cdc7e167419e83e3a0cee5db36c526ff29e06db9deaf44a58a7",
+          "tier": "content"
+        },
+        "cli/shared-file-kind.mjs": {
+          "fingerprint": "sha256:1922ec394748de4424fa326ee0df90eb3d8ef0b0847b0386a757a6397641f65e",
+          "tier": "content"
+        },
+        "cli/shared-git.mjs": {
+          "fingerprint": "sha256:8695a9375acfa67a0b3c4ead2c38d5bedd47612646d0334c133ed23145adfcd6",
+          "tier": "content"
+        },
+        "cli/shared-guard-json.mjs": {
+          "fingerprint": "sha256:2ce4fc40d9ff392344d0a1c77f1201189739d5c2e83fa0fe662994ca940248f3",
+          "tier": "content"
+        },
+        "cli/shared-headings.mjs": {
+          "fingerprint": "sha256:a2f75df888b22f664f9473a27ba0fd3e854a7df2ef1cd52dcdb4f170a29892d6",
+          "tier": "content"
+        },
+        "cli/shared-html-comments.mjs": {
+          "fingerprint": "sha256:87e7fabefd0dd1e604e81c17c2739d0bec842a348a2ca37a6c7182b1f0d917b8",
+          "tier": "content"
+        },
+        "cli/shared-ignore.mjs": {
+          "fingerprint": "sha256:d4678bad6516fdde0adf9c9c6d4bd25b541eba552f3d9ba674413bc2fd92fa1f",
+          "tier": "content"
+        },
+        "cli/shared-labels.mjs": {
+          "fingerprint": "sha256:f2e7d39b3e1854b2f1a691d17f008124ae7b7fec2c07594fda7cc41c06746b64",
+          "tier": "content"
+        },
+        "cli/shared-mirrors.mjs": {
+          "fingerprint": "sha256:2ab45089e2aced24e133e70b52b96124fab8c06502b948ff04bad53faa6a3526",
+          "tier": "content"
+        },
+        "cli/shared-scaffold.mjs": {
+          "fingerprint": "sha256:ac688c9c70dcec5176d67999e856c5b54184340143a6e337d5dd7ce321988174",
+          "tier": "content"
+        },
+        "cli/shared-source.mjs": {
+          "fingerprint": "sha256:9f890a95543b6f437bb0ce90ac54be654e3c57b710cd2869e527a1584293103e",
+          "tier": "content"
+        },
+        "cli/shared.mjs": {
+          "fingerprint": "sha256:6c520746735a4052f047fa1729e612bbd442683ebe5e528fc2fb9a91813f0097",
+          "tier": "content"
+        },
+        "cli/spec-kit-delegation.mjs": {
+          "fingerprint": "sha256:b970e05d820290ccda58f9162b6c6e1336a514938a3b76b96ce450386e9ff157",
+          "tier": "content"
+        },
+        "cli/validator-coverage.mjs": {
+          "fingerprint": "sha256:c97f85cfa5b18c0855922f8e5785953a368fb92ecdd294bad1e94d4c90d30277",
+          "tier": "content"
+        },
+        "cli/validators/aidlc.mjs": {
+          "fingerprint": "sha256:47f6d0c0825faa946bd194a3c739eb2efd8477fabe8eae9a08875c480486282f",
+          "tier": "content"
+        },
+        "cli/validators/api-surface.mjs": {
+          "fingerprint": "sha256:a46f46a1db8c30654ad679d7873e3212ac5c910835ea46d87d109c7cc1a286c4",
+          "tier": "content"
+        },
+        "cli/validators/architecture.mjs": {
+          "fingerprint": "sha256:ddb5d762b65ab9e020a168ea73c946d73da6dd8e6305779ccd187cbd9d696871",
+          "tier": "content"
+        },
+        "cli/validators/decision-records.mjs": {
+          "fingerprint": "sha256:40babe0c228e3526b3c3fec5125d66310546449f8def7c1c796ef94275ab9053",
+          "tier": "content"
+        },
+        "cli/validators/diff-suspicion.mjs": {
+          "fingerprint": "sha256:a6d2541818a257ba9d42c4d13225eee4323c12b2454b3c551a102229cc6c5e47",
+          "tier": "content"
+        },
+        "cli/validators/doc-dependency.mjs": {
+          "fingerprint": "sha256:b2e734ebff4cc377fa1c8b4aeb1ac1566ca745b3e29d06d3a139fdf0c0262486",
+          "tier": "content"
+        },
+        "cli/validators/doc-ownership.mjs": {
+          "fingerprint": "sha256:e9a55d7e7469e7003fb9a807d611ebac0909d4c34763726b29df4994d5ea2a62",
+          "tier": "content"
+        },
+        "cli/validators/doc-quality.mjs": {
+          "fingerprint": "sha256:92f25c765e3519df6642ddfb4213b82ed385dd554e25554096d30cad2deb114b",
+          "tier": "content"
+        },
+        "cli/validators/docs-diff.mjs": {
+          "fingerprint": "sha256:732d52e71cb86a361fbb8e5f49cdf99fe17e5a8842622afafa3ec5202452785d",
+          "tier": "content"
+        },
+        "cli/validators/docs-sync.mjs": {
+          "fingerprint": "sha256:3d01a87e15548914a59c96390fdbeec0d9ae1cb6593df7ca03392162f872affa",
+          "tier": "content"
+        },
+        "cli/validators/document-lifecycle.mjs": {
+          "fingerprint": "sha256:6449019517e5abb99655aff0e2955bbfcd6ff08092788ced163635dc7716fc9e",
+          "tier": "content"
+        },
+        "cli/validators/environment.mjs": {
+          "fingerprint": "sha256:731a48546ea84f3467c94090c4815bc38b9e63ce48cba98783e68b2afe7a7fc2",
+          "tier": "content"
+        },
+        "cli/validators/evidence.mjs": {
+          "fingerprint": "sha256:0c4d87daab48bd9b1d43d047f62714ea5c14f7e64f59dcc250ede797cc5c75f3",
+          "tier": "content"
+        },
+        "cli/validators/generated-staleness.mjs": {
+          "fingerprint": "sha256:d7e2d5a8d59b9b6f46dd238ff61b266fb2347f213730e98496aa26b606926ff1",
+          "tier": "content"
+        },
+        "cli/validators/metrics-consistency.mjs": {
+          "fingerprint": "sha256:f73ede4331d1e8b4b5e2bfb37e4f47e9472867487fd5db7f10f1c2b8f9eaa79c",
+          "tier": "content"
+        },
+        "cli/validators/path-scoped-rules.mjs": {
+          "fingerprint": "sha256:09947d2d0a9132a259d2e7c455ade90627e7ed664ce26483f31cb2d9c4adce85",
+          "tier": "content"
+        },
+        "cli/validators/reference-existence.mjs": {
+          "fingerprint": "sha256:1f7a0d6dbb2328f0f31e73a0eabb73d2a791fbc8dd3b7e1232ed68dacc51cad6",
+          "tier": "content"
+        },
+        "cli/validators/requirement-anchors.mjs": {
+          "fingerprint": "sha256:6318c7e8c65cb38a8afdfd37ff3c96bce7da2596fa118323f35eac77e3a9a7e3",
+          "tier": "content"
+        },
+        "cli/validators/schema-sync.mjs": {
+          "fingerprint": "sha256:d4ad59fc12f688eaecbfebc2a2ab3c599f41e3202dff0b9e289b19b3414968ca",
+          "tier": "content"
+        },
+        "cli/validators/spec-registry.mjs": {
+          "fingerprint": "sha256:7d889f8f94e5447d1c9668e7e99a53de856665493e934a49e4bd61b97add9132",
+          "tier": "content"
+        },
+        "cli/validators/structure.mjs": {
+          "fingerprint": "sha256:bc19ac18b4323947c9ca21fcd1b900a36f163ef93b03911a7569047260a8e45c",
+          "tier": "content"
+        },
+        "cli/validators/suppressions.mjs": {
+          "fingerprint": "sha256:fdf0c2a5bf1cd04807ce7cadde7655844b7442384de93d0fbcc8744aee4e92be",
+          "tier": "content"
+        },
+        "cli/validators/surface-sync.mjs": {
+          "fingerprint": "sha256:cfc8777044ba2ca9804facd580b1b390b0620aba45015035a8f8b94d64c55373",
+          "tier": "content"
+        },
+        "cli/waiver-metadata.mjs": {
+          "fingerprint": "sha256:36dba31d7ff5924932d2e2861757419c06c1b4b4c56cdd300922abe09ae2ffdf",
+          "tier": "content"
+        },
+        "cli/writers/baseline.mjs": {
+          "fingerprint": "sha256:f28ef8bbfa3c661b93ef2d80f71fadfc9a3abe2c6dfe682fa49cca55471a6cce",
+          "tier": "content"
+        },
+        "cli/writers/claimspec-ignore.mjs": {
+          "fingerprint": "sha256:1e11fd46aad310d8428ec1b1dfd19265823df7931b9d17083a4b93a1e61a3d08",
+          "tier": "content"
+        },
+        "cli/writers/doc-generators.mjs": {
+          "fingerprint": "sha256:c106c4640fc8fa304ac830da9b7cb5565771de07d9daea80979acf0c70dc0446",
+          "tier": "content"
+        },
+        "cli/writers/file-transaction.mjs": {
+          "fingerprint": "sha256:a2f7867b95f7e6276c36c0b08955aa93022bbdad4cf3c3538d0c7144ca060067",
+          "tier": "content"
+        },
+        "cli/writers/junit.mjs": {
+          "fingerprint": "sha256:26f4a68518f74d4014ea98f00f8a7a03b8ce25a0cd622cb51d557d5a17ed8e08",
+          "tier": "content"
+        },
+        "cli/writers/mechanical.mjs": {
+          "fingerprint": "sha256:e4f0ce88c706fe854a5685db33570fc1cbe14810b6bedc652922c2b07e714a74",
+          "tier": "content"
+        },
+        "cli/writers/sarif.mjs": {
+          "fingerprint": "sha256:295e494acb1d90dce7da7c4277be2b0c9e9ca423ec6f171233e471e0e16f6409",
+          "tier": "content"
+        },
+        "cli/writers/sections.mjs": {
+          "fingerprint": "sha256:86117011960a12be25b8cccb6377bad8d1717d891bbbaad7df0affa394ad4968",
+          "tier": "content"
+        },
+        "cli/writers/spec-outcomes.mjs": {
+          "fingerprint": "sha256:075855af70d26eb72af635002dc4327beee55acb548c2682b34aa9fb20063254",
+          "tier": "content"
+        },
+        "cli/writers/trace-matrix.mjs": {
+          "fingerprint": "sha256:cf5c61a8a4210ca14e5b740255ee73b50e45372b9127345d42021ef7fc77d252",
+          "tier": "content"
+        },
+        "docs/_config.yml": {
+          "fingerprint": "sha256:d864f7a070c4a0ef28a017c3755fd2de4c4e7303ba21d4db369893d762a262d5",
+          "tier": "content"
+        },
+        "schemas/docguard-benchmark-baseline.schema.json": {
+          "fingerprint": "sha256:c6d07ffaaff88cf868836b6ee0051f50437f3eb95ef474983d789ad27da5c16c",
+          "tier": "content"
+        },
+        "schemas/docguard-benchmark.schema.json": {
+          "fingerprint": "sha256:2d548a10d8aad74a294365eefa1a0a5b8e571aa0a8b38360603b530d5c03b528",
+          "tier": "content"
+        },
+        "schemas/docguard-feedback-fixture.schema.json": {
+          "fingerprint": "sha256:03e9f3332056a0d9b6f5bc284eca90d96c4d0a24996546843f2d22c7dbf0f99a",
+          "tier": "content"
+        },
+        "schemas/docguard-task-context.schema.json": {
+          "fingerprint": "sha256:3414158cd59090ec30fbe330542a586e406bb5f38c4b850d7b977a9a33db8207",
+          "tier": "content"
+        },
+        "server.json": {
+          "fingerprint": "sha256:c4d5a567e25d399ea899cf0fb32a709b68a6c78d2818c199442e478b87c726ca",
+          "tier": "content"
+        },
+        "tools/budget.mjs": {
+          "fingerprint": "sha256:b8492d38b9a11d9bfaca3957b27425847aeefe250e797ba4048bf3bce1181c8e",
+          "tier": "content"
+        },
+        "tools/fuzz.mjs": {
+          "fingerprint": "sha256:1b6d05587ea932a4dc69bf180ce1068cb3dff5c9b89d32f0223451630d2cd1c0",
+          "tier": "content"
+        },
+        "tools/generate-docs-reference.mjs": {
+          "fingerprint": "sha256:0e601a8534873774feef99198a21ebd3dcbdfc95325e60e640f5f5d4effe531f",
+          "tier": "content"
+        },
+        "tools/generate-llms.mjs": {
+          "fingerprint": "sha256:adcd629e39bcc6d8dab87c3e2593a9b2e95f567f72d7c71b10420e777eb62d85",
+          "tier": "content"
+        },
+        "tools/release-ab.mjs": {
+          "fingerprint": "sha256:ae33b4d85ffcd04d19b1ccdd88449d0c491b72aa224b93fe1a19ad3cceebb0f4",
+          "tier": "content"
+        }
+      },
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
+    },
+    "docs-canonical/DATA-MODEL.md": {
+      "excluded": {
+        ".docguard-anchor-lock.jsonl": "DocGuard state file",
+        ".docguard-archive.json": "DocGuard state file",
+        ".docguard-doc-lock.json": "DocGuard state file",
+        ".docguard-specs.json": "DocGuard state file",
+        ".docguard.json": "DocGuard state file",
+        ".docguardignore": "DocGuard state file",
+        "AGENTS.md": "another document (reviewed on its own)",
+        "CLAUDE.md": "another document (reviewed on its own)",
+        "CONTRIBUTING.md": "another document (reviewed on its own)",
+        "README.md": "another document (reviewed on its own)",
+        "benchmarks": "directory",
+        "cli": "directory",
+        "docs": "directory",
+        "docs-canonical": "directory",
+        "docs-canonical/SECURITY.md": "another document (reviewed on its own)",
+        "docs/configuration.md": "another document (reviewed on its own)",
+        "docs/languages.md": "another document (reviewed on its own)",
+        "examples": "directory",
+        "extensions": "directory",
+        "release-gate.json": "under 20 lines",
+        "schemas/claimspec/v1": "directory",
+        "schemas/docguard-precision-evidence.schema.json": "changelog, lockfile or claims/evidence data",
+        "specs": "directory",
+        "templates": "directory",
+        "tests": "directory"
+      },
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "references": {
+        ".gitignore": {
+          "fingerprint": "sha256:cd79dda0d7afe77526187876557a24d83db3e714a685703ec57f141eb781930a",
+          "tier": "content"
+        },
+        "benchmarks/agent-context/manifest-v2.json": {
+          "fingerprint": "sha256:abe20556805093ca54125c2e76eb30d614902b545bd17c0c2e3e4c06b679ea77",
+          "tier": "content"
+        },
+        "benchmarks/agent-context/manifest-v3.json": {
+          "fingerprint": "sha256:61ab6dde128bfc28725014a4e91d9bcd3775a1a3a5aa8435a67cabc2dd2ab571",
+          "tier": "content"
+        },
+        "benchmarks/baseline.json": {
+          "fingerprint": "sha256:625c231b63c4c87a59d6c116f8f51f230d7e6846f047a49ce3822e7993387538",
+          "tier": "content"
+        },
+        "benchmarks/corpus.json": {
+          "fingerprint": "sha256:e8351fd392ba4ab2565499df93016f9c18f9402cbfa48f1504015172261df9df",
+          "tier": "content"
+        },
+        "benchmarks/lib/baseline.mjs": {
+          "fingerprint": "sha256:5c0134c534f8cccc62d5fa91356108e4c72090a41e8fe4e728645ce7d5b0f809",
+          "tier": "content"
+        },
+        "budgets.json": {
+          "fingerprint": "sha256:9ac540954a3c52d05e51e4f64a2c7f35adaf9a5cd81e89a003f8416a172497bb",
+          "tier": "content"
+        },
+        "cli/claimspec-schema.mjs": {
+          "fingerprint": "sha256:483618cb6b754db3923070310ac1ebd1f27b1bb7d179b6df0bde2942ffeb4044",
+          "tier": "content"
+        },
+        "cli/precision-evidence-data.mjs": {
+          "fingerprint": "sha256:6daed8e9420a52c4541d87fa6d5729a65fd8eb19b31146657c22f8753d929d86",
+          "tier": "content"
+        },
+        "cli/scanners/api-doc.mjs": {
+          "fingerprint": "sha256:bd7942d9190b035e9ac2d90e6517db7ea93848ab2ed1fbea6bc775167cef688d",
+          "tier": "content"
+        },
+        "cli/scanners/fingerprint.mjs": {
+          "fingerprint": "sha256:6849c8d892166950a0c5a3002e6f22472b0514938929fc6235bde8875e17bc7d",
+          "tier": "content"
+        },
+        "cli/scanners/route-case.mjs": {
+          "fingerprint": "sha256:c4506e592e5e2bbe0039e891e362ccc3cfe02273e719223fea781272eee325ec",
+          "tier": "content"
+        },
+        "cli/scanners/routes.mjs": {
+          "fingerprint": "sha256:aaa8ff78bf1fccfe272075b1046f688df74ee6042e936412e7dd6c186fc76f6f",
+          "tier": "content"
+        },
+        "cli/scanners/suppressions.mjs": {
+          "fingerprint": "sha256:b4c05e04f51226f1be7e83b7c0fad86cceacc66a4926f7d0db55f665025ce95e",
+          "tier": "content"
+        },
+        "cli/shared-ignore.mjs": {
+          "fingerprint": "sha256:d4678bad6516fdde0adf9c9c6d4bd25b541eba552f3d9ba674413bc2fd92fa1f",
+          "tier": "content"
+        },
+        "cli/shared-labels.mjs": {
+          "fingerprint": "sha256:f2e7d39b3e1854b2f1a691d17f008124ae7b7fec2c07594fda7cc41c06746b64",
+          "tier": "content"
+        },
+        "cli/waiver-metadata.mjs": {
+          "fingerprint": "sha256:36dba31d7ff5924932d2e2861757419c06c1b4b4c56cdd300922abe09ae2ffdf",
+          "tier": "content"
+        },
+        "cli/writers/baseline.mjs": {
+          "fingerprint": "sha256:f28ef8bbfa3c661b93ef2d80f71fadfc9a3abe2c6dfe682fa49cca55471a6cce",
+          "tier": "content"
+        },
+        "package.json": {
+          "fingerprint": "sha256:7a36cce360ad16dfdc784ea8e4794de6ac3c7f64fef7f1a3693fba8f81504103",
+          "tier": "content"
+        },
+        "schemas/docguard-anchor-lock.schema.json": {
+          "fingerprint": "sha256:dcd61d8973756f83cfbdb7f66bf770964b2141f51b47e0bc22a7d03b2662c7b9",
+          "tier": "content"
+        },
+        "schemas/docguard-benchmark-baseline.schema.json": {
+          "fingerprint": "sha256:c6d07ffaaff88cf868836b6ee0051f50437f3eb95ef474983d789ad27da5c16c",
+          "tier": "content"
+        },
+        "schemas/docguard-doc-lock.schema.json": {
+          "fingerprint": "sha256:39d69c62b4d9bfb6837cfac265a53b93a566ad61be4897107ea3887f4483964b",
+          "tier": "content"
+        },
+        "schemas/docguard-doc-reviews.schema.json": {
+          "fingerprint": "sha256:7b7432ff85e21b091ab1656fb3aa031a7f1178c235f17b3896dece3b4ebf06d3",
+          "tier": "content"
+        },
+        "schemas/docguard-dora.schema.json": {
+          "fingerprint": "sha256:ce67acf359a150b4a991cf5271f679204bc74e7f7fa9147eb9ff86f89581c48a",
+          "tier": "content"
+        },
+        "schemas/docguard-specs.schema.json": {
+          "fingerprint": "sha256:2a4d41f67d2262197d4610d35e91559c09d9a234c4d96b334f02d5ab3ddccb2d",
+          "tier": "content"
+        },
+        "schemas/docguard-task-context.schema.json": {
+          "fingerprint": "sha256:3414158cd59090ec30fbe330542a586e406bb5f38c4b850d7b977a9a33db8207",
+          "tier": "content"
+        },
+        "tools/budget.mjs": {
+          "fingerprint": "sha256:b8492d38b9a11d9bfaca3957b27425847aeefe250e797ba4048bf3bce1181c8e",
+          "tier": "content"
+        },
+        "tools/release-ab.mjs": {
+          "fingerprint": "sha256:ae33b4d85ffcd04d19b1ccdd88449d0c491b72aa224b93fe1a19ad3cceebb0f4",
+          "tier": "content"
+        },
+        "tools/suite-runtime-reference.json": {
+          "fingerprint": "sha256:a5f5e37d811c7a4ee23fad1df0b86871b998dcd5069aa440c1c35628e4f5cfef",
+          "tier": "content"
+        }
+      },
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
+    },
+    "docs-canonical/TEST-SPEC.md": {
+      "excluded": {
+        ".docguardignore": "DocGuard state file",
+        "benchmarks": "directory",
+        "cli": "directory",
+        "cli/shared-validator-surface.mjs": "under 20 lines",
+        "docs": "directory",
+        "extensions/aidlc/docguard": "directory",
+        "release-gate.json": "under 20 lines",
+        "schemas/docguard-precision-evidence.schema.json": "changelog, lockfile or claims/evidence data",
+        "tests": "directory",
+        "tests/accountable-suppressions.test.mjs": "test, fixture or example path",
+        "tests/adoption-workflow.test.mjs": "test, fixture or example path",
+        "tests/agent-context-benchmark.test.mjs": "test, fixture or example path",
+        "tests/agent-instruction-budget.test.mjs": "test, fixture or example path",
+        "tests/agent-instruction-role.test.mjs": "test, fixture or example path",
+        "tests/agent.test.mjs": "test, fixture or example path",
+        "tests/aidlc-plugin.test.mjs": "test, fixture or example path",
+        "tests/aidlc-profile.test.mjs": "test, fixture or example path",
+        "tests/anchor-cache.test.mjs": "test, fixture or example path",
+        "tests/anchor-lock-merge.test.mjs": "test, fixture or example path",
+        "tests/anchor-oracle.test.mjs": "test, fixture or example path",
+        "tests/architecture.test.mjs": "test, fixture or example path",
+        "tests/archive.test.mjs": "test, fixture or example path",
+        "tests/as-built-specs.test.mjs": "test, fixture or example path",
+        "tests/assessment.test.mjs": "test, fixture or example path",
+        "tests/asset-path-attribution.test.mjs": "test, fixture or example path",
+        "tests/authoring-contract.test.mjs": "test, fixture or example path",
+        "tests/baseline-stable-fingerprint.test.mjs": "test, fixture or example path",
+        "tests/baseline.test.mjs": "test, fixture or example path",
+        "tests/benchmark-baseline.test.mjs": "test, fixture or example path",
+        "tests/benchmark-manifest.test.mjs": "test, fixture or example path",
+        "tests/benchmark-metrics.test.mjs": "test, fixture or example path",
+        "tests/benchmark-runner.test.mjs": "test, fixture or example path",
+        "tests/budget.test.mjs": "test, fixture or example path",
+        "tests/canonical-requirement-links.test.mjs": "test, fixture or example path",
+        "tests/canonical-sync.test.mjs": "test, fixture or example path",
+        "tests/ci-reproducibility.test.mjs": "test, fixture or example path",
+        "tests/code-derived-diagrams.test.mjs": "test, fixture or example path",
+        "tests/commands.test.mjs": "test, fixture or example path",
+        "tests/compact-guard-response.test.mjs": "test, fixture or example path",
+        "tests/completion-revision-anchoring.test.mjs": "test, fixture or example path",
+        "tests/config.test.mjs": "test, fixture or example path",
+        "tests/consumer-report-precision.test.mjs": "test, fixture or example path",
+        "tests/decision-records.test.mjs": "test, fixture or example path",
+        "tests/demo-command.test.mjs": "test, fixture or example path",
+        "tests/doc-dependency-lock.test.mjs": "test, fixture or example path",
+        "tests/doc-ownership.test.mjs": "test, fixture or example path",
+        "tests/doc-validator-fidelity.test.mjs": "test, fixture or example path",
+        "tests/docguardignore.test.mjs": "test, fixture or example path",
+        "tests/docs-diff.test.mjs": "test, fixture or example path",
+        "tests/docs-sync-specific-evidence.test.mjs": "test, fixture or example path",
+        "tests/docs-sync.test.mjs": "test, fixture or example path",
+        "tests/document-languages-compat.test.mjs": "test, fixture or example path",
+        "tests/document-languages-english-identity.test.mjs": "test, fixture or example path",
+        "tests/document-languages-metrics.test.mjs": "test, fixture or example path",
+        "tests/document-languages-naming.test.mjs": "test, fixture or example path",
+        "tests/document-languages-registry.test.mjs": "test, fixture or example path",
+        "tests/document-languages-strict.test.mjs": "test, fixture or example path",
+        "tests/document-languages-structure.test.mjs": "test, fixture or example path",
+        "tests/document-languages-writers.test.mjs": "test, fixture or example path",
+        "tests/document-lifecycle.test.mjs": "test, fixture or example path",
+        "tests/dogfood-findings.test.mjs": "test, fixture or example path",
+        "tests/dora-evidence.test.mjs": "test, fixture or example path",
+        "tests/enforcement-ladder.test.mjs": "test, fixture or example path",
+        "tests/evidence-adapters.test.mjs": "test, fixture or example path",
+        "tests/evidence-integration.test.mjs": "test, fixture or example path",
+        "tests/evidence-manifest.test.mjs": "test, fixture or example path",
+        "tests/fallback-language-coverage.test.mjs": "test, fixture or example path",
+        "tests/feedback-contributions.test.mjs": "test, fixture or example path",
+        "tests/feedback-fixture.test.mjs": "test, fixture or example path",
+        "tests/field-report-3-deferred.test.mjs": "test, fixture or example path",
+        "tests/file-kinds-detection.test.mjs": "test, fixture or example path",
+        "tests/file-kinds-registry.test.mjs": "test, fixture or example path",
+        "tests/file-kinds-stage2.test.mjs": "test, fixture or example path",
+        "tests/file-kinds.test.mjs": "test, fixture or example path",
+        "tests/file-transaction.test.mjs": "test, fixture or example path",
+        "tests/findings-channels.test.mjs": "test, fixture or example path",
+        "tests/fingerprint-shared.test.mjs": "test, fixture or example path",
+        "tests/first-spec-preflight.test.mjs": "test, fixture or example path",
+        "tests/generated-docs-consistency.test.mjs": "test, fixture or example path",
+        "tests/generated-docs-e2e.test.mjs": "test, fixture or example path",
+        "tests/go-spring-rails-routes.test.mjs": "test, fixture or example path",
+        "tests/helpers/git.mjs": "test, fixture or example path",
+        "tests/helpers/temp-dir.mjs": "test, fixture or example path",
+        "tests/history-replay.test.mjs": "test, fixture or example path",
+        "tests/hooks-contract.test.mjs": "test, fixture or example path",
+        "tests/hooks.test.mjs": "test, fixture or example path",
+        "tests/ignore-parser-parity.test.mjs": "test, fixture or example path",
+        "tests/ignore-reasons.test.mjs": "test, fixture or example path",
+        "tests/impact-walk-relocation.test.mjs": "test, fixture or example path",
+        "tests/impact.test.mjs": "test, fixture or example path",
+        "tests/instruction-audit.test.mjs": "test, fixture or example path",
+        "tests/instruction-copies.test.mjs": "test, fixture or example path",
+        "tests/js-import-edges.test.mjs": "test, fixture or example path",
+        "tests/js-ts-extraction.test.mjs": "test, fixture or example path",
+        "tests/jules-policy.test.mjs": "test, fixture or example path",
+        "tests/junit.test.mjs": "test, fixture or example path",
+        "tests/mcp-doc-tools.test.mjs": "test, fixture or example path",
+        "tests/mcp-http.test.mjs": "test, fixture or example path",
+        "tests/mcp-project-confinement.test.mjs": "test, fixture or example path",
+        "tests/mcp-registry.test.mjs": "test, fixture or example path",
+        "tests/mcp.test.mjs": "test, fixture or example path",
+        "tests/mechanical.test.mjs": "test, fixture or example path",
+        "tests/memory-governance.test.mjs": "test, fixture or example path",
+        "tests/metrics-consistency.test.mjs": "test, fixture or example path",
+        "tests/mirrors.test.mjs": "test, fixture or example path",
+        "tests/npm-pack-smoke.test.mjs": "test, fixture or example path",
+        "tests/output-ux.test.mjs": "test, fixture or example path",
+        "tests/parser-tier.test.mjs": "test, fixture or example path",
+        "tests/path-scoped-rules.test.mjs": "test, fixture or example path",
+        "tests/pattern-lexer.test.mjs": "test, fixture or example path",
+        "tests/php-dotnet-routes.test.mjs": "test, fixture or example path",
+        "tests/precision-evidence.test.mjs": "test, fixture or example path",
+        "tests/program-verification.test.mjs": "test, fixture or example path",
+        "tests/py-ast.test.mjs": "test, fixture or example path",
+        "tests/python-extraction.test.mjs": "test, fixture or example path",
+        "tests/python-import-graph.test.mjs": "test, fixture or example path",
+        "tests/quoted-comment-openers.test.mjs": "test, fixture or example path",
+        "tests/read-only-commands.test.mjs": "test, fixture or example path",
+        "tests/reconcile.test.mjs": "test, fixture or example path",
+        "tests/recorded-document-reviews.test.mjs": "test, fixture or example path",
+        "tests/release-cut-green.test.mjs": "test, fixture or example path",
+        "tests/release-readiness.test.mjs": "test, fixture or example path",
+        "tests/release-trend-gate.test.mjs": "test, fixture or example path",
+        "tests/release-version-sync.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-adoption.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-golden.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-import.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-lock.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-orphans.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-policy.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-rename.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-ripple.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-testchain.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors-treesitter.test.mjs": "test, fixture or example path",
+        "tests/requirement-anchors.test.mjs": "test, fixture or example path",
+        "tests/requirement-evidence-literals.test.mjs": "test, fixture or example path",
+        "tests/router-routes-unresolved.test.mjs": "test, fixture or example path",
+        "tests/routes-multilang.test.mjs": "test, fixture or example path",
+        "tests/sarif.test.mjs": "test, fixture or example path",
+        "tests/score-assurance.test.mjs": "test, fixture or example path",
+        "tests/security-init-injection.test.mjs": "test, fixture or example path",
+        "tests/severity.test.mjs": "test, fixture or example path",
+        "tests/shared-git.test.mjs": "test, fixture or example path",
+        "tests/shared-requirements-block.test.mjs": "test, fixture or example path",
+        "tests/spec-completion.test.mjs": "test, fixture or example path",
+        "tests/spec-first.test.mjs": "test, fixture or example path",
+        "tests/spec-kit-artifact-coverage.test.mjs": "test, fixture or example path",
+        "tests/spec-kit-delegation.test.mjs": "test, fixture or example path",
+        "tests/spec-kit-integration-honesty.test.mjs": "test, fixture or example path",
+        "tests/spec-registry.test.mjs": "test, fixture or example path",
+        "tests/spk010-directory-claims.test.mjs": "test, fixture or example path",
+        "tests/suite-runtime-budget.test.mjs": "test, fixture or example path",
+        "tests/symbol-map.test.mjs": "test, fixture or example path",
+        "tests/sync-since.test.mjs": "test, fixture or example path",
+        "tests/sync.test.mjs": "test, fixture or example path",
+        "tests/task-context.test.mjs": "test, fixture or example path",
+        "tests/test-case-count.test.mjs": "test, fixture or example path",
+        "tests/test-git-hermeticity.test.mjs": "test, fixture or example path",
+        "tests/test-temp-dirs.test.mjs": "test, fixture or example path",
+        "tests/todo-tracking.test.mjs": "test, fixture or example path",
+        "tests/trace-matrix.test.mjs": "test, fixture or example path",
+        "tests/trace-reverse.test.mjs": "test, fixture or example path",
+        "tests/traceability-lifecycle.test.mjs": "test, fixture or example path",
+        "tests/traceability.test.mjs": "test, fixture or example path",
+        "tests/typeorm-models.test.mjs": "test, fixture or example path",
+        "tests/update-awareness.test.mjs": "test, fixture or example path",
+        "tests/upstream-coverage.test.mjs": "test, fixture or example path",
+        "tests/user-docs.test.mjs": "test, fixture or example path",
+        "tests/validator-fuzz.test.mjs": "test, fixture or example path",
+        "tests/verdict-contract.test.mjs": "test, fixture or example path",
+        "tests/volatile-anchor-lines.test.mjs": "test, fixture or example path",
+        "tests/watch-reliability.test.mjs": "test, fixture or example path",
+        "tests/whole-token-sibling-matchers.test.mjs": "test, fixture or example path",
+        "tests/workflow-permissions.test.mjs": "test, fixture or example path",
+        "tools": "directory",
+        "tools/anchor-oracle/corpus": "directory"
+      },
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "references": {
+        ".github/scripts/homebrew-formula.mjs": {
+          "fingerprint": "sha256:a5d846f4eaf3212b43e7367cb966b8c31e1c6d7c840c96d9debc0e5538aeb743",
+          "tier": "content"
+        },
+        ".github/scripts/jules-policy.mjs": {
+          "fingerprint": "sha256:1103ee9ecc4394bc397eceab17fa76fc141ca22e83b3360f3737e14ed97be423",
+          "tier": "content"
+        },
+        ".github/scripts/jules-triage.mjs": {
+          "fingerprint": "sha256:03d233fe859237a5285a19a07ce4a9fb10b083f9ba605da040fd6348f34adca9",
+          "tier": "content"
+        },
+        ".github/scripts/mcp-registry.mjs": {
+          "fingerprint": "sha256:0b1c197f35d73fcda465bb46fece51360563ab3dbb75978de7c539b14735e7b2",
+          "tier": "content"
+        },
+        ".github/scripts/release-changelog.mjs": {
+          "fingerprint": "sha256:ef65f91cd76d33f9db1f039839a0f1f93624696f533206dbfafb99513359e714",
+          "tier": "content"
+        },
+        ".github/scripts/sync-release-version.mjs": {
+          "fingerprint": "sha256:e0a127de88cff01807edf46c60735f8d0194ca8c583923e04ae75ec2193fd57a",
+          "tier": "content"
+        },
+        ".github/workflows/ci.yml": {
+          "fingerprint": "sha256:cb3287466953fd3690e797249c64d6b64661b79b44d439a1e9fd77eee0609d4c",
+          "tier": "content"
+        },
+        ".jules/preflight.mjs": {
+          "fingerprint": "sha256:4af8d99fc2d9b7b88b4702d51e66fd0ad2e9502713d7f17b66feaad8f2120d29",
+          "tier": "content"
+        },
+        ".jules/setup.sh": {
+          "fingerprint": "sha256:2cf84cc8751f2eb347147ba8a7075b074f1b4cabf9b22919bf7c37bda35e8a98",
+          "tier": "content"
+        },
+        "benchmarks/agent-context/run.mjs": {
+          "fingerprint": "sha256:114e62c56c152f806ba4ec1ea9e7910b738e0d0dc2bc6365cc985cc19e818a11",
+          "tier": "content"
+        },
+        "benchmarks/baseline.json": {
+          "fingerprint": "sha256:625c231b63c4c87a59d6c116f8f51f230d7e6846f047a49ce3822e7993387538",
+          "tier": "content"
+        },
+        "benchmarks/generate-precision-evidence.mjs": {
+          "fingerprint": "sha256:6f8a1552361032f9453219b855995bcd84ebf24dece3ef0c88ffe57581210caf",
+          "tier": "content"
+        },
+        "benchmarks/history-replay/run.mjs": {
+          "fingerprint": "sha256:9c957e5f5cb06e694cc61a4bf88ff360b772ffeeaf3b8e68bf2c01dcc53e2fd8",
+          "tier": "content"
+        },
+        "benchmarks/lib/baseline.mjs": {
+          "fingerprint": "sha256:5c0134c534f8cccc62d5fa91356108e4c72090a41e8fe4e728645ce7d5b0f809",
+          "tier": "content"
+        },
+        "benchmarks/lib/compare.mjs": {
+          "fingerprint": "sha256:171e6c29690eae53716a449d586be25e51889d920c6ac5841c2b39b2ada43c1c",
+          "tier": "content"
+        },
+        "benchmarks/lib/manifest.mjs": {
+          "fingerprint": "sha256:234dda5cd0f913d7177f2c2fec7beb71d20ed622678f04b5d3ea923014b10811",
+          "tier": "content"
+        },
+        "benchmarks/lib/metrics.mjs": {
+          "fingerprint": "sha256:375eb31c35d7b8f560823dd499e77f8aeeb1b1f59a6427498658dda07dc867d6",
+          "tier": "content"
+        },
+        "benchmarks/lib/precision-evidence.mjs": {
+          "fingerprint": "sha256:7750a73f5842bab86141b959b441e0689a6daa1a45a8aead2a2180b396005cef",
+          "tier": "content"
+        },
+        "benchmarks/lib/runner.mjs": {
+          "fingerprint": "sha256:a020b876239b23898d87e8ae236770e6c5e448325d08b5900e67bc48a057876b",
+          "tier": "content"
+        },
+        "benchmarks/run.mjs": {
+          "fingerprint": "sha256:115684a78c2285cfa045783efcd78f0842b6240aaf17f20ac4d90d9b8bf69746",
+          "tier": "content"
+        },
+        "cli/agent-surface.mjs": {
+          "fingerprint": "sha256:d2764c09215fe598770e5a30a3d53c6cc92ffdf0e8fecab47dae7c9351b15992",
+          "tier": "content"
+        },
+        "cli/authoring-contract.mjs": {
+          "fingerprint": "sha256:336e1af2be6d650dfc5cb1e216d61034373419eb5f479da8d882d6341e159247",
+          "tier": "content"
+        },
+        "cli/claimspec-schema.mjs": {
+          "fingerprint": "sha256:483618cb6b754db3923070310ac1ebd1f27b1bb7d179b6df0bde2942ffeb4044",
+          "tier": "content"
+        },
+        "cli/commands/agent.mjs": {
+          "fingerprint": "sha256:de4428b64cdae5d2e0e6c6f50a53284c01410be541184ae46558995aa8a278d2",
+          "tier": "content"
+        },
+        "cli/commands/agents.mjs": {
+          "fingerprint": "sha256:1db8882576701e42a9cf5edbe007bd5e97458fa0103deee75e9322900f043fc7",
+          "tier": "content"
+        },
+        "cli/commands/anchors.mjs": {
+          "fingerprint": "sha256:7f74426519c9628a45ab91da99764ff5bcd91a304f5b4b48425b9de7a98c0ba8",
+          "tier": "content"
+        },
+        "cli/commands/badge.mjs": {
+          "fingerprint": "sha256:77071f068ff39ec75c6b5fb8defa100b1b9a88a820202424fbab045ec5e81631",
+          "tier": "content"
+        },
+        "cli/commands/ci.mjs": {
+          "fingerprint": "sha256:cd65dc99dedba549c4f9afc84c0e7544799220c312fadb912ca8895af7efbf49",
+          "tier": "content"
+        },
+        "cli/commands/demo.mjs": {
+          "fingerprint": "sha256:b2407ac4d08a26e8c5f1ab83965946d8a86922b8e446688f151d5be8f6df5e5d",
+          "tier": "content"
+        },
+        "cli/commands/diagnose.mjs": {
+          "fingerprint": "sha256:326361cbf7ef6b58dbd25985ddef81a9713c75bc05987bf654d00386e5dea092",
+          "tier": "content"
+        },
+        "cli/commands/diff.mjs": {
+          "fingerprint": "sha256:4a43a85dde1d4d919ff54ca254e494662fb4e4ce717c143ad458cbb3d2fe42bf",
+          "tier": "content"
+        },
+        "cli/commands/feedback.mjs": {
+          "fingerprint": "sha256:307a85facbc9057f900d0f57fcfbbe9e7df7bede9a851a6308b2cf8862905954",
+          "tier": "content"
+        },
+        "cli/commands/fix.mjs": {
+          "fingerprint": "sha256:73e3cfc0cafc69ae28993fde7155fd4c9b0a34b0fb0f9ae76eb624765fca3a99",
+          "tier": "content"
+        },
+        "cli/commands/generate-as-built.mjs": {
+          "fingerprint": "sha256:22dbd67379006a197c0ad13551cbabfc2bdfa26c8b85acbef2a427542f272937",
+          "tier": "content"
+        },
+        "cli/commands/generate.mjs": {
+          "fingerprint": "sha256:3220dd0de705773dcb0faff488a41bfce36bcd7039316e8bf27130a839b88788",
+          "tier": "content"
+        },
+        "cli/commands/guard.mjs": {
+          "fingerprint": "sha256:be9fc3d10beb5a33f998c1e307819c1339c4378d7d0803efb41c10055a213c3f",
+          "tier": "content"
+        },
+        "cli/commands/hooks.mjs": {
+          "fingerprint": "sha256:44e8c518877e56e4aff66208d12ef1efe4a576ed3a545d1f5efa919c7e759a3c",
+          "tier": "content"
+        },
+        "cli/commands/ignore.mjs": {
+          "fingerprint": "sha256:ff787dbb112c904ff0185306848d82d477a5a6e14a77d94afb44f64132847f14",
+          "tier": "content"
+        },
+        "cli/commands/init.mjs": {
+          "fingerprint": "sha256:d407eda81f294c207b918ef97c56e3e80f1849855c9a6a9e44f235035fad1545",
+          "tier": "content"
+        },
+        "cli/commands/llms.mjs": {
+          "fingerprint": "sha256:a06418e91484266c8ea13da5aacb4b48992adbd0e3cab0500964a645ad01f599",
+          "tier": "content"
+        },
+        "cli/commands/mcp.mjs": {
+          "fingerprint": "sha256:9d86523f203edd98f4256202da80f2875da6b39a13206a602f1fc7e3c81bf71a",
+          "tier": "content"
+        },
+        "cli/commands/memory-aidlc.mjs": {
+          "fingerprint": "sha256:b73f0b5f7994211ad1b35869d0ad4af5b7b60aa4664604efc5e04e5f3eab3ff3",
+          "tier": "content"
+        },
+        "cli/commands/policy.mjs": {
+          "fingerprint": "sha256:69bd6171f877b44db37004c36400fc4528c635185c19863f9e5f5fab34f2e7d5",
+          "tier": "content"
+        },
+        "cli/commands/publish.mjs": {
+          "fingerprint": "sha256:32f98e435831cdaca128056bf9aff1e5a2a5469e47a5a38f01efe48236ba7ccc",
+          "tier": "content"
+        },
+        "cli/commands/reconcile.mjs": {
+          "fingerprint": "sha256:51b951c1f262a43dfaafee009e91a23a8bc17dea8e11feac92499b627723e29d",
+          "tier": "content"
+        },
+        "cli/commands/retire.mjs": {
+          "fingerprint": "sha256:dcf593bc87b0c7ddbd3f59b6c4b63e1c48802a61ed1d05bc2083135e7bd20d6b",
+          "tier": "content"
+        },
+        "cli/commands/review.mjs": {
+          "fingerprint": "sha256:76a812297d584d18f62dc5eb91ab4793a91205812cdcb795636c68748848658a",
+          "tier": "content"
+        },
+        "cli/commands/rules.mjs": {
+          "fingerprint": "sha256:5d99c7249f7b0c0af554efde0337381ec73c0a173ccbfecdd1a88ccf4d3ce3c2",
+          "tier": "content"
+        },
+        "cli/commands/score-dora.mjs": {
+          "fingerprint": "sha256:c9e29e8947e157ca55a745ab52a6008c5af5757b6d27f2a13726751d4df873c9",
+          "tier": "content"
+        },
+        "cli/commands/score.mjs": {
+          "fingerprint": "sha256:2a148cd83b51fa20057fc074da8b0e2c9e3024833031d0642f98b469a45b5eac",
+          "tier": "content"
+        },
+        "cli/commands/sensor.mjs": {
+          "fingerprint": "sha256:192a2b9080a653fb7b580e55533ed8e1141abe1506322df594f04a423a34add4",
+          "tier": "content"
+        },
+        "cli/commands/specs.mjs": {
+          "fingerprint": "sha256:0ee390da573937668b3b4b8569739ac505f826ec06c8888d6ef2432fbb69eed0",
+          "tier": "content"
+        },
+        "cli/commands/sync-tests.mjs": {
+          "fingerprint": "sha256:977313121aaedd13d9a895e91635dc5b1027cf841e065175c1810513d46dccf5",
+          "tier": "content"
+        },
+        "cli/commands/trace.mjs": {
+          "fingerprint": "sha256:aed748e79290b2a303213989a66f699708e2807facafa24f9d359b084a00e274",
+          "tier": "content"
+        },
+        "cli/commands/watch.mjs": {
+          "fingerprint": "sha256:eeee98735df8f79ac451576f738ea5157f043c37e78f6568ceb69f81e3b4d0fb",
+          "tier": "content"
+        },
+        "cli/config.mjs": {
+          "fingerprint": "sha256:d6fdf62316d69c55b99aa5dfe1c33f56d8299206d6c1389d5aaa4fa09d58ee86",
+          "tier": "content"
+        },
+        "cli/docguard.mjs": {
+          "fingerprint": "sha256:bb186f1b356225a3ba862d083591fa1c911f43ab00a1236fff84e53bb391f81a",
+          "tier": "content"
+        },
+        "cli/ensure-skills.mjs": {
+          "fingerprint": "sha256:dc83f5de80f6f5845b79c1d0bab8bbb1542ec565affef7217f0bfa00f952de41",
+          "tier": "content"
+        },
+        "cli/feedback-fixture.mjs": {
+          "fingerprint": "sha256:bb5e01095384dcf44b77094da3d4dc39d18eac083d9878156fdddb84d1dfc92e",
+          "tier": "content"
+        },
+        "cli/findings.mjs": {
+          "fingerprint": "sha256:31bd63eb23c7440e4fb1813059da342c4d998104adf35a5bea5861b632da6d9f",
+          "tier": "content"
+        },
+        "cli/observations.mjs": {
+          "fingerprint": "sha256:46e693dd0de809928d4a48e4b6eb50f70788ea2b1180ebf6a4afcc4eea0d61d7",
+          "tier": "content"
+        },
+        "cli/precision-evidence-data.mjs": {
+          "fingerprint": "sha256:6daed8e9420a52c4541d87fa6d5729a65fd8eb19b31146657c22f8753d929d86",
+          "tier": "content"
+        },
+        "cli/precision-evidence.mjs": {
+          "fingerprint": "sha256:d2daeb61750f6ddd661bbc63cc11a41fec34d338e549271d1bac74f1b444e5fa",
+          "tier": "content"
+        },
+        "cli/release-age.mjs": {
+          "fingerprint": "sha256:9bf9073d1ddd062d55bcb0160f84c21dc972391b24e5cf7aeea82fe0c0534e3c",
+          "tier": "content"
+        },
+        "cli/release-pr-policy.mjs": {
+          "fingerprint": "sha256:9fbe3fba02e7cd529fb824109785200d36661f7ebc1dabc8a6b07bc65b7bb4df",
+          "tier": "content"
+        },
+        "cli/required-checks.mjs": {
+          "fingerprint": "sha256:50dad08f9defb561be3a085d88f2baaa48c46a6ed70df4d8810068f48b2f0424",
+          "tier": "content"
+        },
+        "cli/scanners/agent-instructions.mjs": {
+          "fingerprint": "sha256:a514c058a12e53b4812ec31868beed07ff4964e9d27c95e455bbfc6ba14bff42",
+          "tier": "content"
+        },
+        "cli/scanners/aidlc.mjs": {
+          "fingerprint": "sha256:a49963ad20bce59fc8366d0f00448e4d888680c912451452cd4a0ccf0468f270",
+          "tier": "content"
+        },
+        "cli/scanners/anchor-cache.mjs": {
+          "fingerprint": "sha256:46007e1c06cd8ff70f61e7afceed40c9590d59b1123d0c59068332f1733ed9d6",
+          "tier": "content"
+        },
+        "cli/scanners/anchor-lock.mjs": {
+          "fingerprint": "sha256:50f7bb6401f7932f4d8ae97cbe9ed0639bb45d7af383ab840866232fe645f302",
+          "tier": "content"
+        },
+        "cli/scanners/anchor-tags.mjs": {
+          "fingerprint": "sha256:27704f7dbdbc0a29649070c1e5eb2a4566d5c8dd9b49d9b3f1d0128d718b3b27",
+          "tier": "content"
+        },
+        "cli/scanners/anchors.mjs": {
+          "fingerprint": "sha256:8a7da0ddfcfca20973dc8278cb08ce6655817cd43b3e9da5d183bf65bc5b000d",
+          "tier": "content"
+        },
+        "cli/scanners/as-built.mjs": {
+          "fingerprint": "sha256:bd54b533d83b44966f2e9f587b74c2eb8d47b8feaa6a5b1bc31aa56fe42c283a",
+          "tier": "content"
+        },
+        "cli/scanners/chain-coverage.mjs": {
+          "fingerprint": "sha256:a8d0ef1f7971f81e9c7c0df72a83f103129d90743c5111a988337ef541d6884e",
+          "tier": "content"
+        },
+        "cli/scanners/doc-deps.mjs": {
+          "fingerprint": "sha256:094ff344889bc55acc91e63bfccf1034f5efba572a2cac60dd33299c4900e616",
+          "tier": "content"
+        },
+        "cli/scanners/doc-ownership.mjs": {
+          "fingerprint": "sha256:8b1fc1e180121497fb3c0c85ce8dfc654eea776ce11653ef7c6b5f1955626f85",
+          "tier": "content"
+        },
+        "cli/scanners/doc-references.mjs": {
+          "fingerprint": "sha256:0b99c4769d467f7270cee9727d2a59db7e74014101016895fe0b199eadde87b5",
+          "tier": "content"
+        },
+        "cli/scanners/doc-reviews.mjs": {
+          "fingerprint": "sha256:3770460fd2d61500ffc97ff61058c34dccfc303b63f23b6c338fa893b52b7302",
+          "tier": "content"
+        },
+        "cli/scanners/dotnet-routes.mjs": {
+          "fingerprint": "sha256:b13790e20b2d7b8f626e5ee78b18b1e1cfea9d11f36e85f125c9a96870b488ad",
+          "tier": "content"
+        },
+        "cli/scanners/fingerprint.mjs": {
+          "fingerprint": "sha256:6849c8d892166950a0c5a3002e6f22472b0514938929fc6235bde8875e17bc7d",
+          "tier": "content"
+        },
+        "cli/scanners/frontmatter.mjs": {
+          "fingerprint": "sha256:b7f3ccebc336981f1121c71f5beab135ebc827d41a90921855e7e139801cc120",
+          "tier": "content"
+        },
+        "cli/scanners/go-routes.mjs": {
+          "fingerprint": "sha256:461be9e9bf9392b05f6e621b418be8e0d8c57a433ea5b4db79948c38ca3fb2d7",
+          "tier": "content"
+        },
+        "cli/scanners/import-graph.mjs": {
+          "fingerprint": "sha256:f77d26a4d7282e0671f297a3ff3513125546fab11a6a5734334ac70cb7549f3f",
+          "tier": "content"
+        },
+        "cli/scanners/instruction-audit.mjs": {
+          "fingerprint": "sha256:5907ba74ac01ec58ed270374ce90123ec5f53e30ad6fcbac1aff72091fcd736f",
+          "tier": "content"
+        },
+        "cli/scanners/instruction-scopes.mjs": {
+          "fingerprint": "sha256:557bfa8e9715a5e9ba5ddf969bba38e2bd59a17f11faa7ffc13090c7116a7161",
+          "tier": "content"
+        },
+        "cli/scanners/js-ast.mjs": {
+          "fingerprint": "sha256:f0176b49e545745f3dc87bf4f5d19f23aba89bcc1c443297286a4f153de5c3f8",
+          "tier": "content"
+        },
+        "cli/scanners/module-diagram.mjs": {
+          "fingerprint": "sha256:67f8c4d1e8387d2aef8d49228c1e15b311c3761d5b8d7790efd8f5aa5d362957",
+          "tier": "content"
+        },
+        "cli/scanners/pattern-lexer.mjs": {
+          "fingerprint": "sha256:2bce7155c462be9ef2fb11b7b8e8e97ab9f2f9bab6d1ad3b7122b21e6cb98006",
+          "tier": "content"
+        },
+        "cli/scanners/php-routes.mjs": {
+          "fingerprint": "sha256:7a25e369acb49fd813037d37a0635c9dada1a3470ad52132772b6db8990df139",
+          "tier": "content"
+        },
+        "cli/scanners/py-anchors.mjs": {
+          "fingerprint": "sha256:c3b1b9499a6c91faf516df5619ef0e0e644657e1bc19863976778b0f0084fb84",
+          "tier": "content"
+        },
+        "cli/scanners/py-env.mjs": {
+          "fingerprint": "sha256:949fab8382fda902fddfa05bb9f621e9591dd25672428ada198b00952857233e",
+          "tier": "content"
+        },
+        "cli/scanners/py-outline.mjs": {
+          "fingerprint": "sha256:133036a4b7b74c3e4e6e53628e29a31cdb587742616a6c4fb672296d513d0c34",
+          "tier": "content"
+        },
+        "cli/scanners/python-models.mjs": {
+          "fingerprint": "sha256:580c82d353765e77bab960b8a746b853d4ab7fb2eb6b416413f46db12f11b461",
+          "tier": "content"
+        },
+        "cli/scanners/python-routes.mjs": {
+          "fingerprint": "sha256:dff06224fc13050226c88b79593d0e9c25dc35e1ea579730814ffebf2b099a22",
+          "tier": "content"
+        },
+        "cli/scanners/rails-routes.mjs": {
+          "fingerprint": "sha256:3aa6e165b50d497c40c168d70fc326446d62c22237beac58bfee26bd86e4f61e",
+          "tier": "content"
+        },
+        "cli/scanners/reconciliation.mjs": {
+          "fingerprint": "sha256:ffd5747178fd0cf159143ba67c5aacaac21803d11c6e68767ac2f671096d6351",
+          "tier": "content"
+        },
+        "cli/scanners/recorded-review-signals.mjs": {
+          "fingerprint": "sha256:364e8754743f0686be042bcbf4eef098daed630b8703f88c11a769a90de3fea3",
+          "tier": "content"
+        },
+        "cli/scanners/reference-staleness.mjs": {
+          "fingerprint": "sha256:71db2a4fa14a5b34729b1cb4bcd009928e4d3ee8315f7001c9591b3e7f55c285",
+          "tier": "content"
+        },
+        "cli/scanners/requirement-docs.mjs": {
+          "fingerprint": "sha256:c827eabe7aabb9af63e0fc45f526923100b9bde8880dacef964dac93171ebb62",
+          "tier": "content"
+        },
+        "cli/scanners/requirement-evidence.mjs": {
+          "fingerprint": "sha256:bc181f30f80a0ec7f48a74d146ca9a9770910e85a8d3aa34e6b4bfdb3897ec25",
+          "tier": "content"
+        },
+        "cli/scanners/revision-anchor.mjs": {
+          "fingerprint": "sha256:904a6a9288174f28d319d68a3043bb66a5ef6c5f6d8fdc33d14274048ab29c1d",
+          "tier": "content"
+        },
+        "cli/scanners/route-lexing.mjs": {
+          "fingerprint": "sha256:01eb5f47a9c5d5b39ecefe94484ed8cfcacd19c7cb6c3e6d5324b42b44f6d810",
+          "tier": "content"
+        },
+        "cli/scanners/router-routes.mjs": {
+          "fingerprint": "sha256:d95c2831a15883ddfda7aedda46c4d2a97fb6f3bcc7fe3ede9962f81f6ba3986",
+          "tier": "content"
+        },
+        "cli/scanners/schemas.mjs": {
+          "fingerprint": "sha256:3a5ed119f1523d62f7abe5f0ef9851923032919ad0d77e4303b675777e246a23",
+          "tier": "content"
+        },
+        "cli/scanners/spec-first.mjs": {
+          "fingerprint": "sha256:800a281bb45378f67a30e3bac392ece995fd9a1063592ad1b3eeb059fcdb07d9",
+          "tier": "content"
+        },
+        "cli/scanners/spec-registry.mjs": {
+          "fingerprint": "sha256:6d3e9438a4fca31ba81eab7d370c23922d70a9edec7dce946a7cae6d9c0f6565",
+          "tier": "content"
+        },
+        "cli/scanners/speckit.mjs": {
+          "fingerprint": "sha256:74bcf504b8020bdd2b9f9717920db4064e019ae3960adf0f3b6c57a53b0819f4",
+          "tier": "content"
+        },
+        "cli/scanners/spring-routes.mjs": {
+          "fingerprint": "sha256:e041a72b41c4b2be291744a8cc59873c76dab61d9c9f51eb371f60c08818ac91",
+          "tier": "content"
+        },
+        "cli/scanners/suppressions.mjs": {
+          "fingerprint": "sha256:b4c05e04f51226f1be7e83b7c0fad86cceacc66a4926f7d0db55f665025ce95e",
+          "tier": "content"
+        },
+        "cli/scanners/symbol-map.mjs": {
+          "fingerprint": "sha256:33ef2f0a5ad7a893a4eeadd06ca8d41c622a29ec502ede038fe9bdacfd5a7d19",
+          "tier": "content"
+        },
+        "cli/scanners/task-context.mjs": {
+          "fingerprint": "sha256:f0b5e8e8313873b34f4aed70b0fe46458ce18870685355777ba7d1654cb43f18",
+          "tier": "content"
+        },
+        "cli/scanners/ts-paths.mjs": {
+          "fingerprint": "sha256:ec9f09aa87d9797ced6ba807e2a36b5f8e99bb95ae5fbee6a45d667afc15bee0",
+          "tier": "content"
+        },
+        "cli/shared-agent-instructions.mjs": {
+          "fingerprint": "sha256:28600712fbe740c64996741375e9bcc6888f5810b7bbfe7d2b8bc647fb8dca85",
+          "tier": "content"
+        },
+        "cli/shared-backup-documents.mjs": {
+          "fingerprint": "sha256:17df7de5074deff8cd5bdd0be9e76d527cc458545dd7aab7ff9fa909f79e933a",
+          "tier": "content"
+        },
+        "cli/shared-doc-role-hint.mjs": {
+          "fingerprint": "sha256:65c776a4c8158a950d615a0da06525ab5526cf62709067e8c25907d938adacce",
+          "tier": "content"
+        },
+        "cli/shared-doc-roles.mjs": {
+          "fingerprint": "sha256:c3354c7b3f993cdc7e167419e83e3a0cee5db36c526ff29e06db9deaf44a58a7",
+          "tier": "content"
+        },
+        "cli/shared-file-kind.mjs": {
+          "fingerprint": "sha256:1922ec394748de4424fa326ee0df90eb3d8ef0b0847b0386a757a6397641f65e",
+          "tier": "content"
+        },
+        "cli/shared-git.mjs": {
+          "fingerprint": "sha256:8695a9375acfa67a0b3c4ead2c38d5bedd47612646d0334c133ed23145adfcd6",
+          "tier": "content"
+        },
+        "cli/shared-guard-json.mjs": {
+          "fingerprint": "sha256:2ce4fc40d9ff392344d0a1c77f1201189739d5c2e83fa0fe662994ca940248f3",
+          "tier": "content"
+        },
+        "cli/shared-headings.mjs": {
+          "fingerprint": "sha256:a2f75df888b22f664f9473a27ba0fd3e854a7df2ef1cd52dcdb4f170a29892d6",
+          "tier": "content"
+        },
+        "cli/shared-html-comments.mjs": {
+          "fingerprint": "sha256:87e7fabefd0dd1e604e81c17c2739d0bec842a348a2ca37a6c7182b1f0d917b8",
+          "tier": "content"
+        },
+        "cli/shared-ignore.mjs": {
+          "fingerprint": "sha256:d4678bad6516fdde0adf9c9c6d4bd25b541eba552f3d9ba674413bc2fd92fa1f",
+          "tier": "content"
+        },
+        "cli/shared-labels.mjs": {
+          "fingerprint": "sha256:f2e7d39b3e1854b2f1a691d17f008124ae7b7fec2c07594fda7cc41c06746b64",
+          "tier": "content"
+        },
+        "cli/shared-mirrors.mjs": {
+          "fingerprint": "sha256:2ab45089e2aced24e133e70b52b96124fab8c06502b948ff04bad53faa6a3526",
+          "tier": "content"
+        },
+        "cli/shared-requirements.mjs": {
+          "fingerprint": "sha256:7150b3c5e5e9698d527713e126ef66adc8611f2b584021a6396bc7b3d3384cc1",
+          "tier": "content"
+        },
+        "cli/shared-source.mjs": {
+          "fingerprint": "sha256:9f890a95543b6f437bb0ce90ac54be654e3c57b710cd2869e527a1584293103e",
+          "tier": "content"
+        },
+        "cli/shared-sync-scope.mjs": {
+          "fingerprint": "sha256:cd628d57dad1fa07838547b66662c1333d17a09745f4c0b6c3fa4d84e46f8992",
+          "tier": "content"
+        },
+        "cli/shared-test-cases.mjs": {
+          "fingerprint": "sha256:4ac9a7955c16081a270438ab69e9ba8fb042ef000bcf449661925441cbe7f16a",
+          "tier": "content"
+        },
+        "cli/shared.mjs": {
+          "fingerprint": "sha256:6c520746735a4052f047fa1729e612bbd442683ebe5e528fc2fb9a91813f0097",
+          "tier": "content"
+        },
+        "cli/spec-kit-delegation.mjs": {
+          "fingerprint": "sha256:b970e05d820290ccda58f9162b6c6e1336a514938a3b76b96ce450386e9ff157",
+          "tier": "content"
+        },
+        "cli/validator-coverage.mjs": {
+          "fingerprint": "sha256:c97f85cfa5b18c0855922f8e5785953a368fb92ecdd294bad1e94d4c90d30277",
+          "tier": "content"
+        },
+        "cli/validator-markers.mjs": {
+          "fingerprint": "sha256:fb97a104f20bbed9f14b035f27ada23bb9c5383821b60a96e6b4f9cd962af974",
+          "tier": "content"
+        },
+        "cli/validators/aidlc.mjs": {
+          "fingerprint": "sha256:47f6d0c0825faa946bd194a3c739eb2efd8477fabe8eae9a08875c480486282f",
+          "tier": "content"
+        },
+        "cli/validators/canonical-sync.mjs": {
+          "fingerprint": "sha256:7305cb30da6ae15eb9a9fced1620618a6ed445fff6599fc98633452398c2a854",
+          "tier": "content"
+        },
+        "cli/validators/decision-records.mjs": {
+          "fingerprint": "sha256:40babe0c228e3526b3c3fec5125d66310546449f8def7c1c796ef94275ab9053",
+          "tier": "content"
+        },
+        "cli/validators/doc-dependency.mjs": {
+          "fingerprint": "sha256:b2e734ebff4cc377fa1c8b4aeb1ac1566ca745b3e29d06d3a139fdf0c0262486",
+          "tier": "content"
+        },
+        "cli/validators/doc-ownership.mjs": {
+          "fingerprint": "sha256:e9a55d7e7469e7003fb9a807d611ebac0909d4c34763726b29df4994d5ea2a62",
+          "tier": "content"
+        },
+        "cli/validators/docs-diff.mjs": {
+          "fingerprint": "sha256:732d52e71cb86a361fbb8e5f49cdf99fe17e5a8842622afafa3ec5202452785d",
+          "tier": "content"
+        },
+        "cli/validators/document-lifecycle.mjs": {
+          "fingerprint": "sha256:6449019517e5abb99655aff0e2955bbfcd6ff08092788ced163635dc7716fc9e",
+          "tier": "content"
+        },
+        "cli/validators/evidence.mjs": {
+          "fingerprint": "sha256:0c4d87daab48bd9b1d43d047f62714ea5c14f7e64f59dcc250ede797cc5c75f3",
+          "tier": "content"
+        },
+        "cli/validators/metrics-consistency.mjs": {
+          "fingerprint": "sha256:f73ede4331d1e8b4b5e2bfb37e4f47e9472867487fd5db7f10f1c2b8f9eaa79c",
+          "tier": "content"
+        },
+        "cli/validators/path-scoped-rules.mjs": {
+          "fingerprint": "sha256:09947d2d0a9132a259d2e7c455ade90627e7ed664ce26483f31cb2d9c4adce85",
+          "tier": "content"
+        },
+        "cli/validators/reference-existence.mjs": {
+          "fingerprint": "sha256:1f7a0d6dbb2328f0f31e73a0eabb73d2a791fbc8dd3b7e1232ed68dacc51cad6",
+          "tier": "content"
+        },
+        "cli/validators/requirement-anchors.mjs": {
+          "fingerprint": "sha256:6318c7e8c65cb38a8afdfd37ff3c96bce7da2596fa118323f35eac77e3a9a7e3",
+          "tier": "content"
+        },
+        "cli/validators/schema-sync.mjs": {
+          "fingerprint": "sha256:d4ad59fc12f688eaecbfebc2a2ab3c599f41e3202dff0b9e289b19b3414968ca",
+          "tier": "content"
+        },
+        "cli/validators/spec-registry.mjs": {
+          "fingerprint": "sha256:7d889f8f94e5447d1c9668e7e99a53de856665493e934a49e4bd61b97add9132",
+          "tier": "content"
+        },
+        "cli/validators/structure.mjs": {
+          "fingerprint": "sha256:bc19ac18b4323947c9ca21fcd1b900a36f163ef93b03911a7569047260a8e45c",
+          "tier": "content"
+        },
+        "cli/validators/suppressions.mjs": {
+          "fingerprint": "sha256:fdf0c2a5bf1cd04807ce7cadde7655844b7442384de93d0fbcc8744aee4e92be",
+          "tier": "content"
+        },
+        "cli/validators/todo-tracking.mjs": {
+          "fingerprint": "sha256:5407e97be0491c3e27f95b50d53725a42394de44ec3e6e74a9750685f4f9a330",
+          "tier": "content"
+        },
+        "cli/validators/traceability.mjs": {
+          "fingerprint": "sha256:12c95295f35dd3e6834281a4e372f72b14e2ee0e38ddf074c67e9f243c877710",
+          "tier": "content"
+        },
+        "cli/waiver-metadata.mjs": {
+          "fingerprint": "sha256:36dba31d7ff5924932d2e2861757419c06c1b4b4c56cdd300922abe09ae2ffdf",
+          "tier": "content"
+        },
+        "cli/writers/baseline.mjs": {
+          "fingerprint": "sha256:f28ef8bbfa3c661b93ef2d80f71fadfc9a3abe2c6dfe682fa49cca55471a6cce",
+          "tier": "content"
+        },
+        "cli/writers/claimspec-ignore.mjs": {
+          "fingerprint": "sha256:1e11fd46aad310d8428ec1b1dfd19265823df7931b9d17083a4b93a1e61a3d08",
+          "tier": "content"
+        },
+        "cli/writers/doc-generators.mjs": {
+          "fingerprint": "sha256:c106c4640fc8fa304ac830da9b7cb5565771de07d9daea80979acf0c70dc0446",
+          "tier": "content"
+        },
+        "cli/writers/file-transaction.mjs": {
+          "fingerprint": "sha256:a2f7867b95f7e6276c36c0b08955aa93022bbdad4cf3c3538d0c7144ca060067",
+          "tier": "content"
+        },
+        "cli/writers/generate-io.mjs": {
+          "fingerprint": "sha256:83e421665c4d0851d4b63fb91f45fb039311c9a3783a0af73c790ed35dd8cda6",
+          "tier": "content"
+        },
+        "cli/writers/state-dir.mjs": {
+          "fingerprint": "sha256:48d0e2ea0f041f843a8be942ead51c46bc2bbf8040b0b101a9cb69dc335f612a",
+          "tier": "content"
+        },
+        "extensions/spec-kit-docguard/extension.yml": {
+          "fingerprint": "sha256:175d5bda88a9414994b14439a3aa3744f9451c3de026b6ffd45695b88960005b",
+          "tier": "content"
+        },
+        "schemas/docguard-benchmark-baseline.schema.json": {
+          "fingerprint": "sha256:c6d07ffaaff88cf868836b6ee0051f50437f3eb95ef474983d789ad27da5c16c",
+          "tier": "content"
+        },
+        "tools/anchor-churn-replay.mjs": {
+          "fingerprint": "sha256:bdbb41b3262b869095f398dec6ac5916f7890cf2cc80663bd573b5f1e35c41c7",
+          "tier": "content"
+        },
+        "tools/anchor-oracle/run.mjs": {
+          "fingerprint": "sha256:73e945e33c12ecb25fe330d9db2d4f07583cef5d8ed22ed7f961466050d16a20",
+          "tier": "content"
+        },
+        "tools/budget.mjs": {
+          "fingerprint": "sha256:b8492d38b9a11d9bfaca3957b27425847aeefe250e797ba4048bf3bce1181c8e",
+          "tier": "content"
+        },
+        "tools/check-temp-leaks.mjs": {
+          "fingerprint": "sha256:c674653fd54b17d90b031f2e042470fc2967959d5634d65027127d9e57e78838",
+          "tier": "content"
+        },
+        "tools/fuzz.mjs": {
+          "fingerprint": "sha256:1b6d05587ea932a4dc69bf180ce1068cb3dff5c9b89d32f0223451630d2cd1c0",
+          "tier": "content"
+        },
+        "tools/generate-docs-reference.mjs": {
+          "fingerprint": "sha256:0e601a8534873774feef99198a21ebd3dcbdfc95325e60e640f5f5d4effe531f",
+          "tier": "content"
+        },
+        "tools/release-ab.mjs": {
+          "fingerprint": "sha256:ae33b4d85ffcd04d19b1ccdd88449d0c491b72aa224b93fe1a19ad3cceebb0f4",
+          "tier": "content"
+        },
+        "tools/suite-runtime-budget.mjs": {
+          "fingerprint": "sha256:32e1e28fc46360ccdb41c99f8e937518e8e7a85f7c8ffc87ff4b2d879569df6b",
+          "tier": "content"
+        },
+        "tools/suite-runtime-reference.json": {
+          "fingerprint": "sha256:a5f5e37d811c7a4ee23fad1df0b86871b998dcd5069aa440c1c35628e4f5cfef",
+          "tier": "content"
+        }
+      },
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
+    }
+  },
+  "schemaVersion": 1
+}

@@ -1,0 +1,13 @@
+{
+  "projectName": "laden-de",
+  "version": "0.6",
+  "docs": {
+    "language": "de"
+  },
+  "requiredFiles": {
+    "canonical": [
+      "docs-canonical/ARCHITECTURE.md",
+      "docs-canonical/TEST-SPEC.md"
+    ]
+  }
+}

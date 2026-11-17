@@ -139,11 +139,16 @@ export const SECTION_SYNONYMS = {
  * Normalize a markdown heading: drop #, leading arc42-style numbers, punctuation.
  * The legacy form keeps only `[a-z0-9]`, and an English project meets nothing
  * else. With `unicode` (a non-English `docs.language`, spec 104 FR-006) case and
- * diacritics are folded and Unicode letters and digits are kept.
+ * diacritics are folded and Unicode letters and digits are kept. Both start
+ * from NFC (spec 104 FR-020).
+ * @implements docguard.document-languages#FR-020
  */
 function normalizeHeadingText(line, unicode = false) {
   if (unicode) return foldHeading(line);
+  // NFC first (FR-020): a decomposed accent (`a` + U+0303) and a composed one (`ã`)
+  // are the same heading, and both read as the same separator below.
   return line
+    .normalize('NFC')
     .replace(/^#{1,6}\s*/, '')             // strip leading #s
     .replace(/^\d+(?:\.\d+)*\.?\s+/, '')   // strip leading "5.4 " / "3. " section numbers
     .toLowerCase()

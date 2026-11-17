@@ -12,9 +12,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Reviewed against planSpecCompletion after the hub and evidence-edit changes of spec 103",
-      "reviewedAt": "2026-11-14",
-      "reviewedRevision": "3a14be978988a2080943c4f48e84dab19c70cffc"
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
     },
     "docs-canonical/DATA-MODEL.md#finding-channels": {
       "dependencies": {
@@ -27,9 +27,9 @@
           "tier": "ast"
         }
       },
-      "reason": "Checked: the section is unchanged; mirror findings have their own heading after it.",
-      "reviewedAt": "2026-11-14",
-      "reviewedRevision": "0af9a59d8287c8fe257215211a3035f21173ea6a"
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
     },
     "docs-canonical/DATA-MODEL.md#spec-registry": {
       "dependencies": {
@@ -46,9 +46,9 @@
           "tier": "content"
         }
       },
-      "reason": "Reviewed against completeSpec after spec 103's review fixes; the Blobs row and Status header are unchanged in meaning",
-      "reviewedAt": "2026-11-14",
-      "reviewedRevision": "3a14be978988a2080943c4f48e84dab19c70cffc"
+      "reason": "Checked the spec 104 paragraph against cli/shared-labels.mjs, cli/shared.mjs sectionState and docs/languages.md",
+      "reviewedAt": "2026-11-17",
+      "reviewedRevision": "ca64ed24829bf94b4733cf673b43dcba212de41b"
     }
   }
 }
