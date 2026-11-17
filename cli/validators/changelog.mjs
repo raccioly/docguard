@@ -16,7 +16,8 @@ import { resolve, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
-import { acceptedFormsHint, labelContext, unreleasedState, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
+import { acceptedFormsHint, unreleasedState, unsupportedEntry } from '../shared-labels.mjs';
+import { documentLanguage } from '../shared-doc-language.mjs';
 
 const CODE_EXT_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|php|cs|kt|swift)$/;
 
@@ -78,7 +79,7 @@ export function validateChangelog(projectDir, config) {
   // Check for [Unreleased] section. A language with no built-in set cannot tell
   // a missing section from one written in that language: the file is listed as
   // not judged, never reported as missing (spec 104 FR-011).
-  const labels = labelContext(config);
+  const labels = documentLanguage(config, config.requiredFiles.changelog);
   const state = unreleasedState(content, labels);
   if (state === 'unsupported') {
     notSupported.push(unsupportedEntry(config.requiredFiles.changelog, ['unreleased'], labels));
@@ -146,6 +147,6 @@ export function validateChangelog(projectDir, config) {
     ...resultFromFindings(findings, { passed, total }),
     fixes,
     ...changelogContract(config, total, findings.length > 0),
-    ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
   };
 }

@@ -120,7 +120,7 @@ describe('T005: the heading marker satisfies an id in any language', () => {
     const r = validateDocSections(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'STR003'), []);
     assert.equal(r.passed, 3);
-    assert.deepEqual(r.languageNotSupported ?? [], []);
+    assert.deepEqual(r.unexaminedDocuments ?? [], []);
   });
 
   it('a marker satisfies its id with no docs.language at all (a marker is explicit)', () => {
@@ -247,15 +247,15 @@ describe('T008: a language with no built-in set is never blocked and never passe
     const dir = project({ 'docs-canonical/ARCHITECTURE.md': ARCH_DE }, { language: 'de' });
     const r = validateDocSections(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'STR003'), []);
-    assert.equal(r.languageNotSupported.length, 1);
-    assert.equal(r.languageNotSupported[0].file, 'docs-canonical/ARCHITECTURE.md');
-    assert.equal(r.languageNotSupported[0].cause, 'language-not-supported');
-    assert.equal(r.languageNotSupported[0].language, 'de');
-    assert.match(r.languageNotSupported[0].fix, /docguard:heading/);
-    assert.deepEqual([...r.languageNotSupported[0].sections].sort(), ['component-map', 'system-overview', 'tech-stack']);
-    assert.ok(r.performed > 0, 'a document that was read is not an empty result (strict would exit 4)');
-    assert.equal(r.applicability.status, 'partial', 'it is a check that ran and could not observe the rest');
-    assert.match(r.applicability.reason, /language-not-supported/);
+    assert.equal(r.unexaminedDocuments.length, 1);
+    assert.equal(r.unexaminedDocuments[0].path, 'docs-canonical/ARCHITECTURE.md');
+    assert.equal(r.unexaminedDocuments[0].cause, 'language-not-supported');
+    assert.equal(r.unexaminedDocuments[0].language, 'de');
+    assert.match(r.unexaminedDocuments[0].howToConfigure, /docguard:heading/);
+    assert.deepEqual([...r.unexaminedDocuments[0].sections].sort(), ['component-map', 'system-overview', 'tech-stack']);
+    assert.equal(r.performed, 0, 'nothing was judged, so the result is empty for the cause, never for needs-declaration (strict would exit 4)');
+    assert.equal(r.emptyCause, 'language-not-supported');
+    assert.equal(r.applicability, undefined, 'one mechanism: the cause, not a partial applicability (spec 104 Stage 3)');
   });
 
   it('markers or docs.labelAliases satisfy it, and the report no longer lists the document', () => {
@@ -264,10 +264,10 @@ describe('T008: a language with no built-in set is never blocked and never passe
     }, { language: 'de' });
     const rm = validateDocSections(marked, loadConfig(marked));
     assert.deepEqual(codes(rm, 'STR003'), []);
-    assert.equal(rm.languageNotSupported, undefined);
+    assert.equal(rm.unexaminedDocuments, undefined);
     const aliased = project({ 'docs-canonical/ARCHITECTURE.md': ARCH_DE }, { language: 'de', labelAliases: { 'system-overview': ['Systemübersicht'], 'component-map': ['Komponenten'], 'tech-stack': ['Technologien'] } });
     const ra = validateDocSections(aliased, loadConfig(aliased));
-    assert.equal(ra.languageNotSupported, undefined);
+    assert.equal(ra.unexaminedDocuments, undefined);
     assert.equal(ra.passed, 3);
   });
 
@@ -279,7 +279,7 @@ describe('T008: a language with no built-in set is never blocked and never passe
   it('a reasoned N/A marker still owns the section for an unsupported language', () => {
     const dir = project({ 'docs-canonical/SECURITY.md': `# Sicherheit\n${PROSE}\n<!-- docguard:section authentication n/a — kein Login -->\n<!-- docguard:section secrets-management n/a — keine Geheimnisse -->\n` }, { language: 'de' });
     const r = validateDocSections(dir, loadConfig(dir));
-    assert.equal(r.languageNotSupported, undefined);
+    assert.equal(r.unexaminedDocuments, undefined);
     assert.equal(r.passed, 2);
   });
 
@@ -288,14 +288,14 @@ describe('T008: a language with no built-in set is never blocked and never passe
     const r = validateEnvironment(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'ENV001').concat(codes(r, 'ENV002')), []);
     assert.ok(r.performed > 0);
-    assert.equal(r.languageNotSupported[0].file, 'docs-canonical/ENVIRONMENT.md');
+    assert.equal(r.unexaminedDocuments[0].path, 'docs-canonical/ENVIRONMENT.md');
   });
 
   it('DCV005 follows the same rule for an unsupported language', () => {
     const dir = project({ 'README.md': '# Werkzeug\n\nText.\n\n## Verwendung\n\nlos\n' }, { language: 'de' });
     const r = validateDocsCoverage(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'DCV005'), []);
-    assert.equal(r.languageNotSupported[0].file, 'README.md');
+    assert.equal(r.unexaminedDocuments[0].path, 'README.md');
   });
 
   it('strict guard: the unsupported-language documents are couldNotRead, never unexamined, and the exit code does not move', () => {
@@ -308,7 +308,8 @@ describe('T008: a language with no built-in set is never blocked and never passe
       return { exit: r.status, sections: byKey('docSections'), environment: byKey('environment'), unexamined: (report.strict?.unexamined || []).map(u => u.validator), couldNotRead: (report.strict?.couldNotRead || []).map(u => u.validator) };
     };
     const german = run({ language: 'de' });
-    assert.notEqual(german.sections.verdict, 'empty');
+    // Nothing in the document could be judged, so the verdict is empty, for the cause that strict reads as could-not-read (spec 104 Stage 3).
+    assert.equal(german.sections.verdict === 'empty' ? german.sections.emptyCause : 'language-not-supported', 'language-not-supported');
     assert.ok(!german.unexamined.includes('docSections'), `docSections became unexamined: ${german.unexamined}`);
     assert.ok(!german.unexamined.includes('environment'), `environment became unexamined: ${german.unexamined}`);
     assert.ok(german.couldNotRead.includes('docSections') && german.couldNotRead.includes('environment'), `not listed as could-not-read: ${german.couldNotRead}`);

@@ -37,6 +37,8 @@ import { findTestFiles, countDeclaredTestCases } from '../shared-test-cases.mjs'
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { findConstitution } from '../scanners/speckit.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { LANGUAGE_NOT_SUPPORTED, unreadEntry } from '../shared-labels.mjs';
+import { nonEnglishDocument } from '../shared-doc-language.mjs';
 import { sample } from '../shared-project-evidence.mjs';
 
 /**
@@ -104,7 +106,18 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
 
   // ── Scan markdown files for hardcoded numbers ──
   const isIgnored = loadIgnorePatterns(projectDir);
-  const mdFiles = findMarkdownFiles(projectDir, config);
+  // spec 104 FR-022: every count pattern reads English nouns ("checks", "validators", "runtime dependencies"),
+  // so a document in another language is listed with `language-not-supported`, never read and never passed
+  // silently. A changelog and an ignored file are not read in any language, so they are not listed. Without
+  // `docs.language` this partition is empty and the scan is unchanged.
+  const unread = [];
+  const mdFiles = findMarkdownFiles(projectDir, config).filter(file => {
+    const rel = relative(projectDir, file).replace(/\\/g, '/');
+    const language = nonEnglishDocument(config, rel);
+    if (!language || rel.toLowerCase().includes('changelog') || isIgnored(rel)) return true;
+    unread.push(unreadEntry(rel, language, 'documented counts'));
+    return false;
+  });
   // Patterns must match standalone number references, not ratio-style "8/8 checks".
   // `requireBind`: built-in DocGuard meta-counts (checks/validators) describe a
   // generic noun, so they only fire when the line is bound to "docguard" (Bug #2).
@@ -301,16 +314,20 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
       }
     }
     if (counted.length) return { applies: true, kind: 'unresolved', collections: counted, evidence: `a document counts ${sample(counted.map(u => u.noun))}, but the glob declared for ${counted.length === 1 ? 'it' : 'them'} matches no file` };
+    if (unread.length) return { applies: true, kind: 'language', evidence: `${unread.length} document(s) not read for counts because of their language, for example ${unread[0].path}` };
     return { applies: false, kind: 'none', evidence: `${mdFiles.length} document(s) scanned, none states a count of DocGuard's checks or validators, of the project's tests, of a declared collection, or of runtime dependencies` };
   };
   return {
     ...resultFromFindings(findings, { passed, total }), fixes,
+    ...(unread.length ? { unexaminedDocuments: unread } : {}),
     ...contractFields({
       performed: total,
       found: findings.length > 0,
       ran: `${total} documented count(s) compared with the code`,
       decide,
-      empty: d => (d.applies
+      empty: d => (d.kind === 'language'
+        ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Metrics-Consistency read no document for counts: ${unread[0].reason}.`, howToConfigure: unread[0].howToConfigure }
+        : d.applies
         ? { emptyCause: 'needs-content', note: `Metrics-Consistency read a count it could not compare: ${d.evidence}.`, howToConfigure: `The "collections" entry for ${d.collections.map(u => `${u.noun} (${u.glob})`).join(', ')} in .docguard.json matches no file, so the count a document states is not compared. Point the glob at the files you count (it is relative to the project root), or remove the entry.` }
         : { emptyCause: 'nothing-of-this-kind', note: `Metrics-Consistency found no documented count to compare: ${d.evidence}.`, howToConfigure: 'Nothing to configure unless the documents state a count: Metrics-Consistency compares "N checks" and "N validators" bound to DocGuard, "N tests" about the project\'s own suite, "N <noun>" for a noun declared under `collections` in .docguard.json (`{ "extractors": "src/extractors/*.js" }`), and runtime-dependency claims.' }),
     }),

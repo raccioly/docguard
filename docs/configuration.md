@@ -108,8 +108,13 @@ from `profile`, which only says what kind of project this is:
   whose cause is `layout-not-recognized` is a limit of DocGuard; one whose cause
   is `history-unavailable` ran in a shallow clone (the one-commit default of
   `actions/checkout`), which lacks the git history the check reads, and the fix
-  is to fetch it (`fetch-depth: 0`). None of these changes
-  the exit code: both are listed after the Adopt block under "DocGuard could not
+  is to fetch it (`fetch-depth: 0`); one whose cause is `language-not-supported`
+  read a document in a language DocGuard has no rules for (`docs.language`, or the
+  document's own name: `<name>.<lang>.md`, `i18n/<lang>/`, `locales/<lang>/`) and
+  says which language and what to add: a `<!-- docguard:heading <id> -->` marker
+  or a `docs.labelAliases` entry for a label, nothing for a check that reads
+  English prose (Docs-Diff's tech stack, Metrics-Consistency, semantic claims). None of these changes
+  the exit code: all are listed after the Adopt block under "DocGuard could not
   read", with what was missed and, for a layout, the layouts the validator does
   read. `--fail-on-inconclusive` still makes a project that asks for it exit 4.
   When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
@@ -134,8 +139,10 @@ could not read, and `layouts` (an unread layout only) lists what it does read. T
 record, which blocks; in `couldNotRead` for any other file with no recorded review (a last-reviewed marker alone may be its vendor's), which does not block. The compact form gives
 `documents` as a count.
 `cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`,
-`nothing-of-this-kind` or `history-unavailable` (a shallow checkout; listed under
-`couldNotRead`, never blocking), or `null` when the validator could not observe its
+`nothing-of-this-kind`, `history-unavailable` (a shallow checkout; listed under
+`couldNotRead`, never blocking) or `language-not-supported` (a document in a language
+without rules; listed under `couldNotRead` with `language`, one entry per validator,
+never blocking), or `null` when the validator could not observe its
 input (it is `inconclusive`, and `reason` is the gap). Only the first two,
 and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset
 of the validators, so it does not evaluate the rule and says so.

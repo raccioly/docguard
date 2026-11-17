@@ -22,6 +22,13 @@
  * @implements docguard.strict-by-default#FR-021
  */
 import { EMPTY_CAUSES, performedChecks } from './validator-coverage.mjs';
+
+/**
+ * The cause of a document or validator DocGuard cannot judge because of its language
+ * (spec 104 FR-019). Written here, not imported from `shared-labels.mjs`, because this
+ * module is a leaf that reads results only; a test pins the two spellings together.
+ */
+const LANGUAGE_NOT_SUPPORTED = 'language-not-supported';
 import { STRICT_ADDITIONS, codeAddedIn, compareLines, isNewIn, validatorAddedIn } from './strict-additions.mjs';
 
 export const ENFORCEMENT_MODES = Object.freeze(['strict', 'standard']);
@@ -114,7 +121,9 @@ export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS
  *     routes, an optional parser that is absent), or its cause is
  *     `layout-not-recognized`, a limit of DocGuard and not a gap in the project, or
  *     `history-unavailable`, a shallow checkout that does not carry the git history
- *     the check reads (added 2026-11-13).
+ *     the check reads (added 2026-11-13), or `language-not-supported`, a document or
+ *     validator in a language DocGuard has no rules for (spec 104): reported with the
+ *     language and the fix, never blocking and never dropped.
  *     `--fail-on-inconclusive` and `requiredChecks` keep their own rules.
  *
  * `gating` is the findings that fail the build, by code (Stage A: exactly the
@@ -157,11 +166,13 @@ export function buildStrictReport(results, {
     const unreadLayout = r.verdict === 'empty' && cause === 'layout-not-recognized';
     // A shallow checkout hides the history the check reads: a property of the checkout, not of the project's documents.
     const noHistory = r.verdict === 'empty' && cause === 'history-unavailable';
+    // A validator that read documents and judged none for their language (spec 104 FR-019): a limit of DocGuard, not a gap in the project.
+    const unreadLanguage = r.verdict === 'empty' && cause === LANGUAGE_NOT_SUPPORTED;
     const unclassified = r.verdict === 'empty' && cause !== 'needs-declaration' && cause !== 'needs-content';
-    if (partial || unreadLayout || noHistory || unclassified) {
+    if (partial || unreadLayout || noHistory || unreadLanguage || unclassified) {
       couldNotRead.push({
         validator: r.key, name: r.name || r.key, verdict: r.verdict, cause, reason,
-        ...(noHistory && typeof r.howToConfigure === 'string' && r.howToConfigure ? { howToConfigure: r.howToConfigure } : {}),
+        ...((noHistory || unreadLanguage) && typeof r.howToConfigure === 'string' && r.howToConfigure ? { howToConfigure: r.howToConfigure } : {}),
         ...(Array.isArray(r.layouts) && r.layouts.length ? { layouts: r.layouts } : {}),
       });
       continue;
@@ -227,7 +238,7 @@ export function buildStrictReport(results, {
  */
 function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite, asOf, additions, runningVersion }) {
   const docs = Array.isArray(r.unexaminedDocuments)
-    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content' || d.cause === 'history-unavailable'))
+    ? r.unexaminedDocuments.filter(d => d && typeof d.path === 'string' && (d.cause === 'needs-declaration' || d.cause === 'needs-content' || d.cause === 'history-unavailable' || d.cause === LANGUAGE_NOT_SUPPORTED))
     : [];
   if (docs.length === 0) return;
   if (typeof r.note === 'string' && r.note.startsWith('declared N/A')) return;
@@ -241,8 +252,11 @@ function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite
     };
   };
   const noHistory = docs.filter(d => d.cause === 'history-unavailable');
-  const blocking = docs.filter(d => d.cause !== 'history-unavailable' && d.blocking !== false);
-  const listed = docs.filter(d => d.cause !== 'history-unavailable' && d.blocking === false);
+  // A document in a language DocGuard has no rules for never blocks, whatever its `blocking` says (spec 104 FR-019).
+  const unsupportedLanguage = docs.filter(d => d.cause === LANGUAGE_NOT_SUPPORTED);
+  const ordinary = docs.filter(d => d.cause !== 'history-unavailable' && d.cause !== LANGUAGE_NOT_SUPPORTED);
+  const blocking = ordinary.filter(d => d.blocking !== false);
+  const listed = ordinary.filter(d => d.blocking === false);
   if (blocking.length) {
     const { names, reasons, fix } = summary(blocking);
     const reason = `${blocking.length} document(s) not examined: ${names}. ${reasons}`;
@@ -278,6 +292,24 @@ function addUnexaminedDocuments({ unexamined, couldNotRead, pending }, r, { lite
         howToConfigure: fix, documents: noHistory.map(d => d.path),
       });
     }
+  }
+  if (unsupportedLanguage.length) {
+    const { names, reasons, fix } = summary(unsupportedLanguage);
+    const tags = [...new Set(unsupportedLanguage.map(d => d.tag || d.language).filter(Boolean))];
+    const row = {
+      validator: r.key, name: r.name || r.key, verdict: r.verdict, cause: LANGUAGE_NOT_SUPPORTED,
+      reason: `${unsupportedLanguage.length} document(s) not judged because of their language${tags.length ? ` ("${tags.join('", "')}")` : ''}: ${names}. ${reasons}`,
+      howToConfigure: fix, documents: unsupportedLanguage.map(d => d.path),
+      ...(tags.length ? { language: tags.join(', ') } : {}),
+    };
+    // One row per validator: a validator that is empty for the cause already has its row, and the documents join it.
+    const existing = couldNotRead.find(c => c.validator === r.key && c.cause === LANGUAGE_NOT_SUPPORTED);
+    if (existing) {
+      existing.documents = row.documents;
+      if (!existing.reason?.includes(unsupportedLanguage[0].path)) existing.reason = [existing.reason?.replace(/\.?$/, '.'), `Not judged: ${names}.`].filter(Boolean).join(' ');
+      if (row.language) existing.language = row.language;
+      if (!existing.howToConfigure) existing.howToConfigure = row.howToConfigure;
+    } else couldNotRead.push(row);
   }
   if (listed.length) {
     const { names, reasons, fix } = summary(listed);
@@ -349,6 +381,13 @@ export function couldNotReadLines(strict) {
   if (items.length === 0) return [];
   const lines = ['DocGuard could not read: (reported only; this does not change the exit code)'];
   for (const u of items) {
+    if (u.cause === LANGUAGE_NOT_SUPPORTED) {
+      // One line per validator: the count, the language, the documents and the fix, never one per document.
+      const docs = u.documents?.length ? `${u.documents.length} document(s) not judged` : 'nothing judged';
+      const names = u.documents?.length ? `: ${u.documents.slice(0, 3).join(', ')}${u.documents.length > 3 ? ` and ${u.documents.length - 3} more` : ''}` : '';
+      lines.push(`  • ${u.name}: ${docs} (${LANGUAGE_NOT_SUPPORTED}${u.language ? `, docs.language "${u.language}"` : ''})${names}.${u.howToConfigure ? ` ${u.howToConfigure}` : ''}`);
+      continue;
+    }
     lines.push(`  • ${strictRowHeadline({ ...u, newIn: null })}`);
     if (u.reason) lines.push(`      ${u.reason}`);
     if (u.layouts?.length) lines.push(`      It reads: ${u.layouts.join('; ')}`);
