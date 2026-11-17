@@ -69,7 +69,7 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 - [x] T031 `doc-quality.mjs` skip table, tokenizer, skip report; per-document language from naming in `cli/shared-labels.mjs` (FR-017, FR-018, FR-021).
 - [x] T032 `validator-coverage.mjs` (`EMPTY_CAUSES`), `enforcement.mjs` routing, `shared-guard-json.mjs`, `guard.mjs` text line, and the four validators of FR-022 (FR-019, FR-022).
 - [ ] T033 Native review of the pt-BR and es word lists (owner: maintainer). It blocks enabling the closed-class metrics (negation, conditional, compound requirement, pronouns); until it is recorded those metrics are skipped for every language other than English (FR-017, Decision 4).
-- [ ] T034 Hermetic English A/B (SC-004).
+- [x] T034 Hermetic English A/B (SC-004).
 
 ## Stage 4 - generators and explain
 

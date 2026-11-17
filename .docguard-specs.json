@@ -6031,11 +6031,11 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:21c918af8510b9fad1c9a977e8a8167dd4e2c3960444974abbe1840c55f75caa"
+            "digest": "sha256:7737ac3e8671f0c29c1a3097635f72eef8d03d37350527475ba94eb5b67456b9"
           }
         ],
         "taskCompletion": {
-          "checked": 32,
+          "checked": 33,
           "total": 43
         },
         "implementationEvidence": [
