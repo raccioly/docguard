@@ -76,7 +76,7 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 ### Phase 1: Tests first
 
 - [x] T035 [US5] `tests/document-languages-generate.test.mjs`: `init` and `generate` write the marker under each generated required heading, in the first alias for `pt` and `es`, in English otherwise; the first guard run reports no label finding; no existing document is rewritten; `isUneditedScaffold` recognizes a localized unedited scaffold by id (FR-023).
-- [x] T036 `tests/document-languages-explain.test.mjs` (there is no `tests/explain.test.mjs`; `tests/explain-coverage.test.mjs` is unchanged): `explain` for STR003, CHG001, DEC001, SPK003 and DCV005 states the id, the marker and the aliases; the reference page lists the closed id list and a test fails when they drift (FR-024).
+- [x] T036 `tests/document-languages-explain.test.mjs` (the repository has no `tests/explain.test.mjs`, so the explain tests live here): `explain` for STR003, CHG001, DEC001, SPK003 and DCV005 states the id, the marker and the aliases; the reference page lists the closed id list and a test fails when they drift (FR-024).
 
 ### Phase 2: Implementation
 
