@@ -36,6 +36,8 @@ A warning that cannot be cleared fails builds that run guard with warnings as fa
 | `## Instalação`, `## Uso`, `## Licença` in `README.md` | DCV005 three times (the check searches for the substrings `install`, `usage`, `license` anywhere in the file) |
 | Portuguese prose scored by Doc-Quality | A number built on English word lists and a tokenizer that turns `não` into the tokens `n` and `o` |
 
+`Feito quando` is the heading the reporter's team wrote for its success criteria; it is reproduced here as input, and it is not a built-in translation (the built-in forms are `Critérios de sucesso`, `Critérios de aceite` and `Critérios de aceitação`). The fixture clears it through the project's own `docs.labelAliases`.
+
 What already works: `FR-001` and `SC-001` ids inside Portuguese sentences, and accented text in headings that nothing looks for. A link to an accented heading anchor (`#visão-geral-do-sistema`) did not produce a false Cross-Reference finding, while a control link to a missing anchor in the same README did (XRF002), so the check ran. Both sides of the comparison use the same ASCII-only slug; that slug can map different accented words to the same anchor, which this spec does not address.
 
 ### R1. Inventory: every place the CLI matches an English label or English words
@@ -132,47 +134,49 @@ The ids are the N/A slugs that already exist (`system-overview`, `secrets-manage
 
 `docs.language` in `.docguard.json`, next to `docs.roles`, is a BCP 47 tag. There is no top-level `docs.language` key (Decision 1). Absent means English only, which is today's behavior byte for byte. A tag is matched by its primary subtag (`pt-BR` and `pt-PT` use the `pt` set; `es-MX` uses `es`). Built-in sets in this release: `pt` and `es`. Any other valid tag is accepted and has no built-in set (D4).
 
-Aliases map heading text to ids, the changelog marker to `unreleased`, and decision status words to the ids `proposed`, `accepted`, `rejected`, `deprecated` and `superseded`. English is always accepted, in every language, so mixed documents work. `docs.labelAliases` is flat and keyed by id (ids are global and unique); each value is a list of strings (`{ "success-criteria": ["Feito quando"], "unreleased": ["Em desenvolvimento"], "accepted": ["Vigente"] }`). The built-in sets are selected by `docs.language`; project aliases extend them and never replace them. A front-matter `status:` is read as it is today and its value goes through the same alias mechanism; there is no separate status marker (Decision 3). Structure is never detected from text: only configuration, a document's explicit name (FR-021) and the heading marker decide.
+Aliases map heading text to ids, the changelog marker to `unreleased`, and decision status words to the ids `proposed`, `accepted`, `rejected`, `deprecated` and `superseded`. English is always accepted, in every language, so mixed documents work. `docs.labelAliases` is flat and keyed by id (ids are global and unique); each value is a list of strings (`{ "requirements": ["Requisitos do sistema"], "accepted": ["Vigente"] }`, a team's own wording, not a built-in translation). The built-in sets are selected by `docs.language`; project aliases extend them and never replace them. A front-matter `status:` is read as it is today and its value goes through the same alias mechanism; there is no separate status marker (Decision 3). Structure is never detected from text: only configuration, a document's explicit name (FR-021) and the heading marker decide.
 
 Alias matching folds case and accents (`Visao geral` matches `Visão geral`) and compares whole headings after dropping a leading section number, as today. The English path keeps its current normalization until the gated task of FR-006 (Decision 9).
 
-The initial sets (data, to be reviewed by a native speaker during Stage 1):
+The sets (reviewed by the maintainer, a native Portuguese speaker, on 2026-11-17; see Decision 11):
 
 | Id | pt | es |
 |---|---|---|
 | `system-overview` | Visão geral do sistema, Visão geral, Panorama do sistema | Visión general del sistema, Descripción general del sistema, Visión general, Resumen del sistema |
 | `component-map` | Mapa de componentes, Componentes | Mapa de componentes, Componentes |
-| `tech-stack` | Pilha tecnológica, Stack tecnológica, Tecnologias, Tecnologias utilizadas | Stack tecnológico, Pila tecnológica, Tecnologías |
-| `layer-boundaries` | Limites entre camadas, Camadas | Límites entre capas, Capas |
+| `tech-stack` | Stack tecnológica, Pilha tecnológica, Stack tecnológico, Stack de tecnologia, Tecnologias, Tecnologias utilizadas | Stack tecnológico, Pila tecnológica, Tecnologías, Tecnologías utilizadas |
+| `layer-boundaries` | Limites entre camadas, Camadas, Fronteiras entre camadas | Límites entre capas, Capas |
 | `data-flow` | Fluxo de dados | Flujo de datos |
+| `external-dependencies` | Dependências externas | Dependencias externas |
+| `revision-history` | Histórico de revisões, Histórico de alterações | Historial de revisiones, Historial de cambios |
 | `entities` | Entidades, Modelo de dados | Entidades, Modelo de datos |
-| `relationships`, `indexes` | Relacionamentos; Índices | Relaciones; Índices |
+| `relationships`, `indexes` | Relacionamentos, Relações; Índices | Relaciones; Índices |
 | `authentication` | Autenticação | Autenticación |
-| `secrets-management` | Gerenciamento de segredos, Gestão de segredos | Gestión de secretos |
-| `authorization`, `security-boundaries` | Autorização; Fronteiras de segurança | Autorización; Límites de seguridad |
-| `test-categories` | Categorias de teste | Categorías de pruebas |
+| `secrets-management` | Gerenciamento de segredos, Gestão de segredos, Gestão de credenciais | Gestión de secretos, Manejo de secretos |
+| `authorization`, `security-boundaries` | Autorização; Limites de segurança, Fronteiras de segurança | Autorización; Límites de seguridad |
+| `test-categories` | Categorias de teste, Categorias de testes, Tipos de teste, Tipos de testes | Categorías de pruebas, Tipos de pruebas |
 | `coverage-rules` | Regras de cobertura | Reglas de cobertura |
-| `test-commands` | Comandos de teste | Comandos de prueba |
-| `source-to-test-map` | Mapa de fontes para testes, Mapa de código para testes | Mapa de código a pruebas |
+| `test-commands` | Comandos de teste, Comandos de testes | Comandos de prueba, Comandos de pruebas |
+| `source-to-test-map` | Mapa de código para testes, Mapa de fontes para testes, Mapa do código-fonte para testes | Mapa de código a pruebas, Mapa de código fuente a pruebas |
 | `environment-variables` | Variáveis de ambiente | Variables de entorno |
-| `setup-steps` | Passos de configuração, Instalação e configuração, Como configurar | Pasos de configuración, Instalación y configuración |
-| `prerequisites` | Pré-requisitos | Requisitos previos |
-| `configuration-files` | Arquivos de configuração | Archivos de configuración |
-| README `installation`, `usage`, `license`, `contributing` | Instalação; Uso, Como usar; Licença; Contribuindo, Como contribuir | Instalación; Uso, Cómo usar; Licencia; Contribuir, Cómo contribuir |
-| Spec: `user-scenarios` | Cenários de usuário, Histórias de usuário, Cenários e testes | Escenarios de usuario, Historias de usuario |
+| `setup-steps` | Passos de configuração, Instalação e configuração, Como configurar, Configuração | Pasos de configuración, Instalación y configuración, Configuración |
+| `prerequisites` | Pré-requisitos | Requisitos previos, Prerrequisitos |
+| `configuration-files` | Arquivos de configuração, Ficheiros de configuração | Archivos de configuración |
+| README `installation`, `usage`, `license`, `contributing` | Instalação; Uso, Como usar, Utilização; Licença; Contribuindo, Como contribuir, Contribuição, Contribuições | Instalación; Uso, Cómo usar; Licencia; Contribuir, Cómo contribuir, Contribuciones |
+| Spec: `user-scenarios` | Cenários de usuário, Histórias de usuário, Cenários e testes, Cenários de usuário e testes, Cenários de uso | Escenarios de usuario, Historias de usuario, Escenarios de uso, Escenarios de usuario y pruebas |
 | Spec: `requirements` | Requisitos, Requisitos funcionais | Requisitos, Requisitos funcionales |
-| Spec: `success-criteria` | Critérios de sucesso, Critérios de aceite | Criterios de éxito, Criterios de aceptación |
+| Spec: `success-criteria` | Critérios de sucesso, Critérios de aceite, Critérios de aceitação | Criterios de éxito, Criterios de aceptación |
 | Plan: `summary`, `technical-context`, `project-structure` | Resumo; Contexto técnico; Estrutura do projeto | Resumen; Contexto técnico; Estructura del proyecto |
 | Tasks: `phase` (the word before a number) | Fase | Fase |
-| Bugfix spec: `root-cause`, `fix` | Causa raiz; Correção | Causa raíz; Corrección |
-| `unreleased` (changelog) | [Não lançado], [Não publicado] | [Sin publicar], [No publicado] |
-| `proposed` | proposto, proposta, rascunho | propuesto, propuesta, borrador |
+| Bugfix spec: `root-cause`, `fix` | Causa raiz; Correção, Solução | Causa raíz; Corrección, Solución |
+| `unreleased` (changelog) | [Não lançado], [Não publicado] | [Sin publicar], [No publicado], [Por publicar] |
+| `proposed` | proposto, proposta, rascunho, em análise | propuesto, propuesta, borrador |
 | `accepted` | aceito, aceita, aprovado, aprovada | aceptado, aceptada, aprobado, aprobada |
-| `rejected` | rejeitado, rejeitada, recusado | rechazado, rechazada |
-| `deprecated` | obsoleto, descontinuado, depreciado | obsoleto, en desuso, deprecado |
-| `superseded` | substituído, substituída, superado | sustituido, sustituida, reemplazado, superado |
-| Supersession link words | Substitui; Substituído por | Sustituye; Sustituido por |
-| Lifecycle `Status:` field label | Status, Situação | Estado |
+| `rejected` | rejeitado, rejeitada, recusado, recusada | rechazado, rechazada |
+| `deprecated` | obsoleto, descontinuado, depreciado, obsoleta, descontinuada | obsoleto, en desuso, deprecado, obsoleta |
+| `superseded` | substituído, substituída, superado, superada | sustituido, sustituida, reemplazado, superado, reemplazada, superada |
+| Supersession link words | Substitui; Substituído por, Substituída por | Sustituye, Reemplaza; Sustituido por, Reemplazado por, Sustituida por |
+| Lifecycle `Status:` field label | Status, Situação, Estado | Estado |
 
 The tables are a starting point. A label a team writes that is not listed is cleared by one marker or one `docs.labelAliases` entry, and the STR003 message names both.
 
@@ -234,7 +238,7 @@ A fixture project per language (`pt-BR`, `es`, and one unsupported language, `de
 
 A team writes its documents in Brazilian Portuguese.
 
-1. **Given** `docs.language: "pt-BR"` and `docs-canonical/ARCHITECTURE.md` with `## Visão geral do sistema`, `## Mapa de componentes` and `## Pilha tecnológica`, **When** guard runs, **Then** STR003 reports nothing for the file.
+1. **Given** `docs.language: "pt-BR"` and `docs-canonical/ARCHITECTURE.md` with `## Visão geral do sistema`, `## Mapa de componentes` and `## Pilha tecnológica` (still accepted; the first alias is now `Stack tecnológica`), **When** guard runs, **Then** STR003 reports nothing for the file.
 2. **Given** `## Mapa de fontes para testes` with a table in TEST-SPEC, **Then** Test-Spec examines the table and is not `empty`.
 3. **Given** `## [Não lançado]` in the changelog and `**Status:** Aceito` in an ADR, **Then** neither CHG001 nor DEC001 is reported, and `Substituído por ADR-003` builds the supersession link.
 4. **Given** a spec with `## Requisitos funcionais`, `## Critérios de sucesso` and `FR-001`, a plan with `## Resumo`, and tasks with `## Fase 1`, **Then** no SPK003, SPK004 or SPK005.
@@ -264,7 +268,7 @@ A team writes its documents in Brazilian Portuguese.
 
 1. **Given** `docguard init` and `generate` in a project with `docs.language: "pt-BR"`, **Then** the generated headings are Portuguese, each followed by its id marker, and the first guard run reports no label finding.
 2. **Given** the same commands without `docs.language`, **Then** the headings are English and carry the markers.
-3. **Given** `generate --write` in a Portuguese document that holds `## Pilha tecnológica` with its marker, **Then** the generated block goes under that heading; in a Portuguese document that lacks it, **Then** the Portuguese alias heading and its marker are written, never an English heading; and `fix --write` inserts `## [Não lançado]` with its marker.
+3. **Given** `generate --write` in a Portuguese document that holds `## Stack tecnológica` with its marker, **Then** the generated block goes under that heading; in a Portuguese document that lacks it, **Then** the Portuguese alias heading and its marker are written, never an English heading; and `fix --write` inserts `## [Não lançado]` with its marker.
 
 ### User Story 6 - Translations are not scored as the wrong language (Priority: P2)
 
@@ -374,3 +378,4 @@ Recorded 2026-11-13, from the maintainer's answers to the open questions of the 
 8. **Hint without `docs.language`.** Off, not in this spec.
 9. **Unicode normalization.** NFC for heading comparison, applied to all languages, but only after the English A/B shows no change; it is its own task with that gate (FR-020, T043).
 10. **FR-002 parser fix.** Ships first as its own pull request (Stage 0), because it is a latent bug on its own.
+11. **Label review, 2026-11-17.** The Portuguese and Spanish label sets were reviewed by the maintainer, a native Portuguese speaker, and approved as proposed. Changes: the first alias (the one `init` and `generate` write) of three Portuguese headings is now the form Brazilian teams write (`Tech Stack` is `Stack tecnológica`, not `Pilha tecnológica`; `Source-to-Test Map` is `Mapa de código para testes`, not `Mapa de fontes para testes`; `Security Boundaries` is `Limites de segurança`, not `Fronteiras de segurança`), and each old form stays accepted. Added accepted variants (30 Portuguese, 21 Spanish), and translations for `external-dependencies` and `revision-history`, which had none. A heading that ends in a Spec Kit requirement marker, `*(obrigatório)*`, `*(opcional)*`, `*(obligatorio)*`, `*(mandatory)*` or `*(optional)*`, with or without the emphasis, is matched without it (one trailing parenthetical of that closed list, accent and case folded); any other parenthetical stays part of the heading. The README examples `Feito quando` and `Em desenvolvimento` were the reporter's own wording, not built-in translations; the READMEs now show `Requisitos do sistema` as a team's own alias. T033 (the closed-class word lists for the text metrics) is not part of this review and stays open.

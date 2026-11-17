@@ -62,7 +62,7 @@ const withoutMarkers = text => text.replace(/^<!-- docguard:heading [\w-]+ -->\n
 const REQUIRED_PLUS_MAP = new Set(['system-overview', 'component-map', 'tech-stack', 'entities', 'authentication', 'secrets-management', 'test-categories', 'coverage-rules', 'source-to-test-map', 'environment-variables', 'setup-steps']);
 const SCAFFOLD = {
   'pt-BR': {
-    'docs-canonical/ARCHITECTURE.md': [['system-overview', 'Visão geral do sistema'], ['component-map', 'Mapa de componentes'], ['tech-stack', 'Pilha tecnológica']],
+    'docs-canonical/ARCHITECTURE.md': [['system-overview', 'Visão geral do sistema'], ['component-map', 'Mapa de componentes'], ['tech-stack', 'Stack tecnológica']],
     'docs-canonical/DATA-MODEL.md': [['entities', 'Entidades']],
     'docs-canonical/SECURITY.md': [['authentication', 'Autenticação'], ['secrets-management', 'Gerenciamento de segredos']],
     'docs-canonical/TEST-SPEC.md': [['test-categories', 'Categorias de teste'], ['coverage-rules', 'Regras de cobertura']],
@@ -161,12 +161,12 @@ describe('generate writes language-ready documents (FR-023)', () => {
     const arch = read(dir, 'docs-canonical/ARCHITECTURE.md');
     assert.match(arch, /^## 1\. Visão geral do sistema\n<!-- docguard:heading system-overview -->\n/m);
     assert.match(arch, /^## 5\. Mapa de componentes\n<!-- docguard:heading component-map -->\n/m);
-    assert.match(arch, /^### Pilha tecnológica\n<!-- docguard:heading tech-stack -->\n/m);
+    assert.match(arch, /^### Stack tecnológica\n<!-- docguard:heading tech-stack -->\n/m);
     assert.doesNotMatch(arch, /^#{2,3} (?:\d+\. )?(System Overview|Introduction and Goals|Building Block View|Tech Stack)\b/m);
     assert.match(read(dir, 'docs-canonical/DATA-MODEL.md'), /^## Entidades\n<!-- docguard:heading entities -->\n/m);
     assert.match(read(dir, 'docs-canonical/SECURITY.md'), /^## Gerenciamento de segredos\n<!-- docguard:heading secrets-management -->\n/m);
     assert.match(read(dir, 'docs-canonical/TEST-SPEC.md'), /^## Categorias de teste\n<!-- docguard:heading test-categories -->\n/m);
-    assert.match(read(dir, 'docs-canonical/TEST-SPEC.md'), /^## Mapa de fontes para testes\n<!-- docguard:heading source-to-test-map -->\n/m);
+    assert.match(read(dir, 'docs-canonical/TEST-SPEC.md'), /^## Mapa de código para testes\n<!-- docguard:heading source-to-test-map -->\n/m);
     assert.match(arch, /^### Layer Boundaries\n\n/m, 'a recommended heading keeps its English text, which the Architecture validator reads');
     assert.match(read(dir, 'docs-canonical/ENVIRONMENT.md'), /^## Variáveis de ambiente\n<!-- docguard:heading environment-variables -->\n/m);
     assert.match(read(dir, 'CHANGELOG.md'), /^## \[Não lançado\]\n<!-- docguard:heading unreleased -->\n/m);
@@ -266,7 +266,7 @@ function localizedScaffold(name, pairs) {
 }
 
 describe('isUneditedScaffold compares headings by their marker (FR-023)', () => {
-  const PT = [['System Overview', 'Visão geral do sistema', 'system-overview'], ['Component Map', 'Mapa de componentes', 'component-map'], ['Tech Stack', 'Pilha tecnológica', 'tech-stack']];
+  const PT = [['System Overview', 'Visão geral do sistema', 'system-overview'], ['Component Map', 'Mapa de componentes', 'component-map'], ['Tech Stack', 'Stack tecnológica', 'tech-stack']];
 
   it('an unedited Portuguese scaffold is a scaffold', () => {
     assert.equal(isUneditedScaffold(localizedScaffold('ARCHITECTURE', PT), 'ARCHITECTURE'), true);
@@ -300,7 +300,7 @@ describe('isUneditedScaffold compares headings by their marker (FR-023)', () => 
 });
 
 describe('isDocguardAuthored: exactly what init writes, nothing a person could have changed (FR-023, Constitution VI)', () => {
-  const PT = [['System Overview', 'Visão geral do sistema', 'system-overview'], ['Component Map', 'Mapa de componentes', 'component-map'], ['Tech Stack', 'Pilha tecnológica', 'tech-stack']];
+  const PT = [['System Overview', 'Visão geral do sistema', 'system-overview'], ['Component Map', 'Mapa de componentes', 'component-map'], ['Tech Stack', 'Stack tecnológica', 'tech-stack']];
   const doc = 'docs-canonical/ARCHITECTURE.md';
 
   it('init output in every form it writes: the template, English with markers, pt and es', () => {

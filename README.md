@@ -924,10 +924,12 @@ DocGuard reads documentation written in any language. The structural labels it l
 {
   "docs": {
     "language": "pt-BR",
-    "labelAliases": { "success-criteria": ["Feito quando"], "unreleased": ["Em desenvolvimento"] }
+    "labelAliases": { "requirements": ["Requisitos do sistema"] }
   }
 }
 ```
+
+The example is a team's own wording, added to the built-in set; it is not a built-in translation.
 
 **A language with no built-in set** (`"de"`, for example) is accepted too: a required heading that has no marker and no alias is not reported as missing, because DocGuard cannot tell a missing section from one written in German. The document appears under "DocGuard could not read" with the cause `language-not-supported` and what to add; the exit code does not change. A document named `<name>.<lang>.md`, or under `i18n/<lang>/` or `locales/<lang>/`, is read in that language when `docs.language` is set; the language is never guessed from the text.
 

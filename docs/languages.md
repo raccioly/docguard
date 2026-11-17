@@ -47,48 +47,48 @@ in `docs.labelAliases` is reported and ignored. The table is generated from
 |---|---|---|---|---|---|
 | `system-overview` | heading | `<!-- docguard:heading system-overview -->` | System Overview | Visão geral do sistema, Visão geral, Panorama do sistema | Visión general del sistema, Descripción general del sistema, Visión general, Resumen del sistema |
 | `component-map` | heading | `<!-- docguard:heading component-map -->` | Component Map | Mapa de componentes, Componentes | Mapa de componentes, Componentes |
-| `tech-stack` | heading | `<!-- docguard:heading tech-stack -->` | Tech Stack | Pilha tecnológica, Stack tecnológica, Tecnologias, Tecnologias utilizadas | Stack tecnológico, Pila tecnológica, Tecnologías |
-| `layer-boundaries` | heading | `<!-- docguard:heading layer-boundaries -->` | Layer Boundaries | Limites entre camadas, Camadas | Límites entre capas, Capas |
+| `tech-stack` | heading | `<!-- docguard:heading tech-stack -->` | Tech Stack | Stack tecnológica, Pilha tecnológica, Stack tecnológico, Stack de tecnologia, Tecnologias, Tecnologias utilizadas | Stack tecnológico, Pila tecnológica, Tecnologías, Tecnologías utilizadas |
+| `layer-boundaries` | heading | `<!-- docguard:heading layer-boundaries -->` | Layer Boundaries | Limites entre camadas, Camadas, Fronteiras entre camadas | Límites entre capas, Capas |
 | `data-flow` | heading | `<!-- docguard:heading data-flow -->` | Data Flow | Fluxo de dados | Flujo de datos |
-| `external-dependencies` | heading | `<!-- docguard:heading external-dependencies -->` | External Dependencies | (none yet) | (none yet) |
-| `revision-history` | heading | `<!-- docguard:heading revision-history -->` | Revision History | (none yet) | (none yet) |
+| `external-dependencies` | heading | `<!-- docguard:heading external-dependencies -->` | External Dependencies | Dependências externas | Dependencias externas |
+| `revision-history` | heading | `<!-- docguard:heading revision-history -->` | Revision History | Histórico de revisões, Histórico de alterações | Historial de revisiones, Historial de cambios |
 | `entities` | heading | `<!-- docguard:heading entities -->` | Entities | Entidades, Modelo de dados | Entidades, Modelo de datos |
-| `relationships` | heading | `<!-- docguard:heading relationships -->` | Relationships | Relacionamentos | Relaciones |
+| `relationships` | heading | `<!-- docguard:heading relationships -->` | Relationships | Relacionamentos, Relações | Relaciones |
 | `indexes` | heading | `<!-- docguard:heading indexes -->` | Indexes | Índices | Índices |
 | `authentication` | heading | `<!-- docguard:heading authentication -->` | Authentication | Autenticação | Autenticación |
-| `secrets-management` | heading | `<!-- docguard:heading secrets-management -->` | Secrets Management | Gerenciamento de segredos, Gestão de segredos | Gestión de secretos |
+| `secrets-management` | heading | `<!-- docguard:heading secrets-management -->` | Secrets Management | Gerenciamento de segredos, Gestão de segredos, Gestão de credenciais | Gestión de secretos, Manejo de secretos |
 | `authorization` | heading | `<!-- docguard:heading authorization -->` | Authorization | Autorização | Autorización |
-| `security-boundaries` | heading | `<!-- docguard:heading security-boundaries -->` | Security Boundaries | Fronteiras de segurança | Límites de seguridad |
-| `test-categories` | heading | `<!-- docguard:heading test-categories -->` | Test Categories | Categorias de teste | Categorías de pruebas |
+| `security-boundaries` | heading | `<!-- docguard:heading security-boundaries -->` | Security Boundaries | Limites de segurança, Fronteiras de segurança | Límites de seguridad |
+| `test-categories` | heading | `<!-- docguard:heading test-categories -->` | Test Categories | Categorias de teste, Categorias de testes, Tipos de teste, Tipos de testes | Categorías de pruebas, Tipos de pruebas |
 | `coverage-rules` | heading | `<!-- docguard:heading coverage-rules -->` | Coverage Rules | Regras de cobertura | Reglas de cobertura |
-| `test-commands` | heading | `<!-- docguard:heading test-commands -->` | Test Commands | Comandos de teste | Comandos de prueba |
-| `source-to-test-map` | heading | `<!-- docguard:heading source-to-test-map -->` | Source-to-Test Map, Service-to-Test Map | Mapa de fontes para testes, Mapa de código para testes | Mapa de código a pruebas |
+| `test-commands` | heading | `<!-- docguard:heading test-commands -->` | Test Commands | Comandos de teste, Comandos de testes | Comandos de prueba, Comandos de pruebas |
+| `source-to-test-map` | heading | `<!-- docguard:heading source-to-test-map -->` | Source-to-Test Map, Service-to-Test Map | Mapa de código para testes, Mapa de fontes para testes, Mapa do código-fonte para testes | Mapa de código a pruebas, Mapa de código fuente a pruebas |
 | `environment-variables` | heading | `<!-- docguard:heading environment-variables -->` | Environment Variables | Variáveis de ambiente | Variables de entorno |
-| `setup-steps` | heading | `<!-- docguard:heading setup-steps -->` | Setup Steps | Passos de configuração, Instalação e configuração, Como configurar | Pasos de configuración, Instalación y configuración |
-| `prerequisites` | heading | `<!-- docguard:heading prerequisites -->` | Prerequisites | Pré-requisitos | Requisitos previos |
-| `configuration-files` | heading | `<!-- docguard:heading configuration-files -->` | Configuration Files | Arquivos de configuração | Archivos de configuración |
+| `setup-steps` | heading | `<!-- docguard:heading setup-steps -->` | Setup Steps | Passos de configuração, Instalação e configuração, Como configurar, Configuração | Pasos de configuración, Instalación y configuración, Configuración |
+| `prerequisites` | heading | `<!-- docguard:heading prerequisites -->` | Prerequisites | Pré-requisitos | Requisitos previos, Prerrequisitos |
+| `configuration-files` | heading | `<!-- docguard:heading configuration-files -->` | Configuration Files | Arquivos de configuração, Ficheiros de configuração | Archivos de configuración |
 | `installation` | heading | `<!-- docguard:heading installation -->` | Installation | Instalação | Instalación |
-| `usage` | heading | `<!-- docguard:heading usage -->` | Usage | Uso, Como usar | Uso, Cómo usar |
+| `usage` | heading | `<!-- docguard:heading usage -->` | Usage | Uso, Como usar, Utilização | Uso, Cómo usar |
 | `license` | heading | `<!-- docguard:heading license -->` | License, Licence | Licença | Licencia |
-| `contributing` | heading | `<!-- docguard:heading contributing -->` | Contributing | Contribuindo, Como contribuir | Contribuir, Cómo contribuir |
-| `user-scenarios` | heading | `<!-- docguard:heading user-scenarios -->` | User Scenarios | Cenários de usuário, Histórias de usuário, Cenários e testes | Escenarios de usuario, Historias de usuario |
+| `contributing` | heading | `<!-- docguard:heading contributing -->` | Contributing | Contribuindo, Como contribuir, Contribuição, Contribuições | Contribuir, Cómo contribuir, Contribuciones |
+| `user-scenarios` | heading | `<!-- docguard:heading user-scenarios -->` | User Scenarios | Cenários de usuário, Histórias de usuário, Cenários e testes, Cenários de usuário e testes, Cenários de uso | Escenarios de usuario, Historias de usuario, Escenarios de uso, Escenarios de usuario y pruebas |
 | `requirements` | heading | `<!-- docguard:heading requirements -->` | Requirements | Requisitos, Requisitos funcionais | Requisitos, Requisitos funcionales |
-| `success-criteria` | heading | `<!-- docguard:heading success-criteria -->` | Success Criteria | Critérios de sucesso, Critérios de aceite | Criterios de éxito, Criterios de aceptación |
+| `success-criteria` | heading | `<!-- docguard:heading success-criteria -->` | Success Criteria | Critérios de sucesso, Critérios de aceite, Critérios de aceitação | Criterios de éxito, Criterios de aceptación |
 | `summary` | heading | `<!-- docguard:heading summary -->` | Summary | Resumo | Resumen |
 | `technical-context` | heading | `<!-- docguard:heading technical-context -->` | Technical Context | Contexto técnico | Contexto técnico |
 | `project-structure` | heading | `<!-- docguard:heading project-structure -->` | Project Structure | Estrutura do projeto | Estructura del proyecto |
 | `phase` | word | none | Phase | Fase | Fase |
 | `root-cause` | heading | `<!-- docguard:heading root-cause -->` | Root Cause | Causa raiz | Causa raíz |
-| `fix` | heading | `<!-- docguard:heading fix -->` | Fix | Correção | Corrección |
-| `unreleased` | heading | `<!-- docguard:heading unreleased -->` | Unreleased | Não lançado, Não publicado | Sin publicar, No publicado |
-| `proposed` | word | none | proposed | proposto, proposta, rascunho | propuesto, propuesta, borrador |
+| `fix` | heading | `<!-- docguard:heading fix -->` | Fix | Correção, Solução | Corrección, Solución |
+| `unreleased` | heading | `<!-- docguard:heading unreleased -->` | Unreleased | Não lançado, Não publicado | Sin publicar, No publicado, Por publicar |
+| `proposed` | word | none | proposed | proposto, proposta, rascunho, em análise | propuesto, propuesta, borrador |
 | `accepted` | word | none | accepted | aceito, aceita, aprovado, aprovada | aceptado, aceptada, aprobado, aprobada |
-| `rejected` | word | none | rejected | rejeitado, rejeitada, recusado | rechazado, rechazada |
-| `deprecated` | word | none | deprecated | obsoleto, descontinuado, depreciado | obsoleto, en desuso, deprecado |
-| `superseded` | word | none | superseded | substituído, substituída, superado | sustituido, sustituida, reemplazado, superado |
-| `supersedes` | word | none | Supersedes | Substitui | Sustituye |
-| `superseded-by` | word | none | Superseded by | Substituído por | Sustituido por |
-| `lifecycle-status` | word | none | Status | Status, Situação | Estado |
+| `rejected` | word | none | rejected | rejeitado, rejeitada, recusado, recusada | rechazado, rechazada |
+| `deprecated` | word | none | deprecated | obsoleto, descontinuado, depreciado, obsoleta, descontinuada | obsoleto, en desuso, deprecado, obsoleta |
+| `superseded` | word | none | superseded | substituído, substituída, superado, superada | sustituido, sustituida, reemplazado, superado, reemplazada, superada |
+| `supersedes` | word | none | Supersedes | Substitui | Sustituye, Reemplaza |
+| `superseded-by` | word | none | Superseded by | Substituído por, Substituída por | Sustituido por, Reemplazado por, Sustituida por |
+| `lifecycle-status` | word | none | Status | Status, Situação, Estado | Estado |
 
 <!-- /docguard:label-registry -->
 
@@ -142,8 +142,7 @@ missing from a set is never a dead end: the marker always works.
   "docs": {
     "language": "pt-BR",
     "labelAliases": {
-      "success-criteria": ["Feito quando"],
-      "unreleased": ["Em desenvolvimento"],
+      "requirements": ["Requisitos do sistema"],
       "accepted": ["Vigente"]
     }
   }

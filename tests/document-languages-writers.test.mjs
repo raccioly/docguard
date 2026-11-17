@@ -53,7 +53,7 @@ describe('upsertSection with a label context', () => {
   });
 
   it('no host, a language with a set: the first alias plus the id marker', async () => {
-    for (const [language, heading] of [['pt-BR', 'Pilha tecnológica'], ['es', 'Stack tecnológico']]) {
+    for (const [language, heading] of [['pt-BR', 'Stack tecnológica'], ['es', 'Stack tecnológico']]) {
       const out = upsertSection('# Arq\n', 'tech-stack', '| x |', { heading: 'Tech Stack', labels: await ctxFor(language) }).content;
       assert.match(out, new RegExp(`^## ${heading}\\n<!-- docguard:heading tech-stack -->\\n\\n<!-- docguard:section id=tech-stack source=code -->`, 'm'), language);
       assert.doesNotMatch(out, /## Tech Stack/);

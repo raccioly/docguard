@@ -6039,7 +6039,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:55733de715f70c1bb0dda10d69b613ce6ae149b36dcf604a64c5470bf5e34b11"
+            "digest": "sha256:1d3ecab096b29a963f0e40d6281b485453e7c06bf2ef081f9c292027e0e3b504"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6047,12 +6047,12 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:3c820b97e5078c5d9a9a37f6b983fa757ed9e45f440adaab48664dc41d8861ae"
+            "digest": "sha256:c7cb97609e482063614db6a30dbc076e8d77543310928f3076f29218ee80eab8"
           }
         ],
         "taskCompletion": {
-          "checked": 42,
-          "total": 43
+          "checked": 43,
+          "total": 44
         },
         "implementationEvidence": [
           {
@@ -6084,6 +6084,11 @@
             "requirementId": "FR-005",
             "file": "cli/validators/structure.mjs",
             "line": 206
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-labels.mjs",
+            "line": 162
           },
           {
             "requirementId": "FR-006",
@@ -6153,7 +6158,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 540
+            "line": 554
           },
           {
             "requirementId": "FR-012",
@@ -6168,7 +6173,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 557
+            "line": 571
           },
           {
             "requirementId": "FR-013",
@@ -6183,7 +6188,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 594
+            "line": 608
           },
           {
             "requirementId": "FR-015",
@@ -6238,7 +6243,7 @@
           {
             "requirementId": "FR-024",
             "file": "cli/shared-labels.mjs",
-            "line": 646
+            "line": 660
           }
         ],
         "testEvidence": [
@@ -6276,6 +6281,11 @@
             "requirementId": "FR-006",
             "file": "tests/document-languages-english-identity.test.mjs",
             "line": 18
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/document-languages-labels-review.test.mjs",
+            "line": 8
           },
           {
             "requirementId": "FR-006",

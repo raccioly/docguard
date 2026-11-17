@@ -85,7 +85,7 @@ Guia completo: [docs/ai-integration.md](docs/ai-integration.md) (em inglês).
 
 ## Documentação em outro idioma
 
-O DocGuard lê documentação escrita em qualquer idioma. Os rótulos estruturais que ele procura (os títulos obrigatórios dos documentos canônicos, a seção de não lançado do changelog, as seções do README, os nomes das seções do Spec Kit e as palavras de status dos registros de decisão) são reconhecidos por **id**, e não pelo texto em inglês; por isso um projeto em português ou espanhol não precisa de títulos em inglês. Há três formas de dizer qual título é qual, na ordem em que o DocGuard as tenta:
+O DocGuard lê documentação escrita em qualquer idioma. Os rótulos estruturais que ele procura (os títulos obrigatórios dos documentos canônicos, a seção de mudanças ainda não lançadas do changelog, as seções do README, os nomes das seções do Spec Kit e as palavras de status dos registros de decisão) são reconhecidos por **id**, e não pelo texto em inglês; por isso um projeto em português ou espanhol não precisa de títulos em inglês. Há três formas de dizer qual título é qual, na ordem em que o DocGuard as tenta:
 
 1. **Um marcador.** Escreva `<!-- docguard:heading system-overview -->` na linha logo abaixo do título que você já tem. Funciona em qualquer idioma e não exige configuração. A lista fechada de ids está em [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (em inglês); `docguard explain STR009` também a mostra.
 2. **`docs.language`.** Defina uma tag [BCP 47](https://www.rfc-editor.org/info/bcp47) no `.docguard.json` e os títulos e palavras embutidos desse idioma passam a ser aceitos. Português (`pt`, ou seja `pt-BR` e `pt-PT`) e espanhol (`es`) já vêm nesta versão. Maiúsculas, acentos e a numeração de seção no início são ignorados, e o inglês é sempre aceito, então documentos mistos funcionam.
@@ -95,14 +95,16 @@ O DocGuard lê documentação escrita em qualquer idioma. Os rótulos estruturai
 {
   "docs": {
     "language": "pt-BR",
-    "labelAliases": { "success-criteria": ["Feito quando"], "unreleased": ["Em desenvolvimento"] }
+    "labelAliases": { "requirements": ["Requisitos do sistema"] }
   }
 }
 ```
 
+O exemplo acima mostra a redação própria de uma equipe, acrescentada ao conjunto embutido; ele não é uma tradução embutida.
+
 **Um idioma sem conjunto embutido** (`"de"`, por exemplo) também é aceito: um título obrigatório sem marcador e sem alias não é apontado como ausente, porque o DocGuard não consegue distinguir uma seção ausente de uma escrita em alemão. O documento aparece em "DocGuard could not read" com a causa `language-not-supported` e o que acrescentar; o código de saída não muda. Um documento chamado `<nome>.<idioma>.md`, ou dentro de `i18n/<idioma>/` ou `locales/<idioma>/`, é lido nesse idioma quando `docs.language` está definido; o idioma nunca é deduzido do texto.
 
-**Números de qualidade do texto.** Voz passiva, legibilidade de Flesch e as métricas que usam listas de palavras em inglês são ignoradas em todos os idiomas, exceto o inglês, e cada uma é relatada com o motivo em vez de gerar um número. O tamanho das frases continua sendo medido.
+**Métricas de qualidade do texto.** Voz passiva, legibilidade de Flesch e as métricas que usam listas de palavras em inglês são ignoradas em todos os idiomas, exceto o inglês, e cada uma é relatada com o motivo em vez de gerar um número. O tamanho das frases continua sendo medido.
 
 **Documentos novos.** `docguard init` e `docguard generate` escrevem o marcador sob cada título obrigatório que geram e, com `docs.language` em `pt` ou `es`, escrevem o título nesse idioma (o changelog como `## [Não lançado]` ou `## [Sin publicar]`). Eles nunca reescrevem um documento que já existe.
 

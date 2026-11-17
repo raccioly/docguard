@@ -70,10 +70,10 @@ describe('the label registry (T012)', () => {
   it('the D2 table is shipped as written: spot checks per row group', () => {
     const find = id => LABELS.find(l => l.id === id);
     assert.deepEqual(find('system-overview').pt, ['Visão geral do sistema', 'Visão geral', 'Panorama do sistema']);
-    assert.deepEqual(find('source-to-test-map').pt, ['Mapa de fontes para testes', 'Mapa de código para testes']);
-    assert.deepEqual(find('source-to-test-map').es, ['Mapa de código a pruebas']);
+    assert.deepEqual(find('source-to-test-map').pt, ['Mapa de código para testes', 'Mapa de fontes para testes', 'Mapa do código-fonte para testes']);
+    assert.deepEqual(find('source-to-test-map').es, ['Mapa de código a pruebas', 'Mapa de código fuente a pruebas']);
     assert.deepEqual(find('unreleased').pt, ['Não lançado', 'Não publicado']);
-    assert.deepEqual(find('superseded').es, ['sustituido', 'sustituida', 'reemplazado', 'superado']);
+    assert.deepEqual(find('superseded').es, ['sustituido', 'sustituida', 'reemplazado', 'superado', 'reemplazada', 'superada']);
     assert.deepEqual(find('lifecycle-status').es, ['Estado']);
     assert.deepEqual(find('phase').pt, ['Fase']);
   });
