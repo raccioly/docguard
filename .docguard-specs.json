@@ -6039,7 +6039,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:1d3ecab096b29a963f0e40d6281b485453e7c06bf2ef081f9c292027e0e3b504"
+            "digest": "sha256:90128989c998a37a8b5e7e7ac327c1d38c72780b3e53dc472bec91a230ef8960"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6088,7 +6088,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-labels.mjs",
-            "line": 162
+            "line": 163
           },
           {
             "requirementId": "FR-006",
@@ -6158,7 +6158,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 554
+            "line": 555
           },
           {
             "requirementId": "FR-012",
@@ -6173,7 +6173,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 571
+            "line": 572
           },
           {
             "requirementId": "FR-013",
@@ -6188,7 +6188,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 608
+            "line": 609
           },
           {
             "requirementId": "FR-015",
@@ -6243,7 +6243,7 @@
           {
             "requirementId": "FR-024",
             "file": "cli/shared-labels.mjs",
-            "line": 660
+            "line": 661
           }
         ],
         "testEvidence": [

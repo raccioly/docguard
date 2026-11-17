@@ -132,7 +132,9 @@ accepted, in every language, so mixed documents work. With `docs.language` absen
 or `"en"` the matching is the English matching it has always been, byte for byte.
 An invalid tag is reported and treated as absent.
 
-The headings are data to be reviewed by a native speaker. A heading that is
+The headings and words of the `pt` and `es` sets were reviewed by a native
+speaker on 2026-11-17; only the prose word lists below (task T033) still wait
+for that review. A heading that is
 missing from a set is never a dead end: the marker always works.
 
 ## Your own wording: `docs.labelAliases`

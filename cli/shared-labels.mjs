@@ -28,9 +28,10 @@
  * closed namespace so `docs.labelAliases` has one key space, but no marker
  * names them.
  *
- * Aliases are data to be reviewed by a native speaker (spec 104, D2). They are
- * structural labels (headings), not the prose word lists of Doc-Quality, which
- * stay disabled for every language but English until that review is recorded.
+ * The alias sets were reviewed by the maintainer, a native Portuguese speaker, on
+ * 2026-11-17 (spec 104, Decision 11). They are structural labels (headings), not
+ * the prose word lists of Doc-Quality, which stay disabled for every language but
+ * English until a native speaker reviews those (spec 104, T033).
  */
 export const LABELS = Object.freeze([
   // ARCHITECTURE.md

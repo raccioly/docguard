@@ -8,7 +8,7 @@ Os testes unitários ficam em `tests/` e rodam com `node --test`.
 
 A cobertura mínima é de oitenta por cento nos fluxos críticos.
 
-## Mapa de código para testes
+## Mapa de fontes para testes
 
 | Fonte | Teste |
 |---|---|

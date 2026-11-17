@@ -133,6 +133,13 @@ describe('the branch (green): SC-001 and SC-002, Portuguese and Spanish', () => 
     assert.deepEqual(config.docs.labelAliases['success-criteria'], ['Feito quando']);
     assert.match(readFileSync(join(FIXTURES, 'pt-BR/specs/001-pedidos/spec.md'), 'utf8'), /^## Feito quando$/m);
   });
+
+  it('pt-BR: ARCHITECTURE carries the first alias a generator writes now, TEST-SPEC keeps the reporter\'s old form on purpose', () => {
+    // After the 2026-11-17 review `Stack tecnológica` is the first alias; `Mapa de fontes para testes` stays
+    // accepted, and the reporter's table has it, so this fixture is the end-to-end proof that an old form still works.
+    assert.match(readFileSync(join(FIXTURES, 'pt-BR/docs-canonical/ARCHITECTURE.md'), 'utf8'), /^## Stack tecnológica$/m);
+    assert.match(readFileSync(join(FIXTURES, 'pt-BR/docs-canonical/TEST-SPEC.md'), 'utf8'), /^## Mapa de fontes para testes$/m);
+  });
 });
 
 describe('the branch (green): SC-003, a language with no built-in set (de)', () => {
