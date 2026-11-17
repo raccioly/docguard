@@ -81,10 +81,10 @@ const TRACKED_KEY = '\0tracked-files'; // cannot collide with a path
  * matching a prefix test would not reproduce. An unreadable index counts as tracked.
  */
 function directoryTracked(projectDir, dir, cache) {
-  const read = args => execFileSync('git', args, { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
+  const options = { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 };
   try {
-    if (/[*?[\\]/.test(dir)) return read(['ls-files', '-z', '--', dir]) !== '';
-    if (!cache.has(TRACKED_KEY)) cache.set(TRACKED_KEY, read(['ls-files', '-z']).split('\0').filter(Boolean));
+    if (/[*?[\\]/.test(dir)) return execFileSync('git', ['ls-files', '-z', '--', dir], options) !== '';
+    if (!cache.has(TRACKED_KEY)) cache.set(TRACKED_KEY, execFileSync('git', ['ls-files', '-z'], options).split('\0').filter(Boolean));
     return cache.get(TRACKED_KEY).some(file => file.startsWith(dir));
   } catch { return true; /* unknown: treat as still present */ }
 }
