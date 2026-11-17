@@ -6,6 +6,7 @@
  * checks out with `fetch-depth: 0`.
  *
  * @req docguard.document-languages#FR-001
+ * @req docguard.document-languages#SC-005
  */
 import { makeTempDir } from './helpers/temp-dir.mjs';
 import { describe, it, before, after } from 'node:test';

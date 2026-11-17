@@ -68,7 +68,7 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 - [x] T031 `doc-quality.mjs` skip table, tokenizer, skip report; per-document language from naming in `cli/shared-labels.mjs` (FR-017, FR-018, FR-021).
 - [x] T032 `validator-coverage.mjs` (`EMPTY_CAUSES`), `enforcement.mjs` routing, `shared-guard-json.mjs`, `guard.mjs` text line, and the four validators of FR-022 (FR-019, FR-022).
-- [ ] T033 Native review of the pt-BR and es word lists (owner: maintainer). It blocks enabling the closed-class metrics (negation, conditional, compound requirement, pronouns); until it is recorded those metrics are skipped for every language other than English (FR-017, Decision 4).
+- [x] T033 Native review of the pt-BR and es word lists (owner: maintainer), then the metrics on: `cli/shared-prose-words.mjs`, `cli/validators/doc-quality.mjs`, `tests/document-languages-metrics-wordlists.test.mjs` (FR-017, Decisions 4 and 12). 2026-11-17: the maintainer, a native Portuguese speaker, approved the lists as proposed, with two decisions: Portuguese "se" counts only at the start of a sentence or right after a comma, never after a hyphen; "desde que" is included. Negation, conditional, pronouns and compound sentences now run for `pt` and `es`; every other language still skips them.
 - [x] T034 Hermetic English A/B (SC-004).
 
 ## Stage 4 - generators and explain
@@ -88,6 +88,6 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 - [x] T039 `tests/fixtures/languages/{pt-BR,es,de}/`: committed projects reproducing each row of the Problem table; a test runs each on the v0.48.0 `git archive` copy (red) and on the branch (green) (FR-025, SC-001 to SC-003).
 - [x] T040 Final hermetic A/B: DocGuard and eight other English repositories, findings, verdicts, exit codes and Guard JSON identical (FR-026, SC-004).
 - [x] T041 SC-006: each R1 row has a test that was red before the change, or an "unchanged by decision" entry with the reason.
-- [x] T042 `docs-canonical/` and `docs-implementation/` updates, `docguard specs --write`; `npm test`, `docguard guard`, the benchmark comparison (SC-007). The spec stays `Draft` and is not completed: T033 (the native review) is open, and `docs-implementation/` does not exist in this repository, so only the canonical documents changed.
+- [x] T042 `docs-canonical/` and `docs-implementation/` updates, `docguard specs --write`; `npm test`, `docguard guard`, the benchmark comparison (SC-007). The spec stayed `Draft` then because T033 (the native review) was open; it is closed with the completion of T033. `docs-implementation/` does not exist in this repository, so only the canonical documents changed.
 - [x] T043 `tests/document-languages-nfc.test.mjs` and `cli/shared-labels.mjs`: NFC heading comparison for all languages, a composed and a decomposed accent compare equal; enabled for English only after the English A/B (T040) shows no change in findings, verdicts, exit codes and Guard JSON (FR-020, Decision 9).
 - [x] T044 `cli/shared-labels.mjs`, `tests/document-languages-labels-review.test.mjs`: the pt and es label sets reviewed by the maintainer on 2026-11-17 (Decision 11): three Portuguese first aliases changed, accepted variants added, `(obrigatório)` and the other Spec Kit requirement markers ignored when matching a heading. T033 stays open.

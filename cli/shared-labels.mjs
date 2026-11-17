@@ -30,8 +30,9 @@
  *
  * The alias sets were reviewed by the maintainer, a native Portuguese speaker, on
  * 2026-11-17 (spec 104, Decision 11). They are structural labels (headings), not
- * the prose word lists of Doc-Quality, which stay disabled for every language but
- * English until a native speaker reviews those (spec 104, T033).
+ * the prose word lists of Doc-Quality, which a native speaker reviewed on the same
+ * day for Portuguese and Spanish (spec 104, T033): negation, conditional, pronoun
+ * and compound-sentence metrics run for those two and stay skipped for the rest.
  */
 export const LABELS = Object.freeze([
   // ARCHITECTURE.md
@@ -323,7 +324,7 @@ export function unreadEntry(file, ctx, what) {
     sections: [],
     what: 'prose',
     reason: `${file} not read for ${what}: the rules read English prose and docs.language "${ctx.tag}" is not English`,
-    howToConfigure: `Nothing in this document is wrong and nothing needs configuring: these checks have rules for English only (rules for "${ctx.tag}" need a word list that a native speaker has reviewed, spec 104 T033), so the document is reported here instead of being passed silently.`,
+    howToConfigure: `Nothing in this document is wrong and nothing needs configuring: these checks have rules for English prose only and "${ctx.tag}" is not English, so the document is reported here instead of being passed silently.`,
   };
 }
 

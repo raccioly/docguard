@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Text-quality metrics for Portuguese and Spanish documents: `DQ002`, `DQ003`, `DQ007` and `DQ008` can now appear for them (spec 104 task T033, issue 644).** For a document in `pt` (`pt-BR`, `pt-PT`) or `es` (every `es-*`), by `docs.language` or by its name, Doc-Quality now measures ambiguous pronouns (`DQ002`), compound sentences (`DQ003`), negation load (`DQ007`) and conditional load (`DQ008`) with word lists that the maintainer, a native Portuguese speaker, reviewed and approved on 2026-11-17, and with the same thresholds as English; a project with such documents can therefore see these four warnings, which were skipped for them in 0.49.0, and a metric that ran now counts in `passed` and `total`. Words are matched whole, ignoring case, with accents optional in the text (`nao` counts as `não`) but never invented (`é` is not `e`, `sí` is not `si`, `él` needs its accent). Portuguese `se` counts as a conditional only as the first word of a sentence or right after a comma, never after a hyphen (`configura-se`); `desde que` is included. Passive voice and both Flesch scores stay skipped for every language but English, and negation, conditional, compound and pronoun metrics stay skipped, with the reason `language-not-supported`, for every language other than `pt` and `es`. `<!-- docguard:quality negation-load off -->` and `docQuality.negationLoadThreshold` apply as in English. English results are byte-identical (a differential run on this repository and others). The lists are in `docs/languages.md`.
+
 ## [0.49.0] - 2026-11-17
 
 ### Added

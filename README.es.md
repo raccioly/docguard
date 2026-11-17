@@ -105,7 +105,7 @@ El ejemplo anterior muestra la redacción propia de un equipo, añadida al conju
 
 **Un idioma sin conjunto integrado** (`"de"`, por ejemplo) también se acepta: un título obligatorio sin marcador y sin alias no se señala como ausente, porque DocGuard no puede distinguir una sección ausente de una escrita en alemán. El documento aparece en "DocGuard could not read" con la causa `language-not-supported` y lo que hay que añadir; el código de salida no cambia. Un documento llamado `<nombre>.<idioma>.md`, o dentro de `i18n/<idioma>/` o `locales/<idioma>/`, se lee en ese idioma cuando `docs.language` está definido; el idioma nunca se deduce del texto.
 
-**Métricas de calidad del texto.** La voz pasiva, la legibilidad de Flesch y las métricas que usan listas de palabras en inglés se omiten en todos los idiomas salvo el inglés, y cada omisión se informa con su motivo en lugar de producir un número. La longitud de las frases se sigue midiendo.
+**Métricas de calidad del texto.** La voz pasiva y la legibilidad de Flesch se omiten en todos los idiomas salvo el inglés, y cada omisión se informa con su motivo en lugar de producir un número. La longitud de las frases se sigue midiendo. La negación, las condiciones, las frases compuestas y los pronombres ambiguos (DQ007, DQ008, DQ003, DQ002) ya se miden para portugués y español, con listas de palabras revisadas por un hablante nativo; los demás idiomas siguen omitiéndolos.
 
 **Documentos nuevos.** `docguard init` y `docguard generate` escriben el marcador bajo cada título obligatorio que generan y, con `docs.language` en `pt` o `es`, escriben el título en ese idioma (el changelog como `## [Não lançado]` o `## [Sin publicar]`). Nunca reescriben un documento que ya existe.
 
