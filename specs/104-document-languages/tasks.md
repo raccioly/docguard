@@ -75,13 +75,13 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ### Phase 1: Tests first
 
-- [ ] T035 [US5] `tests/document-languages-generate.test.mjs`: `init` and `generate` write the marker under each generated required heading, in the first alias for `pt` and `es`, in English otherwise; the first guard run reports no label finding; no existing document is rewritten; `isUneditedScaffold` recognizes a localized unedited scaffold by id (FR-023).
-- [ ] T036 `tests/explain.test.mjs` additions: `explain` for STR003, CHG001, DEC001, SPK003 and DCV005 states the id, the marker and the aliases; the reference page lists the closed id list and a test fails when they drift (FR-024).
+- [x] T035 [US5] `tests/document-languages-generate.test.mjs`: `init` and `generate` write the marker under each generated required heading, in the first alias for `pt` and `es`, in English otherwise; the first guard run reports no label finding; no existing document is rewritten; `isUneditedScaffold` recognizes a localized unedited scaffold by id (FR-023).
+- [x] T036 `tests/document-languages-explain.test.mjs` (the repository has no `tests/explain.test.mjs`, so the explain tests live here): `explain` for STR003, CHG001, DEC001, SPK003 and DCV005 states the id, the marker and the aliases; the reference page lists the closed id list and a test fails when they drift (FR-024).
 
 ### Phase 2: Implementation
 
-- [ ] T037 `writers/doc-generators.mjs`, `scanners/memory-plan.mjs`, `scanners/as-built.mjs`, `shared-scaffold.mjs` (FR-023).
-- [ ] T038 `explain.mjs`, `findings.mjs` help, the generated reference page, `docs/languages.md`, README and the two translated READMEs (FR-024).
+- [x] T037 `writers/doc-generators.mjs`, `scanners/as-built.mjs`, `shared-scaffold.mjs`, plus `commands/init.mjs`, `commands/setup.mjs`, `writers/generate-io.mjs` (`isDocguardAuthored` compares by id) and `writers/sections.mjs` (`upsertSection`, the marker for `generate --plan --write`); `scanners/memory-plan.mjs` needed no change: its plan carries the English heading keys and `upsertSection` writes the localized heading (FR-023).
+- [x] T038 `findings.mjs` help (`explain` prints it, so `explain.mjs` needed no change), `tools/generate-docs-reference.mjs` (the findings page, the label table in `docs/languages.md`, the authoring-contract block of the `docguard-fix` skill), `docs/languages.md`, README and the two translated READMEs (FR-024).
 
 ## Stage 5 - measurement and closing
 

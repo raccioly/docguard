@@ -256,6 +256,28 @@ source of truth**. With `"extractors": "src/extractors/*.py"`, a doc claiming
 marker needed. Reserved nouns (`checks`, `validators`, `tests`) keep their
 built-in DocGuard meaning. An unresolvable glob is skipped, never treated as 0.
 
+## Document language — `docs.language` and `docs.labelAliases`
+
+```json
+{
+  "docs": {
+    "language": "pt-BR",
+    "labelAliases": { "success-criteria": ["Feito quando"] }
+  }
+}
+```
+
+`docs.language` is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag.
+Absent (or `"en"`) means English, byte for byte as before. `pt` and `es` ship
+built-in headings and words, matched by primary subtag (`pt-BR`, `pt-PT`, `es-MX`);
+any other valid tag is accepted and has no built-in set, so a document that
+carries no marker and no alias for a required heading is reported as not read
+(`language-not-supported`), never as missing. `docs.labelAliases` is flat, keyed
+by label id; each value is a list of strings that extends the built-in set and
+never replaces it. An invalid tag or key is reported and ignored. The ids, the
+`<!-- docguard:heading <id> -->` marker, what is skipped and why are in
+[Documents in other languages](languages.md).
+
 ## Documentation homes — `docs.dirs`
 
 Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,

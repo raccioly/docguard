@@ -4713,7 +4713,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/scanners/as-built.mjs",
-            "line": 154
+            "line": 155
           },
           {
             "requirementId": "FR-007",
@@ -6047,11 +6047,11 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:7737ac3e8671f0c29c1a3097635f72eef8d03d37350527475ba94eb5b67456b9"
+            "digest": "sha256:e402d89ca17d7132b5761bd953906508ab08ad389ad3b5883c8beca9342b6b9d"
           }
         ],
         "taskCompletion": {
-          "checked": 33,
+          "checked": 37,
           "total": 43
         },
         "implementationEvidence": [
@@ -6128,7 +6128,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/writers/sections.mjs",
-            "line": 183
+            "line": 184
           },
           {
             "requirementId": "FR-009",
@@ -6209,6 +6209,31 @@
             "requirementId": "FR-021",
             "file": "cli/shared-doc-language.mjs",
             "line": 15
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/scanners/as-built.mjs",
+            "line": 222
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/shared-scaffold.mjs",
+            "line": 209
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/shared-scaffold.mjs",
+            "line": 235
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/writers/generate-io.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "cli/shared-labels.mjs",
+            "line": 645
           }
         ],
         "testEvidence": [
@@ -6265,7 +6290,7 @@
           {
             "requirementId": "FR-008",
             "file": "tests/document-languages-writers.test.mjs",
-            "line": 11
+            "line": 12
           },
           {
             "requirementId": "FR-009",
@@ -6331,6 +6356,16 @@
             "requirementId": "FR-022",
             "file": "tests/document-languages-strict.test.mjs",
             "line": 17
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "tests/document-languages-generate.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "tests/document-languages-explain.test.mjs",
+            "line": 6
           },
           {
             "requirementId": "SC-004",
@@ -9126,7 +9161,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1187
+            "line": 1192
           },
           {
             "requirementId": "FR-008",
@@ -9356,12 +9391,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/as-built.mjs",
-            "line": 219
+            "line": 220
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/as-built.mjs",
-            "line": 220
+            "line": 221
           },
           {
             "requirementId": "FR-004",
@@ -9406,7 +9441,7 @@
           {
             "requirementId": "FR-009",
             "file": "cli/writers/generate-io.mjs",
-            "line": 116
+            "line": 128
           },
           {
             "requirementId": "FR-010",
@@ -9825,7 +9860,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/setup.mjs",
-            "line": 410
+            "line": 413
           },
           {
             "requirementId": "FR-005",
@@ -10157,12 +10192,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1463
+            "line": 1468
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1473
+            "line": 1478
           },
           {
             "requirementId": "FR-006",
@@ -13267,7 +13302,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 204
+            "line": 206
           },
           {
             "requirementId": "FR-008",
@@ -14603,7 +14638,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 315
+            "line": 317
           },
           {
             "requirementId": "FR-012",
@@ -14613,7 +14648,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/scanners/as-built.mjs",
-            "line": 144
+            "line": 145
           },
           {
             "requirementId": "FR-014",
@@ -14623,7 +14658,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/scanners/as-built.mjs",
-            "line": 167
+            "line": 168
           },
           {
             "requirementId": "FR-016",
@@ -17878,12 +17913,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 398
+            "line": 400
           },
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 400
+            "line": 402
           },
           {
             "requirementId": "FR-002",
@@ -18164,7 +18199,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 339
+            "line": 341
           },
           {
             "requirementId": "FR-007",
@@ -18174,7 +18209,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/init.mjs",
-            "line": 340
+            "line": 342
           },
           {
             "requirementId": "FR-008",
@@ -18189,7 +18224,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/init.mjs",
-            "line": 341
+            "line": 343
           },
           {
             "requirementId": "FR-010",
@@ -18199,7 +18234,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 342
+            "line": 344
           },
           {
             "requirementId": "FR-012",

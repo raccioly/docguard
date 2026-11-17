@@ -5,8 +5,9 @@
  * through the resolver. With no host they write the first alias of the language
  * plus the id marker for a language that has a set, and the block alone (with a
  * `language-not-supported` report) when it has none. They never write an English
- * heading into a translated document. English output is unchanged in this stage
- * (the markers under generated headings are Stage 4).
+ * heading into a translated document. Stage 4 added the id marker under a heading
+ * written for an English project too (tests/document-languages-generate.test.mjs);
+ * the English heading text is unchanged.
  *
  * @req docguard.document-languages#FR-008
  */
@@ -77,11 +78,13 @@ describe('upsertSection with a label context', () => {
     assert.equal(r.languageNotSupported, 'Endpoints');
   });
 
-  it('English output is unchanged: no docs.language, or docs.language "en", writes the English heading and no marker', async () => {
+  it('English: no docs.language, or docs.language "en", writes the English heading, then its id marker (Stage 4)', async () => {
     const legacy = upsertSection('# Env\n', 'env-vars', '| a |', { heading: 'Environment Variables' }).content;
-    assert.equal(legacy, '# Env\n\n## Environment Variables\n\n<!-- docguard:section id=env-vars source=code -->\n| a |\n<!-- /docguard:section -->\n');
+    assert.equal(legacy, '# Env\n\n## Environment Variables\n<!-- docguard:heading environment-variables -->\n\n<!-- docguard:section id=env-vars source=code -->\n| a |\n<!-- /docguard:section -->\n');
     const en = upsertSection('# Env\n', 'env-vars', '| a |', { heading: 'Environment Variables', labels: await ctxFor('en') }).content;
     assert.equal(en, legacy);
+    // A heading outside the registry has no id, so no marker.
+    assert.equal(upsertSection('# Env\n', 'endpoints', '| a |', { heading: 'Endpoints' }).content, '# Env\n\n## Endpoints\n\n<!-- docguard:section id=endpoints source=code -->\n| a |\n<!-- /docguard:section -->\n');
   });
 });
 
@@ -117,12 +120,11 @@ describe('generate --plan --write in a Portuguese project', () => {
     assert.doesNotMatch(out, ENGLISH_HEADINGS);
   });
 
-  it('without docs.language the English headings are written exactly as before', () => {
+  it('without docs.language the English headings are written as before, each followed by its id marker', () => {
     const dir = expressProject({ 'docs-canonical/ARCHITECTURE.md': '# Architecture\n\n<!-- docguard:generated true -->\n' });
     assert.equal(run(dir, ['generate', '--plan', '--write']).status, 0);
     const out = readFileSync(join(dir, 'docs-canonical/ARCHITECTURE.md'), 'utf8');
-    assert.match(out, /^## Tech Stack\n\n<!-- docguard:section id=tech-stack/m);
-    assert.doesNotMatch(out, /docguard:heading/);
+    assert.match(out, /^## Tech Stack\n<!-- docguard:heading tech-stack -->\n\n<!-- docguard:section id=tech-stack/m);
   });
 
   it('sync refreshes a code section under a Portuguese heading and adds no heading', () => {

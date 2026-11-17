@@ -622,3 +622,51 @@ export function hasPhaseWord(content, ctx) {
   const folded = foldText(content);
   return words.some(word => new RegExp(`(?<![\\p{L}\\p{N}])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+\\d`, 'u').test(folded));
 }
+
+// ── Writers and help (Stage 4) ────────────────────────────────────────────
+
+/** The heading ids of one document group (`architecture`, `data-model`, `security`, `test-spec`, `environment`, `readme`, `spec`, `plan`, `bugfix`, `changelog`), in registry order. */
+export function headingIdsOfGroup(group) {
+  return LABELS.filter(entry => entry.kind === 'heading' && entry.group === group).map(entry => entry.id);
+}
+
+/** The marker line for an id, as written under a heading. */
+export function headingMarkerLine(id) {
+  return `<!-- docguard:heading ${id} -->`;
+}
+
+/**
+ * The paragraph `explain`, the findings help and the generated reference carry
+ * for a finding that reads these ids (spec 104 FR-024): each id with its
+ * marker (headings only), its English label and the built-in aliases, and how
+ * the three ways of satisfying it work. Generated from the registry, so the
+ * help cannot drift from what the validators accept.
+ * @param {string[]} ids registry ids
+ * @implements docguard.document-languages#FR-024
+ */
+export function labelHelp(ids) {
+  const entries = ids.map(id => BY_ID.get(id)).filter(Boolean);
+  const form = entry => {
+    const forms = [`English: ${entry.en.join(' / ')}`];
+    for (const lang of BUILTIN_LANGUAGES) forms.push(`${lang}: ${entry[lang].length ? entry[lang].join(', ') : 'no alias yet'}`);
+    return `\`${entry.id}\`${entry.kind === 'heading' ? ` (${headingMarkerLine(entry.id)})` : ''} [${forms.join('; ')}]`;
+  };
+  const headings = entries.filter(entry => entry.kind === 'heading');
+  const words = entries.filter(entry => entry.kind === 'word');
+  const parts = [];
+  if (headings.length) {
+    parts.push(`Matched by id, not by English text. Headings: ${headings.map(form).join('; ')}. A heading in any language counts when the marker is on the line under it (it works in every language and without docs.language), when docs.language selects the built-in set for it (\`pt\` and \`es\`; English is always accepted), or when docs.labelAliases.<id> in .docguard.json lists it.`);
+  }
+  if (words.length) {
+    parts.push(`Matched by id, not by English text. Words: ${words.map(form).join('; ')}. These are words, not headings, so there is no marker: they match by alias only (docs.language selects the built-in \`pt\` and \`es\` words; English is always accepted; docs.labelAliases.<id> adds your own wording and never replaces the built-in ones).`);
+  }
+  return parts.length ? ` ${parts.join(' ')}` : '';
+}
+
+/** The closed id lists STR009 and the generated reference print: heading ids (a marker may name them) and word ids (docs.labelAliases only). */
+export function labelIdLists() {
+  return {
+    headings: headingIds(),
+    words: LABELS.filter(entry => entry.kind === 'word').map(entry => entry.id),
+  };
+}

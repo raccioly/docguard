@@ -30,6 +30,7 @@ The demo runs against a sample project and needs no install or setup.
 | Use it with AWS AI-DLC | [AWS AI-DLC](guides/aidlc.md) |
 | Gate pull requests | [Continuous Integration](guides/ci.md) |
 | Know which languages and frameworks it reads | [Languages and Frameworks](reference/languages.md) |
+| Write your documents in Portuguese, Spanish or another language | [Documents in Other Languages](languages.md) |
 | Connect your coding agent | [Coding Agents](reference/agents.md) and [AI Integration](ai-integration.md) |
 | Understand a finding code | [Finding Codes](reference/findings.md) |
 
@@ -48,7 +49,7 @@ The demo runs against a sample project and needs no install or setup.
 ## Reference
 
 - [Commands](commands.md) and [Configuration](configuration.md).
-- [Languages and Frameworks](reference/languages.md), [Coding Agents](reference/agents.md) and the [MCP Server](reference/mcp.md).
+- [Languages and Frameworks](reference/languages.md), [Documents in Other Languages](languages.md), [Coding Agents](reference/agents.md) and the [MCP Server](reference/mcp.md).
 - [Finding Codes](reference/findings.md), generated from the code that reports them.
 - [FAQ](faq.md).
 - [Section-Addressable Docs](doc-sections.md): the markers that separate code-derived sections from your prose.

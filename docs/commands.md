@@ -202,6 +202,15 @@ npx docguard-cli init --enforcement standard    # Write the lower mode into .doc
 and writes it only for the non-default answer. The closing text states the mode.
 Init never writes configuration that switches a validator off.
 
+**Language.** Each heading `init` writes that the label registry knows carries
+its id marker on the next line (`<!-- docguard:heading tech-stack -->`). When
+`.docguard.json` already sets `docs.language` to `pt` or `es`, the heading text
+is the first built-in alias (`## Pilha tecnológica`, `## Stack tecnológico`) and
+the new `CHANGELOG.md` starts with `## [Não lançado]` or `## [Sin publicar]`;
+any other language keeps the English heading and the marker. A document that
+already exists is skipped, never rewritten. See
+[Documents in other languages](languages.md).
+
 **Profiles:**
 
 | Profile | Docs Created | Validators |
@@ -279,6 +288,11 @@ DocGuard's own output:
   mention `.env.example` only when it exists.
 - Each generated table cites the source file behind each row, which is what
   links the doc to code for TRC002.
+- `generate` writes the id marker under each required heading of the documents
+  it creates, in the language of `docs.language` when it has a built-in set (see
+  [Documents in other languages](languages.md)); a document that exists is left
+  alone unless `--force` is given. `generate --plan --write` and
+  `generate --spec` do the same for the headings they write.
 - `generate --plan --write` writes an H2 heading for each section it creates,
   or puts the section under a heading the document already has (the init
   template's `## Tech Stack`), so the structure checks find their sections.

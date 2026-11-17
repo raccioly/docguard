@@ -27,6 +27,8 @@ import { autoDetectProjectType } from '../config.mjs';
 import { ensureSkills, detectAgentMode, isSpecKitInitialized, getDetectedAgent } from '../ensure-skills.mjs';
 import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mjs';
 import { resolveHooksTarget } from '../shared-git.mjs';
+import { labelContext } from '../shared-labels.mjs';
+import { languageReadyScaffold } from '../shared-scaffold.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -176,6 +178,7 @@ export async function runSetup(projectDir, config, flags) {
 
     if (create) {
       const today = new Date().toISOString().split('T')[0];
+      const labels = labelContext(config);
       for (const doc of missingDocs) {
         const destPath = resolve(projectDir, doc.file);
         const templatePath = resolve(TEMPLATES_DIR, doc.template);
@@ -186,7 +189,7 @@ export async function runSetup(projectDir, config, flags) {
         }
 
         if (existsSync(templatePath)) {
-          const content = readFileSync(templatePath, 'utf-8').replace(/YYYY-MM-DD/g, today);
+          const content = languageReadyScaffold(doc.file, readFileSync(templatePath, 'utf-8').replace(/YYYY-MM-DD/g, today), labels);
           writeFileSync(destPath, content, 'utf-8');
           console.log(`     ${c.green}✅ Created ${doc.file}${c.reset}`);
           configured++;

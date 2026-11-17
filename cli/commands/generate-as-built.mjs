@@ -18,6 +18,7 @@ import { existsSync, rmdirSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { c } from '../shared.mjs';
 import { patternFallbackAdvice } from '../shared-source.mjs';
+import { labelContext } from '../shared-labels.mjs';
 import { areaTests, collectAreaFacts, factsTier, nextFeatureDir, renderAsBuiltSpec, resolveArea, slugFor } from '../scanners/as-built.mjs';
 import { projectSpecRegistry, SPEC_REGISTRY_PATH } from '../scanners/spec-registry.mjs';
 import { commitFileTransaction } from '../writers/file-transaction.mjs';
@@ -49,7 +50,7 @@ export function runGenerateAsBuilt(projectDir, config, flags) {
   const specId = flags.id || defaultSpecId(config, projectDir, slug);
   if (!SPEC_ID_RE.test(specId)) return fail(`Invalid spec ID ${JSON.stringify(specId)} (lowercase letters, digits, dots, underscores, hyphens; 3-128 chars).`);
   const title = `As-built: ${area.rel}`;
-  const content = renderAsBuiltSpec({ title, specId, areaRel: area.rel, facts, tests, dirName, date: new Date().toISOString().slice(0, 10) });
+  const content = renderAsBuiltSpec({ title, specId, areaRel: area.rel, facts, tests, dirName, date: new Date().toISOString().slice(0, 10), labels: labelContext(config) });
   const specPath = `specs/${dirName}/spec.md`;
   // Which analyzer read the route and entity facts: a candidate the pattern
   // fallback could not see is missing, so the result says so
