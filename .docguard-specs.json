@@ -5544,7 +5544,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 259
+            "line": 262
           }
         ],
         "testEvidence": [
@@ -6039,7 +6039,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:90128989c998a37a8b5e7e7ac327c1d38c72780b3e53dc472bec91a230ef8960"
+            "digest": "sha256:73063aa6a892a666d813ab2d0fe627eb69fe55c05992d89d4b0e44a269991632"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6047,7 +6047,7 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:c7cb97609e482063614db6a30dbc076e8d77543310928f3076f29218ee80eab8"
+            "digest": "sha256:fafb3de863e0efb6f4a9cacc4ed34eb0b5720010b42cd114df0a15bfdc0b460f"
           }
         ],
         "taskCompletion": {
@@ -6202,13 +6202,18 @@
           },
           {
             "requirementId": "FR-017",
+            "file": "cli/shared-prose-words.mjs",
+            "line": 33
+          },
+          {
+            "requirementId": "FR-017",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 32
+            "line": 34
           },
           {
             "requirementId": "FR-018",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 33
+            "line": 35
           },
           {
             "requirementId": "FR-020",
@@ -6349,13 +6354,18 @@
           },
           {
             "requirementId": "FR-017",
+            "file": "tests/document-languages-metrics-wordlists.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-017",
             "file": "tests/document-languages-metrics.test.mjs",
-            "line": 17
+            "line": 18
           },
           {
             "requirementId": "FR-018",
             "file": "tests/document-languages-metrics.test.mjs",
-            "line": 18
+            "line": 19
           },
           {
             "requirementId": "FR-019",
@@ -18687,7 +18697,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 628
+            "line": 650
           },
           {
             "requirementId": "FR-006",

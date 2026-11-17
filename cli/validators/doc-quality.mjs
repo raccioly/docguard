@@ -19,12 +19,14 @@
  * Documents in another language (spec 104, Stage 3): the English word lists,
  * morphology and syllable counter cannot judge them. For a document whose
  * language is not English (`docs.language`, or its own name) passive voice and
- * both Flesch scores are skipped, and so are the closed-class metrics (compound,
- * pronouns, negation, conditional) until a native speaker has reviewed those
- * word lists (task T033). A skipped metric yields no number, no finding and no
- * count in passed or total, and is listed in `skippedMetrics` with the reason
- * `language-not-supported`. Sentence length still runs where the script
- * separates words with spaces. English documents take the legacy path unchanged.
+ * both Flesch scores are skipped. The closed-class metrics (compound, pronouns,
+ * negation, conditional) run for Portuguese and Spanish, whose word lists a
+ * native speaker reviewed on 2026-11-17 (task T033, cli/shared-prose-words.mjs),
+ * and are skipped for every other language. A skipped metric yields no number,
+ * no finding and no count in passed or total, and is listed in `skippedMetrics`
+ * with the reason `language-not-supported`. Sentence length still runs where the
+ * script separates words with spaces. English documents take the legacy path
+ * unchanged.
  *
  * Zero NPM runtime dependencies, and zero process execution — pure Node.js
  * built-ins reading files only.
@@ -40,6 +42,7 @@ import { contractFields } from '../shared-result-contract.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { LANGUAGE_NOT_SUPPORTED, separatesWords } from '../shared-labels.mjs';
 import { nonEnglishDocument } from '../shared-doc-language.mjs';
+import { proseMatchers } from '../shared-prose-words.mjs';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -580,13 +583,14 @@ function analyzeDocument(doc, language = null) {
 
 /**
  * What Doc-Quality can measure for a document whose language is not English
- * (spec 104 FR-017, FR-018). Prose is extracted and counted with Unicode letters;
- * the only metric that needs nothing but a word count, sentence length, is
- * measured when the script separates words with spaces. Every other metric is
- * reported as skipped: passive voice, Flesch Reading Ease and Flesch-Kincaid
- * need English morphology and syllables, and the closed-class metrics (compound
- * sentences, pronouns, negation, conditional) need a word list that a native
- * speaker has not yet reviewed (T033).
+ * (spec 104 FR-017, FR-018). Prose is extracted and counted with Unicode letters.
+ * Sentence length needs nothing but a word count, so it is measured when the
+ * script separates words with spaces. The closed-class metrics (ambiguous
+ * pronouns DQ002, compound sentences DQ003, negation DQ007, conditional DQ008)
+ * are measured for Portuguese and Spanish, whose word lists a native speaker
+ * reviewed on 2026-11-17 (T033); for every other language they are skipped.
+ * Passive voice, Flesch Reading Ease and Flesch-Kincaid need English morphology
+ * and syllables and are skipped for every language but English.
  */
 function analyzeOtherLanguage(doc, content, language) {
   const spaced = separatesWords(language);
@@ -601,7 +605,25 @@ function analyzeOtherLanguage(doc, content, language) {
   const sentences = splitSentences(proseText, true);
   const words = tokenizeWords(proseText, { unicode: true });
   if (words.length < MIN_PROSE_WORDS || sentences.length < 3) return { skipped: true, reason: 'insufficient prose (reference document)', ...base };
-  return { skipped: false, ...base, sentences: sentences.length, words: words.length, metrics: { avgSentenceLength: measureSentenceLength(words, sentences) }, measured: ['DQ006'] };
+  const result = { skipped: false, ...base, sentences: sentences.length, words: words.length, metrics: { avgSentenceLength: measureSentenceLength(words, sentences) }, measured: ['DQ006'] };
+  const matchers = proseMatchers(language.language);
+  if (!matchers) return result;
+  const pronouns = matchers.pronounCount(proseText);
+  const share = predicate => {
+    const count = sentences.filter(predicate).length;
+    return { ratio: count / sentences.length, count, total: sentences.length };
+  };
+  const ambiguous = { ratio: pronouns / words.length, count: pronouns, total: words.length };
+  const atomicity = share(matchers.compound);
+  const negation = share(matchers.negation);
+  const conditional = share(matchers.conditional);
+  return {
+    ...result,
+    metrics: { ...result.metrics, ambiguousPronounRatio: ambiguous.ratio, atomicityScore: atomicity.ratio, negationLoad: negation.ratio, conditionalLoad: conditional.ratio },
+    details: { ambiguous, atomicity, negation, conditional },
+    overrides: { negationLoad: parseQualityOverride(content, 'negation-load') },
+    measured: ['DQ002', 'DQ003', 'DQ006', 'DQ007', 'DQ008'],
+  };
 }
 
 /** The eight metrics by finding code, for the skip report. */
@@ -640,7 +662,7 @@ function qualityContract(projectDir, performed, found, languageSkips = []) {
     decide: () => applies(projectDir),
     empty: (decision) => decision.applies && languageSkips.length > 0
       // Nothing was scored because of the language of every document that had prose: a limit of DocGuard, not a gap in the project.
-      ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Doc-Quality read prose in ${[...new Set(languageSkips.map(s => s.document))].join(', ')} and scored nothing: its rules read English, and the language of ${languageSkips.length === 1 ? 'this document is' : 'these documents are'} "${languageSkips[0].language}".`, howToConfigure: 'Nothing in the documents is wrong. Sentence length runs for a language whose words are separated by spaces; every other metric needs word lists a native speaker has reviewed (spec 104, T033), so it stays skipped for a language other than English.' }
+      ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Doc-Quality read prose in ${[...new Set(languageSkips.map(s => s.document))].join(', ')} and scored nothing: its rules read English, and the language of ${languageSkips.length === 1 ? 'this document is' : 'these documents are'} "${languageSkips[0].language}".`, howToConfigure: 'Nothing in the documents is wrong. Sentence length runs for a language whose words are separated by spaces, and negation, conditional, compound sentences and pronouns also run for Portuguese and Spanish, whose word lists a native speaker reviewed (spec 104, T033); every other metric stays skipped for a language other than English.' }
       : decision.applies
       ? { emptyCause: 'needs-content', note: `Doc-Quality found ${decision.evidence}, but none has ${MIN_PROSE_WORDS} words and 3 sentences of prose (tables, code and lists do not count), so it scored nothing.`, howToConfigure: `Write at least ${MIN_PROSE_WORDS} words in 3 or more sentences of plain paragraphs, for example an overview in README.md; Doc-Quality then scores the passive voice, pronouns, readability and sentence length of each document with enough prose.` }
       : { note: 'Doc-Quality found no canonical document and no README.md, so it had no prose to score.', howToConfigure: 'Nothing to configure unless the project has documents: then Doc-Quality scores the prose of README.md and of the canonical documents.' },
@@ -683,15 +705,38 @@ export function validateDocQuality(projectDir, config) {
     };
 
     if (language) {
-      // Skipped metrics yield no number, no finding and no count (FR-017); sentence length runs where words are spaced.
+      // Skipped metrics yield no number, no finding and no count (FR-017); sentence length runs where words are spaced,
+      // and the closed-class metrics run for the languages whose word lists were reviewed (T033).
       for (const code of Object.keys(METRIC_NAMES)) {
         if (analysis.measured.includes(code)) continue;
         skippedMetrics.push({ document: loc, code, metric: METRIC_NAMES[code], reason: LANGUAGE_NOT_SUPPORTED, language: language.language });
+      }
+      if (analysis.measured.includes('DQ002')) {
+        total++;
+        if (m.ambiguousPronounRatio <= THRESHOLDS.ambiguousPronounRatio.warn) passed++;
+        else warn('DQ002', ambiguousPronounMessage(doc.name, m.ambiguousPronounRatio, PRONOUN_EXAMPLES[language.language]), { kind: 'fix', text: 'Replace vague pronouns with the specific noun they refer to' });
+      }
+      if (analysis.measured.includes('DQ003')) {
+        total++;
+        if (m.atomicityScore <= THRESHOLDS.atomicityScore.warn) passed++;
+        else warn('DQ003', atomicityMessage(doc.name, m.atomicityScore), { kind: 'fix', text: 'Split compound sentences into one statement per sentence' });
       }
       if (analysis.measured.includes('DQ006')) {
         total++;
         if (m.avgSentenceLength <= THRESHOLDS.avgSentenceLength.warn) passed++;
         else warn('DQ006', sentenceLengthMessage(doc.name, m.avgSentenceLength), { kind: 'fix', text: 'Break long sentences up — target 30 words or fewer' });
+      }
+      if (analysis.measured.includes('DQ007')) {
+        total++;
+        const negOv = analysis.overrides?.negationLoad;
+        const negThreshold = negOv?.threshold ?? config.docQuality?.negationLoadThreshold ?? THRESHOLDS.negationLoad.warn;
+        if (negOv?.off || m.negationLoad <= negThreshold) passed++;
+        else warn('DQ007', negationMessage(doc.name, m.negationLoad), NEGATION_SUGGESTION);
+      }
+      if (analysis.measured.includes('DQ008')) {
+        total++;
+        if (m.conditionalLoad <= THRESHOLDS.conditionalLoad.warn) passed++;
+        else warn('DQ008', conditionalMessage(doc.name, m.conditionalLoad), { kind: 'fix', text: 'Split conditional sentences into separate, unconditional requirements' });
       }
       continue;
     }
@@ -721,9 +766,7 @@ export function validateDocQuality(projectDir, config) {
     if (m.ambiguousPronounRatio <= THRESHOLDS.ambiguousPronounRatio.warn) {
       passed++;
     } else {
-      warn('DQ002',
-        `${doc.name}: High ambiguous pronoun ratio (${(m.ambiguousPronounRatio * 100).toFixed(1)}%). ` +
-        `Replace "it/this/that/they" with specific nouns for clarity`,
+      warn('DQ002', ambiguousPronounMessage(doc.name, m.ambiguousPronounRatio, PRONOUN_EXAMPLES.en),
         { kind: 'fix', text: 'Replace vague pronouns with the specific noun they refer to' });
     }
 
@@ -732,9 +775,7 @@ export function validateDocQuality(projectDir, config) {
     if (m.atomicityScore <= THRESHOLDS.atomicityScore.warn) {
       passed++;
     } else {
-      warn('DQ003',
-        `${doc.name}: Low atomicity (${(m.atomicityScore * 100).toFixed(0)}% compound sentences). ` +
-        `Split compound sentences for easier verification (IEEE 830 §4.1)`,
+      warn('DQ003', atomicityMessage(doc.name, m.atomicityScore),
         { kind: 'fix', text: 'Split compound sentences into one statement per sentence' });
     }
 
@@ -780,15 +821,7 @@ export function validateDocQuality(projectDir, config) {
     if (negOv?.off || m.negationLoad <= negThreshold) {
       passed++;
     } else {
-      warn('DQ007',
-        `${doc.name}: High negation load (${(m.negationLoad * 100).toFixed(0)}% of sentences use negation). ` +
-        `Rephrase in positive terms: "must not fail" → "must succeed" (IEEE 830 §4.3). ` +
-        `If the negation is intentional, add: <!-- docguard:quality negation-load off — your reason -->`,
-        {
-          kind: 'suppress',
-          text: 'Rephrase in positive terms, or opt this doc out if the negation is intentional',
-          pragma: '<!-- docguard:quality negation-load off — your reason -->',
-        });
+      warn('DQ007', negationMessage(doc.name, m.negationLoad), NEGATION_SUGGESTION);
     }
 
     // ── Check 8: Conditional Load ──
@@ -796,9 +829,7 @@ export function validateDocQuality(projectDir, config) {
     if (m.conditionalLoad <= THRESHOLDS.conditionalLoad.warn) {
       passed++;
     } else {
-      warn('DQ008',
-        `${doc.name}: High conditional load (${(m.conditionalLoad * 100).toFixed(0)}% of sentences are conditional). ` +
-        `Simplify by splitting conditionals into separate requirements`,
+      warn('DQ008', conditionalMessage(doc.name, m.conditionalLoad),
         { kind: 'fix', text: 'Split conditional sentences into separate, unconditional requirements' });
     }
   }
@@ -815,6 +846,36 @@ export function validateDocQuality(projectDir, config) {
     ...(skippedMetrics.length ? { skippedMetrics } : {}),
     ...qualityContract(projectDir, total, findings.length > 0, skippedMetrics),
   };
+}
+
+/** The vague pronouns a message quotes as examples, per language (English is the legacy text). */
+const PRONOUN_EXAMPLES = Object.freeze({ en: 'it/this/that/they', pt: 'isso/isto/este/ele', es: 'esto/eso/este/ella' });
+
+function ambiguousPronounMessage(name, ratio, examples) {
+  return `${name}: High ambiguous pronoun ratio (${(ratio * 100).toFixed(1)}%). ` +
+    `Replace "${examples}" with specific nouns for clarity`;
+}
+
+function atomicityMessage(name, ratio) {
+  return `${name}: Low atomicity (${(ratio * 100).toFixed(0)}% compound sentences). ` +
+    `Split compound sentences for easier verification (IEEE 830 §4.1)`;
+}
+
+function negationMessage(name, ratio) {
+  return `${name}: High negation load (${(ratio * 100).toFixed(0)}% of sentences use negation). ` +
+    `Rephrase in positive terms: "must not fail" → "must succeed" (IEEE 830 §4.3). ` +
+    `If the negation is intentional, add: <!-- docguard:quality negation-load off — your reason -->`;
+}
+
+const NEGATION_SUGGESTION = Object.freeze({
+  kind: 'suppress',
+  text: 'Rephrase in positive terms, or opt this doc out if the negation is intentional',
+  pragma: '<!-- docguard:quality negation-load off — your reason -->',
+});
+
+function conditionalMessage(name, ratio) {
+  return `${name}: High conditional load (${(ratio * 100).toFixed(0)}% of sentences are conditional). ` +
+    `Simplify by splitting conditionals into separate requirements`;
 }
 
 function sentenceLengthMessage(name, length) {

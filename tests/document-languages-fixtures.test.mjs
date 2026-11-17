@@ -74,7 +74,8 @@ const ROWS = {
 };
 // What stays in the fixtures for reasons that have nothing to do with language: a tiny project with no agent file,
 // no drift log, no Spec Kit directory and one commit. A retired decision record is a lifecycle finding, in any language.
-const UNRELATED = new Set(['STR001', 'STR002', 'SEC010', 'TRC004', 'SPK002', 'SPK015', 'SPR002', 'DLC001']);
+// DQ007: since T033 the Portuguese and Spanish fixture prose is measured for negation, and two of its eight sentences say "não"/"no" (25%, over the 20% every language shares): a real finding about the prose, not about its language.
+const UNRELATED = new Set(['STR001', 'STR002', 'SEC010', 'TRC004', 'SPK002', 'SPK015', 'SPR002', 'DLC001', 'DQ007']);
 const LABEL_VALIDATORS = ['docSections', 'testSpec', 'changelog', 'docsCoverage', 'specKit', 'decisionRecords', 'environment'];
 const PROSE_VALIDATORS = ['metricsConsistency', 'docsDiff', 'semanticClaims'];
 const blockingFor = (run, names) => run.unexamined.filter(u => u.blocking && names.some(n => (u.validator || '') === n));
@@ -109,12 +110,12 @@ describe('the branch (green): SC-001 and SC-002, Portuguese and Spanish', () => 
         assert.ok(testSpec.passed >= 1, 'the map row was checked against the files');
       });
 
-      it('the metrics without lists are reported as skipped with their reason, never as a number', () => {
+      it('passive voice and Flesch are reported as skipped with their reason, never as a number; the reviewed word-list metrics run (T033)', () => {
         const quality = run.json.validators.find(v => v.key === 'docQuality');
         const skipped = quality.skippedMetrics.filter(m => m.document === 'docs-canonical/ARCHITECTURE.md');
-        assert.ok(skipped.length >= 5, 'passive voice, Flesch and the word-list metrics are skipped');
-        assert.ok(skipped.every(m => m.reason === 'language-not-supported' && m.language === 'pt' || m.language === 'es'));
-        assert.deepEqual(['DQ001', 'DQ004', 'DQ005', 'DQ007', 'DQ008'].filter(code => run.codes.has(code)), []);
+        assert.deepEqual(skipped.map(m => m.code).sort(), ['DQ001', 'DQ004', 'DQ005'], 'passive voice and the two Flesch scores are skipped');
+        assert.ok(skipped.every(m => m.reason === 'language-not-supported' && (m.language === 'pt' || m.language === 'es')));
+        assert.deepEqual(['DQ001', 'DQ004', 'DQ005', 'DQ008'].filter(code => run.codes.has(code)), []);
       });
 
       it('the prose checks say they do not read this language, and that does not change the verdict', () => {

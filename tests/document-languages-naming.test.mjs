@@ -119,7 +119,7 @@ describe('T028: labels resolve with the document\'s own set', () => {
 describe('T028: text metrics skip a document by its own language', () => {
   const skipped = r => (r.skippedMetrics || []).map(s => `${s.document.split('/').pop()}:${s.code}`).sort();
 
-  it('docs.language "en": X.pt-BR.md skips seven metrics, the English document beside it runs all eight', () => {
+  it('docs.language "en": X.pt-BR.md skips three metrics (passive voice, Flesch), the English document beside it runs all eight', () => {
     const dir = project({
       'docs-canonical/ARCHITECTURE.md': `# A\n\n${EN_PROSE}`,
       'docs-canonical/ARCHITECTURE.pt-BR.md': `# A\n\n${PT_PROSE}`,
@@ -127,9 +127,9 @@ describe('T028: text metrics skip a document by its own language', () => {
     }, { language: 'en' });
     const r = validateDocQuality(dir, loadConfig(dir));
     assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.md:')).length, 0);
-    assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.pt-BR.md:')).length, 7);
-    assert.equal(skipped(r).filter(s => s.startsWith('SECURITY.md:')).length, 7);
-    assert.equal(r.total, 8 + 1 + 1, 'eight for the English document, sentence length for each translation');
+    assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.pt-BR.md:')).length, 3);
+    assert.equal(skipped(r).filter(s => s.startsWith('SECURITY.md:')).length, 3);
+    assert.equal(r.total, 8 + 5 + 5, 'eight for the English document, five (sentence length and the four reviewed metrics) for each translation');
   });
 
   it('content never changes the language: Portuguese prose in a plain file is scored as English', () => {

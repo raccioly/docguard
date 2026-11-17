@@ -6,9 +6,10 @@
  * metrics that cannot be judged are skipped and reported as skipped with the
  * reason `language-not-supported`: no number, no finding, no count in `passed`
  * or `total`. The closed-class metrics (negation, conditional, compound,
- * pronouns) stay skipped for every language but English until the native review
- * of the pt and es lists (T033) is recorded. Sentence length runs for a script
- * that separates words with spaces.
+ * pronouns) run for pt and es since the native review of their lists (T033,
+ * 2026-11-17; see document-languages-metrics-wordlists.test.mjs) and stay
+ * skipped for every other language but English. Sentence length runs for a
+ * script that separates words with spaces.
  *
  * T025, T026 (the non-English half) and T027 were red on origin/main. The
  * English halves of T026 are guards: they pass on origin/main by construction
@@ -70,16 +71,16 @@ const EN_GOLDEN = {
   ],
 };
 
-describe('T025: Portuguese prose gets sentence length and a skip entry for every other metric', () => {
+describe('T025: Portuguese prose gets sentence length and the reviewed metrics, and a skip entry for passive voice and Flesch', () => {
   const dir = project({ 'README.md': `# Titulo\n\n${PT}\n` }, { language: 'pt-BR' });
   const r = run(dir);
 
-  it('reports sentence length (DQ006) and nothing else as a finding', () => {
-    assert.deepEqual(findingCodes(r), ['DQ006']);
+  it('reports sentence length (DQ006), negation (DQ007) and conditional (DQ008) as findings; passive voice and Flesch yield none', () => {
+    assert.deepEqual(findingCodes(r), ['DQ006', 'DQ007', 'DQ008']);
   });
 
-  it('reports the other seven metrics as skipped, each with the reason language-not-supported', () => {
-    assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ002', 'DQ003', 'DQ004', 'DQ005', 'DQ007', 'DQ008']);
+  it('reports passive voice and both Flesch scores as skipped, each with the reason language-not-supported', () => {
+    assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ004', 'DQ005']);
     for (const s of r.skippedMetrics) {
       assert.equal(s.reason, 'language-not-supported');
       assert.equal(s.language, 'pt');
@@ -89,25 +90,29 @@ describe('T025: Portuguese prose gets sentence length and a skip entry for every
   });
 
   it('a skipped metric yields no number: no count in passed or total', () => {
-    assert.equal(r.total, 1, 'only sentence length was judged');
-    assert.equal(r.passed, 0, 'and it failed');
+    assert.equal(r.total, 5, 'sentence length and the four reviewed metrics were judged');
+    assert.equal(r.passed, 2, 'pronouns and compound sentences passed; the other three failed');
     for (const s of r.skippedMetrics) assert.equal('value' in s || 'ratio' in s || 'score' in s, false);
   });
 
-  it('the closed-class metrics stay skipped for pt and es until the native review (T033) is recorded', () => {
+  it('the closed-class metrics run for pt and es (reviewed lists, T033) and stay skipped for every other language', () => {
     for (const language of ['pt', 'es', 'es-MX', 'pt-PT']) {
+      const result = run(project({ 'README.md': `# T\n\n${PT}\n` }, { language }));
+      for (const code of ['DQ002', 'DQ003', 'DQ007', 'DQ008']) assert.ok(!skippedCodes(result).includes(code), `${language}: ${code} must run`);
+    }
+    for (const language of ['de', 'fr', 'ru']) {
       const result = run(project({ 'README.md': `# T\n\n${PT}\n` }, { language }));
       for (const code of ['DQ002', 'DQ003', 'DQ007', 'DQ008']) assert.ok(skippedCodes(result).includes(code), `${language}: ${code} must be skipped`);
     }
   });
 
-  it('a document that passes sentence length counts one passed check and no finding', () => {
+  it('a document that passes every judged check counts them as passed and has no finding', () => {
     const short = 'O sistema lê o arquivo de configuração e grava o resultado no disco.\nO operador revisa o relatório gerado pelo fluxo todos os dias.\nA equipe guarda os registros em um diretório separado do código.\nCada módulo tem um responsável e um revisor definidos no início.\nOs dados passam por uma etapa de validação antes da gravação final.\nO relatório final lista os arquivos lidos e os arquivos gravados hoje.\n';
     const result = run(project({ 'README.md': `# T\n\n${short}` }, { language: 'pt-BR' }));
-    assert.equal(result.total, 1);
-    assert.equal(result.passed, 1);
+    assert.equal(result.total, 5);
+    assert.equal(result.passed, 5);
     assert.deepEqual(findingCodes(result), []);
-    assert.equal(skippedCodes(result).length, 7);
+    assert.equal(skippedCodes(result).length, 3);
   });
 
   it('the Score does not count a skipped metric: its Doc Quality dimension is the same with and without the prose', () => {

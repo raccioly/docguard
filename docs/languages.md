@@ -133,8 +133,8 @@ or `"en"` the matching is the English matching it has always been, byte for byte
 An invalid tag is reported and treated as absent.
 
 The headings and words of the `pt` and `es` sets were reviewed by a native
-speaker on 2026-11-17; only the prose word lists below (task T033) still wait
-for that review. A heading that is
+speaker on 2026-11-17, and so were the prose word lists behind the text metrics
+(task T033, see below). A heading that is
 missing from a set is never a dead end: the marker always works.
 
 ## Your own wording: `docs.labelAliases`
@@ -172,7 +172,7 @@ exit code. Add a marker or an alias and the entry disappears.
 With `docs.language` set, a document's own name can say it is in another
 language: `README.pt-BR.md`, `docs-canonical/ARCHITECTURE.pt-BR.md`, or a file
 under `i18n/pt-BR/` or `locales/pt-BR/`. Its labels resolve with that language's
-set and its text metrics are skipped as for any language but English. The
+set and its text metrics are measured or skipped as for that language. The
 language is never inferred from the text, and without `docs.language` nothing is
 inferred.
 
@@ -184,7 +184,7 @@ passing silently or inventing a number.
 | Check | In a language other than English |
 |---|---|
 | Passive voice (DQ001), Flesch Reading Ease and Flesch-Kincaid (DQ004, DQ005) | Skipped: the rules are English grammar. Reported with the reason `language-not-supported`; no number, no finding, not counted in the score. |
-| Negation (DQ007), conditional (DQ008), compound requirement (DQ003), ambiguous pronouns | Skipped until a native speaker has reviewed the `pt` and `es` word lists (see below). |
+| Negation (DQ007), conditional (DQ008), compound requirement (DQ003), ambiguous pronouns (DQ002) | Run for `pt` (`pt-BR`, `pt-PT`) and `es` (every `es-*`) with the word lists a native speaker reviewed on 2026-11-17 (see below), and with the same thresholds as English. Skipped for every other language, with the reason `language-not-supported`. |
 | Sentence length (DQ006) | Runs where the script separates words with spaces; skipped for `zh`, `ja`, `th`, `lo`, `km`, `my`. |
 | Docs-Diff's tech stack, Metrics-Consistency, semantic claims | Report `language-not-supported` for the documents they would have read. |
 | Agent-instruction files (`AGENTS.md`, `CLAUDE.md`, ...) and the instruction audit | Out of scope: they get no alias and no `language-not-supported` entry. |
@@ -209,11 +209,46 @@ The tokenizer and the sentence splitter are Unicode-aware for a non-English
   plus the marker.
 - No existing document is rewritten by `init` or `generate`.
 
+## Word lists for the text metrics (`pt` and `es`)
+
+Negation (DQ007), conditional (DQ008), ambiguous pronouns (DQ002) and
+compound sentences (DQ003) count words of a closed list per language. The
+Portuguese and Spanish lists were reviewed by a native speaker on 2026-11-17
+(task T033 of spec 104) and live in one module, `cli/shared-prose-words.mjs`.
+A word is matched whole, ignoring case, with accents optional in the text
+(`nao` counts as `não`) but never invented: `é` is not the conjunction `e`,
+`sí` ("yes") is not `si` ("if"), and `él` counts only with its accent because
+`el` is the article. A phrase matches across spaces. The thresholds are the
+English ones: pronouns over 15% of the words, compound sentences over 35% of the
+sentences, negation over 20%, conditionals over 30%. `<!-- docguard:quality
+negation-load off — reason -->` works as in English.
+
+| Metric | Portuguese (`pt`) | Spanish (`es`) |
+|---|---|---|
+| Negation | não, nunca, jamais, nenhum, nenhuma, nenhuns, nenhumas, nem, ninguém, nada, tampouco | no, nunca, jamás, ningún, ninguno, ninguna, ningunos, ningunas, ni, nadie, nada, tampoco |
+| Conditional | se (see below), caso, quando, sempre que, a menos que, a não ser que, salvo se, exceto se, contanto que, desde que, somente se, apenas se, só se, até que, caso contrário, senão | si (without the accent), cuando, siempre que, a menos que, salvo que, excepto si, en caso de, en caso de que, con tal de que, solo si, sólo si, hasta que, de lo contrario, si no |
+| Ambiguous pronouns | isso, isto, aquilo, ele, ela, eles, elas, este, esta, estes, estas, esse, essa, esses, essas, seu, sua, seus, suas, dele, dela, deles, delas | esto, eso, aquello, él (with the accent), ella, ellos, ellas, este, esta, estos, estas, ese, esa, esos, esas, su, sus |
+| Non-atomic sentence | e também, e depois, e então, assim como, bem como, além de, além disso, adicionalmente, ademais, outrossim, or two or more "e" in one sentence | y también, y luego, y después, así como, además de, además, adicionalmente, asimismo, a su vez, or two or more "y" or "e" in one sentence |
+
+Portuguese `se` is also the reflexive pronoun (`o arquivo se encontra`,
+`configura-se`), which is far more common in technical text than the
+conditional, so it counts only as the first word of a sentence or right after a
+comma, and never after a hyphen. This misses some conditionals in the middle of
+a sentence, which is the safer side. `desde que` is counted as "provided that";
+its time sense ("since") is less common in requirement-style text.
+
+Left out on purpose: `sem` and `sin` ("without"; English does not count it
+either), `enquanto` and `mientras` (mostly temporal), the articles and clitics
+`o a os as lhe` and `lo la los las le les`, `el` without the accent, and `sí`
+with it. Portuguese often omits the subject pronoun, so its pronoun share runs
+lower than in English; the threshold stays. A correction to a list is an issue or
+a pull request.
+
 ## Open
 
-The closed-class word lists behind the negation, conditional,
-compound-requirement and pronoun metrics are not enabled for any language but
-English until a native speaker of `pt` and `es` has reviewed them (task T033 of
-spec 104). Until that review is recorded those four metrics are skipped, not
-guessed. The heading and word sets above are data: a correction is an issue or a
-pull request, and the marker and `docs.labelAliases` work meanwhile.
+Passive voice and the two Flesch scores stay skipped for every language but
+English: their rules are English grammar and syllables. Every other language
+keeps sentence length only, and a language other than `pt` and `es` has no
+reviewed word lists, so the four metrics above are skipped, not guessed. The
+heading and word sets are data: a correction is an issue or a pull request, and
+the marker and `docs.labelAliases` work meanwhile.
