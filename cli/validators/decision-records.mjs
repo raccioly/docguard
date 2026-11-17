@@ -29,7 +29,7 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { walkFiles } from '../shared-ignore.mjs';
 import { resolveDocDirs } from '../shared.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
-import { aliasesFor, foldText, hasTerminalWord, labelContext, lifecycleLabelKeys, statusIdFor, statusWordsHint, unsupportedApplicability, unsupportedEntry, DECISION_STATUS_IDS } from '../shared-labels.mjs';
+import { aliasesFor, foldText, hasTerminalWord, labelContext, lifecycleLabelKeys, statusIdFor, statusWordsHint, unsupportedEntry, DECISION_STATUS_IDS } from '../shared-labels.mjs';
 import { parseLifecycleStatus } from '../scanners/lifecycle-status.mjs';
 
 const VALIDATOR = 'decisionRecords';
@@ -336,6 +336,6 @@ export function validateDecisionRecords(projectDir, config = {}) {
   return {
     ...resultFromFindings(findings, { passed: Math.max(0, total - findings.length), total, applicable: true }),
     ...contractFields({ performed: total, found: findings.length > 0, ran: `${describeSubject(found)} judged`, decide: () => applies(projectDir, config, found), empty: () => ({ note: '', howToConfigure: '' }) }),
-    ...(entries.length ? { languageNotSupported: entries, applicability: unsupportedApplicability(entries) } : {}),
+    ...(entries.length ? { unexaminedDocuments: entries } : {}),
   };
 }

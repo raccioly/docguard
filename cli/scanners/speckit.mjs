@@ -29,7 +29,7 @@ import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { isGitRepo, gitMetadataStatus, unreadableGitApplicability, gitIgnoredPaths, runGit } from '../shared-git.mjs';
 import { chainCoverage } from './chain-coverage.mjs';
 import { isTerminalStatus, parseLifecycleStatus } from './lifecycle-status.mjs';
-import { acceptedFormsHint, hasPhaseWord, headingLabelVia, idForEnglishLabel, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
+import { acceptedFormsHint, hasPhaseWord, headingLabelVia, idForEnglishLabel, labelContext, unsupportedEntry } from '../shared-labels.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
@@ -1089,11 +1089,12 @@ export function validateSpecKitIntegration(projectDir, config) {
   }
 
   const result = { ...resultFromFindings(findings, { passed, total }), ...specKitContract(total, findings.length > 0) };
-  const reasons = [untouchedUnavailable, notSupported.length ? unsupportedApplicability(notSupported).reason : null].filter(Boolean);
+  // spec 104: a spec, plan or tasks file whose sections the language cannot be judged for is listed with the
+  // cause `language-not-supported`; the partial applicability stays for the untouched-history gap only.
   return {
     ...result,
-    ...(notSupported.length ? { languageNotSupported: notSupported } : {}),
-    ...(reasons.length ? { applicability: { status: 'partial', reason: reasons.join('; ') } } : {}),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
+    ...(untouchedUnavailable ? { applicability: { status: 'partial', reason: untouchedUnavailable } } : {}),
   };
 }
 

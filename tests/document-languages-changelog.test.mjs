@@ -94,17 +94,17 @@ describe('CHG001 reads the unreleased label through the registry (T018)', () => 
     const dir = project(log('## [Nicht veröffentlicht]'), { language: 'de' });
     const r = validateChangelog(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'CHG001'), []);
-    assert.equal(r.languageNotSupported.length, 1);
-    assert.equal(r.languageNotSupported[0].file, 'CHANGELOG.md');
-    assert.equal(r.languageNotSupported[0].cause, 'language-not-supported');
-    assert.equal(r.languageNotSupported[0].language, 'de');
-    assert.deepEqual(r.languageNotSupported[0].sections, ['unreleased']);
+    assert.equal(r.unexaminedDocuments.length, 1);
+    assert.equal(r.unexaminedDocuments[0].path, 'CHANGELOG.md');
+    assert.equal(r.unexaminedDocuments[0].cause, 'language-not-supported');
+    assert.equal(r.unexaminedDocuments[0].language, 'de');
+    assert.deepEqual(r.unexaminedDocuments[0].sections, ['unreleased']);
     for (const docs of [{ language: 'de', labelAliases: { unreleased: ['Nicht veröffentlicht'] } }]) {
       const withAlias = project(log('## [Nicht veröffentlicht]'), docs);
-      assert.deepEqual(validateChangelog(withAlias, loadConfig(withAlias)).languageNotSupported ?? [], []);
+      assert.deepEqual(validateChangelog(withAlias, loadConfig(withAlias)).unexaminedDocuments ?? [], []);
     }
     const marked = project(log('## [Nicht veröffentlicht]\n<!-- docguard:heading unreleased -->'), { language: 'de' });
-    assert.deepEqual(validateChangelog(marked, loadConfig(marked)).languageNotSupported ?? [], []);
+    assert.deepEqual(validateChangelog(marked, loadConfig(marked)).unexaminedDocuments ?? [], []);
   });
 
   it('a missing section under a configured language still reports CHG001', () => {

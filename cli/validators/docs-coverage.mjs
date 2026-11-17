@@ -25,7 +25,7 @@ import { resolveSourceRoots } from '../shared-source.mjs';
 import { fileKind, holdsOwnGit } from '../shared-file-kind.mjs';
 import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS, isDocguardOwnedDir } from '../shared-ignore.mjs';
 import { headingsForId, resolveDocDirs } from '../shared.mjs';
-import { acceptedFormsHint, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
+import { acceptedFormsHint, labelContext, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { detectIaC, hasInfrastructureHeading, buildIaCWarning } from '../scanners/iac.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -88,11 +88,14 @@ export function applies() {
   return { applies: true, evidence: 'every project has configuration files, entry points and source directories that its documentation should mention' };
 }
 
-function coverageContract(projectDir, config, performed, found, documented) {
+function coverageContract(projectDir, config, performed, found, documented, notSupported = []) {
   return contractFields({
     performed, found, ran: `checked ${performed} configuration file(s), entry point(s), source directorie(s) and README section(s) against the documentation`,
     decide: applies,
-    empty: () => documented
+    empty: () => notSupported.length
+      // The README was read and none of its sections could be judged for the language (spec 104 FR-019).
+      ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Docs-Coverage read README.md and judged none of its sections: ${notSupported[0].reason}.`, howToConfigure: notSupported[0].howToConfigure }
+      : documented
       ? { emptyCause: 'needs-content', note: 'Docs-Coverage read the project\'s Markdown but found no README.md, no configuration file, no bin entry and no source directory to look for in it.', howToConfigure: 'Write README.md with "## Installation", "## Usage" and "## License" sections; Docs-Coverage checks each of them and every configuration file, bin entry and source directory the project has against the documentation.' }
       : { emptyCause: 'needs-declaration', note: 'Docs-Coverage found no Markdown documentation (README.md, AGENTS.md, CLAUDE.md, CONTRIBUTING.md, STANDARD.md, docs-canonical/), so it checked nothing against it.', howToConfigure: 'Write README.md with "## Installation", "## Usage" and "## License" sections (`docguard init` creates a documentation set); Docs-Coverage then checks the project\'s configuration files, bin entries and source directories against it.' },
   });
@@ -155,8 +158,8 @@ export function validateDocsCoverage(projectDir, config) {
   const notSupported = readmeChecks.unsupported.length ? [unsupportedEntry('README.md', readmeChecks.unsupported, labels)] : [];
   return {
     ...resultFromFindings(findings, { passed, total }),
-    ...coverageContract(projectDir, config, total + readmeChecks.unsupported.length, findings.length > 0, true),
-    ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}),
+    ...coverageContract(projectDir, config, total, findings.length > 0, true, notSupported),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
   };
 }
 

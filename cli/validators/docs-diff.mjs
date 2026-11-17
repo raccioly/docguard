@@ -32,6 +32,8 @@ import { roleDocument } from '../shared-doc-role-hint.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { visibleMarkdown } from '../shared-html-comments.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { LANGUAGE_NOT_SUPPORTED, unreadEntry } from '../shared-labels.mjs';
+import { nonEnglishDocument } from '../shared-doc-language.mjs';
 
 // The shared build-output and package-cache set, plus DocGuard's own document homes. A scaffolder's templates are
 // a file kind (specs/100-file-kinds), left out below.
@@ -85,13 +87,15 @@ export function applies(projectDir, config = {}) {
   return { applies: false, evidence: 'no package manifest that declares technologies and no test file on disk' };
 }
 
-function docsDiffContract(projectDir, config, performed, found) {
+function docsDiffContract(projectDir, config, performed, found, notSupported = []) {
   const arch = docRolePath(config, 'architecture');
   const testSpec = docRolePath(config, 'testSpec');
   return contractFields({
     performed, found, ran: `compared ${performed} of the tech stack and the test files with their documents`,
     decide: () => applies(projectDir, config),
     empty: (decision) => {
+      // The tech stack was the only thing it would have compared and its document is not in English (spec 104 FR-022).
+      if (decision.applies && notSupported.length) return { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Docs-Diff did not compare the tech stack of ${notSupported[0].path}: ${notSupported[0].reason}.`, howToConfigure: notSupported[0].howToConfigure };
       if (!decision.applies) return { note: `Docs-Diff found no package manifest and no test file, so it compared no technology with ${arch} and no test with ${testSpec}.`, howToConfigure: `Nothing to configure unless the project has a package manifest or tests: then Docs-Diff compares them with ${arch} and ${testSpec}.` };
       const noDocs = !existsSync(resolveDocRole(projectDir, config, 'architecture')) && !existsSync(resolveDocRole(projectDir, config, 'testSpec'));
       const a = roleDocument(projectDir, config, 'architecture');
@@ -118,8 +122,18 @@ export function validateDocsDiff(projectDir, config = {}) {
   // NOTE: env-var drift is owned by the Environment validator (which compares
   // documented vars against real process.env / import.meta.env usage). Docs-Diff
   // covers tech-stack and test-file drift to avoid double-reporting.
+  // spec 104 FR-022: the tech-stack comparison reads English prose (negations, lists, removals), so a
+  // document in another language is listed with `language-not-supported`, never compared and never passed
+  // silently. The test-file comparison reads backticked paths and stays. Without `docs.language` nothing changes.
+  const notSupported = [];
+  const archRel = docRolePath(config, 'architecture');
+  const archLanguage = existsSync(resolveDocRole(projectDir, config, 'architecture')) ? nonEnglishDocument(config, archRel) : null;
+  let stack = null;
+  if (archLanguage) {
+    if (scanCodeTechnologies(projectDir, config).hasManifest) notSupported.push(unreadEntry(archRel, archLanguage, 'the tech stack it names'));
+  } else stack = techStackDiff(projectDir, config);
   const checks = [
-    techStackDiff(projectDir, config),
+    stack,
     diffTests(projectDir, config),
   ];
 
@@ -165,7 +179,11 @@ export function validateDocsDiff(projectDir, config = {}) {
     }
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), ...docsDiffContract(projectDir, config, total, findings.length > 0) };
+  return {
+    ...resultFromFindings(findings, { passed, total }),
+    ...docsDiffContract(projectDir, config, total, findings.length > 0, notSupported),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
+  };
 }
 
 // ── Diff Functions (lightweight versions for validator) ──────────────────

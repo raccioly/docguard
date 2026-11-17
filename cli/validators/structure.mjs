@@ -17,7 +17,8 @@ import { resolveDocPath } from '../shared-doc-roles.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { sectionState } from '../shared.mjs';
-import { acceptedFormsHint, headingMarkerIssues, idForEnglishLabel, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
+import { acceptedFormsHint, headingMarkerIssues, idForEnglishLabel, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
+import { documentLanguage } from '../shared-doc-language.mjs';
 import { profileSections, requiredSectionMap } from '../authoring-contract.mjs';
 import { isUneditedScaffold, scaffoldEvidence } from '../shared-scaffold.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
@@ -220,9 +221,7 @@ export function validateDocSections(projectDir, config) {
   // spec 104: the label context of `docs.language` (null for an English project,
   // which keeps today's matcher). A section the language cannot be judged for is
   // listed, not counted, so it neither fails nor passes silently.
-  const labels = labelContext(config);
   const notSupported = [];
-  let skipped = 0;
 
   for (const [defaultFile, sections] of Object.entries(requiredSections)) {
     const file = resolveDocPath(projectDir, config, defaultFile);
@@ -231,6 +230,8 @@ export function validateDocSections(projectDir, config) {
 
     const content = readFileSync(fullPath, 'utf-8');
     const unjudged = [];
+    // spec 104 FR-021: the document's own language (its name) over `docs.language`; null for an English project.
+    const labels = documentLanguage(config, file);
 
     for (const section of sections) {
       // Match a real heading (H2–H6), not a substring in a TOC link or code
@@ -263,7 +264,6 @@ export function validateDocSections(projectDir, config) {
       const owned = naMeta && !naMeta.problem && !isExpired(naMeta.expires);
       if (state === 'unsupported' && !owned) {
         unjudged.push(idForEnglishLabel(section));
-        skipped++;
         continue;
       }
       total++;
@@ -338,6 +338,7 @@ export function validateDocSections(projectDir, config) {
     if (!existsSync(fullPath)) continue;
     const content = readFileSync(fullPath, 'utf-8');
     const unjudged = [];
+    const labels = documentLanguage(config, file);
     for (const heading of headings) {
       const slug = heading.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
       const owned = new RegExp(`<!--\\s*docguard:section\\s+${slug.replace(/-/g, '[-_]')}\\s+n/a\\s*[—-]+\\s*[A-Za-z0-9]`, 'i').test(content);
@@ -354,24 +355,32 @@ export function validateDocSections(projectDir, config) {
       }));
     }
     if (unjudged.length) {
-      const entry = notSupported.find(n => n.file === file);
-      if (entry) entry.sections = [...new Set([...entry.sections, ...unjudged])];
-      else notSupported.push(unsupportedEntry(file, unjudged, labels));
+      const at = notSupported.findIndex(n => n.path === file);
+      const ids = at >= 0 ? [...notSupported[at].sections, ...unjudged] : unjudged;
+      if (at >= 0) notSupported[at] = unsupportedEntry(file, ids, labels);
+      else notSupported.push(unsupportedEntry(file, ids, labels));
     }
   }
 
-  // A section that was read and could not be judged is a check DocGuard made and
-  // could not decide, not a check it never made: the validator is not empty
-  // (which strict would exit 4 on). Stage 3 routes `languageNotSupported` to
-  // `strict.couldNotRead` (spec 104 FR-019).
+  // A section that was read and could not be judged is a check DocGuard could
+  // not make, not one it made: it is listed in `unexaminedDocuments` with the
+  // cause `language-not-supported`, which strict reads as could-not-read
+  // (spec 104 FR-011, FR-019). Only when nothing at all was judged is the
+  // validator empty for that cause.
   return { name: 'doc-sections', ...resultFromFindings(findings, { passed, total }), ...contractFields({
-    performed: total + skipped, found: findings.length > 0,
-    ran: `checked ${total} required section(s) of the canonical documents that exist` + (skipped ? `; ${skipped} not judged (language-not-supported)` : ''),
+    performed: total, found: findings.length > 0,
+    ran: `checked ${total} required section(s) of the canonical documents that exist`,
     decide: appliesDocSections,
-    empty: () => ({
-      emptyCause: 'needs-declaration',
-      note: 'Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).',
-      howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists.',
-    }),
-  }), ...(notSupported.length ? { languageNotSupported: notSupported, applicability: unsupportedApplicability(notSupported) } : {}) };
+    empty: () => notSupported.length
+      ? {
+        emptyCause: LANGUAGE_NOT_SUPPORTED,
+        note: `Doc-Sections read ${notSupported.map(n => n.path).join(', ')} and judged no section: ${notSupported[0].reason}.`,
+        howToConfigure: notSupported[0].howToConfigure,
+      }
+      : {
+        emptyCause: 'needs-declaration',
+        note: 'Doc-Sections found none of the canonical documents whose required sections it checks (docs-canonical/ARCHITECTURE.md, DATA-MODEL.md, SECURITY.md, TEST-SPEC.md, ENVIRONMENT.md).',
+        howToConfigure: 'Write at least one canonical document, for example docs-canonical/ARCHITECTURE.md with its required sections (`docguard init` creates the skeletons, `docguard generate --plan` lists what each section should say); Doc-Sections then checks the sections of every document that exists.',
+      },
+  }), ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}) };
 }

@@ -6,10 +6,11 @@ import { applyDocRoles, resolveDocPath, resolveDocRole } from '../shared-doc-rol
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, resolve, join, extname, sep } from 'node:path';
+import { basename, resolve, join, extname, relative, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { c, sectionState } from '../shared.mjs';
 import { labelContext, unreleasedState } from '../shared-labels.mjs';
+import { documentLanguage } from '../shared-doc-language.mjs';
 import { isUneditedScaffold } from '../shared-scaffold.mjs';
 import { validateSecurity } from '../validators/security.mjs';
 import { runGuardInternal } from './guard.mjs';
@@ -747,8 +748,6 @@ function calcDocQualityScore(dir, config) {
   // spec 104: the same resolver as STR003. A section that cannot be judged for
   // the document's language is left out of the numerator and the denominator, so
   // a skip never lowers a score and never raises one.
-  const labels = labelContext(config);
-
   let found = 0;
   let total = 0;
   const failures = []; // Track specific failures for actionable suggestions
@@ -765,6 +764,8 @@ function calcDocQualityScore(dir, config) {
 
     const content = readFileSync(fullPath, 'utf-8');
     const docName = basename(defaultFile, '.md').toLowerCase();
+    // spec 104 FR-021: the document's own language (its name) over `docs.language`, as STR003 reads it.
+    const labels = documentLanguage(config, file);
 
     // An unedited scaffold has no sections or content to count: every one of
     // its checks fails, so a blank template is not scored as readable
@@ -1101,7 +1102,7 @@ function calcArchitectureScore(dir, config) {
   // their real content instead of being told to add sections they have.
   // spec 104: a check the language cannot be judged for leaves both what it could
   // earn and the total it is out of (no skip, no change of the score).
-  const labels = labelContext(config);
+  const labels = documentLanguage(config, relative(dir, archPath));
   let possible = 100;
   const heading = (...names) => {
     const states = names.map(name => sectionState(content, name, labels));

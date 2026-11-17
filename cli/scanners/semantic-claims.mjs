@@ -30,6 +30,8 @@ import { loadIgnorePatterns } from '../shared.mjs';
 import { OWN_STATE_PATHSPEC } from '../shared-git.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { fileKind } from '../shared-file-kind.mjs';
+import { unreadEntry } from '../shared-labels.mjs';
+import { nonEnglishDocument } from '../shared-doc-language.mjs';
 
 
 // Numbers are only claims when adjacent to a recognized unit.
@@ -236,6 +238,25 @@ function findCitedCode(lines, idx) {
 }
 
 /**
+ * The documents the claim extractor does not read because of their language
+ * (spec 104 FR-022): its units and nouns after a number (`seconds`, `tables`) and
+ * its enum-context words are English, so a document in another language is
+ * listed with the cause `language-not-supported` instead of passing silently. An
+ * agent-instruction file is read as before and never listed (Decision 6). Empty
+ * without `docs.language`.
+ * @returns {Array<object>} entries of `unreadEntry`
+ */
+export function claimDocumentsNotSupported(projectDir, config = {}, read = createEvidenceReader(projectDir)) {
+  if (!config?.docs?.language) return [];
+  const out = [];
+  for (const doc of claimSourceDocs(projectDir, read, config)) {
+    const language = nonEnglishDocument(config, doc);
+    if (language && read(doc).content !== null) out.push(unreadEntry(doc, language, 'documented counts, limits and lists'));
+  }
+  return out;
+}
+
+/**
  * Extract semantic claims from a project's canonical docs.
  * @returns {Array<{ doc, line, section, kind, subkind, value, unit, text, citedCode }>}
  */
@@ -244,6 +265,8 @@ export function extractSemanticClaims(projectDir, config = {}, read = createEvid
   const seen = new Set();
 
   for (const doc of claimSourceDocs(projectDir, read, config)) {
+    // spec 104 FR-022: the rules read English; the document is listed by `claimDocumentsNotSupported`.
+    if (nonEnglishDocument(config, doc)) continue;
     const { content } = read(doc);
     if (content === null) continue;
     const lines = content.split('\n');
