@@ -168,7 +168,8 @@ describe('the lifecycle label and the retired words (T020)', () => {
 
   it('a label of another language, or no language, reads nothing new', () => {
     assert.equal(parseLifecycleStatus('# T\n\nEstado: Obsoleto\n'), null);
-    assert.equal(parseLifecycleStatus('# T\n\nEstado: Obsoleto\n', ctx('pt')), null);
+    assert.equal(parseLifecycleStatus('# T\n\nSituação: Obsoleto\n', ctx('es')), null);
+    assert.equal(parseLifecycleStatus('# T\n\nEstado: Obsoleto\n', ctx('pt')), 'Obsoleto', 'Estado is the pt-PT label (reviewed 2026-11-17)');
     assert.equal(parseLifecycleStatus('# T\n\nStatus: Active\n', ctx('pt')), 'Active');
   });
 

@@ -262,7 +262,7 @@ built-in DocGuard meaning. An unresolvable glob is skipped, never treated as 0.
 {
   "docs": {
     "language": "pt-BR",
-    "labelAliases": { "success-criteria": ["Feito quando"] }
+    "labelAliases": { "requirements": ["Requisitos do sistema"] }
   }
 }
 ```

@@ -8,6 +8,6 @@ O sistema registra pedidos de uma loja pequena. Ele não depende de serviços ex
 
 O módulo principal fica em `src/index.js`. A camada de entrada não acessa o disco diretamente.
 
-## Pilha tecnológica
+## Stack tecnológica
 
 O projeto usa Node.js 20 e o executor de testes embutido.

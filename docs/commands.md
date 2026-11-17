@@ -205,7 +205,7 @@ Init never writes configuration that switches a validator off.
 **Language.** Each heading `init` writes that the label registry knows carries
 its id marker on the next line (`<!-- docguard:heading tech-stack -->`). When
 `.docguard.json` already sets `docs.language` to `pt` or `es`, the heading text
-is the first built-in alias (`## Pilha tecnológica`, `## Stack tecnológico`) and
+is the first built-in alias (`## Stack tecnológica`, `## Stack tecnológico`) and
 the new `CHANGELOG.md` starts with `## [Não lançado]` or `## [Sin publicar]`;
 any other language keeps the English heading and the marker. A document that
 already exists is skipped, never rewritten. See

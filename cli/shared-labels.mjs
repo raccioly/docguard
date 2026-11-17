@@ -28,65 +28,66 @@
  * closed namespace so `docs.labelAliases` has one key space, but no marker
  * names them.
  *
- * Aliases are data to be reviewed by a native speaker (spec 104, D2). They are
- * structural labels (headings), not the prose word lists of Doc-Quality, which
- * stay disabled for every language but English until that review is recorded.
+ * The alias sets were reviewed by the maintainer, a native Portuguese speaker, on
+ * 2026-11-17 (spec 104, Decision 11). They are structural labels (headings), not
+ * the prose word lists of Doc-Quality, which stay disabled for every language but
+ * English until a native speaker reviews those (spec 104, T033).
  */
 export const LABELS = Object.freeze([
   // ARCHITECTURE.md
   { id: 'system-overview', group: 'architecture', kind: 'heading', en: ['System Overview'], pt: ['Visão geral do sistema', 'Visão geral', 'Panorama do sistema'], es: ['Visión general del sistema', 'Descripción general del sistema', 'Visión general', 'Resumen del sistema'] },
   { id: 'component-map', group: 'architecture', kind: 'heading', en: ['Component Map'], pt: ['Mapa de componentes', 'Componentes'], es: ['Mapa de componentes', 'Componentes'] },
-  { id: 'tech-stack', group: 'architecture', kind: 'heading', en: ['Tech Stack'], pt: ['Pilha tecnológica', 'Stack tecnológica', 'Tecnologias', 'Tecnologias utilizadas'], es: ['Stack tecnológico', 'Pila tecnológica', 'Tecnologías'] },
-  { id: 'layer-boundaries', group: 'architecture', kind: 'heading', en: ['Layer Boundaries'], pt: ['Limites entre camadas', 'Camadas'], es: ['Límites entre capas', 'Capas'] },
+  { id: 'tech-stack', group: 'architecture', kind: 'heading', en: ['Tech Stack'], pt: ['Stack tecnológica', 'Pilha tecnológica', 'Stack tecnológico', 'Stack de tecnologia', 'Tecnologias', 'Tecnologias utilizadas'], es: ['Stack tecnológico', 'Pila tecnológica', 'Tecnologías', 'Tecnologías utilizadas'] },
+  { id: 'layer-boundaries', group: 'architecture', kind: 'heading', en: ['Layer Boundaries'], pt: ['Limites entre camadas', 'Camadas', 'Fronteiras entre camadas'], es: ['Límites entre capas', 'Capas'] },
   { id: 'data-flow', group: 'architecture', kind: 'heading', en: ['Data Flow'], pt: ['Fluxo de dados'], es: ['Flujo de datos'] },
-  { id: 'external-dependencies', group: 'architecture', kind: 'heading', en: ['External Dependencies'], pt: [], es: [] },
-  { id: 'revision-history', group: 'architecture', kind: 'heading', en: ['Revision History'], pt: [], es: [] },
+  { id: 'external-dependencies', group: 'architecture', kind: 'heading', en: ['External Dependencies'], pt: ['Dependências externas'], es: ['Dependencias externas'] },
+  { id: 'revision-history', group: 'architecture', kind: 'heading', en: ['Revision History'], pt: ['Histórico de revisões', 'Histórico de alterações'], es: ['Historial de revisiones', 'Historial de cambios'] },
   // DATA-MODEL.md
   { id: 'entities', group: 'data-model', kind: 'heading', en: ['Entities'], pt: ['Entidades', 'Modelo de dados'], es: ['Entidades', 'Modelo de datos'] },
-  { id: 'relationships', group: 'data-model', kind: 'heading', en: ['Relationships'], pt: ['Relacionamentos'], es: ['Relaciones'] },
+  { id: 'relationships', group: 'data-model', kind: 'heading', en: ['Relationships'], pt: ['Relacionamentos', 'Relações'], es: ['Relaciones'] },
   { id: 'indexes', group: 'data-model', kind: 'heading', en: ['Indexes'], pt: ['Índices'], es: ['Índices'] },
   // SECURITY.md
   { id: 'authentication', group: 'security', kind: 'heading', en: ['Authentication'], pt: ['Autenticação'], es: ['Autenticación'] },
-  { id: 'secrets-management', group: 'security', kind: 'heading', en: ['Secrets Management'], pt: ['Gerenciamento de segredos', 'Gestão de segredos'], es: ['Gestión de secretos'] },
+  { id: 'secrets-management', group: 'security', kind: 'heading', en: ['Secrets Management'], pt: ['Gerenciamento de segredos', 'Gestão de segredos', 'Gestão de credenciais'], es: ['Gestión de secretos', 'Manejo de secretos'] },
   { id: 'authorization', group: 'security', kind: 'heading', en: ['Authorization'], pt: ['Autorização'], es: ['Autorización'] },
-  { id: 'security-boundaries', group: 'security', kind: 'heading', en: ['Security Boundaries'], pt: ['Fronteiras de segurança'], es: ['Límites de seguridad'] },
+  { id: 'security-boundaries', group: 'security', kind: 'heading', en: ['Security Boundaries'], pt: ['Limites de segurança', 'Fronteiras de segurança'], es: ['Límites de seguridad'] },
   // TEST-SPEC.md
-  { id: 'test-categories', group: 'test-spec', kind: 'heading', en: ['Test Categories'], pt: ['Categorias de teste'], es: ['Categorías de pruebas'] },
+  { id: 'test-categories', group: 'test-spec', kind: 'heading', en: ['Test Categories'], pt: ['Categorias de teste', 'Categorias de testes', 'Tipos de teste', 'Tipos de testes'], es: ['Categorías de pruebas', 'Tipos de pruebas'] },
   { id: 'coverage-rules', group: 'test-spec', kind: 'heading', en: ['Coverage Rules'], pt: ['Regras de cobertura'], es: ['Reglas de cobertura'] },
-  { id: 'test-commands', group: 'test-spec', kind: 'heading', en: ['Test Commands'], pt: ['Comandos de teste'], es: ['Comandos de prueba'] },
-  { id: 'source-to-test-map', group: 'test-spec', kind: 'heading', en: ['Source-to-Test Map', 'Service-to-Test Map'], pt: ['Mapa de fontes para testes', 'Mapa de código para testes'], es: ['Mapa de código a pruebas'] },
+  { id: 'test-commands', group: 'test-spec', kind: 'heading', en: ['Test Commands'], pt: ['Comandos de teste', 'Comandos de testes'], es: ['Comandos de prueba', 'Comandos de pruebas'] },
+  { id: 'source-to-test-map', group: 'test-spec', kind: 'heading', en: ['Source-to-Test Map', 'Service-to-Test Map'], pt: ['Mapa de código para testes', 'Mapa de fontes para testes', 'Mapa do código-fonte para testes'], es: ['Mapa de código a pruebas', 'Mapa de código fuente a pruebas'] },
   // ENVIRONMENT.md
   { id: 'environment-variables', group: 'environment', kind: 'heading', en: ['Environment Variables'], pt: ['Variáveis de ambiente'], es: ['Variables de entorno'] },
-  { id: 'setup-steps', group: 'environment', kind: 'heading', en: ['Setup Steps'], pt: ['Passos de configuração', 'Instalação e configuração', 'Como configurar'], es: ['Pasos de configuración', 'Instalación y configuración'] },
-  { id: 'prerequisites', group: 'environment', kind: 'heading', en: ['Prerequisites'], pt: ['Pré-requisitos'], es: ['Requisitos previos'] },
-  { id: 'configuration-files', group: 'environment', kind: 'heading', en: ['Configuration Files'], pt: ['Arquivos de configuração'], es: ['Archivos de configuración'] },
+  { id: 'setup-steps', group: 'environment', kind: 'heading', en: ['Setup Steps'], pt: ['Passos de configuração', 'Instalação e configuração', 'Como configurar', 'Configuração'], es: ['Pasos de configuración', 'Instalación y configuración', 'Configuración'] },
+  { id: 'prerequisites', group: 'environment', kind: 'heading', en: ['Prerequisites'], pt: ['Pré-requisitos'], es: ['Requisitos previos', 'Prerrequisitos'] },
+  { id: 'configuration-files', group: 'environment', kind: 'heading', en: ['Configuration Files'], pt: ['Arquivos de configuração', 'Ficheiros de configuração'], es: ['Archivos de configuración'] },
   // README.md
   { id: 'installation', group: 'readme', kind: 'heading', en: ['Installation'], pt: ['Instalação'], es: ['Instalación'] },
-  { id: 'usage', group: 'readme', kind: 'heading', en: ['Usage'], pt: ['Uso', 'Como usar'], es: ['Uso', 'Cómo usar'] },
+  { id: 'usage', group: 'readme', kind: 'heading', en: ['Usage'], pt: ['Uso', 'Como usar', 'Utilização'], es: ['Uso', 'Cómo usar'] },
   { id: 'license', group: 'readme', kind: 'heading', en: ['License', 'Licence'], pt: ['Licença'], es: ['Licencia'] },
-  { id: 'contributing', group: 'readme', kind: 'heading', en: ['Contributing'], pt: ['Contribuindo', 'Como contribuir'], es: ['Contribuir', 'Cómo contribuir'] },
+  { id: 'contributing', group: 'readme', kind: 'heading', en: ['Contributing'], pt: ['Contribuindo', 'Como contribuir', 'Contribuição', 'Contribuições'], es: ['Contribuir', 'Cómo contribuir', 'Contribuciones'] },
   // Spec Kit documents (read by Stage 2)
-  { id: 'user-scenarios', group: 'spec', kind: 'heading', en: ['User Scenarios'], pt: ['Cenários de usuário', 'Histórias de usuário', 'Cenários e testes'], es: ['Escenarios de usuario', 'Historias de usuario'] },
+  { id: 'user-scenarios', group: 'spec', kind: 'heading', en: ['User Scenarios'], pt: ['Cenários de usuário', 'Histórias de usuário', 'Cenários e testes', 'Cenários de usuário e testes', 'Cenários de uso'], es: ['Escenarios de usuario', 'Historias de usuario', 'Escenarios de uso', 'Escenarios de usuario y pruebas'] },
   { id: 'requirements', group: 'spec', kind: 'heading', en: ['Requirements'], pt: ['Requisitos', 'Requisitos funcionais'], es: ['Requisitos', 'Requisitos funcionales'] },
-  { id: 'success-criteria', group: 'spec', kind: 'heading', en: ['Success Criteria'], pt: ['Critérios de sucesso', 'Critérios de aceite'], es: ['Criterios de éxito', 'Criterios de aceptación'] },
+  { id: 'success-criteria', group: 'spec', kind: 'heading', en: ['Success Criteria'], pt: ['Critérios de sucesso', 'Critérios de aceite', 'Critérios de aceitação'], es: ['Criterios de éxito', 'Criterios de aceptación'] },
   { id: 'summary', group: 'plan', kind: 'heading', en: ['Summary'], pt: ['Resumo'], es: ['Resumen'] },
   { id: 'technical-context', group: 'plan', kind: 'heading', en: ['Technical Context'], pt: ['Contexto técnico'], es: ['Contexto técnico'] },
   { id: 'project-structure', group: 'plan', kind: 'heading', en: ['Project Structure'], pt: ['Estrutura do projeto'], es: ['Estructura del proyecto'] },
   { id: 'phase', group: 'tasks', kind: 'word', en: ['Phase'], pt: ['Fase'], es: ['Fase'] },
   { id: 'root-cause', group: 'bugfix', kind: 'heading', en: ['Root Cause'], pt: ['Causa raiz'], es: ['Causa raíz'] },
-  { id: 'fix', group: 'bugfix', kind: 'heading', en: ['Fix'], pt: ['Correção'], es: ['Corrección'] },
+  { id: 'fix', group: 'bugfix', kind: 'heading', en: ['Fix'], pt: ['Correção', 'Solução'], es: ['Corrección', 'Solución'] },
   // CHANGELOG.md: the section is `## [<label>]`; the brackets are syntax, not part of the label.
-  { id: 'unreleased', group: 'changelog', kind: 'heading', en: ['Unreleased'], pt: ['Não lançado', 'Não publicado'], es: ['Sin publicar', 'No publicado'] },
+  { id: 'unreleased', group: 'changelog', kind: 'heading', en: ['Unreleased'], pt: ['Não lançado', 'Não publicado'], es: ['Sin publicar', 'No publicado', 'Por publicar'] },
   // Decision records (read by Stage 2)
-  { id: 'proposed', group: 'decision-status', kind: 'word', en: ['proposed'], pt: ['proposto', 'proposta', 'rascunho'], es: ['propuesto', 'propuesta', 'borrador'] },
+  { id: 'proposed', group: 'decision-status', kind: 'word', en: ['proposed'], pt: ['proposto', 'proposta', 'rascunho', 'em análise'], es: ['propuesto', 'propuesta', 'borrador'] },
   { id: 'accepted', group: 'decision-status', kind: 'word', en: ['accepted'], pt: ['aceito', 'aceita', 'aprovado', 'aprovada'], es: ['aceptado', 'aceptada', 'aprobado', 'aprobada'] },
-  { id: 'rejected', group: 'decision-status', kind: 'word', en: ['rejected'], pt: ['rejeitado', 'rejeitada', 'recusado'], es: ['rechazado', 'rechazada'] },
-  { id: 'deprecated', group: 'decision-status', kind: 'word', en: ['deprecated'], pt: ['obsoleto', 'descontinuado', 'depreciado'], es: ['obsoleto', 'en desuso', 'deprecado'] },
-  { id: 'superseded', group: 'decision-status', kind: 'word', en: ['superseded'], pt: ['substituído', 'substituída', 'superado'], es: ['sustituido', 'sustituida', 'reemplazado', 'superado'] },
-  { id: 'supersedes', group: 'decision-link', kind: 'word', en: ['Supersedes'], pt: ['Substitui'], es: ['Sustituye'] },
-  { id: 'superseded-by', group: 'decision-link', kind: 'word', en: ['Superseded by'], pt: ['Substituído por'], es: ['Sustituido por'] },
+  { id: 'rejected', group: 'decision-status', kind: 'word', en: ['rejected'], pt: ['rejeitado', 'rejeitada', 'recusado', 'recusada'], es: ['rechazado', 'rechazada'] },
+  { id: 'deprecated', group: 'decision-status', kind: 'word', en: ['deprecated'], pt: ['obsoleto', 'descontinuado', 'depreciado', 'obsoleta', 'descontinuada'], es: ['obsoleto', 'en desuso', 'deprecado', 'obsoleta'] },
+  { id: 'superseded', group: 'decision-status', kind: 'word', en: ['superseded'], pt: ['substituído', 'substituída', 'superado', 'superada'], es: ['sustituido', 'sustituida', 'reemplazado', 'superado', 'reemplazada', 'superada'] },
+  { id: 'supersedes', group: 'decision-link', kind: 'word', en: ['Supersedes'], pt: ['Substitui'], es: ['Sustituye', 'Reemplaza'] },
+  { id: 'superseded-by', group: 'decision-link', kind: 'word', en: ['Superseded by'], pt: ['Substituído por', 'Substituída por'], es: ['Sustituido por', 'Reemplazado por', 'Sustituida por'] },
   // Lifecycle `Status:` field label (read by Stage 2)
-  { id: 'lifecycle-status', group: 'lifecycle', kind: 'word', en: ['Status'], pt: ['Status', 'Situação'], es: ['Estado'] },
+  { id: 'lifecycle-status', group: 'lifecycle', kind: 'word', en: ['Status'], pt: ['Status', 'Situação', 'Estado'], es: ['Estado'] },
 ]);
 
 const BY_ID = new Map(LABELS.map(entry => [entry.id, entry]));
@@ -145,9 +146,23 @@ export function foldHeading(text) {
     .normalize('NFD')
     .replace(/\p{M}+/gu, '')
     .toLowerCase()
+    .replace(REQUIREMENT_MARKER_RE, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 }
+
+/**
+ * Spec Kit ends a template heading with a requirement marker, `*(mandatory)*`,
+ * and a team that translates its template writes `*(obrigatório)*`. One trailing
+ * parenthetical of this closed list is not part of the label, with or without
+ * the `*` or `_` emphasis around it. It runs on text already folded for case and
+ * accents, so `(Obrigatória)` and `(obrigatoria)` are the same marker; any other
+ * parenthetical (`(versão 2)`) stays part of the heading. English headings never
+ * meet this: the legacy normalizer of shared.mjs keeps its own rule (a heading
+ * matches by containing the label, so the marker never mattered there).
+ * @implements docguard.document-languages#FR-006
+ */
+const REQUIREMENT_MARKER_RE = /\(\s*(?:mandatory|optional|obrigatori[oa]|opcional|obligatori[oa])\s*\)[\s*_#]*$/;
 
 // ── Language configuration ────────────────────────────────────────────────
 

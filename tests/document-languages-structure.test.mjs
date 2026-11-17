@@ -162,10 +162,10 @@ describe('T005: the heading marker satisfies an id in any language', () => {
 describe('T006: Test-Spec, DCV005 and the Score read the same headings', () => {
   const TEST_FILES = { 'src/a.js': 'export const a = 1;\n', 'tests/a.test.js': 'test("a", () => {});\n' };
 
-  it('"## Mapa de fontes para testes" gives Test-Spec a table to examine (not empty)', () => {
+  it('"## Mapa de código para testes" gives Test-Spec a table to examine (not empty)', () => {
     const dir = project({
       ...TEST_FILES,
-      'docs-canonical/TEST-SPEC.md': `# Testes\n\n## Categorias de teste\n\nx\n\n## Mapa de fontes para testes\n\n| Fonte | Teste | Status |\n|---|---|---|\n| src/a.js | tests/a.test.js | ✅ |\n`,
+      'docs-canonical/TEST-SPEC.md': `# Testes\n\n## Categorias de teste\n\nx\n\n## Mapa de código para testes\n\n| Fonte | Teste | Status |\n|---|---|---|\n| src/a.js | tests/a.test.js | ✅ |\n`,
     });
     const r = validateTestSpec(dir, configFor({ language: 'pt-BR' }));
     assert.equal(r.emptyCause, undefined, `Test-Spec is empty: ${r.note}`);
