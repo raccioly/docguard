@@ -214,9 +214,10 @@ export function shrink(target, text, kind) {
 }
 
 /** Run `cases` generated inputs plus the pathological set; returns failures. */
-export function fuzz({ seed = 1, cases = 200, only = null } = {}) {
+/** `parsers` is a test hook: the tests wrap one target with a busy-wait to prove the time bound can fail. */
+export function fuzz({ seed = 1, cases = 200, only = null, parsers = TARGETS } = {}) {
   const failures = [];
-  const targets = TARGETS.filter(t => !only || t.name === only);
+  const targets = parsers.filter(t => !only || t.name === only);
   for (const target of targets) {
     const r = rng(seed ^ createHash('sha256').update(target.name).digest().readUInt32LE(0));
     for (let i = 0; i < cases; i++) {

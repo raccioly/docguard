@@ -20,3 +20,4 @@
 ## Phase 4 — Follow-up
 
 - [x] T007 2026-11-15 Issue 693: `--seed 7 --cases 3000` crashed with `Invalid string length`; `backtickRefs` gave every reference its whole line, so output was quadratic in a line of many tokens. `text` is now capped at `REF_TEXT_MAX`; the harness reports an unserializable result as `oversized`; a model of the shrunk case is a saved fixture (`tests/fixtures/fuzz/backtickRefs-one-line-many-tokens.txt`, replayed against its parser only) and a unit test (FR-002, FR-004)
+- [x] T008 2026-11-17 SC-003 at reference speed: `tests/validator-fuzz.test.mjs` divides the fixed-seed run by a calibration speed factor; a test injects a busy-wait into `extractHeadings` and requires the bound to fail; `fuzz()` gains a test-only `parsers` option (SC-003)

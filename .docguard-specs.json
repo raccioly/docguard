@@ -21197,7 +21197,7 @@
         "artifacts": [
           {
             "path": "specs/088-validator-fuzz/spec.md",
-            "digest": "sha256:1a73bca0cd4c93a8b28734ee7a80c5f038541f17f663a09ff33f1f1f67b90d23"
+            "digest": "sha256:080157436ab8d9a3a25ce2f2910dd49b577f0e73bd518d7e0425bc2988302e32"
           },
           {
             "path": "specs/088-validator-fuzz/plan.md",
@@ -21205,12 +21205,12 @@
           },
           {
             "path": "specs/088-validator-fuzz/tasks.md",
-            "digest": "sha256:07630f194ae4c7c11e0ced8d9097465ed5a8a28c7c792e7199683a2cb2417e1c"
+            "digest": "sha256:7b26b1f09fb11d71bb5941d20cc067af54f21540b3c4d301ad5489052190f935"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
-          "total": 7
+          "checked": 8,
+          "total": 8
         },
         "implementationEvidence": [
           {
