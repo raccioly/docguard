@@ -72,6 +72,23 @@ function namesWholePath(text, name) {
   return new RegExp(`(?:^|${PATH_EDGE})${escapeRegExp(name)}(?=$|${PATH_EDGE}|\\.(?:\\s|$))`, 'm').test(text);
 }
 
+const TRACKED_KEY = '\0tracked-files'; // cannot collide with a path
+
+/**
+ * Whether the index tracks anything under `dir/`. One `git ls-files` for the whole
+ * reconciliation, answered by prefix, instead of one per directory of every deleted
+ * file; a name with a glob character keeps the per-directory pathspec, whose glob
+ * matching a prefix test would not reproduce. An unreadable index counts as tracked.
+ */
+function directoryTracked(projectDir, dir, cache) {
+  const options = { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 };
+  try {
+    if (/[*?[\\]/.test(dir)) return execFileSync('git', ['ls-files', '-z', '--', dir], options) !== '';
+    if (!cache.has(TRACKED_KEY)) cache.set(TRACKED_KEY, execFileSync('git', ['ls-files', '-z'], options).split('\0').filter(Boolean));
+    return cache.get(TRACKED_KEY).some(file => file.startsWith(dir));
+  } catch { return true; /* unknown: treat as still present */ }
+}
+
 function removalLinks(projectDir, path, registry, cache) {
   const parts = path.split('/');
   // A directory is gone when HEAD tracks nothing under it (Git keeps no
@@ -79,13 +96,7 @@ function removalLinks(projectDir, path, registry, cache) {
   const removedDirs = parts.slice(1).map((_, i) => `${parts.slice(0, i + 1).join('/')}/`)
     .filter(dir => {
       const key = `dir:${dir}`;
-      if (!cache.has(key)) {
-        let tracked = true;
-        try {
-          tracked = execFileSync('git', ['ls-files', '-z', '--', dir], { cwd: projectDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }) !== '';
-        } catch { /* unknown: treat as still present */ }
-        cache.set(key, tracked);
-      }
+      if (!cache.has(key)) cache.set(key, directoryTracked(projectDir, dir, cache));
       return !cache.get(key);
     });
   const links = [];
@@ -155,18 +166,46 @@ const isLocal = path => path?.split('/').includes('.local');
 // requirement identities they name and, for source and tests, the canonical
 // requirements they cite. Keeping these instead of the text lets a range read
 // in batches hold one batch's patch at a time (FR-008).
-function collectChangeFacts(projectDir, patch, registry, canonicalCache, facts) {
+function collectChangeFacts(projectDir, patch, registry, canonicalCache, facts, mentionIndex = indexRequirementMentions(registry)) {
   for (const file of parseUnifiedDiff(patch)) {
     const path = file.newPath || file.oldPath;
     if (!path || [file.oldPath, file.newPath].some(isLocal)) continue;
     const text = file.hunks.flatMap(hunk => hunk.lines.filter(line => line.op !== ' ').map(line => line.text)).join('\n');
-    const mentions = registry.specs
-      .filter(spec => (spec.intent.requirements || []).some(identity => text.includes(identity)))
-      .map(spec => spec.specId);
+    const mentions = specsNamedIn(text, mentionIndex);
     const kind = fileKind(path, registry);
     const canonical = kind === 'source' || kind === 'test' ? canonicalRequirementLinks(projectDir, text, canonicalCache) : [];
     facts.set(path, { mentions, canonical });
   }
+}
+
+/**
+ * Each spec's requirement identities grouped by what precedes the `#`, built once per
+ * reconciliation. Asking "does this text contain any identity of any spec" file by file
+ * was specs x identities substring scans of every changed file (2.8 s of a 4.6 s
+ * reconciliation of 300 commits on this repository); a text that does not contain the
+ * prefix (`<spec-id>#`) cannot contain an identity that starts with it, so the
+ * identities of that spec are not scanned for it. The answer is the same, and
+ * substring semantics are kept: `x#FR-1` still matches inside `x#FR-10`.
+ * @implements docguard.completion-upkeep#FR-019
+ */
+function indexRequirementMentions(registry) {
+  return registry.specs.map(spec => {
+    const groups = new Map();
+    for (const identity of spec.intent.requirements || []) {
+      const cut = identity.indexOf('#');
+      const prefix = cut < 0 ? identity : identity.slice(0, cut + 1);
+      if (!groups.has(prefix)) groups.set(prefix, []);
+      groups.get(prefix).push(identity);
+    }
+    return { specId: spec.specId, groups: [...groups] };
+  });
+}
+
+function specsNamedIn(text, mentionIndex) {
+  if (!text) return [];
+  return mentionIndex
+    .filter(({ groups }) => groups.some(([prefix, identities]) => text.includes(prefix) && identities.some(identity => text.includes(identity))))
+    .map(({ specId }) => specId);
 }
 
 function blockedRange(since, baseRevision, head, snapshot, issues, reading = {}) {
@@ -205,6 +244,32 @@ function summarize(classifications) {
   };
 }
 
+/**
+ * What reading a range would answer, without building the graph: `ok`, or the status
+ * and reason a blocked reading would carry (`too-large`, `timeout`, `error`). It
+ * takes the same Git reads as `buildReconciliationPlan` and stops where that function
+ * would have gone on to classify files, so a caller that only asks "can this range be
+ * read within the budgets?" does not parse every patch of the range for the answer
+ * (`reviewBaseline` asked it by building the whole plan of the recorded range).
+ * @implements docguard.completion-upkeep#FR-019
+ */
+export function reconciliationRangeStatus(projectDir, since, runtime = {}) {
+  const baseRevision = resolveRevision(projectDir, since);
+  const head = getHeadInfo(projectDir);
+  if (!baseRevision || !head?.commit) return { status: 'unsupported', reason: 'Git ref or HEAD could not be resolved.' };
+  const limits = runtime.diffLimits || {};
+  const readDiff = runtime.getDiffSnapshot || ((dir, ref) => getDiffSnapshot(dir, ref, limits));
+  const readBatches = runtime.readPatchBatches || readPatchBatches;
+  const snapshot = readDiff(projectDir, baseRevision);
+  if (snapshot.status === 'ok') return { status: 'ok', reason: null };
+  if (Number.isSafeInteger(snapshot.commitCount) && ['too-large', 'timeout'].includes(snapshot.status)) {
+    const reading = readBatches(projectDir, baseRevision, snapshot.changedFiles, () => {}, limits);
+    if (reading.status !== 'ok') return { status: reading.status, reason: reading.reason || snapshot.reason };
+    return { status: 'ok', reason: null };
+  }
+  return { status: snapshot.status, reason: snapshot.reason };
+}
+
 export function buildReconciliationPlan(projectDir, config = {}, since, runtime = {}) {
   if (!since) throw new Error('Reconcile requires --since <git-ref>.');
   const baseRevision = resolveRevision(projectDir, since);
@@ -229,15 +294,16 @@ export function buildReconciliationPlan(projectDir, config = {}, since, runtime 
   const snapshot = readDiff(projectDir, baseRevision);
   const facts = new Map();
   const canonicalCache = new Map();
+  const mentionIndex = indexRequirementMentions(projection.registry);
   let batches = 1;
   let patchBytes = snapshot.patchBytes;
   if (snapshot.status === 'ok') {
-    collectChangeFacts(projectDir, snapshot.patch, projection.registry, canonicalCache, facts);
+    collectChangeFacts(projectDir, snapshot.patch, projection.registry, canonicalCache, facts, mentionIndex);
   } else if (Number.isSafeInteger(snapshot.commitCount) && ['too-large', 'timeout'].includes(snapshot.status)) {
     // The inventory is whole and only the single patch read failed: read the
     // patch again in bounded batches (FR-008).
     const reading = readBatches(projectDir, baseRevision, snapshot.changedFiles,
-      patch => collectChangeFacts(projectDir, patch, projection.registry, canonicalCache, facts), limits);
+      patch => collectChangeFacts(projectDir, patch, projection.registry, canonicalCache, facts, mentionIndex), limits);
     if (reading.status !== 'ok') return blockedRange(since, baseRevision, head, snapshot, projection.issues, reading);
     ({ batches, patchBytes } = reading);
   } else {
