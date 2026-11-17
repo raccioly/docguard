@@ -142,7 +142,13 @@ export function pathological() {
 }
 
 const ARRAY = v => Array.isArray(v) || v instanceof Map || v instanceof Set;
-const plain = v => JSON.stringify(v, (_, x) => (x instanceof Map ? [...x] : x instanceof Set ? [...x] : x));
+const plain = v => {
+  try { return JSON.stringify(v, (_, x) => (x instanceof Map ? [...x] : x instanceof Set ? [...x] : x)); } catch (err) {
+    // A result too large to serialize is a finding, not a crash of the harness (issue 693).
+    if (err instanceof RangeError) return null;
+    throw err;
+  }
+};
 
 /** Every target: a name, the call, and any extra property it must hold. */
 export const TARGETS = [
@@ -186,10 +192,12 @@ export function check(target, text) {
   try { first = target.run(text); } catch (err) { return { kind: 'throws', detail: String(err?.stack || err).split('\n').slice(0, 3).join(' | ') }; }
   const ms = performance.now() - start;
   if (ms > budgetMs(text)) return { kind: 'slow', detail: `${Math.round(ms)} ms for ${text.length} chars (budget ${Math.round(budgetMs(text))} ms)` };
-  if (target.check && !target.check(first)) return { kind: 'shape', detail: `unexpected result ${plain(first)?.slice(0, 200)}` };
+  const firstJson = plain(first);
+  if (firstJson === null) return { kind: 'oversized', detail: `the result for ${text.length} chars is too large to serialize: its size is not linear in the input` };
+  if (target.check && !target.check(first)) return { kind: 'shape', detail: `unexpected result ${firstJson.slice(0, 200)}` };
   let second;
   try { second = target.run(text); } catch (err) { return { kind: 'throws-second', detail: String(err) }; }
-  if (plain(first) !== plain(second)) return { kind: 'nondeterministic', detail: 'two calls on the same input disagree' };
+  if (firstJson !== plain(second)) return { kind: 'nondeterministic', detail: 'two calls on the same input disagree' };
   return null;
 }
 
@@ -206,9 +214,10 @@ export function shrink(target, text, kind) {
 }
 
 /** Run `cases` generated inputs plus the pathological set; returns failures. */
-export function fuzz({ seed = 1, cases = 200, only = null } = {}) {
+/** `parsers` is a test hook: the tests wrap one target with a busy-wait to prove the time bound can fail. */
+export function fuzz({ seed = 1, cases = 200, only = null, parsers = TARGETS } = {}) {
   const failures = [];
-  const targets = TARGETS.filter(t => !only || t.name === only);
+  const targets = parsers.filter(t => !only || t.name === only);
   for (const target of targets) {
     const r = rng(seed ^ createHash('sha256').update(target.name).digest().readUInt32LE(0));
     for (let i = 0; i < cases; i++) {

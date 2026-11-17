@@ -140,8 +140,13 @@ export function diaryFiles(spaceAbs) {
   return filesIn(join(spaceAbs, 'intents'), name => name === 'memory.md');
 }
 
+/** The most of a line a reference carries: a line of k tokens would otherwise be copied k times, quadratic in its length (issue 693). */
+export const REF_TEXT_MAX = 200;
+
 /**
- * Backticked tokens outside fences and HTML comments, with their line.
+ * Backticked tokens outside fences and HTML comments, with their line. `text`
+ * is the line's first REF_TEXT_MAX characters, so the result stays linear in
+ * the input.
  * @returns {{ token: string, line: number, text: string }[]}
  */
 export function backtickRefs(text) {
@@ -157,7 +162,7 @@ export function backtickRefs(text) {
       if (comment) { const e = rest.indexOf('-->'); if (e < 0) { rest = ''; break; } comment = false; rest = rest.slice(e + 3); }
       else { const s = rest.indexOf('<!--'); if (s < 0) { line += rest; break; } line += rest.slice(0, s); comment = true; rest = rest.slice(s + 4); }
     }
-    for (const m of line.matchAll(/`([^`\n]{2,200})`/g)) out.push({ token: m[1].trim(), line: i + 1, text: raw.trim() });
+    for (const m of line.matchAll(/`([^`\n]{2,200})`/g)) out.push({ token: m[1].trim(), line: i + 1, text: raw.trim().slice(0, REF_TEXT_MAX) });
   });
   return out;
 }
