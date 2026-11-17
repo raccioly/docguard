@@ -61,7 +61,7 @@ It also protects older shared readers: headings, doc sections, covers lists, lif
 
 - **SC-001**: Every acceptance scenario has a test.
 - **SC-002**: Six seeds of 3,000 cases each across 19 parsers report no failure after the fixes this spec makes.
-- **SC-003**: The suite's fuzz test takes under 5 seconds.
+- **SC-003**: The suite's fuzz test takes under 5 seconds at reference speed. *Amended 2026-11-17:* the bound was absolute wall time, and it failed on slow runners: `test (18)` measured 5.46 s on PR 695 and the Monday scheduled release (run 43838313911, on main) failed its verify step on the same assertion, so no release went out. The test now measures a fixed calibration workload that does not touch the parsers, divides the fuzz run's time by the ratio to a reference runner (about 2.6x slower than a development laptop), and still fails for a real slowdown (2.3x injected, a margin over 2x for a loaded machine), which a test with a busy-wait in one parser proves. This is the same method as `tools/suite-runtime-budget.mjs`.
 
 ## Verification Notes
 
