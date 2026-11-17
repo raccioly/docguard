@@ -5976,12 +5976,12 @@
       "path": "specs/104-document-languages/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -5991,11 +5991,72 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md",
+            "docs-canonical/TEST-SPEC.md"
+          ],
+          "assetPaths": [
+            "tests/fixtures/languages/"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
+          "outcomes": [
+            {
+              "revision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
+              "reason": "T033 closes spec 104: the maintainer reviewed the pt and es word lists on 2026-11-17 and Doc-Quality now runs negation, conditional, pronoun and compound-sentence metrics for Portuguese and Spanish; every task is checked, the English A/B is identical, and the compatibility, identity and fixture tests pass.",
+              "evidence": [
+                "cli/authoring-contract.mjs",
+                "cli/config.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "cli/scanners/speckit.mjs",
+                "cli/shared-doc-language.mjs",
+                "cli/shared-labels.mjs",
+                "cli/shared-prose-words.mjs",
+                "cli/shared-requirement-ids.mjs",
+                "cli/shared-scaffold.mjs",
+                "cli/shared.mjs",
+                "cli/validators/changelog.mjs",
+                "cli/validators/decision-records.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/docs-coverage.mjs",
+                "cli/validators/environment.mjs",
+                "cli/validators/structure.mjs",
+                "cli/validators/test-spec.mjs",
+                "cli/writers/generate-io.mjs",
+                "cli/writers/mechanical.mjs",
+                "cli/writers/sections.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/config.test.mjs",
+                "tests/document-languages-changelog.test.mjs",
+                "tests/document-languages-compat.test.mjs",
+                "tests/document-languages-decisions.test.mjs",
+                "tests/document-languages-english-identity-stage2.test.mjs",
+                "tests/document-languages-english-identity.test.mjs",
+                "tests/document-languages-explain.test.mjs",
+                "tests/document-languages-fixtures.test.mjs",
+                "tests/document-languages-generate.test.mjs",
+                "tests/document-languages-labels-review.test.mjs",
+                "tests/document-languages-metrics-wordlists.test.mjs",
+                "tests/document-languages-metrics.test.mjs",
+                "tests/document-languages-naming.test.mjs",
+                "tests/document-languages-nfc.test.mjs",
+                "tests/document-languages-r1-coverage.test.mjs",
+                "tests/document-languages-registry.test.mjs",
+                "tests/document-languages-requirements.test.mjs",
+                "tests/document-languages-sections.test.mjs",
+                "tests/document-languages-speckit.test.mjs",
+                "tests/document-languages-strict.test.mjs",
+                "tests/document-languages-structure.test.mjs",
+                "tests/document-languages-verification.test.mjs",
+                "tests/document-languages-writers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -6039,7 +6100,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:06984e921e3a53454ced8584dc32ad4ea48ffe6b8010ae7cc311eb31ff9b532f"
+            "digest": "sha256:0315d1ab8686c1f340c9e9f87fade2e826d8ccd2fa83071c363000120ebd0cf2"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6047,11 +6108,11 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:fafb3de863e0efb6f4a9cacc4ed34eb0b5720010b42cd114df0a15bfdc0b460f"
+            "digest": "sha256:321a4a31a6e2f55028a88fc8d1b4f79246a3211579913544b1d78ea2ec82d7e6"
           }
         ],
         "taskCompletion": {
-          "checked": 43,
+          "checked": 44,
           "total": 44
         },
         "implementationEvidence": [

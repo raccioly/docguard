@@ -68,7 +68,7 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 - [x] T031 `doc-quality.mjs` skip table, tokenizer, skip report; per-document language from naming in `cli/shared-labels.mjs` (FR-017, FR-018, FR-021).
 - [x] T032 `validator-coverage.mjs` (`EMPTY_CAUSES`), `enforcement.mjs` routing, `shared-guard-json.mjs`, `guard.mjs` text line, and the four validators of FR-022 (FR-019, FR-022).
-- [ ] T033 Native review of the pt-BR and es word lists (owner: maintainer), then the metrics on: `cli/shared-prose-words.mjs`, `cli/validators/doc-quality.mjs`, `tests/document-languages-metrics-wordlists.test.mjs` (FR-017, Decisions 4 and 12). 2026-11-17: the maintainer, a native Portuguese speaker, approved the lists as proposed, with two decisions: Portuguese "se" counts only at the start of a sentence or right after a comma, never after a hyphen; "desde que" is included. Negation, conditional, pronouns and compound sentences now run for `pt` and `es`; every other language still skips them.
+- [x] T033 Native review of the pt-BR and es word lists (owner: maintainer), then the metrics on: `cli/shared-prose-words.mjs`, `cli/validators/doc-quality.mjs`, `tests/document-languages-metrics-wordlists.test.mjs` (FR-017, Decisions 4 and 12). 2026-11-17: the maintainer, a native Portuguese speaker, approved the lists as proposed, with two decisions: Portuguese "se" counts only at the start of a sentence or right after a comma, never after a hyphen; "desde que" is included. Negation, conditional, pronouns and compound sentences now run for `pt` and `es`; every other language still skips them.
 - [x] T034 Hermetic English A/B (SC-004).
 
 ## Stage 4 - generators and explain
