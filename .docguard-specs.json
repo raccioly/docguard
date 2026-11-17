@@ -6039,7 +6039,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:73063aa6a892a666d813ab2d0fe627eb69fe55c05992d89d4b0e44a269991632"
+            "digest": "sha256:06984e921e3a53454ced8584dc32ad4ea48ffe6b8010ae7cc311eb31ff9b532f"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6403,6 +6403,11 @@
             "line": 11
           },
           {
+            "requirementId": "FR-026",
+            "file": "tests/document-languages-verification.test.mjs",
+            "line": 9
+          },
+          {
             "requirementId": "SC-001",
             "file": "tests/document-languages-fixtures.test.mjs",
             "line": 12
@@ -6428,8 +6433,18 @@
             "line": 19
           },
           {
+            "requirementId": "SC-005",
+            "file": "tests/document-languages-compat.test.mjs",
+            "line": 9
+          },
+          {
             "requirementId": "SC-006",
             "file": "tests/document-languages-r1-coverage.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "SC-007",
+            "file": "tests/document-languages-verification.test.mjs",
             "line": 10
           }
         ]

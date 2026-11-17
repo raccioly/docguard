@@ -74,7 +74,7 @@ const ROWS = {
 };
 // What stays in the fixtures for reasons that have nothing to do with language: a tiny project with no agent file,
 // no drift log, no Spec Kit directory and one commit. A retired decision record is a lifecycle finding, in any language.
-// DQ007: since T033 the Portuguese and Spanish fixture prose is measured for negation, and two of its eight sentences say "não"/"no" (25%, over the 20% every language shares): a real finding about the prose, not about its language.
+// DQ007: since T033 the Portuguese and Spanish fixture prose is measured for negation, and two of its nine sentences say "não"/"no" (22%, over the 20% every language shares): a real finding about the prose, not about its language.
 const UNRELATED = new Set(['STR001', 'STR002', 'SEC010', 'TRC004', 'SPK002', 'SPK015', 'SPR002', 'DLC001', 'DQ007']);
 const LABEL_VALIDATORS = ['docSections', 'testSpec', 'changelog', 'docsCoverage', 'specKit', 'decisionRecords', 'environment'];
 const PROSE_VALIDATORS = ['metricsConsistency', 'docsDiff', 'semanticClaims'];
