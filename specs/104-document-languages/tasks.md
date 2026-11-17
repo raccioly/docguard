@@ -85,8 +85,8 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ## Stage 5 - measurement and closing
 
-- [ ] T039 `tests/fixtures/languages/{pt-BR,es,de}/`: committed projects reproducing each row of the Problem table; a test runs each on the v0.48.0 `git archive` copy (red) and on the branch (green) (FR-025, SC-001 to SC-003).
-- [ ] T040 Final hermetic A/B: DocGuard and eight other English repositories, findings, verdicts, exit codes and Guard JSON identical (FR-026, SC-004).
-- [ ] T041 SC-006: each R1 row has a test that was red before the change, or an "unchanged by decision" entry with the reason.
-- [ ] T042 `docs-canonical/` and `docs-implementation/` updates, `docguard specs --write`, the spec's move to `Implemented`; `npm test`, `node cli/docguard.mjs guard`, the benchmark comparison (SC-007).
-- [ ] T043 `tests/document-languages-nfc.test.mjs` and `cli/shared-labels.mjs`: NFC heading comparison for all languages, a composed and a decomposed accent compare equal; enabled for English only after the English A/B (T040) shows no change in findings, verdicts, exit codes and Guard JSON (FR-020, Decision 9).
+- [x] T039 `tests/fixtures/languages/{pt-BR,es,de}/`: committed projects reproducing each row of the Problem table; a test runs each on the v0.48.0 `git archive` copy (red) and on the branch (green) (FR-025, SC-001 to SC-003).
+- [x] T040 Final hermetic A/B: DocGuard and eight other English repositories, findings, verdicts, exit codes and Guard JSON identical (FR-026, SC-004).
+- [x] T041 SC-006: each R1 row has a test that was red before the change, or an "unchanged by decision" entry with the reason.
+- [x] T042 `docs-canonical/` and `docs-implementation/` updates, `docguard specs --write`; `npm test`, `docguard guard`, the benchmark comparison (SC-007). The spec stays `Draft` and is not completed: T033 (the native review) is open, and `docs-implementation/` does not exist in this repository, so only the canonical documents changed.
+- [x] T043 `tests/document-languages-nfc.test.mjs` and `cli/shared-labels.mjs`: NFC heading comparison for all languages, a composed and a decomposed accent compare equal; enabled for English only after the English A/B (T040) shows no change in findings, verdicts, exit codes and Guard JSON (FR-020, Decision 9).

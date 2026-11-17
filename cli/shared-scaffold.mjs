@@ -36,7 +36,7 @@ const analysisCache = new Map();
 
 /** Heading text as a matcher key: no `#`, no section number, lowercase alphanumerics. */
 function headingKey(line) {
-  return line.replace(/^#{1,6}\s*/, '').replace(/^\d+(?:\.\d+)*\.?\s+/, '')
+  return line.normalize('NFC').replace(/^#{1,6}\s*/, '').replace(/^\d+(?:\.\d+)*\.?\s+/, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 

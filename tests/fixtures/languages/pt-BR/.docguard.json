@@ -1,0 +1,18 @@
+{
+  "projectName": "loja-pt",
+  "version": "0.6",
+  "docs": {
+    "language": "pt-BR",
+    "labelAliases": {
+      "success-criteria": [
+        "Feito quando"
+      ]
+    }
+  },
+  "requiredFiles": {
+    "canonical": [
+      "docs-canonical/ARCHITECTURE.md",
+      "docs-canonical/TEST-SPEC.md"
+    ]
+  }
+}

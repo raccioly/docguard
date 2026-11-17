@@ -17,7 +17,7 @@ import { walkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { headingsForId } from '../shared.mjs';
-import { labelContext } from '../shared-labels.mjs';
+import { labelContext, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
 
 /**
  * The tests a project has, by the three signals Test-Spec uses: a top-level
@@ -69,7 +69,7 @@ export function applies(projectDir, config = {}) {
     : { applies: false, evidence: `no test directory (tests/, test/, spec/, e2e/ and similar), no co-located *.test.* or *.spec.* file and no Vitest or Jest configuration, and no ${docRolePath(config, 'testSpec')}` };
 }
 
-function testSpecContract(projectDir, config, { performed, found, mapped }) {
+function testSpecContract(projectDir, config, { performed, found, mapped, notSupported = [] }) {
   const specDoc = docRolePath(config, 'testSpec');
   return contractFields({
     performed, found, ran: `checked ${performed} row(s) of the Source-to-Test Map and journeys of ${specDoc} against the files on disk`,
@@ -81,6 +81,9 @@ function testSpecContract(projectDir, config, { performed, found, mapped }) {
         const table = '"## Source-to-Test Map" table (the older "## Service-to-Test Map" heading is read too), `| Source File | Unit Test | Status |`, one row per source file and its test file';
         return { emptyCause: 'needs-declaration', note: `Test-Spec found tests (${decision.evidence}) but no ${specDoc}, so it checked no mapping.`, howToConfigure: role.lead ? `${role.lead}The document needs a ${table}.` : `Create ${specDoc} with a ${table} (\`docguard generate\` drafts the document).${role.tail}` };
       }
+      // spec 104 FR-011, FR-019: a test spec in a language with no built-in set, with no marker and no alias
+      // for its map, is a document DocGuard cannot read, not a document that declares no mapping.
+      if (!mapped && notSupported.length) return { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Test-Spec read ${specDoc} and found no Source-to-Test Map it could judge: ${notSupported[0].reason}.`, howToConfigure: notSupported[0].howToConfigure };
       return mapped
         ? { emptyCause: 'needs-content', note: `The Source-to-Test Map in ${specDoc} has a table but no row Test-Spec could check (a row needs a source file path or a test file path).`, howToConfigure: `Add a row for each source file to the Source-to-Test Map (or the older Service-to-Test Map) in ${specDoc}: \`| src/a.js | tests/a.test.js | ✅ |\`; Test-Spec checks that both files exist.` }
         : { emptyCause: 'needs-declaration', note: `${specDoc} declares no service-to-test mappings, so Test-Spec checked no source or test file.`, howToConfigure: `Add a "## Source-to-Test Map" table (or the older "## Service-to-Test Map") to ${specDoc}: column 1 the source, column 2 the test file, the last column the status (\`| Source File | Unit Test | Status |\`); \`docguard explain testSpec\` describes the shapes it reads.` };
@@ -350,7 +353,13 @@ export function validateTestSpec(projectDir, config) {
     }
   }
 
-  const res = { name: 'test-spec', ...resultFromFindings(findings, { passed, total }), ...testSpecContract(projectDir, config, { performed: total, found: findings.length > 0, mapped: Boolean(mapSection) }) };
+  const labels = labelContext(config);
+  const notSupported = !mapSection && labels?.unsupported ? [unsupportedEntry(specDoc, ['source-to-test-map'], labels)] : [];
+  const res = {
+    name: 'test-spec', ...resultFromFindings(findings, { passed, total }),
+    ...testSpecContract(projectDir, config, { performed: total, found: findings.length > 0, mapped: Boolean(mapSection), notSupported }),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
+  };
   // The legacy sentence stays for a project that has tests and a spec that maps none of them; the contract's own
   // sentence replaces it only on an empty result, where the cause says the same with the exact fix.
   if (note && res.note === undefined) res.note = note;
