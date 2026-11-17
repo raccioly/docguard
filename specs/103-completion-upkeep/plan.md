@@ -39,10 +39,16 @@
 
 Measured on this repository with the machine loaded (load average 14 to 20): `buildReconciliationPlan` takes 0.6 s for 3 commits, 1.0 s for 30 and 2.3 s for 120; `computeAnchorStatus` 0.3 s; `projectSpecRegistry` 0.5 s; `runGuardInternal` 25 s (a `complete` run: 23 s for `--since HEAD~3`, 32 s for `HEAD~150`). The reconciliation does not explain more than 120 seconds; the guard run SPC007 needs does, and it ran once per `complete` (so once per spec of a batch). Changed here: a batch plans against one guard run, one registry projection and one reconciliation per distinct base. What still grows with the number of specs is the recorded-base lookup, the blobs and the reconciliation of each new base: planning 1, 10 and 40 of this repository's specs with a shared guard result took 1.5 s, 12.3 s and 33.4 s on the loaded machine (19 distinct bases for the 40), so roughly one second per further spec; 81 specs would be about a minute plus one guard run. Not changed: the cost of one guard run, which is the budget work merged on the same day; a single `complete` still pays it.
 
+### Update 2026-11-17 (issue 684 item 4, FR-019)
+
+The more-than-120 s run does not reproduce on this repository (593 commits, 98 specs). `specs complete --id docguard.file-kinds --since HEAD~N`, a dry run, five alternating runs per cell on a machine with load average 7 to 14: before, minimum and median 9.8 and 10.9 s (50 commits), 11.4 and 15.0 s (150), 12.1 and 15.0 s (300); after, 9.1 and 11.0 s, 9.2 and 10.1 s, 9.3 and 10.4 s. The run is mostly one guard run (about 65 percent, flat in the range) plus a reconciliation that grows with the range: at 300 commits 2.8 s of its 4.6 s was `collectChangeFacts` testing every changed file's text against every spec's identities, and about 210 git processes started, 76 of them `git rev-parse` in the feature history. Changed: those two, the per-directory `git ls-files` of a deleted file, and the narrowing check, which built the whole plan of the recorded range to learn only whether it is too large to read. Not changed, on purpose: the guard run, which is still paid once per plan, and no cache of its result: it would need a key over the tree, the configuration, the environment, the clock (Freshness, generated-section staleness) and the remote refs, and a stale verdict would let SPC007 pass over an error. The dry-run output (text and JSON, with every classification) of 14 specs at 50, 150 and 300 commits is byte-identical before and after.
+
 ## Project Structure
 
 ```text
 cli/scanners/stale-completions.mjs     new
+cli/scanners/reconciliation.mjs        mention index, directoryTracked, reconciliationRangeStatus (FR-019)
+cli/scanners/speckit.mjs               one rev-parse for the introducing commits (FR-019)
 cli/scanners/revision-anchor.mjs       tagOnlyChange, evidenceBlobsInTree, lastCommitTouching, reviewedCommitOnHistory
 cli/writers/spec-outcomes.mjs          markSpecActive, readSpecStatus
 cli/commands/specs.mjs                 completeStale, prepareCompletion, hints, output

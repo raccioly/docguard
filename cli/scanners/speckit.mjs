@@ -1248,9 +1248,13 @@ export function createFeatureHistory(projectDir, { specDirs = null } = {}) {
     let range = ['HEAD'];
     if (specDirs && firsts.length) {
       const ids = [...new Set(firsts.map(c => c.id))];
-      const parents = ids.map(id => run(['rev-parse', '--verify', '--quiet', `${id}^`]));
-      if (parents.every(p => p !== null && p.trim())) {
-        const heads = [...new Set(parents.map(p => p.trim()))];
+      // One process for every introducing commit's parent (it was one per commit: 76 of the ~210 git processes of
+      // a `specs complete` run on this repository). A commit with no parent, or any failure, fails the whole call,
+      // which is the same fallback as one missing parent: the window is all of HEAD.
+      const resolved = run(['rev-parse', '--quiet', ...ids.map(id => `${id}^`)]);
+      const parents = resolved === null ? [null] : resolved.split('\n').map(line => line.trim()).filter(Boolean);
+      if (resolved !== null && parents.length === ids.length && parents.every(p => /^[0-9a-f]{40,64}$/.test(p))) {
+        const heads = [...new Set(parents)];
         const common = heads.length === 1 ? heads : (run(['merge-base', '--octopus', '--all', ...heads]) || '').split('\n').map(l => l.trim()).filter(Boolean);
         if (common.length) range = ['HEAD', ...common.map(c => `^${c}`)];
       }

@@ -42,7 +42,7 @@ import { appendImplementationOutcome, markSpecActive, readOutcomeBlobs, readSpec
 import { staleCompletions } from '../scanners/stale-completions.mjs';
 import { commitsBetween, contentAnchor, evidenceBlobsAt, evidenceBlobsInTree, evidenceDifferences, findAnchor, isAncestorOf, lastCommitTouching, modifiedPaths, nonLifecycleChanges, reachableFromDefaultBranch, resolveCommit, reviewedCommitOnHistory, strandedRevisions } from '../scanners/revision-anchor.mjs';
 import { serializeLifecycleContext } from '../scanners/lifecycle-context.mjs';
-import { buildReconciliationPlan } from '../scanners/reconciliation.mjs';
+import { buildReconciliationPlan, reconciliationRangeStatus } from '../scanners/reconciliation.mjs';
 import { canonicalOutcome, PERSISTENCE_VALUES, preflightSpec, projectSpecRegistry, readSpecRegistry, sortedUnique, SPEC_REGISTRY_PATH, unrecordedCompletions, untrackedRequirementEvidence } from '../scanners/spec-registry.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { anchorsActivated, computeAnchorStatus, failOnPolicy, isFailingProblem } from '../scanners/anchors.mjs';
@@ -236,11 +236,12 @@ function reviewBaseline(projectDir, config, spec, ref, runtime, recordedOverride
     return blocked(`--since ${ref} is neither an ancestor nor a descendant of the recorded review revision ${short} on HEAD's history; omit --since, or re-anchor a revision a squash merge discarded with \`docguard specs reanchor --id ${spec.specId}\`.`);
   }
   const skippedCommits = commitsBetween(projectDir, recordedCommit, sinceCommit);
-  const full = buildReconciliationPlan(projectDir, config, recordedCommit, runtime);
-  if (full.status !== 'BLOCKED' || !['too-large', 'timeout'].includes(full.range?.status) || skippedCommits === null) {
+  // docguard.completion-upkeep#FR-019: only whether the recorded range can be read within the budgets is asked, not its classification.
+  const full = reconciliationRangeStatus(projectDir, recordedCommit, runtime);
+  if (!['too-large', 'timeout'].includes(full.status) || skippedCommits === null) {
     return blocked(`--since ${ref} would skip ${skippedCommits ?? 'some'} commit(s) after the recorded review revision ${short}, whose range can be reconciled; omit --since.`);
   }
-  return { narrowedFrom: { revision: recordedCommit, since: sinceCommit, skippedCommits, reason: full.coverage.reason } };
+  return { narrowedFrom: { revision: recordedCommit, since: sinceCommit, skippedCommits, reason: full.reason } };
 }
 
 /**
