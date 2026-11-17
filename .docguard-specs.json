@@ -4153,7 +4153,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d66d57209b5aafec0e1a70f517f3ce3929254240",
+          "lastReviewedRevision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -4206,6 +4206,19 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
+              "reason": "Spec 104 stage 3 edited score.mjs and guard.mjs (per-document language, skip report, claim-document gaps); neither spec's behavior changed",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -4228,7 +4241,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:d4a1afb999e184815db954e95ed99690284b2b10d17e4f7b277b9b4e948b7a6b"
+            "digest": "sha256:853a15abb5ca67a0f2e08d6702320368f17644f38b57e0e2bbfd01527599b792"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
@@ -8625,7 +8638,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
+          "lastReviewedRevision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
           "outcomes": [
             {
               "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
@@ -8686,6 +8699,36 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
+              "reason": "Spec 104 stage 3 edited score.mjs and guard.mjs (per-document language, skip report, claim-document gaps); neither spec's behavior changed",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -8716,7 +8759,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:6091b15332d95503385f8ce64d0e7747f24679e8a6b589c9fd6bdf86a2c7ac78"
+            "digest": "sha256:21a299a121e1b3d9ebf911abe9d2668ef82556151a7b687c9f5e4682699d680c"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
