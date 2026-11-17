@@ -204,7 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Budgets
 
-Budget-Exempt: bytes:llms-full.txt — +41 KB (13.8%) is this release's new documentation: docs/languages.md and the language sections (spec 104), the file-kind rule (spec 100), one-commit completion and stale re-close (specs 101, 103) and the anchor-lock merge (spec 102), bundled for agents
+Budget-Exempt: bytes:llms-full.txt — +42 KB (14.5%) is this release's new documentation: docs/languages.md and the language sections (spec 104, including the reviewed Portuguese and Spanish label tables), the file-kind rule (spec 100), one-commit completion and stale re-close (specs 101, 103) and the anchor-lock merge (spec 102), bundled for agents
 
 ## [0.48.0] - 2026-11-13
 
