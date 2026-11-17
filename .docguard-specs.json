@@ -6000,11 +6000,65 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
+          "lastReviewedRevision": "1fc539107aba321501ba66d150f1bb7048514414",
           "outcomes": [
             {
               "revision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
               "reason": "T033 closes spec 104: the maintainer reviewed the pt and es word lists on 2026-11-17 and Doc-Quality now runs negation, conditional, pronoun and compound-sentence metrics for Portuguese and Spanish; every task is checked, the English A/B is identical, and the compatibility, identity and fixture tests pass.",
+              "evidence": [
+                "cli/authoring-contract.mjs",
+                "cli/config.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "cli/scanners/speckit.mjs",
+                "cli/shared-doc-language.mjs",
+                "cli/shared-labels.mjs",
+                "cli/shared-prose-words.mjs",
+                "cli/shared-requirement-ids.mjs",
+                "cli/shared-scaffold.mjs",
+                "cli/shared.mjs",
+                "cli/validators/changelog.mjs",
+                "cli/validators/decision-records.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/docs-coverage.mjs",
+                "cli/validators/environment.mjs",
+                "cli/validators/structure.mjs",
+                "cli/validators/test-spec.mjs",
+                "cli/writers/generate-io.mjs",
+                "cli/writers/mechanical.mjs",
+                "cli/writers/sections.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/config.test.mjs",
+                "tests/document-languages-changelog.test.mjs",
+                "tests/document-languages-compat.test.mjs",
+                "tests/document-languages-decisions.test.mjs",
+                "tests/document-languages-english-identity-stage2.test.mjs",
+                "tests/document-languages-english-identity.test.mjs",
+                "tests/document-languages-explain.test.mjs",
+                "tests/document-languages-fixtures.test.mjs",
+                "tests/document-languages-generate.test.mjs",
+                "tests/document-languages-labels-review.test.mjs",
+                "tests/document-languages-metrics-wordlists.test.mjs",
+                "tests/document-languages-metrics.test.mjs",
+                "tests/document-languages-naming.test.mjs",
+                "tests/document-languages-nfc.test.mjs",
+                "tests/document-languages-r1-coverage.test.mjs",
+                "tests/document-languages-registry.test.mjs",
+                "tests/document-languages-requirements.test.mjs",
+                "tests/document-languages-sections.test.mjs",
+                "tests/document-languages-speckit.test.mjs",
+                "tests/document-languages-strict.test.mjs",
+                "tests/document-languages-structure.test.mjs",
+                "tests/document-languages-verification.test.mjs",
+                "tests/document-languages-writers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "1fc539107aba321501ba66d150f1bb7048514414",
+              "reason": "Pt/es matcher: a hyphen between letters is part of the word, and stale T033 texts updated; reviewed against the new tests; English path unchanged",
               "evidence": [
                 "cli/authoring-contract.mjs",
                 "cli/config.mjs",
@@ -6100,7 +6154,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:384b495194993c2f158ae20c1225265cfd7f689102c40ed9411d56ace6b9ef1f"
+            "digest": "sha256:a26ac5e77e46436c1f90ff532a4c5a87afc00d39509ee399cffe2bcaf5495eb7"
           },
           {
             "path": "specs/104-document-languages/plan.md",
