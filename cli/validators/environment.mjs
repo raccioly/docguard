@@ -22,7 +22,8 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { describeLanguageCounts, grepEnvUsage, resolveSourceRoots, summarizeTiers, tierFor } from '../shared-source.mjs';
 import { shouldIgnore } from '../shared-ignore.mjs';
 import { sectionState } from '../shared.mjs';
-import { acceptedFormsHint, labelContext, unsupportedApplicability, unsupportedEntry } from '../shared-labels.mjs';
+import { acceptedFormsHint, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
+import { documentLanguage } from '../shared-doc-language.mjs';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
@@ -102,12 +103,15 @@ export function applies(projectDir, config = {}) {
   return { applies: false, evidence: `no ${envDoc}, no .env.example or .env.template, and no source file that reads an environment variable` };
 }
 
-function environmentContract(projectDir, config, performed, found) {
+function environmentContract(projectDir, config, performed, found, notSupported = []) {
   const envDoc = docRolePath(config, 'environment');
   return contractFields({
     performed, found, ran: `checked the sections of ${envDoc} and the variables the code reads against it`,
     decide: () => applies(projectDir, config),
-    empty: (decision) => decision.applies
+    empty: (decision) => decision.applies && notSupported.length
+      // Every section was read and none could be judged for the document's language: a limit of DocGuard (spec 104 FR-019).
+      ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Environment read ${envDoc} and judged no section: ${notSupported[0].reason}.`, howToConfigure: notSupported[0].howToConfigure }
+      : decision.applies
       ? (() => {
         const role = roleDocument(projectDir, config, 'environment');
         const content = 'a "## Setup Steps" section and a "## Environment Variables" section that lists every variable the code reads; `.env.example` entries count as documentation';
@@ -144,8 +148,8 @@ export function validateEnvironment(projectDir, config) {
   // @implements docguard.doc-validator-fidelity#FR-001
   // spec 104: the same resolver with the project's label context. A section the
   // language cannot be judged for (a `docs.language` with no built-in set) is
-  // listed in `languageNotSupported` and counted as neither passed nor failed.
-  const labels = labelContext(config);
+  // listed in `unexaminedDocuments` (cause `language-not-supported`) and counted as neither passed nor failed.
+  const labels = documentLanguage(config, envDoc);
   const unjudged = [];
   const setup = [sectionState(content, '## Setup Steps', labels), sectionState(content, '## Prerequisites', labels)];
   if (setup.includes('present')) {
@@ -329,13 +333,12 @@ export function validateEnvironment(projectDir, config) {
   }
 
   const notSupported = unjudged.length ? [unsupportedEntry(envDoc, unjudged, labels)] : [];
-  const reason = notSupported.length ? unsupportedApplicability(notSupported).reason : null;
   return {
     name: 'environment',
-    ...(applicability || reason ? { applicability: { status: 'partial', reason: [applicability?.reason, reason].filter(Boolean).join(' ') } } : {}),
+    ...(applicability ? { applicability: { status: 'partial', reason: applicability.reason } } : {}),
     ...resultFromFindings(findings, { passed, total }),
-    // A section that was read and could not be judged is a check made, not a check never made: not an empty result (spec 104 FR-011).
-    ...environmentContract(projectDir, config, total + unjudged.length, findings.length > 0),
-    ...(notSupported.length ? { languageNotSupported: notSupported } : {}),
+    // A section that could not be judged is listed with the cause; only when nothing was judged is the result empty for it.
+    ...environmentContract(projectDir, config, total, findings.length > 0, notSupported),
+    ...(notSupported.length ? { unexaminedDocuments: notSupported } : {}),
   };
 }

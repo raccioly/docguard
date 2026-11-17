@@ -31,7 +31,7 @@ import { readAgentSurface, agentCommand, commandHint } from '../agent-surface.mj
 import { findConstitution } from '../scanners/speckit.mjs';
 import { checkUpgradeStatus } from './upgrade.mjs';
 import { changedFilesSince, isGitRepo, listTrackedFiles } from '../shared-git.mjs';
-import { extractSemanticClaims } from '../scanners/semantic-claims.mjs';
+import { claimDocumentsNotSupported, extractSemanticClaims } from '../scanners/semantic-claims.mjs';
 import { toSarif } from '../writers/sarif.mjs';
 import { toJUnit } from '../writers/junit.mjs';
 import { loadBaseline, saveBaseline, fingerprintFinding, legacyFingerprint, baselineAgeDays, BASELINE_FILE } from '../writers/baseline.mjs';
@@ -804,7 +804,17 @@ export function runGuardInternal(projectDir, config) {
   // specs/097 FR-007/FR-015: what strict reports. The pre-commit subset does not run
   // the full validator set, so it never evaluates the unexamined rule (the report
   // says so with `evaluated: false`).
-  const strictReport = strict ? buildStrictReport(results, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
+  // spec 104 FR-022: documents the semantic-claim extractor does not read because of their language. It is not a
+  // validator, so strict reads them as the result of a pseudo validator that carries `unexaminedDocuments`: the
+  // same cause and the same route as every other validator. Empty (and free) without `docs.language`.
+  let claimLanguageGaps = [];
+  if (!lite && config?.docs?.language) {
+    try { claimLanguageGaps = claimDocumentsNotSupported(projectDir, config); } catch { claimLanguageGaps = []; }
+  }
+  const strictInput = claimLanguageGaps.length
+    ? [...results, { key: 'semanticClaims', name: 'Semantic claims', verdict: 'pass', findings: [], performed: 1, unexaminedDocuments: claimLanguageGaps }]
+    : results;
+  const strictReport = strict ? buildStrictReport(strictInput, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -842,7 +852,8 @@ export function runGuardInternal(projectDir, config) {
     try {
       const claims = extractSemanticClaims(projectDir, config);
       const scoped = coverSemanticClaims(claims, evidence);
-      semanticClaims = { count: scoped.unverified, discovered: scoped.total, verifiedWithinScope: scoped.verifiedWithinScope, coveredClaimIds: scoped.covered };
+      semanticClaims = { count: scoped.unverified, discovered: scoped.total, verifiedWithinScope: scoped.verifiedWithinScope, coveredClaimIds: scoped.covered,
+        ...(claimLanguageGaps.length ? { languageNotSupported: claimLanguageGaps.map(({ path, language, tag, reason }) => ({ path, language, tag, reason })) } : {}) };
     }
     catch { semanticClaims = null; }
   }
@@ -1173,6 +1184,12 @@ export function runGuard(projectDir, config, flags) {
     }
     if (v.requirementCoverage?.deferred > 0) {
       console.log(`     ${c.dim}${v.requirementCoverage.deferred} planned requirement(s) deferred by reviewed lifecycle${c.reset}`);
+    }
+    // spec 104 FR-017: a metric skipped for a document's language is said, never counted. One line per validator.
+    if (v.skippedMetrics?.length) {
+      const docs = [...new Set(v.skippedMetrics.map(m => m.document))];
+      const codes = [...new Set(v.skippedMetrics.map(m => m.code))].join(', ');
+      console.log(`     ${c.dim}skipped (language-not-supported): ${codes} for ${docs.length} document(s), language ${[...new Set(v.skippedMetrics.map(m => m.language))].map(l => `"${l}"`).join(', ')}${c.reset}`);
     }
     // docguard.verdict-contract#FR-015: a check that could not decide says why, without --verbose.
     if (v.verdict === 'inconclusive' && v.applicability?.reason) {

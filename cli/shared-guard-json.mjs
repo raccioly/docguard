@@ -145,7 +145,12 @@ function compactStrict(strict) {
     ...rest,
     unexamined: (unexamined || []).map(({ name: _name, reason: _reason, howToConfigure: _fix, documents, ...u }) => (documents ? { ...u, documents: documents.length } : u)),
     // Keys and a short reason: the validator's own entry carries the full text.
-    couldNotRead: (couldNotRead || []).map(({ name: _name, reason, howToConfigure: _fix, documents, ...u }) => ({ ...u, reason: short(reason), ...(documents ? { documents: documents.length } : {}) })),
+    // `language-not-supported` keeps its fix: the validator's own `unexaminedDocuments` is dropped from this form, so the row is the only place the fix and the language are (spec 104 FR-019).
+    couldNotRead: (couldNotRead || []).map(({ name: _name, reason, howToConfigure, documents, ...u }) => ({
+      ...u, reason: short(reason),
+      ...(u.cause === 'language-not-supported' && howToConfigure ? { howToConfigure } : {}),
+      ...(documents ? { documents: documents.length } : {}),
+    })),
     // A held-back item: its key and the release that lists it; the validator's own entry has the rest.
     pending: (pending || []).map(({ name: _name, reason: _reason, documents, ...p }) => (documents ? { ...p, documents: documents.length } : p)),
   };

@@ -16,8 +16,21 @@
  *   cells as "long sentences"), this version extracts ONLY actual prose
  *   paragraphs. Docs that are mostly tables/code skip readability scoring.
  *
+ * Documents in another language (spec 104, Stage 3): the English word lists,
+ * morphology and syllable counter cannot judge them. For a document whose
+ * language is not English (`docs.language`, or its own name) passive voice and
+ * both Flesch scores are skipped, and so are the closed-class metrics (compound,
+ * pronouns, negation, conditional) until a native speaker has reviewed those
+ * word lists (task T033). A skipped metric yields no number, no finding and no
+ * count in passed or total, and is listed in `skippedMetrics` with the reason
+ * `language-not-supported`. Sentence length still runs where the script
+ * separates words with spaces. English documents take the legacy path unchanged.
+ *
  * Zero NPM runtime dependencies, and zero process execution — pure Node.js
  * built-ins reading files only.
+ *
+ * @implements docguard.document-languages#FR-017
+ * @implements docguard.document-languages#FR-018
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -25,6 +38,8 @@ import { resolve, join, extname, relative, basename } from 'node:path';
 import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
+import { LANGUAGE_NOT_SUPPORTED, separatesWords } from '../shared-labels.mjs';
+import { nonEnglishDocument } from '../shared-doc-language.mjs';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -98,7 +113,7 @@ const TECH_VOCAB = new Set([
  *   - Has ≥55% alphabetic characters (filters out paths/URLs/symbol-heavy lines)
  *   - Has ≥5 words (fragments aren't prose)
  */
-function extractProse(content) {
+function extractProse(content, unicode = false, unspaced = false) {
   const lines = content.split('\n');
   const proseLines = [];
   let inCodeBlock = false;
@@ -149,12 +164,15 @@ function extractProse(content) {
     if (cleaned.length < 15) continue;
 
     // Prose heuristic: check alphabetic ratio and word count
-    const alphaCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
+    // Any Unicode letter counts for a non-English document (spec 104 FR-018); the
+    // English path keeps [a-zA-Z]. A script without word spacing has no five
+    // space-separated words in a line, so its lines qualify on letters alone.
+    const alphaCount = unicode ? (cleaned.match(/\p{L}/gu) || []).length : (cleaned.match(/[a-zA-Z]/g) || []).length;
     const alphaRatio = alphaCount / cleaned.length;
     const wordCount = cleaned.split(/\s+/).length;
 
     // A prose line needs ≥55% letters and ≥5 words
-    if (alphaRatio >= 0.55 && wordCount >= 5) {
+    if (alphaRatio >= 0.55 && (wordCount >= 5 || (unspaced && cleaned.length >= 15))) {
       proseLines.push(cleaned);
     }
   }
@@ -172,7 +190,7 @@ function extractProse(content) {
  *   - Common abbreviations (e.g., i.e., etc., vs.)
  *   - Technical dotted names (package.json, .env.local)
  */
-function splitSentences(text) {
+function splitSentences(text, unicode = false) {
   if (!text || text.trim().length === 0) return [];
 
   let protected_ = text;
@@ -204,7 +222,10 @@ function splitSentences(text) {
   protected_ = protected_.replace(/(\d)\.(\d)/g, '$1≈$2');
 
   // Split on sentence-ending punctuation followed by whitespace/newline/end
-  const raw = protected_.split(/[.!?]+(?:\s+|\n|$)/);
+  // A non-English document also ends a sentence at the full-width and Arabic marks (spec 104 FR-018).
+  const raw = unicode
+    ? protected_.split(/(?:[.!?]+(?:\s+|\n|$))|[。！？؟]+/u)
+    : protected_.split(/[.!?]+(?:\s+|\n|$)/);
 
   // Restore protected characters and filter empties/fragments
   return raw
@@ -257,8 +278,21 @@ export function countSyllables(word) {
 
 /**
  * Tokenize text into words. Strips punctuation, lowercases.
+ *
+ * `unicode: true` is the non-English path (spec 104 FR-018): it keeps every
+ * Unicode letter, digit and combining mark, composed first, so `não` is one
+ * token and a decomposed `na` + tilde + `o` is too. Without it the English
+ * tokenizer is unchanged, byte for byte.
  */
-function tokenizeWords(text) {
+export function tokenizeWords(text, { unicode = false } = {}) {
+  if (unicode) {
+    return text
+      .normalize('NFC')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\p{M}\s'’-]/gu, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 0);
+  }
   return text
     .toLowerCase()
     .replace(/[^a-z0-9\s'-]/g, ' ')
@@ -495,8 +529,9 @@ function parseQualityOverride(content, rule) {
   return v === 'off' ? { off: true } : { threshold: parseFloat(v) };
 }
 
-function analyzeDocument(doc) {
+function analyzeDocument(doc, language = null) {
   const content = readFileSync(doc.path, 'utf-8');
+  if (language) return analyzeOtherLanguage(doc, content, language);
   const proseText = extractProse(content);
 
   const sentences = splitSentences(proseText);
@@ -544,6 +579,38 @@ function analyzeDocument(doc) {
 }
 
 /**
+ * What Doc-Quality can measure for a document whose language is not English
+ * (spec 104 FR-017, FR-018). Prose is extracted and counted with Unicode letters;
+ * the only metric that needs nothing but a word count, sentence length, is
+ * measured when the script separates words with spaces. Every other metric is
+ * reported as skipped: passive voice, Flesch Reading Ease and Flesch-Kincaid
+ * need English morphology and syllables, and the closed-class metrics (compound
+ * sentences, pronouns, negation, conditional) need a word list that a native
+ * speaker has not yet reviewed (T033).
+ */
+function analyzeOtherLanguage(doc, content, language) {
+  const spaced = separatesWords(language);
+  const proseText = extractProse(content, true, !spaced);
+  const base = { name: doc.name, language };
+  if (!spaced) {
+    // Words are not separated by spaces, so there is nothing to count: judge only that there is prose.
+    const letters = (proseText.match(/\p{L}/gu) || []).length;
+    if (letters < MIN_PROSE_WORDS) return { skipped: true, reason: 'insufficient prose (reference document)', ...base };
+    return { skipped: false, ...base, sentences: 0, words: 0, metrics: {}, measured: [] };
+  }
+  const sentences = splitSentences(proseText, true);
+  const words = tokenizeWords(proseText, { unicode: true });
+  if (words.length < MIN_PROSE_WORDS || sentences.length < 3) return { skipped: true, reason: 'insufficient prose (reference document)', ...base };
+  return { skipped: false, ...base, sentences: sentences.length, words: words.length, metrics: { avgSentenceLength: measureSentenceLength(words, sentences) }, measured: ['DQ006'] };
+}
+
+/** The eight metrics by finding code, for the skip report. */
+const METRIC_NAMES = Object.freeze({
+  DQ001: 'passive voice', DQ002: 'ambiguous pronouns', DQ003: 'compound sentences', DQ004: 'Flesch reading ease',
+  DQ005: 'Flesch-Kincaid grade', DQ006: 'sentence length', DQ007: 'negation load', DQ008: 'conditional load',
+});
+
+/**
  * Main validator entry point.
  *
  * Scans all canonical docs, runs 8 metrics on each, and reports
@@ -567,11 +634,14 @@ export function applies(projectDir) {
     : { applies: false, evidence: 'no canonical document and no README.md whose prose could be scored' };
 }
 
-function qualityContract(projectDir, performed, found) {
+function qualityContract(projectDir, performed, found, languageSkips = []) {
   return contractFields({
     performed, found, ran: `scored ${performed} readability and clarity measure(s) of the project's prose documents`,
     decide: () => applies(projectDir),
-    empty: (decision) => decision.applies
+    empty: (decision) => decision.applies && languageSkips.length > 0
+      // Nothing was scored because of the language of every document that had prose: a limit of DocGuard, not a gap in the project.
+      ? { emptyCause: LANGUAGE_NOT_SUPPORTED, note: `Doc-Quality read prose in ${[...new Set(languageSkips.map(s => s.document))].join(', ')} and scored nothing: its rules read English, and the language of ${languageSkips.length === 1 ? 'this document is' : 'these documents are'} "${languageSkips[0].language}".`, howToConfigure: 'Nothing in the documents is wrong. Sentence length runs for a language whose words are separated by spaces; every other metric needs word lists a native speaker has reviewed (spec 104, T033), so it stays skipped for a language other than English.' }
+      : decision.applies
       ? { emptyCause: 'needs-content', note: `Doc-Quality found ${decision.evidence}, but none has ${MIN_PROSE_WORDS} words and 3 sentences of prose (tables, code and lists do not count), so it scored nothing.`, howToConfigure: `Write at least ${MIN_PROSE_WORDS} words in 3 or more sentences of plain paragraphs, for example an overview in README.md; Doc-Quality then scores the passive voice, pronouns, readability and sentence length of each document with enough prose.` }
       : { note: 'Doc-Quality found no canonical document and no README.md, so it had no prose to score.', howToConfigure: 'Nothing to configure unless the project has documents: then Doc-Quality scores the prose of README.md and of the canonical documents.' },
   });
@@ -588,14 +658,19 @@ export function validateDocQuality(projectDir, config) {
     return { errors: [], warnings: [], passed: 0, total: 0, ...qualityContract(projectDir, 0, false) };
   }
 
+  // spec 104: a metric a document's language cannot support is listed here, never counted.
+  const skippedMetrics = [];
+
   for (const doc of docs) {
     if (!existsSync(doc.path)) continue;
 
-    const analysis = analyzeDocument(doc);
+    const loc = relative(projectDir, doc.path);
+    // A document's language comes from `docs.language` and its own name, never its text; English takes the legacy path.
+    const language = nonEnglishDocument(config, loc);
+    const analysis = analyzeDocument(doc, language);
     if (analysis.skipped) continue;
 
     const m = analysis.metrics;
-    const loc = relative(projectDir, doc.path);
     const warn = (code, message, suggestion) => {
       findings.push(mkFinding({
         code,
@@ -606,6 +681,20 @@ export function validateDocQuality(projectDir, config) {
         suggestion,
       }));
     };
+
+    if (language) {
+      // Skipped metrics yield no number, no finding and no count (FR-017); sentence length runs where words are spaced.
+      for (const code of Object.keys(METRIC_NAMES)) {
+        if (analysis.measured.includes(code)) continue;
+        skippedMetrics.push({ document: loc, code, metric: METRIC_NAMES[code], reason: LANGUAGE_NOT_SUPPORTED, language: language.language });
+      }
+      if (analysis.measured.includes('DQ006')) {
+        total++;
+        if (m.avgSentenceLength <= THRESHOLDS.avgSentenceLength.warn) passed++;
+        else warn('DQ006', sentenceLengthMessage(doc.name, m.avgSentenceLength), { kind: 'fix', text: 'Break long sentences up — target 30 words or fewer' });
+      }
+      continue;
+    }
 
     // ── Check 1: Passive Voice ──
     total++;
@@ -676,9 +765,7 @@ export function validateDocQuality(projectDir, config) {
     if (m.avgSentenceLength <= THRESHOLDS.avgSentenceLength.warn) {
       passed++;
     } else {
-      warn('DQ006',
-        `${doc.name}: Average sentence too long (${m.avgSentenceLength} words). ` +
-        `Target ≤30 words per sentence for readability`,
+      warn('DQ006', sentenceLengthMessage(doc.name, m.avgSentenceLength),
         { kind: 'fix', text: 'Break long sentences up — target 30 words or fewer' });
     }
 
@@ -716,11 +803,21 @@ export function validateDocQuality(projectDir, config) {
     }
   }
 
-  if (total === 0) {
+  if (total === 0 && skippedMetrics.length === 0) {
     // Every doc was skipped (insufficient prose) — same literal legacy shape,
     // because tests deepEqual this exact object for the all-skipped case too.
     return { errors: [], warnings: [], passed: 0, total: 0, ...qualityContract(projectDir, 0, false) };
   }
 
-  return { ...resultFromFindings(findings, { passed, total }), ...qualityContract(projectDir, total, findings.length > 0) };
+  // The skip report is present only when a metric was skipped, so an English project's result has no new key.
+  return {
+    ...resultFromFindings(findings, { passed, total }),
+    ...(skippedMetrics.length ? { skippedMetrics } : {}),
+    ...qualityContract(projectDir, total, findings.length > 0, skippedMetrics),
+  };
+}
+
+function sentenceLengthMessage(name, length) {
+  return `${name}: Average sentence too long (${length} words). ` +
+    `Target ≤30 words per sentence for readability`;
 }

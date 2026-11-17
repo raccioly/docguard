@@ -132,8 +132,8 @@ describe('SPK003 to SPK005 read Portuguese and Spanish documents (T020)', () => 
     const dir = project(files, { language: 'de' });
     const r = validateSpecKitIntegration(dir, loadConfig(dir));
     assert.deepEqual(spk(r, 'SPK003', 'SPK004').map(f => f.message), []);
-    assert.deepEqual(r.languageNotSupported.map(e => e.file).sort(), ['specs/001-a/plan.md', 'specs/001-a/spec.md']);
-    assert.ok(r.languageNotSupported.every(e => e.cause === 'language-not-supported' && e.language === 'de'));
+    assert.deepEqual(r.unexaminedDocuments.map(e => e.path).sort(), ['specs/001-a/plan.md', 'specs/001-a/spec.md']);
+    assert.ok(r.unexaminedDocuments.every(e => e.cause === 'language-not-supported' && e.language === 'de'));
   });
 
   it('English is unchanged: the legacy substring rule and messages, with no language and with "en"', () => {

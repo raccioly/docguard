@@ -211,15 +211,19 @@ export function readLabelConfig(docs) {
 export function labelContext(config) {
   const read = readLabelConfig(config?.docs);
   if (!read.language) return null;
-  const english = read.language === 'en';
-  const builtin = BUILTIN_LANGUAGES.includes(read.language);
+  return contextFor(read.language, read.tag, read.aliases);
+}
+
+function contextFor(language, tag, project) {
+  const english = language === 'en';
+  const builtin = BUILTIN_LANGUAGES.includes(language);
   return Object.freeze({
-    language: read.language,
-    tag: read.tag,
+    language,
+    tag,
     unicode: !english,
     builtin,
     unsupported: !english && !builtin,
-    project: read.aliases,
+    project,
   });
 }
 
@@ -253,41 +257,126 @@ export function acceptedFormsHint(id, ctx) {
 }
 
 /**
- * One entry of a validator's `languageNotSupported` list: a document whose
- * labels DocGuard cannot judge because `docs.language` has no built-in set. It
- * is the carrier of the cause `language-not-supported`; the strict report routes
- * it to `couldNotRead` in Stage 3 (spec 104 FR-011, FR-019).
+ * One entry of a validator's `unexaminedDocuments` for the cause
+ * `language-not-supported`: a document whose labels DocGuard cannot judge
+ * because its language has no built-in set (spec 104 FR-011, FR-019). It is the
+ * only carrier of the cause: the strict report reads it from there (Stage 1 and
+ * 2 kept a separate `languageNotSupported` list and a `partial` applicability;
+ * both are gone, so there is one mechanism). `blocking: false` because the
+ * project cannot resolve it by declaring more than the fix names, and DocGuard
+ * has no rules to apply to it.
  */
 export function unsupportedEntry(file, ids, ctx) {
   const word = ids.length > 0 && ids.every(id => BY_ID.get(id)?.kind === 'word');
+  const sections = [...new Set(ids)];
+  const howToConfigure = word
+    ? `Add the words to docs.labelAliases.<id> in .docguard.json (the ids: ${sections.join(', ')}), write them in English, or ask for a built-in set for "${ctx.tag}".`
+    : `Write <!-- docguard:heading <id> --> on the line under each heading, add the heading to docs.labelAliases.<id> in .docguard.json, or ask for a built-in set for "${ctx.tag}".`;
   return {
-    file,
-    cause: 'language-not-supported',
+    path: file,
+    cause: LANGUAGE_NOT_SUPPORTED,
+    blocking: false,
     language: ctx.language,
     tag: ctx.tag,
-    sections: [...new Set(ids)],
+    sections,
     what: word ? 'word' : 'heading',
-    fix: word
-      ? `Add the words to docs.labelAliases.<id> in .docguard.json (the ids: ${[...new Set(ids)].join(', ')}), write them in English, or ask for a built-in set for "${ctx.tag}".`
-      : `Write <!-- docguard:heading <id> --> on the line under each heading, add the heading to docs.labelAliases.<id> in .docguard.json, or ask for a built-in set for "${ctx.tag}".`,
+    reason: `${sections.length} ${word ? 'word label(s)' : 'required heading(s)'} of ${file} not judged: docs.language "${ctx.tag}" has no built-in ${word ? 'word' : 'heading'} set and the document carries no ${word ? 'docs.labelAliases entry' : '<!-- docguard:heading <id> --> marker or docs.labelAliases entry'} for ${sections.join(', ')}`,
+    howToConfigure,
   };
 }
 
+/** The cause a check reports for a document it cannot judge because of its language (spec 104 FR-019). */
+export const LANGUAGE_NOT_SUPPORTED = 'language-not-supported';
+
 /**
- * The applicability of a validator that left sections unjudged for their
- * language: `partial`, which the verdict contract already treats as a check that
- * ran and could not observe the rest (`inconclusive`, listed in
- * `strict.couldNotRead`, never an exit code). Stage 3 gives the cause its own
- * name in the strict report (spec 104 FR-019).
+ * A document that a check skipped because its rules read English prose (or
+ * English words) and the document's language has none: Doc-Quality's prose
+ * metrics, Docs-Diff, Metrics-Consistency and semantic claims (spec 104 FR-017,
+ * FR-022). Same shape as `unsupportedEntry`, so strict reads one thing.
+ * @param {string} file project-relative path
+ * @param {object} ctx the document's label context
+ * @param {string} what what was not read, for the reason (`'the tech stack'`, `'documented counts'`)
  */
-export function unsupportedApplicability(entries) {
-  const tag = entries[0].tag;
-  const count = entries.reduce((n, entry) => n + entry.sections.length, 0);
-  const files = entries.map(entry => entry.file).join(', ');
-  if (entries.every(entry => entry.what === 'word')) {
-    return { status: 'partial', reason: `language-not-supported: label(s) or word(s) in ${files} not judged, because docs.language "${tag}" has no built-in set and the words are not in docs.labelAliases` };
+export function unreadEntry(file, ctx, what) {
+  return {
+    path: file,
+    cause: LANGUAGE_NOT_SUPPORTED,
+    blocking: false,
+    language: ctx.language,
+    tag: ctx.tag,
+    sections: [],
+    what: 'prose',
+    reason: `${file} not read for ${what}: the rules read English prose and docs.language "${ctx.tag}" is not English`,
+    howToConfigure: `Nothing in this document is wrong and nothing needs configuring: these checks have rules for English only (rules for "${ctx.tag}" need a word list that a native speaker has reviewed, spec 104 T033), so the document is reported here instead of being passed silently.`,
+  };
+}
+
+/** Scripts whose words are not separated by spaces; sentence length counts spaces, so it is not meaningful for them. */
+export const NO_WORD_SPACING = Object.freeze(['zh', 'ja', 'th', 'lo', 'km', 'my']);
+
+/** Whether a document's script separates words with spaces (a closed list of primary subtags, never read from text). */
+export function separatesWords(ctx) {
+  return !ctx || !NO_WORD_SPACING.includes(ctx.language);
+}
+
+// ── Per-document language (spec 104 FR-021) ───────────────────────────────
+
+/** ISO 639-1 language codes: a dotted suffix is a language only when it is one of these. */
+const ISO_639_1 = new Set('aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy da de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu hy hz ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln lo lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti tk tl tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu'.split(' '));
+
+/**
+ * A language tag as it appears in a name: an ISO 639-1 primary subtag, then an
+ * optional script (`Hans`) or region (`BR`, `419`). Three-letter suffixes such
+ * as `old`, `api` or `dev` are never languages here, and neither are two-letter
+ * words that are not codes (`xx`).
+ */
+function tagFromName(text) {
+  const m = /^([A-Za-z]{2})(?:-([A-Za-z]{4}|[A-Za-z]{2}|\d{3}))?$/.exec(text);
+  if (!m || !ISO_639_1.has(m[1].toLowerCase())) return null;
+  return text;
+}
+
+/**
+ * The language tag a document's name gives: `<name>.<lang>.md`, or an
+ * `i18n/<lang>/` or `locales/<lang>/` folder segment (spec 104 FR-021,
+ * Decision 5). Only the name decides, never the text. The file name wins over a
+ * folder, and the deepest folder over a shallower one. Null when the name says
+ * nothing.
+ * @param {string} relPath project-relative path
+ */
+export function languageFromNaming(relPath) {
+  const parts = String(relPath).replace(/\\/g, '/').split('/').filter(Boolean);
+  if (parts.length === 0) return null;
+  const file = parts[parts.length - 1];
+  const named = /^.+\.([A-Za-z0-9-]+)\.md$/i.exec(file);
+  if (named) {
+    const tag = tagFromName(named[1]);
+    if (tag) return tag;
   }
-  return { status: 'partial', reason: `language-not-supported: ${count} required heading(s) in ${files} not judged, because docs.language "${tag}" has no built-in heading set and the headings carry no <!-- docguard:heading <id> --> marker or docs.labelAliases entry` };
+  for (let i = parts.length - 2; i >= 1; i--) {
+    if (/^(?:i18n|locales)$/i.test(parts[i - 1])) {
+      const tag = tagFromName(parts[i]);
+      if (tag) return tag;
+    }
+  }
+  return null;
+}
+
+/**
+ * The label context of one document: the project's `labelContext(config)`, or,
+ * when the document's name carries a language, the context of that language with
+ * the project's aliases. Null without `docs.language`: nothing is inferred
+ * (FR-021). An agent-instruction file is excluded by `documentLanguage`
+ * (cli/shared-doc-language.mjs), which is what callers use.
+ */
+export function documentLabelContext(config, relPath) {
+  const base = labelContext(config);
+  if (!base) return null;
+  const tag = languageFromNaming(relPath);
+  if (!tag) return base;
+  const language = primaryLanguage(tag);
+  if (!language) return base;
+  return language === base.language ? base : contextFor(language, tag, base.project);
 }
 
 // ── The heading marker ────────────────────────────────────────────────────

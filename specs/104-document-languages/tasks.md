@@ -57,19 +57,19 @@ Tests come first. Each reproduction must fail on the v0.48.0 tag before the chan
 
 ### Phase 1: Tests first
 
-- [ ] T025 [US1] `tests/document-languages-metrics.test.mjs`: with `docs.language: "pt-BR"`, Portuguese prose gets sentence length and a skip entry (reason `language-not-supported`) for passive voice, Flesch, and, until T033 is recorded, negation, conditional, compound and pronouns; no skipped metric yields a number, a finding, or a count in passed or total; the Score excludes it from numerator and denominator (FR-017).
-- [ ] T026 Same file: the Unicode tokenizer keeps `não` as one token for a non-English language; with no `docs.language` the tokenizer is unchanged and the English fixtures' numbers are identical; DQ006 is skipped for a script without word spacing (FR-018).
-- [ ] T027 [US3] Same file: `docs.language: "de"` yields no passive, readability or negation number, each reported as skipped for `language-not-supported`.
-- [ ] T028 [US6] `tests/document-languages-naming.test.mjs`: with `docs.language: "en"`, `X.pt-BR.md`, `i18n/pt-BR/X.md` and `locales/pt-BR/X.md` resolve labels with the `pt` set and skip text metrics; content in another language never changes the language; without `docs.language` nothing is inferred (FR-021).
-- [ ] T029 [US3] `tests/document-languages-strict.test.mjs`: the `de` fixture in strict mode: the documents appear in `strict.couldNotRead` with `language-not-supported`, the fix and the language; the exit code equals the same project's exit code without them; the cause is not dropped by `addUnexaminedDocuments` and not labeled "ownership is not established"; validator-level and document-level routes both work; the text prints one line per validator (FR-019).
-- [ ] T030 Same file: Docs-Diff, Metrics-Consistency and semantic claims report `language-not-supported` for a document in a language without rules, and are silent when `docs.language` is absent; an agent-instruction file gets no entry and no alias (FR-022, Decision 6).
+- [x] T025 [US1] `tests/document-languages-metrics.test.mjs`: with `docs.language: "pt-BR"`, Portuguese prose gets sentence length and a skip entry (reason `language-not-supported`) for passive voice, Flesch, and, until T033 is recorded, negation, conditional, compound and pronouns; no skipped metric yields a number, a finding, or a count in passed or total; the Score excludes it from numerator and denominator (FR-017).
+- [x] T026 Same file: the Unicode tokenizer keeps `não` as one token for a non-English language; with no `docs.language` the tokenizer is unchanged and the English fixtures' numbers are identical; DQ006 is skipped for a script without word spacing (FR-018).
+- [x] T027 [US3] Same file: `docs.language: "de"` yields no passive, readability or negation number, each reported as skipped for `language-not-supported`.
+- [x] T028 [US6] `tests/document-languages-naming.test.mjs`: with `docs.language: "en"`, `X.pt-BR.md`, `i18n/pt-BR/X.md` and `locales/pt-BR/X.md` resolve labels with the `pt` set and skip text metrics; content in another language never changes the language; without `docs.language` nothing is inferred (FR-021).
+- [x] T029 [US3] `tests/document-languages-strict.test.mjs`: the `de` fixture in strict mode: the documents appear in `strict.couldNotRead` with `language-not-supported`, the fix and the language; the exit code equals the same project's exit code without them; the cause is not dropped by `addUnexaminedDocuments` and not labeled "ownership is not established"; validator-level and document-level routes both work; the text prints one line per validator (FR-019).
+- [x] T030 Same file: Docs-Diff, Metrics-Consistency and semantic claims report `language-not-supported` for a document in a language without rules, and are silent when `docs.language` is absent; an agent-instruction file gets no entry and no alias (FR-022, Decision 6).
 
 ### Phase 2: Implementation
 
-- [ ] T031 `doc-quality.mjs` skip table, tokenizer, skip report; per-document language from naming in `cli/shared-labels.mjs` (FR-017, FR-018, FR-021).
-- [ ] T032 `validator-coverage.mjs` (`EMPTY_CAUSES`), `enforcement.mjs` routing, `shared-guard-json.mjs`, `guard.mjs` text line, and the four validators of FR-022 (FR-019, FR-022).
+- [x] T031 `doc-quality.mjs` skip table, tokenizer, skip report; per-document language from naming in `cli/shared-labels.mjs` (FR-017, FR-018, FR-021).
+- [x] T032 `validator-coverage.mjs` (`EMPTY_CAUSES`), `enforcement.mjs` routing, `shared-guard-json.mjs`, `guard.mjs` text line, and the four validators of FR-022 (FR-019, FR-022).
 - [ ] T033 Native review of the pt-BR and es word lists (owner: maintainer). It blocks enabling the closed-class metrics (negation, conditional, compound requirement, pronouns); until it is recorded those metrics are skipped for every language other than English (FR-017, Decision 4).
-- [ ] T034 Hermetic English A/B (SC-004).
+- [x] T034 Hermetic English A/B (SC-004).
 
 ## Stage 4 - generators and explain
 

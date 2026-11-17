@@ -82,6 +82,8 @@ export function describeCheckCoverage(projectDir, config, result) {
  *   emptyCause     One of EMPTY_CAUSES. Required whenever the result performed
  *                  nothing and found nothing. `nothing-of-this-kind` if and
  *                  only if `applies.applies` is false.
+ *                  `language-not-supported` (spec 104) when every document the
+ *                  validator read is in a language it has no rules for.
  *   howToConfigure A non-empty text owned by the validator: the snippet, file
  *                  or command that makes it examine something (the cause's
  *                  fix), or what was looked for and not found.
@@ -97,7 +99,7 @@ export function describeCheckCoverage(projectDir, config, result) {
  * @implements docguard.strict-by-default#FR-005
  * @implements docguard.strict-by-default#FR-006
  */
-export const EMPTY_CAUSES = Object.freeze(['needs-declaration', 'needs-content', 'layout-not-recognized', 'nothing-of-this-kind', 'history-unavailable']);
+export const EMPTY_CAUSES = Object.freeze(['needs-declaration', 'needs-content', 'layout-not-recognized', 'nothing-of-this-kind', 'history-unavailable', 'language-not-supported']);
 
 /**
  * How many checks a validator genuinely performed. The explicit `performed`

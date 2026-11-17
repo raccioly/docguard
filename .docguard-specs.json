@@ -680,7 +680,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1104
+            "line": 1105
           }
         ],
         "testEvidence": [
@@ -2370,17 +2370,17 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 906
+            "line": 917
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 933
+            "line": 944
           },
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1357
+            "line": 1358
           },
           {
             "requirementId": "FR-022",
@@ -4153,7 +4153,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "d66d57209b5aafec0e1a70f517f3ce3929254240",
+          "lastReviewedRevision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -4206,6 +4206,19 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
+              "reason": "Spec 104 stage 3 edited score.mjs and guard.mjs (per-document language, skip report, claim-document gaps); neither spec's behavior changed",
+              "evidence": [
+                "cli/commands/score.mjs",
+                "cli/shared-doc-roles.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/configured-canonical-paths.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -4228,7 +4241,7 @@
         "artifacts": [
           {
             "path": "specs/093-configured-canonical-paths/spec.md",
-            "digest": "sha256:d4a1afb999e184815db954e95ed99690284b2b10d17e4f7b277b9b4e948b7a6b"
+            "digest": "sha256:853a15abb5ca67a0f2e08d6702320368f17644f38b57e0e2bbfd01527599b792"
           },
           {
             "path": "specs/093-configured-canonical-paths/plan.md",
@@ -4257,7 +4270,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/score.mjs",
-            "line": 500
+            "line": 501
           }
         ],
         "testEvidence": [
@@ -4405,12 +4418,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1331
+            "line": 1332
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1361
+            "line": 1362
           },
           {
             "requirementId": "FR-005",
@@ -5455,37 +5468,37 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/environment.mjs",
-            "line": 144
+            "line": 148
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 445
+            "line": 463
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 460
+            "line": 478
           },
           {
             "requirementId": "FR-002",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 477
+            "line": 495
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 184
+            "line": 202
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 236
+            "line": 254
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 251
+            "line": 269
           },
           {
             "requirementId": "FR-006",
@@ -5500,7 +5513,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/score.mjs",
-            "line": 772
+            "line": 773
           },
           {
             "requirementId": "FR-009",
@@ -5515,7 +5528,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 238
+            "line": 259
           }
         ],
         "testEvidence": [
@@ -6018,11 +6031,11 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:37ad7eaa9bf6b3a3ea0338c61c64905493ddc011976c37d057edad05b89f9698"
+            "digest": "sha256:7737ac3e8671f0c29c1a3097635f72eef8d03d37350527475ba94eb5b67456b9"
           }
         ],
         "taskCompletion": {
-          "checked": 24,
+          "checked": 33,
           "total": 43
         },
         "implementationEvidence": [
@@ -6054,7 +6067,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/structure.mjs",
-            "line": 205
+            "line": 206
           },
           {
             "requirementId": "FR-006",
@@ -6084,12 +6097,12 @@
           {
             "requirementId": "FR-008",
             "file": "cli/validators/docs-coverage.mjs",
-            "line": 513
+            "line": 516
           },
           {
             "requirementId": "FR-008",
             "file": "cli/validators/environment.mjs",
-            "line": 121
+            "line": 125
           },
           {
             "requirementId": "FR-008",
@@ -6104,27 +6117,27 @@
           {
             "requirementId": "FR-009",
             "file": "cli/validators/structure.mjs",
-            "line": 206
+            "line": 207
           },
           {
             "requirementId": "FR-010",
             "file": "cli/validators/structure.mjs",
-            "line": 207
+            "line": 208
           },
           {
             "requirementId": "FR-011",
             "file": "cli/validators/environment.mjs",
-            "line": 122
+            "line": 126
           },
           {
             "requirementId": "FR-011",
             "file": "cli/validators/structure.mjs",
-            "line": 208
+            "line": 209
           },
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 450
+            "line": 539
           },
           {
             "requirementId": "FR-012",
@@ -6139,7 +6152,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 467
+            "line": 556
           },
           {
             "requirementId": "FR-013",
@@ -6154,17 +6167,32 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 504
+            "line": 593
           },
           {
             "requirementId": "FR-015",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1359
+            "line": 1360
           },
           {
             "requirementId": "FR-016",
             "file": "cli/shared-requirement-ids.mjs",
             "line": 31
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 32
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 33
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/shared-doc-language.mjs",
+            "line": 15
           }
         ],
         "testEvidence": [
@@ -6262,6 +6290,31 @@
             "requirementId": "FR-016",
             "file": "tests/document-languages-requirements.test.mjs",
             "line": 13
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/document-languages-metrics.test.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/document-languages-metrics.test.mjs",
+            "line": 18
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/document-languages-strict.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/document-languages-naming.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "tests/document-languages-strict.test.mjs",
+            "line": 17
           },
           {
             "requirementId": "SC-004",
@@ -6929,22 +6982,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 436
+            "line": 453
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 415
+            "line": 432
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 492
+            "line": 509
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 506
+            "line": 523
           }
         ],
         "testEvidence": [
@@ -7086,7 +7139,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 406
+            "line": 424
           },
           {
             "requirementId": "FR-002",
@@ -7146,7 +7199,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 353
+            "line": 371
           },
           {
             "requirementId": "FR-008",
@@ -8585,7 +8638,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "32242623b704fd4ec6c43f011b9487442e15b8e8",
+          "lastReviewedRevision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
           "outcomes": [
             {
               "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
@@ -8646,6 +8699,36 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
+              "reason": "Spec 104 stage 3 edited score.mjs and guard.mjs (per-document language, skip report, claim-document gaps); neither spec's behavior changed",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -8676,7 +8759,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:6091b15332d95503385f8ce64d0e7747f24679e8a6b589c9fd6bdf86a2c7ac78"
+            "digest": "sha256:21a299a121e1b3d9ebf911abe9d2668ef82556151a7b687c9f5e4682699d680c"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -16873,7 +16956,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/semantic-claims.mjs",
-            "line": 79
+            "line": 81
           },
           {
             "requirementId": "FR-033",
@@ -18274,12 +18357,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1358
+            "line": 1359
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1360
+            "line": 1361
           }
         ],
         "testEvidence": [
@@ -18403,12 +18486,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/validator-coverage.mjs",
-            "line": 96
+            "line": 98
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validator-coverage.mjs",
-            "line": 162
+            "line": 164
           },
           {
             "requirementId": "FR-005",
@@ -18418,7 +18501,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validator-coverage.mjs",
-            "line": 97
+            "line": 99
           },
           {
             "requirementId": "FR-006",
@@ -18443,12 +18526,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validator-coverage.mjs",
-            "line": 98
+            "line": 100
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validator-coverage.mjs",
-            "line": 163
+            "line": 165
           },
           {
             "requirementId": "FR-006",
@@ -18478,7 +18561,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/changelog.mjs",
-            "line": 41
+            "line": 42
           },
           {
             "requirementId": "FR-006",
@@ -18508,7 +18591,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 561
+            "line": 628
           },
           {
             "requirementId": "FR-006",
@@ -18518,7 +18601,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/docs-diff.mjs",
-            "line": 78
+            "line": 80
           },
           {
             "requirementId": "FR-006",
@@ -18538,7 +18621,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/environment.mjs",
-            "line": 93
+            "line": 94
           },
           {
             "requirementId": "FR-006",
@@ -18563,7 +18646,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 50
+            "line": 52
           },
           {
             "requirementId": "FR-006",
@@ -18593,12 +18676,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 37
+            "line": 38
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/structure.mjs",
-            "line": 47
+            "line": 48
           },
           {
             "requirementId": "FR-006",
@@ -21376,7 +21459,7 @@
           {
             "requirementId": "FR-001",
             "file": "cli/validator-coverage.mjs",
-            "line": 159
+            "line": 161
           },
           {
             "requirementId": "FR-002",
@@ -21391,7 +21474,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validator-coverage.mjs",
-            "line": 160
+            "line": 162
           },
           {
             "requirementId": "FR-004",
@@ -21426,12 +21509,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/validator-coverage.mjs",
-            "line": 161
+            "line": 163
           },
           {
             "requirementId": "FR-012",
             "file": "cli/validator-coverage.mjs",
-            "line": 181
+            "line": 183
           },
           {
             "requirementId": "FR-013",

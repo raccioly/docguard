@@ -223,10 +223,10 @@ describe('a language with no built-in set (T019)', () => {
     const dir = project({ 'docs-canonical/ADR.md': `# ADR\n\n${adr(1, '**Status**: Akzeptiert')}${adr(2, '**Status**: accepted')}` }, { language: 'de' });
     const r = validateDecisionRecords(dir, loadConfig(dir));
     assert.deepEqual(codes(r, 'DEC001'), []);
-    assert.equal(r.languageNotSupported.length, 1);
-    assert.equal(r.languageNotSupported[0].file, 'docs-canonical/ADR.md');
-    assert.equal(r.languageNotSupported[0].cause, 'language-not-supported');
+    assert.equal(r.unexaminedDocuments.length, 1);
+    assert.equal(r.unexaminedDocuments[0].path, 'docs-canonical/ADR.md');
+    assert.equal(r.unexaminedDocuments[0].cause, 'language-not-supported');
     const aliased = project({ 'docs-canonical/ADR.md': `# ADR\n\n${adr(1, '**Status**: Akzeptiert')}` }, { language: 'de', labelAliases: { accepted: ['Akzeptiert'] } });
-    assert.deepEqual(validateDecisionRecords(aliased, loadConfig(aliased)).languageNotSupported ?? [], []);
+    assert.deepEqual(validateDecisionRecords(aliased, loadConfig(aliased)).unexaminedDocuments ?? [], []);
   });
 });
