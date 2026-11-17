@@ -23,3 +23,7 @@
 - [x] T010 `npm test`, the CI lint, `docguard guard`, the benchmark, the two completion test files.
 - [x] T011 Dogfood: close this spec with the one-commit flow, and every other spec whose evidence this change edited with `specs complete --stale`.
 - [x] T012 Scrub check; pull request; CI.
+
+## Phase 4: Issue 684 item 4 (amended 2026-11-17)
+
+- [x] T013 FR-019: measure a `complete` run over 50, 150 and 300 commits and profile it; batch the feature history's parent lookup, index the requirement mentions, list the index once per reconciliation and ask the narrowing check for the range's readability only; prove the dry-run output byte-identical on 14 specs and 3 ranges; `tests/completion-wide-range-cost.test.mjs` pins the git process counts.

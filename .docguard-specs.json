@@ -2380,7 +2380,7 @@
           {
             "requirementId": "FR-021",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1358
+            "line": 1362
           },
           {
             "requirementId": "FR-022",
@@ -3301,7 +3301,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/specs.mjs",
-            "line": 252
+            "line": 253
           },
           {
             "requirementId": "FR-007",
@@ -3560,7 +3560,7 @@
           {
             "requirementId": "FR-003",
             "file": "cli/commands/specs.mjs",
-            "line": 558
+            "line": 559
           },
           {
             "requirementId": "FR-003",
@@ -3802,6 +3802,7 @@
           "docguard.completion-upkeep#FR-016",
           "docguard.completion-upkeep#FR-017",
           "docguard.completion-upkeep#FR-018",
+          "docguard.completion-upkeep#FR-019",
           "docguard.completion-upkeep#SC-001",
           "docguard.completion-upkeep#SC-002",
           "docguard.completion-upkeep#SC-003",
@@ -3812,20 +3813,20 @@
         "artifacts": [
           {
             "path": "specs/103-completion-upkeep/spec.md",
-            "digest": "sha256:5c4132e461e1fb60eebcb1273315f72d81d5e608f69ccd05139c3973980b0668"
+            "digest": "sha256:b3b9f5b6cd2a9a14d9e4eb9f1b0b2a60dee6b69f901763f69eac00bd0dac7694"
           },
           {
             "path": "specs/103-completion-upkeep/plan.md",
-            "digest": "sha256:18fc96ea81f12f3e158f8abcd52d47faaf7712efe6edc8a99b1ee43cd1e3798f"
+            "digest": "sha256:25f8152f636a22948322247325c8629936148e6988e15522ff1837c58a262668"
           },
           {
             "path": "specs/103-completion-upkeep/tasks.md",
-            "digest": "sha256:6b1b898c56db0cb72773c22343a75ac0c1fb77d8b2c00bb7c6f383dbf1ae9054"
+            "digest": "sha256:df2f55e2ee36bdc1bfb084abb1e70f8e70a0fbb88289ef82c1bbf2e4f75ef197"
           }
         ],
         "taskCompletion": {
-          "checked": 12,
-          "total": 12
+          "checked": 13,
+          "total": 13
         },
         "implementationEvidence": [
           {
@@ -3861,7 +3862,7 @@
           {
             "requirementId": "FR-004",
             "file": "cli/commands/specs.mjs",
-            "line": 505
+            "line": 506
           },
           {
             "requirementId": "FR-005",
@@ -3871,12 +3872,12 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 399
+            "line": 400
           },
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 506
+            "line": 507
           },
           {
             "requirementId": "FR-006",
@@ -3886,7 +3887,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/commands/specs.mjs",
-            "line": 507
+            "line": 508
           },
           {
             "requirementId": "FR-007",
@@ -3936,7 +3937,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/specs.mjs",
-            "line": 400
+            "line": 401
           },
           {
             "requirementId": "FR-011",
@@ -4012,6 +4013,16 @@
             "requirementId": "FR-018",
             "file": "cli/scanners/stale-completions.mjs",
             "line": 55
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 189
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "cli/scanners/reconciliation.mjs",
+            "line": 254
           }
         ],
         "testEvidence": [
@@ -4104,6 +4115,11 @@
             "requirementId": "FR-018",
             "file": "tests/completion-upkeep.test.mjs",
             "line": 28
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/completion-wide-range-cost.test.mjs",
+            "line": 13
           },
           {
             "requirementId": "SC-001",
@@ -4418,12 +4434,12 @@
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1332
+            "line": 1336
           },
           {
             "requirementId": "FR-004",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1362
+            "line": 1366
           },
           {
             "requirementId": "FR-005",
@@ -6172,7 +6188,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1360
+            "line": 1364
           },
           {
             "requirementId": "FR-016",
@@ -9090,7 +9106,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/commands/specs.mjs",
-            "line": 676
+            "line": 677
           },
           {
             "requirementId": "FR-006",
@@ -18357,12 +18373,12 @@
           {
             "requirementId": "FR-001",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1359
+            "line": 1363
           },
           {
             "requirementId": "FR-002",
             "file": "cli/scanners/speckit.mjs",
-            "line": 1361
+            "line": 1365
           }
         ],
         "testEvidence": [
