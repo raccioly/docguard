@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-11-17
+
 ### Added
 
 - **Documents in any language: Portuguese and Spanish projects no longer need English headings, and any other language is reported instead of failing (spec 104, `docguard.document-languages`, issue 644).** DocGuard matched every structural label it looks for in English only, so a team that writes its documents in Portuguese got warnings it could not clear, and a strict run exited 4 over a Test-Spec table it could not read. Labels are now matched by id, in this order: a marker, the English label, a built-in alias, your own alias.
@@ -205,6 +207,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Budgets
 
 Budget-Exempt: bytes:llms-full.txt — +42 KB (14.5%) is this release's new documentation: docs/languages.md and the language sections (spec 104, including the reviewed Portuguese and Spanish label tables), the file-kind rule (spec 100), one-commit completion and stale re-close (specs 101, 103) and the anchor-lock merge (spec 102), bundled for agents
+
+### Commits
+
+- fix(docs): Portuguese and Spanish labels reviewed by a native speaker; Spec Kit (obrigatório) headings match (spec 104) (#701)
+- test(docs): fixture projects per language, final English A/B and NFC headings (spec 104 stage 5) (#699)
+- feat(docs): init and generate write language-ready documents; explain names ids and aliases (spec 104 stage 4) (#698)
+- perf(specs): completion over a wide range (batched git reads, indexed mentions) (#697)
+- feat(docs): text metrics skip what they cannot read; language-not-supported in strict (spec 104 stage 3) (#696)
+- fix(aidlc): backtickRefs output stays linear in its input (#693) (#695)
+- feat(docs): changelog, decision records and Spec Kit sections in pt-BR and es (spec 104 stage 2) (#694)
+- feat(docs): required sections in any language; pt-BR and es heading sets (spec 104 stage 1) (#692)
+- fix(sections): a section marker without id= opens no bounded block (spec 104 stage 0) (#691)
+- spec(104): documents in any language (issue 644) (#690)
+- feat(files): mirrors are checked once and drift is reported (spec 100 stage 3) (#687)
+- feat(specs): warn when a closed spec's evidence changes; one command re-closes them (spec 103) (#688)
+- perf(tests): the benchmark suites run the corpus once and leave headroom under the runtime ceiling (#689)
+- perf(guard): ask git once per scan, not per spec; the budget job fits its bound again (#686)
+- feat(files): every validator uses the shared file-kind rule; copies never stand in for or hide this project's files (spec 100 stage 2) (#685)
+- spec(093-095): complete with the one-commit flow (#683)
+- feat(specs): close a spec in one commit; completion records survive squash and rebase (spec 101) (#682)
+- fix(anchors): the lock merges cleanly; duplicates from a union merge are resolved, not refused (spec 102) (#681)
+- feat(files): one rule for copied files; template and fixture instruction copies leave the role (specs 099, 100 stage 1) (#680)
+- spec(098): reanchor completion after squash merge (#679)
+- spec(098): complete test temporary directories (#678)
+- fix(security): "example" exempts a value only as a whole segment (#655) (#676)
+- fix(tests): temporary directories are removed after every run (#662) (#677)
+- chore: TestGuard 0.26.0, config file and plain probe commands (#673)
 
 ## [0.48.0] - 2026-11-13
 
