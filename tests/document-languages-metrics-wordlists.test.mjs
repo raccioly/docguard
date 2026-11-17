@@ -110,6 +110,32 @@ describe('Portuguese "se": a conditional only at the start of a sentence or afte
   it('"se" is not a rule for Spanish: "se" there is not a conditional', () => assert.ok(!es.conditional('Se guarda el archivo en el disco local.')));
 });
 
+describe('a hyphen between letters is part of the word (pt and es)', () => {
+  it('"e-mail" adds no "e" to the compound count', () => {
+    assert.ok(!pt.compound('Envie o e-mail e grave o e-mail no disco.'));
+    assert.ok(!es.compound('Envía el e-mail y guarda el e-mail en el disco.'));
+    assert.ok(pt.compound('Envie o e-mail e grave o arquivo e feche.'), 'a normal "e" still counts, twice here');
+  });
+  it('"requisito não-funcional" is a compound adjective, not a negation; a normal "não" counts', () => {
+    assert.ok(!pt.negation('Este é um requisito não-funcional do sistema.'));
+    assert.ok(!es.negation('Es un requisito no-funcional del sistema.'));
+    assert.ok(pt.negation('O requisito não funcional falha.'));
+    assert.ok(pt.negation('O requisito não é funcional.'));
+  });
+  it('"configura-se" and "dá-se" stay excluded, also after a comma', () => {
+    assert.ok(!pt.conditional('Configura-se o módulo antes do uso.'));
+    assert.ok(!pt.conditional('Aqui, configura-se o módulo.'));
+    assert.ok(!pt.conditional('Quando falha, dá-se o aviso'.replace('Quando', 'Ao')));
+  });
+  it('a pronoun or phrase word inside a hyphenated word does not count', () => {
+    assert.equal(pt.pronounCount('Veja o ex-ele e o pós-isso.'), 0);
+    assert.ok(!pt.conditional('O pré-quando é raro.'));
+  });
+  it('a spaced dash is still a boundary: "não - e" counts', () => {
+    assert.ok(pt.negation('O sistema - não grava.'));
+  });
+});
+
 describe('Portuguese: accents are optional in the text, never invented', () => {
   it('"nao" counts as "não"', () => assert.ok(pt.negation('O sistema nao grava o valor.')));
   it('"ninguem", "ate que", "so se", "alem de", "senao" count', () => {

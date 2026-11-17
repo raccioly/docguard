@@ -218,7 +218,7 @@ Portuguese and Spanish lists were reviewed by a native speaker on 2026-11-17
 A word is matched whole, ignoring case, with accents optional in the text
 (`nao` counts as `não`) but never invented: `é` is not the conjunction `e`,
 `sí` ("yes") is not `si` ("if"), and `él` counts only with its accent because
-`el` is the article. A phrase matches across spaces. The thresholds are the
+`el` is the article. A hyphen between letters belongs to the word, so `e-mail`, `não-funcional` and `configura-se` never match `e`, `não` or `se`. A phrase matches across spaces. The thresholds are the
 English ones: pronouns over 15% of the words, compound sentences over 35% of the
 sentences, negation over 20%, conditionals over 30%. `<!-- docguard:quality
 negation-load off — reason -->` works as in English.

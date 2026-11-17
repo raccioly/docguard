@@ -6100,7 +6100,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:0315d1ab8686c1f340c9e9f87fade2e826d8ccd2fa83071c363000120ebd0cf2"
+            "digest": "sha256:384b495194993c2f158ae20c1225265cfd7f689102c40ed9411d56ace6b9ef1f"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -6149,7 +6149,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/shared-labels.mjs",
-            "line": 163
+            "line": 164
           },
           {
             "requirementId": "FR-006",
@@ -6219,7 +6219,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/shared-labels.mjs",
-            "line": 555
+            "line": 556
           },
           {
             "requirementId": "FR-012",
@@ -6234,7 +6234,7 @@
           {
             "requirementId": "FR-013",
             "file": "cli/shared-labels.mjs",
-            "line": 572
+            "line": 573
           },
           {
             "requirementId": "FR-013",
@@ -6249,7 +6249,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/shared-labels.mjs",
-            "line": 609
+            "line": 610
           },
           {
             "requirementId": "FR-015",
@@ -6264,7 +6264,7 @@
           {
             "requirementId": "FR-017",
             "file": "cli/shared-prose-words.mjs",
-            "line": 33
+            "line": 35
           },
           {
             "requirementId": "FR-017",
@@ -6309,7 +6309,7 @@
           {
             "requirementId": "FR-024",
             "file": "cli/shared-labels.mjs",
-            "line": 661
+            "line": 662
           }
         ],
         "testEvidence": [

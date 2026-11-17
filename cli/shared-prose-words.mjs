@@ -11,7 +11,9 @@
  *
  * Matching rules (see `proseMatchers`):
  *   - a word is whole: not preceded or followed by a Unicode letter, digit or
- *     combining mark (JS `\b` does not work for accented letters);
+ *     combining mark (JS `\b` does not work for accented letters), and a hyphen
+ *     between letters is part of the word (`e-mail`, `não-funcional`,
+ *     `configura-se` never match `e`, `não`, `se`);
  *   - case-insensitive, and accent-optional: a list word written with an accent
  *     also matches the text without it (`nao` matches `não`), but text carrying
  *     an accent must match the list exactly, so `é` is never the conjunction
@@ -62,8 +64,10 @@ export const PROSE_WORDS = Object.freeze({
 // The accent-optional rule, entry by entry: these list words must carry the accent in the text.
 const EXACT_ONLY = new Set(['él']);
 
-const NOT_WORD_BEFORE = '(?<![\\p{L}\\p{N}\\p{M}])';
-const NOT_WORD_AFTER = '(?![\\p{L}\\p{N}\\p{M}])';
+// The one word boundary of every matcher. A hyphen between two letters or digits belongs to the word
+// (`e-mail`, `configura-se`, `não-funcional` are single words), so a list entry never matches a piece of one.
+const NOT_WORD_BEFORE = '(?<![\\p{L}\\p{N}\\p{M}])(?<![\\p{L}\\p{N}\\p{M}]-)';
+const NOT_WORD_AFTER = '(?![\\p{L}\\p{N}\\p{M}])(?!-[\\p{L}\\p{N}])';
 const MARKS = /\p{M}/gu;
 
 function escapeRegex(s) {
