@@ -37,7 +37,7 @@ Spec Kit template.
 
 Every id below is a **heading** (a marker may name it) or a **word** (matched by
 alias only; there is no marker for a status word). The list is closed: an
-unknown id in a marker is [STR009](reference/findings.html), and an unknown id
+unknown id in a marker is [STR009](reference/findings.md), and an unknown id
 in `docs.labelAliases` is reported and ignored. The table is generated from
 `cli/shared-labels.mjs`; `docguard explain STR009` prints the same ids.
 
