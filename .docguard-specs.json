@@ -6047,11 +6047,11 @@
           },
           {
             "path": "specs/104-document-languages/tasks.md",
-            "digest": "sha256:e402d89ca17d7132b5761bd953906508ab08ad389ad3b5883c8beca9342b6b9d"
+            "digest": "sha256:c7f2b897b13fb1bfc80b7ef477fa43e7e8fe07b28c9c4d9cbc1a99beacc7058c"
           }
         ],
         "taskCompletion": {
-          "checked": 37,
+          "checked": 42,
           "total": 43
         },
         "implementationEvidence": [
