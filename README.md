@@ -914,20 +914,28 @@ your-project/
 
 ## 🌐 Writing your docs in another language
 
-DocGuard reads documentation written in any language, but a few labels it looks for are matched in English only. Support for other languages is tracked in [issue #644](https://github.com/raccioly/docguard/issues/644).
+DocGuard reads documentation written in any language. The structural labels it looks for (the required headings of the canonical documents, the changelog's unreleased section, the README sections, the Spec Kit section names and the decision-record status words) are matched by **id**, not by English text, so a Portuguese or Spanish project needs no English headings. Three ways to say which heading is which, in the order DocGuard tries them:
 
-**Works today.** Prose in any language, accents included, and requirement ids such as `FR-001` inside sentences in any language.
+1. **A marker.** Put `<!-- docguard:heading system-overview -->` on the line directly under the heading you already have. It works in every language and needs no configuration. The closed list of ids is in [Documents in other languages](https://raccioly.github.io/docguard/languages.html); `docguard explain STR009` prints it too.
+2. **`docs.language`.** Set a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag in `.docguard.json` and the built-in headings and words for that language are accepted. Portuguese (`pt`, so `pt-BR` and `pt-PT`) and Spanish (`es`) ship in this release. Case, accents and a leading section number are ignored, and English is always accepted, so mixed documents work.
+3. **`docs.labelAliases`.** Your own wording, by id. It adds to the built-in set and never replaces it.
 
-**Must stay in English today.** Write these labels exactly as shown and keep everything else in your language:
+```json
+{
+  "docs": {
+    "language": "pt-BR",
+    "labelAliases": { "success-criteria": ["Feito quando"], "unreleased": ["Em desenvolvimento"] }
+  }
+}
+```
 
-- **Canonical document headings** (case-insensitive; a leading section number is fine): `ARCHITECTURE.md` needs `## System Overview`, `## Component Map` and `## Tech Stack`; `DATA-MODEL.md` needs `## Entities`; `SECURITY.md` needs `## Authentication` and `## Secrets Management`; `TEST-SPEC.md` needs `## Test Categories` and `## Coverage Rules`; `ENVIRONMENT.md` needs `## Environment Variables` and `## Setup Steps`. A project profile can add more required headings.
-- **Spec Kit section names**: a `spec.md` needs a heading containing `User Scenarios`, `Requirements` and `Success Criteria`, plus ids such as `FR-001` and `SC-001`; a `plan.md` needs `Summary`, `Technical Context` and `Project Structure`; a `tasks.md` needs a `Phase 1` style heading and ids such as `T001`.
-- **Changelog marker**: `CHANGELOG.md` must contain `[Unreleased]`.
-- **Decision-record status**: the first word of `**Status:**` must be `Proposed`, `Accepted`, `Rejected`, `Deprecated` or `Superseded` (also accepted: `Approved`, `Draft`, `Proposal`, `Obsolete`, `Replaced`).
+**A language with no built-in set** (`"de"`, for example) is accepted too: a required heading that has no marker and no alias is not reported as missing, because DocGuard cannot tell a missing section from one written in German. The document appears under "DocGuard could not read" with the cause `language-not-supported` and what to add; the exit code does not change. A document named `<name>.<lang>.md`, or under `i18n/<lang>/` or `locales/<lang>/`, is read in that language when `docs.language` is set; the language is never guessed from the text.
 
-A required section that does not apply to your project can be marked with `<!-- docguard:section <slug> n/a — reason -->`, where `<slug>` is the English heading in lowercase with hyphens (for example `system-overview`). The reason must begin with a letter or digit from `A-Z`, `a-z` or `0-9`.
+**Text-quality numbers.** Passive voice, Flesch readability and the metrics that rely on English word lists are skipped for every language but English, and each skip is reported with its reason instead of producing a number. Sentence length still runs.
 
-**Ignore the text-quality numbers.** Passive voice, negation, conditional load and the similar metrics rely on English word lists, so for documents in another language their numbers carry no meaning until DocGuard can say so itself.
+**New documents.** `docguard init` and `docguard generate` write the marker under each required heading they generate, and, with `docs.language` set to `pt` or `es`, write the heading in that language (the changelog as `## [Não lançado]` or `## [Sin publicar]`). They never rewrite a document that already exists.
+
+A required section that does not apply to your project can be marked with `<!-- docguard:section <slug> n/a — reason -->`, where `<slug>` is the section's id (for example `system-overview`). The reason must begin with a letter or digit from `A-Z`, `a-z` or `0-9`. Full guide: [Documents in other languages](https://raccioly.github.io/docguard/languages.html).
 
 ---
 

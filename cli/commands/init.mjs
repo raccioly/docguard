@@ -26,6 +26,8 @@ import { ensureSkills, detectAgentMode } from '../ensure-skills.mjs';
 import { delegateSpecKitInit, MIN_SPEC_KIT_VERSION } from '../spec-kit-delegation.mjs';
 import { readAgentSurface, readIntegrationLayout, readExtensionCommands, agentCommand, commandHint } from '../agent-surface.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
+import { labelContext } from '../shared-labels.mjs';
+import { languageReadyScaffold } from '../shared-scaffold.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
@@ -643,6 +645,11 @@ export async function runInit(projectDir, configArg, flags) {
     ...alwaysCreate,
   ];
 
+  // spec 104 D7: a new document is written language-ready (marker under each
+  // registered heading, the language's first alias when it has a built-in set).
+  // An existing document is skipped below and never rewritten.
+  const labels = labelContext(config);
+
   for (const mapping of fileMappings) {
     const destPath = resolve(projectDir, mapping.dest);
     const templatePath = resolve(TEMPLATES_DIR, mapping.template);
@@ -670,7 +677,7 @@ export async function runInit(projectDir, configArg, flags) {
       if (mapping.dest.startsWith('docs-canonical/') && !/docguard:last-reviewed/.test(processed)) {
         processed = stampLastReviewed(processed, today);
       }
-      writeFileSync(destPath, processed, 'utf-8');
+      writeFileSync(destPath, languageReadyScaffold(mapping.dest, processed, labels), 'utf-8');
       created.push(mapping.dest);
       console.log(`  ${c.green}✅${c.reset} Created: ${c.cyan}${mapping.dest}${c.reset}`);
     } else {

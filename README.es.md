@@ -86,20 +86,28 @@ Guía completa: [docs/ai-integration.md](docs/ai-integration.md) (en inglés).
 
 ## Documentación en otro idioma
 
-DocGuard lee documentación escrita en cualquier idioma, pero algunas etiquetas que busca solo se reconocen en inglés. El soporte para otros idiomas se sigue en la [issue #644](https://github.com/raccioly/docguard/issues/644).
+DocGuard lee documentación escrita en cualquier idioma. Las etiquetas estructurales que busca (los títulos obligatorios de los documentos canónicos, la sección de sin publicar del changelog, las secciones del README, los nombres de las secciones de Spec Kit y las palabras de estado de los registros de decisión) se reconocen por **id**, no por el texto en inglés; por eso un proyecto en español o portugués no necesita títulos en inglés. Hay tres formas de indicar qué título es cuál, en el orden en que DocGuard las prueba:
 
-**Funciona hoy.** Texto en cualquier idioma, con tildes y acentos, e ids de requisito como `FR-001` dentro de frases en cualquier idioma.
+1. **Un marcador.** Escribe `<!-- docguard:heading system-overview -->` en la línea justo debajo del título que ya tienes. Funciona en cualquier idioma y no requiere configuración. La lista cerrada de ids está en [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (en inglés); `docguard explain STR009` también la muestra.
+2. **`docs.language`.** Define una etiqueta [BCP 47](https://www.rfc-editor.org/info/bcp47) en `.docguard.json` y se aceptan los títulos y palabras integrados de ese idioma. Portugués (`pt`, es decir `pt-BR` y `pt-PT`) y español (`es`) vienen en esta versión. Se ignoran las mayúsculas, las tildes y la numeración de sección al principio, y el inglés siempre se acepta, así que los documentos mixtos funcionan.
+3. **`docs.labelAliases`.** Tu propia redacción, por id. Se suma al conjunto integrado y nunca lo reemplaza.
 
-**Por ahora debe quedar en inglés.** Escribe estas etiquetas exactamente como aparecen y deja todo lo demás en tu idioma:
+```json
+{
+  "docs": {
+    "language": "es",
+    "labelAliases": { "success-criteria": ["Hecho cuando"], "unreleased": ["En desarrollo"] }
+  }
+}
+```
 
-- **Títulos de los documentos canónicos** (sin distinguir mayúsculas de minúsculas; se acepta una numeración de sección al principio): `ARCHITECTURE.md` exige `## System Overview`, `## Component Map` y `## Tech Stack`; `DATA-MODEL.md` exige `## Entities`; `SECURITY.md` exige `## Authentication` y `## Secrets Management`; `TEST-SPEC.md` exige `## Test Categories` y `## Coverage Rules`; `ENVIRONMENT.md` exige `## Environment Variables` y `## Setup Steps`. Un perfil de proyecto puede añadir más títulos obligatorios.
-- **Nombres de las secciones de Spec Kit**: el `spec.md` necesita títulos que contengan `User Scenarios`, `Requirements` y `Success Criteria`, además de ids como `FR-001` y `SC-001`; el `plan.md` necesita `Summary`, `Technical Context` y `Project Structure`; el `tasks.md` necesita un título del estilo `Phase 1` e ids como `T001`.
-- **Marcador del changelog**: el `CHANGELOG.md` debe contener `[Unreleased]`.
-- **Estado del registro de decisión**: la primera palabra de `**Status:**` debe ser `Proposed`, `Accepted`, `Rejected`, `Deprecated` o `Superseded` (también valen `Approved`, `Draft`, `Proposal`, `Obsolete` y `Replaced`).
+**Un idioma sin conjunto integrado** (`"de"`, por ejemplo) también se acepta: un título obligatorio sin marcador y sin alias no se señala como ausente, porque DocGuard no puede distinguir una sección ausente de una escrita en alemán. El documento aparece en "DocGuard could not read" con la causa `language-not-supported` y lo que hay que añadir; el código de salida no cambia. Un documento llamado `<nombre>.<idioma>.md`, o dentro de `i18n/<idioma>/` o `locales/<idioma>/`, se lee en ese idioma cuando `docs.language` está definido; el idioma nunca se deduce del texto.
 
-Una sección obligatoria que no aplica a tu proyecto puede marcarse con `<!-- docguard:section <slug> n/a — motivo -->`, donde `<slug>` es el título en inglés, en minúsculas y con guiones (por ejemplo `system-overview`). El motivo debe empezar con una letra o un dígito de `A-Z`, `a-z` o `0-9`.
+**Números de calidad del texto.** La voz pasiva, la legibilidad de Flesch y las métricas que usan listas de palabras en inglés se omiten en todos los idiomas salvo el inglés, y cada omisión se informa con su motivo en lugar de producir un número. La longitud de las frases se sigue midiendo.
 
-**Ignora los números de calidad del texto.** La voz pasiva, la negación, la carga condicional y el resto de métricas parecidas usan listas de palabras en inglés; en documentos de otro idioma sus valores no significan nada hasta que DocGuard pueda avisarlo por sí mismo.
+**Documentos nuevos.** `docguard init` y `docguard generate` escriben el marcador bajo cada título obligatorio que generan y, con `docs.language` en `pt` o `es`, escriben el título en ese idioma (el changelog como `## [Não lançado]` o `## [Sin publicar]`). Nunca reescriben un documento que ya existe.
+
+Una sección obligatoria que no aplica a tu proyecto puede marcarse con `<!-- docguard:section <slug> n/a — motivo -->`, donde `<slug>` es el id de la sección (por ejemplo `system-overview`). El motivo debe empezar con una letra o un dígito de `A-Z`, `a-z` o `0-9`. Guía completa: [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (en inglés).
 
 ## Documentación
 

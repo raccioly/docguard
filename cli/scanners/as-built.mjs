@@ -30,6 +30,7 @@ import { scanRoutesDeep } from './routes.mjs';
 import { scanSchemasDeep } from './schemas.mjs';
 import { exportedNames, astTierAvailable } from './js-ast.mjs';
 import { isTestSource } from './requirement-evidence.mjs';
+import { firstAlias, headingMarkerLine } from '../shared-labels.mjs';
 
 const JS_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts']);
 export const FACT_MARKER_RE = /<!--\s*docguard:fact\s+(route|export|env|entity)\s+(.+?)\s*-->/g;
@@ -218,8 +219,13 @@ const FACT_NOUN = {
  * reports no drift for the spec, and (when tests exist) those tests pass —
  * so the skeleton passes SPK003 (docguard.generated-docs-consistency#FR-004).
  * @implements docguard.generated-docs-consistency#FR-004
+ * @implements docguard.document-languages#FR-023
  */
-export function renderAsBuiltSpec({ title, specId, areaRel, facts, tests, dirName, date }) {
+export function renderAsBuiltSpec({ title, specId, areaRel, facts, tests, dirName, date, labels = null }) {
+  // The three mandatory headings, language-ready (spec 104 D5, D7): a language
+  // with a built-in set gets the first alias, every other project the Spec Kit
+  // heading, each followed by its id marker.
+  const heading = (id, english) => `## ${firstAlias(id, labels) ?? english}\n${headingMarkerLine(id)}`;
   const cite = f => (f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '');
   const candidates = facts.map((f, i) =>
     `- **FR-${String(i + 1).padStart(3, '0')}**: <!-- agent: state the observable behaviour of ${FACT_NOUN[f.kind](f)} as the code implements it today -->${cite(f)}\n  <!-- docguard:fact ${f.kind} ${f.key} -->`);
@@ -241,11 +247,11 @@ export function renderAsBuiltSpec({ title, specId, areaRel, facts, tests, dirNam
 
 <!-- agent: what this area does, for whom, and why a specification is needed now (refactor, migration, onboarding). Ground every sentence in the code under ${areaRel}. -->
 
-## User Scenarios & Testing *(mandatory)*
+${heading('user-scenarios', 'User Scenarios & Testing *(mandatory)*')}
 
 <!-- agent: the user-visible journeys this area supports today, each with Given/When/Then acceptance scenarios taken from observed behaviour. -->
 
-## Requirements *(mandatory)*
+${heading('requirements', 'Requirements *(mandatory)*')}
 
 ### Functional Requirements
 
@@ -257,7 +263,7 @@ ${candidates.join('\n') || '<!-- no deterministic facts were found; describe beh
 
 ${tests.length ? tests.map(t => `- \`${t}\``).join('\n') : '- none found under this area'}
 
-## Success Criteria *(mandatory)*
+${heading('success-criteria', 'Success Criteria *(mandatory)*')}
 
 - **SC-001**: \`docguard guard\` reports no SPR007 finding for this spec: every fact marked above still exists under \`${areaRel}\`, or is listed under Out of Scope with a reason.
 ${tests.length ? `- **SC-002**: The existing tests listed above pass.\n` : ''}

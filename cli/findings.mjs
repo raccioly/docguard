@@ -79,7 +79,12 @@
 import { readFileSync } from 'node:fs';
 import { evidenceForCode, PRECISION_EVIDENCE } from './precision-evidence.mjs';
 import { isExpired, splitWaiverMetadata } from './waiver-metadata.mjs';
-import { headingIds } from './shared-labels.mjs';
+import { labelHelp, labelIdLists } from './shared-labels.mjs';
+import { CANONICAL_SECTIONS } from './authoring-contract.mjs';
+
+// Generated from the registries, so the finding help cannot drift from what the validators accept (spec 104 FR-024).
+const STR003_IDS = Object.values(CANONICAL_SECTIONS).flat().filter(section => section.required).map(section => section.id);
+const LABEL_IDS = labelIdLists();
 
 /**
  * Stable finding-code registry. `docguard explain <CODE>` reads this, and
@@ -157,7 +162,7 @@ export const CODES = {
   STR003: {
     validator: 'docSections',
     title: 'Missing required doc section',
-    help: 'A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`. A document in another language is read by id: set `docs.language` (a BCP 47 tag; `pt` and `es` ship heading sets, `docs.labelAliases` adds your own wording), or put `<!-- docguard:heading <id> -->` on the line under the heading (spec 104; `docguard explain STR009` lists the ids).',
+    help: 'A canonical doc exists but lacks a section its document type requires. The doc is read where its role resolves: a `docs.roles` mapping, the `docs-canonical/` default, or the one same-named entry of `requiredFiles.canonical` (spec 093). Add the section — or, if it is genuinely not applicable, own the absence with an inline marker: `<!-- docguard:section <slug> n/a — reason -->`. A document in another language is read by id: set `docs.language` (a BCP 47 tag; `pt` and `es` ship heading sets, `docs.labelAliases` adds your own wording), or put `<!-- docguard:heading <id> -->` on the line under the heading (spec 104; `docguard explain STR009` lists the ids).' + labelHelp(STR003_IDS),
     suppress: '<!-- docguard:section <slug> n/a — reason -->',
   },
   STR004: {
@@ -195,13 +200,13 @@ export const CODES = {
   STR009: {
     validator: 'docSections',
     title: 'Heading marker that cannot work as written',
-    help: 'A `<!-- docguard:heading <id> -->` comment on the line under a heading is the language-neutral way to say which required section that heading is, whatever language it is written in (spec 104; `docs.language` in `.docguard.json` also selects built-in Portuguese and Spanish headings, and `docs.labelAliases` adds your own). This finding means a marker cannot do that: its id is not one of the closed list (`' + headingIds().join(', ') + '`), a second heading carries the same id (the first counts), its heading is the English label of a different id (the marker wins, so the other id stays unsatisfied), or it is not on the next non-blank line under a heading (after prose, inside a code fence, inside a larger comment) although it names a valid id. Fix the id, or move the marker directly under its heading. A marker in a project with no `docs.language` still satisfies its id. Advisory (a warning).',
+    help: 'A `<!-- docguard:heading <id> -->` comment on the line under a heading is the language-neutral way to say which required section that heading is, whatever language it is written in (spec 104; `docs.language` in `.docguard.json` also selects built-in Portuguese and Spanish headings, and `docs.labelAliases` adds your own). This finding means a marker cannot do that: its id is not one of the closed list. Heading ids (a marker may name these): `' + LABEL_IDS.headings.join(', ') + '`. Word ids (docs.labelAliases only, no marker): `' + LABEL_IDS.words.join(', ') + '`, a second heading carries the same id (the first counts), its heading is the English label of a different id (the marker wins, so the other id stays unsatisfied), or it is not on the next non-blank line under a heading (after prose, inside a code fence, inside a larger comment) although it names a valid id. Fix the id, or move the marker directly under its heading. A marker in a project with no `docs.language` still satisfies its id. Advisory (a warning).',
     suppress: null,
   },
   CHG001: {
     validator: 'changelog',
     title: 'Missing [Unreleased] section',
-    help: 'Keep a Changelog format expects an [Unreleased] section where in-progress work accumulates before each release. `docguard fix --write` inserts one.',
+    help: 'Keep a Changelog format expects an [Unreleased] section where in-progress work accumulates before each release. `docguard fix --write` inserts one (in the language of docs.language, with its marker).' + labelHelp(['unreleased']),
     suppress: null,
   },
   CHG002: {
@@ -351,7 +356,7 @@ export const CODES = {
   DCV005: {
     validator: 'docsCoverage',
     title: 'README missing a standard section',
-    help: 'README.md lacks a section every well-documented project needs — Installation, Usage, or License (Standard README spec). Add the missing section. In another language, `docs.language` (`pt` and `es` ship the headings), `docs.labelAliases` or `<!-- docguard:heading installation -->` (or `usage`, `license`) under the heading satisfies it.',
+    help: 'README.md lacks a section every well-documented project needs — Installation, Usage, or License (Standard README spec). Add the missing section. In another language, `docs.language` (`pt` and `es` ship the headings), `docs.labelAliases` or `<!-- docguard:heading installation -->` (or `usage`, `license`) under the heading satisfies it.' + labelHelp(['installation', 'usage', 'license']),
     suppress: null,
   },
   DCV006: {
@@ -573,19 +578,19 @@ export const CODES = {
   SPK003: {
     validator: 'specKit',
     title: 'spec.md quality issue',
-    help: 'A spec.md is missing a mandatory template element: a required section (User Scenarios, Requirements, Success Criteria), FR-/REQ- requirement IDs, or SC- success-criteria IDs. A defect spec can opt into the narrower bugfix shape (Root Cause + Fix required instead) with the inline marker.',
+    help: 'A spec.md is missing a mandatory template element: a required section (User Scenarios, Requirements, Success Criteria), FR-/REQ- requirement IDs, or SC- success-criteria IDs. A defect spec can opt into the narrower bugfix shape (Root Cause + Fix required instead) with the inline marker.' + labelHelp(['user-scenarios', 'requirements', 'success-criteria', 'root-cause', 'fix']),
     suppress: '<!-- docguard:spec-type bugfix -->',
   },
   SPK004: {
     validator: 'specKit',
     title: 'plan.md quality issue',
-    help: 'A plan.md is missing a mandatory section (Summary, Technical Context, or Project Structure) per spec-kit plan-template.md. Add the section.',
+    help: 'A plan.md is missing a mandatory section (Summary, Technical Context, or Project Structure) per spec-kit plan-template.md. Add the section.' + labelHelp(['summary', 'technical-context', 'project-structure']),
     suppress: null,
   },
   SPK005: {
     validator: 'specKit',
     title: 'tasks.md quality issue',
-    help: 'A tasks.md lacks a phased breakdown ("Phase 1:", "Phase 2:", …) or task IDs (T001, T002, …) per spec-kit tasks-template.md.',
+    help: 'A tasks.md lacks a phased breakdown ("Phase 1:", "Phase 2:", …) or task IDs (T001, T002, …) per spec-kit tasks-template.md. A translated phase word counts (`Fase 1`).' + labelHelp(['phase']),
     suppress: null,
   },
   SPK006: {
@@ -633,7 +638,7 @@ export const CODES = {
   MEM001: { validator: 'aidlc', title: 'Learned rule names something gone', help: 'A rule in an AI-DLC memory layer (memory/org.md, team.md, project.md or phases/*.md) names, in backticks, a path that no longer exists or an environment variable no code or env example uses. The rule keeps steering every later stage. Update or retire it through AI-DLC; DocGuard never edits memory layers. Withheld while an observation gap stands. Informational by default.', suppress: null, defaultLevel: 'info' },
   MEM002: { validator: 'aidlc', title: 'CodeKB names a path that is gone', help: 'A file in an AI-DLC CodeKB (codekb/<repo>/*.md) names, in backticks, a path that no longer exists, so agents load a stale map of the code. Rerun AI-DLC reverse engineering for that repository. Informational by default.', suppress: null, defaultLevel: 'info' },
   // docguard.decision-records — advisory by default (docguard.enforcement-ladder).
-  DEC001: { validator: 'decisionRecords', title: 'ADR status missing or unknown', help: 'An ADR has no status line, or one that is not proposed, accepted, rejected, deprecated or superseded (Approved, Draft, Proposal, Obsolete and Replaced are read as synonyms). Without a known status nobody can tell whether the decision is in force. Informational by default.', suppress: null, defaultLevel: 'info' },
+  DEC001: { validator: 'decisionRecords', title: 'ADR status missing or unknown', help: 'An ADR has no status line, or one that is not proposed, accepted, rejected, deprecated or superseded (Approved, Draft, Proposal, Obsolete and Replaced are read as synonyms). Without a known status nobody can tell whether the decision is in force. Informational by default.' + labelHelp(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded']), suppress: null, defaultLevel: 'info' },
   DEC002: { validator: 'decisionRecords', title: 'Decision link names no record', help: 'A Supersedes / Superseded-by link, or an index row, names an ADR number that no decision record defines. Fix the number or write the record. Withheld while an observation gap stands (spec 081). Informational by default.', suppress: null, defaultLevel: 'info' },
   DEC003: { validator: 'decisionRecords', title: 'One-way supersession', help: 'One ADR says it supersedes (or is superseded by) another, and the other does not say the reverse, so a reader of the older record follows a decision that is no longer in force. Make both records name each other and set the older one to superseded. Informational by default.', suppress: null, defaultLevel: 'info' },
   DEC004: { validator: 'decisionRecords', title: 'Superseded status and successor disagree', help: 'An ADR is superseded but names no successor, or names a successor while its status is still something else. Add the link or correct the status. Informational by default.', suppress: null, defaultLevel: 'info' },

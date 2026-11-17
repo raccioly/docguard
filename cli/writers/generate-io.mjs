@@ -11,22 +11,34 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from
 import { resolve, dirname, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectSections } from './sections.mjs';
+import { labelContext } from '../shared-labels.mjs';
+import { languageReadyScaffold } from '../shared-scaffold.mjs';
 
 const TEMPLATES_DIR = fileURLToPath(new URL('../../templates/', import.meta.url));
 const GENERATED_MARKER_RE = /^[ \t]*<!--\s*docguard:generated\s+true\s*-->[ \t]*$/m;
 
 /**
  * True for a document DocGuard wrote and nobody has edited: one marked
- * `docguard:generated true`, or an init template still byte-identical to its
- * template apart from the dates init stamps. A person's document is never
- * DocGuard's, so its overwrite keeps a backup.
+ * `docguard:generated true`, or an init template still byte-identical to what
+ * `init` writes from it, apart from the dates init stamps: the template, with
+ * its `docguard:heading` markers and, for `pt` and `es`, its headings in that
+ * language (spec 104 FR-023). A hand-translated copy is a person's document,
+ * and a person's document is never DocGuard's, so its overwrite keeps a backup.
+ * @implements docguard.document-languages#FR-023
  */
 export function isDocguardAuthored(docPath, content) {
   if (GENERATED_MARKER_RE.test(content)) return true;
   const template = join(TEMPLATES_DIR, `${basename(docPath)}.template`);
   if (!existsSync(template)) return false;
   const norm = (text) => String(text).replace(/\r\n/g, '\n').replace(/\b\d{4}-\d{2}-\d{2}\b|YYYY-MM-DD/g, '<date>');
-  try { return norm(readFileSync(template, 'utf-8')) === norm(content); } catch { return false; }
+  try {
+    const raw = readFileSync(template, 'utf-8');
+    // What `init` can have written: the template, with its markers in English (also
+    // the output for a language with no built-in set), and in each built-in language.
+    // An exact match with one of these, nothing a person could have changed.
+    const written = new Set([raw, ...[null, 'pt', 'es'].map(language => languageReadyScaffold(basename(docPath), raw, language && labelContext({ docs: { language } })))].map(norm));
+    return written.has(norm(content));
+  } catch { return false; }
 }
 
 /**

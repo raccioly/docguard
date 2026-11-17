@@ -25,6 +25,8 @@ import { c } from '../shared.mjs';
 import { generateERDiagram } from '../scanners/schemas.mjs';
 import { safeWrite, appendStandardsCitation } from './generate-io.mjs';
 import { assertMappedFullDocumentWrites, docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
+import { labelContext } from '../shared-labels.mjs';
+import { languageReadyScaffold } from '../shared-scaffold.mjs';
 
 // ── Document Generators ────────────────────────────────────────────────────
 
@@ -229,7 +231,7 @@ See \`DRIFT-LOG.md\` for documented deviations from canonical specs.
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (arc42 + C4 aligned) |
 `;
 
-  safeWrite(path, appendStandardsCitation(content, 'ARCHITECTURE.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(languageReadyScaffold('ARCHITECTURE', content, labelContext(config)), 'ARCHITECTURE.md'), 'utf-8');
   console.log(`  ${c.green}✅ ARCHITECTURE.md${c.reset} (arc42 §1-§12, ${componentRows.length} components, ${Object.values(stack).filter(Boolean).length} tech)`);
   return true;
 }
@@ -487,7 +489,7 @@ ${erDiagram}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${entities.length} entities, ${relationships.length} relationships from ${schemaSource}) |
 `;
 
-  safeWrite(path, appendStandardsCitation(content, 'DATA-MODEL.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(languageReadyScaffold('DATA-MODEL', content, labelContext(config)), 'DATA-MODEL.md'), 'utf-8');
   console.log(`  ${c.green}✅ DATA-MODEL.md${c.reset} (${entities.length} entities, ${relationships.length} relationships from ${schemaSource})`);
   return true;
 }
@@ -559,7 +561,7 @@ ${envVarRows || '| <!-- No environment variables detected --> | | | | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.envVars.length} env vars found) |
 `;
 
-  safeWrite(path, appendStandardsCitation(content, 'ENVIRONMENT.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(languageReadyScaffold('ENVIRONMENT', content, labelContext(config)), 'ENVIRONMENT.md'), 'utf-8');
   console.log(`  ${c.green}✅ ENVIRONMENT.md${c.reset} (${scan.envVars.length} env vars detected)`);
   return true;
 }
@@ -649,7 +651,7 @@ ${serviceRows || '| <!-- No services found --> | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated (${scan.tests.length} test files, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} mapped) |
 `;
 
-  safeWrite(path, appendStandardsCitation(content, 'TEST-SPEC.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(languageReadyScaffold('TEST-SPEC', content, labelContext(config)), 'TEST-SPEC.md'), 'utf-8');
   console.log(`  ${c.green}✅ TEST-SPEC.md${c.reset} (${scan.tests.length} tests, ${serviceMap.filter(s => s.status === '✅').length}/${serviceMap.length} services mapped)`);
   return true;
 }
@@ -724,7 +726,7 @@ ${secretRows || '| <!-- TBD --> | | | |'}
 | 0.1.0 | ${new Date().toISOString().split('T')[0]} | DocGuard Generate | Auto-generated |
 `;
 
-  safeWrite(path, appendStandardsCitation(content, 'SECURITY.md'), 'utf-8');
+  safeWrite(path, appendStandardsCitation(languageReadyScaffold('SECURITY', content, labelContext(config)), 'SECURITY.md'), 'utf-8');
   const authLabel = auth.length ? auth.map(a => `${a.name} (${a.evidence.join(', ')})`).join(', ') : stack.auth;
   console.log(`  ${c.green}✅ SECURITY.md${c.reset} (auth: ${authLabel || 'not detected'})`);
   return true;
@@ -861,7 +863,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - CDD documentation via DocGuard generate
 `;
-    safeWrite(changelogPath, content);
+    safeWrite(changelogPath, languageReadyScaffold('CHANGELOG', content, labelContext(config)));
     console.log(`  ${c.green}✅ CHANGELOG.md${c.reset}`);
     created++;
   } else {

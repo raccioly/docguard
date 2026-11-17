@@ -118,7 +118,7 @@ describe('FR-002: diff reads entity tables', () => {
 describe('FR-003: generated docs carry the required headings', () => {
   it('upsertSection writes a heading above a new section', () => {
     const out = upsertSection('# Env\n', 'env-vars', '| a |', { heading: 'Environment Variables' }).content;
-    assert.match(out, /^## Environment Variables\n\n<!-- docguard:section id=env-vars source=code -->/m);
+    assert.match(out, /^## Environment Variables\n<!-- docguard:heading environment-variables -->\n\n<!-- docguard:section id=env-vars source=code -->/m);
   });
 
   it('an existing heading hosts the section instead of a second heading', () => {

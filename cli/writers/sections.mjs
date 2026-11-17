@@ -173,7 +173,8 @@ export function replaceSection(content, id, newBody) {
  * (docguard.generated-docs-consistency#FR-003).
  *
  * `labels` is the project's `labelContext(config)` (spec 104 D7, FR-008). An
- * English project (null, or `en`) gets the English heading exactly as before.
+ * English project (null, or `en`) gets the English heading, followed by its id
+ * marker when the heading is one the registry knows (FR-023).
  * For a language with a built-in set the new heading is the first alias plus
  * `<!-- docguard:heading <id> -->`; an English heading is never written into a
  * translated document. When the language has no set, or the heading has no alias
@@ -206,7 +207,10 @@ export function upsertSection(content, id, newBody, { source = 'code', position 
       return { content: [...before, '', block, '', ...after].join('\n'), action: 'inserted' };
     }
     if (!labels || labels.language === 'en') {
-      block = `## ${heading}\n\n${block}`;
+      // The marker makes the new heading language-ready (spec 104 FR-023); a
+      // heading outside the registry has no id and so no marker.
+      const headingId = idForEnglishLabel(heading);
+      block = `## ${heading}\n${headingId ? `<!-- docguard:heading ${headingId} -->\n` : ''}\n${block}`;
     } else {
       const headingId = idForEnglishLabel(heading);
       const alias = headingId ? firstAlias(headingId, labels) : null;
