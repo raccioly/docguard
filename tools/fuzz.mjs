@@ -38,6 +38,8 @@ import { parseDocguardIgnore } from '../cli/shared-ignore.mjs';
 import { docHasSection, findSectionHeading, headingsForId } from '../cli/shared.mjs';
 import { hasPhaseWord, headingLabelVia, headingMarkerIssues, labelContext, scanHeadingMarkers, statusIdFor, unreleasedState } from '../cli/shared-labels.mjs';
 import { hasPlaceholderSlot } from '../cli/shared-requirement-ids.mjs';
+import { checkableLines, parseGlossary, termMatcher } from '../cli/shared-glossary.mjs';
+import { numberedSteps, proseSentences } from '../cli/shared-sentences.mjs';
 
 /** mulberry32: a small, fast, well-distributed 32-bit generator. */
 export function rng(seed) {
@@ -150,6 +152,8 @@ const plain = v => {
   }
 };
 
+const FUZZ_GLOSSARY = termMatcher(parseGlossary('| Use | Avoid |\n|---|---|\n| configuration | config, conf |\n| Spec Kit | spec kit |\n| specification | spec, specs |\n| pull request | PR |\n| não | nao |\n'));
+
 /** Every target: a name, the call, and any extra property it must hold. */
 export const TARGETS = [
   { name: 'definedIds', run: t => definedIds(t), check: ARRAY },
@@ -180,6 +184,13 @@ export const TARGETS = [
   { name: 'scanHeadingMarkers', run: t => scanHeadingMarkers(t) },
   { name: 'headingMarkerIssues', run: t => headingMarkerIssues(t), check: ARRAY },
   { name: 'docHasSection (pt)', run: t => [docHasSection(t, '## System Overview', labelContext({ docs: { language: 'pt-BR' } })), findSectionHeading(t, '## Tech Stack', labelContext({ docs: { language: 'de' } })), headingsForId(t, 'source-to-test-map', labelContext({ docs: { language: 'es' } }))], check: ARRAY },
+  // spec 105: the glossary table reader, the exempt-region masker and the line-aware sentence reader.
+  { name: 'parseGlossary', run: t => { const g = parseGlossary(t); return { found: g.found, rows: g.rows, issues: g.issues }; } },
+  { name: 'checkableLines (pt)', run: t => [checkableLines(t), checkableLines(t, labelContext({ docs: { language: 'pt-BR' } }))], check: ARRAY },
+  // A fixed glossary against fuzzed lines, and the fuzzed text as its own glossary.
+  { name: 'termMatcher', run: t => [FUZZ_GLOSSARY, termMatcher(parseGlossary(t))].flatMap(m => t.split(/\r?\n/).slice(0, 40).map(line => m.hits(line.slice(0, 2000)))), check: ARRAY },
+  { name: 'proseSentences', run: t => [proseSentences(t), proseSentences(t, { unicode: true })], check: ARRAY },
+  { name: 'numberedSteps', run: t => numberedSteps(t), check: ARRAY },
 ];
 
 /** Time allowed for one call: generous, but linear in the input. */

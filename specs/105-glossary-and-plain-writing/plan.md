@@ -29,6 +29,19 @@ Two independent pieces in one pull request.
 - **Code this builds on**: `listCanonicalDocs`, `walkFiles` (`cli/shared-ignore.mjs`); `resolveDocDirs` (`cli/shared.mjs`); `documentLanguage`, `nonEnglishDocument` (`cli/shared-doc-language.mjs`); `idForEnglishLabel`, `foldHeading`, `aliasesFor`, `headingIds`, `separatesWords`, `LANGUAGE_NOT_SUPPORTED` (`cli/shared-labels.mjs`); `agentInstructionKind` (`cli/shared-agent-instructions.mjs`); the file-kind classifier (`cli/shared-file-kind.mjs`, spec 100); `suppressesCode` (`cli/findings.mjs`); `contractFields` (`cli/shared-result-contract.mjs`); `safeWrite` (`cli/writers/generate-io.mjs`); the word-boundary rules of `cli/shared-prose-words.mjs`.
 - **Constraints**: DQ001 to DQ008 byte-identical (`extractProse` and `splitSentences` unchanged); no `empty` Glossary result when it applies; one finding per document (and term); bounded time on adversarial input; Constitution IV (shared modules are leaves; validators never import commands).
 
+## Project Structure
+
+```text
+cli/shared-glossary.mjs          # glossary path, table reader, matcher, document set, starter (new)
+cli/shared-sentences.mjs         # line-aware sentence and numbered-step reader (new)
+cli/validators/glossary.mjs      # Glossary validator, GLS001-GLS004 (new)
+cli/validators/doc-quality.mjs   # DQ009, DQ010
+cli/commands/{guard,init,fix}.mjs
+cli/{findings,config,strict-additions}.mjs, schemas/docguard-config.schema.json
+tests/glossary-*.test.mjs, tests/doc-quality-plain-writing.test.mjs
+tools/fuzz.mjs
+```
+
 ## Design details
 
 ### Glossary table reader (`parseGlossary`)

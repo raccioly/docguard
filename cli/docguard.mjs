@@ -209,7 +209,7 @@ const COMMAND_HELP = {
     flags: [
       ['--skeleton', 'Blank templates instead of the smart scan-and-propose'],
       ['--wizard', 'Guided interactive onboarding'],
-      ['--with <name>', 'Add a scaffolder: agents, hooks, ci, badge, llms, publish'],
+      ['--with <name>', 'Add a scaffolder: agents, hooks, ci, badge, llms, publish, glossary'],
       ['--profile <p>', 'starter | standard | cli | library | enterprise (default: standard)'],
       ['--enforcement <m>', 'strict | standard: write the mode into .docguard.json (default: no key, which is strict)'],
       ['--skip-prompts', 'Non-interactive; create the profile defaults (CI)'],

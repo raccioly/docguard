@@ -86,7 +86,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs · ignore<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (36)"]
+    guard --> Validators["Validators (37)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -333,7 +333,7 @@ DocGuard ships **28 commands**: the "Daily 5" and 23 situational tools. The tool
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Set up a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Check against canonical docs — 36 validators |
+| `guard` | Check against canonical docs — 37 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh the doc sections that come from code, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code. This keeps memory up to date |
 | `score` | CDD maturity score for the doc structure (0-100; not a guard verdict; `--diff` shows the change between refs; `--dora` shows DORA documentation-quality and AI-capability evidence) |
@@ -481,7 +481,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **36 automated validators** on every `guard` run. Validators that read source code know the language where their evidence model applies. Validators for the repository and for documents work with any source language.
+DocGuard runs **37 automated validators** on every `guard` run. Validators that read source code know the language where their evidence model applies. Validators for the repository and for documents work with any source language.
 
 > **Counting note:** `guard` prints one row for each check. `Structure` produces a second
 > check (`Doc Sections`) under the same validator key, so the table below has one
