@@ -171,7 +171,7 @@ As a writer of English procedures, guard tells me which numbered steps start wit
 
 ### Levels, compatibility and proof
 
-- **FR-026**: The default levels MUST be: GLS001, GLS002, GLS003 and DQ009 `warn`; GLS004 and DQ010 `info` (Decision 2). `findingSeverity.<CODE>` changes any of them.
+- **FR-026** *(amended 2026-11-19)*: The default levels MUST be: GLS001, GLS002 and GLS003 `warn`; GLS004, DQ009 and DQ010 `info` (Decision 2). `findingSeverity.<CODE>` changes any of them.
 - **FR-027**: On a project with no glossary and no plain-writing problem, guard MUST give the same exit code, the same findings and the same JSON keys as the previous release, except the GLS004 line, the Glossary validator's own result and Doc-Quality's check counts. A test MUST show it on a fixture with no `enforcement` key.
 - **FR-028**: The glossary table reader and the sentence reader MUST be registered in `npm run fuzz` (no throw, the same answer twice, bounded time).
 - **FR-029**: `docs/configuration.md`, the generated finding reference (`npm run docs:reference`), `docs/languages.md` and the README MUST document the glossary, the six codes, the keys and the markers. The CHANGELOG MUST name each new code.
@@ -187,7 +187,7 @@ As a writer of English procedures, guard tells me which numbered steps start wit
 ## Decisions
 
 1. **A validator of its own for the glossary; Doc-Quality for sentences.** Glossary reads the documentation homes, which Doc-Quality does not read, and its findings follow the project's own table. The sentence checks are refinements of DQ006 and share Doc-Quality's documents and markers. Rejected: putting everything in Doc-Quality, which would either widen its document set (changing DQ001 to DQ008 on every project) or leave `docs/` unchecked.
-2. **Levels.** GLS001 to GLS003 are warnings: they fire only after a project wrote a glossary, and they repeat the project's own decision, so a finding is true by construction. DQ009 is a warning: a sentence's word count is a fact, and the maintainer chose STE100 for the default (spec 097: new checks join; a project opts out per document or per code). GLS004 is informational: a missing glossary is not a defect in the documents. DQ010 is informational: its word list is a heuristic whose precision is not measured (spec 083). **Trade-off, in plain words:** with DQ009 at `warn`, 25 of 30 measured projects get at least one new warning. Guard's exit code goes from 0 to 2 where a project had no warning before; a pipeline that fails on warnings turns red until the long sentences are split or the document opts out. With DQ009 at `info`, no exit code changes, and the long sentences are listed but easy to ignore. *(Decided by the maintainer on 2026-11-19: keep `warn`.)*
+2. **Levels.** GLS001 to GLS003 are warnings: they fire only after a project wrote a glossary, and they repeat the project's own decision, so a finding is true by construction. DQ009 is informational: it runs for every project (spec 097: new checks join), but a long sentence is a style choice, not a defect, so it does not change the exit code; `findingSeverity.DQ009` makes it a warning. GLS004 is informational: a missing glossary is not a defect in the documents. DQ010 is informational: its word list is a heuristic whose precision is not measured (spec 083). **Trade-off, in plain words (measured before the decision):** with DQ009 at `warn`, 25 of 30 measured projects get at least one new warning. Guard's exit code goes from 0 to 2 where a project had no warning before; a pipeline that fails on warnings turns red until the long sentences are split or the document opts out. With DQ009 at `info`, no exit code changes, and the long sentences are listed but easy to ignore. *(Decided by the maintainer on 2026-11-19: `info`. DQ009 ships informational, so no exit code changes; a project that wants the STE100 limit enforced sets `findingSeverity.DQ009`.)*
 3. **A missing glossary is a performed check, not an empty result.** Under strict, an `empty` validator with a project-side cause exits 4 (spec 097 FR-007). The lookup is a real check with a real answer, so the validator reports GLS004 instead. Rejected: `applies: false` without a glossary, which spec 097 FR-006 forbids (a validator's own missing input cannot decide that it does not apply).
 4. **One finding per document and term.** Per-line findings would print up to 762 lines for one measured document and break the MCP response budget. A document-level finding names the first five lines and the count, as FRS002 does.
 5. **Exempt headings are the ones DocGuard matches.** A required heading cannot be renamed without breaking STR003, so it is exempt. Any other heading is prose and is checked.
@@ -199,7 +199,7 @@ As a writer of English procedures, guard tells me which numbered steps start wit
 
 ## Open Questions
 
-None. DQ009 at `warn` or `info` was the one open question; the maintainer chose `warn` on 2026-11-19.
+None. DQ009 at `warn` or `info` was the one open question; the maintainer chose `info` on 2026-11-19, after first choosing `warn` the same day.
 
 ## Out of Scope
 
@@ -224,6 +224,8 @@ None. DQ009 at `warn` or `info` was the one open question; the maintainer chose 
 | `# Glosario` | es | The same, for `es` |
 | `\| Usar \| Evitar \| Significado \|` | pt, es | Header of that starter table |
 | `Usar`, `Evitar`, `Significado`, `Definição` | pt, es | Header cells the glossary reader accepts (compared without case and accents, so `Definicao` also works) |
+
+The maintainer, a native Portuguese speaker, approved all four strings above on 2026-11-19.
 
 <!-- docguard:implementation-outcomes:start -->
 ## Implementation Outcomes

@@ -366,7 +366,7 @@ describe('T012: DQ010, a numbered step that does not start with a verb', () => {
   it('is informational by its registered default level', async () => {
     const { codeDefaultLevel } = await import('../cli/findings.mjs');
     assert.equal(codeDefaultLevel('DQ010'), 'info');
-    assert.equal(codeDefaultLevel('DQ009'), null, 'DQ009 is a warning');
+    assert.equal(codeDefaultLevel('DQ009'), 'info', 'DQ009 is informational by default (maintainer, 2026-11-19)');
   });
 
   it('is skipped, listed with language-not-supported, in every other language', () => {

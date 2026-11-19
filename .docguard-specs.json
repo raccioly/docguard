@@ -9430,7 +9430,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1233
+            "line": 1234
           },
           {
             "requirementId": "FR-008",
@@ -9938,7 +9938,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:6253e6291eeb3e1f7058313b55c94b987121be5250b98ab37c81841d66659aca"
+            "digest": "sha256:21dafcc3911a6697ff5a5f1dcb61bbf34c684a17782413043ff9ddda967d65be"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
@@ -10978,12 +10978,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1509
+            "line": 1510
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1519
+            "line": 1520
           },
           {
             "requirementId": "FR-006",

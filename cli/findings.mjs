@@ -1080,8 +1080,9 @@ export const CODES = {
   DQ009: {
     validator: 'docQuality',
     title: 'Sentence over the word limit',
-    help: 'One or more sentences of the document are longer than the limit: 25 words in descriptive text and 20 words in a numbered step (ASD STE100; `docQuality.sentenceLimit` and `docQuality.stepSentenceLimit` change them). DQ006 checks only the average, so one long sentence can hide behind short ones; DQ009 reports each one by line, in one finding per document that names the first five and gives the count. Split each sentence into two, one statement each. A word is a run of characters between spaces that has a letter or a digit; inline code is one word. It runs for every language that separates words with spaces. Suppress one sentence with `<!-- docguard:ignore DQ009 — reason -->` on its first line, set one document\'s limit with `<!-- docguard:quality sentence-limit 30 — reason -->`, or turn it off for that document with `sentence-limit off`.',
+    help: 'One or more sentences of the document are longer than the limit: 25 words in descriptive text and 20 words in a numbered step (ASD STE100; `docQuality.sentenceLimit` and `docQuality.stepSentenceLimit` change them). DQ006 checks only the average, so one long sentence can hide behind short ones; DQ009 reports each one by line, in one finding per document that names the first five and gives the count. Split each sentence into two, one statement each. A word is a run of characters between spaces that has a letter or a digit; inline code is one word. It runs for every language that separates words with spaces. Informational by default: it does not change the exit code; `findingSeverity.DQ009` makes it a warning. Suppress one sentence with `<!-- docguard:ignore DQ009 — reason -->` on its first line, set one document\'s limit with `<!-- docguard:quality sentence-limit 30 — reason -->`, or turn it off for that document with `sentence-limit off`.',
     suppress: '<!-- docguard:quality sentence-limit off — your reason -->',
+    defaultLevel: 'info',
   },
   DQ010: {
     validator: 'docQuality',

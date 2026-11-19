@@ -260,7 +260,7 @@ To start a glossary:
 
 Doc-Quality checks each sentence against a word limit from ASD STE100
 (Simplified Technical English): 25 words in descriptive text and 20 words in a
-numbered step (`DQ009`, a warning). It reports one finding per document, with
+numbered step (`DQ009`, informational: it does not change the exit code). It reports one finding per document, with
 the first five long sentences by line and the count. `DQ006` still checks the
 average sentence length.
 
