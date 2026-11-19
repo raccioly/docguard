@@ -2370,12 +2370,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 917
+            "line": 920
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 944
+            "line": 947
           },
           {
             "requirementId": "FR-021",
@@ -5544,7 +5544,7 @@
           {
             "requirementId": "FR-012",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 262
+            "line": 283
           }
         ],
         "testEvidence": [
@@ -6323,12 +6323,12 @@
           {
             "requirementId": "FR-017",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 34
+            "line": 48
           },
           {
             "requirementId": "FR-018",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 35
+            "line": 49
           },
           {
             "requirementId": "FR-020",
@@ -9346,7 +9346,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1192
+            "line": 1233
           },
           {
             "requirementId": "FR-008",
@@ -9802,11 +9802,11 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:3f48d27106a24f312577d21b0920320250e8d47c700d099c8db25056f6027cea"
+            "digest": "sha256:d803b98ad088f84d563cb0b6af9687705761ed2cc68e319f8a53710243f463bd"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
-            "digest": "sha256:3befdb7ad9c73902f64bec4b42e91f904482ee4b3769ce5fa9854f7ee8948d05"
+            "digest": "sha256:14fe64c892b58fc5fe824c6088d6f674ac6e5e8013fd2e20ddde316660da150a"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/tasks.md",
@@ -9817,8 +9817,315 @@
           "checked": 0,
           "total": 18
         },
-        "implementationEvidence": [],
-        "testEvidence": []
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/config.mjs",
+            "line": 61
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-glossary.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-glossary.mjs",
+            "line": 51
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-glossary.mjs",
+            "line": 450
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-glossary.mjs",
+            "line": 451
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-glossary.mjs",
+            "line": 573
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/shared-glossary.mjs",
+            "line": 452
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "cli/shared-glossary.mjs",
+            "line": 453
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "cli/validators/glossary.mjs",
+            "line": 71
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "cli/shared-glossary.mjs",
+            "line": 675
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/shared-glossary.mjs",
+            "line": 401
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "cli/shared-glossary.mjs",
+            "line": 414
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "cli/shared-glossary.mjs",
+            "line": 590
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "cli/validators/glossary.mjs",
+            "line": 72
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "cli/shared-glossary.mjs",
+            "line": 377
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "cli/validators/glossary.mjs",
+            "line": 73
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "cli/validators/glossary.mjs",
+            "line": 47
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/validators/glossary.mjs",
+            "line": 38
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "cli/validators/glossary.mjs",
+            "line": 74
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "cli/commands/init.mjs",
+            "line": 53
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "cli/shared-glossary.mjs",
+            "line": 797
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "cli/commands/fix.mjs",
+            "line": 588
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 50
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/shared-sentences.mjs",
+            "line": 27
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 51
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 52
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/shared-sentences.mjs",
+            "line": 28
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 53
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 54
+          },
+          {
+            "requirementId": "FR-025",
+            "file": "cli/validators/doc-quality.mjs",
+            "line": 55
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/glossary-match.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-006",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/glossary-compat.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-007",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-008",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-009",
+            "file": "tests/glossary-match.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-010",
+            "file": "tests/glossary-match.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-011",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-012",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-013",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-014",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-015",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-017",
+            "file": "tests/glossary-init.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-018",
+            "file": "tests/glossary-init.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-019",
+            "file": "tests/glossary-init.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-020",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-021",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-022",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "FR-023",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-024",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-025",
+            "file": "tests/doc-quality-plain-writing.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "tests/glossary-compat.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-026",
+            "file": "tests/glossary-validator.test.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-027",
+            "file": "tests/glossary-compat.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "tests/glossary-match.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-028",
+            "file": "tests/glossary-parse.test.mjs",
+            "line": 14
+          }
+        ]
       }
     },
     {
@@ -10465,12 +10772,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1468
+            "line": 1509
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1478
+            "line": 1519
           },
           {
             "requirementId": "FR-006",
@@ -13575,7 +13882,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 206
+            "line": 229
           },
           {
             "requirementId": "FR-008",
@@ -13640,7 +13947,7 @@
           {
             "requirementId": "FR-015",
             "file": "cli/config.mjs",
-            "line": 248
+            "line": 271
           },
           {
             "requirementId": "FR-016",
@@ -14906,12 +15213,12 @@
           {
             "requirementId": "FR-010",
             "file": "cli/config.mjs",
-            "line": 247
+            "line": 270
           },
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 317
+            "line": 340
           },
           {
             "requirementId": "FR-012",
@@ -18186,12 +18493,12 @@
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 400
+            "line": 423
           },
           {
             "requirementId": "FR-002",
             "file": "cli/commands/init.mjs",
-            "line": 402
+            "line": 425
           },
           {
             "requirementId": "FR-002",
@@ -18472,7 +18779,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/commands/init.mjs",
-            "line": 341
+            "line": 364
           },
           {
             "requirementId": "FR-007",
@@ -18482,7 +18789,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/commands/init.mjs",
-            "line": 342
+            "line": 365
           },
           {
             "requirementId": "FR-008",
@@ -18497,7 +18804,7 @@
           {
             "requirementId": "FR-010",
             "file": "cli/commands/init.mjs",
-            "line": 343
+            "line": 366
           },
           {
             "requirementId": "FR-010",
@@ -18507,7 +18814,7 @@
           {
             "requirementId": "FR-011",
             "file": "cli/commands/init.mjs",
-            "line": 344
+            "line": 367
           },
           {
             "requirementId": "FR-012",
@@ -18915,7 +19222,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/doc-quality.mjs",
-            "line": 650
+            "line": 676
           },
           {
             "requirementId": "FR-006",
@@ -19085,7 +19392,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 232
+            "line": 233
           },
           {
             "requirementId": "FR-014",
