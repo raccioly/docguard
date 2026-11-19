@@ -9739,7 +9739,7 @@
       "reviewed": {
         "lifecycle": {
           "approval": "approved",
-          "delivery": "implemented",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
@@ -9759,8 +9759,33 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "7db0ae5fa8809ddbd40c6b23d69a1d4ca5ae06b4",
+          "outcomes": [
+            {
+              "revision": "7db0ae5fa8809ddbd40c6b23d69a1d4ca5ae06b4",
+              "reason": "Glossary validator (GLS001-GLS004), DQ009/DQ010 and the init/fix starter; full suite green except three stub files that fail identically on main with local Node 24; release A/B PASS, no exit-code change on DocGuard, the benchmark corpus or 12 other projects",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/init.mjs",
+                "cli/config.mjs",
+                "cli/shared-glossary.mjs",
+                "cli/shared-sentences.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/glossary.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/doc-quality-plain-writing.test.mjs",
+                "tests/glossary-compat.test.mjs",
+                "tests/glossary-init.test.mjs",
+                "tests/glossary-match.test.mjs",
+                "tests/glossary-parse.test.mjs",
+                "tests/glossary-validator.test.mjs",
+                "tests/glossary-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -9805,7 +9830,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:d5def3bdcee5b23ac35af1ccbcdbeded3db733a55afa412fafaf9101640b5238"
+            "digest": "sha256:b3b210e2e7dae320797977ac9aacb8873de4e2f3d862b525ee270e847f28fefe"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
@@ -10059,6 +10084,16 @@
             "line": 15
           },
           {
+            "requirementId": "FR-016",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 9
+          },
+          {
+            "requirementId": "FR-016",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 69
+          },
+          {
             "requirementId": "FR-017",
             "file": "tests/glossary-init.test.mjs",
             "line": 8
@@ -10127,6 +10162,66 @@
             "requirementId": "FR-028",
             "file": "tests/glossary-parse.test.mjs",
             "line": 14
+          },
+          {
+            "requirementId": "FR-029",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 10
+          },
+          {
+            "requirementId": "FR-029",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 60
+          },
+          {
+            "requirementId": "FR-030",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 11
+          },
+          {
+            "requirementId": "FR-030",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 51
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 40
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 41
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "SC-003",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 42
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "SC-004",
+            "file": "tests/glossary-verification.test.mjs",
+            "line": 43
           }
         ]
       }
