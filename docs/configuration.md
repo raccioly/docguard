@@ -204,7 +204,7 @@ Use column, an Avoid column and an optional Meaning column:
 | Use | Avoid | Meaning |
 |---|---|---|
 | configuration | config, conf | The settings in .docguard.json. |
-| specification | spec | A feature description under specs/. |
+| spec | specification | A feature description under specs/. |
 ```
 
 The Glossary validator reports each document that uses an Avoid term in prose
