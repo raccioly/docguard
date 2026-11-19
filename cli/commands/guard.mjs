@@ -983,7 +983,7 @@ export function liteValidatorsConfig(config = {}) {
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
     'evidence', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'suppressions',
-    'decisionRecords', 'aidlc',
+    'decisionRecords', 'aidlc', 'glossary',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

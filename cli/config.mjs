@@ -54,6 +54,28 @@ function applyLabelConfig(merged) {
   }
 }
 
+/**
+ * `docs.glossary` (spec 105 FR-001): a project-relative `.md` path inside the
+ * project. A malformed value is reported on stderr once per process and dropped,
+ * so the lookup falls back to docs/GLOSSARY.md, as a bad `docs.language` does.
+ * @implements docguard.glossary-and-plain-writing#FR-001
+ */
+function applyGlossaryConfig(merged) {
+  const docs = merged.docs;
+  if (!docs || typeof docs !== 'object' || Array.isArray(docs) || docs.glossary === undefined) return;
+  const value = docs.glossary;
+  const parts = typeof value === 'string' ? value.replace(/\\/g, '/').split('/') : [];
+  const ok = typeof value === 'string' && /\.md$/i.test(value) && !/^([A-Za-z]:|\/)/.test(value)
+    && !parts.some(p => p === '..' || p.toLowerCase() === '.git');
+  if (ok) return;
+  const problem = `docs.glossary must be a project-relative path to a .md file inside the project, got ${JSON.stringify(value)}; using the default lookup (docs/GLOSSARY.md)`;
+  if (!reportedLabelProblems.has(problem)) {
+    reportedLabelProblems.add(problem);
+    console.error(`${c.yellow}⚠ .docguard.json: ${problem}${c.reset}`);
+  }
+  delete docs.glossary;
+}
+
 export function loadConfig(projectDir) {
   const configPath = resolve(projectDir, '.docguard.json');
   const defaults = {
@@ -190,6 +212,7 @@ export function loadConfig(projectDir) {
       }
 
       applyLabelConfig(merged);
+      applyGlossaryConfig(merged);
 
       // FR-001: a malformed `enforcement` is a configuration error, reported like
       // a bad findingSeverity. The key is never defaulted here, so a run can tell
@@ -302,7 +325,7 @@ const _KNOWN_VALIDATORS = [
   'apiSurface', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking',
   'schemaSync', 'specKit', 'crossReference', 'generatedStaleness',
   'canonicalSync', 'surfaceSync', 'metricsConsistency',
-  'evidence',
+  'evidence', 'glossary',
 ];
 
 function _kebabToCamel(k) {

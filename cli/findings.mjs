@@ -1076,6 +1076,47 @@ export const CODES = {
     help: 'Over 30% of sentences are conditional (if/unless/when…). Split conditionals into separate, unconditional requirements.',
     suppress: null,
   },
+  // docguard.glossary-and-plain-writing (spec 105): per-sentence limits from ASD STE100.
+  DQ009: {
+    validator: 'docQuality',
+    title: 'Sentence over the word limit',
+    help: 'One or more sentences of the document are longer than the limit: 25 words in descriptive text and 20 words in a numbered step (ASD STE100; `docQuality.sentenceLimit` and `docQuality.stepSentenceLimit` change them). DQ006 checks only the average, so one long sentence can hide behind short ones; DQ009 reports each one by line, in one finding per document that names the first five and gives the count. Split each sentence into two, one statement each. A word is a run of characters between spaces that has a letter or a digit; inline code is one word. It runs for every language that separates words with spaces. Suppress one sentence with `<!-- docguard:ignore DQ009 — reason -->` on its first line, set one document\'s limit with `<!-- docguard:quality sentence-limit 30 — reason -->`, or turn it off for that document with `sentence-limit off`.',
+    suppress: '<!-- docguard:quality sentence-limit off — your reason -->',
+  },
+  DQ010: {
+    validator: 'docQuality',
+    title: 'Numbered step does not start with a verb',
+    help: 'A step of a numbered list (two or more items) starts with an article, a pronoun, a modal or auxiliary verb, or a word ending in "-ing", so it does not tell the reader what to do (ASD STE100 writes each step as an instruction: "Run", "Open", "Set"). Rewrite the step to start with the verb. A step that starts with inline code or a link is not judged. English documents only; other languages are listed as `language-not-supported`. The word list is a heuristic whose precision is not measured, so the finding is informational by default. Suppress one step with `<!-- docguard:ignore DQ010 — reason -->` on its line, or a document with `<!-- docguard:quality step-verbs off — reason -->`.',
+    suppress: '<!-- docguard:quality step-verbs off — your reason -->',
+    defaultLevel: 'info',
+  },
+
+  // docguard.glossary-and-plain-writing (spec 105): one term for one concept, from the project's own glossary.
+  GLS001: {
+    validator: 'glossary',
+    title: 'Document uses a term the glossary says to avoid',
+    help: 'The project glossary (`docs/GLOSSARY.md`, or the file `docs.glossary` names) lists this word in the Avoid column of a row, and a document uses it in prose. One finding per document and term gives the count and the first five lines. Replace the word with the Use term of that row. Code, inline code, links, file paths, quoted text, blockquotes, HTML comments and the headings DocGuard requires are not checked, and neither are CHANGELOG.md, DRIFT-LOG.md, decision records, specs/ and agent-instruction files. When the word means something else on one line, add `<!-- docguard:ignore GLS001 — reason -->` to that line; for a whole document, `<!-- docguard:glossary allow <term> — reason -->`, or `<!-- docguard:glossary off — reason -->` to skip the document.',
+    suppress: '<!-- docguard:ignore GLS001 — the word means something else here -->',
+  },
+  GLS002: {
+    validator: 'glossary',
+    title: 'Glossary row is malformed',
+    help: 'A row of the glossary table cannot be read as one term to use and the terms to avoid: the Use cell is empty while the Avoid cell is not, the same Use term has two rows, one Avoid term is listed twice, or the table has more than 500 rows (the rest are not read). Fix the row at the reported line. A term is one word or phrase; separate several Avoid terms with commas.',
+    suppress: null,
+  },
+  GLS003: {
+    validator: 'glossary',
+    title: 'Glossary rows contradict each other',
+    help: 'A term is the Use term of one row and an Avoid term of another, or one Avoid term is listed under two different Use terms. DocGuard cannot tell which word the project chose, so it does not check documents for that term until the rows agree. Keep one row per concept.',
+    suppress: null,
+  },
+  GLS004: {
+    validator: 'glossary',
+    title: 'No glossary DocGuard can read',
+    help: 'The project has no glossary, or its glossary file has no table with a Use column and an Avoid column, so DocGuard cannot check that each concept has one name. Run `docguard init --with glossary` to write `docs/GLOSSARY.md` with the table header and proposals taken from your documents, then `docguard fix --doc glossary` for an agent prompt that fills it. Point `docs.glossary` in .docguard.json at another file. Informational by default: a missing glossary is not a defect in the documents.',
+    suppress: '<!-- docguard:validator glossary n/a — reason -->',
+    defaultLevel: 'info',
+  },
 
   // ── v0.31.0 change-driven + IR detectors (all confidence:'low' / soft) ──
   DSP001: {
