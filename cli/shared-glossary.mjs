@@ -281,11 +281,12 @@ function walk(text, { full, ctx = null }) {
       prevHeading = true;
       if (headingIsExempt(line, n, examined)) { out[n] = spaces(line.length); continue; }
     }
-    text1 = blankRanges(text1, linkDestinations(text1));
-    text1 = text1.replace(/<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[^\s<>@]+@[^\s<>@]+)>/g, m => spaces(m.length));
-    text1 = text1.replace(/(?<![A-Za-z0-9+.-])(?:[A-Za-z][A-Za-z0-9+.-]*:\/\/|www\.)[^\s<>]+/g, m => spaces(m.length));
-    text1 = blankRanges(text1, quotedSpans(text1));
-    text1 = text1.replace(/\S+/g, token => (token.includes('/') || /[\p{L}\p{N}]\.[\p{L}\p{N}]/u.test(token) ? spaces(token.length) : token));
+    // Each pass runs only when its trigger character is on the line: most lines have none, and the walk stays cheap.
+    if (text1.includes('](')) text1 = blankRanges(text1, linkDestinations(text1));
+    if (text1.includes('<')) text1 = text1.replace(/<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[^\s<>@]+@[^\s<>@]+)>/g, m => spaces(m.length));
+    if (text1.includes('://') || text1.includes('www.')) text1 = text1.replace(/(?<![A-Za-z0-9+.-])(?:[A-Za-z][A-Za-z0-9+.-]*:\/\/|www\.)[^\s<>]+/g, m => spaces(m.length));
+    if (/["“”]/.test(text1)) text1 = blankRanges(text1, quotedSpans(text1));
+    if (text1.includes('/') || text1.includes('.')) text1 = text1.replace(/\S+/g, token => (token.includes('/') || /[\p{L}\p{N}]\.[\p{L}\p{N}]/u.test(token) ? spaces(token.length) : token));
     out[n] = text1;
   }
   return { raw, out, comments: state.comments };

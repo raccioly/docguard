@@ -162,6 +162,8 @@ function protectFileNames(token) {
 
 /** A token with the dots that do not end a sentence turned into a placeholder, as `splitSentences` does. */
 function protectToken(token) {
+  // Every protection below only rewrites dots: a token without one is already safe (most tokens).
+  if (!token.includes('.')) return token;
   if (token.length > LONG_TOKEN) {
     const tail = trailingTerminals(token);
     return token.slice(0, token.length - tail).replace(/\./g, '≈') + token.slice(token.length - tail);
