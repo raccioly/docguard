@@ -211,4 +211,16 @@ As a writer of English procedures, guard tells me which numbered steps start wit
 
 ## Verification Notes
 
-(Filled in during implementation: A/B results, fuzz, the non-English review table.)
+- **SC-001**: `tests/glossary-match.test.mjs` and `tests/glossary-validator.test.mjs` seed Avoid terms in prose and in every exempt place of FR-009; every prose use is reported and nothing in an exempt place.
+- **SC-002**: the full suite passes by exit code except three files that fail identically on `main` with the local Node 24 (`spec-kit-delegation`, `spec-kit-integration-honesty`, `upgrade-pr-e2e`: their `specify` stubs are read as ES modules); CI is the reference. `npm run fuzz`: 32 parsers, 0 failures.
+- **SC-003**: `tools/release-ab.mjs` (main at `31652de` against this branch) over DocGuard and the 25 benchmark directories: gate PASS, no exit code changed, every change is an added finding: GLS004 in each benchmark directory without a glossary; on DocGuard 8 DQ009 and 2 DQ010. A hermetic A/B on 12 other local projects (one `git archive` copy per CLI, sequential): no exit code or status changed, no finding removed; added DQ009 2 to 12 per project, DQ010 0 to 4, GLS004 once each.
+- **SC-004**: no Glossary result is `empty` on any corpus directory (the lookup is a performed check), and no strict exit 4 is new.
+- **Amendment (2026-11-19)**: blockquotes are not prose for DQ009 (FR-021).
+- **FR-030, non-English strings for review before release:**
+
+| String | Language | Where it is used |
+|---|---|---|
+| `# Glossário` | pt | Title of the starter `docs/GLOSSARY.md` that `init` writes when `docs.language` is `pt` |
+| `# Glosario` | es | The same, for `es` |
+| `\| Usar \| Evitar \| Significado \|` | pt, es | Header of that starter table |
+| `Usar`, `Evitar`, `Significado`, `Definição` | pt, es | Header cells the glossary reader accepts (compared without case and accents, so `Definicao` also works) |

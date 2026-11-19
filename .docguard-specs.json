@@ -9802,7 +9802,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:d803b98ad088f84d563cb0b6af9687705761ed2cc68e319f8a53710243f463bd"
+            "digest": "sha256:d5def3bdcee5b23ac35af1ccbcdbeded3db733a55afa412fafaf9101640b5238"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
@@ -9810,11 +9810,11 @@
           },
           {
             "path": "specs/105-glossary-and-plain-writing/tasks.md",
-            "digest": "sha256:002960cb07b49f1089e6d417e16618531a078dee4858ec4317ae16515be8e09b"
+            "digest": "sha256:de918307849c8c385b05390b0bb92a257d6ff8b04384482c148c368c21d477ee"
           }
         ],
         "taskCompletion": {
-          "checked": 0,
+          "checked": 18,
           "total": 18
         },
         "implementationEvidence": [
