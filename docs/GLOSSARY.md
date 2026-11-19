@@ -6,10 +6,13 @@ Code, links, quotes and the headings DocGuard requires are not checked. -->
 
 | Use | Avoid | Meaning |
 |---|---|---|
+| canonical docs | | The documents under `docs-canonical/`, or the ones `docs.roles` maps, that state the design. |
+| finding | | One result of a check, with a stable code such as `GLS001`. |
+| validator | | A group of checks that reads one part of the project, for example Doc-Quality. |
+| check | | One test that a validator runs. `guard` counts checks as passed or not. |
+| agent | | An AI coding agent, such as Claude Code or Codex, that reads the docs and changes the code. |
+| spec | | A feature description under `specs/`, written with Spec Kit. |
+| Spec Kit | | GitHub's spec-driven workflow. DocGuard is one of its extensions. |
 | guard | | The command that runs every validator and sets the exit code. |
-| validator | | One check that reads the project and reports findings, for example Doc-Quality. |
-| finding | | One result of a validator, with a stable code such as `GLS001`. |
-| canonical document | | A document under `docs-canonical/`, or one that `docs.roles` maps, that states the design. |
-| strict | | The default enforcement mode: a validator that applies and examined nothing fails the run. |
-| Spec Kit | | GitHub's spec-driven workflow; DocGuard is one of its extensions. |
+| strict | | The default enforcement mode: a validator that applies and checked nothing fails the run. |
 | glossary | | This file: one term for each concept, read by the Glossary validator. |

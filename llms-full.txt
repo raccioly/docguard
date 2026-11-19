@@ -2050,6 +2050,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Text-quality metrics for Portuguese and Spanish documents: `DQ002`, `DQ003`, `DQ007` and `DQ008` can now appear for them (spec 104 task T033, issue 644).** For a document in `pt` (`pt-BR`, `pt-PT`) or `es` (every `es-*`), by `docs.language` or by its name, Doc-Quality now measures ambiguous pronouns (`DQ002`), compound sentences (`DQ003`), negation load (`DQ007`) and conditional load (`DQ008`) with word lists that the maintainer, a native Portuguese speaker, reviewed and approved on 2026-11-17, and with the same thresholds as English; a project with such documents can therefore see these four warnings, which were skipped for them in 0.49.0, and a metric that ran now counts in `passed` and `total`. Words are matched whole, ignoring case, with accents optional in the text (`nao` counts as `não`) but never invented (`é` is not `e`, `sí` is not `si`, `él` needs its accent). Portuguese `se` counts as a conditional only as the first word of a sentence or right after a comma, never after a hyphen (`configura-se`); `desde que` is included. Passive voice and both Flesch scores stay skipped for every language but English, and negation, conditional, compound and pronoun metrics stay skipped, with the reason `language-not-supported`, for every language other than `pt` and `es`. `<!-- docguard:quality negation-load off -->` and `docQuality.negationLoadThreshold` apply as in English. English results are byte-identical (a differential run on this repository and others). The lists are in `docs/languages.md`.
 
+### Documentation
+
+- **The user docs are rewritten in plain language (light ASD STE100).** README (English, Portuguese and Spanish), `docs/` (quickstart, installation, FAQ, guides, reference, commands, configuration), PHILOSOPHY, CONTRIBUTING, PRIVACY, SECURITY, SUPPORT, COMPARISONS and the technical brief (`docs/docguard-explained.html` and its PDF) now use short sentences, active voice and one term per concept. Sentences over 25 words fell from about 18% to under 10% on most pages. No command, flag, config key, finding code, heading or link changed, and no behavior changed. The canonical docs and the generated findings reference are unchanged.
+
 ## [0.49.0] - 2026-11-17
 
 ### Added
@@ -2425,12 +2429,8 @@ Budget-Exempt: bytes:llms-full.txt — +42 KB (14.5%) is this release's new docu
   (`docguard.strict-by-default` FR-006, T018g).
 - **The `docs.roles` mapping offer ranks its candidates.** A file whose own name
   has the role's word ranks above one that only sits in a folder with that word;
-  within a folder match only an overview or index document (overview, index,
-  README, summary) is a candidate, and siblings are not listed. Nothing is cut
-  from the list before ranking. When the rule cannot tell which file is the
-  document it offers none by name, says which folder it looked in, and prints the
 
-<!-- truncated: 6788 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6792 more lines — read CHANGELOG.md directly -->
 
 ---
 
