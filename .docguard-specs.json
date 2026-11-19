@@ -9734,6 +9734,94 @@
       }
     },
     {
+      "specId": "docguard.glossary-and-plain-writing",
+      "path": "specs/105-glossary-and-plain-writing/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.glossary-and-plain-writing#FR-001",
+          "docguard.glossary-and-plain-writing#FR-002",
+          "docguard.glossary-and-plain-writing#FR-003",
+          "docguard.glossary-and-plain-writing#FR-004",
+          "docguard.glossary-and-plain-writing#FR-005",
+          "docguard.glossary-and-plain-writing#FR-006",
+          "docguard.glossary-and-plain-writing#FR-007",
+          "docguard.glossary-and-plain-writing#FR-008",
+          "docguard.glossary-and-plain-writing#FR-009",
+          "docguard.glossary-and-plain-writing#FR-010",
+          "docguard.glossary-and-plain-writing#FR-011",
+          "docguard.glossary-and-plain-writing#FR-012",
+          "docguard.glossary-and-plain-writing#FR-013",
+          "docguard.glossary-and-plain-writing#FR-014",
+          "docguard.glossary-and-plain-writing#FR-015",
+          "docguard.glossary-and-plain-writing#FR-016",
+          "docguard.glossary-and-plain-writing#FR-017",
+          "docguard.glossary-and-plain-writing#FR-018",
+          "docguard.glossary-and-plain-writing#FR-019",
+          "docguard.glossary-and-plain-writing#FR-020",
+          "docguard.glossary-and-plain-writing#FR-021",
+          "docguard.glossary-and-plain-writing#FR-022",
+          "docguard.glossary-and-plain-writing#FR-023",
+          "docguard.glossary-and-plain-writing#FR-024",
+          "docguard.glossary-and-plain-writing#FR-025",
+          "docguard.glossary-and-plain-writing#FR-026",
+          "docguard.glossary-and-plain-writing#FR-027",
+          "docguard.glossary-and-plain-writing#FR-028",
+          "docguard.glossary-and-plain-writing#FR-029",
+          "docguard.glossary-and-plain-writing#FR-030",
+          "docguard.glossary-and-plain-writing#SC-001",
+          "docguard.glossary-and-plain-writing#SC-002",
+          "docguard.glossary-and-plain-writing#SC-003",
+          "docguard.glossary-and-plain-writing#SC-004"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/105-glossary-and-plain-writing/spec.md",
+            "digest": "sha256:3f48d27106a24f312577d21b0920320250e8d47c700d099c8db25056f6027cea"
+          },
+          {
+            "path": "specs/105-glossary-and-plain-writing/plan.md",
+            "digest": "sha256:3befdb7ad9c73902f64bec4b42e91f904482ee4b3769ce5fa9854f7ee8948d05"
+          },
+          {
+            "path": "specs/105-glossary-and-plain-writing/tasks.md",
+            "digest": "sha256:002960cb07b49f1089e6d417e16618531a078dee4858ec4317ae16515be8e09b"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 0,
+          "total": 18
+        },
+        "implementationEvidence": [],
+        "testEvidence": []
+      }
+    },
+    {
       "specId": "docguard.go-spring-rails-routes",
       "path": "specs/047-go-spring-rails-routes/spec.md",
       "reviewed": {
