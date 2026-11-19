@@ -61,13 +61,14 @@ const FILL_THE_TEMPLATE = ['DCV003', 'ENV003', 'SCH002', 'DDF001', 'DDF002', 'TR
 const PLAN_DERIVES_NOTHING = ['docs-canonical/SECURITY.md'];
 
 const FLOWS = {
-  generate: { steps: [['generate']], allow: NO_SPEC_KIT, diffClean: true },
+  // GLS004 (informational): `generate` writes no glossary (spec 105 Decision 10); `init` does.
+  generate: { steps: [['generate']], allow: [...NO_SPEC_KIT, 'GLS004'], diffClean: true },
   plan: {
     steps: [['generate', '--plan', '--write']],
     // The plan scaffolds code-derived docs only; without init, the profile's
     // other required files (SECURITY.md, AGENTS.md, CHANGELOG.md, DRIFT-LOG.md)
     // do not exist yet.
-    allow: [...NO_SPEC_KIT, 'STR001', 'STR002', 'TRC001'],
+    allow: [...NO_SPEC_KIT, 'STR001', 'STR002', 'TRC001', 'GLS004'],
     diffClean: true,
   },
   init: { steps: [['init', '--skip-prompts']], allow: FILL_THE_TEMPLATE, diffClean: false },

@@ -44,7 +44,7 @@ A code that accepts an in-place marker shows it below. Inline `docguard:ignore <
 | [Evidence](#evidence-evidence) | EVD001, EVD002, EVD003, EVD004, EVD005 |
 | [Freshness](#freshness-freshness) | FRS001, FRS002, FRS006, FRS007, FRS009, FRS010, FRS003, FRS004, FRS005 |
 | [Generated-Staleness](#generated-staleness-generatedstaleness) | GST001, GST002 |
-| [glossary](#glossary-glossary) | GLS001, GLS002, GLS003, GLS004 |
+| [Glossary](#glossary-glossary) | GLS001, GLS002, GLS003, GLS004 |
 | [Metadata-Sync](#metadata-sync-metadatasync) | MDS001, MDS002 |
 | [Metrics-Consistency](#metrics-consistency-metricsconsistency) | MET001, MET002, MET003, MET004 |
 | [Path-Scoped-Rules](#path-scoped-rules-pathscopedrules) | PSR001, PSR002, PSR003, PSR004, PSR005, PSR006, PSR007, PSR008 |
@@ -583,7 +583,7 @@ Marker:
 <!-- docguard:section id=<id> source=code pinned="reason" -->
 ```
 
-## glossary (glossary)
+## Glossary (glossary)
 
 ### GLS001: Document uses a term the glossary says to avoid
 

@@ -295,18 +295,13 @@ function scan(text) {
     inTable = false;
     if (trimmed.startsWith('![') || /^<\/?[A-Za-z][^>]*>/.test(trimmed)) { cur = null; prevBlank = false; continue; }
 
-    // A block quote reads as its text.
-    let body = raw;
-    if (trimmed[0] === '>') {
-      let k = 0;
-      const t = raw.trimStart();
-      while (k < t.length && (t[k] === '>' || t[k] === ' ')) k++;
-      body = t.slice(k);
-      if (body.trim() === '') { cur = null; prevBlank = true; continue; }
-    }
+    // A block quote is someone else's words or a metadata note (`> **Reference**: ...`), not the
+    // author's sentence: not prose, as for the glossary (spec 105 FR-009, FR-021).
+    if (trimmed[0] === '>') { cur = null; prevBlank = false; continue; }
+    const body = raw;
 
-    const ordered = body === raw ? ORDERED_ITEM.exec(body) : null;
-    const bullet = !ordered && body === raw ? BULLET_ITEM.exec(body) : null;
+    const ordered = ORDERED_ITEM.exec(body);
+    const bullet = !ordered ? BULLET_ITEM.exec(body) : null;
     prevBlank = false;
 
     if (ordered) {

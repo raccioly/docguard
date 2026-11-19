@@ -233,6 +233,17 @@ const EXPLAINERS = {
     example: 'ADR-007 says "Supersedes ADR-003" while ADR-003 is still Accepted',
     standard: 'Nygard ADRs / MADR status lifecycle',
   },
+  glossary: {
+    title: 'Glossary — one term for one concept (GLS001–GLS004)',
+    what: 'Reads the project glossary (`docs/GLOSSARY.md`, or the file `docs.glossary` names): a table with Use, Avoid and Meaning columns. Reports each document that uses an Avoid term in prose (GLS001, one finding per document and term), a row it cannot read (GLS002), rows that contradict each other (GLS003), and a project with no readable glossary (GLS004, informational). Code, links, quotes, the headings DocGuard requires, history files, specs/ and agent-instruction files are not checked.',
+    why: 'A document that names one concept two ways makes a reader, and an agent above all, think there are two concepts. Each project decides its own words, so the check reads the project\'s own table.',
+    triggers: [
+      ['is on the glossary\'s avoid list; use …', 'Replace the word with the Use term, or add `<!-- docguard:glossary allow <term> — reason -->` when it means something else.'],
+      ['No glossary found', 'Run `docguard init --with glossary`, then `docguard fix --doc glossary`.'],
+    ],
+    example: 'README.md says "config" on line 7; the glossary row is `| configuration | config | ... |`',
+    standard: 'ASD STE100 (one word for one concept)',
+  },
   apiDocSmells: {
     title: 'API-Doc-Smells — Bloated / Lazy API documentation (APS001/APS002)',
     what: 'Length signals on doc units whose heading is a code signature (HTTP endpoint / function / backticked symbol). Lazy = ≤6 prose words (documented in name only); Bloated = ≥300 words for one unit. Deterministic (F1 0.90/0.95); confidence:low. OFF by default — enable with `validators.apiDocSmells: true`.',
@@ -546,6 +557,7 @@ export const DISPLAY_NAMES = {
   apiDocSmells: 'API-Doc-Smells',
   decisionRecords: 'Decision-Records',
   aidlc: 'AI-DLC',
+  glossary: 'Glossary',
 };
 
 /** Collapse a key / display name to a comparable form: lowercase, alnum only. */

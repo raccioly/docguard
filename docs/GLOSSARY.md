@@ -1,3 +1,9 @@
+---
+title: Glossary
+parent: Reference
+nav_order: 10
+---
+
 # Glossary
 
 <!-- One row per concept. Use is the term to write. Avoid lists other names for

@@ -101,6 +101,8 @@ describe('runGuardInternal — severity-aware effective counts', () => {
       // No CHANGELOG to force Changelog validator to fail/warn? We instead
       // rely on Docs-Coverage which warns about missing README sections.
       'src/index.ts': 'export const x = 1;',
+      // A glossary, so the informational GLS004 (spec 105) does not count as a raw warning here.
+      'docs/GLOSSARY.md': '# Glossary\n\n| Use | Avoid | Meaning |\n|---|---|---|\n| item | | One record the service stores. |\n',
     };
   }
 
@@ -234,6 +236,8 @@ describe('runGuardInternal — status word agrees with the severity-aware exit c
     'package.json': JSON.stringify({ name: 'test', version: '0.0.0' }),
     'docs-canonical/ARCHITECTURE.md': '# Architecture\n\nStub.',
     'src/index.ts': 'export const x = 1;',
+      // A glossary, so the informational GLS004 (spec 105) does not count as a raw warning here.
+      'docs/GLOSSARY.md': '# Glossary\n\n| Use | Avoid | Meaning |\n|---|---|---|\n| item | | One record the service stores. |\n',
   });
 
   const onlyDocsCoverage = (severity) => ({
