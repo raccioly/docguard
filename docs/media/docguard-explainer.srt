@@ -1,0 +1,84 @@
+1
+00:00:01,200 --> 00:00:03,960
+Your documentation says one thing.
+
+2
+00:00:03,960 --> 00:00:05,872
+Your code does another.
+
+3
+00:00:05,872 --> 00:00:09,000
+Your AI agent reads the documentation and trusts it.
+
+4
+00:00:09,800 --> 00:00:13,012
+Even your agent instructions go out of date.
+
+5
+00:00:13,012 --> 00:00:15,331
+The agent writes the wrong code.
+
+6
+00:00:15,331 --> 00:00:18,733
+You find the problem in review, or in production.
+
+7
+00:00:19,533 --> 00:00:23,163
+DocGuard compares your documentation with your code.
+
+8
+00:00:23,163 --> 00:00:26,457
+It finds each claim that is no longer true.
+
+9
+00:00:26,457 --> 00:00:28,867
+It shows you the file and the line.
+
+10
+00:00:29,667 --> 00:00:31,649
+Run one command.
+
+11
+00:00:31,649 --> 00:00:36,498
+More than thirty checks read your routes, schemas, tests, and specs.
+
+12
+00:00:36,498 --> 00:00:40,326
+DocGuard drafts missing documentation from your code.
+
+13
+00:00:40,326 --> 00:00:43,233
+It stops the merge when an important check fails.
+
+14
+00:00:44,033 --> 00:00:47,315
+Your agent can also ask DocGuard directly.
+
+15
+00:00:47,315 --> 00:00:52,100
+The MCP server gives the agent the current documentation before it writes code.
+
+16
+00:00:52,900 --> 00:00:56,426
+DocGuard runs on your machine and sends nothing out.
+
+17
+00:00:56,426 --> 00:01:02,878
+It works with Claude Code, Cursor, Codex, Spec Kit, and GitHub Actions.
+
+18
+00:01:02,878 --> 00:01:06,567
+It reads English, Portuguese, and Spanish.
+
+19
+00:01:07,367 --> 00:01:10,011
+DocGuard is free and open source.
+
+20
+00:01:10,011 --> 00:01:14,163
+Start in one minute, and star the repository on GitHub.
+
+21
+00:01:14,163 --> 00:01:18,066
+Keep your documentation true, so your agents stay correct.
+

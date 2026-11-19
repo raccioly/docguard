@@ -17,6 +17,10 @@
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-0a7ea4)](https://registry.modelcontextprotocol.io/)
 [![mcp.market](https://mcp.market/badge/raccioly-docguard.svg)](https://mcp.market/server/raccioly-docguard)
 
+[![Watch the 79-second DocGuard explainer](https://raw.githubusercontent.com/raccioly/docguard/main/docs/media/docguard-explainer-poster.png)](https://github.com/raccioly/docguard/blob/main/docs/media/docguard-explainer.mp4)
+
+▶️ **Watch the 79-second explainer** (sound on, with captions): what DocGuard checks, how it guards the merge, and how to start.
+
 ---
 
 > **✨ See what DocGuard catches in 30 seconds — no install, no setup:**
