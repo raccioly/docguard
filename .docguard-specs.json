@@ -6000,7 +6000,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "1fc539107aba321501ba66d150f1bb7048514414",
+          "lastReviewedRevision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
           "outcomes": [
             {
               "revision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
@@ -6109,6 +6109,60 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
+              "reason": "spec 105 added DQ009/DQ010, the Glossary validator and its registration in files these specs list as evidence; read each spec's requirements against the change: their behavior is unchanged (DQ001-DQ008 byte-identical, existing validators and commands untouched apart from additive entries)",
+              "evidence": [
+                "cli/authoring-contract.mjs",
+                "cli/config.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "cli/scanners/speckit.mjs",
+                "cli/shared-doc-language.mjs",
+                "cli/shared-labels.mjs",
+                "cli/shared-prose-words.mjs",
+                "cli/shared-requirement-ids.mjs",
+                "cli/shared-scaffold.mjs",
+                "cli/shared.mjs",
+                "cli/validators/changelog.mjs",
+                "cli/validators/decision-records.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/docs-coverage.mjs",
+                "cli/validators/environment.mjs",
+                "cli/validators/structure.mjs",
+                "cli/validators/test-spec.mjs",
+                "cli/writers/generate-io.mjs",
+                "cli/writers/mechanical.mjs",
+                "cli/writers/sections.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/config.test.mjs",
+                "tests/document-languages-changelog.test.mjs",
+                "tests/document-languages-compat.test.mjs",
+                "tests/document-languages-decisions.test.mjs",
+                "tests/document-languages-english-identity-stage2.test.mjs",
+                "tests/document-languages-english-identity.test.mjs",
+                "tests/document-languages-explain.test.mjs",
+                "tests/document-languages-fixtures.test.mjs",
+                "tests/document-languages-generate.test.mjs",
+                "tests/document-languages-labels-review.test.mjs",
+                "tests/document-languages-metrics-wordlists.test.mjs",
+                "tests/document-languages-metrics.test.mjs",
+                "tests/document-languages-naming.test.mjs",
+                "tests/document-languages-nfc.test.mjs",
+                "tests/document-languages-r1-coverage.test.mjs",
+                "tests/document-languages-registry.test.mjs",
+                "tests/document-languages-requirements.test.mjs",
+                "tests/document-languages-sections.test.mjs",
+                "tests/document-languages-speckit.test.mjs",
+                "tests/document-languages-strict.test.mjs",
+                "tests/document-languages-structure.test.mjs",
+                "tests/document-languages-verification.test.mjs",
+                "tests/document-languages-writers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -6154,7 +6208,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:a26ac5e77e46436c1f90ff532a4c5a87afc00d39509ee399cffe2bcaf5495eb7"
+            "digest": "sha256:92198221c00484979445a7365ca88749eac9ef2971682d91ebc67852ac0bca95"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -8874,7 +8928,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "be59b729e765cd7b072008551bfcbbd1a90ae120",
+          "lastReviewedRevision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
           "outcomes": [
             {
               "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
@@ -8965,6 +9019,36 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
+              "reason": "spec 105 added DQ009/DQ010, the Glossary validator and its registration in files these specs list as evidence; read each spec's requirements against the change: their behavior is unchanged (DQ001-DQ008 byte-identical, existing validators and commands untouched apart from additive entries)",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -8995,7 +9079,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:21a299a121e1b3d9ebf911abe9d2668ef82556151a7b687c9f5e4682699d680c"
+            "digest": "sha256:21763ebdcfba2d8af5836af95bdc443bd07722f3018683d5859650c6198766e9"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
