@@ -9962,7 +9962,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:c43158fae1ca514b266a94b70c437364fa94ac99a9f5df0f8db255d22be536ff"
+            "digest": "sha256:aedb11463cc686ed93aa22512dfd737f364020af6b088e0c5e40dcc72e1b4734"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",

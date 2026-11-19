@@ -216,6 +216,7 @@ None. DQ009 at `warn` or `info` was the one open question; the maintainer chose 
 - **SC-003**: `tools/release-ab.mjs` (main at `31652de` against this branch) over DocGuard and the 25 benchmark directories: gate PASS, no exit code changed, every change is an added finding: GLS004 in each benchmark directory without a glossary; on DocGuard 8 DQ009 and 2 DQ010. A hermetic A/B on 12 other local projects (one `git archive` copy per CLI, sequential): no exit code or status changed, no finding removed; added DQ009 2 to 12 per project, DQ010 0 to 4, GLS004 once each.
 - **SC-004**: no Glossary result is `empty` on any corpus directory (the lookup is a performed check), and no strict exit 4 is new.
 - **Amendment (2026-11-19)**: blockquotes are not prose for DQ009 (FR-021).
+- **After DQ009 became informational (2026-11-19)**: both A/Bs rerun on the final tree: the release gate PASS with 0 exit-code changes over 26 directories; the 12 other projects unchanged in exit code and status, with DQ009, DQ010 and GLS004 all resolving to `info`. Full suite: 5,962 pass; the same 22 failures, all in the three stub files that fail identically on `main`.
 - **FR-030, non-English strings for review before release:**
 
 | String | Language | Where it is used |
