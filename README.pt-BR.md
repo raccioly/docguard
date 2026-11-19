@@ -14,6 +14,10 @@
 [![PyPI](https://img.shields.io/pypi/v/docguard-cli)](https://pypi.org/project/docguard-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Vídeo de 79 segundos sobre o DocGuard (em inglês)](https://raw.githubusercontent.com/raccioly/docguard/main/docs/media/docguard-explainer-poster.png)](https://github.com/raccioly/docguard/blob/main/docs/media/docguard-explainer.mp4)
+
+▶️ **Vídeo de 79 segundos (em inglês)**, com legendas.
+
 ---
 
 > **✨ Veja o que o DocGuard detecta em 30 segundos — sem instalar nada:**

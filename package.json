@@ -65,6 +65,7 @@
     "extensions/",
     "docs/",
     "!docs/*.pdf",
+    "!docs/media/",
     "schemas/",
     "STANDARD.md",
     "PRIVACY.md",

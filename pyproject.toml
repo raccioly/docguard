@@ -39,3 +39,7 @@ docguard = "docguard_cli.wrapper:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["docguard_cli"]
+
+[tool.hatch.build.targets.sdist]
+# The explainer video and its poster are for GitHub readers, not for installs.
+exclude = ["docs/media"]
