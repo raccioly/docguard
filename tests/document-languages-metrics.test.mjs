@@ -60,8 +60,8 @@ const EN = [
 /** What origin/main reports for EN with no `docs.language` (captured before this stage). */
 const EN_GOLDEN = {
   passed: 3,
-  total: 8,
-  codes: ['DQ001', 'DQ003', 'DQ006', 'DQ007', 'DQ008'],
+  total: 9, // eight metrics and the sentence limit DQ009 (spec 105); its finding is left out of `messages`, which pins DQ001-DQ008
+  codes: ['DQ001', 'DQ003', 'DQ006', 'DQ007', 'DQ008', 'DQ009'],
   messages: [
     'README.md: High passive voice ratio (100% of sentences). Use active voice for clarity. Found 4/4 passive sentences. If the passive voice is intentional (sequence/flow doc), add: <!-- docguard:quality passive-voice off — your reason -->',
     'README.md: Low atomicity (50% compound sentences). Split compound sentences for easier verification (IEEE 830 §4.1)',
@@ -76,11 +76,11 @@ describe('T025: Portuguese prose gets sentence length and the reviewed metrics, 
   const r = run(dir);
 
   it('reports sentence length (DQ006), negation (DQ007) and conditional (DQ008) as findings; passive voice and Flesch yield none', () => {
-    assert.deepEqual(findingCodes(r), ['DQ006', 'DQ007', 'DQ008']);
+    assert.deepEqual(findingCodes(r), ['DQ006', 'DQ007', 'DQ008', 'DQ009']); // DQ009 is spec 105: the sentence limit runs where words are spaced
   });
 
   it('reports passive voice and both Flesch scores as skipped, each with the reason language-not-supported', () => {
-    assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ004', 'DQ005']);
+    assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ004', 'DQ005', 'DQ010']); // DQ010 (spec 105) is English only
     for (const s of r.skippedMetrics) {
       assert.equal(s.reason, 'language-not-supported');
       assert.equal(s.language, 'pt');
@@ -90,7 +90,7 @@ describe('T025: Portuguese prose gets sentence length and the reviewed metrics, 
   });
 
   it('a skipped metric yields no number: no count in passed or total', () => {
-    assert.equal(r.total, 5, 'sentence length and the four reviewed metrics were judged');
+    assert.equal(r.total, 6, 'sentence length, the four reviewed metrics and the sentence limit (DQ009) were judged');
     assert.equal(r.passed, 2, 'pronouns and compound sentences passed; the other three failed');
     for (const s of r.skippedMetrics) assert.equal('value' in s || 'ratio' in s || 'score' in s, false);
   });
@@ -109,10 +109,10 @@ describe('T025: Portuguese prose gets sentence length and the reviewed metrics, 
   it('a document that passes every judged check counts them as passed and has no finding', () => {
     const short = 'O sistema lê o arquivo de configuração e grava o resultado no disco.\nO operador revisa o relatório gerado pelo fluxo todos os dias.\nA equipe guarda os registros em um diretório separado do código.\nCada módulo tem um responsável e um revisor definidos no início.\nOs dados passam por uma etapa de validação antes da gravação final.\nO relatório final lista os arquivos lidos e os arquivos gravados hoje.\n';
     const result = run(project({ 'README.md': `# T\n\n${short}` }, { language: 'pt-BR' }));
-    assert.equal(result.total, 5);
-    assert.equal(result.passed, 5);
+    assert.equal(result.total, 6);
+    assert.equal(result.passed, 6);
     assert.deepEqual(findingCodes(result), []);
-    assert.equal(skippedCodes(result).length, 3);
+    assert.equal(skippedCodes(result).length, 4);
   });
 
   it('the Score does not count a skipped metric: its Doc Quality dimension is the same with and without the prose', () => {
@@ -149,7 +149,7 @@ describe('T026: the Unicode tokenizer, and the English path unchanged', () => {
       assert.equal(r.passed, EN_GOLDEN.passed);
       assert.equal(r.total, EN_GOLDEN.total);
       assert.deepEqual(findingCodes(r), EN_GOLDEN.codes);
-      assert.deepEqual(r.findings.map(f => f.message).sort(), [...EN_GOLDEN.messages].sort());
+      assert.deepEqual(r.findings.filter(f => f.code !== 'DQ009').map(f => f.message).sort(), [...EN_GOLDEN.messages].sort());
       assert.equal(r.skippedMetrics, undefined, 'an English project carries no skip report');
     }
   });
@@ -157,8 +157,8 @@ describe('T026: the Unicode tokenizer, and the English path unchanged', () => {
   it('Cyrillic prose is prose: a Russian document is scored for sentence length, not dropped as insufficient', () => {
     const ru = 'Система читает файл настройки и записывает результат на диск каждый день без исключения.\nОператор проверяет отчет, который создает процесс, и сообщает команде о любых ошибках.\nКаждый модуль имеет ответственного и проверяющего, назначенных в начале работы над проектом.\nДанные проходят этап проверки до окончательной записи в хранилище и после нее.\nИтоговый отчет перечисляет прочитанные файлы и записанные файлы за текущий день работы.\n';
     const r = run(project({ 'README.md': `# T\n\n${ru}` }, { language: 'ru' }));
-    assert.equal(r.total, 1);
-    assert.equal(skippedCodes(r).length, 7);
+    assert.equal(r.total, 2);
+    assert.equal(skippedCodes(r).length, 8);
   });
 
   it('DQ006 is skipped for a script without word spacing (Chinese, Japanese, Thai): nothing is scored', () => {
@@ -166,7 +166,7 @@ describe('T026: the Unicode tokenizer, and the English path unchanged', () => {
     for (const language of ['zh', 'zh-Hans', 'ja', 'th']) {
       const r = run(project({ 'README.md': `# T\n\n${zh}` }, { language }));
       assert.equal(r.total, 0, `${language}: nothing is scored`);
-      assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ002', 'DQ003', 'DQ004', 'DQ005', 'DQ006', 'DQ007', 'DQ008'], language);
+      assert.deepEqual(skippedCodes(r), ['DQ001', 'DQ002', 'DQ003', 'DQ004', 'DQ005', 'DQ006', 'DQ007', 'DQ008', 'DQ009', 'DQ010'], language);
       assert.equal(r.emptyCause, 'language-not-supported', `${language}: an empty result names the cause`);
       assert.deepEqual(r.findings, []);
     }
@@ -182,12 +182,12 @@ describe('T027: a language with no built-in set reports each metric as skipped',
       assert.ok(!findingCodes(r).includes(code), `${code} yields no finding`);
     }
     assert.ok(r.skippedMetrics.every(s => s.reason === 'language-not-supported' && s.language === 'de'));
-    assert.equal(r.total, 1, 'sentence length still runs: German separates words with spaces');
+    assert.equal(r.total, 2, 'sentence length and the sentence limit still run: German separates words with spaces');
   });
 
   it('English prose under docs.language "de" is skipped too: the language is configuration, never content', () => {
     const r = run(project({ 'README.md': `# T\n\n${EN}\n` }, { language: 'de' }));
-    assert.equal(r.total, 1);
-    assert.equal(skippedCodes(r).length, 7);
+    assert.equal(r.total, 2);
+    assert.equal(skippedCodes(r).length, 8);
   });
 });

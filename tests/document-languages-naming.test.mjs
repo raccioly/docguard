@@ -127,23 +127,23 @@ describe('T028: text metrics skip a document by its own language', () => {
     }, { language: 'en' });
     const r = validateDocQuality(dir, loadConfig(dir));
     assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.md:')).length, 0);
-    assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.pt-BR.md:')).length, 3);
-    assert.equal(skipped(r).filter(s => s.startsWith('SECURITY.md:')).length, 3);
-    assert.equal(r.total, 8 + 5 + 5, 'eight for the English document, five (sentence length and the four reviewed metrics) for each translation');
+    assert.equal(skipped(r).filter(s => s.startsWith('ARCHITECTURE.pt-BR.md:')).length, 4);
+    assert.equal(skipped(r).filter(s => s.startsWith('SECURITY.md:')).length, 4);
+    assert.equal(r.total, 9 + 6 + 6, 'nine for the English document (eight metrics and the sentence limit), six (sentence length, the four reviewed metrics and the sentence limit) for each translation');
   });
 
   it('content never changes the language: Portuguese prose in a plain file is scored as English', () => {
     const dir = project({ 'docs-canonical/ARCHITECTURE.md': `# A\n\n${PT_PROSE}` }, { language: 'en' });
     const r = validateDocQuality(dir, loadConfig(dir));
     assert.equal(r.skippedMetrics, undefined);
-    assert.equal(r.total, 8);
+    assert.equal(r.total, 9);
   });
 
   it('without docs.language nothing is inferred: X.pt-BR.md is scored as English (guard)', () => {
     const dir = project({ 'docs-canonical/ARCHITECTURE.pt-BR.md': `# A\n\n${PT_PROSE}` });
     const r = validateDocQuality(dir, loadConfig(dir));
     assert.equal(r.skippedMetrics, undefined);
-    assert.equal(r.total, 8);
+    assert.equal(r.total, 9);
   });
 
   it('a README with an unsupported-language name is skipped; AGENTS.md is not a Doc-Quality document at all', () => {

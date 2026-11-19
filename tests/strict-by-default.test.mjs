@@ -72,7 +72,7 @@ const ALL_KEYS = [
   'docQuality', 'todoTracking', 'schemaSync', 'specKit', 'documentLifecycle', 'specRegistry',
   'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'evidence', 'crossReference',
   'generatedStaleness', 'surfaceSync', 'suppressions', 'diffSuspicion', 'referenceExistence',
-  'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
+  'apiDocSmells', 'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency', 'glossary',
 ];
 const only = (...keys) => Object.fromEntries(ALL_KEYS.map(k => [k, keys.includes(k)]));
 // The fixture helper pins the lower mode, because most tests here pin pre-strict behavior and name the mode when it matters;
@@ -474,7 +474,7 @@ const MIGRATED = [
   'docsDiff', 'metadataSync', 'docsCoverage', 'docQuality', 'todoTracking', 'schemaSync', 'specKit', 'documentLifecycle',
   'specRegistry', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'evidence',
   'crossReference', 'generatedStaleness', 'suppressions', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
-  'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency',
+  'decisionRecords', 'aidlc', 'canonicalSync', 'metricsConsistency', 'glossary',
 ];
 
 /** Fixtures per migrated validator: where it applies and is empty, where it does not apply, and the fix applied. */
@@ -498,6 +498,12 @@ const FIXTURES = {
     'layout-not-recognized': { files: { 'cli/commands/a.mjs': '', 'README.md': '# R\n' }, extra: { surfaceSync: { surfaces: [{ name: 'commands', glob: 'bin/*.mjs', docs: ['README.md'] }] } } },
     'nothing-of-this-kind': { files: NO_API },
     fix: { files: { 'cli/commands/a.mjs': '', 'cli/commands/b.mjs': '', 'cli/commands/c.mjs': '', 'README.md': '# R\n\n| Command |\n|---|\n| `a` |\n| `b` |\n| `c` |\n' }, extra: { surfaceSync: { surfaces: [{ name: 'commands', glob: 'cli/commands/*.mjs', docs: ['README.md'] }] } } },
+  },
+  // Glossary (spec 105): a project with a document to check is never empty, because looking for the glossary is a check
+  // (Decision 3), so its one empty case is a project with no document. The fixture's README, which the isolation adds, is ignored.
+  glossary: {
+    'nothing-of-this-kind': { files: NO_API, extra: { ignore: ['README.md'] } },
+    fix: { files: { ...NO_API, 'README.md': '# R\n\nThe project is small.\n', 'docs/GLOSSARY.md': '# Glossary\n\n| Use | Avoid |\n|---|---|\n| configuration | config |\n' } },
   },
 };
 // The documents of the `docs-missing` case: a declared surface whose document does not exist.
@@ -536,7 +542,7 @@ describe('the result contract, per migrated validator', () => {
         assert.equal(result.verdict === 'pass' || result.verdict === 'fail', true, `verdict ${result.verdict}`);
       });
       it('exports applies(projectDir, config) with the same decision', async () => {
-        const mod = await import(`../cli/validators/${{ apiSurface: 'api-surface', docsSync: 'docs-sync', surfaceSync: 'surface-sync' }[key]}.mjs`);
+        const mod = await import(`../cli/validators/${{ apiSurface: 'api-surface', docsSync: 'docs-sync', surfaceSync: 'surface-sync', glossary: 'glossary' }[key]}.mjs`);
         for (const [cause, fixture] of Object.entries(FIXTURES[key])) {
           if (cause === 'fix') continue;
           const { dir } = run(key, fixture);

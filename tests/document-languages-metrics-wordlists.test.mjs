@@ -242,15 +242,15 @@ describe('a Portuguese document gets numbers and the four findings above thresho
     it(`${language}: heavy prose yields DQ002, DQ003, DQ007 and DQ008, nothing is skipped for them`, () => {
       const r = run({ 'README.md': `# T\n\n${PT_HEAVY}\n` }, { language });
       for (const code of CLOSED) assert.ok(codes(r).includes(code), `${language}: ${code}`);
-      assert.deepEqual(skipped(r), ['DQ001', 'DQ004', 'DQ005'], 'passive voice and both Flesch scores stay skipped');
+      assert.deepEqual(skipped(r), ['DQ001', 'DQ004', 'DQ005', 'DQ010'], 'passive voice and both Flesch scores stay skipped, and so do the English-only step verbs (DQ010, spec 105)');
       assert.ok(r.skippedMetrics.every(s => s.reason === 'language-not-supported' && s.language === 'pt'));
-      assert.equal(r.total, 5, 'sentence length and the four closed-class metrics are judged');
+      assert.equal(r.total, 6, 'sentence length, the four closed-class metrics and the sentence limit (DQ009, spec 105) are judged');
     });
     it(`${language}: clean prose is judged on all five and yields none of the four`, () => {
       const r = run({ 'README.md': `# T\n\n${PT_CLEAN}\n` }, { language });
       assert.deepEqual(codes(r).filter(c => CLOSED.includes(c)), []);
-      assert.equal(r.total, 5);
-      assert.equal(r.passed, 5);
+      assert.equal(r.total, 6);
+      assert.equal(r.passed, 6);
     });
   }
   it('messages keep the English wording and name the metric; DQ002 quotes Portuguese pronouns', () => {
@@ -276,14 +276,14 @@ describe('a Spanish document gets numbers and the four findings above threshold'
     it(`${language}: heavy prose yields DQ002, DQ003, DQ007 and DQ008`, () => {
       const r = run({ 'README.md': `# T\n\n${ES_HEAVY}\n` }, { language });
       for (const code of CLOSED) assert.ok(codes(r).includes(code), `${language}: ${code}`);
-      assert.deepEqual(skipped(r), ['DQ001', 'DQ004', 'DQ005']);
+      assert.deepEqual(skipped(r), ['DQ001', 'DQ004', 'DQ005', 'DQ010']);
       assert.ok(r.skippedMetrics.every(s => s.language === 'es'));
-      assert.equal(r.total, 5);
+      assert.equal(r.total, 6);
     });
     it(`${language}: clean prose yields none of the four`, () => {
       const r = run({ 'README.md': `# T\n\n${ES_CLEAN}\n` }, { language });
       assert.deepEqual(codes(r).filter(c => CLOSED.includes(c)), []);
-      assert.equal(r.passed, 5);
+      assert.equal(r.passed, 6);
     });
   }
   it('DQ002 quotes Spanish pronouns', () => {
@@ -298,7 +298,7 @@ describe('overrides and configuration work as in English', () => {
     const r = run({ 'README.md': body }, { language: 'pt-BR' });
     assert.ok(!codes(r).includes('DQ007'));
     assert.ok(codes(r).includes('DQ008'));
-    assert.equal(r.total, 5);
+    assert.equal(r.total, 6);
   });
   it('a numeric override raises the negation threshold', () => {
     const body = `# T\n\n<!-- docguard:quality negation-load 1 — operacional -->\n\n${ES_HEAVY}\n`;
@@ -320,7 +320,7 @@ describe('every other language stays skipped, English is untouched', () => {
         assert.ok(!codes(r).includes(code));
       }
       assert.ok(r.skippedMetrics.every(s => s.reason === 'language-not-supported'));
-      assert.equal(r.total, 1, 'only sentence length is judged');
+      assert.equal(r.total, 2, 'only sentence length and the sentence limit (DQ009, spec 105) are judged');
     });
   }
   it('English prose (no docs.language, and "en") never reports a skip and is scored with the English lists', () => {
@@ -328,7 +328,7 @@ describe('every other language stays skipped, English is untouched', () => {
     for (const docs of [undefined, { language: 'en' }]) {
       const r = run({ 'README.md': `# T\n\n${EN}\n` }, docs);
       assert.equal(r.skippedMetrics, undefined);
-      assert.equal(r.total, 8);
+      assert.equal(r.total, 9, 'eight metrics and the sentence limit (DQ009, spec 105)');
     }
   });
 });
