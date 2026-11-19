@@ -35,5 +35,5 @@ Tests come first in each phase. Private repository names never appear in a track
 
 - [x] T015 `tools/fuzz.mjs`: `parseGlossary`, `checkableLines`, `proseSentences`, `numberedSteps`; `npm run fuzz` passes (FR-028).
 - [x] T016 Documents: `docs/configuration.md`, `docs/languages.md`, README section, `npm run docs:reference`, `npm run llms` if a canonical document changed, CHANGELOG naming every new code; DocGuard's own `docs/GLOSSARY.md` with rows that produce no finding on `main` (FR-029).
-- [x] T017 Proof: `npm test` by exit code; A/B with `tools/release-ab.mjs` on DocGuard and the benchmark corpus; hermetic A/B on local projects (notes folder only); `npm run budget`; record results and the non-English review table in Verification Notes (SC-001 to SC-004, FR-030).
+- [x] T017 Proof: `npm test` by exit code; A/B with `tools/release-ab.mjs` on DocGuard and the benchmark corpus; hermetic A/B on local projects (notes folder only); `npm run budget`; record results and the non-English review table in Verification Notes (SC-001 to SC-004, FR-030). <!-- docguard:ignore SPK010 — the task runs this tool, it does not change it -->
 - [x] T018 Close: `specs --write`, anchors accepted for files this change touched, issue 706 updated to point at this spec.
