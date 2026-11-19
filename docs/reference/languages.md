@@ -7,17 +7,17 @@ nav_order: 3
 # Languages and Frameworks
 
 DocGuard reads source code statically. It never imports, builds or runs your
-project. This page lists what it reads, how it reads it, and where its reading
-stops. Every row points at the scanner that does the work, under `cli/scanners/`
-unless stated otherwise.
+project. This page lists what DocGuard reads, how it reads it, and where its
+reading stops. Every row points at the scanner that does the work, under
+`cli/scanners/` unless stated otherwise.
 
 Two things decide how much DocGuard sees in a file:
 
-- the **parser tier**: whether a syntax tree was available, or the file was
-  matched by pattern;
+- the **parser tier**: whether a syntax tree was available, or DocGuard matched
+  the file by pattern;
 - the **framework**: route and model extraction runs only for the frameworks
-  listed below. A framework that is not listed is not read, even in a language
-  DocGuard otherwise supports.
+  listed below. DocGuard does not read a framework that is not listed, even in
+  a language that DocGuard otherwise supports.
 
 ## Parser tiers
 
@@ -36,12 +36,12 @@ Every finding carries a `parserTier` field (`cli/findings.mjs`,
 
 What a degraded tier changes:
 
-- **Findings are kept.** What a pattern found is real.
-- **Coverage is lowered.** The owning validator reports
-  `applicability: partial`, and the reason names the languages and file counts
-  (`tierApplicability` in `cli/shared-source.mjs`). The absence of a finding in
-  those files is weak evidence: a form the patterns do not match is not seen.
-- **`generate` says which facts were read by pattern.** `generate --plan`
+- **Findings stay.** What a pattern found is real.
+- **Coverage is lower.** The owning validator reports `applicability: partial`,
+  and the reason names the languages and file counts (`tierApplicability` in
+  `cli/shared-source.mjs`). No finding in those files is weak evidence, because
+  DocGuard does not see a form that the patterns do not match.
+- **`generate` says which facts it read by pattern.** `generate --plan`
   reports a tier for its endpoints and entities, with two separate flags:
   - `degraded`: a file whose language has a parser was read by
     `regex-fallback`. The surface confidence is `low`, the endpoint, entity
@@ -113,9 +113,9 @@ syntax tree. A dash means nothing is extracted.
 | PHP | `.php` | `fallback-language` | Laravel, Symfony | - | Yes | - |
 | C# | `.cs` | `fallback-language` | ASP.NET Core controllers and minimal APIs | - | Yes | - |
 
-Every other language in `LANGUAGE_NAMES` (`cli/shared-source.mjs`) is
-recognised by extension so that a coverage gap can name it, and nothing is
-extracted from it:
+DocGuard recognizes every other language in `LANGUAGE_NAMES`
+(`cli/shared-source.mjs`) by extension, so that a coverage gap can name it.
+DocGuard extracts nothing from these languages:
 
 Swift (`.swift`), Scala (`.scala`), Elixir (`.ex .exs`), Dart (`.dart`),
 C (`.c .h`), C++ (`.cc .cpp .cxx .hpp`), Objective-C (`.m .mm`), Lua (`.lua`),
@@ -123,10 +123,10 @@ Clojure (`.clj`), Haskell (`.hs`), Erlang (`.erl`), OCaml (`.ml`), F# (`.fs`),
 Visual Basic (`.vb`), Groovy (`.groovy`), Perl (`.pl`), Crystal (`.cr`),
 Nim (`.nim`), Zig (`.zig`), Julia (`.jl`).
 
-When the env scan's source roots contain files in one of these languages, the
-Environment validator reports `partial` and names them, instead of a silent
-pass. The symbol map and the module graph also name the languages the import
-graph does not read, with file counts.
+When the source roots of the env scan contain files in one of these languages,
+the Environment validator reports `partial` and names them. It does not pass
+silently. The symbol map and the module graph also name the languages that the
+import graph does not read, with file counts.
 
 ### What "partial" means per language
 
@@ -138,14 +138,14 @@ graph does not read, with file counts.
 | Any other source language | When files in it sit under the env scan's roots |
 
 Route discovery for the pattern-read languages walks up to 32 directory levels
-and stops at 20,000 files per scan; reaching that cap also makes coverage
+and stops at 20,000 files per scan. If a scan reaches that cap, coverage is also
 `partial` (`cli/scanners/routes.mjs`).
 
 ## Project and framework detection
 
 DocGuard identifies each ecosystem from its manifest files, up to four
-directory levels deep, skipping dependency, build and test-fixture directories
-(`cli/scanners/project-type.mjs`). A repository can hold several.
+directory levels deep. It skips dependency, build and test-fixture directories
+(`cli/scanners/project-type.mjs`). A repository can hold several ecosystems.
 
 | Manifest | Language | Frameworks it classifies |
 |---|---|---|
@@ -160,8 +160,8 @@ directory levels deep, skipping dependency, build and test-fixture directories
 | `*.csproj` | C# | ASP.NET Core (the `Microsoft.NET.Sdk.Web` SDK, the `Microsoft.AspNetCore.App` framework reference, or a `Microsoft.AspNetCore.*` package) |
 
 A classified framework is not the same as a read one. The next section lists
-which frameworks have a scanner. For a JS/TS ecosystem the profile also names
-the ORM, UI and auth libraries it finds in dependencies: Prisma, Drizzle,
+which frameworks have a scanner. For a JS/TS ecosystem, the profile also names
+the ORM, UI and auth libraries that it finds in dependencies: Prisma, Drizzle,
 Mongoose, TypeORM, Sequelize, Knex, React, Vue, Svelte, NextAuth.js,
 Passport.js, Clerk and Lucia.
 
@@ -172,8 +172,8 @@ Passport.js, Clerk and Lucia.
 Routes feed the API-surface check in `docguard guard`, `docguard diff` and the
 API reference that `docguard generate` writes. When the project has an OpenAPI
 or Swagger file (`openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.*`, or
-`openapi.*` under `api/`, `docs/` or `spec/`), its endpoints are used instead of
-the code scan (`cli/scanners/doc-tools.mjs`).
+`openapi.*` under `api/`, `docs/` or `spec/`), DocGuard uses its endpoints
+instead of the code scan (`cli/scanners/doc-tools.mjs`).
 
 | Framework | Read when | What is extracted | Tier | Scanner |
 |---|---|---|---|---|
@@ -202,11 +202,11 @@ the code scan (`cli/scanners/doc-tools.mjs`).
 | Symfony | A `symfony/framework-bundle` dependency in `composer.json` | `#[Route]` attributes and `@Route` docblock annotations on controller methods, joined to the class-level route, with `methods` (`ANY` when absent) and localized path arrays; on an invokable controller (an `__invoke` method and no method route) the class-level route is the route of `__invoke`, as Symfony's loader reads it; a declaration that yields no route (a trait method's, one above a property) is recorded in `scan.unresolved` (`route-unresolved-declaration`); `config/routes.yaml` and `config/routes/*.yaml` routes (`path`, `methods`) and imports, whose `prefix` applies to the attribute routes of an imported directory or to an imported YAML file. `when@env` blocks and bundle resources are skipped; `config/routes.php` and XML are not read. Auth from `IsGranted` or `Security` on the method or class, or `denyAccessUnlessGranted` in the method | `fallback-language` | `php-routes.mjs` |
 | ASP.NET Core | A `.csproj` using `Microsoft.NET.Sdk.Web`, referencing the `Microsoft.AspNetCore.App` framework or a `Microsoft.AspNetCore.*` package | Controllers: class-level `[Route]` (inherited from a base controller) joined to `[HttpGet]`, `[HttpPost]`, `[HttpPut]`, `[HttpDelete]`, `[HttpPatch]`, `[HttpHead]`, `[HttpOptions]`, `[Route]` and `[AcceptVerbs]` templates; `/` and `~/` templates are absolute; `[controller]` (the class name, case kept), `[action]` (`Async` suffix removed, `[ActionName]` honoured) and `[area]`; `const string` templates. Minimal APIs: `MapGet`, `MapPost`, `MapPut`, `MapDelete`, `MapPatch`, `MapMethods`, `Map` and `MapHealthChecks` (`ANY`) under `MapGroup` prefixes, through variables and methods the group is passed to, in any file. Auth from `[Authorize]`/`[AllowAnonymous]`, `RequireAuthorization()`/`AllowAnonymous()` and `MapControllers().RequireAuthorization()`. Conventional routes (`MapControllerRoute`) are not read, nor a prefix a custom `IControllerModelConvention` adds at run time (often from configuration): those routes are reported without it | `fallback-language` | `dotnet-routes.mjs` |
 
-A Sinatra app inside a Rails project is not read: the project is classified
-Rails and only `config/routes.rb` is read.
+DocGuard does not read a Sinatra app inside a Rails project. It classifies the
+project as Rails and reads only `config/routes.rb`.
 
-Routes in test, fixture and example directories are dropped by default. When
-that leaves no route, the API-surface reason says how many were excluded and
+DocGuard drops routes in test, fixture and example directories by default. When
+that leaves no route, the API-surface reason says how many DocGuard excluded and
 names the `detection.includeNonProduct` setting.
 
 ### Case-sensitive route matching
@@ -227,9 +227,9 @@ ASP.NET Core reader). Every other route compares exactly, case included.
 | Hono, itty-router, Cloudflare Worker dispatch, Next.js | Never | Not marked. Hono's routers do not fold case; a custom `getPath` is code, not a setting |
 | Spring, Laravel, Symfony, Rails, Sinatra, Django, Flask, FastAPI, Starlette, the Go and Rust frameworks | Never (by default) | Not marked |
 
-A setting or option whose value is not a literal (`app.set('case sensitive
-routing', process.env.CS === '1')`, `new Router(options)`) leaves the routes it
-may govern compared exactly, so a gap is never hidden. `diff` names each such
+When a setting or option has a value that is not a literal (`app.set('case sensitive
+routing', process.env.CS === '1')`, `new Router(options)`), DocGuard compares the
+routes it may govern exactly, so a gap is never hidden. `diff` names each such
 setting under API Routes, with its file and line.
 
 ### Data models
@@ -257,7 +257,7 @@ Two consumers read models, and they do not read the same set:
 | Go structs | `.go` files | Any struct whose fields carry `json`, `gorm`, `db` or `bson` tags | `generate` and `diff` only | `schemas.mjs` |
 | Diesel | `.rs` files | `table!` blocks and their columns | `generate` and `diff` only | `schemas.mjs` |
 
-An OpenAPI file's schemas, when present, take priority over code for
+When an OpenAPI file is present, its schemas take priority over code for
 `generate`. Python, Drizzle, Mongoose, TypeORM and Sequelize model findings
 carry the tier of the files behind them; a schema read by pattern marks the
 plan's entity surface partial. Prisma, Knex and Rails model findings carry
@@ -271,11 +271,11 @@ objects, `@ViewEntity`, `@ChildEntity`, embedded columns and class-level
 
 ### Environment variables
 
-The env scan reads source files under the source roots and reports names that
-are UPPER_SNAKE_CASE: starting with a letter and ending with a letter or digit
-(`grepEnvUsage` in `cli/shared-source.mjs`). A name built at runtime, such as
-`os.Getenv(key)`, is not seen in any language. Each form is matched only in
-files of its own language.
+The env scan reads source files under the source roots and reports names in
+UPPER_SNAKE_CASE: a name starts with a letter and ends with a letter or digit
+(`grepEnvUsage` in `cli/shared-source.mjs`). DocGuard does not see a name built
+at runtime, such as `os.Getenv(key)`, in any language. DocGuard matches each
+form only in files of its own language.
 
 | Language | Forms read |
 |---|---|
@@ -288,8 +288,8 @@ files of its own language.
 | PHP | `getenv("X")`, `$_ENV["X"]`, Laravel's `env("X")` |
 | C# | `Environment.GetEnvironmentVariable("X")` |
 
-Env reads inside templated YAML, such as a Rails `database.yml` with ERB, are
-not read.
+DocGuard does not read env reads inside templated YAML, such as a Rails
+`database.yml` with ERB.
 
 ### Imports and the module graph
 
@@ -383,8 +383,8 @@ are read in every language.
 
 ### External services
 
-`docguard generate --plan` names the third-party services a project depends on
-by matching dependency names from every detected manifest against a fixed list
-(`integrations.mjs`): cloud providers, databases, payments, auth, AI, messaging,
-observability, search, queues and storage. It reads dependency names only, not
-code.
+`docguard generate --plan` names the third-party services that a project depends
+on. It matches dependency names from every detected manifest against a fixed
+list (`integrations.mjs`): cloud providers, databases, payments, auth, AI,
+messaging, observability, search, queues and storage. It reads dependency names
+only, not code.

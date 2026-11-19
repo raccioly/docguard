@@ -1,6 +1,6 @@
 # Contributing to DocGuard
 
-Thank you for your interest in contributing to DocGuard! This document provides guidelines for contributing.
+Thank you for contributing to DocGuard! This page tells you how.
 
 ## Getting Started
 
@@ -9,11 +9,11 @@ Thank you for your interest in contributing to DocGuard! This document provides 
 3. **Install**: `npm install` (one runtime dependency, `@babel/parser`, exact-pinned; no dev dependencies)
 4. **Run tests**: `npm test`
 5. **Run DocGuard on itself**: `node cli/docguard.mjs guard`
-6. **Spec Kit** (optional, needed to run the `/speckit-*` workflow): install the
-   [`specify` CLI](https://github.com/github/spec-kit), then `npm run speckit:dev`
-   to register this repository's own extension and its hooks. The Spec Kit core
-   skills for Claude Code (`.claude/skills/speckit-*`) and Codex
-   (`.agents/skills/speckit-*`) are already tracked.
+6. **Spec Kit** (optional; you need it to run the `/speckit-*` workflow): install the
+   [`specify` CLI](https://github.com/github/spec-kit), then run `npm run speckit:dev`.
+   This registers this repository's own extension and its hooks. The repository
+   already tracks the Spec Kit core skills for Claude Code (`.claude/skills/speckit-*`)
+   and Codex (`.agents/skills/speckit-*`).
 
 ## Development Workflow
 
@@ -47,33 +47,33 @@ tests/                  ← Integration tests
 docs-canonical/         ← DocGuard's own CDD documentation
 ```
 
-(Counts are deliberately not stated here — they drift. The README's counts are
-machine-governed by the `canonical-sync` validator.)
+(This page states no counts on purpose, because they drift. The `canonical-sync`
+validator checks the README's counts.)
 
 ## Architecture Rules
 
-- **Minimal dependencies**: exactly one runtime dep (`@babel/parser`, exact-pinned, optional-load). New deps require constitution-level justification + exact pinning + supply-chain vetting. Default to Node.js built-ins.
+- **Minimal dependencies**: exactly one runtime dep (`@babel/parser`, exact-pinned, optional-load). New deps need a constitution-level justification, exact pinning and supply-chain vetting. Use Node.js built-ins by default.
 - **Validators are pure**: Each validator receives `(projectDir, config)` and returns results. No side effects.
 - **Commands don't cross-import**: Commands import from validators, never from other commands.
-- **Writes are explicit and bounded**: The CLI previews first. Deterministic
-  writes require a write flag, preserve recovery evidence, and fail closed on
-  ambiguous ownership. Human-authored intent is never rewritten to match code
-  automatically.
+- **Writes are explicit and bounded**: The CLI shows a preview first. A deterministic
+  write needs a write flag, keeps recovery evidence, and fails closed when
+  ownership is ambiguous. DocGuard never rewrites human-written intent to match
+  the code.
 
 ## Adding a New Command
 
-> **Surface rule:** the v0.20 consolidation cut 21 commands to 13 because the
-> surface had outgrown its users; it has been creeping back since. A PR adding a
-> new *user-facing* command must either retire/absorb an existing one or include
-> an explicit justification for why the surface must grow. Internal helper
-> modules under `cli/commands/` (not registered in the dispatcher) are exempt —
-> but add them to `surfaceSync.commands.ignore` in `.docguard.json` or guard
-> will flag them.
+> **Surface rule:** the v0.20 consolidation cut 21 commands to 13, because the
+> surface had outgrown its users. It has grown back since. A PR that adds a
+> new *user-facing* command must retire or absorb an existing one, or explain
+> why the surface must grow. Internal helper
+> modules under `cli/commands/` (not registered in the dispatcher) are exempt.
+> Add them to `surfaceSync.commands.ignore` in `.docguard.json`, or guard
+> flags them.
 
 1. Create `cli/commands/your-command.mjs` with an exported `runYourCommand(projectDir, config, flags)` function
 2. Import it in `cli/docguard.mjs`
 3. Add it to the help text, command routing switch, and argument parsing
-4. Update the README commands table + count (Canonical-Sync/Surface-Sync enforce these)
+4. Update the README commands table and count (Canonical-Sync/Surface-Sync enforce these)
 5. Add focused tests in `tests/<command>.test.mjs` or the nearest existing suite
 6. Update `CHANGELOG.md`
 
@@ -83,13 +83,13 @@ Search open and closed issues and pull requests before filing. Include a minimal
 synthetic reproduction, a neighboring valid control, the expected and actual
 finding codes, and the smallest relevant configuration. Classify the report as a
 suspected false positive, false negative, unsupported syntax, or policy
-disagreement. Test-only contributions are welcome; maintainers can own the
+disagreement. Test-only contributions are welcome. Maintainers can own the
 detector change after the behavior is reproduced.
 
 ## Contributing an agent-context case
 
 Run `npm run benchmark:agent-context` to validate the frozen synthetic fixtures
-without invoking a model. New task classes belong in a new predeclared protocol,
+without calling a model. New task classes belong in a new predeclared protocol,
 not in the completed v1 matrix. Include an agent-visible fixture, evaluator-only
 fail-to-pass and pass-to-pass checks, reviewed reference behavior, an exact
 changed-file allowlist, model/harness identity, repetitions, and promotion
@@ -133,8 +133,8 @@ test: add edge case tests for score command
 
 ## Closing a Spec
 
-A change that implements a spec closes it in the same pull request, in one
-commit, with no hand edit of `.docguard-specs.json` (`specs/101-completion-one-commit`):
+A change that implements a spec closes it in the same pull request. Use one
+commit, and do not edit `.docguard-specs.json` by hand (`specs/101-completion-one-commit`):
 
 ```bash
 # tick the last task in specs/<feature>/tasks.md, then:
@@ -147,10 +147,10 @@ git add -A && git commit
 
 `specs approve` takes the same `--canonical-doc` (repeatable) and `--persistence`
 flags. If your change edits the evidence of specs that are already closed, guard
-reports SPR011 for each; `docguard specs complete --stale --reason "<text>" --write`
+reports SPR011 for each one. `docguard specs complete --stale --reason "<text>" --write`
 closes them all again in one transaction (`specs/103-completion-upkeep`). Ticking boxes in the completing spec's own `tasks.md` does not block
-`complete`; any other change to it does. The record carries the git blob of every
-evidence file, so a squash merge or a rebase does not strand it: there is no
+`complete`. Any other change to that file does. The record carries the git blob of every
+evidence file. So a squash merge or a rebase does not strand it, and there is no
 second "reanchor" commit. Run `docguard specs reanchor --id <spec-id> --write`
 only when guard reports SPR008 (a record written before blobs were recorded, or
 evidence that changed between review and landing).
@@ -164,7 +164,7 @@ evidence that changed between review and landing).
 
 ## Tests That Create Temporary Directories
 
-A temporary directory comes from `makeTempDir(prefix)` in `tests/helpers/temp-dir.mjs`, never from `mkdtempSync(join(tmpdir(), …))` (spec 098). The helper removes the directory when the test it was given (`makeTempDir(prefix, t)`) ends, when the file's tests end, and, as a backstop, when the process exits or is interrupted. It works without the test runner, so a benchmark or tool uses it too and also removes its directories in a `finally`. `tests/test-temp-dirs.test.mjs` fails on a `mkdtemp` call outside the helper, and `npm run test:temp-leaks` runs the suite with an empty temporary folder and fails if anything is left in it.
+A temporary directory comes from `makeTempDir(prefix)` in `tests/helpers/temp-dir.mjs`, never from `mkdtempSync(join(tmpdir(), …))` (spec 098). The helper removes the directory in three cases: when the test it was given (`makeTempDir(prefix, t)`) ends, when the file's tests end, and, as a backstop, when the process exits or is interrupted. It works without the test runner, so a benchmark or tool can use it too. Such a tool also removes its directories in a `finally`. `tests/test-temp-dirs.test.mjs` fails on a `mkdtemp` call outside the helper, and `npm run test:temp-leaks` runs the suite with an empty temporary folder and fails if anything is left in it.
 
 ## Tests That Create Git Repositories
 
@@ -173,7 +173,7 @@ Fixture git goes through `tests/helpers/git.mjs`; product git does not.
 - A test that builds or inspects a throwaway repository passes `FIXTURE_GIT` on every git call (`spawnSync('git', [...FIXTURE_GIT, ...args])`), or `FIXTURE_GIT_SHELL` in a `git …` command line. The options turn hooks off (`core.hooksPath` set to the null device) and commit and tag signing off, for that one call.
 - Prefer `fixtureGit(cwd, args)` for setup steps. It throws with git's stderr when the step fails, so a fixture that was never committed cannot let the test pass against an empty repository.
 - Pin the branch when the test depends on it: `git init -b main`.
-- Never set the options in the environment, and never add them to `cli/`. DocGuard's own git calls must keep meeting the user's real configuration. The exception is a scratch repository DocGuard itself creates, such as the `demo` fixture.
+- Never set the options in the environment, and never add them to `cli/`. DocGuard's own git calls must keep using the user's real configuration. The exception is a scratch repository DocGuard itself creates, such as the `demo` fixture.
 - `tests/test-git-hermeticity.test.mjs` fails on a git spawn in `tests/` that bypasses the helper. A call that must bypass it (a control that proves a config bites) carries a `fixture-git-exempt:` comment with the reason.
 
 CI's `hermeticity` job runs the suite under a global config whose hooks all fail, whose signing always fails and whose default branch is `trunk`. To reproduce it locally without touching your own config:
@@ -235,9 +235,9 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ## Explain every finding change before a release
 
-A release is compared with the previous one, finding by finding
-(`tools/release-ab.mjs`, spec 087). The release fails unless the CHANGELOG section
-being released names each finding code whose findings changed. When your change
+`tools/release-ab.mjs` (spec 087) compares each release with the previous one,
+finding by finding. The release fails unless the CHANGELOG section
+for that release names each finding code whose findings changed. When your change
 adds, removes or rewords findings, name the code in your `[Unreleased]` entry and
 say why it changed. If it changes an exit code, add a line starting `Exit codes:`
 that says which runs now exit differently. For a release that grows a budget on
@@ -253,9 +253,9 @@ node tools/release-ab.mjs --base ../prev --head .
 
 ## Fuzz the document parsers
 
-`npm test` fuzzes every text parser with a fixed seed (`tests/validator-fuzz.test.mjs`). Each parser must return without throwing, give the same answer twice, and finish within a budget linear in its input. When you add or change a parser that reads text people or agents write, add it to `TARGETS` in `tools/fuzz.mjs`, and add a structured block to the grammar if the generator doesn't reach it yet. The suite asserts every parser is reached.
+`npm test` fuzzes every text parser with a fixed seed (`tests/validator-fuzz.test.mjs`). Each parser must return without throwing, give the same answer twice, and finish within a budget linear in its input. When you add or change a parser that reads text people or agents write, add it to `TARGETS` in `tools/fuzz.mjs`. If the generator does not reach it yet, also add a structured block to the grammar. The suite asserts that every parser is reached.
 
-For a deep run, use `npm run fuzz -- --cases 20000 --seed <n>`. Add `--save` to shrink each failing input and keep it in `tests/fixtures/fuzz/`, where the suite replays it. Fix the parser; never exempt the input (`specs/088-validator-fuzz`).
+For a deep run, use `npm run fuzz -- --cases 20000 --seed <n>`. Add `--save` to shrink each failing input and keep it in `tests/fixtures/fuzz/`, where the suite replays it. Fix the parser. Never exempt the input (`specs/088-validator-fuzz`).
 
 ## Turn a finding into a regression test
 
@@ -265,10 +265,10 @@ A report or a test-only contribution is useful even when you cannot fix the dete
 2. State expected behavior and actual behavior. Distinguish a false positive, a missed defect, unsupported syntax, and a policy preference. A suppression by itself does not demonstrate a bug.
 3. Create the smallest synthetic project that preserves the behavior. Use invented names and values. Include the tool version, runtime version, minimal configuration, exact command, and expected finding code. Avoid attaching the full local feedback record: it can contain private project details.
 4. Set `provenance.synthetic` and `redactionAttested` only after reviewing every inline file. Record the parser tier, exact expected identity, explicit predicate, same-path opposite control, supported scope, and candidate benchmark delta. The command refuses incomplete contribution evidence.
-5. Generate a direct test with `--contribution tests/<name>.test.mjs`. A false-positive case should stay clean while its neighboring real defect still emits; a missed detection should emit while its clean control remains clean. Ambiguous and policy cases require adjudication before test generation.
+5. Generate a direct test with `--contribution tests/<name>.test.mjs`. A false-positive case should stay clean while its neighboring real defect still emits. A missed detection should emit while its clean control remains clean. Ambiguous and policy cases require adjudication before test generation.
 6. Run the focused test and `node benchmarks/run.mjs --external --baseline benchmarks/baseline.json` against the affected version. Describe the result honestly. A test that never exercised the intended parser path is not evidence of a fix.
-7. If the baseline must change, regenerate it with `--write-baseline benchmarks/baseline.json --replace-baseline` and set `review.status`, `reviewedAt`, and `reviewer` by hand after adjudicating every case. Never edit `review.caveat` or `core.metrics`: both are derived from `core.cases` and the loader rejects an envelope where they disagree. When quoting a benchmark number anywhere, quote it with its `n`, its Wilson bound, and the envelope's `review.caveat` — a precision figure without them reads as a calibrated probability, which DocGuard does not measure.
-7. Submit the reviewed example or a test-only PR. Include the duplicate identity so maintainers can find related open and closed work. Follow the repository's changelog and canonical-documentation rules when changing behavior.
+7. If the baseline must change, regenerate it with `--write-baseline benchmarks/baseline.json --replace-baseline` and set `review.status`, `reviewedAt`, and `reviewer` by hand after you adjudicate every case. Never edit `review.caveat` or `core.metrics`. DocGuard derives both from `core.cases`, and the loader rejects an envelope where they disagree. When you quote a benchmark number anywhere, give its `n`, its Wilson bound, and the envelope's `review.caveat`. Without them, a precision figure reads as a calibrated probability, and DocGuard does not measure that.
+8. Submit the reviewed example or a test-only PR. Include the duplicate identity so maintainers can find related open and closed work. Follow the repository's changelog and canonical-documentation rules when changing behavior.
 
 Maintainers should acknowledge reproducible reports, preserve contributor attribution with consent, and record the causal defect family in the regression test. Reproduction success and triage time matter more than issue volume. Do not execute arbitrary submitted scripts with repository credentials. Security-sensitive reports belong in the private channel described by SECURITY.md.
 

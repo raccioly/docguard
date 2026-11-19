@@ -15,8 +15,8 @@ A DocGuard upgrade can touch four things:
 | Agent files | DocGuard's skills and commands, and the Spec Kit extension registration | Yes |
 | CI pins | The Action tag, workflow install lines, pre-commit `rev:` | No |
 
-This guide covers how to see what is behind, what to read before upgrading, how
-to upgrade each channel, and what to check afterwards.
+This guide shows how to see what is behind, what to read before you upgrade, how
+to upgrade each channel, and what to check afterward.
 
 ## 1. See what is behind
 
@@ -41,7 +41,7 @@ The sample output and the table below write versions as `X.Y.Z`; use the release
 ```
 
 The report writes nothing. It asks the npm registry for the latest version, with
-a 3-second timeout, and prints "could not check (offline?)" when it cannot.
+a 3-second timeout. It prints "could not check (offline?)" when it cannot.
 Validation commands such as `guard` make no network calls.
 
 | Command | What it does |
@@ -54,15 +54,15 @@ Validation commands such as `guard` make no network calls.
 ### How DocGuard tells you a release is old
 
 When the installed release is more than 14 days old, guard's text output, the
-MCP server's `initialize` instructions and the context pack say so, and suggest
-`docguard upgrade`. DocGuard reads its own release date from the
-`CHANGELOG.md` it ships with. The note makes no network call and never claims
-that a newer version exists; it only says this one is old.
+MCP server's `initialize` instructions and the context pack say so. They suggest
+`docguard upgrade`. DocGuard reads its own release date from the `CHANGELOG.md`
+that ships with it. The note makes no network call. It never claims that a
+newer version exists. It only says this one is old.
 
-It stays silent when the date cannot be read for certain, in a DocGuard source
-checkout, and in guard's text output when the `CI` environment variable is set.
-JSON, SARIF, JUnit and MCP tool results never carry it. The 14-day threshold is
-fixed. Turn the note off everywhere with:
+The note does not appear in these cases: DocGuard cannot read the date for
+certain, you run a DocGuard source checkout, or the `CI` environment variable
+is set (in guard's text output). JSON, SARIF, JUnit and MCP tool results never
+carry it. The 14-day threshold is fixed. To turn the note off everywhere, run:
 
 ```bash
 export DOCGUARD_NO_UPDATE_HINT=1
@@ -75,14 +75,14 @@ ends with a line suggesting `docguard upgrade --apply --schema-only`.
 
 Every release has an entry in
 [CHANGELOG.md](https://github.com/raccioly/docguard/blob/main/CHANGELOG.md).
-New releases often add checks or read code that was invisible before, so a
-project that passed can start reporting findings. The entry says which.
+New releases often add checks or read code that DocGuard could not see before.
+A project that passed can then start to report findings. The entry says which.
 
 For example, the 0.43.0 entry opens with **Upgrading from 0.42.x**. No new
-check in that release fails a build: every new finding is a warning or an
-escalation. The worst case is `guard` moving from PASS to WARN (exit `2`). That
-still fails CI that runs with `--fail-on-warning`, or that treats any non-zero
-exit as failure. The most likely triggers it lists:
+check in that release fails a build. Every new finding is a warning or an
+escalation. The worst case is `guard` changing from PASS to WARN (exit `2`).
+That still fails CI that runs with `--fail-on-warning`, or that treats any
+non-zero exit as failure. The entry lists these likely triggers:
 
 | Code | What starts being reported |
 |---|---|
@@ -93,28 +93,28 @@ exit as failure. The most likely triggers it lists:
 | ENV003 | On Go, Java, Kotlin, Ruby, Rust, PHP and C# projects, environment variables read in code (and Spring `${X}` placeholders) that the docs do not list |
 | SCH002, ENV findings | On Python projects, SQLAlchemy models and pydantic `BaseSettings` fields the docs do not mention |
 
-The same entry lists behaviour changes. Among them:
+The same entry lists behavior changes. They include:
 
 - The GitHub Action installs the CLI version it was released with, not
-  `@latest`. Set `docguard-version: latest` to keep following npm.
+  `@latest`. Set `docguard-version: latest` to follow npm.
 - `docguard mcp` refuses a tool call whose `projectDir` is outside the
   directory it serves. Start it with `--root <dir>` for each other tree.
 - `sync`, `fix` and `generate` no longer run `specify init`. Run
   `docguard init` or `specify init` yourself.
 - The Spec Kit extension requires Spec Kit 0.11.2 or later.
 - In a Claude Code project, `docguard init` installs DocGuard's skills into
-  `.claude/skills/` instead of `.agent/`. An existing `.agent/` is left in place.
+  `.claude/skills/` instead of `.agent/`. An existing `.agent/` stays in place.
 - A `.docguardignore` `dir/` pattern matches that directory at any depth, as
-  in `.gitignore`. This can hide findings that fired before.
+  in `.gitignore`. This can hide findings that DocGuard reported before.
 - The MCP tool `docguard_guard` returns the compact form. Pass
   `detail: "full"` for the previous shape.
 - API-Surface reports `partial` on Go, Java, Ruby and Rust services, and
   Environment reports `partial` when a source language has no environment
   patterns. Both used to say `checked`. The exit code does not change, but the
-  badge colour and coverage counts do.
+  badge color and coverage counts do.
 
-Read every entry between your version and the one you are moving to, including
-the `[Unreleased]` section if you install from the repository.
+Read every entry between your version and the one you move to. Include the
+`[Unreleased]` section if you install from the repository.
 
 ## 3. Upgrade the CLI for your install channel
 
@@ -133,17 +133,17 @@ the `[Unreleased]` section if you install from the repository.
 | Claude Desktop | Download the new `docguard-v<version>.mcpb` from the release page and install it in place of the old one | The bundle's version |
 | Spec Kit extension | Refreshed from the installed CLI; see step 4 | Follows the CLI |
 
-> **Note:** The PyPI package is a small wrapper, and its own version does not
+> **Note:** The PyPI package is a small wrapper. Its own version does not
 > decide which CLI runs. It looks for `node_modules/docguard-cli` in the current
 > directory and each parent. If it finds one, it runs that copy. Otherwise it
 > runs `npx -y docguard-cli@latest`, which always means the newest release on
 > npm. To pin the CLI for a Python project, add `docguard-cli` as an npm dev
-> dependency at the project root; the wrapper then uses it.
+> dependency at the project root. The wrapper then uses it.
 
 > **Note:** `docguard upgrade --apply` always installs with
-> `npm install -g`. If you use another channel, upgrade through that channel,
-> then run `docguard upgrade --apply --schema-only` with the new CLI. That
-> migrates the schema and refreshes agent files without touching npm.
+> `npm install -g`. If you use another channel, upgrade through that channel.
+> Then run `docguard upgrade --apply --schema-only` with the new CLI. That
+> migrates the schema and refreshes agent files without using npm.
 
 If you generated a workflow with `docguard init --with ci`, its install step
 pins an exact version (`npm install --global --ignore-scripts
@@ -160,8 +160,8 @@ docguard upgrade --apply                 # npm global installs only
 
 1. **The CLI** (without `--schema-only`). If npm has a newer release, it runs
    `npm install -g docguard-cli@latest`. A new release can change the number of
-   validators or checks, so it reminds you to run `docguard fix --write` to
-   refresh counts your documents quote.
+   validators or checks. DocGuard reminds you to run `docguard fix --write` to
+   refresh the counts that your documents quote.
 2. **The schema.** It migrates `.docguard.json` to the current schema version.
    The migrations are additive: an empty `severity` map, an empty
    `findingSeverity` map, `project` renamed to `projectName` in very old files.
@@ -169,9 +169,9 @@ docguard upgrade --apply                 # npm global installs only
    form the validators read. Any other broken `requiredFiles` shape is reported,
    not guessed at.
 3. **Agent files.** It rewrites DocGuard's skills and commands that differ from
-   the installed CLI's copies. If the project's Spec Kit registration is from
-   another DocGuard release, it re-registers the extension (this needs the
-   `specify` CLI on your `PATH`).
+   the installed CLI's copies. If the project's Spec Kit registration comes from
+   another DocGuard release, it registers the extension again. This needs the
+   `specify` CLI on your `PATH`.
 
 When the same run installs a newer CLI, the running process still holds the old
 version's files. It skips the agent-file refresh and asks you to run
@@ -187,8 +187,8 @@ run because `specify` is not on your `PATH`.
 docguard upgrade --apply --schema-only --pr
 ```
 
-With `--pr`, the schema migration goes to a pull request instead of being
-written in place. It needs the GitHub CLI (`gh`). DocGuard then:
+With `--pr`, the schema migration goes to a pull request. DocGuard does not
+write it in place. This needs the GitHub CLI (`gh`). DocGuard then:
 
 1. creates and checks out a branch named `docguard/upgrade-schema-<version>-<id>`
    from your current `HEAD`;
@@ -196,14 +196,14 @@ written in place. It needs the GitHub CLI (`gh`). DocGuard then:
 3. pushes the branch to `origin`;
 4. opens the pull request with `gh pr create`.
 
-You are left on the new branch. Start from a clean working tree. If any step
-fails, the command exits `1` and undoes its own work: you are back on the
-branch (or commit) you started from, `.docguard.json` is as it was, and the new
-branch is deleted unless it was already pushed. When only `gh pr create`
-failed, the message names the pushed branch so you can open the pull request
-yourself. Any step DocGuard could not undo is printed with the command to run.
-Run without `--pr` to migrate in place. When the schema is already current,
-there is nothing to migrate and no pull request is opened.
+You stay on the new branch. Start from a clean working tree. If any step fails,
+the command exits `1` and undoes its own work. You are back on the branch (or
+commit) you started from, `.docguard.json` is as it was, and the new branch is
+deleted unless it was already pushed. When only `gh pr create` failed, the
+message names the pushed branch so you can open the pull request yourself.
+DocGuard prints any step it could not undo, with the command to run. Run
+without `--pr` to migrate in place. When the schema is already current, there
+is nothing to migrate and DocGuard opens no pull request.
 
 `--pr` covers only the schema. Without `--schema-only`, the same run can still
 install the CLI globally and refresh agent files in your working tree.
@@ -211,27 +211,28 @@ install the CLI globally and refresh agent files in your working tree.
 ## 5. Check the result
 
 1. Confirm the version: `docguard --version`.
-2. Run `docguard guard`. Findings that the new release introduces are not in
-   your baseline, so they show as new. For each one, choose:
+2. Run `docguard guard`. Findings that the new release adds are not in your
+   baseline, so they show as new. For each one, choose one of these:
    - fix it;
    - demote its code with `"findingSeverity": { "<CODE>": "low" }`, which keeps
      it visible without failing the build;
-   - or, after reading `docguard guard --no-baseline`, freeze it with
+   - or read `docguard guard --no-baseline`, then freeze it with
      `docguard guard --update-baseline`.
 3. If you use Spec Kit, run `docguard specs --check`.
 4. Commit the result in one pull request: the migrated `.docguard.json`, the
    refreshed agent files, any baseline change and the new CI pins.
 
-To record which release the project was last checked with, run
-`docguard guard --pin` after a passing run. It writes `docguardVersion` into
-`.docguard.json` (it refuses after a FAIL run). From then on, guard prints a
-note when a different CLI version runs against the project.
+To record which release last checked the project, run `docguard guard --pin`
+after a passing run. It writes `docguardVersion` into `.docguard.json` (it
+refuses after a FAIL run). From then on, guard prints a note when a different
+CLI version runs against the project.
 
-> **Note:** Baselines survive upgrades. A finding keeps its fingerprint unless
-> its code, file or message wording changes, so a release that rewords a
-> message brings that finding back as new. The `[Unreleased]` section of the
-> CHANGELOG describes one such case being fixed: TRC004's soft-match hint no
-> longer counts toward the fingerprint, and existing baselines keep working.
+> **Note:** Baselines stay valid after an upgrade. A finding keeps its
+> fingerprint unless its code, file or message wording changes. A release that
+> rewords a message therefore brings that finding back as new. The
+> `[Unreleased]` section of the CHANGELOG describes one such case being fixed:
+> TRC004's soft-match hint no longer counts toward the fingerprint, and
+> existing baselines keep working.
 
 ## Keep CI reproducible
 

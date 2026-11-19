@@ -6,11 +6,11 @@ nav_order: 8
 
 # Compliance Profiles
 
-DocGuard supports three compliance profiles to match different project needs.
+DocGuard has three compliance profiles. Choose the one that fits your project.
 
 ## The Problem: Document Tax
 
-Requiring all 5 canonical docs for a weekend side project is overkill. Requiring only ARCHITECTURE.md for a regulated enterprise app is dangerous. Profiles solve this.
+Requiring all 5 canonical docs for a weekend side project is too much. Requiring only ARCHITECTURE.md for a regulated enterprise app is too little, and it is risky. Profiles solve this.
 
 ## Profiles
 
@@ -26,7 +26,7 @@ npx docguard-cli init --profile starter
 
 **Validators disabled:** drift, architecture, testSpec, security, environment, freshness
 
-**Use when:** Solo projects, hackathons, learning projects, anything where "some docs" beats "no docs."
+**Use when:** Solo projects, hackathons, learning projects, and any project where some docs are better than none.
 
 ### `standard` — For team projects (default)
 
@@ -41,7 +41,7 @@ npx docguard-cli init --profile standard # explicit
 
 **Validators disabled:** architecture (deep import analysis), security (secrets scanning)
 
-**Use when:** Active team projects, repos with 3+ contributors, anything that will live longer than a sprint.
+**Use when:** Active team projects, repos with 3 or more contributors, and any project that will last longer than a sprint.
 
 ### `enterprise` — For regulated and critical projects
 
@@ -51,9 +51,9 @@ npx docguard-cli init --profile enterprise
 
 **Creates:** All 5 canonical docs + all tracking files
 
-**Validators enabled:** ALL — including architecture (import graph), security (secrets), and freshness
+**Validators enabled:** ALL, including architecture (import graph), security (secrets) and freshness
 
-**Use when:** Regulated industries, SOC2/HIPAA compliance, mission-critical production systems, enterprise monorepos.
+**Use when:** Regulated industries, SOC2/HIPAA compliance, critical production systems and enterprise monorepos.
 
 ## Setting a Profile
 
@@ -73,7 +73,7 @@ npx docguard-cli init --profile starter
 
 ### Overriding specific validators
 
-Profiles set defaults, but you can override anything:
+A profile sets defaults. You can override any of them:
 
 ```json
 {
@@ -84,21 +84,21 @@ Profiles set defaults, but you can override anything:
 }
 ```
 
-This uses the starter baseline but enables freshness checks.
+This uses the starter baseline and turns on the freshness checks.
 
 ## Graduating Between Profiles
 
-As your project grows:
+As your project grows, move up one profile at a time:
 
 ```
 starter  →  standard  →  enterprise
 ```
 
-1. Start with `starter` — just ARCHITECTURE + CHANGELOG
-2. When your team grows, switch to `standard` — add all 5 docs
-3. When you need compliance, switch to `enterprise` — enable all validators
+1. Start with `starter`: only ARCHITECTURE and CHANGELOG.
+2. When your team grows, switch to `standard` to add all 5 docs.
+3. When you need compliance, switch to `enterprise` to enable all validators.
 
-Change the `"profile"` field in `.docguard.json` and run `docguard diagnose` to see what's missing.
+Change the `"profile"` field in `.docguard.json`. Then run `docguard diagnose` to see what is missing.
 
 ## Measuring the Cost
 
@@ -106,4 +106,4 @@ Change the `"profile"` field in `.docguard.json` and run `docguard diagnose` to 
 npx docguard-cli score --tax
 ```
 
-Shows estimated weekly maintenance time. If the tax is HIGH, consider downgrading your profile. If LOW, you might benefit from upgrading.
+This shows the estimated weekly maintenance time. If the tax is HIGH, consider a lighter profile. If it is LOW, a stricter profile may help you.

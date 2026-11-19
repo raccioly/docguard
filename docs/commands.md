@@ -51,17 +51,7 @@ npx docguard-cli guard --no-baseline     # Ignore the committed baseline this ru
 npx docguard-cli guard --fail-on-inconclusive  # Exit 4 when a check could not decide
 ```
 
-**Enforcement mode (spec 097).** The default is `strict`. The first line of the
-summary states the mode (`strict` or `standard`) and whether it came from
-`"enforcement"` in `.docguard.json` or from the default. Under `strict`, a
-validator that applies to the project and examined nothing, for a reason the
-project can resolve, exits 4 (the default for a project that has not chosen a
-mode; `"enforcement": "standard"` restores the earlier exit codes), and the **Adopt** block (printed with `--quiet` too) lists each one
-with its cause and fix, the baseline command, the waiver form and the key for
-the lower mode. A partial result and a layout DocGuard does not read are listed
-after it under "DocGuard could not read" and leave the exit code alone. See
-[Configuration](configuration.md#enforcement-mode) and
-[Upgrading to Strict](upgrading-to-strict.md).
+**Enforcement mode (spec 097).** The default is `strict`. The first line of the summary states the mode (`strict` or `standard`) and whether it came from `"enforcement"` in `.docguard.json` or from the default. Under `strict`, a validator that applies to the project and examined nothing, for a reason the project can resolve, exits 4. This is the default for a project that has not chosen a mode. `"enforcement": "standard"` restores the earlier exit codes. The **Adopt** block (printed with `--quiet` too) lists each one with its cause and fix. It also gives the baseline command, the waiver form and the key for the lower mode. DocGuard lists a partial result and a layout it does not read after it, under "DocGuard could not read". They leave the exit code alone. See [Configuration](configuration.md#enforcement-mode) and [Upgrading to Strict](upgrading-to-strict.md).
 
 **Adoption baseline:** on a legacy repo, `--update-baseline` writes
 `.docguard.baseline.json` (commit it). From then on guard/ci suppress those
@@ -73,14 +63,7 @@ npx docguard-cli guard --verbose         # Show all check details
 npx docguard-cli guard --changed-only    # Pre-commit lite mode (fast subset)
 ```
 
-**Exit codes:** `0` (pass), `1` (errors, or an invalid flag combination such
-as `--update-baseline --changed-only`), `2` (warnings only), `3` (errors in a
-project with no `.docguard.json`: DocGuard has not been adopted there, so a Git
-hook can tell "not initialised" from "failed"), `4` (with `--fail-on-inconclusive`:
-no error, but a check could not decide; it outranks warnings, so a pipeline
-that tolerates `2` still stops). Run `docguard init` to adopt;
-smart-mode `init` on an existing codebase writes the `.docguard.json` it
-inferred.
+**Exit codes:** `0` (pass). `1` (errors, or an invalid flag combination such as `--update-baseline --changed-only`). `2` (warnings only). `3` (errors in a project with no `.docguard.json`). `4` (with `--fail-on-inconclusive`: no error, but a check could not decide). Code `3` means DocGuard has not been adopted there, so a Git hook can tell "not initialised" from "failed". Code `4` outranks warnings, so a pipeline that tolerates `2` still stops. Run `docguard init` to adopt. Smart-mode `init` on an existing codebase writes the `.docguard.json` it inferred.
 
 With `--format json|sarif|junit`, stdout is only the artifact. The
 `--changed-only` note ("N file(s) changed since HEAD~1") goes to stderr in those
@@ -119,10 +102,7 @@ When issues are found, guard outputs: `Run docguard diagnose to get AI fix promp
 }
 ```
 
-Most codes report `not-measured`: DocGuard defines far more finding codes than
-its corpus measures, and a code never inherits another code's precision just
-because they share a validator. `docguard explain <CODE>` prints the same
-evidence in prose.
+Most codes report `not-measured`. DocGuard defines far more finding codes than its corpus measures. A code never inherits another code's precision just because they share a validator. `docguard explain <CODE>` prints the same evidence in prose.
 
 Every finding carries a stable code — `docguard explain <CODE>` for its
 contract, `// docguard:ignore <CODE>` to suppress a false positive at the site.
@@ -202,14 +182,7 @@ npx docguard-cli init --enforcement standard    # Write the lower mode into .doc
 and writes it only for the non-default answer. The closing text states the mode.
 Init never writes configuration that switches a validator off.
 
-**Language.** Each heading `init` writes that the label registry knows carries
-its id marker on the next line (`<!-- docguard:heading tech-stack -->`). When
-`.docguard.json` already sets `docs.language` to `pt` or `es`, the heading text
-is the first built-in alias (`## Stack tecnológica`, `## Stack tecnológico`) and
-the new `CHANGELOG.md` starts with `## [Não lançado]` or `## [Sin publicar]`;
-any other language keeps the English heading and the marker. A document that
-already exists is skipped, never rewritten. See
-[Documents in other languages](languages.md).
+**Language.** Each heading `init` writes that the label registry knows carries its id marker on the next line (`<!-- docguard:heading tech-stack -->`). Suppose `.docguard.json` already sets `docs.language` to `pt` or `es`. Then the heading text is the first built-in alias (`## Stack tecnológica`, `## Stack tecnológico`), and the new `CHANGELOG.md` starts with `## [Não lançado]` or `## [Sin publicar]`. Any other language keeps the English heading and the marker. `init` skips a document that already exists and never rewrites it. See [Documents in other languages](languages.md).
 
 **Profiles:**
 
@@ -233,12 +206,8 @@ npx docguard-cli init --profile starter --spec-kit   # Starter skips Spec Kit un
 - For Spec Kit's `generic` integration, which registers no extension
   commands, `init` writes the `speckit.docguard.*` commands into the generic
   commands directory.
-- "Workflow hooks active" is printed only after every mandatory hook in
-  `.specify/extensions.yml` resolves to a command file; otherwise each missing
-  hook and its expected path is listed.
-- DocGuard's own skills go to the agent's skills directory (`.claude/skills/`
-  for Claude Code), to `.agent/` for `generic` or an unknown agent, and nowhere
-  for a commands-only integration. `--no-spec-kit` still installs them.
+- DocGuard prints "Workflow hooks active" only after every mandatory hook in `.specify/extensions.yml` resolves to a command file. Otherwise it lists each missing hook and its expected path.
+- DocGuard's own skills go to the agent's skills directory (`.claude/skills/` for Claude Code). They go to `.agent/` for `generic` or an unknown agent, and nowhere for a commands-only integration. `--no-spec-kit` still installs them.
 - The summary counts DocGuard's files, the agent files it installed, and the
   files `specify` wrote, each one by one.
 
@@ -252,19 +221,9 @@ npx docguard-cli upgrade --check-only # Exit 1 when anything is behind
 npx docguard-cli upgrade --apply      # Install the CLI, migrate the schema, refresh agent files
 ```
 
-The report also states what the `strict` default changes for this project: the
-validators that now fail because they apply and examined nothing (cause and
-fix), the findings that fail the build by code, the items DocGuard could not read
-(reported, not failing), and the three ways forward in order: fix or declare,
-waive with a reason, an owner and an expiry, or set `"enforcement": "standard"`.
-That part is read-only and runs offline. See
-[Upgrading to Strict](upgrading-to-strict.md).
+The report also states what the `strict` default changes for this project. It lists the validators that now fail because they apply and examined nothing (cause and fix). It lists the findings that fail the build by code. It also lists the items DocGuard could not read (reported, not failing). Last, it gives the three ways forward in order: fix or declare, waive with a reason, an owner and an expiry, or set `"enforcement": "standard"`. That part is read-only and runs offline. See [Upgrading to Strict](upgrading-to-strict.md).
 
-`upgrade --apply` refreshes agent files the way `init` installs them: DocGuard's
-skills and commands that differ from this CLI's copies, and a Spec Kit extension
-registered at another version. When the same run installs a newer CLI globally,
-the running process still holds the old files, so it skips the refresh and asks
-you to run `docguard upgrade --apply` (or `docguard init`) again.
+`upgrade --apply` refreshes agent files the way `init` installs them. It replaces DocGuard's skills and commands that differ from this CLI's copies, and a Spec Kit extension registered at another version. Suppose the same run installs a newer CLI globally. The running process still holds the old files, so it skips the refresh and asks you to run `docguard upgrade --apply` (or `docguard init`) again.
 
 ### `docguard generate`
 
@@ -277,9 +236,7 @@ npx docguard-cli generate --dir ./my-project
 
 **Detects:** Next.js, React, Vue, Angular, Express, Fastify, Hono, Koa, NestJS, Cloudflare Workers, Cloudflare Pages, Django, FastAPI, SvelteKit, and more.
 
-What `generate` writes is read back by the same scanners `guard` and `diff`
-use, so running them straight after `generate` reports nothing about
-DocGuard's own output:
+The same scanners that `guard` and `diff` use read back what `generate` writes. So running them straight after `generate` reports nothing about DocGuard's own output:
 
 - Routes, entities, the tech stack, test files, source modules and environment
   variables come from the checks' own scanners. Environment variables are one
@@ -288,46 +245,18 @@ DocGuard's own output:
   mention `.env.example` only when it exists.
 - Each generated table cites the source file behind each row, which is what
   links the doc to code for TRC002.
-- `generate` writes the id marker under each required heading of the documents
-  it creates, in the language of `docs.language` when it has a built-in set (see
-  [Documents in other languages](languages.md)); a document that exists is left
-  alone unless `--force` is given. `generate --plan --write` and
-  `generate --spec` do the same for the headings they write.
-- `generate --plan --write` writes an H2 heading for each section it creates,
-  or puts the section under a heading the document already has (the init
-  template's `## Tech Stack`), so the structure checks find their sections.
-- Re-running `generate --plan --write` only inserts missing sections and
-  refreshes unpinned code sections. It never replaces prose in a
-  `source=human` section and skips `pinned` sections. A document DocGuard
-  wrote (marked `docguard:generated true`, or an init template nobody edited)
-  gets no `.bak` when every byte outside its code sections is unchanged; your
-  own documents, and any other change, keep their `.bak`.
+- `generate` writes the id marker under each required heading of the documents it creates. It uses the language of `docs.language` when it has a built-in set (see [Documents in other languages](languages.md)). A document that exists is left alone unless `--force` is given. `generate --plan --write` and `generate --spec` do the same for the headings they write.
+- `generate --plan --write` writes an H2 heading for each section it creates. If the document already has a heading for it (the init template's `## Tech Stack`), it puts the section under that heading. The structure checks then find their sections.
+- Re-running `generate --plan --write` only inserts missing sections and refreshes unpinned code sections. It never replaces prose in a `source=human` section and skips `pinned` sections. A document that DocGuard wrote (marked `docguard:generated true`, or an init template nobody edited) gets no `.bak` when every byte outside its code sections is unchanged. Your own documents, and any other change, keep their `.bak`.
 
 #### What the JS/TS scanners read
 
 - **Routes**:
-  - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains, with
-    paths built from `const` strings in the same file or imported from another
-    project file (`import { USERS_PATH }`, `const { PREFIX } = require(…)`,
-    `cfg.PREFIX` from `module.exports = { PREFIX: '/api' }`);
-  - mount prefixes from `app.use('/api', router)`, including routers imported
-    through a `tsconfig`/`jsconfig` path alias (`@/routes`), and prefixes built
-    from `const` strings in the same file or imported from another
-    (`app.use(API_PREFIX + '/users', users)`); a prefix that cannot be read
-    (`config.apiPrefix`, `process.env.BASE`) is reported as partial coverage
-    and the routes below it are left out, not shown at the root;
+  - `app.get('/x', …)` and `router.route('/x').get(…).post(…)` chains. Paths can be built from `const` strings in the same file, or imported from another project file (`import { USERS_PATH }`, `const { PREFIX } = require(…)`, `cfg.PREFIX` from `module.exports = { PREFIX: '/api' }`);
+  - mount prefixes from `app.use('/api', router)`, including routers imported through a `tsconfig`/`jsconfig` path alias (`@/routes`). It also reads prefixes built from `const` strings in the same file or imported from another (`app.use(API_PREFIX + '/users', users)`). A prefix that cannot be read (`config.apiPrefix`, `process.env.BASE`) is reported as partial coverage. The routes below it are left out, not shown at the root;
   - the Next.js App and Pages routers;
-  - Koa routers with their `prefix` (option or `router.prefix()`), nested
-    with `router.use('/users', users.routes())` and mounted on applications
-    with `app.use(router.routes())` or koa-mount's `mount('/admin', admin)`,
-    across files through `import` and `require`, and `redirect('/from', to)`
-    as `ALL /from`;
-  - Cloudflare Pages Functions: each `onRequest*` export of a file under
-    `functions/`, at the path the file serves (`functions/api/users/[id].ts`
-    is `/api/users/:id`), with a `_middleware` file's auth check covering its
-    directory, kept only where `_routes.json` lets requests reach Functions; in
-    advanced mode the `_worker.js` replaces `functions/` and is read as a
-    Worker `fetch` entry;
+  - Koa routers with their `prefix` (option or `router.prefix()`). They can be nested with `router.use('/users', users.routes())` and mounted on applications with `app.use(router.routes())` or koa-mount's `mount('/admin', admin)`. DocGuard follows them across files through `import` and `require`. It reads `redirect('/from', to)` as `ALL /from`;
+  - Cloudflare Pages Functions: each `onRequest*` export of a file under `functions/`, at the path the file serves (`functions/api/users/[id].ts` is `/api/users/:id`). A `_middleware` file's auth check covers its directory. DocGuard keeps a route only where `_routes.json` lets requests reach Functions. In advanced mode the `_worker.js` replaces `functions/` and is read as a Worker `fetch` entry;
   - `@hono/zod-openapi` routes, `app.openapi(createRoute({ method, path }), h)`,
     with the definition inline or imported, `{id}` read as `:id`, under the
     app's `basePath()` and `route()` mounts.
@@ -355,11 +284,7 @@ DocGuard's own output:
   - Mongoose schemas (nested `{ type, ref }` fields, arrays of refs, the
     `model('Name', schema)` name), anywhere under the source roots, including
     `lib/models`;
-  - TypeORM `@Entity` classes whose decorators come from `typeorm`, directly
-    or through a project barrel that re-exports it: columns with
-    their type, nullability, primary key, `unique` and default, columns
-    inherited from a base class, and each relation drawn once from its owning
-    side (`@ManyToOne`, the `@JoinColumn` or `@JoinTable` side);
+  - TypeORM `@Entity` classes whose decorators come from `typeorm`, directly or through a project barrel that re-exports it. DocGuard reads columns with their type, nullability, primary key, `unique` and default. It reads columns inherited from a base class. It draws each relation once from its owning side (`@ManyToOne`, the `@JoinColumn` or `@JoinTable` side);
   - Sequelize models from `sequelize.define('Name', …)` and
     `Model.init(…, { sequelize })`, with their declared attributes and
     `belongsTo`, `hasMany`, `hasOne` and `belongsToMany` associations.
@@ -391,37 +316,19 @@ framework's routing rules:
   prefixes, `resources`/`resource` with `only:`/`except:`, nesting, `shallow`,
   `member`/`collection`, `match … via:`, `root` and concerns, as `rails routes`
   lists them. Update is both `PATCH` and `PUT`.
-- **Sinatra**: classic and modular apps (a class inheriting from
-  `Sinatra::Base`, also through another project class), nested `namespace`
-  prefixes, `register`ed extensions, and the prefix `config.ru` maps an app
-  under (`map`, `Rack::URLMap`).
+- **Sinatra**: classic and modular apps (a class inheriting from `Sinatra::Base`, also through another project class). It reads nested `namespace` prefixes, `register`ed extensions, and the prefix `config.ru` maps an app under (`map`, `Rack::URLMap`).
 - **Warp**: filter chains are evaluated through `and`/`or`, `let` bindings and
   functions in other files, from what `warp::serve` runs. `path!("todos" / u64)`
   is `/todos/{u64}`; a filter with no method filter is `ANY`.
 - **Tide**: `app.at("/posts")` and nested `.at("/:id")`, `nest()` of another
   server, and functions that receive the server.
-- **Laravel** (the route files the app loads: `routes/web.php`, and
-  `routes/api.php` under `/api`, or what `bootstrap/app.php`'s `withRouting`
-  or `RouteServiceProvider` maps): `Route::get` and the other verbs, `prefix`,
-  `middleware` and `group` chains, and `resource`/`apiResource`/`singleton`
-  expanded as `php artisan route:list` lists them. An `auth` or `can:`
-  middleware is auth evidence.
+- **Laravel** (the route files the app loads: `routes/web.php`, and `routes/api.php` under `/api`, or what `bootstrap/app.php`'s `withRouting` or `RouteServiceProvider` maps). It reads `Route::get` and the other verbs, `prefix`, `middleware` and `group` chains, and `resource`/`apiResource`/`singleton` expanded as `php artisan route:list` lists them. An `auth` or `can:` middleware is auth evidence.
 - **Symfony**: `#[Route]` attributes and `@Route` annotations joined to the
   class-level route, and `config/routes.yaml` routes and imports, whose
   `prefix` applies to an imported controller directory.
-- **ASP.NET Core**: controllers (`[Route("api/[controller]")]` joined to
-  `[HttpGet("{id}")]` and the other verb attributes, with token replacement and
-  `[Authorize]`/`[AllowAnonymous]`), and minimal APIs (`MapGet` and the other
-  `Map*` calls under `MapGroup` prefixes, also when the group is passed to an
-  extension method in another file).
+- **ASP.NET Core**: controllers (`[Route("api/[controller]")]` joined to `[HttpGet("{id}")]` and the other verb attributes, with token replacement and `[Authorize]`/`[AllowAnonymous]`). It also reads minimal APIs: `MapGet` and the other `Map*` calls under `MapGroup` prefixes. This works when the group is passed to an extension method in another file too.
 
-A route is omitted when its path or prefix is not literal text or a constant
-it can resolve: an environment variable, a `${…}` placeholder (in Express and
-Fastify too, which used to report it as `:param`), a Ruby or PHP
-interpolation, a C# interpolated string, or a call it cannot pin to one
-function. It is never reported at a guessed path. Every pattern reader counts
-what it omits, and guard's API-surface check reports that count and the first
-locations as partial coverage.
+A route is omitted when its path or prefix is not literal text or a constant it can resolve. Examples are an environment variable and a `${…}` placeholder (in Express and Fastify too, which used to report it as `:param`). Other examples are a Ruby or PHP interpolation, a C# interpolated string, and a call it cannot pin to one function. It is never reported at a guessed path. Every pattern reader counts what it omits. Guard's API-surface check reports that count and the first locations as partial coverage.
 
 **Python projects.** Routes carry their full paths:
 
@@ -442,36 +349,15 @@ locations as partial coverage.
   is written `{pk}` and compares equal to it. An include of a module outside
   the project is reported, never invented as an endpoint.
 
-The data model is the ORM model (SQLAlchemy `Column` and `Mapped`/
-`mapped_column`, Django models, SQLModel `table=True`), with one-to-many,
-many-to-many and one-to-one relationships; Pydantic classes are the data model
-only when there is no ORM. Environment variables include pydantic
-`BaseSettings` fields (`env_prefix`, `alias`, `validation_alias`).
+The data model is the ORM model (SQLAlchemy `Column` and `Mapped`/`mapped_column`, Django models, SQLModel `table=True`), with one-to-many, many-to-many and one-to-one relationships. Pydantic classes are the data model only when there is no ORM. Environment variables include pydantic `BaseSettings` fields (`env_prefix`, `alias`, `validation_alias`).
 
-Without `python3`, the pattern fallback reads the same facts from standard
-layouts, and `generate --plan` says so: `surface.parserTiers` names the tier
-of the endpoints and entities and sets `degraded: true`, `surface.confidence`
-is `low`, a note explains why, and those code sections are marked partial.
+Without `python3`, the pattern fallback reads the same facts from standard layouts, and `generate --plan` says so. `surface.parserTiers` names the tier of the endpoints and entities and sets `degraded: true`. `surface.confidence` is `low`, a note explains why, and those code sections are marked partial.
 
-Endpoints and entities in a language DocGuard has no parser for (Go, Java,
-Kotlin, Ruby, Rust, PHP, C#) are read by pattern too, for a different reason:
-there is nothing to install. `surface.parserTiers` reports `patternRead: true`
-with `patternLanguages` (for example `["Go"]`) per surface and for the plan,
-leaves `degraded` false and the confidence unchanged, marks the endpoint,
-entity and diagram sections partial, and adds a note naming the languages. The
-text output says which surfaces were read by pattern.
+Endpoints and entities in a language DocGuard has no parser for (Go, Java, Kotlin, Ruby, Rust, PHP, C#) are read by pattern too. The reason is different: there is nothing to install. `surface.parserTiers` reports `patternRead: true` with `patternLanguages` (for example `["Go"]`) per surface and for the plan. It leaves `degraded` false and the confidence unchanged. It marks the endpoint, entity and diagram sections partial, and adds a note naming the languages. The text output says which surfaces were read by pattern.
 
 #### As-built specs: `docguard generate --spec <area>`
 
-For code that has no spec (a refactor, a migration, onboarding), DocGuard
-proposes a Spec Kit spec for **one** directory. It scans the facts it can
-establish without an LLM (routes, exported JS/TS symbols, environment variables
-read, and data entities) and writes one `FR-NNN` candidate per fact. Each
-candidate carries a `<!-- docguard:fact <kind> <key> -->` marker and a file
-citation: the file and line of the route registration, export, or first env
-read. A Next.js route handler is one fact, its route; its `GET`/`POST` export is
-not listed again. DocGuard writes no requirement prose; every statement is an
-agent task.
+For code that has no spec (a refactor, a migration, onboarding), DocGuard proposes a Spec Kit spec for **one** directory. It scans the facts it can establish without an LLM (routes, exported JS/TS symbols, environment variables read, and data entities). It writes one `FR-NNN` candidate per fact. Each candidate carries a `<!-- docguard:fact <kind> <key> -->` marker and a file citation: the file and line of the route registration, export, or first env read. A Next.js route handler is one fact, its route. Its `GET`/`POST` export is not listed again. DocGuard writes no requirement prose. Every statement is an agent task.
 
 ```bash
 npx docguard-cli generate --spec src/billing                # preview the candidates
@@ -479,13 +365,7 @@ npx docguard-cli generate --spec src/billing --write        # create specs/NNN-a
 npx docguard-cli generate --spec src/billing --id acme.billing --write --format json
 ```
 
-The JSON result carries `parserTier` and `confidence` (`low` when routes or
-entities in a language with a parser were read by the pattern fallback,
-`regex-fallback`; facts in a pattern-only language such as Go, which make the
-tier `fallback-language` or `mixed`, do not lower it), and SPR007 findings
-carry the tier of the facts they concern. Its note, like `generate --plan`'s,
-names what the affected files lack: `python3` on `PATH`, a Python or
-JavaScript/TypeScript syntax fix, or a reinstall so `@babel/parser` loads.
+The JSON result carries `parserTier` and `confidence`. The confidence is `low` when routes or entities in a language with a parser were read by the pattern fallback, `regex-fallback`. Facts in a pattern-only language such as Go make the tier `fallback-language` or `mixed`, and they do not lower it. SPR007 findings carry the tier of the facts they concern. Its note, like `generate --plan`'s, names what the affected files lack: `python3` on `PATH`, a Python or JavaScript/TypeScript syntax fix, or a reinstall so `@babel/parser` loads.
 
 `--write` creates the spec in the next free feature directory (honouring Spec
 Kit's `feature_numbering`) and registers it with `origin: as_built` and its
@@ -507,10 +387,7 @@ npx docguard-cli audit
 
 ### `docguard specs`
 
-**Maintain the committed spec lifecycle registry.** The registry keeps reviewed
-approval, delivery, context, lineage, and canonical-document scope separate from
-deterministically observed artifacts, task counts, and requirement-scoped test
-evidence.
+**Maintain the committed spec lifecycle registry.** The registry keeps reviewed facts separate from observed facts. Reviewed facts are approval, delivery, context, lineage, and canonical-document scope. Observed facts are deterministically observed artifacts, task counts, and requirement-scoped test evidence.
 
 ```bash
 npx docguard-cli specs --check                 # CI: registry must match the repository
@@ -525,54 +402,16 @@ npx docguard-cli specs require --since origin/main --message-file pr.txt # spec-
 npx docguard-cli specs reanchor --id acme.feature --write               # move a squash-discarded revision
 ```
 
-`specs require` is the spec-first gate. A change to a governed path (see
-[`specFirst`](configuration.md#spec-first-gate--specfirst)) must name its spec,
-either as a `specs/<dir>` path or a Spec ID, in the commit messages or the
-message file, or declare `Spec-Exempt: <kind> — <reason>`. The reason must be at
-least 10 characters; a shorter one is listed as an invalid exemption. A Spec ID
-written after `Spec:` or `Spec ID:` that matches no spec is listed as an
-unresolved reference and covers nothing. Exit 1 means an uncovered change; exit
-2 means the check could not decide (for example, the base ref is missing). The
-GitHub Action runs it with `command: spec-first`.
+`specs require` is the spec-first gate. A change to a governed path (see [`specFirst`](configuration.md#spec-first-gate--specfirst)) must name its spec in the commit messages or the message file. It names the spec as a `specs/<dir>` path or a Spec ID. Or it must declare `Spec-Exempt: <kind> — <reason>`. The reason must be at least 10 characters, and DocGuard lists a shorter one as an invalid exemption. A Spec ID written after `Spec:` or `Spec ID:` that matches no spec is listed as an unresolved reference and covers nothing. Exit 1 means an uncovered change. Exit 2 means the check could not decide (for example, the base ref is missing). The GitHub Action runs it with `command: spec-first`.
 
 Every active spec needs a stable project-scoped metadata identity such as
 `Spec ID: acme.billing-export` near the top of the authoritative spec. Completion evidence uses
 `specId#requirementId`; bare `FR-001` references remain navigation hints because
 the same local ID commonly appears in several specs.
 
-The generated-spec preflight blocks missing or duplicate identity, stale
-registry state, unsafe paths, and broken lifecycle lineage. Text similarity is
-low-confidence review context and never blocks by itself. It checks the
-registry against every spec except the draft, so the draft's own entry may be
-missing (not yet written) or stale (the draft is still changing). A project's
-first spec therefore passes with no registry at all, and again after `specs
---write` has registered it.
+The generated-spec preflight blocks missing or duplicate identity, stale registry state, unsafe paths, and broken lifecycle lineage. Text similarity is low-confidence review context and never blocks by itself. It checks the registry against every spec except the draft. So the draft's own entry may be missing (not yet written) or stale (the draft is still changing). A project's first spec therefore passes with no registry at all, and again after `specs --write` has registered it.
 
-`specs approve` records a person's approval in the registry's reviewed
-lifecycle, and with `--delivery` the state `planned`, `in_progress` or
-`implemented`. Without `--write` it prints the transition and writes nothing.
-It needs a current registry and a current spec. It refuses `verified` and
-`released`, which only `specs complete` records after checking evidence, and
-never moves a verified spec back. Approval is never read from the spec's prose
-(a `**Status**: Approved` line): prose is generated and observed, while
-reviewed fields are attested by whoever runs the command and reviewed in the
-pull request that commits the registry. `docguard explain SPC001` … `SPC008`
-explains each blocker `specs approve`, `specs complete` and `specs reanchor`
-print. `specs approve` and `specs complete` take `--persistence living|flow_forward|flow_back`
-and a repeatable `--canonical-doc <path>` (each path must exist; stored sorted
-and deduplicated, replacing the recorded list), so neither field is edited by
-hand in `.docguard-specs.json`. `specs complete` treats the completing spec's own
-`tasks.md` as a lifecycle file: ticking boxes in it does not block, so the tick,
-the registry record and the outcome land in one commit (any other change to it,
-and any change to another spec's, still blocks with SPC001). `specs complete`
-verifies exact-revision implementation evidence, canonical outcomes, and context
-regeneration before marking a spec verified; `--write` requires a reviewed
-reason and performs the registry, spec outcome, and current-context writes as
-one rollback-safe transaction. Several completions can run back to back against
-the same revision before one commit: the files completion writes do not count as
-changes. Repeat `--deviation <text>` to record accepted deviations, in any
-order: the registry and the spec's outcome line list them deduplicated and
-sorted.
+`specs approve` records a person's approval in the registry's reviewed lifecycle, and with `--delivery` the state `planned`, `in_progress` or `implemented`. Without `--write` it prints the transition and writes nothing. It needs a current registry and a current spec. It refuses `verified` and `released`, which only `specs complete` records after checking evidence. It never moves a verified spec back. DocGuard never reads approval from the spec's prose (a `**Status**: Approved` line). Prose is generated and observed. Whoever runs the command attests the reviewed fields, and the pull request that commits the registry reviews them. `docguard explain SPC001` … `SPC008` explains each blocker that `specs approve`, `specs complete` and `specs reanchor` print. `specs approve` and `specs complete` take `--persistence living|flow_forward|flow_back` and a repeatable `--canonical-doc <path>`. Each path must exist. DocGuard stores the paths sorted and deduplicated, and they replace the recorded list. So nobody edits either field by hand in `.docguard-specs.json`. `specs complete` treats the completing spec's own `tasks.md` as a lifecycle file. Ticking boxes in it does not block, so the tick, the registry record and the outcome land in one commit. Any other change to it, and any change to another spec's, still blocks with SPC001. `specs complete` verifies exact-revision implementation evidence, canonical outcomes, and context regeneration before it marks a spec verified. `--write` requires a reviewed reason. It performs the registry, spec outcome, and current-context writes as one rollback-safe transaction. Several completions can run back to back against the same revision before one commit, because the files completion writes do not count as changes. Repeat `--deviation <text>` to record accepted deviations, in any order. The registry and the spec's outcome line list them deduplicated and sorted.
 
 Completion traces every changed source or test file to a spec: through that
 spec's recorded evidence, or through a requirement identity in the changed
@@ -582,82 +421,19 @@ recorded output, is listed by hand under its owner's
 covers a directory, and any other entry covers exactly one file; wildcards are
 rejected. Guard reports **SPR009** for an entry that covers no tracked file.
 
-Each outcome `specs complete --write` records also carries the git blob of every
-evidence file (the `Blobs:` segment of its line in the spec's outcome block), so
-a squash merge or a rebase does not strand it: a recorded revision that is not an
-ancestor of `HEAD` is anchored when the commit that landed the record has those
-blobs, and the next `complete` takes that commit as its diff base. Guard reports
-**SPR010** for a current spec that is `verified` or `released` with no recorded
-outcome, and `specs --check` lists such specs.
+Each outcome `specs complete --write` records also carries the git blob of every evidence file (the `Blobs:` segment of its line in the spec's outcome block). So a squash merge or a rebase does not strand it. A recorded revision that is not an ancestor of `HEAD` is anchored when the commit that landed the record has those blobs. The next `complete` then takes that commit as its diff base. Guard reports **SPR010** for a current spec that is `verified` or `released` with no recorded outcome, and `specs --check` lists such specs.
 
-Guard reports **SPR011** (a warning, which a strict gate fails on) for a
-`verified` or `released` spec whose latest outcome records blobs and whose
-implementation or test files are different at `HEAD`, or gone
-(`specs/103-completion-upkeep`). SPR008 cannot see this on a pull request's
-merge ref: the commit that landed the record is the main branch's squash commit,
-whose files match. The spec's canonical documents are not compared (Freshness and
-requirement anchors cover them), nor is a hub file that four or more closed specs
-list as evidence (guard JSON lists them under `files.completionHubs`; the anchor
-lock keeps watching their linked code), and a record written before blobs existed
-is not judged. `docguard specs complete --stale --reason "<text>" --write` closes every
-flagged spec again in one transaction, each as a maintenance completion that keeps
-its canonical documents and persistence: it plans all of them against one guard
-run and one reconciliation per distinct base, writes the registry, the active
-context and every spec together, and writes nothing, listing each blocker with its
-spec, when one spec is blocked. It takes no `--id`, `--since`, `--canonical-doc`,
-`--persistence` or `--successor`, and reports CURRENT when nothing drifted. `complete` (with `--id` or `--stale`) takes uncommitted edits of the spec's evidence
-files and records their working-tree blobs, so the code change and its completion
-are one commit and a gate on every commit passes at each one. A
-tick of the last task of a spec in the batch does not block it. A branch that
-merged the base branch needs no `--since` for `complete` or `--stale`: the commit
-that carries the reviewed files is found through the merge's second parent.
+Guard reports **SPR011** (a warning, which a strict gate fails on) for some `verified` or `released` specs. The spec's latest outcome must record blobs. Its implementation or test files must be different at `HEAD`, or gone (`specs/103-completion-upkeep`). SPR008 cannot see this on a pull request's merge ref. The commit that landed the record is the main branch's squash commit, whose files match. SPR011 does not compare the spec's canonical documents (Freshness and requirement anchors cover them). It does not compare a hub file that four or more closed specs list as evidence either. Guard JSON lists them under `files.completionHubs`, and the anchor lock keeps watching their linked code. It does not judge a record written before blobs existed. `docguard specs complete --stale --reason "<text>" --write` closes every flagged spec again in one transaction. Each is a maintenance completion that keeps its canonical documents and persistence. It plans all of them against one guard run and one reconciliation per distinct base. It writes the registry, the active context and every spec together. When one spec is blocked, it writes nothing and lists each blocker with its spec. It takes no `--id`, `--since`, `--canonical-doc`, `--persistence` or `--successor`, and reports CURRENT when nothing drifted. `complete` (with `--id` or `--stale`) takes uncommitted edits of the spec's evidence files and records their working-tree blobs. So the code change and its completion are one commit, and a gate on every commit passes at each one. A tick of the last task of a spec in the batch does not block it. A branch that merged the base branch needs no `--since` for `complete` or `--stale`. DocGuard finds the commit that carries the reviewed files through the merge's second parent.
 
-`specs complete --write` prints what it wrote (the registry fields, the outcome
-line, how many evidence blobs it recorded) and moves the spec's `**Status**:`
-header from a draft value to `Active`; both are lines completion writes, so
-neither blocks the next run. Uncommitted edits that only add `@implements` or
-`@req` tags for the completing spec's own requirements do not block either, and
-the blobs recorded for those files are their working-tree content, so tagging and
-closing land in one commit. A requirement with no code target (a documentation
-requirement, a one-time measurement) takes its evidence from a test that checks
-the result, in the form of `describes()` and `recorded()` in
-`tests/program-verification.test.mjs`. An unknown `--id` lists the closest recorded
-IDs. When SPC006 lists unresolved changed files, it also names the newest commit
-that touched any of them.
+`specs complete --write` prints what it wrote (the registry fields, the outcome line, how many evidence blobs it recorded). It moves the spec's `**Status**:` header from a draft value to `Active`. Completion writes both lines, so neither blocks the next run. Uncommitted edits that only add `@implements` or `@req` tags for the completing spec's own requirements do not block either. The blobs recorded for those files are their working-tree content, so tagging and closing land in one commit. A requirement with no code target (a documentation requirement, a one-time measurement) takes its evidence from a test that checks the result. Use the form of `describes()` and `recorded()` in `tests/program-verification.test.mjs`. An unknown `--id` lists the closest recorded IDs. When SPC006 lists unresolved changed files, it also names the newest commit that touched any of them.
 
-`specs reanchor` repairs a recorded revision that a squash merge discarded
-and whose blobs were not recorded, or whose evidence changed
-(guard reports it as **SPR008**). It finds the first commit on HEAD's
-first-parent history whose evidence files are byte-identical to the reviewed
-ones and moves the anchor there, recording `reanchoredFrom`. If the old revision
-no longer exists anywhere, or no commit carries the reviewed bytes (the PR kept
-changing after its completion), `--to <revision> --reason "<why>"` records an
-attested anchor instead, listing the evidence files that differ. `--to` takes
-anything git resolves to a commit on HEAD's history: a SHA (full or short), a
-branch, a tag or `HEAD`. The full SHA is recorded. When one spec
-has dangling revisions from different merges, add `--from <revision>` to attest
-them one at a time; the others are left as they are.
+`specs reanchor` repairs a recorded revision that a squash merge discarded and whose blobs were not recorded, or whose evidence changed (guard reports it as **SPR008**). It finds the first commit on HEAD's first-parent history whose evidence files are byte-identical to the reviewed ones. It moves the anchor there, recording `reanchoredFrom`. Suppose the old revision no longer exists anywhere, or no commit carries the reviewed bytes (the PR kept changing after its completion). Then `--to <revision> --reason "<why>"` records an attested anchor instead, listing the evidence files that differ. `--to` takes anything git resolves to a commit on HEAD's history: a SHA (full or short), a branch, a tag or `HEAD`. DocGuard records the full SHA. When one spec has dangling revisions from different merges, add `--from <revision>` to attest them one at a time. The others are left as they are.
 
-Completion reconciles from the spec's recorded revision. A range whose patch
-exceeds the 5 MB per-call budget, or times out, is read again in batches of
-changed paths, each under the same budget, so a spec reviewed long ago still
-gets complete coverage; `reconcile --format json` reports the reads as
-`range.batches`. When even batches cannot read it (one file's patch alone over
-the budget, more than 64 MB in total, more than 5,000 changed files, or over two
-minutes), completion is blocked, and `--since <ref>` may name a newer commit
-between the recorded revision and `HEAD`. The outcome then records
-`narrowedFrom`: the recorded revision, the ref, how many commits were not
-reconciled and the budget that forced it, and the spec's outcome line says
-`Not reconciled: <revision>..<ref>`. A newer `--since` is refused while the
-recorded range can be reconciled, and so is a ref unrelated to the recorded
-revision; an older one widens the review and records nothing extra
-(`specs/028-completion-revision-anchoring`).
+Completion reconciles from the spec's recorded revision. A range whose patch exceeds the 5 MB per-call budget, or times out, is read again in batches of changed paths. Each batch stays under the same budget. So a spec reviewed long ago still gets complete coverage. `reconcile --format json` reports the reads as `range.batches`. Sometimes even batches cannot read it. In that case one of these is true. One file's patch alone is over the budget. The total is more than 64 MB. There are more than 5,000 changed files. Or the read takes over two minutes. Completion is blocked, and `--since <ref>` may name a newer commit between the recorded revision and `HEAD`. The outcome then records `narrowedFrom`: the recorded revision, the ref, how many commits were not reconciled and the budget that forced it. The spec's outcome line says `Not reconciled: <revision>..<ref>`. DocGuard refuses a newer `--since` while the recorded range can be reconciled, and it refuses a ref unrelated to the recorded revision. An older one widens the review and records nothing extra (`specs/028-completion-revision-anchoring`).
 
 ### `docguard review`
 
-**Know which docs to re-read when code changes.** A doc section declares the
-code it describes on its marker, and a review records what that code looked
-like:
+**Know which docs to re-read when code changes.** A doc section declares the code it describes on its marker. A review records what that code looked like:
 
 ```markdown
 <!-- docguard:section id=pricing source=human covers="src/pricing.mjs#discount" -->
@@ -672,23 +448,11 @@ npx docguard-cli review --prune                           # drop entries whose s
 npx docguard-cli review --suggest docs-canonical/ARCHITECTURE.md   # propose covers= (low confidence)
 ```
 
-`review --accept` takes several paths (`--accept AGENTS.md CLAUDE.md --reason …`)
-and records every one in one transaction; if any path cannot be accepted it
-writes nothing, names that path and exits 1.
+`review --accept` takes several paths (`--accept AGENTS.md CLAUDE.md --reason …`) and records every one in one transaction. If any path cannot be accepted, it writes nothing, names that path and exits 1.
 
-`review --suggest` needs a document; without one it exits 1. A glob in
-`covers=` fingerprints tracked files only (the working tree outside git), so an
-untracked scratch file inside the glob does not change the fingerprint until it
-is added.
+`review --suggest` needs a document. Without one it exits 1. A glob in `covers=` fingerprints tracked files only (the working tree outside git). So an untracked scratch file inside the glob does not change the fingerprint until it is added.
 
-Guard then reports **DLK001** when a covered symbol's code changes
-semantically. Reformatting, comments and moving the function do not count; a
-same-size edit such as `0.9` → `0.8` does. The finding carries the `git diff`
-command for the change. **DLK002** reports a dependency that no longer
-resolves, **DLK003** a section never accepted or whose `covers=` changed,
-**DLK004** a lock entry without a section, and **DLK005** an unreadable lock.
-Only `review --accept` and `--prune` write `.docguard-doc-lock.json`; `sync`,
-`fix` and agents never do.
+Guard then reports **DLK001** when a covered symbol's code changes semantically. Reformatting, comments and moving the function do not count. A same-size edit such as `0.9` → `0.8` does. The finding carries the `git diff` command for the change. **DLK002** reports a dependency that no longer resolves. **DLK003** reports a section never accepted or whose `covers=` changed. **DLK004** reports a lock entry without a section, and **DLK005** an unreadable lock. Only `review --accept` and `--prune` write `.docguard-doc-lock.json`. `sync`, `fix` and agents never do.
 
 ### `docguard anchors`
 
@@ -732,9 +496,7 @@ quoted YAML value is not a tag.
 Every link names the tier that placed it:
 - `babel@7` for JS/TS;
 - `python-ast@3.12` for Python, from the machine's `python3` in one run;
-- `pattern@1` for Go, Rust, Java, Kotlin, C#, PHP, Ruby, Swift, C and C++,
-  using a string-aware lexer that falls back to file scope when it cannot
-  balance a file;
+- `pattern@1` for Go, Rust, Java, Kotlin, C#, PHP, Ruby, Swift, C and C++. It uses a string-aware lexer that falls back to file scope when it cannot balance a file;
 - `treesitter@<hash>` when the opt-in tree-sitter tier is configured;
 - `file` for YAML and shell.
 
@@ -750,9 +512,7 @@ or C++.
   It never searches `node_modules`.
 - **Kotlin and Swift.** They have no tier: their grammars fail the dependency
   vetting.
-- **Measurement.** A CI job uses the same grammars to measure the pattern
-  tier, and fails when a high-confidence language disagrees with tree-sitter
-  on more than 1% of declarations (`tools/anchor-oracle`).
+- **Measurement.** A CI job uses the same grammars to measure the pattern tier. It fails when a high-confidence language disagrees with tree-sitter on more than 1% of declarations (`tools/anchor-oracle`).
 
 Only files git tracks are scanned, the same files the spec registry reads; a
 new file's tags appear once it is added. Outside git, the working tree is
@@ -781,19 +541,10 @@ npx docguard-cli anchors accept --remove '<key>' --reason "implementation moved 
 Rules for an accept:
 - It is bound to the fingerprints it saw, so a later change flags the link
   again.
-- It refuses when a file changed during the run, when more than one link is
-  selected without `--bulk`, or when the reason is shorter than 10
-  characters.
+- It refuses in three cases. A file changed during the run. More than one link is selected without `--bulk`. The reason is shorter than 10 characters.
 - `--baseline` stamps links as baselined, never as reviewed.
 
-**Merging the lock.** Declare the lock `merge=union` in `.gitattributes`
-(`accept --gitattributes` adds the line). Two branches that review the same
-link then merge without a conflict and leave two lines for it. DocGuard reads
-the line whose recorded fingerprints match the code and the requirement as they
-are now and ignores the others; a link needs review (ANC001 or ANC002, with its
-`accept` command) only when none matches. Any `accept` writes one line per
-link. To collapse the lines without accepting anything, or to resolve a lock
-that carries git conflict markers (a project without `merge=union`):
+**Merging the lock.** Declare the lock `merge=union` in `.gitattributes` (`accept --gitattributes` adds the line). Two branches that review the same link then merge without a conflict and leave two lines for it. DocGuard reads the line whose recorded fingerprints match the code and the requirement as they are now. It ignores the others. A link needs review (ANC001 or ANC002, with its `accept` command) only when none matches. Any `accept` writes one line per link. To collapse the lines without accepting anything, or to resolve a lock that carries git conflict markers (a project without `merge=union`):
 
 ```bash
 npx docguard-cli anchors merge --check    # exit 2 when the lock is not one line per link, in order
@@ -825,17 +576,14 @@ env:
   at every tier. The value can change; the link stays current.
 - A construct that crosses onto another line (a multi-line string or call) is
   fingerprinted as before.
-- Adding or removing the marker is itself a change: a reviewed link over that
-  line turns suspect once, so the marker gets reviewed like any other edit.
+- Adding or removing the marker is itself a change. A reviewed link over that line turns suspect once, so the marker gets reviewed like any other edit.
 - The marker counts only in a real comment, never inside a string, and only on
   its own line. A file with no marker fingerprints exactly as it did before.
 - An anchor whose every line is marked can never turn suspect. `docguard
   anchors` lists it as **ANC011** (info); guard does not report it.
 - The doc lock (`covers=` in doc sections) does not read the marker.
 
-**Ripple.** When an anchored function's code changes, `docguard anchors`
-also lists the anchored links in files that might be affected, as
-`↳ may affect` lines and `ripple[]` in JSON:
+**Ripple.** When an anchored function's code changes, `docguard anchors` also lists the anchored links in files that might be affected. They appear as `↳ may affect` lines, and as `ripple[]` in JSON:
 - **One hop:** files that import the changed file and use the changed name
   (named import, default, or `ns.name`).
 - **Two hops:** files one import further, at low confidence.
@@ -846,11 +594,7 @@ also lists the anchored links in files that might be affected, as
 Ripple uses the same reverse-import walk as `diff --since`. It covers JS/TS
 and Python, and it is advisory: it never adds a guard finding.
 
-**Tests of a changed requirement.** Under each link whose code changed, the
-listing names every test that cites the requirement (`@req`, `@covers`, or the
-ID in a test name) as `⊢ test` lines, and `tests[]` in JSON. Each test is
-**needs re-verification** until saved TestGuard evidence proves otherwise. A
-test is **re-verified at `<revision>`** only when all of these hold:
+**Tests of a changed requirement.** Under each link whose code changed, the listing names every test that cites the requirement. A test cites it with `@req`, `@covers`, or the ID in a test name. They appear as `⊢ test` lines, and as `tests[]` in JSON. Each test is **needs re-verification** until saved TestGuard evidence proves otherwise. A test is **re-verified at `<revision>`** only when all of these hold:
 - the evidence revision exists here and carried the anchored code with
   today's fingerprint;
 - a TestGuard claim names the requirement as
@@ -858,24 +602,9 @@ test is **re-verified at `<revision>`** only when all of these hold:
 - the test is among the defenders TestGuard recorded for that claim;
 - every fault of the claim was killed, and the claim, its faults, its targets
   and its defenders are unchanged since the probe.
-- when the evidence records the import closure of its targets and defenders
-  (`dependencyHashes` with `dependencyClosure: "complete"`), every module in it
-  is unchanged too. An `indeterminate` closure is inconclusive
-  (`closure-indeterminate`): freshness cannot be established. These fields come
-  from a TestGuard evidence schema that is not yet released; evidence without
-  them keeps its verdicts, but the result lists `dependency-closure` under
-  `notChecked`.
+- when the evidence records the import closure of its targets and defenders (`dependencyHashes` with `dependencyClosure: "complete"`), every module in it is unchanged too. An `indeterminate` closure is inconclusive (`closure-indeterminate`): freshness cannot be established. These fields come from a TestGuard evidence schema that is not yet released. Evidence without them keeps its verdicts, but the result lists `dependency-closure` under `notChecked`.
 
-A `re-verified` test that rested on something DocGuard did not check carries a
-`notChecked` list in `--format json` and prints in yellow with
-`not checked: …`. When the evidence says its claims were supplied from outside
-the repository (`run.claimsSource.external`) and `anchors.testguard.claims` is
-not set, DocGuard reads no claims file, not even the default, because that file
-is not the one that was probed. The test is `re-verified` with reason
-`claims-not-compared` and `notChecked` lists `claim-changed` and
-`fault-unprobed`; every other check still applies. Setting
-`anchors.testguard.claims` to a copy of the claims file restores the full
-comparison against that file.
+A `re-verified` test that rested on something DocGuard did not check carries a `notChecked` list in `--format json` and prints in yellow with `not checked: …`. Suppose the evidence says its claims were supplied from outside the repository (`run.claimsSource.external`), and `anchors.testguard.claims` is not set. Then DocGuard reads no claims file, not even the default, because that file is not the one that was probed. The test is `re-verified` with reason `claims-not-compared`, and `notChecked` lists `claim-changed` and `fault-unprobed`. Every other check still applies. Setting `anchors.testguard.claims` to a copy of the claims file restores the full comparison against that file.
 
 Evidence that cannot be trusted is **inconclusive**, with the reason. That
 covers an unreadable or provisional report, a revision this clone lacks, or a
@@ -913,13 +642,7 @@ How imported tags are read:
 Fingerprints, reviews and the test chain then work as for native tags.
 DocGuard never writes foreign tags.
 
-**Code without a requirement.** `docguard anchors --orphans` lists each
-exported or top-level unit that no tag anchors, once, ordered by file and line:
-functions, classes, structs, enums and top-level methods. Type-only
-declarations, plain constants and private names are not listed: a name
-starting with `_` in Python, a lowercase name in Go, Rust without `pub`, and
-`static` in C. A file-scope tag covers every symbol in its file, and a tagged
-method covers its class.
+**Code without a requirement.** `docguard anchors --orphans` lists each exported or top-level unit that no tag anchors. It lists each unit once, ordered by file and line: functions, classes, structs, enums and top-level methods. Type-only declarations, plain constants and private names are not listed. Private names are a name starting with `_` in Python, a lowercase name in Go, Rust without `pub`, and `static` in C. A file-scope tag covers every symbol in its file, and a tagged method covers its class.
 
 It looks under `anchors.orphanPaths`, else under the `scope.sourcePaths` of
 current specs; `--spec <id>` narrows it to one spec. It is a report: it exits
@@ -958,11 +681,7 @@ DocGuard authenticates nobody. Require review of the lock through CODEOWNERS
 
 ### `docguard rules`
 
-**Which instructions an agent loads for a path.** Each harness finds its
-instructions its own way (nested `AGENTS.md`, `CLAUDE.md`, `.claude/rules`,
-`.cursor/rules/*.mdc`, `.github/instructions`, skills). `rules --for` answers,
-per harness, which files apply to a path, why (always, the directory chain, or
-the pattern that matched) and how many bytes they add up to:
+**Which instructions an agent loads for a path.** Each harness finds its instructions its own way (nested `AGENTS.md`, `CLAUDE.md`, `.claude/rules`, `.cursor/rules/*.mdc`, `.github/instructions`, skills). `rules --for` answers three questions per harness. Which files apply to a path? Why do they apply (always, the directory chain, or the pattern that matched)? How many bytes do they add up to? Example:
 
 ```bash
 npx docguard-cli rules --for src/api/users.ts
@@ -974,11 +693,7 @@ The path need not exist yet. It must be project-relative: an absolute path,
 or gitignored) are listed and marked `local`. Skills and rules that load by
 description or keyword are counted as not path-scoped. Read-only.
 
-For Claude Code, `rules --for` follows `@path` imports the way Claude Code
-does: relative to the importing file, up to 5 hops, never inside a code span or
-fenced block. Each imported file is listed (`imported by CLAUDE.md`) and its
-bytes count toward the total and toward PSR003. Only a token ending in a file
-extension is an import, so `@babel/parser` in prose is not one.
+For Claude Code, `rules --for` follows `@path` imports the way Claude Code does. It resolves them relative to the importing file, up to 5 hops, and never inside a code span or fenced block. Each imported file is listed (`imported by CLAUDE.md`) and its bytes count toward the total and toward PSR003. Only a token ending in a file extension is an import, so `@babel/parser` in prose is not one.
 
 Guard's **Path-Scoped-Rules** validator checks the same files, tracked ones
 only:
@@ -994,11 +709,7 @@ only:
 
 ### `docguard sensor --aidlc`
 
-**DocGuard as an AWS AI-DLC sensor** (spec 090). Prints one JSON line in
-AI-DLC's sensor contract. `pass` is false when guard has a blocking finding, a
-validator that could not run, an undecided required check, or a finding the
-HEAD commit did not have (drift the work in progress introduced). Cached per
-tree state. The `docguard` AI-DLC plugin runs it; see the AI-DLC guide.
+**DocGuard as an AWS AI-DLC sensor** (spec 090). Prints one JSON line in AI-DLC's sensor contract. `pass` is false when guard has a blocking finding, a validator that could not run, or an undecided required check. It is also false when there is a finding the HEAD commit did not have (drift the work in progress introduced). Cached per tree state. The `docguard` AI-DLC plugin runs it; see the AI-DLC guide.
 
 ```bash
 npx docguard-cli sensor --aidlc --stage code-generation
@@ -1006,15 +717,7 @@ npx docguard-cli sensor --aidlc --stage code-generation
 
 ### `docguard memory --export aidlc` / `--consolidate aidlc`
 
-**Govern AWS AI-DLC's agent memory** (spec 091). `--export aidlc` builds a
-digest of the facts DocGuard verified against code (only comparisons that
-matched) and, with `--write`, writes it to
-`aidlc/spaces/<space>/knowledge/docguard/canonical-memory.md`; it prints the
-`aidlc engine knowledge onboard` command that indexes it and never runs it.
-`--consolidate aidlc` groups repeated stage-diary entries across intents and
-flags those naming paths that are gone; it writes nothing. Guard's AI-DLC
-validator reports learned rules and CodeKB files that name deleted paths or
-unused env vars (MEM001, MEM002). DocGuard never edits AI-DLC memory layers.
+**Govern AWS AI-DLC's agent memory** (spec 091). `--export aidlc` builds a digest of the facts DocGuard verified against code (only comparisons that matched). With `--write`, it writes the digest to `aidlc/spaces/<space>/knowledge/docguard/canonical-memory.md`. It prints the `aidlc engine knowledge onboard` command that indexes it and never runs it. `--consolidate aidlc` groups repeated stage-diary entries across intents and flags those naming paths that are gone. It writes nothing. Guard's AI-DLC validator reports learned rules and CodeKB files that name deleted paths or unused env vars (MEM001, MEM002). DocGuard never edits AI-DLC memory layers.
 
 ```bash
 npx docguard-cli memory --export aidlc            # dry run
@@ -1024,17 +727,7 @@ npx docguard-cli memory --consolidate aidlc --format json
 
 ### `docguard policy`
 
-**The enforcement ladder, with evidence from this project's CI history.** For
-every finding code it shows what `.docguard.json` sets (`findingSeverity`,
-the validator's `severity`, or the code's default), the level the code last had
-when it fired, and how many of the last `--window` usable `ci` runs (default 5)
-saw it. A code is **ready to promote** when its last level was advisory, this
-project has exercised it at least once, and it stayed silent for the whole
-window; the report prints the `findingSeverity` line that promotes it. A
-blocking code that fired in at least half the window is listed as **noisy**.
-Runs with observation gaps (spec 081) and runs recorded before per-code
-evidence are not counted. Keep `.docguard/history.jsonl` between CI runs
-(CI-RECIPES) or there is no evidence. Read-only.
+**The enforcement ladder, with evidence from this project's CI history.** For every finding code it shows three things. First, what `.docguard.json` sets (`findingSeverity`, the validator's `severity`, or the code's default). Second, the level the code last had when it fired. Third, how many of the last `--window` usable `ci` runs (default 5) saw it. A code is **ready to promote** when its last level was advisory and this project has exercised it at least once. It must also have stayed silent for the whole window. The report prints the `findingSeverity` line that promotes it. A blocking code that fired in at least half the window is listed as **noisy**. Runs with observation gaps (spec 081) and runs recorded before per-code evidence are not counted. Keep `.docguard/history.jsonl` between CI runs (CI-RECIPES) or there is no evidence. Read-only.
 
 ```bash
 npx docguard-cli policy
@@ -1043,13 +736,7 @@ npx docguard-cli policy --window 10 --format json
 
 ### `docguard ignore`
 
-**Every suppression in the project, and why.** Lists each way the project tells
-DocGuard not to look, with its scope, reason (or `no reason`), expiry, state and
-source location: `.docguardignore` entries, the `.docguard.json` arrays
-(`ignore`, `securityIgnore`, `todoIgnore`), inline `docguard:ignore` pragmas,
-validator and section N/A markers, and the baseline's frozen fingerprints.
-Each entry carries its `owner` (or `null`); `--owner <owner>` lists only that
-owner's suppressions (spec 084). Read-only.
+**Every suppression in the project, and why.** Lists each way the project tells DocGuard not to look. Each entry shows its scope, reason (or `no reason`), expiry, state and source location. The ways are `.docguardignore` entries, the `.docguard.json` arrays (`ignore`, `securityIgnore`, `todoIgnore`), inline `docguard:ignore` pragmas, validator and section N/A markers, and the baseline's frozen fingerprints. Each entry carries its `owner` (or `null`). `--owner <owner>` lists only that owner's suppressions (spec 084). Read-only.
 
 ```bash
 npx docguard-cli ignore
@@ -1057,10 +744,7 @@ npx docguard-cli ignore --format json
 npx docguard-cli ignore --format claimspec > ignore.claimspec.json
 ```
 
-The text listing shows the first 20 inline pragmas; `--format json` lists every
-one, plus the export report below. Inline pragmas are found by text match, so a
-line in your docs that quotes `docguard:ignore` is listed too: guard would honour
-it on that line in the same way.
+The text listing shows the first 20 inline pragmas. `--format json` lists every one, plus the export report below. DocGuard finds inline pragmas by text match, so a line in your docs that quotes `docguard:ignore` is listed too. Guard would honor it on that line in the same way.
 
 `--format claimspec` writes a [claimspec](https://github.com/raccioly/testguard/tree/main/spec)
 v1 `ignore` document to stdout and, on stderr, everything it left out. It
@@ -1070,20 +754,9 @@ exports a `.docguardignore` entry only when all of this survives exactly:
 - an expiry DocGuard can read, or none. `expires:2026-12-31` becomes
   `"expires": "2027-01-01T00:00:00Z"`, the first instant the entry no longer
   applies. Expired entries are exported with their date, so a consumer can warn;
-- a pattern gitignore syntax states with the same scope. DocGuard matches a
-  pattern with a slash in the middle below any directory, so `src/legacy/**` is
-  written `**/src/legacy/**`, and `build/` is written `build`; each rewrite is
-  listed. A pattern is left out when the two syntaxes disagree on it: a leading
-  `!` (negation in gitignore, a literal character to DocGuard), a `**` inside a
-  path segment (`a**`), an unclosed `[`, or a POSIX class such as `[[:alpha:]]`.
+- a pattern gitignore syntax states with the same scope. DocGuard matches a pattern with a slash in the middle below any directory. So `src/legacy/**` is written `**/src/legacy/**`, and `build/` is written `build`. Each rewrite is listed. A pattern is left out when the two syntaxes disagree on it. This happens with a leading `!` (negation in gitignore, a literal character to DocGuard). It also happens with a `**` inside a path segment (`a**`), an unclosed `[`, or a POSIX class such as `[[:alpha:]]`.
 
-Nothing else is exported: `.docguard.json` arrays cannot carry a reason, a
-validator-scoped pattern written as a claimspec `path` would apply to every
-tool, and pragmas, N/A markers and baseline fingerprints have no claimspec kind
-that fits. stderr counts each group and says whether the document is the
-complete policy. The document is checked against the claimspec schema vendored
-in `schemas/claimspec/v1/` before it is printed; if the check fails, nothing is
-printed and the exit code is 1.
+Nothing else is exported. `.docguard.json` arrays cannot carry a reason. A validator-scoped pattern written as a claimspec `path` would apply to every tool. Pragmas, N/A markers and baseline fingerprints have no claimspec kind that fits. stderr counts each group and says whether the document is the complete policy. DocGuard checks the document against the claimspec schema vendored in `schemas/claimspec/v1/` before it prints it. If the check fails, nothing is printed and the exit code is 1.
 
 ### `docguard trace`
 
@@ -1115,9 +788,7 @@ Rows:
   test chain's `needs-reverification`, `re-verified` or `inconclusive`.
 - **Order.** Rows sort by requirement, file, anchor and test (UTF-8 byte
   order), so two runs give the same bytes.
-- **Cells.** Quoted per RFC 4180. A cell that starts with `=`, `+`, `-`, `@`,
-  a tab or a carriage return gets a `'` prefix, so a spreadsheet does not run
-  it as a formula.
+- **Cells.** Quoted per RFC 4180. A cell that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets a `'` prefix. So a spreadsheet does not run it as a formula.
 
 `--format reqif` writes ReqIF 1.2:
 - requirements, anchors and tests are spec objects;
@@ -1131,22 +802,10 @@ Rows:
 (or `--output`) writes the file through DocGuard's safe write, which backs up
 an existing file first; otherwise the export is the whole of stdout.
 
-`--owners` reads the `ownership` block in `.docguard.json`
-([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds
-a draft from the top-level source modules, the source files directly beside
-them (`src/pricing.mjs` next to `src/api/`), their `@doc` annotations and the
-built-in doc patterns. It assigns paths only to documents that exist (falling
-back to `ARCHITECTURE.md`), and leaves every `purpose` as a placeholder for a
-person. Without declared `roots`, the validator checks those root-level files
-too. With a map, `trace --reverse` prints the owner first, labelled `declared`;
-when two entries are equally specific it prints `Owner: none` and names them
-(`ownerReason` and `tie` in JSON).
+`--owners` reads the `ownership` block in `.docguard.json` ([configuration](configuration.md#doc-ownership--ownership)). `--suggest` builds a draft from the top-level source modules and the source files directly beside them (`src/pricing.mjs` next to `src/api/`). It also uses their `@doc` annotations and the built-in doc patterns. It assigns paths only to documents that exist (falling back to `ARCHITECTURE.md`), and leaves every `purpose` as a placeholder for a person. Without declared `roots`, the validator checks those root-level files too. With a map, `trace --reverse` prints the owner first, labelled `declared`. When two entries are equally specific, it prints `Owner: none` and names them (`ownerReason` and `tie` in JSON).
 
-The text mentions after the owner are each canonical doc line that names the
-file by its path, its basename or its backticked module name (`` `users` ``).
-A path or basename counts only as a whole file name: `src/b.mjs` is not named
-by `hub.mjs` or `b.mjs.bak`, and `config.js` is not named by `config.json`.
-`diff --since` and the `docguard_docs_for_path` MCP tool use the same matcher.
+The text mentions after the owner are each canonical doc line that names the file. The line can name it by its path, its basename or its backticked module name (`` `users` ``). A path or basename counts only as a whole file name: `src/b.mjs` is not named
+by `hub.mjs` or `b.mjs.bak`, and `config.js` is not named by `config.json`. `diff --since` and the `docguard_docs_for_path` MCP tool use the same matcher.
 
 Guard's **Doc-Ownership** validator reports:
 - **OWN001**: an unowned source directory;
@@ -1159,9 +818,7 @@ Guard's **Doc-Ownership** validator reports:
 
 ### `docguard retire`
 
-**Remove reviewed stale documents from active AI context while preserving exact
-recovery metadata in Git.** Planning and checking are read-only; writing requires
-explicit paths and a reason.
+**Remove reviewed stale documents from active AI context while preserving exact recovery metadata in Git.** Planning and checking are read-only. Writing requires explicit paths and a reason.
 
 ```bash
 npx docguard-cli retire --plan
@@ -1232,32 +889,17 @@ npx docguard-cli agents --sync     # AGENTS.md → CLAUDE.md/Copilot/Cursor/… 
 npx docguard-cli agents --check    # CI gate: exit 2 if any synced variant is stale
 ```
 
-`--sync` treats AGENTS.md as the canonical source: generated variants carry a
-source-hash marker and are regenerated on change; files you wrote by hand are
-never touched without `--force`.
+`--sync` treats AGENTS.md as the canonical source. Generated variants carry a source-hash marker and are regenerated on change. Files you wrote by hand are never touched without `--force`.
 
 ### `docguard mcp`
 
-**MCP server over stdio** (or `--transport http`, loopback by default) — DocGuard's
-read-only core as native agent tools
-(`docguard_guard`, `docguard_score`, `docguard_explain`,
-`docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`,
-`docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`,
-`docguard_task_context`, `docguard_anchors`, `docguard_diagnose`). `docguard_guard` returns each
-fact once by default; pass `detail: "full"` for the complete contract. The four navigation tools answer
-"which docs describe this file?" and read one bounded section at a time, so an
-agent does not load whole documents; none of them calls a model.
+**MCP server over stdio** (or `--transport http`, loopback by default). DocGuard's read-only core becomes native agent tools (`docguard_guard`, `docguard_score`, `docguard_explain`, `docguard_verify_evidence`, `docguard_verify_claims`, `docguard_report`, `docguard_docs_for_path`, `docguard_doc_structure`, `docguard_read_section`, `docguard_task_context`, `docguard_anchors`, `docguard_diagnose`). `docguard_guard` returns each fact once by default. Pass `detail: "full"` for the complete contract. The four navigation tools answer "which docs describe this file?" and read one bounded section at a time. So an agent does not load whole documents, and none of them calls a model.
 
 ```bash
 claude mcp add docguard -- npx docguard-cli mcp
 ```
 
-A tool call's optional `projectDir` must be the served directory (`--dir`, or
-the directory the server was started in) or inside it; relative paths resolve
-against the served directory, and symlinks are followed before the check.
-Anything else gets an `isError` result naming the served directories.
-`--root <dir>` (repeatable) serves another tree; a `--root` that does not exist
-stops the server at startup.
+A tool call's optional `projectDir` must be the served directory (`--dir`, or the directory the server was started in) or inside it. Relative paths resolve against the served directory, and symlinks are followed before the check. Anything else gets an `isError` result naming the served directories. `--root <dir>` (repeatable) serves another tree. A `--root` that does not exist stops the server at startup.
 
 ### `docguard verify --semantic`
 
@@ -1288,14 +930,7 @@ npx docguard-cli memory --pack     # .docguard/context-pack.md (session-start co
 npx docguard-cli memory --pack --symbols   # …plus a symbol map (opt-in)
 ```
 
-`--symbols` adds a `## Symbol map`: the source files most central in the static
-import graph (PageRank), each with the names it exports, cut to
-`memory.symbolMap.maxBytes` (default 4096) at a whole line. It is byte-identical
-for the same tree and names what it left out. It stays opt-in: the frozen
-agent-context benchmark (protocol v3, 54 trials, 2026-10-10) found no
-regression, but none of the gains the protocol required in advance, so the
-extra bytes are not added to every session
-(`benchmarks/agent-context/results/README-v3.md`).
+`--symbols` adds a `## Symbol map`. It lists the source files most central in the static import graph (PageRank), each with the names it exports. It cuts the list to `memory.symbolMap.maxBytes` (default 4096) at a whole line. It is byte-identical for the same tree and names what it left out. It stays opt-in. The frozen agent-context benchmark (protocol v3, 54 trials, 2026-10-10) found no regression, but none of the gains the protocol required in advance. So the extra bytes are not added to every session (`benchmarks/agent-context/results/README-v3.md`).
 
 ---
 
@@ -1303,10 +938,7 @@ extra bytes are not added to every session
 
 ### `docguard report`
 
-**Compliance-evidence bundle for audits** — guard verdict, CDD score, ALCOA+
-data-integrity attributes, findings grouped by code, and fix history, stamped
-with the git commit and a tamper-evident sha256 integrity hash. Evidence, not
-a gate: always exits 0 (`guard`/`ci` fail builds).
+**Compliance-evidence bundle for audits.** It holds the guard verdict, CDD score, ALCOA+ data-integrity attributes, findings grouped by code, and fix history. It is stamped with the git commit and a tamper-evident sha256 integrity hash. Evidence, not a gate: always exits 0 (`guard`/`ci` fail builds).
 
 ```bash
 npx docguard-cli report                          # markdown to stdout
@@ -1344,15 +976,7 @@ npx docguard-cli hooks --remove     # Remove hooks
 - `pre-push` → runs `docguard score` with threshold
 - `commit-msg` → validates conventional commit format
 
-Hooks go into the folder Git runs them from: `.git/hooks` (shared by the
-repository's linked worktrees), or a `core.hooksPath` set in the repository's
-own configuration that points inside the repository (for example `.githooks`).
-DocGuard never writes, replaces or removes hooks in a folder other
-repositories use: a `core.hooksPath` from your global or system Git config, the
-command line, or one pointing outside the repository. There, `hooks` (with or
-without `--force`, `--auto-fix` or `--remove`) changes nothing, exits `1`, and
-prints the line to add to the shared hooks yourself, or how to give the
-repository its own folder. `--list` still works and says the folder is shared.
+Hooks go into the folder Git runs them from. That is `.git/hooks` (shared by the repository's linked worktrees). Or it is a `core.hooksPath` set in the repository's own configuration that points inside the repository (for example `.githooks`). DocGuard never writes, replaces or removes hooks in a folder other repositories use. Such a folder is a `core.hooksPath` from your global or system Git config, the command line, or one pointing outside the repository. There, `hooks` (with or without `--force`, `--auto-fix` or `--remove`) changes nothing and exits `1`. It prints the line to add to the shared hooks yourself, or how to give the repository its own folder. `--list` still works and says the folder is shared.
 
 ### `docguard watch`
 
@@ -1424,16 +1048,7 @@ DDF002 reads them, from the test-spec document `docs.roles` maps (by
 default `docs-canonical/TEST-SPEC.md`), including names that match
 `testPatterns`.
 
-Every section reads the document guard reads for it: the API reference
-(falling back to the architecture document when there is none), the data
-model and the environment document, each from its `docs.roles` mapping, or,
-when the default path is missing, the one canonical document with that file
-name in a subfolder (`docs-canonical/04-api/API-REFERENCE.md`). Routes compare
-as guard compares them: case-insensitively only where the framework matches
-that way (ASP.NET Core; Express and Koa routers unless configured otherwise;
-see [case-sensitive route matching](reference/languages.md#case-sensitive-route-matching)).
-A case setting DocGuard cannot read is listed under API Routes with its file
-and line, and those routes compare exactly.
+Every section reads the document guard reads for it. These are the API reference (falling back to the architecture document when there is none), the data model and the environment document. Each comes from its `docs.roles` mapping. When the default path is missing, it comes from the one canonical document with that file name in a subfolder (`docs-canonical/04-api/API-REFERENCE.md`). Routes compare as guard compares them. They compare case-insensitively only where the framework matches that way (ASP.NET Core; Express and Koa routers unless configured otherwise; see [case-sensitive route matching](reference/languages.md#case-sensitive-route-matching)). A case setting DocGuard cannot read is listed under API Routes with its file and line, and those routes compare exactly.
 
 ---
 
@@ -1457,11 +1072,7 @@ and line, and those routes compare exactly.
 | `--help` | Show help |
 | `--version` | Show version |
 
-**Colour.** DocGuard prints ANSI colour only when stdout is a terminal. A
-non-empty `NO_COLOR` ([no-color.org](https://no-color.org)) turns it off;
-`FORCE_COLOR` turns it on even in a pipe (`FORCE_COLOR=0` turns it off) and
-wins over `NO_COLOR`, as in Node. `--stdout` (`memory --pack`, `llms`) prints
-the artifact with no banner.
+**Color.** DocGuard prints ANSI color only when stdout is a terminal. A non-empty `NO_COLOR` ([no-color.org](https://no-color.org)) turns it off. `FORCE_COLOR` turns it on even in a pipe (`FORCE_COLOR=0` turns it off). It wins over `NO_COLOR`, as in Node. `--stdout` (`memory --pack`, `llms`) prints the artifact with no banner.
 
 Without `--dir`, a command remains scoped to the current directory. DocGuard
 reads only bounded ancestors for an owning `.docguard.json`, npm `workspaces`, or

@@ -6,19 +6,19 @@ nav_order: 3
 # Installation
 
 DocGuard is a Node.js command-line tool. It is published as **`docguard-cli`**
-on npm and PyPI, and the command it installs is **`docguard`**. Every channel on
-this page runs the same CLI. They differ in how it reaches your machine and how
-its version is pinned.
+on npm and PyPI. The command it installs is **`docguard`**. Every channel on this
+page runs the same CLI. The channels differ in how the CLI reaches your machine
+and how you pin its version.
 
-In the examples, replace `X.Y.Z` with a release version. To find the latest one,
-run `npm view docguard-cli version` or open the
+In the examples, replace `X.Y.Z` with a release version. To find the latest
+version, run `npm view docguard-cli version` or open the
 [releases page](https://github.com/raccioly/docguard/releases).
 
 ## Choose a channel
 
 | Channel | Command | Needs | Use it for |
 |---|---|---|---|
-| [npx](#run-with-npx) | `npx docguard-cli@X.Y.Z guard` | Node.js | Trying it, one-off runs, CI |
+| [npx](#run-with-npx) | `npx docguard-cli@X.Y.Z guard` | Node.js | Trying it, single runs, CI |
 | [npm, global](#install-globally-with-npm) | `npm i -g docguard-cli` | Node.js | Daily use on your machine |
 | [npm, project](#add-it-to-a-project-with-npm) | `npm i -D -E docguard-cli@X.Y.Z` | Node.js | A version pinned in the repository |
 | [PyPI](#pypi-pip-pipx-uv) | `pipx install docguard-cli` | Python 3.8+ **and** Node.js | Python-first toolchains |
@@ -34,18 +34,18 @@ run `npm view docguard-cli version` or open the
 
 | Requirement | Needed for | Without it |
 |---|---|---|
-| **Node.js 18 or later** | Everything. `package.json` declares `"engines": { "node": ">=18.0.0" }`. Releases are tested on Node.js 18, 20, 22 and 24. | Nothing runs. The PyPI wrapper and the Homebrew formula still need Node.js. |
-| `git` | Checks and commands that read history: freshness, `diff --since`, `specs require`, `specs complete`, `reconcile`. | DocGuard treats the project as having no Git history, and those checks do not run. In CI, clone with full history (`fetch-depth: 0`). |
-| `python3` (or `python`) | Reading Python projects with Python's own syntax tree. | Python routes, models and settings are read by a pattern fallback. Results are marked partial (`parserTier`, `confidence: low`). See [Languages and Frameworks](reference/languages.md). |
-| `@babel/parser` | Reading JavaScript and TypeScript with a syntax tree. It is DocGuard's only runtime dependency, pinned to an exact version and installed with the package. | The CLI still starts. JavaScript and TypeScript fall back to the regex tier. This only happens when the dependency is missing, for example when you run an unpacked tarball. |
+| **Node.js 18 or later** | Everything. `package.json` declares `"engines": { "node": ">=18.0.0" }`. We test releases on Node.js 18, 20, 22 and 24. | Nothing runs. The PyPI wrapper and the Homebrew formula still need Node.js. |
+| `git` | Checks and commands that read history: freshness, `diff --since`, `specs require`, `specs complete`, `reconcile`. | DocGuard treats the project as having no Git history. Those checks do not run. In CI, clone with full history (`fetch-depth: 0`). |
+| `python3` (or `python`) | Reading Python projects with Python's own syntax tree. | A pattern fallback reads Python routes, models and settings. DocGuard marks the results partial (`parserTier`, `confidence: low`). See [Languages and Frameworks](reference/languages.md). |
+| `@babel/parser` | Reading JavaScript and TypeScript with a syntax tree. It is DocGuard's only runtime dependency. It is pinned to an exact version and installed with the package. | The CLI still starts. JavaScript and TypeScript fall back to the regex tier. This happens only when the dependency is missing, for example when you run an unpacked tarball. |
 
-DocGuard runs no install scripts, so `npm i -g docguard-cli --ignore-scripts`
-behaves the same as a plain install.
+DocGuard runs no install scripts. `npm i -g docguard-cli --ignore-scripts`
+therefore works the same as a plain install.
 
 ### Network use
 
-Validation runs locally and makes no network calls. You need the network only
-to download DocGuard, and for the few commands that use it at your request:
+Validation runs locally and makes no network calls. You need the network only to
+download DocGuard, and for the few commands that use it when you ask:
 `docguard upgrade`, `upgrade --pr`, `impact --prs` and `feedback`. The full list
 is in [PRIVACY.md](https://github.com/raccioly/docguard/blob/main/PRIVACY.md).
 
@@ -58,9 +58,9 @@ npx docguard-cli@X.Y.Z demo        # sample project, no setup
 npx docguard-cli@X.Y.Z diagnose    # your project
 ```
 
-Without a version, npx uses the copy installed in the project if there is one.
-Otherwise it resolves the package from the registry. Pin a version wherever the
-result must be reproducible, such as CI, scripts and agent configuration.
+Without a version, npx uses the copy installed in the project, if there is one.
+Otherwise it gets the package from the registry. Pin a version wherever the
+result must be the same every time, such as CI, scripts and agent configuration.
 
 ### Install globally with npm
 
@@ -71,8 +71,8 @@ docguard --version
 
 ### Add it to a project with npm
 
-This pins the version in `package.json` and the lockfile, so every contributor
-and CI job runs the same release:
+This pins the version in `package.json` and the lockfile. Every contributor and
+CI job then runs the same release:
 
 ```bash
 npm install --save-dev --save-exact docguard-cli@X.Y.Z
@@ -104,21 +104,21 @@ uvx --from docguard-cli docguard --version   # run once without installing
 
 The PyPI package is a thin Python wrapper (`docguard_cli/wrapper.py`). It
 contains no copy of DocGuard and has no Python dependencies. The `docguard`
-command it installs:
+command that it installs does these steps:
 
-1. Looks for Node.js 18 or later on `PATH` (`node`, `node18`, `node20`,
-   `node22`). If none is found, it prints how to install Node.js and exits 1.
-2. Looks for `node_modules/docguard-cli/cli/docguard.mjs` in the current
-   directory and each parent. If found, it runs that copy with `node`. This copy
-   is pinned by the project and works offline.
-3. Otherwise runs `npx -y docguard-cli@latest`, forwarding every argument and
-   the exit code.
+1. It looks for Node.js 18 or later on `PATH` (`node`, `node18`, `node20`,
+   `node22`). If it finds none, it prints how to install Node.js and exits 1.
+2. It looks for `node_modules/docguard-cli/cli/docguard.mjs` in the current
+   directory and each parent. If it finds the file, it runs that copy with
+   `node`. The project pins this copy, and it works offline.
+3. Otherwise it runs `npx -y docguard-cli@latest`. It passes on every argument
+   and the exit code.
 
 The PyPI version does not pin the CLI version. Outside a project that has
 `docguard-cli` in `node_modules`, the wrapper always runs the latest npm
-release, and the first run needs the network. To pin, add `docguard-cli` to the
-project with npm ([above](#add-it-to-a-project-with-npm)). The wrapper then runs
-that copy.
+release, and the first run needs the network. To pin the version, add
+`docguard-cli` to the project with npm ([above](#add-it-to-a-project-with-npm)).
+The wrapper then runs that copy.
 
 ## Homebrew
 
@@ -127,17 +127,17 @@ brew install raccioly/tap/docguard
 docguard --version
 ```
 
-The formula lives in the `raccioly/homebrew-tap` repository. It installs the
-npm package from the npm registry, pinned by SHA-256, and depends on
-Homebrew's `node`. The release workflow updates it after each npm publish,
-from the published tarball, and checks that tarball against npm's recorded
-integrity first. Its source template is
+The formula is in the `raccioly/homebrew-tap` repository. It installs the npm
+package from the npm registry, pinned by SHA-256, and depends on Homebrew's
+`node`. The release workflow updates it after each npm publish, from the
+published tarball. First, the workflow checks that tarball against the integrity
+value that npm recorded. The source template is
 [`packaging/homebrew/docguard.rb`](https://github.com/raccioly/docguard/blob/main/packaging/homebrew/docguard.rb).
 
 ## Docker (GHCR)
 
-The container image runs the **MCP server**. It needs no local Node.js and is
-public, so pulling it needs no authentication.
+The container image runs the **MCP server**. It needs no local Node.js. The image
+is public, so you do not need to authenticate to pull it.
 
 ```bash
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:X.Y.Z
@@ -154,24 +154,24 @@ docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:X.Y.Z
 | Writes | None. The server is read-only. |
 | Not included | `git` and `python3`. History-based checks do not run, and Python is read by the pattern fallback. |
 
-Tools inspect `/workspace` by default. A `projectDir` passed in a tool call must
-be `/workspace` or a directory inside it. To serve another mounted tree, add
-`--root <dir>` after the image name. See the [MCP Server](reference/mcp.md)
-reference for the tools and client setup.
+Tools inspect `/workspace` by default. A `projectDir` in a tool call must be
+`/workspace` or a directory inside it. To serve another mounted tree, add
+`--root <dir>` after the image name. The [MCP Server](reference/mcp.md)
+reference describes the tools and the client setup.
 
-The image is built for the MCP server. You can run another command by replacing
-the entrypoint, with the limitations in the table above:
+The image is built for the MCP server. To run another command, replace the
+entrypoint. The limits in the table above apply:
 
 ```bash
 docker run --rm -v "$PWD":/workspace --entrypoint node \
   ghcr.io/raccioly/docguard:X.Y.Z /app/cli/docguard.mjs guard
 ```
 
-For CI, prefer [npx or the GitHub Action](guides/ci.md). Both run with `git`
+For CI, use [npx or the GitHub Action](guides/ci.md). Both run with `git`
 available.
 
-To build the image yourself from a checkout, run
-`docker build -t docguard-mcp .` using the repository's `Dockerfile`.
+To build the image yourself from a checkout, run `docker build -t docguard-mcp .`.
+It uses the repository's `Dockerfile`.
 
 ## GitHub Action
 
@@ -183,9 +183,9 @@ To build the image yourself from a checkout, run
     command: guard
 ```
 
-The action installs the `docguard-cli` version it was released with, so pinning
-the action also pins the CLI. Its inputs, outputs, pull request feedback and
-the spec-first gate are covered in [Continuous Integration](guides/ci.md).
+The action installs the `docguard-cli` version that it was released with. When
+you pin the action, you also pin the CLI. [Continuous Integration](guides/ci.md)
+covers its inputs, outputs, pull request feedback and the spec-first gate.
 
 ## pre-commit framework
 
@@ -202,7 +202,7 @@ repos:
 ```
 
 `docguard-guard-full` runs at the `pre-push` stage. It needs pre-commit 3.2 or
-later, and the push hook installed once per clone with
+later. Install the push hook once for each clone with
 `pre-commit install --hook-type pre-push`.
 
 To install plain Git hooks without the pre-commit framework, use
@@ -211,20 +211,20 @@ To install plain Git hooks without the pre-commit framework, use
 ## Spec Kit extension
 
 DocGuard ships a [Spec Kit](https://github.com/github/spec-kit) extension. It
-adds the `speckit.docguard.*` commands and the workflow hooks. It requires Spec
-Kit 0.11.2 or later, and `node` and `npx` on `PATH`.
+adds the `speckit.docguard.*` commands and the workflow hooks. It needs Spec Kit
+0.11.2 or later, and `node` and `npx` on `PATH`.
 
-**Recommended: let `docguard init` register it.** With the `specify` CLI on
-`PATH`, `docguard init` initializes Spec Kit for your coding agent and
-registers the extension copy that ships inside the installed npm package. That
-copy is always the same version as your CLI.
+**Recommended: let `docguard init` register it.** If the `specify` CLI is on
+`PATH`, `docguard init` initializes Spec Kit for your coding agent. It registers
+the extension copy that ships inside the installed npm package. That copy always
+has the same version as your CLI.
 
 ```bash
 npm install -g docguard-cli
 docguard init
 ```
 
-**To register it yourself**, install from the release archive or from a local
+**To register it yourself**, install it from the release archive or from a local
 copy:
 
 ```bash
@@ -236,14 +236,14 @@ specify extension add docguard --from \
 specify extension add ./node_modules/docguard-cli/extensions/spec-kit-docguard --dev
 ```
 
-`specify extension add docguard` without `--from` does not install DocGuard on
-a default Spec Kit setup. DocGuard is listed in Spec Kit's community catalog,
-which Spec Kit treats as discovery only. Spec Kit refuses to install from it
-and suggests `--from <archive-url>`. The catalog entry is also updated by hand
-after each release and can lag behind npm.
+`specify extension add docguard` without `--from` does not install DocGuard on a
+default Spec Kit setup. DocGuard is in Spec Kit's community catalog. Spec Kit
+uses that catalog for discovery only. It refuses to install from it and suggests
+`--from <archive-url>`. Someone updates the catalog entry by hand after each
+release, so it can be behind npm.
 
-The [Spec Kit guide](guides/spec-kit.md) covers what the extension adds and how
-to use it.
+The [Spec Kit guide](guides/spec-kit.md) covers what the extension adds and how to
+use it.
 
 ## Claude Desktop (MCPB bundle)
 
@@ -253,27 +253,28 @@ Each GitHub release includes a Claude Desktop extension bundle,
 1. Download it from the
    [latest release](https://github.com/raccioly/docguard/releases/latest).
 2. In Claude Desktop, open **Settings → Extensions** and drag the file in.
-3. Choose the project folder DocGuard should analyze when asked.
+3. When Claude Desktop asks, choose the project folder that DocGuard should
+   analyze.
 
-The bundle contains the npm package and its one production dependency, so
-nothing is downloaded from npm. Its tools are read-only. A tool call may pass a
-`projectDir` inside the chosen folder, and folders outside it are refused. The
-bundle does not update itself; to upgrade, install the bundle from a newer
+The bundle contains the npm package and its one production dependency, so it
+downloads nothing from npm. Its tools are read-only. A tool call may pass a
+`projectDir` inside the chosen folder. The bundle refuses folders outside it. The
+bundle does not update itself. To upgrade, install the bundle from a newer
 release.
 
-For Claude Code, Cursor and other MCP clients, register the server with a
-command instead, for example
+For Claude Code, Cursor and other MCP clients, register the server with a command
+instead, for example
 `claude mcp add docguard -- npx -y docguard-cli@X.Y.Z mcp`. See
 [MCP Server](reference/mcp.md) and [AI Integration](ai-integration.md).
 
 ## Offline and air-gapped use
 
-Validation never uses the network, so DocGuard works offline once it is
-installed. Only the install step needs a way in. Choose one of these:
+Validation never uses the network, so DocGuard works offline after you install it.
+Only the install step needs network access. Choose one of these methods:
 
-**Pre-filled npm cache (complete install).** On a connected machine, install
-once into a dedicated cache. Then copy the cache directory to the offline
-machine and install from it:
+**Pre-filled npm cache (complete install).** On a connected machine, install once
+into a dedicated cache. Then copy the cache directory to the offline machine and
+install from it:
 
 ```bash
 # connected machine
@@ -285,27 +286,27 @@ docguard --version
 ```
 
 **Project-local copy.** Install into a directory with
-`npm install --prefix ./docguard-offline docguard-cli@X.Y.Z` and copy that
+`npm install --prefix ./docguard-offline docguard-cli@X.Y.Z`. Copy that
 directory. Run `./docguard-offline/node_modules/.bin/docguard`.
 
 **Bare `npm pack` tarball (reduced tier).** `npm pack docguard-cli@X.Y.Z`
-produces `docguard-cli-X.Y.Z.tgz`. Unpacked, it runs with
-`node package/cli/docguard.mjs`. The tarball does not include `@babel/parser`,
-so JavaScript and TypeScript are read by the regex fallback. Installing the
-tarball with `npm install` offline fails, because npm must resolve
-`@babel/parser` and its own dependencies. Use the npm cache method for a
-complete offline install.
+produces `docguard-cli-X.Y.Z.tgz`. After you unpack it, it runs with
+`node package/cli/docguard.mjs`. The tarball does not include `@babel/parser`, so
+the regex fallback reads JavaScript and TypeScript. If you install the tarball
+with `npm install` offline, the install fails, because npm must resolve
+`@babel/parser` and its own dependencies. Use the npm cache method for a complete
+offline install.
 
 Other channels:
 
 - **PyPI wrapper**: runs offline only when the project has `docguard-cli` in
-  `node_modules`. Otherwise it calls `npx docguard-cli@latest`, which needs
-  the registry.
+  `node_modules`. Otherwise it calls `npx docguard-cli@latest`, which needs the
+  registry.
 - **Docker**: move the image with `docker save` and `docker load`.
 
-Guard's text output, the MCP server and the context pack say so when your
-release is more than 14 days old. This note makes no network call. DocGuard
-compares the release date in its bundled `CHANGELOG.md` with your clock. Set
+Guard's text output, the MCP server and the context pack say so when your release
+is more than 14 days old. This note makes no network call. DocGuard compares the
+release date in its bundled `CHANGELOG.md` with your clock. Set
 `DOCGUARD_NO_UPDATE_HINT=1` to turn it off.
 
 ## Verify the installation
@@ -315,8 +316,8 @@ docguard --version     # prints the installed version
 docguard demo          # runs guard against a built-in sample project
 ```
 
-`demo` runs in a temporary directory and removes it afterwards. It writes
-nothing to your project.
+`demo` runs in a temporary directory and removes it afterward. It writes nothing
+to your project.
 
 ## Upgrading
 
@@ -336,9 +337,9 @@ Upgrade through the channel you installed with:
 
 `docguard upgrade` reports whether a newer CLI exists. It contacts the npm
 registry. It also reports whether `.docguard.json` or the installed agent files
-are behind. `docguard upgrade --apply` runs `npm install -g docguard-cli@latest`,
-migrates the configuration and refreshes agent files. Use `--apply` for a
-global npm install. For other channels, upgrade the CLI as shown above, then run
+are out of date. `docguard upgrade --apply` runs `npm install -g docguard-cli@latest`,
+migrates the configuration and refreshes the agent files. Use `--apply` for a
+global npm install. For other channels, upgrade the CLI as shown above. Then run
 `docguard upgrade --apply` to migrate the project. See
 [Upgrading](guides/upgrading.md) for release notes, baselines and
 configuration migration.
@@ -356,16 +357,16 @@ configuration migration.
 | Claude Desktop | Remove the extension in **Settings → Extensions** |
 
 Removing the CLI leaves your project files alone. They are plain files in your
-repository; delete the ones you no longer want:
+repository. Delete the ones you no longer want:
 
 - `.docguard.json`: configuration, written by `docguard init`.
 - `.docguard/`: local state, such as fix history, score history and caches.
 - `.docguard.baseline.json`: written by `guard --update-baseline`.
 - `.docguard-specs.json`: the spec registry, written by `specs --write`.
-- Agent skills and commands that `init` installed. Their paths are listed in
-  [Coding Agents](reference/agents.md).
+- Agent skills and commands that `init` installed. [Coding Agents](reference/agents.md)
+  lists their paths.
 - Git hooks from `docguard init --with hooks`. Remove DocGuard's part with
-  `docguard hooks --remove`, which keeps any other commands in those hooks.
+  `docguard hooks --remove`. It keeps any other commands in those hooks.
 
 ## Supply chain
 
@@ -379,6 +380,6 @@ repository; delete the ones you no longer want:
 | Spec Kit ZIP, MCPB bundle | `release.yml`: built by `build-extension` and `build-mcpb` without credentials, attached by `attach-assets` | Attached to the GitHub release. No checksum file or attestation is published for them. |
 | GitHub Action | `action.yml` at the release tag | The actions it uses are pinned to commit SHAs. Pin `raccioly/docguard` to a reviewed tag or commit. |
 
-The npm and PyPI jobs authenticate with OIDC; no long-lived registry token is
-stored. DocGuard has one runtime dependency, `@babel/parser`, pinned to an
-exact version.
+The npm and PyPI jobs authenticate with OIDC. DocGuard stores no long-lived
+registry token. DocGuard has one runtime dependency, `@babel/parser`, pinned to
+an exact version.

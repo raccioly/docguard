@@ -6,8 +6,8 @@ nav_order: 6
 
 # Troubleshooting
 
-Each section starts from a symptom, explains the cause, and gives the command or
-setting that resolves it. For one finding code, `docguard explain <CODE>` and
+Each section starts with a symptom, explains the cause, and gives the command or
+setting that fixes it. For one finding code, `docguard explain <CODE>` and
 the [finding reference](../reference/findings.md) are the fastest answer. For
 general questions, see the [FAQ](../faq.md).
 
@@ -26,10 +26,10 @@ Exit `3` usually means you ran guard in the wrong directory, or before
 `docguard init`. Check the `Directory:` line at the top of the output, and see
 [Monorepos](monorepo.md) if you are inside a package.
 
-Blocking is decided by effective severity, not by how a finding looks.
+Effective severity decides what blocks, not how a finding looks.
 `severity.<validator>` and `findingSeverity.<CODE>` in `.docguard.json` can
-promote warnings to blocking (`"high"`) or demote them so they never fail
-(`"low"`).
+promote warnings to blocking (`"high"`). They can also demote warnings so they
+never fail (`"low"`).
 
 `guard --fail-on-warning` is accepted, but guard already exits `2` on warnings.
 To make warnings exit `1`, use `docguard ci --fail-on-warning`, or
@@ -51,8 +51,8 @@ you set `fail-on-warning: 'true'`.
 
 ## Reading a finding
 
-Every finding carries five independent fields. They answer different
-questions, so read them separately.
+Every finding carries five independent fields. Each field answers a different
+question, so read them separately.
 
 | Field | Question | Values |
 |---|---|---|
@@ -62,16 +62,16 @@ questions, so read them separately.
 | `evidence.status` | Has the reviewed benchmark corpus ever measured this code? | `measured`, `not-measured` |
 | `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, `fallback-language`, `mixed`, `not-applicable` |
 
-- **`act`**: DocGuard names a defect and its correction. You can apply it, or
-  let `docguard fix` or your agent apply it.
-- **`escalate`**: DocGuard observed a signal and the judgement is yours. For
-  example, FRS002 counts commits since a document was reviewed. The count is
-  exact (`confidence: high`), but it shows only that a review is due, not that
-  the document is wrong. Reviewing and leaving the document as it is can be the
-  correct outcome. Do not edit a document just to make an escalation go quiet.
-- **`evidence.status: not-measured`** means the confidence label is a
-  maintainer's estimate. Most codes are not measured. That does not make their
-  findings wrong, only unverified.
+- **`act`**: DocGuard names a defect and its correction. You can apply the
+  correction, or let `docguard fix` or your agent apply it.
+- **`escalate`**: DocGuard saw a signal, and you decide what it means. For
+  example, FRS002 counts commits since someone reviewed a document. The count is
+  exact (`confidence: high`). It shows only that a review is due. It does not
+  show that the document is wrong. You can review the document and leave it as
+  it is. Do not edit a document only to silence an escalation.
+- **`evidence.status: not-measured`** means the confidence label is an
+  estimate by a maintainer. Most codes are not measured. Their findings are
+  not wrong. They are unverified.
 - **`parserTier`** says what the detector could see. See
   [Partial coverage](#partial-coverage-and-the-fallback-tiers) below.
 
@@ -81,13 +81,13 @@ to review"). `guard --format json`, SARIF `result.properties` and
 `docguard explain <CODE>` prints what one code means, its benchmark evidence
 and how to suppress it.
 
-Guard lists a validator's findings only when that validator fails or warns. A
-validator that passes overall can still hold findings, for example ones demoted
-to `low`. Add `--show-failing` or `--verbose` to list every finding.
+Guard lists the findings of a validator only when that validator fails or warns.
+A validator that passes overall can still hold findings, for example findings
+demoted to `low`. Add `--show-failing` or `--verbose` to list every finding.
 
 ## A finding is wrong (false positives)
 
-Work from the narrowest fix to the broadest.
+Start with the narrowest fix. Move to a broader one only if needed.
 
 ### 1. Confirm what the code checks
 
@@ -95,13 +95,13 @@ Work from the narrowest fix to the broadest.
 docguard explain SEC001
 ```
 
-The output says what triggers the code, whether its precision was measured,
-and, when the code has one, the marker that suppresses it. `explain` also
+The output says what triggers the code and whether its precision was measured.
+If the code has a suppression marker, the output shows it. `explain` also
 accepts a validator key or pasted warning text.
 
 ### 2. Suppress the one occurrence
 
-How you suppress depends on the code. `docguard explain` and the
+The way you suppress a finding depends on the code. `docguard explain` and the
 [finding reference](../reference/findings.md) give the exact form.
 
 **The inline pragma** works for SEC001 to SEC006, REF001, REF002 and SPK010.
@@ -131,7 +131,7 @@ suppresses every code on that line; prefer naming the code.
 Write the reason after the code list, as in the examples: `docguard ignore`
 shows it next to the pragma, and a pragma without one is listed as `no reason`.
 
-Some codes have no suppression marker. For those, use one of the broader
+Some codes have no suppression marker. For those codes, use one of the broader
 options below.
 
 ### 3. Broader options
@@ -152,11 +152,11 @@ docguard feedback --code TRC005       # one code, whatever its confidence
 docguard feedback --code TRC005 --preview
 ```
 
-`feedback` writes a local record to `.docguard/feedback/` (skipped with
-`--preview`) and prints a prefilled GitHub issue link and duplicate-search
-links. The links carry only the finding's identity and tool metadata: no paths,
-source text or messages. Nothing is sent automatically. The local record can
-contain private details, so do not attach it as it is.
+`feedback` writes a local record to `.docguard/feedback/` (not with
+`--preview`). It prints a prefilled GitHub issue link and duplicate-search
+links. The links carry only the identity of the finding and tool metadata. They
+carry no paths, source text or messages. DocGuard sends nothing automatically.
+The local record can contain private details, so do not attach it as it is.
 
 ## Partial coverage and the fallback tiers
 
@@ -165,28 +165,29 @@ contain private details, so do not attach it as it is.
 
 DocGuard reads JavaScript and TypeScript with a syntax tree (`js-ast`) and
 Python with the interpreter's own `ast` module (`py-ast`). When one of those is
-unavailable for a file, it falls back to patterns (`regex-fallback`). Go, Java,
-Kotlin, Ruby, Rust, PHP and C# have no syntax-tree tier at all: routes and
-environment variables there are matched by pattern (`fallback-language`).
+unavailable for a file, DocGuard falls back to patterns (`regex-fallback`). Go,
+Java, Kotlin, Ruby, Rust, PHP and C# have no syntax-tree tier at all. DocGuard
+matches routes and environment variables in those languages by pattern
+(`fallback-language`).
 
 On those tiers, a missing finding is weak evidence. The owning validator
-reports `applicability: partial`, with a reason naming the language and the
+reports `applicability: partial`, with a reason that names the language and the
 file count. A source language with no environment patterns at all (Swift,
-Scala, …) makes the Environment check `partial` rather than a silent pass.
+Scala, …) makes the Environment check `partial`, not a silent pass.
 
 Each validator reports one of these states: `checked`, `partial`, `disabled`,
 `not-applicable`, `missing-prerequisite`, `unsupported`, `no-matches`, `error`.
-The text output summarises them ("Check coverage: 12 of 31 validator(s)
-checked · 2 disabled · 19 no matches"), and `guard --format json` has the detail
-in `checkCoverage` and in each validator's `applicability`. A passing gate means
-the selected checks passed. It does not mean unsupported languages were
-examined.
+The text output summarizes them ("Check coverage: 12 of 31 validator(s)
+checked · 2 disabled · 19 no matches"). `guard --format json` has the detail in
+`checkCoverage` and in the `applicability` of each validator. A passing gate
+means the selected checks passed. It does not mean DocGuard examined
+unsupported languages.
 
-`docguard sync --write` will not write a code section drawn from partial
+`docguard sync --write` does not write a code section that comes from partial
 evidence unless you add `--allow-partial`.
 
-What each language and framework supports is in
-[Languages](../reference/languages.md).
+[Languages](../reference/languages.md) lists what each language and framework
+supports.
 
 ## Python analysis is partial
 
@@ -194,17 +195,16 @@ What each language and framework supports is in
 `generate --plan` reports `low` confidence for endpoints and entities.
 
 The Python syntax-tree tier runs the project's own interpreter. DocGuard looks
-for `python3`, then `python`, on your `PATH`, and uses the first one that can
+for `python3`, then `python`, on your `PATH`. It uses the first one that can
 import `ast` and `json`. It never imports your modules. Without one:
 
-- routes, models and settings are read by the pattern tier, which composes
-  router prefixes and Django URL configurations the same way on standard
-  layouts;
-- affected validators report the degraded tier;
+- the pattern tier reads routes, models and settings. It composes router
+  prefixes and Django URL configurations the same way on standard layouts;
+- affected validators report the lower tier;
 - a documentation section that covers a Python symbol cannot be compared, so
   the doc-dependency check reports `partial`;
-- the generated module graph says the interpreter was unavailable instead of
-  drawing Python edges.
+- the generated module graph says the interpreter was unavailable. It draws
+  no Python edges.
 
 Install Python 3 on the machine or CI image that runs DocGuard, and make sure
 `python3` is on the `PATH` of that process. The official Docker image
@@ -217,16 +217,17 @@ Install Python 3 on the machine or CI image that runs DocGuard, and make sure
 Spec-Kit check reports `partial`.
 
 A `.git` exists, but Git commands fail. The usual cause is an agent sandbox
-running in a linked worktree: there, `.git` is a file pointing at a Git
-directory elsewhere, and sandboxes hide that directory by default. The same
-state is reported when `git` is not installed.
+that runs in a linked worktree. There, `.git` is a file that points at a Git
+directory elsewhere, and sandboxes hide that directory by default. DocGuard
+reports the same state when `git` is not installed.
 
-DocGuard reports these checks as not run, with Git's own error message,
-instead of a clean "no matches", and the badge is not shown as fully green.
+DocGuard reports these checks as not run, with the error message from Git. It
+does not report a clean "no matches", and the badge does not show fully green.
 
-Fix it by exposing the repository's Git directory to the sandbox (ai-jail:
+To fix it, expose the Git directory of the repository to the sandbox (ai-jail:
 `--worktree`; other sandboxes: mount the directory named in the `.git` file).
-A project with no `.git` anywhere is unaffected: it has no history to read.
+A project with no `.git` anywhere is not affected, because it has no history to
+read.
 
 DocGuard needs no network access and no credentials. `guard` runs with a
 read-only project mount; commands that write (`init`, `fix --write`,
@@ -239,7 +240,7 @@ writable one.
 the base, or `specs require` exits `2` with "unknown ref or shallow history".
 
 DocGuard does not detect a shallow clone. Its Git metadata is readable, so the
-history-based checks run, but they see only the commits that were fetched.
+history-based checks run. They see only the commits that Git fetched.
 
 In CI, fetch the full history:
 
@@ -248,28 +249,29 @@ In CI, fetch the full history:
   with: { fetch-depth: 0 }
 ```
 
-For `specs require` and `diff --since origin/main`, the base branch must also be
-fetched.
+For `specs require` and `diff --since origin/main`, you must also fetch the base
+branch.
 
-## Colour codes in logs, or no colour
+## Color codes in logs, or no color
 
-DocGuard decides colour in this order:
+DocGuard decides color in this order:
 
-1. `FORCE_COLOR` is set: any value but `0` forces colour on; `0` turns it off.
-2. `NO_COLOR` is set to a non-empty value: colour is off.
-3. Otherwise colour is on only when stdout is a terminal.
+1. `FORCE_COLOR` is set: any value but `0` forces color on; `0` turns it off.
+2. `NO_COLOR` is set to a non-empty value: color is off.
+3. Otherwise color is on only when stdout is a terminal.
 
 Piped or redirected output is therefore plain by default. If a CI log shows raw
 escape codes, look for a `FORCE_COLOR` set by the CI image, and set
-`NO_COLOR=1`. Because `FORCE_COLOR` takes precedence, unset it as well.
+`NO_COLOR=1`. `FORCE_COLOR` takes precedence, so unset it as well.
 
 ## `--format json` output does not parse
 
 With `--format json`, `sarif` or `junit`, stdout carries only the artifact: no
-banner, no colour, no notes. Everything else goes to stderr, including the
+banner, no color, no notes. Everything else goes to stderr, including the
 `--changed-only` note and the ancestor-root guidance (one JSON line of type
 `docguard.repository-root-guidance`). The 14-day release-age note never appears
-in machine output. Large payloads are flushed in full before the process exits.
+in machine output. DocGuard writes large payloads in full before the process
+exits.
 
 If parsing fails, the cause is almost always stderr mixed into stdout. Keep the
 streams apart:
@@ -278,9 +280,9 @@ streams apart:
 docguard guard --format json > guard.json 2> guard.log
 ```
 
-The exit code is set as usual in JSON mode, so read it separately from the
-document. `--compact` (with `--format json`) prints each fact once, which is the
-form the MCP guard tool returns.
+The exit code is the same in JSON mode, so read it separately from the
+document. `--compact` (with `--format json`) prints each fact once. The MCP
+guard tool returns this form.
 
 ## Slow runs
 
@@ -294,10 +296,10 @@ It prints the ten slowest validators with wall time and share of the total.
 
 Then:
 
-- **Exclude what is not yours to check.** Large generated, vendored or fixture
-  directories belong in `.docguardignore`. `node_modules`, `.git`, `dist`,
-  `build`, `out`, `coverage`, `vendor`, `target` and similar build directories
-  are already skipped.
+- **Exclude what is not yours to check.** Put large generated, vendored or
+  fixture directories in `.docguardignore`. DocGuard already skips
+  `node_modules`, `.git`, `dist`, `build`, `out`, `coverage`, `vendor`,
+  `target` and similar build directories.
 - **Use the fast path locally.** `docguard guard --changed-only` runs a smaller
   validator set on the files changed since `HEAD~1` (or `--since <ref>`).
   Validators you marked `severity: "high"` still run. Keep the full run for CI.
@@ -307,9 +309,9 @@ Then:
 
 **Symptom:** a finding you froze with `--update-baseline` is reported again.
 
-A baselined finding is matched by its code, its file path without the line
-number, and its message with numbers masked. It comes back when one of those
-changes, or when the baseline cannot apply:
+DocGuard matches a baselined finding by its code, its file path without the line
+number, and its message with numbers masked. The finding comes back when one of
+these changes, or when the baseline cannot apply:
 
 | Cause | What to do |
 |---|---|
@@ -322,9 +324,9 @@ changes, or when the baseline cannot apply:
 | On 0.43.1 or earlier, a TRC004 finding returns after you add an unrelated test file | Its message ends with a soft-match hint that names the closest test file. The `[Unreleased]` section of the CHANGELOG describes the fix, which leaves the hint out of the fingerprint. Until you have that release, review and re-freeze |
 
 Re-freezing captures every finding that fires at that moment. Run
-`docguard guard --no-baseline` and read the list before running
+`docguard guard --no-baseline` and read the list before you run
 `docguard guard --update-baseline`. Guard reports how many baselined entries
-"no longer occur — safe to drop"; re-freezing removes them.
+"no longer occur — safe to drop". Re-freezing removes them.
 
 ## Ignored files are checked again
 
@@ -338,20 +340,20 @@ Re-freezing captures every finding that fires at that moment. Run
   line has no pattern. Fix the date or remove the token.
 
 `docguard ignore` lists every entry with its state. One more case: a line like
-`fixtures/ # test data` excluded nothing before v0.44 (the comment was read as
-part of the pattern) and excludes `fixtures/` now.
+`fixtures/ # test data` excluded nothing before v0.44, because DocGuard read the
+comment as part of the pattern. It excludes `fixtures/` now.
 
 ## `docguard hooks` refuses: core.hooksPath points at a shared folder
 
-When `core.hooksPath` comes from your global or system Git config, the command
+When `core.hooksPath` comes from your global or system Git config or the command
 line, or points outside the repository, every repository that uses that folder
-runs its hooks. DocGuard will not install, replace or remove hooks there,
+runs its hooks. DocGuard does not install, replace or remove hooks there,
 because the change would reach every one of those repositories. Pick one:
 
-- Add DocGuard's check to the shared hooks yourself. The refusal prints the
+- Add the DocGuard check to the shared hooks yourself. The refusal prints the
   line, for example `npx docguard-cli guard --changed-only` for `pre-commit`.
-- Give this repository its own hooks folder, then install. Git stops running
-  the shared hooks in this repository:
+- Give this repository its own hooks folder, then install. Git then stops
+  running the shared hooks in this repository:
 
   ```bash
   git config --local core.hooksPath .githooks

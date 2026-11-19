@@ -6,9 +6,9 @@ nav_order: 7
 
 # Section-Addressable Docs
 
-DocGuard maintains canonical docs *surgically*: it regenerates the parts that are
-derived from code while never touching the prose a human wrote. It does this with
-HTML-comment markers that keep the document plain, readable markdown.
+DocGuard updates canonical docs *surgically*. It regenerates the parts that come
+from code and never touches the prose a person wrote. It uses HTML-comment
+markers for this, so the document stays plain, readable markdown.
 
 ## The marker format
 
@@ -18,26 +18,26 @@ HTML-comment markers that keep the document plain, readable markdown.
 <!-- /docguard:section -->
 ```
 
-- **`id`** — a stable identifier for the section (e.g. `api-endpoints`, `entities`,
-  `env-vars`, `screens`). DocGuard addresses sections by id.
-- **`source`** — `code` means DocGuard owns and may regenerate this block from the
-  codebase; `human` means it is author-owned and DocGuard will not rewrite it.
+- **`id`** — a stable name for the section (for example `api-endpoints`, `entities`,
+  `env-vars`, `screens`). DocGuard finds sections by id.
+- **`source`** — `code` means DocGuard owns this block and may regenerate it from
+  the code. `human` means the author owns it and DocGuard does not rewrite it.
 
-Markers must each sit on their own line. An open marker with no matching close is
-ignored (DocGuard never corrupts a malformed doc).
+Each marker must be on its own line. DocGuard ignores an open marker that has no
+matching close marker. It never corrupts a malformed doc.
 
 ## What DocGuard does and does not touch
 
-- It rewrites **only** the bytes between a `source=code` section's open and close
-  markers when the underlying code changes.
-- **Everything outside any marker — and any `source=human` section — is preserved
-  exactly.** Your rationale, "why" notes, and design intent are safe.
+- When the code changes, it rewrites **only** the bytes between the open and
+  close markers of a `source=code` section.
+- **Everything outside the markers, and every `source=human` section, stays
+  exactly as it is.** Your rationale, "why" notes and design intent are safe.
 
 ## Diagrams drawn from code
 
 Two section ids hold mermaid diagrams that DocGuard draws from the code. Add the
-empty marker where the diagram should go, then run `docguard sync --write` (add
-`--force` if the doc is not marked `docguard:generated`):
+empty marker where the diagram should go. Then run `docguard sync --write`. Add
+`--force` if the doc is not marked `docguard:generated`:
 
 ```markdown
 <!-- docguard:section id=module-graph source=code -->
@@ -45,29 +45,31 @@ empty marker where the diagram should go, then run `docguard sync --write` (add
 ```
 
 - **`module-graph`** (ARCHITECTURE) — a `graph LR` with one node per directory
-  module and one edge per pair of modules with a static import between them. A
-  dashed edge is a dynamic `import()` only. Tests, fixtures, examples and ignored
-  paths are not drawn. Over `diagrams.moduleGraph.maxNodes` (default 30, at most
-  60), modules are grouped one directory level higher, then the least-connected
-  are merged into one counted node; at most 150 edges are drawn. A caption under
-  the diagram states every reduction.
+  module. It has one edge for each pair of modules that have a static import
+  between them. A dashed edge means a dynamic `import()` only. DocGuard does not
+  draw tests, fixtures, examples or ignored paths. If there are more modules than
+  `diagrams.moduleGraph.maxNodes` (default 30, at most 60), DocGuard groups
+  modules one directory level higher. Then it merges the least-connected modules
+  into one counted node. It draws at most 150 edges. A caption under the diagram
+  states every reduction.
 - **`entity-diagram`** (DATA-MODEL) — an `erDiagram` from the same schema scan as
-  the `entities` table, with entities and relationships sorted by name.
+  the `entities` table. Entities and relationships are sorted by name.
 
-When imports or schemas change, Generated-Staleness reports the section (GST002)
-and `sync --write` redraws it. An existing doc without the marker is never given
-one; `generate --plan --write` adds both when it creates the doc.
+When imports or schemas change, Generated-Staleness reports the section (GST002).
+Then `sync --write` redraws it. DocGuard never adds the marker to an existing doc.
+`generate --plan --write` adds both markers when it creates the doc.
 
-When the graph cannot be complete on this machine (no Python interpreter for
-Python files, an unreadable source file), guard reports the check as `partial`
-instead of GST002, and `sync --write` leaves the committed diagram alone unless
-you pass `--allow-partial`. Options: [`diagrams.moduleGraph`](configuration.md#code-derived-diagrams--diagramsmodulegraph).
+Sometimes the graph cannot be complete on this machine. For example, there may be
+no Python interpreter for Python files, or a source file may be unreadable. Then
+guard reports the check as `partial` and not as GST002. `sync --write` leaves the
+committed diagram as it is unless you pass `--allow-partial`. Options: [`diagrams.moduleGraph`](configuration.md#code-derived-diagrams--diagramsmodulegraph).
 
 ## Why this matters
 
-This is the foundation for two things:
+Markers make two things possible:
 
-1. **Complete generation** — `docguard generate` writes code-derived sections inside
-   markers, then an AI agent fills the prose around them.
-2. **Always up to date** — `docguard sync` refreshes just the affected section when
-   code changes, instead of regenerating (and clobbering) the whole document.
+1. **Complete generation** — `docguard generate` writes code-derived sections
+   inside markers. Then an agent fills in the prose around them.
+2. **Docs that stay current** — when the code changes, `docguard sync` refreshes
+   only the affected section. It does not regenerate the whole document and
+   overwrite your prose.

@@ -22,7 +22,7 @@
     --indigo:     #2a5b9b;   /* DocGuard's own mark: structure, code-truth */
     --indigo-deep:#1f4677;
     --indigo-wash:#eef2f8;
-    --amber:      #9a6b12;   /* escalate — the judgement is yours */
+    --amber:      #9a6b12;   /* escalate — the judgment is yours */
     --amber-wash: #fbf5e6;
     --sans: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
@@ -170,13 +170,13 @@
   </div>
 
   <h1>Your docs are green. That is not the same as your docs being true.</h1>
-  <p class="standfirst">DocGuard reads what your documentation claims about your code, reads the code,
-  and reports every claim the two no longer agree on — saying which it is sure about, and which it is not.</p>
+  <p class="standfirst">DocGuard reads what your docs claim about your code. It reads the code too.
+  It reports every claim that no longer matches, and says which findings it is sure about and which it is not.</p>
 
   <section class="rule-top">
     <h2>The problem</h2>
     <p class="lede"><strong>The faster AI writes code, the faster everyone loses the map of what was built.</strong>
-    Every agent session starts from zero and re-derives how the system works. The docs are the map.
+    Every agent session starts from zero and works out again how the system works. The docs are the map.
     Nothing checks whether the map still matches the territory.</p>
 
     <div class="exhibit drift">
@@ -186,8 +186,8 @@
    <span class="cm">→ Doc lives in canonical/ but isn't in the manifest — guard skips it, drift accumulates silently.</span></pre>
     </div>
 
-    <p><code>npx docguard-cli demo</code> returns seventeen of these in half a second, against a project whose
-    documentation <em>looks</em> complete. Each names the file, the claim, and what trusting it would cost.</p>
+    <p><code>npx docguard-cli demo</code> finds seventeen of these in half a second in a project whose
+    docs <em>look</em> complete. Each names the file, the claim, and what you lose if you trust it.</p>
 
     <figure style="margin-top:11px">
       <svg viewBox="0 0 760 112" role="img" aria-label="A score of 100 out of 100 for structure beside seventeen warnings for truth">
@@ -205,7 +205,7 @@
         <text class="s-sub" x="412" y="95" style="font-size:8px">claims that no longer match the code</text>
         <rect x="412" y="102" width="328" height="5" rx="2.5" fill="#f0ded5"/>
       </svg>
-      <p class="figcap">Fig. 1 — The same documentation, under two different questions. DocGuard reports both, and never lets one stand in for the other.</p>
+      <p class="figcap">Fig. 1 — The same docs, two questions. DocGuard reports both and never lets one replace the other.</p>
     </figure>
   </section>
 
@@ -222,7 +222,7 @@
       </div>
       <div class="verdict judge">
         <span class="tag">escalate</span>
-        <p>Something changed near this claim. <strong>The judgement is yours</strong> — the tool says so, rather than guessing.</p>
+        <p>Something changed near this claim. <strong>The judgment is yours</strong> — DocGuard says so instead of guessing.</p>
       </div>
     </div>
   </section>
@@ -244,11 +244,11 @@
   </div>
 
   <section style="margin-top:17px">
-    <h2>Two tiers, or the tool would overwrite your thinking</h2>
-    <p class="lede">A canonical document holds two kinds of sentence. <strong>Some are derived from code</strong>
+    <h2>Two tiers, so the tool never overwrites your thinking</h2>
+    <p class="lede">A canonical doc holds two kinds of sentence. <strong>Some come from code</strong>
     — endpoints, entities, environment variables. <strong>Some are human reasoning</strong> — why the queue is
-    idempotent, which trade-off was rejected, the gotcha nobody would guess. A tool that regenerates the whole
-    file destroys the second kind every time it refreshes the first.</p>
+    idempotent, which trade-off was rejected, the gotcha nobody would guess. A tool that rewrites the whole
+    file destroys the second kind each time it refreshes the first.</p>
     <p>DocGuard keeps both in one readable markdown file, separated by HTML-comment markers. It owns the bytes
     inside a <code>source=code</code> block and may rewrite them when the code changes. It never touches anything else.</p>
 
@@ -287,7 +287,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
         <text class="s-lbl" x="530" y="126" style="fill:#2a5b9b">code-derived</text>
         <text class="s-sub" x="530" y="137">Fails Generated-Staleness if the scan disagrees.</text>
       </svg>
-      <p class="figcap">Fig. 2 — One file, two owners. The tool refreshes the blue bands and validates the grey one; it never has permission to do the reverse.</p>
+      <p class="figcap">Fig. 2 — One file, two owners. The tool refreshes the blue bands and checks the gray one. It never does the reverse.</p>
     </figure>
   </section>
 
@@ -296,13 +296,13 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <table>
       <thead><tr><th>Direction</th><th>Verb</th><th>What it does</th></tr></thead>
       <tbody>
-        <tr><td>code → docs</td><td><strong>generate</strong></td><td>Reverse-engineer a canonical memory from any codebase. Forty-six scanners build the code-truth skeleton (routes, schemas, screens, env vars, IaC); an agent writes the prose around it.</td></tr>
-        <tr><td>code ↔ docs</td><td><strong>sync</strong></td><td>When code changes, refresh only the affected <code>source=code</code> sections. Mechanical where deterministic; a structured agent task where not.</td></tr>
-        <tr><td>docs ↔ code</td><td><strong>guard</strong></td><td>Validate that the memory still matches reality: deleted endpoints still documented, routes never documented, env vars nobody reads, requirement IDs no test traces to.</td></tr>
+        <tr><td>code → docs</td><td><strong>generate</strong></td><td>Build a canonical memory from any codebase. Forty-six scanners build the code-truth skeleton (routes, schemas, screens, env vars, IaC). An agent writes the prose around it.</td></tr>
+        <tr><td>code ↔ docs</td><td><strong>sync</strong></td><td>When code changes, refresh only the affected <code>source=code</code> sections. Automatic where certain; a structured agent task where not.</td></tr>
+        <tr><td>docs ↔ code</td><td><strong>guard</strong></td><td>Check that the memory still matches reality: deleted endpoints still documented, routes never documented, env vars nobody reads, requirement IDs no test traces to.</td></tr>
       </tbody>
     </table>
-    <p class="note" style="margin-top:8px">Any language: JavaScript/TypeScript and Python get a syntax tree; Rust, Go, Java/Kotlin, Ruby, PHP and C# get a
-    shape-aware fallback, and every finding says which produced it — silence on a fallback file is weak evidence, not a pass.</p>
+    <p class="note" style="margin-top:8px">Any language works. JavaScript/TypeScript and Python get a syntax tree. Rust, Go, Java/Kotlin, Ruby, PHP and C# get a
+    fallback that reads code shape. Every finding says which produced it; silence on a fallback file is weak evidence, not a pass.</p>
   </section>
 
   <div class="pull" style="margin-top:14px">
@@ -322,9 +322,9 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 
   <section style="margin-top:17px">
     <h2>One claim, from document to verdict</h2>
-    <p class="lede">Every run is the same five steps, and none of them calls a language model. The whole
-    pipeline is deterministic, offline, and reproducible — the same tree produces the same findings on
-    every machine, which is what lets a finding be a CI gate rather than an opinion.</p>
+    <p class="lede">Every run follows the same five steps. None of them calls a language model. The
+    pipeline is deterministic, offline and reproducible: the same tree gives the same findings on
+    every machine. That is why a finding can be a CI gate and not an opinion.</p>
 
     <figure>
       <svg viewBox="0 0 760 118" role="img" aria-label="Pipeline: scan the code, read the docs, compare, classify, report">
@@ -377,15 +377,15 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   <section class="rule-top">
     <h2>What a finding carries</h2>
     <p>A finding used to answer one question — <em>how worried should you be?</em> — with one field. That
-    field was doing three jobs: how certain the detector was, whether a human had to look, and whether the
-    number had ever been checked against reality. DocGuard split it into five channels that are
-    <strong>independent</strong>: a blocking error can still be an escalation, and a high-confidence
+    field did three jobs: how certain the detector was, whether a human had to look, and whether anyone had
+    checked the number against reality. DocGuard now splits it into five <strong>independent</strong>
+    channels. A blocking error can still be an escalation. A high-confidence
     observation can still be one only you can judge.</p>
     <table class="tight">
       <thead><tr><th>Channel</th><th>The question it answers</th><th>Values</th></tr></thead>
       <tbody>
         <tr><td>severity</td><td>Does CI block?</td><td><code>error</code> · <code>warn</code> · <code>info</code></td></tr>
-        <tr><td>disposition</td><td>Who decides — the tool or you?</td><td><span class="v-good"><code>act</code></span> DocGuard asserts a defect and names the correction · <span class="v-judge"><code>escalate</code></span> the judgement is yours</td></tr>
+        <tr><td>disposition</td><td>Who decides — the tool or you?</td><td><span class="v-good"><code>act</code></span> DocGuard states a defect and names the fix · <span class="v-judge"><code>escalate</code></span> the judgment is yours</td></tr>
         <tr><td>confidence</td><td>How sure is the detector of its <em>observation</em>?</td><td><code>high</code> · <code>low</code></td></tr>
         <tr><td>evidence</td><td>Has the reviewed corpus ever measured this code?</td><td><code>measured</code> with <em>n</em> and a Wilson bound · <code>not-measured</code> (a maintainer's prior, nothing more)</td></tr>
         <tr><td>parserTier</td><td>Which analyzer could see this file?</td><td><code>js-ast</code> · <code>py-ast</code> · <code>regex-fallback</code> · <code>fallback-language</code> · <code>mixed</code></td></tr>
@@ -394,11 +394,11 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="cols-2" style="margin-top:12px">
       <div class="verdict judge">
         <span class="tag">escalate · confidence: high</span>
-        <p><em>“13 code commits since ARCHITECTURE.md was reviewed.”</em> The count comes from <code>git log</code>, so it is exact — and it proves only that a review is <strong>due</strong>, never that the document is wrong. Editing until it stops printing fixes nothing.</p>
+        <p><em>“13 code commits since ARCHITECTURE.md was reviewed.”</em> The count comes from <code>git log</code>, so it is exact. It proves only that a review is <strong>due</strong>, never that the document is wrong. Editing until it stops printing fixes nothing.</p>
       </div>
       <div class="verdict good">
         <span class="tag">act · confidence: high</span>
-        <p><em>“README says 15 validators; the package ships 33.”</em> Both sides are counted from disk, so the tool may rewrite the number — and it stamps the provenance of the count it used, so a later reader can see the fix was about the same subject.</p>
+        <p><em>“README says 15 validators; the package ships 33.”</em> Both sides are counted from disk, so the tool may rewrite the number. It also records where the count came from. A later reader can see the fix was about the same subject.</p>
       </div>
     </div>
   </section>
@@ -419,12 +419,12 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   </div>
 
   <section style="margin-top:17px">
-    <h2>Thirty-six detectors, and every one had to earn its default</h2>
-    <p class="lede">Each validator compares one family of documented claims against one source of evidence,
-    grouped here by what they read — which decides how much a finding is worth.</p>
+    <h2>Thirty-six detectors, each proven before it is on by default</h2>
+    <p class="lede">Each validator compares one family of documented claims with one source of evidence.
+    grouped by what they read, which decides how much a finding is worth.</p>
 
     <div class="statband four">
-      <div><div class="fig indigo">36</div><div class="cap">validator modules; new rules start advisory</div><div class="src">cli/validators/</div></div>
+      <div><div class="fig indigo">36</div><div class="cap">validator modules; new checks start advisory</div><div class="src">cli/validators/</div></div>
       <div><div class="fig indigo">73</div><div class="cap">code scanners feeding them, two full AST parsers</div><div class="src">cli/scanners/</div></div>
       <div><div class="fig sage">1</div><div class="cap">pinned runtime dependency, with a regex fallback</div><div class="src">@babel/parser</div></div>
       <div><div class="fig sage">0</div><div class="cap">model, network or telemetry calls at validation time</div><div class="src">PRIVACY.md</div></div>
@@ -467,16 +467,16 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 
   <section style="margin-top:17px">
     <h2>Built from papers, then measured on real repositories</h2>
-    <p class="lede">The change-aware detectors are not inventions. Each implements a published result, and each needed
-    a precision lever the paper never had to worry about before it could run unattended in someone else's CI.</p>
+    <p class="lede">The change-aware detectors are not inventions. Each implements a published result. Each also needed
+    a precision lever the paper never required before it could run unattended in someone else's CI.</p>
     <table class="tight">
       <thead><tr><th>Detector</th><th>Published basis</th><th>What was taken</th><th>What had to be added before default-on</th></tr></thead>
       <tbody>
-        <tr><td>Diff-Suspicion</td><td>Outdated-comment detection, arXiv 2010.01625</td><td>A deterministic rule — prose whose tokens overlap a deleted span of the diff is suspect — reached F1 74.7, beating every post-hoc neural model. Applied to docs instead of comments.</td><td>Two signals must <em>both</em> hold (the doc references the changed file <em>and</em> shares its removed symbols); a generic-token filter; a per-doc cap. See Fig. 4.</td></tr>
-        <tr><td>Reference-Existence</td><td>Two-revision symbol check, arXiv 2212.01479</td><td>A backticked symbol present when the doc was last updated but gone at HEAD is outdated; field-tested at roughly 50% maintainer acceptance.</td><td>CLI flags excluded and the two-revision gate made mandatory — the two documented false-positive modes of the source method.</td></tr>
-        <tr><td>API-Doc-Smells</td><td>API-documentation smell taxonomy, 1,000-unit benchmark</td><td>The two smells with strong deterministic detectors: Bloated (F1 0.90) and Lazy (F1 0.95), keyed on documentation length per signature-headed section.</td><td>The three semantic smells that need a BERT model were left out on purpose and routed to staged agent judgement instead.</td></tr>
-        <tr><td>Finding labels</td><td>TRACE — calibrated explainability, IEEE TMLCN 2026</td><td>The HIGH / MEDIUM / LOW vocabulary, used as deterministic strata (a validator's check pass-ratio).</td><td>An explicit statement that the strata were never calibrated against outcomes — precision is the quantity DocGuard actually measures (page 6).</td></tr>
-        <tr><td>Doc generation</td><td>AITPG — multi-agent debate + RAG, IEEE TSE 2026</td><td>The staged prose pattern behind <code>generate</code> and <code>diagnose</code>: the CLI structures, the agent writes, the validators check.</td><td>Nothing generated is trusted: every <code>source=code</code> section is re-validated on the next run.</td></tr>
+        <tr><td>Diff-Suspicion</td><td>Outdated-comment detection, arXiv 2010.01625</td><td>A fixed rule reached F1 74.7, beating every post-hoc neural model: prose that shares tokens with a deleted part of the diff is suspect. Applied to docs, not comments.</td><td>Two signals must <em>both</em> hold (the doc references the changed file <em>and</em> shares its removed symbols); a generic-token filter; a per-doc cap. See Fig. 4.</td></tr>
+        <tr><td>Reference-Existence</td><td>Two-revision symbol check, arXiv 2212.01479</td><td>A backticked symbol that existed when the doc was last updated but is gone at HEAD marks the doc outdated. Field tests reached roughly 50% maintainer acceptance.</td><td>CLI flags excluded, two-revision gate required: the two documented false-positive modes of the source method.</td></tr>
+        <tr><td>API-Doc-Smells</td><td>API-documentation smell taxonomy, 1,000-unit benchmark</td><td>The two smells with strong deterministic detectors: Bloated (F1 0.90) and Lazy (F1 0.95), based on documentation length per signature-headed section.</td><td>The three semantic smells that need a BERT model were left out on purpose and routed to staged agent judgment instead.</td></tr>
+        <tr><td>Finding labels</td><td>TRACE — calibrated explainability, IEEE TMLCN 2026</td><td>The HIGH / MEDIUM / LOW vocabulary, used as deterministic strata (a validator's check pass-ratio).</td><td>A plain statement that the strata were never calibrated against outcomes. DocGuard measures precision instead (page 6).</td></tr>
+        <tr><td>Doc generation</td><td>AITPG — multi-agent debate + RAG, IEEE TSE 2026</td><td>The staged prose pattern behind <code>generate</code> and <code>diagnose</code>: the CLI structures, the agent writes, the validators check.</td><td>Nothing generated is trusted: every <code>source=code</code> section is re-checked on the next run.</td></tr>
       </tbody>
     </table>
   </section>
@@ -486,12 +486,12 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
     <div class="cols-2">
       <div>
         <p><em>Evaluating AGENTS.md</em> (arXiv 2602.11988, revised June 2026) found that repository context files
-        did not generally improve agent task success in its evaluated settings, and increased inference cost. It also
+        did not generally improve agent task success in its evaluated settings. They also increased inference cost. The study also
         found agents generally followed the instructions they were given.</p>
         <p>DocGuard's README cites this study in its own “Why” section and says plainly that the results
-        <strong>do not establish DocGuard's effectiveness</strong>. They motivate two things the tool now does: keep
-        context concise (retired plans leave the tree; <code>memory</code> packs task-specific context, not everything),
-        and measure outcomes rather than assume them.</p>
+        <strong>do not establish DocGuard's effectiveness</strong>. They led to two changes. The tool keeps
+        context short (retired plans leave the tree; <code>memory</code> packs task-specific context, not everything).
+        It also measures outcomes instead of assuming them.</p>
       </div>
       <div>
         <figure>
@@ -533,8 +533,8 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   <section style="margin-top:17px">
     <h2>The number comes with its n, or it does not ship</h2>
     <p class="lede">Most tools publish an accuracy figure. DocGuard publishes a frozen benchmark, the cases behind it,
-    the confidence interval, the caveat, and a loader that refuses to quote the number if any of those
-    have been edited by hand.</p>
+    the confidence interval, the caveat, and a loader. The loader refuses to quote the number if anyone edited any of those
+    by hand.</p>
 
     <div class="statband">
       <div><div class="fig sage">1.000</div><div class="cap">finding precision · 12 expected findings, 0 unexpected</div><div class="src">Wilson 95% · 0.757 – 1.000</div></div>
@@ -568,7 +568,7 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 <pre>Benchmark precision on a deliberately balanced corpus of 12 defect and 12 clean-control cases … This is DocGuard's precision on labelled cases, <span class="bad">not the probability that a finding in your repository is real</span>; quote every ratio with its n and Wilson 95% bound.</pre>
         </div>
         <p class="note">DocGuard does not publish a calibration document. The real base rate of a stale claim is
-        nowhere near the corpus's 50/50 split, so a probability read off this corpus would mislead — and the
+        nowhere near the corpus's 50/50 split, so a probability taken from this corpus would mislead. The
         README says so in the same paragraph that cites the number.</p>
       </div>
     </div>
@@ -580,26 +580,26 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
       <div>
         <h3>Fail-closed loader</h3>
         <p class="note">The baseline is an envelope of retained cases plus derived ratios. The loader recomputes every ratio
-        from the cases and refuses an envelope whose numbers, caveat, or measure have been hand-edited. A test asserts each
-        rejection path; TestGuard probes that the guard cannot be silently removed.</p>
+        from the cases and refuses an envelope if someone edited its numbers, caveat or measure by hand. A test covers each
+        rejection path. TestGuard probes that nobody can remove the guard silently.</p>
       </div>
       <div>
         <h3>Adjudication record</h3>
-        <p class="note">The corpus could only absorb a false positive that had already been repaired — so a disagreement the
-        maintainers reviewed and declined to act on left no trace, and “precision 1.0” described the contribution pipeline
-        rather than the detectors. An adjudication row now records the disagreement without corrupting the measurement.</p>
+        <p class="note">The corpus could only take in a false positive that was already fixed. So a disagreement the
+        maintainers reviewed and declined left no trace, and “precision 1.0” described the contribution pipeline,
+        not the detectors. An adjudication row now records the disagreement and leaves the measurement intact.</p>
       </div>
       <div>
         <h3>Feedback samples the unmeasured</h3>
-        <p class="note"><code>docguard feedback</code> used to sample only findings the confidence label already doubted — the
-        channel that would validate the label sampled nothing it could learn from. Selection is now “unmeasured code, or low
-        confidence”, and the command states what it left out.</p>
+        <p class="note"><code>docguard feedback</code> used to sample only findings that the confidence label already doubted. So the
+        channel meant to test the label sampled nothing it could learn from. It now selects “unmeasured code, or low
+        confidence”, and the command says what it left out.</p>
       </div>
     </div>
   </section>
 
   <div class="pull">
-    <p>“Precision 1.000” is true, and it is a claim about twelve labelled cases. The tool is built to stop that sentence from ever being shortened.</p>
+    <p>“Precision 1.000” is true, and it is a claim about twelve labeled cases. The tool is built to stop that sentence from ever being shortened.</p>
     <div class="attrib">specs/007 · Independent Precision Evidence Loop</div>
   </div>
 
@@ -615,10 +615,10 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 
   <section style="margin-top:17px">
     <h2>Field reports become tests, not tickets</h2>
-    <p class="lede">More than a hundred releases in under eight months. The cadence is not the point; what fed it is. Each report
-    from a real working session — most of them written by an AI agent that hit friction on a real tree —
-    was reproduced as a regression test <em>with a control</em>: the pre-fix behaviour, asserted, so a
-    future change cannot silently re-break it.</p>
+    <p class="lede">More than a hundred releases in under eight months. What fed them matters more than the pace. Each report
+    from a real working session became a regression test <em>with a control</em>.
+    Agents wrote most reports after they hit friction on a real tree. The control asserts the behavior before the fix, so a
+    later change cannot silently break it again.</p>
 
     <figure>
       <svg viewBox="0 0 760 150" role="img" aria-label="Timeline from March to September 2026 with release milestones and field reports">
@@ -647,10 +647,10 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
   </section>
 
   <section class="rule-top">
-    <h2>Dogfooding, including the part that is embarrassing</h2>
-    <p>DocGuard guards its own repository on every push: <code>guard</code>, <code>score</code>, <code>diff</code>, <code>badge</code>,
-    and the packed npm tarball run without installed dependencies. Its README count claims are machine-governed. Its own claims are
-    fault-probed by its sibling, TestGuard. Three things that discipline found:</p>
+    <h2>Dogfooding, including the part that went wrong</h2>
+    <p>DocGuard guards its own repository on every push. <code>guard</code>, <code>score</code>, <code>diff</code>, <code>badge</code>
+    and the packed npm tarball run without installed dependencies. A machine checks the count claims in its README. Its
+    sibling, TestGuard, probes its claims with planted faults. This habit found three things:</p>
     <div class="cols-3">
       <div class="verdict good">
         <span class="tag">found · v0.32</span>
@@ -658,11 +658,11 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
       </div>
       <div class="verdict good">
         <span class="tag">found · v0.32</span>
-        <p>REF002 flagged DocGuard's own source: doc comments used realistic <code>ADR-012</code> examples and fixtures cited ADRs. Non-product scoping and digit-free placeholders; shipped with zero self-findings.</p>
+        <p>REF002 flagged DocGuard's own source: doc comments used realistic <code>ADR-012</code> examples and fixtures cited ADRs. The fix skips tests and fixtures and uses placeholders without digits, such as <code>ADR-NNN</code>. It shipped with zero self-findings.</p>
       </div>
       <div class="verdict bad">
         <span class="tag">missed · Sep 22</span>
-        <p>The README said <strong>“33 tests”</strong> from March 15 through all 92 releases while the suite grew past 2,000 — and every self-guard was green. Metrics-Consistency had computed the test count since v0.8.2 and never compared it to anything. A human found it, not the tool.</p>
+        <p>The README said <strong>“33 tests”</strong> from March 15 through all 92 releases while the suite grew past 2,000. Every self-guard stayed green. Metrics-Consistency had computed the test count since v0.8.2 and never compared it to anything. A human found it, not the tool.</p>
       </div>
     </div>
     <div class="exhibit drift" style="margin-top:12px">
@@ -672,9 +672,9 @@ client retries on any 5xx; see ADR-007 for the rejected alternative.   <span cla
 MET003 flags a documented count <span class="bad">below</span> the floor (stale for certain) and passes anything above it.
 It carries <span class="bad">no mechanical fix</span>: writing the floor would replace a stale number with a wrong one.</pre>
     </div>
-    <p class="note">A green self-guard proves the checks that exist passed, not that the right checks exist.
-    The honest version of this story — a half-built check, a human reader, a lower-bound design that refuses to
-    guess — is the loop this page is about, and it is why the tool's limitations page comes next.</p>
+    <p class="note">A green self-guard proves the existing checks passed, not that the right checks exist.
+    This page tells the honest version: a half-built check, a human reader, and a lower-bound design that refuses to
+    guess. That is why page 10 covers the limits.</p>
   </section>
 
   <div class="footer"><span>DocGuard — Technical Brief</span><span>Page 7 of 10 · Field reports</span></div>
@@ -689,10 +689,10 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
 
   <section style="margin-top:17px">
     <h2>From checking the map to governing how it changes</h2>
-    <p class="lede">Through 0.42, DocGuard asked one question: <em>does the documentation still match the code?</em>
-    Versions 0.43 and 0.44 add the questions around it — which section a change should have touched, whether a feature went
-    through its spec first, what an agent needs to read, and whether the tool got slower or noisier. Fifty-one specs (014–064) were written, planned and tasked before
-    their code; thirty-four carry TestGuard claims probed with planted faults.</p>
+    <p class="lede">Through 0.42, DocGuard asked one question: <em>do the docs still match the code?</em>
+    Versions 0.43 and 0.44 add more questions. Which section should a change have touched? Did a feature go
+    through its spec first? What must an agent read? Did the tool get slower or noisier? Fifty-one specs (014–064) were written, planned and tasked before
+    their code. Thirty-four carry TestGuard claims probed with planted faults.</p>
 
     <div class="statband four">
       <div><div class="fig indigo">51</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.42</div><div class="src">specs/014 – specs/064</div></div>
@@ -726,7 +726,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
       <div class="verdict judge">
         <span class="tag">held back · measured</span>
         <p>The symbol map ships <strong>opt-in</strong>. A frozen 54-trial benchmark found no regression but no benefit
-        on navigation tasks (steps unchanged, latency 6% lower against a 15% bar), so it stays off by default.</p>
+        on navigation tasks. Steps were unchanged and latency was 6% lower, against a 15% bar. So it stays off by default.</p>
       </div>
     </div>
   </section>
@@ -749,8 +749,8 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
   <section style="margin-top:17px">
     <h2>From governing change to proving every verdict</h2>
     <p class="lede">Through 0.44, a green line meant the check found nothing. Versions 0.45 and 0.46 make it say what it
-    <em>looked at</em>: which function a requirement lives in, and whether a check could observe what it needed. Ideas from
-    AWS AI-DLC and DORA were rebuilt here, not copied.</p>
+    <em>looked at</em>. It records which function a requirement lives in, and whether a check could see what it needed.
+    AWS AI-DLC and DORA ideas were rebuilt, not copied.</p>
 
     <div class="statband four">
       <div><div class="fig indigo">22</div><div class="cap">specs delivered through the Spec Kit pipeline since 0.44</div><div class="src">specs/070 – specs/092</div></div>
@@ -766,7 +766,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
       <tbody>
         <tr><td>Requirements<br>in the code</td><td>An <code>@implements</code> tag anchors to the function under it, and turns suspect when that code or the requirement changes.</td><td>Traceability that knows <em>which function</em>, not just which file.</td></tr>
         <tr><td>Every check<br>decides</td><td>Each validator ends in one of six verdicts. A git call that fails is a recorded gap, never a finding.</td><td>“Could not look” stops reading as “looked and found nothing”.</td></tr>
-        <tr><td>Rules you<br>grow into</td><td>New rules ship advisory; <code>docguard policy</code> shows which ones CI history says are ready to promote. Suppressions name an owner and an end date.</td><td>Stricter over time, on evidence from your own runs.</td></tr>
+        <tr><td>Checks you<br>grow into</td><td>New checks start advisory. <code>docguard policy</code> shows which ones CI history says are ready to promote. Suppressions name an owner and an end date.</td><td>Stricter over time, on evidence from your own runs.</td></tr>
         <tr><td>Chains and<br>decisions</td><td>Requirements must reach tasks; ADR supersession must run both ways; authoring guidance comes from the registry the validators read.</td><td>The tool’s own skill had told agents to write a section its checker rejected.</td></tr>
         <tr><td>AWS AI-DLC</td><td>Reads AI-DLC’s records and memory; a plugin sensor fails a gate on drift the stage introduced, not drift it inherited.</td><td>A gate that fails on old warnings gets switched off.</td></tr>
         <tr><td>DORA<br>evidence</td><td><code>score --dora</code> maps DORA’s documentation items and AI capabilities to repository evidence.</td><td>DORA found documentation multiplies what every practice pays back.</td></tr>
@@ -808,11 +808,11 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <div class="cols-2">
       <div><ul class="ticks">
         <li><strong>No recall guarantee.</strong> Precision-first means some real drift is missed by design. The variants that caught more were tested and rejected because they also flooded.</li>
-        <li><strong>No judgement of prose.</strong> Whether a paragraph is <em>true</em> is never auto-decided. Exact declarations in <code>.docguard-evidence.json</code> can verify selected statements; every other statement stays unverified, and the badge prints how many.</li>
-        <li><strong>No calibrated probabilities.</strong> HIGH / MEDIUM / LOW are deterministic strata. The one number DocGuard measures is precision on labelled cases, with n and a bound, and a caveat that cannot be deleted.</li>
+        <li><strong>No judgment of prose.</strong> DocGuard never auto-decides whether a paragraph is <em>true</em>. Exact declarations in <code>.docguard-evidence.json</code> can verify selected statements; every other statement stays unverified, and the badge prints how many.</li>
+        <li><strong>No calibrated probabilities.</strong> HIGH / MEDIUM / LOW are deterministic strata. The one number DocGuard measures is precision on labeled cases, with n and a bound, and a caveat that cannot be deleted.</li>
       </ul></div>
       <div><ul class="ticks">
-        <li><strong>Not proof that context helps.</strong> The AGENTS.md study on page 5 is cited in the README precisely because it cuts the other way. What DocGuard offers is a way to find out on your repository, with outcomes measured.</li>
+        <li><strong>Not proof that context helps.</strong> The README cites the AGENTS.md study on page 5 because it cuts the other way. DocGuard offers a way to find out on your repository, with outcomes measured.</li>
         <li><strong>Soft by default.</strong> The research-backed detectors ship as low-confidence warnings. Exit code 2 still fails an ordinary shell step; the severity policy is yours.</li>
         <li><strong>A maturity score is not a verdict.</strong> 100/100 means the map is whole; only <code>guard</code> says whether it is true. Nor is <code>score --dora</code> a DORA survey.</li>
       </ul></div>
@@ -824,7 +824,7 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <table class="tight">
       <thead><tr><th>Alongside</th><th>What that does</th><th>What DocGuard adds</th></tr></thead>
       <tbody>
-        <tr><td>GitHub Spec Kit</td><td>Generates feature specs, plans, tasks — spec → code, once.</td><td>Governance after generation: drift tracking, lifecycle (retire what shipped), spec-quality validation. DocGuard is an official Spec Kit community extension.</td></tr>
+        <tr><td>GitHub Spec Kit</td><td>Generates feature specs, plans, tasks — spec → code, once.</td><td>Governance after generation: drift tracking, lifecycle (retire what shipped), spec-quality checks. DocGuard is an official Spec Kit community extension.</td></tr>
         <tr><td>AGENTS.md</td><td>One instruction file: build, test, style.</td><td>AGENTS.md is one of the required files. DocGuard validates it, packs task-specific context from the canonical docs, and keeps every agent on the same map.</td></tr>
         <tr><td>Kiro · Cursor rules</td><td>IDE-bound spec or rule files.</td><td>Portable across any IDE and any agent; enforced in CI rather than read by one editor.</td></tr>
         <tr><td>AWS AI-DLC</td><td>A gated lifecycle where agents write each stage’s artifacts.</td><td>A plugin sensor that fails a gate on new drift; reads AI-DLC’s records and memory.</td></tr>
@@ -837,16 +837,16 @@ It carries <span class="bad">no mechanical fix</span>: writing the floor would r
     <h2>Three more things that follow from it</h2>
     <div class="cols-3">
       <div>
-        <h3>Ships everywhere, phones nowhere</h3>
+        <h3>Ships widely, sends no data</h3>
         <p class="note">npm and PyPI packages with provenance attestation, Homebrew, a GitHub Action, a Docker image, an MCP server and Claude Desktop bundle, a Spec Kit extension. No telemetry, no network at validation time.</p>
       </div>
       <div>
         <h3>Evidence, not output</h3>
-        <p class="note">JSON, SARIF and JUnit with all five channels on every finding; a badge that prints the unverified-claim count next to the check count; a benchmark envelope with its cases attached.</p>
+        <p class="note">JSON, SARIF and JUnit carry all five channels on every finding. The badge prints the unverified-claim count next to the check count. The benchmark envelope includes its cases.</p>
       </div>
       <div>
         <h3>Built for AI-written code</h3>
-        <p class="note">When an agent writes both the code and the docs, the failure mode is confident, plausible documentation of a system that no longer exists. A deterministic comparison against the tree can see it.</p>
+        <p class="note">When an agent writes both the code and the docs, the typical failure is confident, plausible documentation of a system that no longer exists. A deterministic comparison against the tree can catch it.</p>
       </div>
     </div>
   </section>

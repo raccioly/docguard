@@ -6,9 +6,9 @@
 
 ## The Problem We're Solving
 
-In 2026, AI coding agents can write thousands of lines of code in minutes. But they have a fatal flaw: **they don't remember.**
+In 2026, agents can write thousands of lines of code in minutes. But they have one big flaw: **they don't remember.**
 
-Every new session, every new agent, every new conversation starts from zero. The agent re-reads your code, re-derives how the system works, makes assumptions, and builds on them. Humans hit the same wall: a new contributor faces 500 files and a 50-line README.
+Every new session, agent or conversation starts from zero. The agent re-reads your code and works out again how the system works. It makes assumptions and builds on them. Humans hit the same wall: a new contributor faces 500 files and a 50-line README.
 
 This is the **comprehension crisis of the AI era:**
 
@@ -18,7 +18,7 @@ This is the **comprehension crisis of the AI era:**
 
 ## The Insight
 
-A project needs a **canonical memory** — a complete, structured, always-current description of what the system *is*: every endpoint, screen, entity, the architecture, the tech stack, the setup. Written so an AI agent (or a human) can load it in seconds and understand the whole project without re-reading the code.
+A project needs a **canonical memory**. This is a complete, structured, current description of what the system *is*: every endpoint, screen and entity, plus the architecture, the tech stack and the setup. An agent (or a human) can load it in seconds and understand the whole project without re-reading the code.
 
 DocGuard's job is to **build that memory from the code, keep it true as the code changes, and protect the human reasoning inside it.**
 
@@ -30,30 +30,30 @@ DocGuard's job is to **build that memory from the code, keep it true as the code
 
 ### Pillar 1: Documentation is a first-class, validated artifact
 
-In traditional development, docs are an afterthought — written late (if at all), never updated, quickly stale. CDD makes documentation a **required, validated, and maintained** artifact, on the same footing as tests. If it isn't validated on every change, it rots; so DocGuard validates it.
+In traditional development, docs come last. People write them late, if at all, and never update them, so they go stale. CDD makes documentation a **required, validated, and maintained** artifact, like tests. Docs that no one validates on every change rot. So DocGuard validates them.
 
 ### Pillar 2: Two tiers — derived truth and human reasoning
 
-CDD separates documentation into two kinds of content, and treats them differently:
+CDD splits documentation into two kinds of content and treats them differently:
 
-- **Code-derived** (endpoints, entities, screens, tech stack, env vars): DocGuard generates and re-generates these *from the code*. They are mechanical, and DocGuard owns them.
-- **Human reasoning** (the "why", design intent, trade-offs, gotchas): authored by people (or an AI agent), and **never overwritten** by the tool.
+- **Code-derived** (endpoints, entities, screens, tech stack, env vars): DocGuard generates and regenerates these *from the code*. They are mechanical, and DocGuard owns them.
+- **Human reasoning** (the "why", design intent, trade-offs, gotchas): people (or an agent) write this, and the tool **never overwrites** it.
 
-DocGuard keeps these in the same readable markdown using section markers
-(`<!-- docguard:section id=… source=code -->`), so it can refresh the derived
-parts surgically while leaving your writing untouched.
+DocGuard keeps both kinds in the same readable markdown. It uses section markers
+(`<!-- docguard:section id=… source=code -->`). This lets it refresh the derived
+parts and leave your writing untouched.
 
 ### Pillar 3: Generate AND Guard — bidirectional, continuous
 
-Earlier versions of this document framed CDD as "validate code against docs, never generate docs from code." Experience proved that too narrow. The tool people actually want does **both directions, continuously:**
+Earlier versions of this document said CDD means "validate code against docs, never generate docs from code." That was too narrow. People want a tool that works in **both directions, continuously:**
 
 | Direction | Mode | What it does |
 |-----------|------|--------------|
-| code → docs | **Generate** | Reverse-engineer a complete canonical memory from any codebase. DocGuard scans and builds the code-truth skeleton; an AI agent writes the prose. |
-| code ↔ docs | **Sync** | When code changes, refresh the affected doc sections automatically — mechanical where deterministic, agent-assisted for prose. |
-| docs ↔ code | **Guard** | Validate that the memory still matches reality. Catch documented-but-deleted endpoints, undocumented routes, missing tests, unlogged drift. |
+| code → docs | **Generate** | Build a complete canonical memory from any codebase. DocGuard scans the code and builds the skeleton from it. An agent writes the prose. |
+| code ↔ docs | **Sync** | When code changes, refresh the affected doc sections: automatically for mechanical content, with agent help for prose. |
+| docs ↔ code | **Guard** | Check that the memory still matches the code. Find documented endpoints that no longer exist, undocumented routes, missing tests and unlogged drift. |
 
-The CLI orchestrates (scan, structure, verify); the AI agent does the language-specific writing. Together they keep the memory both **complete** and **accurate**.
+The CLI scans, structures and verifies. The agent does the language-specific writing. Together they keep the memory **complete** and **accurate**.
 
 ---
 
@@ -61,10 +61,10 @@ The CLI orchestrates (scan, structure, verify); the AI agent does the language-s
 
 A memory is only useful if you can trust it. DocGuard measures two things:
 
-- **Completeness** — is the map whole? (No missing chapters: architecture, data model, API surface, screens, environment.)
-- **Accuracy** — does the map match the territory? (The documented endpoints exist; the documented env vars are used; the schemas match the models.)
+- **Completeness** — does the memory cover everything? (No missing chapters: architecture, data model, API surface, screens, environment.)
+- **Accuracy** — does the memory match the code? (The documented endpoints exist; the documented env vars are used; the schemas match the models.)
 
-A document can be beautifully formatted and completely wrong. DocGuard's validators that compare docs against **code truth** are what make a green check mean something — and when a check has nothing to validate, it says so honestly instead of showing a misleading pass.
+A document can be well formatted and completely wrong. DocGuard's validators compare docs against **code truth**, so a green check means something. When a check has nothing to validate, it says so instead of showing a misleading pass.
 
 ---
 
@@ -72,17 +72,17 @@ A document can be beautifully formatted and completely wrong. DocGuard's validat
 
 DocGuard documents **any** project, not just web/JS. It detects the ecosystem
 (JavaScript/TypeScript, Python, Rust, Go, Java/Kotlin, Ruby, PHP, C#) and any
-polyglot/monorepo mix, then builds a memory shaped for that project: a Rust CLI
-gets a Rust-shaped doc set; a Django app a Django-shaped one; a React app gets
+polyglot or monorepo mix. Then it builds a memory that fits the project. A Rust CLI
+gets a Rust doc set, a Django app gets a Django doc set, and a React app gets
 its screens and components.
 
 ---
 
 ## Why Now?
 
-1. **AI agents are primary developers.** They need structured context to work well. A canonical memory is the highest-leverage context you can give them.
-2. **Multi-agent development is real.** Claude Code, Copilot, Cursor, and humans touch the same repo in the same week. They need one shared, current source of truth.
-3. **Code volume is exploding; comprehension isn't keeping up.** AI makes adding code trivial. DocGuard makes *understanding* it trivial — and keeps that understanding current.
+1. **Agents are primary developers.** They need structured context to work well. A canonical memory is the most useful context you can give them.
+2. **Multi-agent development is real.** Claude Code, Copilot, Cursor, and humans change the same repo in the same week. They need one shared, current source of truth.
+3. **Code volume is growing fast; comprehension isn't keeping up.** Agents make adding code easy. DocGuard makes *understanding* it easy, and keeps that understanding current.
 
 ---
 
@@ -94,16 +94,16 @@ generate ──▶ guard ──▶ sync ──▶ guard ──▶ …
                         current)
 ```
 
-- **Day 1:** `docguard generate --plan` → a complete first-draft memory of your repo (agent fills the prose).
-- **Every change:** `docguard sync` refreshes the derived sections; `docguard guard` verifies; the agent updates prose where flagged.
+- **Day 1:** `docguard generate --plan` → a complete first-draft memory of your repo (the agent fills in the prose).
+- **Every change:** `docguard sync` refreshes the derived sections, `docguard guard` verifies, and the agent updates prose where DocGuard flags it.
 - **Forever:** the memory stays complete and true. Any agent or human can understand your project in seconds.
 
 ---
 
 ## CDD and Other Methodologies
 
-- **+ Spec Kit (SDD):** Spec Kit generates code from specs (the build phase); DocGuard maintains the living memory and governance afterward. DocGuard ships as a Spec Kit extension.
-- **+ TDD/BDD:** `TEST-SPEC.md` declares what must be tested; DocGuard verifies the tests exist; TDD/BDD drive their implementation.
+- **+ Spec Kit (SDD):** Spec Kit generates code from specs (the build phase). After that, DocGuard maintains the living memory and the governance. DocGuard ships as a Spec Kit extension.
+- **+ TDD/BDD:** `TEST-SPEC.md` declares what you must test. DocGuard verifies that the tests exist. TDD/BDD drive how you write them.
 - **+ Agile:** the memory grows sprint by sprint alongside the code. A 30-line `ARCHITECTURE.md` that is complete, current, and validated beats a 300-page document that's stale.
 
 ---
@@ -113,9 +113,9 @@ generate ──▶ guard ──▶ sync ──▶ guard ──▶ …
 CDD is a practitioner methodology whose patterns align with peer-reviewed research:
 
 - **Generate → validate → evaluate pipeline** — inspired by the AITPG framework (Lopez et al., IEEE TSE 2026): multi-agent generation grounded in standards produces more comprehensive documentation while staying semantically aligned with expert references.
-- **Stratified quality evaluation** — DocGuard's HIGH/MEDIUM/LOW labels and multi-signal scoring adopt the label vocabulary and composite-scoring structure of the CJE framework from TRACE (Lopez et al., IEEE TMLCN 2026). They are deterministic strata (a validator's check pass-ratio, a finding's heuristic confidence tier), not calibrated probabilities: DocGuard has never measured P(finding is real) and does not claim to. What *is* measured is detector precision on a labelled, deliberately balanced benchmark corpus, published with sample sizes and Wilson 95% bounds in [`benchmarks/baseline.json`](benchmarks/baseline.json) and summarised in [VALIDATION.md](VALIDATION.md); every ratio there carries the caveat that benchmark precision on a balanced corpus is not the base rate of stale claims in your repository.
+- **Stratified quality evaluation** — DocGuard's HIGH/MEDIUM/LOW labels and multi-signal scoring use the label names and the composite-scoring structure of the CJE framework from TRACE (Lopez et al., IEEE TMLCN 2026). They are deterministic strata (a validator's check pass-ratio, a finding's heuristic confidence tier), not calibrated probabilities. DocGuard has never measured P(finding is real) and does not claim to. What *is* measured is detector precision on a labeled, deliberately balanced benchmark corpus. [`benchmarks/baseline.json`](benchmarks/baseline.json) publishes it with sample sizes and Wilson 95% bounds, and [VALIDATION.md](VALIDATION.md) summarizes it. Every ratio there carries a caveat: benchmark precision on a balanced corpus is not the base rate of stale claims in your repository.
 - **Standards-grounded generation** — each canonical document maps to a relevant standard (arc42, C4, OWASP ASVS, ISO 29119, OpenAPI, 12-Factor App).
-- **Enforcement over instructions** — a 2026 ETH Zurich study (138 repos, 5,694 agent PRs) found the most common style of agent-instruction file *degrades* agent performance; practitioner reports converge on the same conclusion: written rules are routinely ignored, programmatic checks are respected. CDD's answer is to make the docs machine-verified rather than merely machine-readable.
+- **Enforcement over instructions** — a 2026 ETH Zurich study (138 repos, 5,694 agent PRs) found that the most common style of agent-instruction file *degrades* agent performance. Practitioner reports reach the same conclusion: agents routinely ignore written rules and respect programmatic checks. CDD's answer is to make the docs machine-verified, not only machine-readable.
 
 > **Lead researcher**: [Martin Manuel Lopez](https://github.com/martinmanuel9) · [ORCID 0009-0002-7652-2385](https://orcid.org/0009-0002-7652-2385), University of Arizona
 

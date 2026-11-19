@@ -6,8 +6,8 @@ nav_order: 4
 
 # Coding Agents
 
-DocGuard runs from a terminal and needs no agent. When you use one, DocGuard can
-put four kinds of files where that agent reads them:
+DocGuard runs from a terminal and needs no agent. When you use an agent,
+DocGuard can put four kinds of files where that agent reads them:
 
 | Files | Written by | When |
 |---|---|---|
@@ -17,7 +17,7 @@ put four kinds of files where that agent reads them:
 | A Claude Code nudge hook in `.claude/settings.json` | `docguard hooks --claude` | Only when you ask |
 
 No other command writes agent files. Every agent can also call DocGuard as an
-MCP server; see [MCP Server](mcp.md).
+MCP server. See [MCP Server](mcp.md).
 
 ## The files DocGuard installs
 
@@ -26,15 +26,15 @@ MCP server; see [MCP Server](mcp.md).
 `docguard-sync`.
 
 **Slash commands**, from `commands/`: `docguard.fix.md`, `docguard.guard.md`,
-`docguard.review.md`, `docguard.score.md`. They are written only where the
+`docguard.review.md`, `docguard.score.md`. DocGuard writes them only where the
 project has a commands directory for DocGuard (the fallback and `generic`
 layouts below).
 
 **Spec Kit extension commands**, declared in
 `extensions/spec-kit-docguard/extension.yml`: `speckit.docguard.init`,
 `guard`, `fix`, `review`, `score`, `diagnose`, `generate`, `sync`, `trace`,
-`brief`, `preflight` and `complete`. Spec Kit names the files for each agent;
-for a skills agent `speckit.docguard.guard` becomes
+`brief`, `preflight` and `complete`. Spec Kit names the files for each agent.
+For a skills agent, `speckit.docguard.guard` becomes
 `speckit-docguard-guard/SKILL.md`.
 
 **Extension hooks**, which Spec Kit runs around its own commands:
@@ -48,24 +48,24 @@ for a skills agent `speckit.docguard.guard` becomes
 | `after_converge` | `speckit.docguard.complete` | No (prompts) |
 | `after_tasks` | `speckit.docguard.score` | No (prompts) |
 
-`init` reports the hooks as active only after it finds the command file each
-mandatory hook resolves to (`verifyHooks` in `cli/agent-surface.mjs`). The
-extension requires Spec Kit 0.11.2 or later; `init` checks the installed
+`init` reports the hooks as active only after it finds the command file that
+each mandatory hook resolves to (`verifyHooks` in `cli/agent-surface.mjs`). The
+extension requires Spec Kit 0.11.2 or later. `init` checks the installed
 version before it initializes anything. See the
 [Spec Kit guide](../guides/spec-kit.md) for the workflow.
 
-Content is compared before writing, so a rerun of `init` with nothing changed
-writes nothing.
+DocGuard compares content before it writes. If you run `init` again with
+nothing changed, it writes nothing.
 
 ## How DocGuard identifies your agent
 
-DocGuard uses Spec Kit's integration keys. It takes the first of:
+DocGuard uses the integration keys of Spec Kit. It takes the first of these:
 
 1. **The integration Spec Kit recorded**: `default_integration`, then
    `integration` in `.specify/integration.json`, then `integration`, then `ai`
    in `.specify/init-options.json`. A value must match
-   `^[a-zA-Z0-9_-]{1,32}$`; anything else is ignored and never passed to a
-   subprocess.
+   `^[a-zA-Z0-9_-]{1,32}$`. DocGuard ignores any other value and never passes
+   it to a subprocess.
 2. **A file or directory in the project root**, checked in this order:
 
    | Signal | Integration key |
@@ -91,16 +91,16 @@ Source: `getDetectedAgent` and `detectAIAgent` in `cli/ensure-skills.mjs`,
 
 ## Where the files go
 
-There are two paths. Which one applies depends on whether Spec Kit has written
-an install manifest for the recorded integration.
+There are two paths. The path depends on whether Spec Kit has written an
+install manifest for the recorded integration.
 
 ### Spec Kit integration-key path
 
 When `.specify/integrations/<key>.manifest.json` exists, DocGuard reads the file
-Spec Kit wrote for its own `constitution` command and copies that file's
-directory, shape (skill or command) and name separator
+that Spec Kit wrote for its own `constitution` command. It copies the
+directory, shape (skill or command) and name separator of that file
 (`readIntegrationLayout` in `cli/agent-surface.mjs`). DocGuard keeps no
-per-agent table, so it follows whatever layout your Spec Kit version uses.
+per-agent table, so it follows the layout that your Spec Kit version uses.
 
 | Integration style | DocGuard's skills | DocGuard's slash commands | Extension commands |
 |---|---|---|---|
@@ -108,17 +108,16 @@ per-agent table, so it follows whatever layout your Spec Kit version uses.
 | Commands (for example `gemini`, `kiro-cli`) | Not written: the agent reads commands, not skills | Not written | Written by Spec Kit into the agent's commands directory |
 | `generic` | `.agent/skills/` | `.agent/commands/` | Written by DocGuard into the generic commands directory, because Spec Kit registers none for `generic` |
 
-When DocGuard runs `specify init` itself it passes
-`--integration <key>`, and for `generic` also
-`--integration-options "--commands-dir .agent/commands/"`. Paths read from
-`.specify/*.json` are checked to stay inside the project before anything is
-written.
+When DocGuard runs `specify init` itself, it passes `--integration <key>`. For
+`generic` it also passes `--integration-options "--commands-dir .agent/commands/"`.
+DocGuard checks that paths read from `.specify/*.json` stay inside the project
+before it writes anything.
 
 ### Fallback `.agent/` layout
 
 Without a Spec Kit manifest (Spec Kit not installed, `--no-spec-kit`, the
 `starter` profile, or `specify init` failed), DocGuard places its own files
-from the detected key alone:
+by the detected key alone:
 
 | Key | Skills directory | Commands directory |
 |---|---|---|
@@ -128,7 +127,8 @@ from the detected key alone:
 | `generic` recorded without a manifest | `.agent/skills/` | the recorded `--commands-dir`, else `.agent/commands/` |
 | Any other key, or no agent | `.agent/skills/` | `.agent/commands/` |
 
-Extension commands and hooks need Spec Kit, so none are written on this path.
+Extension commands and hooks need Spec Kit, so DocGuard writes none on this
+path.
 
 ### What this produces per agent
 
@@ -150,16 +150,15 @@ version the integration-key path follows that version's manifest.
 | Any other Spec Kit integration | Recorded in `.specify/` only | From the Spec Kit manifest | none | From the Spec Kit manifest | From the Spec Kit manifest |
 
 Spec Kit 1.1.3 rejects `windsurf` and `roo` ("not found in catalog"). DocGuard
-passes the key anyway, prints Spec Kit's error with the command to retry by
-hand, and installs its own files in the fallback layout. It never substitutes
-another agent.
+passes the key anyway. It prints the error from Spec Kit with the command to
+retry by hand, and installs its own files in the fallback layout. It never
+substitutes another agent.
 
 ## Invoking commands
 
 DocGuard names a slash command only when its file exists in the project
-(`agentCommand` in `cli/agent-surface.mjs`); otherwise it prints the CLI
-command, such as `docguard guard`. The prefix and separator come from the
-layout:
+(`agentCommand` in `cli/agent-surface.mjs`). Otherwise it prints the CLI
+command, such as `docguard guard`. The layout sets the prefix and separator:
 
 | Layout | Example |
 |---|---|
@@ -169,9 +168,9 @@ layout:
 | Commands, including `generic` | `/speckit.docguard.guard` |
 | DocGuard's own commands in a commands directory | `/docguard.guard` |
 
-These prefixes mirror Spec Kit 1.0.13's invocation styles. DocGuard's own skills
-(`docguard-guard` and the rest) are loaded through the agent's skill mechanism;
-DocGuard does not print an invocation for them.
+These prefixes mirror the invocation styles of Spec Kit 1.0.13. The agent loads
+DocGuard's own skills (`docguard-guard` and the rest) through its skill
+mechanism. DocGuard does not print an invocation for them.
 
 ## Instruction files from AGENTS.md
 
@@ -188,8 +187,8 @@ it (`cli/commands/agents.mjs`):
 | `claude` | `CLAUDE.md` |
 | `gemini` | `.gemini/settings.json` (a JSON object with the project name, canonical docs and rules) |
 
-An existing file is skipped unless you pass `--force`. Pass `--agent <key>` to
-write one file. Any other key is refused with the list above.
+DocGuard skips an existing file unless you pass `--force`. Pass `--agent <key>`
+to write one file. DocGuard refuses any other key and prints the list above.
 
 To keep the family in step with `AGENTS.md`:
 
@@ -199,24 +198,24 @@ docguard agents --check    # exit 2 when a marked file is older than AGENTS.md
 ```
 
 `--sync` stamps each file with a hash of `AGENTS.md` (an HTML comment, or a
-`_docguardSync` field in JSON). A file without the marker is treated as yours:
-`--sync` skips it with a warning and `--check` does not judge it.
+`_docguardSync` field in JSON). DocGuard treats a file without the marker as
+yours: `--sync` skips it with a warning and `--check` does not judge it.
 
 Two things to know:
 
-- Files `init --with agents` writes carry the marker, so `--sync` keeps them
-  current. Files written by DocGuard before v0.44 carry none: run
+- Files that `init --with agents` writes carry the marker, so `--sync` keeps
+  them current. Files that DocGuard wrote before v0.44 carry none. Run
   `docguard agents --sync --force` once to adopt them. `--force` replaces every
-  one of the six files, including one you wrote by hand; add `--agent <key>` to
-  limit it to one. It does not overwrite your canonical documents.
-- `agents` is a deprecated alias of `init --with agents`, but `agents --sync`
-  and `agents --check` run only the agent-file sync: no scaffolding, skill
+  one of the six files, including one you wrote by hand. Add `--agent <key>` to
+  limit it to one. It does not overwrite your canonical docs.
+- `agents` is a deprecated alias of `init --with agents`. `agents --sync` and
+  `agents --check` run only the agent-file sync. They do no scaffolding, skill
   installation or Spec Kit step.
 
 ## What each harness loads
 
-`docguard rules --for <path>` lists the instruction files a harness loads for
-one path, why each applies and how many bytes they add. `--harness` takes one
+`docguard rules --for <path>` lists the instruction files that a harness loads
+for one path, why each applies and how many bytes they add. `--harness` takes one
 of `codex`, `claude`, `cursor`, `copilot` or `openhands`
 (`HARNESSES` in `cli/scanners/instruction-scopes.mjs`).
 
@@ -232,12 +231,12 @@ docguard rules --for src/api/users.ts --harness cursor --format json
 | `copilot` | `.github/copilot-instructions.md`; `.github/instructions/**/*.instructions.md`; the nearest `AGENTS.md` | `applyTo:` |
 | `openhands` | `.agents/skills/*/SKILL.md`, `.openhands/skills`, legacy `.openhands/microagents`; root `AGENTS.md` and `CLAUDE.md` | `paths:` |
 
-These formats were checked against each vendor's documentation on 2026-09-30.
-The details, including how each harness treats a slashless pattern, are in
-[AI Integration](../ai-integration.md). The Path-Scoped-Rules validator reports
-stale scopes and broken pointers (PSR001 to PSR004), and the Structure
-validator measures each `AGENTS.md` chain against its byte budget (STR004,
-STR005); see [Finding Codes](findings.md).
+We checked these formats against each vendor's documentation on 2026-09-30.
+[AI Integration](../ai-integration.md) has the details, including how each
+harness treats a slashless pattern. The Path-Scoped-Rules validator reports
+stale scopes and broken pointers (PSR001 to PSR004). The Structure validator
+measures each `AGENTS.md` chain against its byte budget (STR004, STR005). See
+[Finding Codes](findings.md).
 
 ## Claude Code nudge hook
 
@@ -247,12 +246,12 @@ docguard hooks --claude --remove   # remove
 ```
 
 This adds a `PostToolUse` entry to the project's `.claude/settings.json` that
-runs `docguard nudge-hook`. After the agent edits a canonical document it is
-reminded to run guard on the changed files. After it edits a code file, it is
-pointed to `docguard impact` when a canonical document or a root `AGENTS.md`,
-`CLAUDE.md` or `GEMINI.md` names it as a whole file name: `config.js` is not
-named by `tsconfig.json`. Only DocGuard's own entry is added
-or removed, and a `settings.json` that is not valid JSON is left untouched.
+runs `docguard nudge-hook`. After the agent edits a canonical document, the
+hook reminds it to run guard on the changed files. After the agent edits a
+code file, the hook points it to `docguard impact` when a canonical doc or a
+root `AGENTS.md`, `CLAUDE.md` or `GEMINI.md` names it as a whole file name: `config.js` is not
+named by `tsconfig.json`. DocGuard adds or removes only its
+own entry, and it leaves a `settings.json` that is not valid JSON untouched.
 `init` never installs it.
 
 ## Related

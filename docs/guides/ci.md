@@ -6,10 +6,10 @@ nav_order: 3
 
 # Continuous Integration
 
-DocGuard gates a pipeline with exit codes and writes reports in formats that CI
-systems read. This page covers the GitHub Action, starter workflows for GitHub
-Actions, and recipes for GitLab CI, Azure Pipelines, CircleCI, Jenkins and plain
-shell.
+DocGuard gates a pipeline with exit codes. It also writes reports in formats
+that CI systems read. This page covers the GitHub Action, starter workflows for
+GitHub Actions, and recipes for GitLab CI, Azure Pipelines, CircleCI, Jenkins
+and plain shell.
 
 In the examples, replace `X.Y.Z` with the DocGuard version you have reviewed.
 The maintained source for these recipes is
@@ -25,12 +25,12 @@ The maintained source for these recipes is
 - **Pin the version.** Use `npx docguard-cli@X.Y.Z`, a pinned devDependency, or
   a pinned action tag.
 - **Clone with full history.** Freshness, `diff --since`, `specs require` and
-  `specs complete` read Git history. A shallow clone makes them partial or
-  inconclusive.
+  `specs complete` read Git history. A shallow clone makes their results
+  partial or inconclusive.
 - **Run against the revision that will merge.** Use the pull request's merge
-  commit or a merge queue trigger, not an older branch head.
-- **Require the check in branch protection.** Adding a workflow does not make
-  it required.
+  commit or a merge queue trigger. Do not use an older branch head.
+- **Require the check in branch protection.** A new workflow is not required
+  until you require it.
 
 ## Choose the command
 
@@ -41,15 +41,16 @@ The maintained source for these recipes is
 | Output formats | text, `json`, `sarif`, `junit` | text, `json` |
 | Strict on warnings | Warnings already exit `2` | `--fail-on-warning` turns warnings into exit `1` |
 | History | Not recorded | Appends to `.docguard/history.jsonl` unless `--no-history` |
-| Uninitialised project | Exit `3` | Exit `1` |
+| Uninitialized project | Exit `3` | Exit `1` |
 
 Use `guard` when you need SARIF or JUnit. Use `ci` when you also want a minimum
 score, or a single READY / ATTENTION / BLOCKED verdict in JSON. Both use the
-committed baseline and the severity overrides in `.docguard.json`, so the same
-findings give the same verdict from both.
+committed baseline and the severity overrides in `.docguard.json`. The same
+findings therefore give the same verdict from both.
 
-The score measures documentation structure, not whether the documentation is
-correct. Use guard findings for enforcement; a high score alone proves neither.
+The score measures the structure of your docs. It does not show that the docs
+are correct. Use guard findings for enforcement. A high score alone proves
+neither.
 
 ## Exit codes
 
@@ -61,12 +62,13 @@ correct. Use guard findings for enforcement; a high score alone proves neither.
 | `specs --check` | Registry current | (not used) | Registry missing, stale or inconsistent | (not used) |
 | `verify --evidence` | Every declaration verified | A contradiction, or an invalid manifest | Stale, inconclusive or unsupported evidence | (not used) |
 
-`guard` and `ci` also exit `4` under the strict default: a validator that applies
-to the project examined nothing for a reason the project can resolve, or could
-not observe at all. The output lists each one with its cause and fix. A plain
-shell step fails on `4`, and so does the Action. Hold a project at the checks it
-already passes with `"enforcement": { "mode": "strict", "asOf": "0.47" }`, or
-stay on the earlier behavior with `"enforcement": "standard"`; see
+`guard` and `ci` also exit `4` under the strict default. This happens when a
+validator that applies to the project examined nothing for a reason the project
+can resolve, or could not observe at all. The output lists each one with its
+cause and fix. A plain shell step fails on `4`, and so does the Action. To hold
+a project at the checks it already passes, use
+`"enforcement": { "mode": "strict", "asOf": "0.47" }`. To stay on the earlier
+behavior, use `"enforcement": "standard"`. See
 [Upgrading to Strict](../upgrading-to-strict.md).
 
 A plain shell step fails on any non-zero exit, so by default warnings fail the
@@ -94,25 +96,25 @@ because warnings already exit `2`. To make warnings fail, treat `2` as a failure
 | `--format sarif` (guard only) | SARIF 2.1.0: finding codes become rules, locations become regions | GitHub code scanning and other SARIF viewers |
 | `--format junit` (guard only) | JUnit XML, one test case per validator | GitLab, Jenkins, Azure DevOps, CircleCI test reports |
 
-With a machine format, stdout contains only the report, and notes go to
-stderr. A large report is flushed completely before the process exits, so
+With a machine format, stdout contains only the report. Notes go to stderr.
+DocGuard writes a large report completely before the process exits, so
 `> report.json` is safe.
 
 Each SARIF result carries the finding's channels in `properties`:
 `disposition`, `confidence`, `evidence`, `parserTier`, `reportable`,
-`suggestionKind`, and the intrinsic and effective severities. Base automation on
-`disposition`, not on severity alone:
+`suggestionKind`, and the intrinsic and effective severities. Base automation
+on `disposition`, not on severity alone:
 
 - `act`: DocGuard names the correction.
-- `escalate`: a person must judge it. Applying an automated fix to an escalation
-  silences the signal without resolving it.
+- `escalate`: a person must judge it. An automated fix on an escalation
+  silences the signal and does not resolve it.
 
 A `parserTier` of `regex-fallback` or `fallback-language` means no syntax tree
-was available for that file. The absence of findings there is weak evidence.
+was available for that file. No findings there is weak evidence.
 
 ## Baselines in CI
 
-On a repository that already has findings, freeze them once and gate only new
+On a repository that already has findings, freeze them once. Then gate only new
 ones:
 
 ```bash
@@ -121,15 +123,15 @@ git add .docguard.baseline.json
 ```
 
 `guard` and `ci` then suppress the frozen findings and fail only on new ones.
-The suppression is always reported: a "N pre-existing finding(s) suppressed"
-line in text output, and `baselineSuppressed` in JSON. `--no-baseline` shows
-everything for one run. `"baseline": false` in `.docguard.json` turns the
-baseline off.
+DocGuard always reports the suppression: a "N pre-existing finding(s)
+suppressed" line in text output, and `baselineSuppressed` in JSON.
+`--no-baseline` shows everything for one run. `"baseline": false` in
+`.docguard.json` turns the baseline off.
 
 - `--update-baseline` cannot be combined with `--changed-only`. The baseline
   must freeze the full validator set.
-- Regenerate the baseline only in a reviewed change, so the diff shows what was
-  accepted.
+- Regenerate the baseline only in a reviewed change. The diff then shows what
+  you accepted.
 
 ## GitHub Actions
 
@@ -155,9 +157,9 @@ jobs:
           command: guard
 ```
 
-The action installs the `docguard-cli` version it was released with, so pinning
-`raccioly/docguard@vX.Y.Z` also pins the CLI. For a stronger pin, use a full
-commit SHA and keep the release tag in a comment.
+The action installs the `docguard-cli` version it was released with. Pinning
+`raccioly/docguard@vX.Y.Z` therefore also pins the CLI. For a stronger pin, use
+a full commit SHA and keep the release tag in a comment.
 
 **Inputs** (from [`action.yml`](https://github.com/raccioly/docguard/blob/main/action.yml)):
 
@@ -183,8 +185,8 @@ result, with `command: score` and `format: json`), `fixes-applied`,
 
 Annotations and the PR comment run even when guard fails, because that is when
 they matter. The action passes every input and every piece of event data, such
-as the PR body and branch names, through environment variables. None of it is
-spliced into a script.
+as the PR body and branch names, through environment variables. It never puts
+any of this text into a script.
 
 The action does not run `ci` with a threshold. `score-threshold` applies only
 to `command: score`. To combine guard and a minimum score in one step, call the
@@ -194,17 +196,17 @@ CLI directly, as the starter workflow below does.
 
 `docguard init --with ci` writes `.github/workflows/docguard.yml` from
 [`templates/ci/github-actions.yml`](https://github.com/raccioly/docguard/blob/main/templates/ci/github-actions.yml).
-It keeps an existing workflow; `--force` backs it up and replaces it. The
+It keeps an existing workflow. `--force` backs it up and replaces it. The
 starter:
 
 - checks out the full history with `persist-credentials: false`;
 - installs a pinned `docguard-cli` with `--ignore-scripts`;
 - runs `docguard ci --format json --threshold 70 --no-history`;
-- validates that the report is JSON and records its verdict from the real exit
+- checks that the report is JSON and records its verdict from the real exit
   code;
 - writes the report to the job summary and uploads it as an artifact.
 
-Its actions are pinned to commit SHAs. Review the pins and the threshold before
+It pins its actions to commit SHAs. Review the pins and the threshold before
 you commit it.
 
 The Spec Kit extension ships two more starters in
@@ -248,7 +250,7 @@ jobs:
         run: '[ "$STATUS" -eq 0 ] || [ "$STATUS" -eq 2 ]'
 ```
 
-Uploading comes before the gate, so findings reach code scanning even when the
+The upload comes before the gate, so findings reach code scanning even when the
 job fails.
 
 ### Spec-first gate
@@ -274,7 +276,7 @@ The action runs `docguard specs require --since origin/<base> --message-file
 
 A reference to a spec that does not exist never passes. Exit `1` (uncovered)
 and exit `2` (inconclusive) both fail the job. Declare the governed paths in
-`.docguard.json`; see [`specFirst`](../configuration.md#spec-first-gate--specfirst).
+`.docguard.json`. See [`specFirst`](../configuration.md#spec-first-gate--specfirst).
 
 When you call the CLI from your own workflow, pass the PR body through `env`
 into a file. Never put `${{ github.event.pull_request.body }}` inside a `run:`
@@ -314,7 +316,7 @@ include:
 
 The job uses `node:20` (input `node_image`) and `GIT_DEPTH: 0`. Exit `2` from
 `guard` passes unless `fail_on_warning` is true. The job also saves
-`docguard.sarif` as an artifact even when it fails. It does not produce a JUnit
+`docguard.sarif` as an artifact, even when it fails. It does not produce a JUnit
 report. For test-report integration, use your own job:
 
 ```yaml
@@ -357,8 +359,8 @@ steps:
 
 ## CircleCI
 
-The status is saved to a file so the report is stored before the gate step
-runs.
+The job saves the status to a file. The report is then stored before the gate
+step runs.
 
 ```yaml
 version: 2.1
@@ -413,7 +415,7 @@ Make sure the checkout is not shallow.
 
 The Azure Pipelines, CircleCI and Jenkins examples use each platform's own
 syntax for Node.js setup and test reports. The DocGuard part is the `npx` call
-and the exit-status check; the DocGuard repository does not test these platform
+and the exit-status check. The DocGuard repository does not test these platform
 files.
 
 ## Any other CI system
@@ -434,14 +436,14 @@ code follows `status`.
 ## Score history across runs
 
 `ci` appends one line per run to `.docguard/history.jsonl`: score, grade,
-commit and guard counts. `docguard score --trend` reads it. On ephemeral
+commit and guard counts. `docguard score --trend` reads it. On temporary
 runners, the file disappears with the workspace.
 
 - For stateless gates, pass `--no-history`. The starter workflow does this.
 - To keep a trend, save and restore `.docguard/history.jsonl` with your CI's
   cache or artifact feature. DocGuard ships no recipe for this.
-- Treat restored history as information, not as proof that the current
-  checkout was verified.
+- Treat restored history as information. It does not prove that DocGuard
+  verified the current checkout.
 - Do not share a writable cache between untrusted pull requests and privileged
   workflows.
 
@@ -454,7 +456,7 @@ runners, the file disappears with the workspace.
 | SARIF upload | `security-events: write` |
 | Action `auto-commit` | `contents: write`, on a same-repository branch only |
 
-Grant write permissions only to workflows that need them. Pull requests from
+Give write permissions only to workflows that need them. Pull requests from
 forks should get read-only checks.
 
 ## Related

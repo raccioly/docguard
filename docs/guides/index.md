@@ -6,5 +6,5 @@ has_children: true
 
 # Guides
 
-Task-oriented walkthroughs: adopting DocGuard, wiring it into Spec Kit and CI,
-and keeping it working as your repository and DocGuard change.
+Step-by-step guides. They show how to adopt DocGuard, connect it to Spec Kit
+and CI, and keep it working as your repository and DocGuard change.
