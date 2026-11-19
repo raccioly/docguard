@@ -51,6 +51,7 @@ The demo runs against a sample project and needs no install or setup.
 - [Commands](commands.md) and [Configuration](configuration.md).
 - [Languages and Frameworks](reference/languages.md), [Documents in Other Languages](languages.md), [Coding Agents](reference/agents.md) and the [MCP Server](reference/mcp.md).
 - [Finding Codes](reference/findings.md), generated from the code that reports them.
+- [Glossary](GLOSSARY.md): the words these docs use, one for each concept.
 - [FAQ](faq.md).
 - [Section-Addressable Docs](doc-sections.md): the markers that keep code-derived sections apart from your own text.
 

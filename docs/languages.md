@@ -187,6 +187,9 @@ not pass silently and does not invent a number.
 | Passive voice (DQ001), Flesch Reading Ease and Flesch-Kincaid (DQ004, DQ005) | Skipped, because the rules are English grammar. DocGuard reports the reason `language-not-supported`. It gives no number and no finding, and the score does not count it. |
 | Negation (DQ007), conditional (DQ008), compound requirement (DQ003), ambiguous pronouns (DQ002) | Run for `pt` (`pt-BR`, `pt-PT`) and `es` (every `es-*`). They use the word lists that a native speaker reviewed on 2026-11-17 (see below), and the same thresholds as English. Skipped for every other language, with the reason `language-not-supported`. |
 | Sentence length (DQ006) | Runs where the script separates words with spaces. Skipped for `zh`, `ja`, `th`, `lo`, `km`, `my`. |
+| Word limit per sentence (DQ009) | Runs with the same limits where the script separates words with spaces. Skipped for `zh`, `ja`, `th`, `lo`, `km`, `my`. |
+| Steps that start with a verb (DQ010) | Skipped for every language but English, because the word list is English. |
+| Glossary terms (GLS001) | The glossary has the language of its own file. DocGuard does not check a document in another language, and reports it with `language-not-supported`. For `pt` and `es`, it reads the header `Usar`, `Evitar`, `Significado`. |
 | Docs-Diff's tech stack, Metrics-Consistency, semantic claims | Report `language-not-supported` for the documents they would have read. |
 | Agent-instruction files (`AGENTS.md`, `CLAUDE.md`, ...) and the instruction audit | Out of scope. They get no alias and no `language-not-supported` entry. |
 

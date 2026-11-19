@@ -75,7 +75,8 @@ const ROWS = {
 // What stays in the fixtures for reasons that have nothing to do with language: a tiny project with no agent file,
 // no drift log, no Spec Kit directory and one commit. A retired decision record is a lifecycle finding, in any language.
 // DQ007: since T033 the Portuguese and Spanish fixture prose is measured for negation, and two of its nine sentences say "não"/"no" (22%, over the 20% every language shares): a real finding about the prose, not about its language.
-const UNRELATED = new Set(['STR001', 'STR002', 'SEC010', 'TRC004', 'SPK002', 'SPK015', 'SPR002', 'DLC001', 'DQ007']);
+// GLS004 (spec 105): the fixtures have no glossary, which is true and informational.
+const UNRELATED = new Set(['STR001', 'STR002', 'SEC010', 'TRC004', 'SPK002', 'SPK015', 'SPR002', 'DLC001', 'DQ007', 'GLS004']);
 const LABEL_VALIDATORS = ['docSections', 'testSpec', 'changelog', 'docsCoverage', 'specKit', 'decisionRecords', 'environment'];
 const PROSE_VALIDATORS = ['metricsConsistency', 'docsDiff', 'semanticClaims'];
 const blockingFor = (run, names) => run.unexamined.filter(u => u.blocking && names.some(n => (u.validator || '') === n));
@@ -113,7 +114,7 @@ describe('the branch (green): SC-001 and SC-002, Portuguese and Spanish', () => 
       it('passive voice and Flesch are reported as skipped with their reason, never as a number; the reviewed word-list metrics run (T033)', () => {
         const quality = run.json.validators.find(v => v.key === 'docQuality');
         const skipped = quality.skippedMetrics.filter(m => m.document === 'docs-canonical/ARCHITECTURE.md');
-        assert.deepEqual(skipped.map(m => m.code).sort(), ['DQ001', 'DQ004', 'DQ005'], 'passive voice and the two Flesch scores are skipped');
+        assert.deepEqual(skipped.map(m => m.code).sort(), ['DQ001', 'DQ004', 'DQ005', 'DQ010'], 'passive voice, the two Flesch scores and the English step-verb check (spec 105) are skipped');
         assert.ok(skipped.every(m => m.reason === 'language-not-supported' && (m.language === 'pt' || m.language === 'es')));
         assert.deepEqual(['DQ001', 'DQ004', 'DQ005', 'DQ008'].filter(code => run.codes.has(code)), []);
       });

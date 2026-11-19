@@ -86,7 +86,7 @@ graph TD
     Commands --> setup["setup wizard"]
     Commands --> other["diff · init · fix · trace · impact · sync · reconcile · retire · specs · ignore<br/>explain · memory · upgrade · agents · hooks · badge · ci · watch"]
 
-    guard --> Validators["Validators (36)"]
+    guard --> Validators["Validators (37)"]
     generate --> Scanners["Scanners (4)<br/>routes · schemas · doc-tools · speckit"]
     score --> Scoring["Weighted Scoring<br/>8 categories"]
     diagnose --> Validators
@@ -333,7 +333,7 @@ DocGuard ships **28 commands**: the "Daily 5" and 23 situational tools. The tool
 | Command | What It Does |
 |:--------|:-------------|
 | `init`  | Set up a project (`--wizard` for interactive · `--with <name>` for scaffolders) |
-| `guard` | Check against canonical docs — 36 validators |
+| `guard` | Check against canonical docs — 37 validators |
 | `diff`  | Show gaps between docs and code (`--since <ref>` for impact mode) |
 | `sync`  | Refresh the doc sections that come from code, including the `module-graph` and `entity-diagram` mermaid diagrams drawn from code. This keeps memory up to date |
 | `score` | CDD maturity score for the doc structure (0-100; not a guard verdict; `--diff` shows the change between refs; `--dora` shows DORA documentation-quality and AI-capability evidence) |
@@ -481,7 +481,7 @@ $ npx docguard-cli generate
 
 ## 🔍 Validators
 
-DocGuard runs **36 automated validators** on every `guard` run. Validators that read source code know the language where their evidence model applies. Validators for the repository and for documents work with any source language.
+DocGuard runs **37 automated validators** on every `guard` run. Validators that read source code know the language where their evidence model applies. Validators for the repository and for documents work with any source language.
 
 > **Counting note:** `guard` prints one row for each check. `Structure` produces a second
 > check (`Doc Sections`) under the same validator key, so the table below has one
@@ -506,7 +506,7 @@ DocGuard runs **36 automated validators** on every `guard` run. Validators that 
 | 13 | **API-Surface** | API-REFERENCE.md endpoints match real routes (OpenAPI cross-check) | ✅ On |
 | 14 | **Metadata-Sync** | Version refs consistent across docs | ✅ On |
 | 15 | **Docs-Coverage** | Code features referenced in documentation | ✅ On |
-| 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity, IEEE 830) | ✅ On |
+| 16 | **Doc-Quality** | Writing quality (readability, passive voice, atomicity, IEEE 830), and ASD STE100 plain writing: each sentence within 25 words, 20 in a numbered step (DQ009), and numbered steps that start with a verb (DQ010, English, informational) | ✅ On |
 | 17 | **TODO-Tracking** | Untracked TODOs/FIXMEs and skipped tests (skips test files by default) | ✅ On |
 | 18 | **Schema-Sync** | Database models documented in DATA-MODEL.md | ✅ On |
 | 19 | **Spec-Kit** | Spec quality validation (FR-IDs, mandatory sections, phased tasks, unique spec numbers) | ✅ On |
@@ -528,6 +528,7 @@ DocGuard runs **36 automated validators** on every `guard` run. Validators that 
 | 35 | **Requirement-Anchors** | With `.docguard-anchor-lock.jsonl` or `anchors.enabled`: reviewed code→requirement links whose code or requirement changed since review (ANC001/ANC002), reviewed links whose tag is gone (ANC003), tags citing an undeclared or retired requirement (ANC007/ANC008), an unreadable lock (ANC005) and files read below their exact tier (ANC010). `docguard anchors` lists every link; `anchors accept` records a review | ✅ On |
 | 36 | **Decision-Records** | ADR status, one-way or dangling supersession, index/record mismatches, and unanswered clarifications or `[Answer]:` tags (DEC001–DEC006). Informational by default | ✅ On |
 | 37 | **AIDLC** | AWS AI-DLC workspaces (`aidlc/spaces/…`, legacy `aidlc-docs/`): traceability targets that no longer exist (AID001), gaps left in completed stages (AID002), unit deliverables removed after the unit (AID003), unreadable records (AID004). Informational by default | ✅ On |
+| 38 | **Glossary** | One term for one concept: documents that use a term the project glossary (`docs/GLOSSARY.md`, a Use / Avoid / Meaning table) says to avoid (GLS001), glossary rows that cannot be read or contradict each other (GLS002, GLS003). Without a glossary, one informational line (GLS004) and `docguard init --with glossary` writes a starter | ✅ On |
 
 **Per-validator controls** (in `.docguard.json`):
 ```json

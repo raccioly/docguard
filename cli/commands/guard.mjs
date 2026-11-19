@@ -177,6 +177,7 @@ import { validateDocumentLifecycle } from '../validators/document-lifecycle.mjs'
 import { validateSuppressions } from '../validators/suppressions.mjs';
 import { validateDecisionRecords } from '../validators/decision-records.mjs';
 import { validateAidlc } from '../validators/aidlc.mjs';
+import { validateGlossary } from '../validators/glossary.mjs';
 import { validateSpecRegistry } from '../validators/spec-registry.mjs';
 import { validateDocDependency } from '../validators/doc-dependency.mjs';
 import { validateRequirementAnchors } from '../validators/requirement-anchors.mjs';
@@ -539,6 +540,8 @@ export function runGuardInternal(projectDir, config) {
     { key: 'decisionRecords', name: 'Decision-Records', fn: () => validateDecisionRecords(projectDir, config) },
     // docguard.aidlc-profile: AWS AI-DLC records stay true after the workflow (advisory).
     { key: 'aidlc', name: 'AI-DLC', fn: () => validateAidlc(projectDir, config) },
+    // docguard.glossary-and-plain-writing: one term for one concept, from the project's own glossary.
+    { key: 'glossary', name: 'Glossary', fn: () => validateGlossary(projectDir, config) },
     // Metrics-Consistency runs post-loop (needs guard results)
   ];
 
@@ -983,7 +986,7 @@ export function liteValidatorsConfig(config = {}) {
     'canonicalSync', 'surfaceSync', 'metricsConsistency', 'documentLifecycle',
     'specRegistry', 'diffSuspicion', 'referenceExistence', 'apiDocSmells',
     'evidence', 'docDependency', 'requirementAnchors', 'pathScopedRules', 'docOwnership', 'suppressions',
-    'decisionRecords', 'aidlc',
+    'decisionRecords', 'aidlc', 'glossary',
   ];
   const userValidators = (config && config.validators) || {};
   const exactHighValidators = new Set(

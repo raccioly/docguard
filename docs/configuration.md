@@ -195,6 +195,89 @@ built-in DocGuard meaning. An unresolvable glob is skipped, never treated as 0.
 
 `docs.language` is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag. Absent (or `"en"`) means English, byte for byte as before. `pt` and `es` ship built-in headings and words, matched by primary subtag (`pt-BR`, `pt-PT`, `es-MX`). Any other valid tag is accepted and has no built-in set. So a document that carries no marker and no alias for a required heading is reported as not read (`language-not-supported`), never as missing. `docs.labelAliases` is flat, keyed by label id. Each value is a list of strings that extends the built-in set and never replaces it. An invalid tag or key is reported and ignored. The ids, the `<!-- docguard:heading <id> -->` marker, what is skipped and why are in [Documents in other languages](languages.md).
 
+## Glossary — `docs.glossary`
+
+A glossary gives each concept one name. Write it as a Markdown table with a
+Use column, an Avoid column and an optional Meaning column:
+
+```markdown
+| Use | Avoid | Meaning |
+|---|---|---|
+| configuration | config, conf | The settings in .docguard.json. |
+| spec | specification | A feature description under specs/. |
+```
+
+The Glossary validator reports each document that uses an Avoid term in prose
+(`GLS001`, a warning), with the line and the term to use. It reports a row it
+cannot read (`GLS002`) and two rows that contradict each other (`GLS003`).
+Without a glossary it reports `GLS004` at the informational level, which does
+not change the exit code.
+
+```json
+{ "docs": { "glossary": "docs/TERMS.md" } }
+```
+
+Without `docs.glossary`, DocGuard uses the first of `docs/GLOSSARY.md`,
+`docs-canonical/GLOSSARY.md` and `GLOSSARY.md` that exists. A file with no Use
+and Avoid table is read as a free-form glossary: DocGuard does not check terms
+from it and does not report it as malformed.
+
+How terms match:
+
+- Whole words only. A hyphen joins words, so `config` does not match `config-file`.
+- Case does not matter, except for a term with a capital letter after its first
+  letter (`PR`, `GitHub`), which matches exactly.
+- A single word also matches its plural with `s` or `es`. There is no other stemming.
+- An Avoid term inside a longer Use term is not reported: with Use `Spec Kit`,
+  "Spec Kit" never counts as "spec".
+
+Not checked: code blocks, inline code, link targets, URLs, file paths, text in
+double quotes, blockquotes, HTML comments, and the headings DocGuard requires.
+Also not checked: the glossary itself, `CHANGELOG.md`, `DRIFT-LOG.md`, decision
+records, `specs/` and agent-instruction files such as `AGENTS.md`.
+
+Waivers:
+
+| Scope | Marker |
+|---|---|
+| One line | `<!-- docguard:ignore GLS001 — reason -->` on that line |
+| One term in one document | `<!-- docguard:glossary allow config — reason -->` |
+| One document | `<!-- docguard:glossary off — reason -->` |
+| The validator | `<!-- docguard:validator glossary n/a — reason -->` |
+
+To start a glossary:
+
+1. Run `docguard init --with glossary`. It writes `docs/GLOSSARY.md` with the
+   table header. It lists proposed rows in an HTML comment, for example
+   `spec / specification` when your documents use both, with each count.
+   It never overwrites a file.
+2. Move each proposal you accept into the table.
+3. Run `docguard fix --doc glossary` to get a prompt for an AI agent that fills
+   in the rest.
+4. Run `docguard guard`.
+
+## Plain writing — `docQuality.sentenceLimit`
+
+Doc-Quality checks each sentence against a word limit from ASD STE100
+(Simplified Technical English): 25 words in descriptive text and 20 words in a
+numbered step (`DQ009`, informational: it does not change the exit code). It reports one finding per document, with
+the first five long sentences by line and the count. `DQ006` still checks the
+average sentence length.
+
+```json
+{ "docQuality": { "sentenceLimit": 30, "stepSentenceLimit": 25 } }
+```
+
+It also reports numbered steps that do not start with a verb (`DQ010`, English
+only, informational). A step that starts with "The", "You", "Should" or a word
+that ends in "-ing" does not tell the reader what to do.
+
+| Scope | Marker |
+|---|---|
+| One sentence or step | `<!-- docguard:ignore DQ009 — reason -->` (or `DQ010`) on its first line |
+| One document, a different limit | `<!-- docguard:quality sentence-limit 30 — reason -->` |
+| One document, off | `<!-- docguard:quality sentence-limit off — reason -->`, `<!-- docguard:quality step-verbs off — reason -->` |
+
 ## Documentation homes — `docs.dirs`
 
 Conventional doc folders (`docs/`, `doc/`, `documentation/`, `guides/`,

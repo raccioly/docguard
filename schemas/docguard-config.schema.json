@@ -140,6 +140,7 @@
         "metadataSync":       { "type": "boolean" },
         "docsCoverage":       { "type": "boolean" },
         "docQuality":         { "type": "boolean" },
+        "glossary":           { "type": "boolean" },
         "todoTracking":       { "type": "boolean" },
         "schemaSync":         { "type": "boolean" },
         "specKit":            { "type": "boolean" },
@@ -265,6 +266,16 @@
         "deepScan": {
           "type": "boolean",
           "description": "If true and the `understanding` CLI is on PATH, run its 31-metric deep analysis. Off by default."
+        },
+        "sentenceLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "DQ009: the most words a sentence of descriptive text may have (default 25, from ASD STE100). One document sets its own with <!-- docguard:quality sentence-limit <n> — reason --> (specs/105-glossary-and-plain-writing)."
+        },
+        "stepSentenceLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "DQ009: the most words a sentence in a numbered step may have (default 20, from ASD STE100)."
         }
       },
       "additionalProperties": true
@@ -343,6 +354,12 @@
           "type": "string",
           "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z0-9]{5,8}|\\d[A-Za-z0-9]{3}))*$",
           "description": "The language the project's documents are written in, as a BCP 47 tag (specs/104-document-languages). It is matched by its primary subtag: pt-BR and pt-PT use the built-in pt heading set, es-MX the es set. Absent, or en, means English only, which is today's behavior. Any other valid tag (de, fr) has no built-in set: a required heading with no English form, alias or heading marker is reported as language-not-supported, never as a missing section. There is no top-level language key."
+        },
+        "glossary": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\.[mM][dD]$",
+          "description": "The project glossary: a Markdown file with a table of Use, Avoid and Meaning columns (specs/105-glossary-and-plain-writing). Absent, DocGuard uses the first of docs/GLOSSARY.md, docs-canonical/GLOSSARY.md and GLOSSARY.md that exists. The Glossary validator reports each document that uses an Avoid term (GLS001)."
         },
         "labelAliases": {
           "type": "object",

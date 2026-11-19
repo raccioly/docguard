@@ -75,6 +75,8 @@ function fixture(t, { mapped = true, missingRole, missingEnv = false, missingApi
   safeWrite(join(dir, 'AGENTS.md'), '# Instructions\nRead the project documentation.\n');
   safeWrite(join(dir, 'CHANGELOG.md'), '# Changelog\n## [Unreleased]\n### Added\n- Initial service.\n');
   safeWrite(join(dir, 'DRIFT-LOG.md'), '# Drift log\nNo deviations.\n');
+  // A project glossary, so the Glossary validator (spec 105) has nothing to advise.
+  safeWrite(join(dir, 'docs/GLOSSARY.md'), '# Glossary\n\n| Use | Avoid | Meaning |\n|---|---|---|\n| item | | One record the service stores. |\n');
   safeWrite(join(dir, '.gitignore'), '.env\n');
   safeWrite(join(dir, 'src/routes.js'), 'export const region = process.env.SERVICE_REGION;\napp.get("/api/items", handler);\n' + (missingApi ? 'app.post("/api/items", handler);\n' : ''));
   safeWrite(join(dir, 'openapi.yaml'), 'openapi: 3.0.3\ninfo:\n  title: Item API\n  version: 1.0.0\npaths:\n  /api/items:\n    get:\n      summary: List items\n' + (missingApi ? '    post:\n      summary: Create item\n' : ''));

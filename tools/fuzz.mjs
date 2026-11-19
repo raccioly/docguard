@@ -38,6 +38,8 @@ import { parseDocguardIgnore } from '../cli/shared-ignore.mjs';
 import { docHasSection, findSectionHeading, headingsForId } from '../cli/shared.mjs';
 import { hasPhaseWord, headingLabelVia, headingMarkerIssues, labelContext, scanHeadingMarkers, statusIdFor, unreleasedState } from '../cli/shared-labels.mjs';
 import { hasPlaceholderSlot } from '../cli/shared-requirement-ids.mjs';
+import { checkableLines, parseGlossary, termMatcher } from '../cli/shared-glossary.mjs';
+import { numberedSteps, proseSentences } from '../cli/shared-sentences.mjs';
 
 /** mulberry32: a small, fast, well-distributed 32-bit generator. */
 export function rng(seed) {
@@ -87,6 +89,8 @@ const BLOCKS = [
   r => ['## Stage Progress', ...Array.from({ length: 1 + r.int(6) }, () => `- [${r.pick([' ', 'x', '-', '?', 'R', 'S'])}] ${r.pick(['requirements-analysis', 'code-generation', 'build-and-test', 'units-generation'])} — ${WORD(r)}`)],
   r => [`<!-- docguard:section id=${r.pick(['api', 'model', 'x-1'])} covers=${r.pick(['src/a.js', 'src/a.js,src/b.py#Cls.m', ' , ,', 'src/*.ts'])} -->`, LINE(r), '<!-- /docguard:section -->'],
   r => [`${r.pick(['##', '###'])} ${r.pick(['System Overview', 'Visão geral do sistema', 'Tech Stack', WORD(r)])}`, r.pick(['', '', 'prose']), `<!-- docguard:heading ${r.pick(['system-overview', 'tech-stack', 'nothing-real', 'phase', ''])} -->`],
+  r => ['| Use | Avoid | Meaning |', '|---|---|---|', ...Array.from({ length: 1 + r.int(6) }, () => `| ${r.pick([WORD(r), 'configuration', 'Spec Kit', '', 'PR'])} | ${r.pick(['config, conf', 'spec', '', '—', `${WORD(r)}; ${WORD(r)}`, 'configuration'])} | ${WORD(r)} |`), r.pick(['The config file and the spec.', 'Use `config` in "config" or config.json.', `1. ${r.pick(['Run', 'The', 'Running'])} the ${WORD(r)}.`, ''])],
+  r => Array.from({ length: 2 + r.int(5) }, (_, i) => `${i + 1}${r.pick(['.', ')'])} ${r.pick(['Run', 'The', '**Open**', '`npm test`', 'Step 2: Set', 'Running', 'You'])} the ${WORD(r)}${r.pick(['.', '', ' and then a much longer clause follows here.'])}`),
   r => ['## Requirements', ...Array.from({ length: 1 + r.int(8) }, () => `- **${ID(r)}**: ${WORD(r)}`), '## Success Criteria', `- **SC-${String(r.int(9)).padStart(3, '0')}**: ${WORD(r)}`],
 ];
 
@@ -150,6 +154,8 @@ const plain = v => {
   }
 };
 
+const FUZZ_GLOSSARY = termMatcher(parseGlossary('| Use | Avoid |\n|---|---|\n| configuration | config, conf |\n| Spec Kit | spec kit |\n| specification | spec, specs |\n| pull request | PR |\n| não | nao |\n'));
+
 /** Every target: a name, the call, and any extra property it must hold. */
 export const TARGETS = [
   { name: 'definedIds', run: t => definedIds(t), check: ARRAY },
@@ -180,6 +186,14 @@ export const TARGETS = [
   { name: 'scanHeadingMarkers', run: t => scanHeadingMarkers(t) },
   { name: 'headingMarkerIssues', run: t => headingMarkerIssues(t), check: ARRAY },
   { name: 'docHasSection (pt)', run: t => [docHasSection(t, '## System Overview', labelContext({ docs: { language: 'pt-BR' } })), findSectionHeading(t, '## Tech Stack', labelContext({ docs: { language: 'de' } })), headingsForId(t, 'source-to-test-map', labelContext({ docs: { language: 'es' } }))], check: ARRAY },
+  // spec 105: the glossary table reader, the exempt-region masker and the line-aware sentence reader.
+  { name: 'parseGlossary', run: t => { const g = parseGlossary(t); return { found: g.found, rows: g.rows, issues: g.issues }; } },
+  // One variant per input (by its length), so the two paths share the fixed-seed time budget.
+  { name: 'checkableLines (pt)', run: t => checkableLines(t, t.length % 2 ? labelContext({ docs: { language: 'pt-BR' } }) : null), check: ARRAY },
+  // A fixed glossary against fuzzed lines, and the fuzzed text as its own glossary.
+  { name: 'termMatcher', run: t => [FUZZ_GLOSSARY, termMatcher(parseGlossary(t))].flatMap(m => t.split(/\r?\n/).slice(0, 40).map(line => m.hits(line.slice(0, 2000)))), check: ARRAY },
+  { name: 'proseSentences', run: t => proseSentences(t, { unicode: t.length % 2 === 1 }), check: ARRAY },
+  { name: 'numberedSteps', run: t => numberedSteps(t), check: ARRAY },
 ];
 
 /** Time allowed for one call: generous, but linear in the input. */

@@ -31,6 +31,7 @@ import { labelContext, unreleasedState } from '../shared-labels.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { runGuardInternal } from './guard.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
+import { glossaryDocuments, glossaryPath } from '../shared-glossary.mjs';
 
 /**
  * Compatibility entry point for the former API deletion writer.
@@ -580,9 +581,54 @@ function assessDocQuality(content, expectations) {
 
 // ── Deep Document Prompt Generator ─────────────────────────────────────────
 
+/**
+ * What the glossary should hold, in the shape of a DOC_EXPECTATIONS entry. It is not in that table:
+ * the table also drives the scan of `fix` for canonical documents, and a glossary is not one (its
+ * path is configurable and a project may not have one by choice).
+ * @implements docguard.glossary-and-plain-writing#FR-019
+ */
+const GLOSSARY_EXPECTATIONS = {
+  label: 'Glossary',
+  purpose: 'Give each concept of the project one name: a table of the term to Use, the terms to Avoid and what it Means, so DocGuard can report a document that uses another word',
+  aiResearchInstructions: `
+RESEARCH STEPS:
+1. Read the project documents listed above (README, canonical documents, the documentation folders)
+2. List every concept that is named two or more ways ("spec" and "specification", "config" and "configuration", a product name written in two spellings)
+3. Choose ONE term for each concept WITH THE MAINTAINER: ask which word the project wants; do not decide alone
+4. Write one table row per concept: | Use | Avoid | Meaning |. Put the chosen term in Use, the other words in Avoid separated by commas, and one sentence in Meaning
+5. If the file has a "docguard:glossary-proposals" comment, move each accepted proposal into the table and delete the rest of the comment
+6. Keep each Use term once, and never list a word as both Use and Avoid
+7. Run \`docguard guard\` and fix the Glossary findings (GLS001 lists each document and line that still uses an Avoid term)`,
+};
+
+function generateGlossaryPrompt(projectDir, config, { json = false } = {}) {
+  const target = glossaryPath(projectDir, config);
+  const action = target.exists ? 'IMPROVE' : 'CREATE';
+  const projectType = config.projectType || 'unknown';
+  const projectName = config.projectName || basename(projectDir);
+  const docs = glossaryDocuments(projectDir, config);
+  const lines = [
+    `\nYou are documenting the project "${projectName}" (a ${projectType} project).`,
+    `Project directory: ${projectDir}\n`,
+    `TASK: ${action} the file ${target.rel}`,
+    `PURPOSE: ${GLOSSARY_EXPECTATIONS.purpose}\n`,
+    docs.length
+      ? `DOCUMENTS TO READ (${docs.length}): ${docs.slice(0, 12).map(d => d.rel).join(', ')}${docs.length > 12 ? `, and ${docs.length - 12} more` : ''}\n`
+      : 'DOCUMENTS TO READ: none found yet; write the glossary from the project README and code.\n',
+    GLOSSARY_EXPECTATIONS.aiResearchInstructions.trim(),
+    `\nVALIDATION: After writing, run \`npx docguard-cli guard\` and check that the Glossary validator reports no GLS001, GLS002 or GLS003.`,
+  ];
+  if (json) {
+    console.log(JSON.stringify({ doc: target.rel, action, projectType, prompt: lines.join('\n').trim() }, null, 2));
+    return;
+  }
+  for (const line of lines) console.log(line);
+}
+
 function generateDocPrompt(projectDir, config, docName, { json = false } = {}) {
   // Normalize doc name: "architecture" → "docs-canonical/ARCHITECTURE.md"
   const normalized = docName.toLowerCase().replace(/\.md$/, '');
+  if (normalized === 'glossary') return generateGlossaryPrompt(projectDir, config, { json });
   const mapping = {
     'architecture': 'docs-canonical/ARCHITECTURE.md',
     'data-model': 'docs-canonical/DATA-MODEL.md',
@@ -600,7 +646,7 @@ function generateDocPrompt(projectDir, config, docName, { json = false } = {}) {
   const filePath = mapping[normalized];
   if (!filePath) {
     console.error(`${c.red}Unknown document: ${docName}${c.reset}`);
-    console.error(`${c.dim}Available: architecture, data-model, security, test-spec, environment, api-reference${c.reset}`);
+    console.error(`${c.dim}Available: architecture, data-model, security, test-spec, environment, api-reference, glossary${c.reset}`);
     process.exit(1);
   }
 

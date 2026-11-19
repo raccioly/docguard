@@ -37,6 +37,11 @@ export const STRICT_ADDITIONS = Object.freeze({
     ]),
     gatingCodes: Object.freeze([]),
   }),
+  // docguard.glossary-and-plain-writing (spec 105).
+  '0.50': Object.freeze({
+    validators: Object.freeze(['glossary']),
+    gatingCodes: Object.freeze([]),
+  }),
 });
 
 /** `"0.48"` or `"0.48.3"` to `[0, 48]`; null when it is neither. */

@@ -28,21 +28,42 @@
  * script separates words with spaces. English documents take the legacy path
  * unchanged.
  *
+ * Plain writing (spec 105): two more checks read each document by line with
+ * cli/shared-sentences.mjs, leaving the eight metrics above untouched.
+ *   DQ009  a sentence over the word limit (docQuality.sentenceLimit, 25; 20 in a
+ *          numbered step, docQuality.stepSentenceLimit). One finding per document
+ *          with the count and up to five `line N (W words)` pairs. Runs for every
+ *          language that separates words with spaces; listed in `skippedMetrics`
+ *          with `language-not-supported` for the others.
+ *   DQ010  a numbered step whose first word is an article, a pronoun, a modal or
+ *          auxiliary verb, or a long "-ing" word (English only; informational).
+ * Each adds one to `total` per document (DQ010 only for a document with a numbered
+ * step) and runs only for a document that has enough prose to be scored. Waivers:
+ * `<!-- docguard:ignore DQ009 -->` on a sentence's first line, and the markers
+ * `<!-- docguard:quality sentence-limit off|<n> -->` and `step-verbs off`.
+ *
  * Zero NPM runtime dependencies, and zero process execution — pure Node.js
  * built-ins reading files only.
  *
  * @implements docguard.document-languages#FR-017
  * @implements docguard.document-languages#FR-018
+ * @implements docguard.glossary-and-plain-writing#FR-020
+ * @implements docguard.glossary-and-plain-writing#FR-021
+ * @implements docguard.glossary-and-plain-writing#FR-022
+ * @implements docguard.glossary-and-plain-writing#FR-023
+ * @implements docguard.glossary-and-plain-writing#FR-024
+ * @implements docguard.glossary-and-plain-writing#FR-025
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve, join, extname, relative, basename } from 'node:path';
-import { mkFinding, resultFromFindings } from '../findings.mjs';
+import { mkFinding, resultFromFindings, suppressesCode } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { LANGUAGE_NOT_SUPPORTED, separatesWords } from '../shared-labels.mjs';
 import { nonEnglishDocument } from '../shared-doc-language.mjs';
 import { proseMatchers } from '../shared-prose-words.mjs';
+import { proseSentences, numberedSteps } from '../shared-sentences.mjs';
 
 // ──── Metric Thresholds ────
 // These define "good" vs "warning" boundaries for each metric.
@@ -534,7 +555,8 @@ function parseQualityOverride(content, rule) {
 
 function analyzeDocument(doc, language = null) {
   const content = readFileSync(doc.path, 'utf-8');
-  if (language) return analyzeOtherLanguage(doc, content, language);
+  // `content` rides along for the plain-writing checks, which read the document by line; it is never part of a result.
+  if (language) return { ...analyzeOtherLanguage(doc, content, language), content };
   const proseText = extractProse(content);
 
   const sentences = splitSentences(proseText);
@@ -558,6 +580,7 @@ function analyzeDocument(doc, language = null) {
   return {
     skipped: false,
     name: doc.name,
+    content,
     sentences: sentences.length,
     words: words.length,
     metrics: {
@@ -625,6 +648,9 @@ function analyzeOtherLanguage(doc, content, language) {
     measured: ['DQ002', 'DQ003', 'DQ006', 'DQ007', 'DQ008'],
   };
 }
+
+/** The two plain-writing checks (spec 105) by finding code, for the skip report. */
+const PLAIN_WRITING_NAMES = Object.freeze({ DQ009: 'sentence word limit', DQ010: 'numbered step verbs' });
 
 /** The eight metrics by finding code, for the skip report. */
 const METRIC_NAMES = Object.freeze({
@@ -738,6 +764,15 @@ export function validateDocQuality(projectDir, config) {
         if (m.conditionalLoad <= THRESHOLDS.conditionalLoad.warn) passed++;
         else warn('DQ008', conditionalMessage(doc.name, m.conditionalLoad), { kind: 'fix', text: 'Split conditional sentences into separate, unconditional requirements' });
       }
+      // Plain writing (spec 105 FR-024): the sentence limit runs where words are spaced; step verbs are English only.
+      if (separatesWords(language)) {
+        total++;
+        const over = sentenceLimitFinding(doc, loc, analysis.content, config, true);
+        if (over) findings.push(over); else passed++;
+      } else {
+        skippedMetrics.push({ document: loc, code: 'DQ009', metric: PLAIN_WRITING_NAMES.DQ009, reason: LANGUAGE_NOT_SUPPORTED, language: language.language });
+      }
+      skippedMetrics.push({ document: loc, code: 'DQ010', metric: PLAIN_WRITING_NAMES.DQ010, reason: LANGUAGE_NOT_SUPPORTED, language: language.language });
       continue;
     }
 
@@ -832,6 +867,19 @@ export function validateDocQuality(projectDir, config) {
       warn('DQ008', conditionalMessage(doc.name, m.conditionalLoad),
         { kind: 'fix', text: 'Split conditional sentences into separate, unconditional requirements' });
     }
+
+    // ── Check 9: Sentence word limit (spec 105 FR-020) ──
+    total++;
+    const longSentences = sentenceLimitFinding(doc, loc, analysis.content, config, false);
+    if (longSentences) findings.push(longSentences); else passed++;
+
+    // ── Check 10: Numbered steps start with a verb (spec 105 FR-023) ──
+    const steps = numberedSteps(analysis.content);
+    if (steps.length > 0) {
+      total++;
+      const stepFinding = stepVerbFinding(doc, loc, analysis.content, steps);
+      if (stepFinding) findings.push(stepFinding); else passed++;
+    }
   }
 
   if (total === 0 && skippedMetrics.length === 0) {
@@ -881,4 +929,82 @@ function conditionalMessage(name, ratio) {
 function sentenceLengthMessage(name, length) {
   return `${name}: Average sentence too long (${length} words). ` +
     `Target ≤30 words per sentence for readability`;
+}
+
+// ──── Plain writing (spec 105) ────
+
+/** Default word limits (ASD STE100): descriptive text, and a sentence inside a numbered step. */
+const SENTENCE_LIMIT = 25;
+const STEP_SENTENCE_LIMIT = 20;
+const MAX_REPORTED = 5;
+
+/** The closed list of words a step must not start with (spec 105 Decision 7); "-ing" words are tested apart. */
+const NON_VERB_START = new Set([
+  'the', 'a', 'an',
+  'i', 'you', 'we', 'they', 'he', 'she', 'it', 'this', 'that', 'these', 'those', 'there', 'here',
+  'should', 'must', 'can', 'could', 'will', 'would', 'may', 'might', 'shall', 'is', 'are', 'was', 'were', 'do', 'does',
+]);
+const SHORT_ING_WORDS = new Set(['bring', 'string', 'spring', 'swing', 'thing']);
+
+function startsWithNonVerb(word) {
+  const w = word.toLowerCase();
+  return NON_VERB_START.has(w) || (w.length >= 6 && w.endsWith('ing') && !SHORT_ING_WORDS.has(w));
+}
+
+/** The first five `line N (W words)` pairs and a tail for the rest. */
+function describeLines(items, describe) {
+  const shown = items.slice(0, MAX_REPORTED).map(describe).join(', ');
+  return items.length > MAX_REPORTED ? `${shown}, and ${items.length - MAX_REPORTED} more` : shown;
+}
+
+/**
+ * DQ009 for one document: null when no sentence is over its limit (or the check is off), else the finding.
+ * `unicode` is the non-English path, whose sentence ends include the full-width and Arabic marks.
+ */
+function sentenceLimitFinding(doc, loc, content, config, unicode) {
+  const marker = parseQualityOverride(content, 'sentence-limit');
+  if (marker?.off) return null;
+  const positive = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+  const limit = positive(marker?.threshold) ?? positive(config?.docQuality?.sentenceLimit) ?? SENTENCE_LIMIT;
+  const stepLimit = positive(config?.docQuality?.stepSentenceLimit) ?? STEP_SENTENCE_LIMIT;
+  const lines = content.split(/\r?\n/);
+  const over = proseSentences(content, { unicode })
+    .filter(s => s.words > (s.step ? stepLimit : limit))
+    .filter(s => !suppressesCode(lines[s.line - 1], 'DQ009'));
+  if (over.length === 0) return null;
+  return mkFinding({
+    code: 'DQ009',
+    validator: 'docQuality',
+    severity: 'warn',
+    message: `${doc.name}: ${over.length} ${over.length === 1 ? 'sentence is' : 'sentences are'} over the word limit (${limit} words; ${stepLimit} in a numbered step): ` +
+      describeLines(over, s => `line ${s.line} (${s.words} words)`),
+    location: `${loc}:${over[0].line}`,
+    suggestion: {
+      kind: 'suppress',
+      text: 'Split each long sentence into two, one statement each, or turn the limit off for this document',
+      pragma: '<!-- docguard:quality sentence-limit off — your reason -->',
+    },
+  });
+}
+
+/** DQ010 for one English document that has numbered steps: null when each starts with a verb (or is waived). */
+function stepVerbFinding(doc, loc, content, steps) {
+  if (parseQualityOverride(content, 'step-verbs')?.off) return null;
+  const lines = content.split(/\r?\n/);
+  const bad = steps.filter(s => s.firstWord && startsWithNonVerb(s.firstWord) && !suppressesCode(lines[s.line - 1], 'DQ010'));
+  if (bad.length === 0) return null;
+  return mkFinding({
+    code: 'DQ010',
+    validator: 'docQuality',
+    // Informational by its registered default (CODES.DQ010.defaultLevel).
+    severity: 'warn',
+    message: `${doc.name}: ${bad.length} numbered ${bad.length === 1 ? 'step does' : 'steps do'} not start with a verb: ` +
+      describeLines(bad, s => `line ${s.line}`),
+    location: `${loc}:${bad[0].line}`,
+    suggestion: {
+      kind: 'suppress',
+      text: 'Start each step with the action to do ("Run", "Open", "Set"), or turn the check off for this document',
+      pragma: '<!-- docguard:quality step-verbs off — your reason -->',
+    },
+  });
 }

@@ -29,6 +29,7 @@ import { safeWrite } from '../writers/generate-io.mjs';
 import { labelContext } from '../shared-labels.mjs';
 import { languageReadyScaffold } from '../shared-scaffold.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
+import { glossaryPath, starterGlossary } from '../shared-glossary.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
 // dispatched to their writers. CI scaffolding is distinct from the standalone
@@ -41,7 +42,29 @@ const SCAFFOLDER_DISPATCH = {
   badge:   async (dir, cfg, flags) => (await import('./badge.mjs')).runBadge(dir, cfg, flags),
   llms:    async (dir, cfg, flags) => (await import('./llms.mjs')).runLlms(dir, cfg, flags),
   publish: async (dir, cfg, flags) => (await import('./publish.mjs')).runPublish(dir, cfg, flags),
+  glossary: (dir, cfg) => scaffoldGlossary(dir, cfg),
 };
+
+/**
+ * Write the starter glossary (docguard.glossary-and-plain-writing FR-017) at the configured path,
+ * default docs/GLOSSARY.md. It never overwrites, `--force` included: a glossary is the project's own
+ * decisions, so an existing file (or a symlink, which could lead outside the project) is left alone
+ * and the command says so.
+ * @implements docguard.glossary-and-plain-writing#FR-017
+ * @returns {boolean} whether a file was written
+ */
+function scaffoldGlossary(projectDir, config) {
+  const target = glossaryPath(projectDir, config);
+  let present = target.exists;
+  if (!present) { try { lstatSync(target.abs); present = true; } catch { /* nothing there */ } }
+  if (present) {
+    console.log(`  ${c.dim}⏭️  ${target.rel} exists; left alone${c.reset}`);
+    return false;
+  }
+  safeWrite(target.abs, starterGlossary(projectDir, config));
+  console.log(`  ${c.green}✅ ${target.rel} created${c.reset} ${c.dim}(a Use and Avoid table; proposals from your documents are in a comment)${c.reset}`);
+  return true;
+}
 
 /**
  * Run one or more scaffolders after init has completed.
@@ -883,6 +906,12 @@ poetry.lock
   // v0.20: `docguard init --with agents,hooks,ci,badge,llms,publish` runs
   // the named scaffolders after init has finished. Each one runs in sequence
   // and uses the same flags object (so --force / --skip-prompts propagate).
+  // A project with no glossary gets the starter (FR-017); `--with glossary` already runs it below.
+  if (!(Array.isArray(flags.with) && flags.with.includes('glossary')) && !glossaryPath(projectDir, config).exists) {
+    console.log(`  ${c.bold}📖 Glossary${c.reset}`);
+    scaffoldGlossary(projectDir, config);
+    console.log('');
+  }
   if (Array.isArray(flags.with) && flags.with.length > 0) {
     await runScaffolders(projectDir, config, flags, flags.with);
   }
