@@ -1,6 +1,6 @@
 # Comparisons & Honest Limitations
 
-> CDD vs the landscape, plus an honest assessment of what will and won't work.
+> CDD compared with other tools, plus what works and what does not.
 
 ---
 
@@ -50,13 +50,13 @@
 | **Post-build governance** | Hooks; AI-DLC sensors check at each gate | ✅ Every change: drift, tests, architecture, AI-DLC records (spec 089) |
 | **Reverse engineering** | ✅ Through AI-DLC's reverse-engineering stage (CodeKB) | ✅ Generate mode |
 
-**Verdict**: Kiro is a capable environment for spec-driven work, and AI-DLC gives it a rigorous workflow. DocGuard is portable across agents and keeps what those workflows produced true after they finish; the two compose.
+**Verdict**: Kiro is a capable environment for spec-driven work, and AI-DLC gives it a rigorous workflow. DocGuard is portable across agents. After those workflows finish, it keeps what they produced true. The two work together.
 
 ---
 
 ### CDD vs AWS AI-DLC
 
-[AI-DLC](https://github.com/awslabs/aidlc-workflows) (MIT-0) turns a coding agent into a gated workflow (Inception → Construction → Operation) across seven harnesses, with hook-enforced human approvals, an audit log, and deterministic sensors at each gate.
+[AI-DLC](https://github.com/awslabs/aidlc-workflows) (MIT-0) turns a coding agent into a gated workflow (Inception → Construction → Operation) across seven harnesses. It has hook-enforced human approvals, an audit log, and deterministic sensors at each gate.
 
 | Dimension | AI-DLC | DocGuard |
 |-----------|--------|----------|
@@ -96,9 +96,9 @@
 | **AI surface** | Q&A assistant over whatever is written | MCP server over docs *proven* current at guard time |
 | **Enterprise trust** | SOC 2 / SSO / RBAC on their platform | Runs entirely local/CI — nothing leaves your infra |
 
-**Verdict**: Complementary, not competing. Platforms publish; DocGuard proves.
-The strongest setup gates the platform publish on `docguard ci` — readers only
-ever see docs that passed validation.
+**Verdict**: Complementary, not competing. Platforms publish. DocGuard proves.
+The strongest setup gates the platform publish on `docguard ci`, so readers only
+see docs that passed validation.
 
 ---
 
@@ -110,7 +110,7 @@ ever see docs that passed validation.
 
 **1. LLMs DO read and use project context files.**
 
-AGENTS.md, CLAUDE.md, and similar files are loaded into the LLM's context window at session start. Research confirms these files "act as formal carriers of context, grounding subsequent LLM reasoning and reducing hallucinations" (EmergentMind, 2025). This is not theoretical — it's how Claude Code, Copilot, Cursor, and Antigravity work today.
+AGENTS.md, CLAUDE.md, and similar files are loaded into the LLM's context window at session start. Research confirms these files "act as formal carriers of context, grounding subsequent LLM reasoning and reducing hallucinations" (EmergentMind, 2025). This is not theory. Claude Code, Copilot, Cursor, and Antigravity work this way today.
 
 **CDD impact**: Your canonical docs in `docs-canonical/` are markdown files that agents can read. When `AGENTS.md` says "check `docs-canonical/ARCHITECTURE.md` before making changes," compliant agents will do so.
 
@@ -121,27 +121,27 @@ Modern LLMs (March 2026):
 - GPT-4o: 128,000 tokens
 - Gemini: 1M+ tokens
 
-8 canonical docs at ~200 lines each ≈ 1,600 lines ≈ ~8,000 tokens. That's **4% of even the smallest context window.** Context size is NOT a limitation for CDD.
+8 canonical docs at ~200 lines each ≈ 1,600 lines ≈ ~8,000 tokens. That's **4% of even the smallest context window.** Context size is NOT a limit for CDD.
 
 **3. "Context engineering" is a recognized discipline.**
 
-The industry now treats context management as a first-class skill. Tools like Sourcegraph build dedicated "context engines" that rank and retrieve relevant project information. CDD's structured markdown docs are IDEAL for this — clearly labeled, consistently formatted, and easily parseable.
+The industry now treats context management as a core skill. Tools like Sourcegraph build dedicated "context engines" that rank and retrieve relevant project information. CDD's structured markdown docs suit this well: they are clearly labeled, consistently formatted and easy to parse.
 
 **4. Agents increasingly navigate codebases autonomously.**
 
-By 2025-2026, AI agents don't just read what you give them — they actively explore codebases, collecting context without explicit instructions. Having canonical docs in a known location (`docs-canonical/`) makes this autodiscovery reliable.
+By 2025-2026, agents do more than read what you give them. They explore codebases and collect context without explicit instructions. Canonical docs in a known location (`docs-canonical/`) make this autodiscovery reliable.
 
 ---
 
 ### Known Risks and Honest Limitations ⚠️
 
-**Here's where I challenge this approach:**
+**Here is where I challenge this approach:**
 
 **1. LLMs suffer from "Lost in the Middle" problem.**
 
-Research confirms LLMs prioritize information at the beginning and end of their context window, sometimes overlooking details in the middle. If canonical docs are loaded into a long context, some sections may get less attention.
+Research confirms that LLMs favor information at the beginning and end of their context window, and sometimes overlook details in the middle. If you load canonical docs into a long context, some sections may get less attention.
 
-**CDD mitigation**: Each canonical doc is a separate file, not one giant document. Agents read one file at a time as needed. Additionally, `AGENTS.md` serves as the index/pointer, directing the agent to the specific doc that matters for the current task.
+**CDD mitigation**: Each canonical doc is a separate file, not one giant document. Agents read one file at a time as needed. Also, `AGENTS.md` is the index. It points the agent to the doc that matters for the current task.
 
 **Is this enough?** Mostly yes. The risk is low because canonical docs are typically 50-200 lines each — well within the attention span of modern LLMs.
 
@@ -152,23 +152,23 @@ DocGuard can check:
 - ✅ "Does it have a `## Component Map` section?" (structure)
 - ❌ "Is the component map ACCURATE?" (semantic — cannot validate)
 
-If ARCHITECTURE.md says "we use PostgreSQL" but the code switched to MongoDB, DocGuard won't catch it. Only a human (or AI agent reading both code and docs) would notice.
+If ARCHITECTURE.md says "we use PostgreSQL" but the code switched to MongoDB, DocGuard won't catch it. Only a human (or an agent that reads both code and docs) would notice.
 
-**CDD mitigation**: This is why DRIFT-LOG.md exists. The discipline of logging drift means the HUMAN (or AI agent following the rules) documents when code deviates. It's not perfect — if someone silently deviates without adding `// DRIFT:`, DocGuard won't catch it.
+**CDD mitigation**: This is why DRIFT-LOG.md exists. Logging drift means the HUMAN (or an agent that follows the rules) documents when code deviates. It is not perfect: if someone deviates without adding `// DRIFT:`, DocGuard does not catch it.
 
-**Is this a fatal flaw?** No. No tool can guarantee content accuracy — not Spec Kit, not Kiro, not anything. What CDD does is make non-compliance VISIBLE (missing drift entries, undocumented routes). It can't prevent bad behavior, but it can flag missing documentation.
+**Is this a fatal flaw?** No. No tool can guarantee content accuracy: not Spec Kit, not Kiro, not anything. CDD makes non-compliance VISIBLE (missing drift entries, undocumented routes). It cannot prevent bad behavior, but it can flag missing documentation.
 
 **3. Documentation CAN rot — even with validators.**
 
-The #1 criticism of any documentation-first approach: docs go stale. DocGuard validators prevent STRUCTURAL rot (missing files, missing sections). But CONTENT rot (outdated descriptions, wrong version numbers) can still happen.
+The #1 criticism of any documentation-first approach is that docs go stale. DocGuard validators prevent STRUCTURAL rot (missing files, missing sections). But CONTENT rot (outdated descriptions, wrong version numbers) can still happen.
 
 **CDD mitigation**: 
 - CI/CD integration (docguard guard on every PR) catches structural problems
 - The two-tier model means canonical docs change LESS frequently than implementation docs
 - DRIFT-LOG creates a paper trail that naturally prompts review
-- AI agents asked to "research docs first" will flag obvious inconsistencies
+- Agents that you ask to "research docs first" will flag obvious inconsistencies
 
-**Is this enough?** It's significantly better than no docs or unvalidated docs. But it's honest to say: CDD reduces documentation rot, it doesn't eliminate it.
+**Is this enough?** It is much better than no docs or unvalidated docs. But CDD reduces documentation rot; it does not eliminate it.
 
 **4. Upfront effort is real.**
 
@@ -178,7 +178,7 @@ Writing 8 canonical docs before (or alongside) coding takes time. Research shows
 - Generate mode reverse-engineers docs from existing code — you don't START from zero
 - Progressive adoption — start with 2 files, add more over time
 - Templates mean you're filling in tables, not writing essays
-- The time investment pays back when AI agents onboard instantly
+- The time investment pays back when agents onboard instantly
 
 **Is this worth it?** For projects that will be maintained long-term: absolutely. For throwaway scripts: probably not. CDD is for projects that matter.
 
@@ -189,13 +189,13 @@ Even with a well-written AGENTS.md that says "research docs first," agents somet
 **CDD mitigation**: 
 - The user's existing enforcement rules (Step 1 Research, Step 2 Confirm) in AGENTS.md help
 - DocGuard guard in pre-commit hooks catches the OUTPUT (missing changelog, unlogged drift) regardless of whether the agent followed the process
-- This is the same as how linters catch style violations — you don't rely on discipline, you rely on automation
+- Linters work the same way for style violations. You rely on automation, not discipline
 
 **Is this acceptable?** Yes. No governance system relies on 100% compliance. The combination of agent instructions + automated validation catches most issues.
 
 **6. Not every finding is a defect, and almost none of them are calibrated.**
 
-This is the limitation most tools hide. A linter's output is uniform — every line is a rule violation. DocGuard's is not. Some findings are defects it can name the correction for; others are signals that something is worth a human's attention. Reported as one undifferentiated list, the second kind gets "fixed", which means a document is edited until a message stops printing and nobody has actually decided anything.
+Most tools hide this limitation. A linter's output is uniform: every line is a rule violation. DocGuard's is not. Some findings are defects, and DocGuard can name the correction. Others are signals that a human should look. In one undifferentiated list, people "fix" the second kind. They edit a document until a message stops printing, and nobody has decided anything.
 
 So a DocGuard finding carries the question it answers, not just a severity:
 
@@ -207,11 +207,11 @@ So a DocGuard finding carries the question it answers, not just a severity:
 | `evidence.status` | Has the reviewed corpus measured this code? | `measured`, `not-measured` |
 | `parserTier` | Which analyzer produced it? | `js-ast`, `py-ast`, `regex-fallback`, … |
 
-These are independent. Freshness FRS002 — "13 code commits since this document was reviewed" — is a **blocking-capable, high-confidence escalation**: the commit count comes from `git log` and is exact, and it still establishes only that a review is due, never that the document is wrong.
+These fields are independent. Freshness FRS002 — "13 code commits since this document was reviewed" — is a **blocking-capable, high-confidence escalation**. The commit count comes from `git log` and is exact. It still shows only that a review is due, never that the document is wrong.
 
-**The honest part is `evidence.status`.** For most finding codes it reads `not-measured`: the reviewed precision corpus has never scored them, so the `confidence` label is a maintainer's prior, not a measurement. DocGuard says so on the finding rather than presenting a hand-set label as a statistic. The corpus is three orders of magnitude too small to derive confidence from measured precision honestly, and no threshold in the tool is fitted from data.
+**`evidence.status` shows the limit.** For most finding codes it reads `not-measured`. The reviewed precision corpus has never scored them, so the `confidence` label is a maintainer's prior, not a measurement. DocGuard says so on the finding. It does not present a hand-set label as a statistic. The corpus is three orders of magnitude too small to derive confidence from measured precision, and no threshold in the tool is fitted from data.
 
-**Is this enough?** It is honest, which is the part that was missing. It does not make DocGuard a probabilistic judge, and it is not meant to: a reader who knows which findings the tool adjudicated and which it merely surfaced can act on the first set and think about the second. A reader handed one flat list cannot.
+**Is this enough?** It is honest, and that was the missing part. It does not make DocGuard a probabilistic judge, and it is not meant to. A reader who knows which findings the tool adjudicated and which it only surfaced can act on the first set and think about the second. A reader with one flat list cannot.
 
 ---
 
@@ -269,7 +269,7 @@ Existing project (no docs)
    docguard guard enabled     ← Continuous enforcement from here
 ```
 
-This is a CRUCIAL adoption path because:
+This adoption path matters because:
 1. Most projects in the world don't have canonical docs
 2. Nobody wants to spend days writing docs for existing code
 3. AI can analyze imports, schemas, routes, and test files to produce 80% accurate docs
@@ -281,16 +281,16 @@ This is a CRUCIAL adoption path because:
 
 **Is CDD a waste of time?**
 
-No. Here's why, being completely honest:
+No. Here is why:
 
-1. **The problem is real.** AI agents are writing more code, documentation is falling further behind, and projects are losing their design intent. This is not theoretical — it's happening across the industry.
+1. **The problem is real.** Agents write more code, documentation falls further behind, and projects lose their design intent. This is not theory. It is happening across the industry.
 
-2. **The approach is grounded in proven patterns.** AGENTS.md (25+ agents, Linux Foundation backing), Spec-Driven Development (46K stars on GitHub), and project documentation standards (IEEE 829, ISO 29119) are all established. CDD synthesizes and extends them.
+2. **The approach is grounded in proven patterns.** AGENTS.md (25+ agents, Linux Foundation backing), Spec-Driven Development (46K stars on GitHub), and project documentation standards (IEEE 829, ISO 29119) are all established. CDD combines and extends them.
 
-3. **The limitations are manageable.** Every limitation listed above has a mitigation strategy. None of them are fatal flaws. They're tradeoffs that are explicitly acknowledged — which is better than claiming perfection.
+3. **The limitations are manageable.** Every limitation listed above has a mitigation strategy. None is a fatal flaw. They are tradeoffs, and we state them openly. That is better than claiming perfection.
 
 4. **Nothing else does governance.** This is the key differentiator. After exhaustive research: Spec Kit generates, AGENTS.md provides context, Kiro ties specs to an IDE. Nobody does continuous validation of project documentation. That gap is real and unaddressed.
 
 5. **It works with how LLMs actually process context.** Context windows are large enough. Structured markdown is the ideal format. Agents do read project files. The architecture of CDD aligns with how these systems actually work.
 
-**The honest risk**: If the open-source community doesn't adopt it, it's still valuable for your own projects. The standard makes YOUR projects better, regardless of whether others use it.
+**The risk**: If the open-source community does not adopt it, it is still useful for your own projects. The standard makes YOUR projects better, whether or not others use it.

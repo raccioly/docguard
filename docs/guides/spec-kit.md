@@ -7,23 +7,23 @@ nav_order: 2
 # Using DocGuard with Spec Kit
 
 [GitHub Spec Kit](https://github.com/github/spec-kit) has your coding agent
-write a specification, a plan and a task list, then implement them. DocGuard
-adds four things to that workflow:
+write a spec, a plan and a task list, then implement them. DocGuard adds four
+things to that workflow:
 
 - It checks the quality of those documents.
 - It keeps a committed registry of each spec's lifecycle and evidence.
 - It blocks a new spec that contradicts the recorded state.
-- It verifies a spec as complete only when the code, tests and canonical docs
-  show it.
+- It marks a spec as verified only when the code, tests and canonical docs
+  show that the spec is complete.
 
 The README's
 [Spec Kit Integration](https://github.com/raccioly/docguard/blob/main/README.md#-spec-kit-integration)
 section has the phase-by-phase overview. This guide covers installation, the
-extension's commands and hooks, the registry and an end-to-end flow.
+commands and hooks of the extension, the registry and an end-to-end flow.
 
 ## What the extension adds
 
-The extension is defined by
+The extension is defined in
 [`extensions/spec-kit-docguard/extension.yml`](https://github.com/raccioly/docguard/blob/main/extensions/spec-kit-docguard/extension.yml).
 It requires Spec Kit 0.11.2 or later, plus `node` (18 or later) and `npx`.
 
@@ -53,8 +53,8 @@ For `generic`, `docguard init` writes the command files into the generic
 commands directory, `.agent/commands/` by default.
 
 Each command file runs `docguard` from `PATH` when it is installed. Otherwise it
-runs `npx --yes docguard-cli@<version>`, pinned to the release the file shipped
-with. It never runs `@latest`.
+runs `npx --yes docguard-cli@<version>`, pinned to the release that the file
+shipped with. It never runs `@latest`.
 
 ### Hooks
 
@@ -70,8 +70,8 @@ with. It never runs `@latest`.
 "Mandatory" means `optional: false` in the manifest. Optional hooks carry a
 prompt, for example "Show CDD maturity score after task generation?". A lower
 priority runs first. The briefing (priority 5) runs before the branch creation
-of Spec Kit's git extension (default 10), so a blocked briefing never leaves an
-empty feature branch behind. Spec Kit records the hooks in
+of Spec Kit's git extension (default 10). A blocked briefing therefore never
+leaves an empty feature branch behind. Spec Kit records the hooks in
 `.specify/extensions.yml`.
 
 ### Also included
@@ -86,7 +86,7 @@ empty feature branch behind. Spec Kit records the hooks in
   - `docguard-init-doc.sh` creates a canonical document with its metadata
     header.
 
-  They need DocGuard in `node_modules` or on `PATH`, and do not download it.
+  They need DocGuard in `node_modules` or on `PATH`. They do not download it.
 - **Two GitHub Actions starters**, `docguard-guard.yml` and
   `docguard-autofix.yml`. See [Continuous Integration](ci.md#starter-workflow).
 
@@ -105,22 +105,22 @@ With the `specify` CLI on `PATH`, `docguard init` sets up Spec Kit and the
 extension:
 
 1. It checks that `specify` is at least the version the extension requires
-   (0.11.2) before changing anything. If it is older, it prints the upgrade
-   command (`specify self upgrade`) and continues without Spec Kit.
-2. It picks the Spec Kit integration for your agent: the one Spec Kit already
-   recorded, otherwise an unambiguous signal in the repository (such as a
-   `.claude/` directory), otherwise `generic`.
+   (0.11.2) before it changes anything. If `specify` is older, it prints the
+   upgrade command (`specify self upgrade`) and continues without Spec Kit.
+2. It picks the Spec Kit integration for your agent. It uses the one Spec Kit
+   already recorded. If there is none, it uses a clear signal in the repository
+   (such as a `.claude/` directory). If there is no signal, it uses `generic`.
 3. It runs `specify init --here --force --integration <agent>`, adding
    `--non-interactive`, `--ignore-agent-tools` and `--script` when your Spec
    Kit supports them. `generic` gets its commands directory set to
    `.agent/commands/`.
 4. It registers the extension copy that ships inside the installed npm package,
-   with `specify extension add <dir> --dev`. Nothing is downloaded. If a
-   different version is registered, it replaces it with `--force` and keeps
-   its priority. A registration you disabled stays disabled.
+   with `specify extension add <dir> --dev`. Nothing is downloaded. If another
+   version is registered, it replaces that version with `--force` and keeps its
+   priority. A registration you disabled stays disabled.
 5. It reports the workflow hooks as active only after every mandatory hook
    resolves to a command file your agent can run. Otherwise it names each
-   missing one.
+   missing hook.
 6. It installs DocGuard's own skills for your agent.
 
 Example output, with Claude Code and Spec Kit installed:
@@ -157,19 +157,19 @@ specify extension add docguard --from \
 specify extension add ./node_modules/docguard-cli/extensions/spec-kit-docguard --dev
 ```
 
-`specify extension add docguard` on its own does not work with Spec Kit's
-default catalogs. DocGuard is listed in the community catalog, which Spec Kit
+`specify extension add docguard` on its own does not work with the default
+catalogs of Spec Kit. DocGuard is in the community catalog, which Spec Kit
 treats as discovery only. See [Installation](../installation.md#spec-kit-extension).
 
 ### Keep it current, or remove it
 
-`docguard upgrade --apply` and `docguard init` re-register the extension when
+`docguard upgrade --apply` and `docguard init` register the extension again when
 its version differs from the CLI's. To remove it, run
 `specify extension remove docguard`.
 
 ## What guard checks in a Spec Kit project
 
-In a project with specs, `docguard guard` runs two validators for them. Both are listed in [Finding Codes](../reference/findings.md).
+In a project with specs, `docguard guard` runs two validators for them. [Finding Codes](../reference/findings.md) lists both.
 
 **Spec-Kit (`SPK` codes)** checks the documents themselves:
 
@@ -217,10 +217,10 @@ Requirement text stays in each `spec.md`. The registry holds:
 | `tombstones` | Specs moved to Git history | `specs --write`, from the records `docguard retire` keeps in `.docguard-archive.json` |
 
 `specs --write` refreshes the observed part and never changes the reviewed
-part. Approval is never read from a spec's prose. A `**Status**: Approved` line
-in `spec.md` is ignored. Reviewed fields record what the person who ran the
-command attested, and the pull request that commits the registry is where that
-gets reviewed.
+part. DocGuard never reads approval from a spec's prose. It ignores a
+`**Status**: Approved` line in `spec.md`. Reviewed fields record what the person
+who ran the command attested. The pull request that commits the registry is
+where a reviewer checks that.
 
 ### Spec IDs and evidence
 
@@ -260,11 +260,11 @@ Every subcommand accepts `--format json`. `preflight`, `approve`, `complete` and
 `reanchor` exit `2` when their result is `BLOCKED`. The full option list is in
 [Commands](../commands.md#docguard-specs).
 
-`specs approve` refuses `verified` and `released`; only `specs complete`
-records them, after checking evidence. It never moves a verified spec back.
+`specs approve` refuses `verified` and `released`. Only `specs complete`
+records them, after it checks the evidence. It never moves a verified spec back.
 
-`specs complete` blocks until all of these hold. Each blocker has its own code;
-run `docguard explain SPC001` through `SPC008` for details.
+`specs complete` blocks until all of these hold. Each blocker has its own code.
+Run `docguard explain SPC001` through `SPC008` for details.
 
 - The working tree is committed and the registry is current (SPC001).
 - The spec is approved and its delivery is `in_progress` or `implemented`
@@ -275,13 +275,13 @@ run `docguard explain SPC001` through `SPC008` for details.
   has `@req <specId>#<req>`, and every requirement has evidence (SPC004).
 - `reviewed.scope.canonicalDocs` lists the canonical documents the change
   updated (SPC005). Record them with `--canonical-doc <path>` on `specs approve`
-  or `specs complete`; do not edit the registry by hand.
+  or `specs complete`. Do not edit the registry by hand.
 - Every file changed since the baseline traces to a spec (SPC006).
 - Guard reports no errors (SPC007).
 
 The write updates the registry, the spec's outcome block and
 `.docguard/current-context.json` together. If a write or validation fails during
-the run, all three are rolled back.
+the run, DocGuard rolls back all three.
 
 ## As-built specs for existing code
 
@@ -301,7 +301,7 @@ and line and carries a `<!-- docguard:fact <kind> <key> -->` marker. DocGuard
 writes no requirement prose; your agent writes each statement.
 
 `--write` creates the spec in the next free feature directory, following Spec
-Kit's `feature_numbering`, and registers it with `origin: as_built` and its
+Kit's `feature_numbering`. It registers the spec with `origin: as_built` and its
 `sourcePaths`. From then on, guard reports SPR007 in two cases:
 
 - a fact under those paths that the spec neither marks nor lists under
@@ -323,7 +323,7 @@ examples, see [Continuous Integration](ci.md#spec-first-gate).
 ## End-to-end flow
 
 This walks one feature through Spec Kit with the DocGuard hooks active. The
-hooks run the `docguard` commands shown; run them yourself if your agent does
+hooks run the `docguard` commands shown. Run them yourself if your agent does
 not.
 
 | Step | You or your agent | DocGuard |
@@ -339,19 +339,19 @@ not.
 | 9. Gate | CI runs `docguard guard`, `docguard specs --check` and the spec-first gate. | |
 
 Agents do not approve or complete on their own. The `complete` command file
-tells the agent to ask the maintainer to approve, and to apply the completion
-write only when the maintainer supplies the reason.
+tells the agent to ask the maintainer to approve. It also tells the agent to
+apply the completion write only when the maintainer supplies the reason.
 
 ### Squash merges
 
-A squash merge or a rebase discards the commit a completion recorded. The
-record survives: each outcome carries the git blob of every evidence file, and a
-revision that is no longer on the history is anchored by those blobs when the
-commit that landed the record has them. Guard reports SPR008 only when the
+A squash merge or a rebase discards the commit that a completion recorded. The
+record survives. Each outcome carries the git blob of every evidence file. When
+a revision is no longer on the history, those blobs anchor it, if the commit
+that landed the record has them. Guard reports SPR008 only when the
 evidence changed between review and landing (the message names the files) or
 for a record written before blobs were recorded; repair that one with
 `docguard specs reanchor --id <id> --write`. Run as many
-`specs complete --write` as you need before the one commit: the files
+`specs complete --write` as you need before the one commit. The files that
 completion writes do not count as changes, so several completions can share one
 revision.
 
@@ -362,8 +362,8 @@ revision.
 - `docguard reconcile --since <ref>`: a read-only review of changes since a ref
   against approved intent.
 - `docguard retire`: remove completed or superseded planning material from
-  active AI context. It records recovery metadata and retired requirement
-  identities in `.docguard-archive.json`.
+  the active context of your agent. It records recovery metadata and retired
+  requirement identities in `.docguard-archive.json`.
 
 See [Commands](../commands.md) for every option, and
 [Existing Projects](existing-projects.md) for adopting DocGuard on a repository

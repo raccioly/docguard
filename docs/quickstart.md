@@ -5,7 +5,7 @@ nav_order: 2
 
 # DocGuard — Quick Start
 
-Get AI-enforced documentation in under 5 minutes.
+Set up DocGuard in under 5 minutes. Your agent then keeps your docs correct.
 
 ## For New Projects
 
@@ -16,7 +16,7 @@ cd your-project
 npx docguard-cli init --profile starter
 ```
 
-Creates only ARCHITECTURE.md + CHANGELOG — the bare minimum.
+Creates only ARCHITECTURE.md and CHANGELOG. This is the minimum.
 
 ### Option B: Full CDD (team projects)
 
@@ -25,11 +25,11 @@ cd your-project
 npx docguard-cli init
 ```
 
-Creates all 6 canonical docs (including REQUIREMENTS.md) + tracking files + AI slash commands.
+Creates the 5 required canonical docs plus REQUIREMENTS.md, the tracking files and the agent slash commands.
 
 ### Option C: Spec-Driven Development (spec-kit projects)
 
-If you're using [GitHub Spec Kit](https://github.com/github/spec-kit):
+If you use [GitHub Spec Kit](https://github.com/github/spec-kit):
 
 ```bash
 # 1. Initialize Spec Kit for your agent
@@ -50,19 +50,19 @@ cd your-project
 npx docguard-cli generate
 ```
 
-Scans your codebase and generates pre-filled documentation, including REQUIREMENTS.md with spec-kit-aligned FR/SC IDs.
+Scans your code and writes pre-filled docs. These include REQUIREMENTS.md, with FR/SC IDs that match Spec Kit.
 
 ## Fill the Docs (AI Does It)
 
-After init creates skeleton templates, run **one command**:
+After `init` creates the skeleton templates, run **one command**:
 
 ```bash
 npx docguard-cli diagnose
 ```
 
-This outputs a complete AI remediation plan. If you're using Claude Code, Cursor, Copilot, or Antigravity, the AI reads the output and writes every doc automatically.
+This prints a complete fix plan for your agent. If you use Claude Code, Cursor, Copilot, or Antigravity, the agent reads the plan and writes every doc.
 
-**That's it.** The AI loop:
+**That's all.** The loop works like this:
 
 ```
 diagnose  →  AI reads prompts  →  AI fixes docs  →  guard verifies
@@ -94,6 +94,6 @@ npx docguard-cli watch --auto-fix
 
 - [Commands Reference](./commands.md) — All 28 commands
 - [Configuration](./configuration.md) — `.docguard.json` options
-- [Profiles](./profiles.md) — Starter vs Standard vs Enterprise
-- [AI Integration](./ai-integration.md) — How AI agents use DocGuard
+- [Profiles](./profiles.md) — Starter, Standard and Enterprise
+- [AI Integration](./ai-integration.md) — How agents use DocGuard
 - [FAQ](./faq.md) — Common questions

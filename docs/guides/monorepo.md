@@ -7,10 +7,10 @@ nav_order: 4
 # Monorepos
 
 DocGuard checks one project directory per run. In a repository with several
-packages, you choose what that directory is: the repository root, with one set
-of documents for everything, or each package, with its own configuration and
-documents. This guide covers both, how DocGuard picks the directory, and what
-it does not do.
+packages, you choose what that directory is. It can be the repository root,
+with one set of documents for everything. Or it can be each package, with its
+own configuration and documents. This guide covers both layouts, how DocGuard
+picks the directory, and what DocGuard does not do.
 
 ## How DocGuard picks the project directory
 
@@ -23,20 +23,19 @@ docguard guard --dir packages/api   # an explicit directory
 ```
 
 From that directory DocGuard reads `.docguard.json`, `.docguardignore`, the
-canonical documents and the baseline. It never changes the directory on its
-own.
+canonical docs and the baseline. It never changes the directory on its own.
 
 ### Ancestor-root guidance
 
 If you run a command inside a package that has no `.docguard.json` of its own,
-DocGuard checks whether a parent directory governs it. It walks up (at most 32
-levels, and never past the Git repository root) looking for either of these:
+DocGuard checks whether a parent directory governs it. It walks up, at most 32
+levels and never past the Git repository root. It looks for either of these:
 
 - a `.docguard.json`;
 - a workspace declaration that lists the package: `workspaces` in
   `package.json`, or `packages` in `pnpm-workspace.yaml`.
 
-When it finds one, it still checks the directory you are in, and prints on
+When it finds one, it still checks the directory you are in. It also prints on
 stderr how to check the whole repository instead:
 
 ```text
@@ -45,9 +44,10 @@ DocGuard is checking /repo/packages/api.
 Re-run for repository scope: docguard guard --dir /repo
 ```
 
-With `--format json`, `sarif` or `junit`, stdout is unchanged and stays valid.
-Stderr gets one JSON line of type `docguard.repository-root-guidance`, with the
-selected directory, the suggested one, the reason and the rerun command.
+With `--format json`, `sarif` or `junit`, stdout does not change and stays
+valid. Stderr gets one JSON line of type `docguard.repository-root-guidance`.
+The line holds the selected directory, the suggested one, the reason and the
+rerun command.
 
 The guidance does not appear when:
 
@@ -75,8 +75,8 @@ Run `docguard init` and every other command from the root.
 
 ### Where DocGuard looks for code
 
-Routes, environment variables, data models, dependencies and test files are
-collected from these source roots, in order:
+DocGuard collects routes, environment variables, data models, dependencies and
+test files from these source roots, in order:
 
 1. `sourceRoot` in `.docguard.json`, if set;
 2. each workspace package from `package.json` `workspaces` (an array, or an
@@ -85,7 +85,7 @@ collected from these source roots, in order:
    `api`, `functions`, `backend/src`, `backend`, `cli` (and `pages`,
    `components`, `hooks`, `utils` in a Next.js project).
 
-The repository root itself is scanned only when none of these exist.
+DocGuard scans the repository root itself only when none of these exist.
 
 ```json
 { "sourceRoot": "services/backend/src" }
@@ -97,12 +97,12 @@ The repository root itself is scanned only when none of these exist.
 ### Project type
 
 Type detection reads the manifest at the root only. A workspace root whose own
-`package.json` names no framework is typed `unknown`. That type assumes the
-project needs documented environment variables, an `.env.example` and a data
-model, which may not match your repository.
+`package.json` names no framework gets the type `unknown`. That type assumes
+the project needs documented environment variables, an `.env.example` and a
+data model. This may not match your repository.
 
-`init` writes both `projectType` and the `projectTypeConfig` flags derived from
-it, and the flags in the file win. Edit both:
+`init` writes both `projectType` and the `projectTypeConfig` flags that come
+from it. The flags in the file win. Edit both:
 
 ```json
 {
@@ -116,9 +116,9 @@ it, and the flags in the file win. Edit both:
 }
 ```
 
-Valid types are `cli`, `library`, `webapp`, `api` and `unknown`. The flags each
-type implies are listed in [Configuration](../configuration.md), under "Project
-Type Defaults".
+Valid types are `cli`, `library`, `webapp`, `api` and `unknown`.
+[Configuration](../configuration.md) lists the flags each type implies, under
+"Project Type Defaults".
 
 ### Where DocGuard looks for documents
 
@@ -128,18 +128,17 @@ Type Defaults".
   `handbook`, `manual`, `wiki`, `extensions`, and `website/docs`.
 - Documents mapped with `docs.roles`.
 
-A package's own `packages/api/docs/` is not found automatically. The guard
-summary counts it as "outside any tier". Add it with `docs.dirs`:
+DocGuard does not find a package's own `packages/api/docs/` automatically. The
+guard summary counts it as "outside any tier". Add it with `docs.dirs`:
 
 ```json
 { "docs": { "dirs": ["packages/api/docs", "packages/web/docs"] } }
 ```
 
 `docs.dirs` adds directories to the inventory and to freshness review. It does
-not make them canonical documents. A canonical role (`architecture`,
-`dataModel`, …) maps to one file for the whole project, through `docs.roles`.
-If each package needs its own architecture document checked as canonical, use
-layout 2.
+not make them canonical docs. A canonical role (`architecture`, `dataModel`, …)
+maps to one file for the whole project, through `docs.roles`. If each package
+needs its own architecture document checked as canonical, use layout 2.
 
 ### Agent instructions in packages
 
@@ -168,8 +167,8 @@ A `dir/` pattern matches that directory at any depth, as in `.gitignore`.
 
 ## Layout 2: each package is its own project
 
-Use this when packages are owned by different teams, released separately, or
-need their own canonical documents.
+Use this when different teams own the packages, you release them separately, or
+they need their own canonical docs.
 
 ```text
 repo/
@@ -192,17 +191,17 @@ docguard guard --dir packages/api
 
 Each package keeps its own `.docguard.json`, documents, `.docguard.baseline.json`
 and `.docguard/` state directory. Git-based checks still work, because Git
-metadata is found in an ancestor directory.
+finds its metadata in an ancestor directory.
 
 > **Note:** A run at the root does not read the packages' `.docguard.json`
-> files or their `docs-canonical/` directories, and does not combine their
+> files or their `docs-canonical/` directories. It does not combine their
 > results. Run each package separately.
 
 Mapped document roles cannot point outside the package: `docs.roles` rejects
 absolute paths and parent traversal (`../`).
 
 Both layouts can coexist. A root project for repository-wide documents and a
-project per package are separate runs.
+project for each package are separate runs.
 
 ## CI per package
 
@@ -240,9 +239,9 @@ jobs:
 ```
 
 Set `pr-comment: 'false'` when more than one job runs the action on the same
-pull request. The sticky comment is found by a fixed marker, so each job would
-overwrite the last one's comment. Inline annotations still work: the action
-rewrites finding paths to be relative to the repository root.
+pull request. The action finds its sticky comment by a fixed marker, so each
+job would overwrite the comment of the last one. Inline annotations still work,
+because the action rewrites finding paths to start at the repository root.
 
 A matrix over package directories works the same way, with the package path in
 `working-directory`.
@@ -265,10 +264,10 @@ More CI recipes are in [CI](ci.md).
 
 ## The MCP server in a monorepo
 
-`docguard mcp` serves one directory, and a tool call's `projectDir` must sit
-inside it. Started at the repository root, it can answer for any package.
-Started inside a package, it refuses other packages unless you add
-`--root <dir>` for each extra tree. See [MCP](../reference/mcp.md).
+`docguard mcp` serves one directory. A tool call's `projectDir` must sit inside
+it. Started at the repository root, it can answer for any package. Started
+inside a package, it refuses other packages unless you add `--root <dir>` for
+each extra tree. See [MCP](../reference/mcp.md).
 
 ## What is not supported
 
@@ -277,7 +276,7 @@ Started inside a package, it refuses other packages unless you add
 - **Workspace declarations other than `package.json` `workspaces` and
   `pnpm-workspace.yaml`.** Nx project files, `lerna.json` package lists, Rush,
   Cargo and Go workspaces, and Maven or Gradle multi-module builds do not add
-  source roots, and do not trigger ancestor-root guidance. Set `sourceRoot` or
+  source roots, and do not trigger ancestor-root guidance. Set `sourceRoot`,
   rely on the conventional directories, or use layout 2.
 - **Checking only the packages a change touched.** DocGuard has no
   changed-package detection. Use your CI's path filters to decide which

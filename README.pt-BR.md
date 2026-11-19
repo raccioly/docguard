@@ -7,7 +7,7 @@
 [English](README.md) · **Português (BR)** · [Español](README.es.md)
 
 > **A camada de enforcement para Spec-Driven Development.**
-> Valide. Pontue. Garanta. Entregue documentação que agentes de IA conseguem realmente usar.
+> Valide. Pontue. Garanta. Entregue documentação que agentes conseguem usar de verdade.
 
 [![CI](https://github.com/raccioly/docguard/actions/workflows/ci.yml/badge.svg)](https://github.com/raccioly/docguard/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/docguard-cli)](https://www.npmjs.com/package/docguard-cli)
@@ -27,15 +27,15 @@
 
 ## O que é o DocGuard?
 
-O DocGuard é a ferramenta de enforcement do **Canonical-Driven Development (CDD)** —
-uma metodologia em que a documentação é a fonte da verdade e a ferramenta **verifica,
-deterministicamente, que ela continua verdadeira em relação ao código**.
+O DocGuard é a ferramenta de enforcement do **Canonical-Driven Development (CDD)**.
+No CDD, a documentação é a fonte da verdade. O DocGuard **verifica, de forma
+determinística, que a documentação continua verdadeira em relação ao código**.
 
-A diferença para outras ferramentas de documentação: um resultado verde do DocGuard
-significa *"os documentos correspondem ao código, de forma verificável"* — não apenas
-"os arquivos existem". Ele extrai rotas, schemas, variáveis de ambiente, contagens e
-afirmações documentadas, e compara tudo com o código real. Núcleo com zero chamadas a
-LLM: determinístico, offline, auditável.
+Um resultado verde do DocGuard significa *"os documentos correspondem ao código, de forma
+verificável"*. Não significa apenas "os arquivos existem".
+Ele extrai rotas, schemas, variáveis de ambiente, contagens e afirmações documentadas.
+Depois compara tudo com o código real. O núcleo não faz nenhuma chamada a LLM. Ele é
+determinístico, offline e auditável.
 
 ## Início rápido
 
@@ -46,7 +46,7 @@ npx docguard-cli guard      # valida — verde significa "docs corretos"
 npx docguard-cli score      # nota de maturidade da documentação (0-100)
 ```
 
-> **O modo estrito é o padrão.** O `docguard guard` termina com código 4 quando uma verificação que se aplica ao seu projeto não examinou nada (por exemplo, não há referência de API embora existam rotas) e mostra o que adicionar. Uma verificação que não se aplica é ignorada, e um layout que o DocGuard não lê é apenas informado, sem falhar a execução. Atualizou e viu o build ficar vermelho? Leia [Atualizando para o modo estrito](https://raccioly.github.io/docguard/upgrading-to-strict) (em inglês). Para manter o comportamento anterior, defina `"enforcement": "standard"` no `.docguard.json`.
+> **O modo estrito é o padrão.** O `docguard guard` termina com código 4 quando uma verificação que se aplica ao seu projeto não examinou nada. Por exemplo, o projeto tem rotas, mas não tem referência de API. O DocGuard então mostra o que adicionar. O DocGuard ignora uma verificação que não se aplica. Ele apenas informa um layout que não consegue ler, e a execução não falha. Atualizou e viu o build ficar vermelho? Leia [Atualizando para o modo estrito](https://raccioly.github.io/docguard/upgrading-to-strict) (em inglês). Para manter o comportamento anterior, defina `"enforcement": "standard"` no `.docguard.json`.
 
 Para um projeto existente, o caminho inverso funciona melhor:
 
@@ -59,41 +59,40 @@ npx docguard-cli generate --plan --write   # engenharia reversa: docs a partir d
 | Comando | O que faz |
 |:--------|:----------|
 | `init`  | Inicializa o projeto (detecta o stack automaticamente) |
-| `guard` | Valida os documentos contra o código — o portão de CI |
+| `guard` | Compara os documentos com o código. É a verificação final no CI |
 | `diff`  | Mostra a diferença entre docs e código (`--since <ref>` para impacto de PR) |
 | `sync`  | Regenera as seções de "verdade do código" nos documentos |
 | `score` | Nota de maturidade CDD, com detalhamento por categoria |
 
 A lista completa de comandos, validadores e flags está no
-[README em inglês](README.md#usage) — mantida sincronizada com o código pelo
-próprio DocGuard.
+[README em inglês](README.md#usage). O próprio DocGuard a mantém sincronizada com o código.
 
 ## Integração com IA (nativo, não improvisado)
 
-O DocGuard foi desenhado para ser usado **por** agentes de IA, não só por humanos:
+O DocGuard foi feito para ser usado **por** agentes, não só por pessoas:
 
-- **Servidor MCP** — `claude mcp add docguard -- npx docguard-cli mcp` expõe
-  guard/score/explain/verify/diagnose como ferramentas nativas para Claude,
-  Cursor e qualquer cliente MCP.
-- **Contrato JSON estável** — `guard --format json` com códigos de finding
-  estáveis, explicáveis (`docguard explain <CÓDIGO>`) e supressíveis na linha.
+- **Servidor MCP** — `claude mcp add docguard -- npx docguard-cli mcp` oferece
+  guard/score/explain/verify/diagnose como ferramentas nativas ao Claude,
+  ao Cursor e a qualquer cliente MCP.
+- **Contrato JSON estável** — `guard --format json` com códigos de achado
+  estáveis. Você pode explicar cada código (`docguard explain <CÓDIGO>`) e suprimi-lo na linha.
 - **SARIF** — `guard --format sarif` integra com o GitHub Code Scanning.
-- **llms.txt / llms-full.txt / context pack** — superfícies de contexto para
+- **llms.txt / llms-full.txt / context pack** — arquivos de contexto para
   LLMs que leem o repositório.
 - **GitHub Action** — anotações inline no diff do PR + comentário fixo com o
   impacto nos documentos canônicos.
-- **`agents --sync`** — o AGENTS.md vira fonte canônica para CLAUDE.md, regras
-  do Cursor, instruções do Copilot e afins — sem duplicação manual, sem drift.
+- **`agents --sync`** — o AGENTS.md é a fonte canônica de CLAUDE.md, das regras
+  do Cursor, das instruções do Copilot e afins. Não há duplicação manual nem drift.
 
 Guia completo: [docs/ai-integration.md](docs/ai-integration.md) (em inglês).
 
 ## Documentação em outro idioma
 
-O DocGuard lê documentação escrita em qualquer idioma. Os rótulos estruturais que ele procura (os títulos obrigatórios dos documentos canônicos, a seção de mudanças ainda não lançadas do changelog, as seções do README, os nomes das seções do Spec Kit e as palavras de status dos registros de decisão) são reconhecidos por **id**, e não pelo texto em inglês; por isso um projeto em português ou espanhol não precisa de títulos em inglês. Há três formas de dizer qual título é qual, na ordem em que o DocGuard as tenta:
+O DocGuard lê documentação escrita em qualquer idioma. Ele reconhece os rótulos estruturais que procura por **id**, e não pelo texto em inglês. Esses rótulos são: os títulos obrigatórios dos documentos canônicos, a seção de mudanças ainda não lançadas do changelog, as seções do README, os nomes das seções do Spec Kit e as palavras de status dos registros de decisão. Por isso, um projeto em português ou espanhol não precisa de títulos em inglês. Há três formas de dizer qual título é qual. O DocGuard as tenta nesta ordem:
 
 1. **Um marcador.** Escreva `<!-- docguard:heading system-overview -->` na linha logo abaixo do título que você já tem. Funciona em qualquer idioma e não exige configuração. A lista fechada de ids está em [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (em inglês); `docguard explain STR009` também a mostra.
-2. **`docs.language`.** Defina uma tag [BCP 47](https://www.rfc-editor.org/info/bcp47) no `.docguard.json` e os títulos e palavras embutidos desse idioma passam a ser aceitos. Português (`pt`, ou seja `pt-BR` e `pt-PT`) e espanhol (`es`) já vêm nesta versão. Maiúsculas, acentos e a numeração de seção no início são ignorados, e o inglês é sempre aceito, então documentos mistos funcionam.
-3. **`docs.labelAliases`.** Sua própria redação, por id. Ela soma ao conjunto embutido e nunca o substitui.
+2. **`docs.language`.** Defina uma tag [BCP 47](https://www.rfc-editor.org/info/bcp47) no `.docguard.json`. O DocGuard então aceita os títulos e as palavras embutidos desse idioma. Português (`pt`, ou seja `pt-BR` e `pt-PT`) e espanhol (`es`) já vêm nesta versão. O DocGuard ignora maiúsculas, acentos e a numeração de seção no início. Ele sempre aceita o inglês, então documentos mistos funcionam.
+3. **`docs.labelAliases`.** Sua própria redação, por id. Ela se soma ao conjunto embutido e nunca o substitui.
 
 ```json
 {
@@ -106,13 +105,13 @@ O DocGuard lê documentação escrita em qualquer idioma. Os rótulos estruturai
 
 O exemplo acima mostra a redação própria de uma equipe, acrescentada ao conjunto embutido; ele não é uma tradução embutida.
 
-**Um idioma sem conjunto embutido** (`"de"`, por exemplo) também é aceito: um título obrigatório sem marcador e sem alias não é apontado como ausente, porque o DocGuard não consegue distinguir uma seção ausente de uma escrita em alemão. O documento aparece em "DocGuard could not read" com a causa `language-not-supported` e o que acrescentar; o código de saída não muda. Um documento chamado `<nome>.<idioma>.md`, ou dentro de `i18n/<idioma>/` ou `locales/<idioma>/`, é lido nesse idioma quando `docs.language` está definido; o idioma nunca é deduzido do texto.
+**Um idioma sem conjunto embutido** (`"de"`, por exemplo) também é aceito. O DocGuard não consegue distinguir uma seção ausente de uma escrita em alemão. Por isso, ele não aponta como ausente um título obrigatório sem marcador e sem alias. O documento aparece em "DocGuard could not read" com a causa `language-not-supported` e o que acrescentar. O código de saída não muda. Quando `docs.language` está definido, o DocGuard lê nesse idioma um documento chamado `<nome>.<idioma>.md`, ou dentro de `i18n/<idioma>/` ou `locales/<idioma>/`. O DocGuard nunca deduz o idioma do texto.
 
-**Métricas de qualidade do texto.** Voz passiva e legibilidade de Flesch são ignoradas em todos os idiomas, exceto o inglês, e cada uma é relatada com o motivo em vez de gerar um número. O tamanho das frases continua sendo medido. Negação, condições, frases compostas e pronomes ambíguos (DQ007, DQ008, DQ003, DQ002) agora são medidos para português e espanhol, com listas de palavras revisadas por um falante nativo; os demais idiomas continuam ignorando essas métricas.
+**Métricas de qualidade do texto.** O DocGuard ignora a voz passiva e a legibilidade de Flesch em todos os idiomas, exceto o inglês. Ele informa o motivo de cada omissão em vez de gerar um número. O tamanho das frases continua sendo medido. Agora o DocGuard mede negação, condições, frases compostas e pronomes ambíguos (DQ007, DQ008, DQ003, DQ002) para português e espanhol, com listas de palavras revisadas por um falante nativo. Os demais idiomas continuam ignorando essas métricas.
 
-**Documentos novos.** `docguard init` e `docguard generate` escrevem o marcador sob cada título obrigatório que geram e, com `docs.language` em `pt` ou `es`, escrevem o título nesse idioma (o changelog como `## [Não lançado]` ou `## [Sin publicar]`). Eles nunca reescrevem um documento que já existe.
+**Documentos novos.** `docguard init` e `docguard generate` escrevem o marcador sob cada título obrigatório que geram. Com `docs.language` em `pt` ou `es`, eles escrevem o título nesse idioma (o changelog como `## [Não lançado]` ou `## [Sin publicar]`). Eles nunca reescrevem um documento que já existe.
 
-Uma seção obrigatória que não se aplica ao seu projeto pode ser marcada com `<!-- docguard:section <slug> n/a — motivo -->`, em que `<slug>` é o id da seção (por exemplo `system-overview`). O motivo deve começar com uma letra ou dígito de `A-Z`, `a-z` ou `0-9`. Guia completo: [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (em inglês).
+Para marcar uma seção obrigatória que não se aplica ao seu projeto, escreva `<!-- docguard:section <slug> n/a — motivo -->`. Aqui, `<slug>` é o id da seção (por exemplo `system-overview`). O motivo deve começar com uma letra ou dígito de `A-Z`, `a-z` ou `0-9`. Guia completo: [Documents in other languages](https://raccioly.github.io/docguard/languages.html) (em inglês).
 
 ## Documentação
 

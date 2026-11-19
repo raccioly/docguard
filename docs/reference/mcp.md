@@ -7,8 +7,8 @@ nav_order: 6
 # MCP Server
 
 `docguard mcp` serves DocGuard's checks and document navigation as Model
-Context Protocol tools. Every tool is read-only: it reads the project and
-never writes, scaffolds or calls the network. No tool calls a language model.
+Context Protocol tools. Every tool is read-only. It reads the project and never
+writes, scaffolds or calls the network. No tool calls a language model.
 
 ```bash
 npx docguard-cli mcp
@@ -16,13 +16,12 @@ npx docguard-cli mcp
 
 The server speaks JSON-RPC 2.0, one message per line, over stdio by default,
 or over Streamable HTTP with `--transport http`. It implements MCP protocol
-revision `2024-11-05` and echoes the revision a client asks for in
+revision `2024-11-05`. It echoes the revision that a client asks for in
 `initialize`. Source: `cli/commands/mcp.mjs`.
 
 ## Options
 
-`docguard mcp --help` prints the general help; these are the options the
-server reads.
+`docguard mcp --help` prints the general help. The server reads these options.
 
 | Option | Default | Effect |
 |---|---|---|
@@ -34,24 +33,25 @@ server reads.
 | `--path <path>` | `/mcp` | HTTP only: the endpoint path; any other path answers 404 |
 | `--api-key <key>` | The `DOCGUARD_API_KEY` environment variable, else none | HTTP only: every request must carry the key |
 
-On startup the server prints one line to stderr naming the transport, the
-served directory and every root. On stdio, stdout carries only JSON-RPC
-messages; every diagnostic goes to stderr.
+On startup the server prints one line to stderr. The line names the transport,
+the served directory and every root. On stdio, stdout carries only JSON-RPC
+messages. Every diagnostic goes to stderr.
 
 ## Project confinement
 
 Every project-scoped tool accepts an optional `projectDir`.
 
 - Without it, the tool runs against the served directory.
-- With it, the path is resolved against the served directory, symbolic links
-  are followed, and the result must be the served directory, one of the
+- With it, the server resolves the path against the served directory and
+  follows symbolic links. The result must be the served directory, one of the
   `--root` trees, or a directory inside one of them.
-- Anything else returns an `isError` result that names the served roots and
-  says to restart with `--root <dir>`. The message is the same whether or not
-  the outside path exists, and nothing under it is read.
+- For any other path, the server returns an `isError` result. It names the
+  served roots and says to restart with `--root <dir>`. The message is the same
+  whether or not the outside path exists, and the server reads nothing under
+  it.
 
 The same rule applies on both transports. To serve several repositories from
-one server, name each at startup:
+one server, name each one at startup:
 
 ```bash
 docguard mcp --root ~/work/api --root ~/work/web
@@ -98,8 +98,8 @@ the full result, never a recomputation, so both always agree
 | Raw benchmark statistics per code | Left out | `precisionEvidence.codes` |
 | Marker | `detail: "compact"` and a `hint` naming the full form | none |
 
-The full form is the same contract `docguard guard --format json` prints. The
-CLI prints the compact form with `docguard guard --format json --compact`.
+The full form is the same contract that `docguard guard --format json` prints.
+The CLI prints the compact form with `docguard guard --format json --compact`.
 
 ## Errors
 
@@ -112,8 +112,8 @@ CLI prints the compact form with `docguard guard --format json --compact`.
 | An unknown tool | `-32602` |
 | An internal failure | `-32603` |
 
-Configuration is read on every call, so an edit to `.docguard.json` applies to
-the next call without a restart.
+The server reads the configuration on every call. An edit to `.docguard.json`
+applies to the next call without a restart.
 
 ## Streamable HTTP
 
@@ -133,31 +133,31 @@ docguard mcp --transport http --host 0.0.0.0 --api-key "$KEY"
 
 Security rules:
 
-- The server binds to `127.0.0.1` unless you pass `--host`. Binding any host
+- The server binds to `127.0.0.1` unless you pass `--host`. If you bind any host
   other than `127.0.0.1`, `localhost` or `::1` without `--api-key` or
-  `DOCGUARD_API_KEY` refuses to start.
+  `DOCGUARD_API_KEY`, the server refuses to start.
 - With a key set, every request must send `Authorization: Bearer <key>` or
-  `X-API-Key: <key>`; otherwise `401`.
-- A request with an `Origin` header whose host is not a loopback address is
-  refused with `403`. Clients that send no `Origin`, such as MCP SDKs and
+  `X-API-Key: <key>`. Otherwise the answer is `401`.
+- The server refuses with `403` a request with an `Origin` header whose host is
+  not a loopback address. Clients that send no `Origin`, such as MCP SDKs and
   `curl`, are not affected.
-- An API key is not a boundary between projects: every client with the key
+- An API key is not a boundary between projects. Every client with the key
   reaches every served root.
 
 ## Version-age note
 
 When the installed release is more than 14 days old, the `initialize` result
-carries `instructions` that give the version and its release date, say a newer
+carries `instructions`. They give the version and its release date, say a newer
 version may exist, and tell the agent to offer `docguard upgrade` and never to
-upgrade without the user's agreement. The date comes from the `CHANGELOG.md`
-shipped in the package, so no network call is made. The note is absent in a
-source checkout and with `DOCGUARD_NO_UPDATE_HINT=1`, and it never appears in
-a tool result.
+upgrade without the agreement of the user. The date comes from the
+`CHANGELOG.md` that ships in the package, so the server makes no network call.
+The note is absent in a source checkout and with `DOCGUARD_NO_UPDATE_HINT=1`.
+It never appears in a tool result.
 
 ## Client setup
 
-Each of these starts the same server. Point it at your project with `--dir`
-(or the client's working directory) and add `--root` for further trees.
+Each of these starts the same server. Point it at your project with `--dir` (or
+the working directory of the client) and add `--root` for more trees.
 
 ### Claude Code
 
@@ -170,8 +170,8 @@ claude mcp add docguard -- npx docguard-cli mcp
 Download `docguard-v<version>.mcpb` from the
 [latest release](https://github.com/raccioly/docguard/releases/latest) and drag
 it into Settings, Extensions. Claude Desktop asks for the project folder. The
-bundle runs the copy of DocGuard inside it, so neither npm nor a JSON edit is
-needed. Its manifest (`mcpb/manifest.template.json`) starts the server as:
+bundle runs the copy of DocGuard inside it, so you need neither npm nor a JSON
+edit. Its manifest (`mcpb/manifest.template.json`) starts the server as:
 
 ```json
 {
@@ -208,7 +208,7 @@ A public image on GHCR runs the stdio server without a local Node.js:
 docker run -i --rm -v "$PWD":/workspace ghcr.io/raccioly/docguard:latest
 ```
 
-Mount the project at `/workspace`; it is the served directory. Arguments after
+Mount the project at `/workspace`. It is the served directory. Arguments after
 the image name go to `docguard mcp`, so `--root <dir>` serves another mounted
 tree. Pin a version tag in shared setups.
 

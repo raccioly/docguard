@@ -19,22 +19,22 @@ If you discover a security vulnerability in DocGuard, please report it responsib
    - Potential impact
    - Suggested fix (if any)
 
-We will acknowledge your report within 48 hours and provide a timeline for a fix.
+We will acknowledge your report within 48 hours. We will then give you a timeline for a fix.
 
 ## Security Model
 
 DocGuard is a **local CLI tool** with a minimal attack surface:
 
 - **One exact-pinned, vetted dependency** (`@babel/parser`, loaded optionally with a regex fallback) — minimal supply-chain surface
-- **No network requests** — runs entirely offline
-- **No authentication** — no credentials to compromise
-- **No data storage** — stateless, reads/writes project files only
-- **Read-mostly** — most commands only read files; `init`, `generate`, and `hooks` write files
+- **No network requests** — it runs entirely offline
+- **No authentication** — there are no credentials to compromise
+- **No data storage** — stateless; it reads and writes project files only
+- **Read-mostly** — most commands only read files. `init`, `generate`, and `hooks` write files
 
-For full details, see [docs-canonical/SECURITY.md](./docs-canonical/SECURITY.md).
+For more detail, see [docs-canonical/SECURITY.md](./docs-canonical/SECURITY.md).
 
 ## Best Practices for Users
 
 - Keep Node.js updated (DocGuard requires ≥ 18)
-- Review generated git hooks before enabling (`docguard hooks`)
-- Review generated documentation before committing
+- Review generated git hooks before you enable them (`docguard hooks`)
+- Review generated documentation before you commit it

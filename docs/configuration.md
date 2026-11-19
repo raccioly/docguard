@@ -75,14 +75,7 @@ DocGuard is configured via `.docguard.json` in the project root. If no config fi
 }
 ```
 
-`requiredChecks` names the validators the project depends on. Each must reach a
-decision (verdict `pass` or `fail`) in every run: one that found nothing to
-judge, could not decide or could not run makes `guard` exit 4 and `ci` block
-(`CI_REQUIRED_CHECK_UNDECIDED`). A reasoned in-repo
-`<!-- docguard:validator <key> n/a — reason -->` marker is the only bypass;
-disabling a required validator in config is reported as REQ001, and an
-unknown key as REQ002. `docguard policy` shows which advisory codes this
-project's CI history shows are ready to promote with `findingSeverity`.
+`requiredChecks` names the validators the project depends on. Each must reach a decision (verdict `pass` or `fail`) in every run. A validator that found nothing to judge, could not decide or could not run makes `guard` exit 4 and `ci` block (`CI_REQUIRED_CHECK_UNDECIDED`). A reasoned in-repo `<!-- docguard:validator <key> n/a — reason -->` marker is the only bypass. DocGuard reports disabling a required validator in config as REQ001, and an unknown key as REQ002. `docguard policy` shows which advisory codes this project's CI history shows are ready to promote with `findingSeverity`.
 
 ### Enforcement mode
 
@@ -95,81 +88,21 @@ from `profile`, which only says what kind of project this is:
 { "enforcement": { "mode": "strict", "asOf": "0.47" } }
 ```
 
-- **`strict`**: every validator that applies to the project must examine
-  something. One that applies, performed no check, and whose cause is
-  `needs-declaration` or `needs-content` (a declaration or a document the
-  project can write) makes `guard` exit 4 and `ci` block
-  (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. So does one that
-  could not observe at all (`blocked`, or `inconclusive` with zero checks). A
-  validator that does not apply is `skipped`, with what it looked for as the
-  reason.
-  A validator that performed at least one check and could not read the rest
-  (some routes unreadable, an optional parser absent) is `inconclusive`, and one
-  whose cause is `layout-not-recognized` is a limit of DocGuard; one whose cause
-  is `history-unavailable` ran in a shallow clone (the one-commit default of
-  `actions/checkout`), which lacks the git history the check reads, and the fix
-  is to fetch it (`fetch-depth: 0`); one whose cause is `language-not-supported`
-  read a document in a language DocGuard has no rules for (`docs.language`, or the
-  document's own name: `<name>.<lang>.md`, `i18n/<lang>/`, `locales/<lang>/`) and
-  says which language and what to add: a `<!-- docguard:heading <id> -->` marker
-  or a `docs.labelAliases` entry for a label, nothing for a check that reads
-  English prose (Docs-Diff's tech stack, Metrics-Consistency, semantic claims). None of these changes
-  the exit code: all are listed after the Adopt block under "DocGuard could not
-  read", with what was missed and, for a layout, the layouts the validator does
-  read. `--fail-on-inconclusive` still makes a project that asks for it exit 4.
-  When the run exits 1 or 4, an **Adopt** block lists, in order, the fix for each
-  unexamined validator, `docguard guard --update-baseline`, the waiver form
-  with `owner:` and `expires:`, and the key that selects the lower mode.
+- **`strict`**: every validator that applies to the project must examine something. Suppose a validator applies and performs no check. Its cause is `needs-declaration` or `needs-content` (a declaration or a document the project can write). Then it makes `guard` exit 4 and `ci` block (`CI_STRICT_UNEXAMINED`), unless a reasoned waiver covers it. So does a validator that could not observe at all (`blocked`, or `inconclusive` with zero checks). A validator that does not apply is `skipped`, with what it looked for as the reason. A validator that performed at least one check and could not read the rest (some routes unreadable, an optional parser absent) is `inconclusive`. A cause of `layout-not-recognized` is a limit of DocGuard. A cause of `history-unavailable` means the check ran in a shallow clone (the one-commit default of `actions/checkout`), which lacks the git history the check reads. The fix is to fetch it (`fetch-depth: 0`). A cause of `language-not-supported` means the validator read a document in a language DocGuard has no rules for. DocGuard takes the language from `docs.language`, or from the document's own name: `<name>.<lang>.md`, `i18n/<lang>/`, `locales/<lang>/`. It says which language and what to add: a `<!-- docguard:heading <id> -->` marker or a `docs.labelAliases` entry for a label. Nothing is needed for a check that reads English prose (Docs-Diff's tech stack, Metrics-Consistency, semantic claims). None of these changes the exit code. DocGuard lists all of them after the Adopt block under "DocGuard could not read". Each entry says what was missed and, for a layout, the layouts the validator does read. `--fail-on-inconclusive` still makes a project that asks for it exit 4. When the run exits 1 or 4, an **Adopt** block lists four things in order. First comes the fix for each unexamined validator. Then comes `docguard guard --update-baseline`. Then comes the waiver form with `owner:` and `expires:`. Last comes the key that selects the lower mode.
 - **`standard`**: the behavior before the default changed. No exit code changes.
-- **Absent**: `strict`. A project that has not chosen a mode is checked in full,
-  and `profile` never selects the mode: the stored value `profile: "standard"`
-  is a project shape, not a choice of strictness. Every run states the mode and
-  where it came from on the first line of its summary, and `--format json`
-  carries `enforcement: { mode, asOf, source }` (`source` is `default` or
-  `config`). If your build turned red after upgrading, see
-  [Upgrading to Strict](upgrading-to-strict.md).
+- **Absent**: `strict`. A project that has not chosen a mode is checked in full. `profile` never selects the mode: the stored value `profile: "standard"` is a project shape, not a choice of strictness. Every run states the mode and where it came from on the first line of its summary. `--format json` carries `enforcement: { mode, asOf, source }` (`source` is `default` or `config`). If your build turned red after upgrading, see [Upgrading to Strict](upgrading-to-strict.md).
 
-Under `strict`, `--format json` also carries
-`strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], ignoredDisabled[], baselined }`. `ignoredDisabled` lists the `validators.<key>: false` entries strict did not honor (keys only in the compact form).
+Under `strict`, `--format json` also carries `strict: { evaluated, unexamined[], couldNotRead[], blocking[], gating[], pending[], waived[], ignoredDisabled[], baselined }`. `ignoredDisabled` lists the `validators.<key>: false` entries strict did not honor (keys only in the compact form).
 Each `unexamined` entry is `{ validator, name, verdict, cause, reason, howToConfigure, newIn, blocking, documents? }`.
-Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts?, documents?, howToConfigure? }`: `reason` is what the validator
-could not read, and `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
-`documents` lists the agent-instruction files Freshness did not examine while it examined others (the validator's own
-`unexaminedDocuments`): in `unexamined` when the review no longer covers the file or a root instruction file has no review
-record, which blocks; in `couldNotRead` for any other file with no recorded review (a last-reviewed marker alone may be its vendor's), which does not block. The compact form gives
-`documents` as a count.
-`cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`,
-`nothing-of-this-kind`, `history-unavailable` (a shallow checkout; listed under
-`couldNotRead`, never blocking) or `language-not-supported` (a document in a language
-without rules; listed under `couldNotRead` with `language`, one entry per validator,
-never blocking), or `null` when the validator could not observe its
-input (it is `inconclusive`, and `reason` is the gap). Only the first two,
-and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset
-of the validators, so it does not evaluate the rule and says so.
+Each `couldNotRead` entry is `{ validator, name, verdict, cause, reason, layouts?, documents?, howToConfigure? }`. `reason` is what the validator could not read. `layouts` (an unread layout only) lists what it does read. The compact form keeps the keys and a short reason.
+`documents` lists the agent-instruction files Freshness did not examine while it examined others (the validator's own `unexaminedDocuments`). A file is in `unexamined` when the review no longer covers it, or when a root instruction file has no review record. That blocks. A file is in `couldNotRead` when it is any other file with no recorded review (a last-reviewed marker alone may be its vendor's). That does not block. The compact form gives `documents` as a count.
+`cause` is one of `needs-declaration`, `needs-content`, `layout-not-recognized`, `nothing-of-this-kind`, `history-unavailable` or `language-not-supported`, or `null`. `history-unavailable` means a shallow checkout. It is listed under `couldNotRead` and never blocks. `language-not-supported` means a document in a language without rules. It is listed under `couldNotRead` with `language`, one entry per validator, and never blocks. `null` means the validator could not observe its input (it is `inconclusive`, and `reason` is the gap). Only the first two causes, and a validator that could not observe at all, are in `unexamined`. `--changed-only` runs a subset of the validators, so it does not evaluate the rule and says so.
 
-`asOf` (`"<major>.<minor>"`) holds a project at the strict set of that release (every validator is listed under `0.48`, so `"0.47"` keeps today's exit codes and prints the strict report beside them). A validator or gating code the release table lists under a later version is
-reported as pending and does not change the exit code. Without `asOf` every item
-applies, and one added in the running release or the one before it is labeled
-"new in vX.Y" when it fails.
+`asOf` (`"<major>.<minor>"`) holds a project at the strict set of that release. Every validator is listed under `0.48`, so `"0.47"` keeps today's exit codes and prints the strict report beside them. A validator or gating code the release table lists under a later version is reported as pending and does not change the exit code. Without `asOf` every item applies, and one added in the running release or the one before it is labeled "new in vX.Y" when it fails.
 
-Under `strict` every registered validator runs, whatever the profile's
-`validators` block or your own file says. A `"validators": { "<key>": false }`
-entry does not switch a validator off under `strict`: nearly every such entry
-was written by `docguard init` from a profile, not chosen by a person, and
-honoring it would exempt existing projects from the checks the default is meant
-to give them. Guard says in one line, on every run, which entries it did not
-honor. To switch a validator off on purpose, use a reasoned waiver
-(`<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`)
-or `"enforcement": "standard"`, under which the `validators` block works as it
-always has.
+Under `strict` every registered validator runs, whatever the profile's `validators` block or your own file says. A `"validators": { "<key>": false }` entry does not switch a validator off under `strict`. Nearly every such entry was written by `docguard init` from a profile, not chosen by a person. Honoring it would exempt existing projects from the checks the default is meant to give them. Guard says in one line, on every run, which entries it did not honor. To switch a validator off on purpose, use a reasoned waiver (`<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->`) or `"enforcement": "standard"`, under which the `validators` block works as it always has.
 
-`docguard init` writes no `enforcement` key by default; `docguard init
---enforcement strict|standard` writes it, and the interactive setup asks once
-and writes the key only for the non-default answer. `docguard upgrade` reports,
-read-only and without writing, what the default changes for the project: the
-validators that now fail with cause and fix, the items only reported, and the
-three ways forward (fix or declare, waive with reason, owner and expiry, or set
-`"enforcement": "standard"`).
+`docguard init` writes no `enforcement` key by default. `docguard init --enforcement strict|standard` writes it. The interactive setup asks once and writes the key only for the non-default answer. `docguard upgrade` reports, read-only and without writing, what the default changes for the project. It lists the validators that now fail with cause and fix, and the items only reported. It also lists the three ways forward (fix or declare, waive with reason, owner and expiry, or set `"enforcement": "standard"`).
 
 `requiredSections` adds sections a document must carry beyond the canonical
 ones STR003 checks, keyed by file. A bare name such as `SECURITY.md` means the
@@ -202,7 +135,7 @@ See [Profiles](./profiles.md) for details.
 | Validator | Default | What It Checks |
 |-----------|---------|----------------|
 | `structure` | `true` | `docs-canonical/` exists, required files present (STR001, STR002, STR004, STR005) |
-| `docSections` | follows `structure` | Each canonical doc has its expected sections (STR003). Reported as its own result, key `docSections` with `parent: "structure"`; until a config names `docSections`, `validators.structure`, `severity.structure` and a `structure` N/A marker apply to it as before |
+| `docSections` | follows `structure` | Each canonical doc has its expected sections (STR003). DocGuard reports it as its own result, with key `docSections` and `parent: "structure"`. Until a config names `docSections`, `validators.structure`, `severity.structure` and a `structure` N/A marker apply to it as before |
 | `docsSync` | `true` | AGENTS.md references DocGuard workflow |
 | `drift` | `true` | DRIFT-LOG.md exists and has entries when code deviates |
 | `changelog` | `true` | CHANGELOG.md has [Unreleased] section, version entries |
@@ -212,16 +145,13 @@ See [Profiles](./profiles.md) for details.
 | `environment` | `true` | Setup steps, env vars, prerequisites, .env.example |
 | `freshness` | varies | Docs updated recently relative to code changes (git-based) |
 | `suppressions` | `true` | `.docguardignore` entries that expired (IGN001), cannot be read (IGN003), or have no reason while `suppressions.requireReason` is set (IGN002) |
-| `aidlc` | `true` | AWS AI-DLC records after the workflow: traceability targets that no longer exist, gaps left in completed stages, unit deliverables removed later, unreadable records (AID001–AID004, informational by default) |
+| `aidlc` | `true` | AWS AI-DLC records after the workflow. It reports traceability targets that no longer exist, gaps left in completed stages, and unit deliverables removed later. It also reports unreadable records (AID001–AID004, informational by default) |
 | `decisionRecords` | `true` | ADR status, supersession links and index rows, and unanswered Spec Kit clarifications or `[Answer]:` tags (DEC001–DEC006, informational by default) |
-| `requirementAnchors` | `true` | Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed, reviewed links whose tag is gone (ANC003), an unreadable anchor lock (ANC005, error), tags citing an undeclared (ANC007) or retired (ANC008) requirement, an unreadable lock, and files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
+| `requirementAnchors` | `true` | Reports these findings. Reviewed code→requirement links whose code (ANC001) or requirement (ANC002) changed. Reviewed links whose tag is gone (ANC003). An unreadable anchor lock (ANC005, error). Tags that cite an undeclared (ANC007) or retired (ANC008) requirement. Files read below their exact tier (ANC010). Not applicable until `.docguard-anchor-lock.jsonl` exists or `anchors.enabled` is set |
 
 ## Severity overrides
 
-`severity.<validator>` changes a validator's **exit-code weight** without hiding
-anything from display: `"high"` promotes its warnings to blocking (CI fails),
-`"low"` demotes them (shown, but never fail the build). Valid values:
-`high | medium | low`. To silence a validator entirely, use `validators.<key>: false`.
+`severity.<validator>` changes a validator's **exit-code weight** without hiding anything from display. `"high"` promotes its warnings to blocking (CI fails). `"low"` demotes them (shown, but never fail the build). Valid values: `high | medium | low`. To silence a validator entirely, use `validators.<key>: false`.
 
 `findingSeverity.<CODE>` applies the same enforcement levels to one stable
 finding code and takes precedence over the validator setting. This is the
@@ -241,11 +171,7 @@ yours follow another convention, list globs for them:
 { "testPatterns": ["test_*.mjs", "tests/**/test_*.py"] }
 ```
 
-`testPattern` (one string) is the older form and is merged into the list. The
-patterns apply to both sides of Test Files drift (DDF002): files on disk that
-match are tests, and a backticked name in TEST-SPEC.md that matches is a
-documented test. A bare file name such as `test_bot.mjs` is compared with the
-pattern's last segment, so `tests/**/test_*.py` accepts `test_api.py`.
+`testPattern` (one string) is the older form and is merged into the list. The patterns apply to both sides of Test Files drift (DDF002). Files on disk that match are tests. A backticked name in TEST-SPEC.md that matches is a documented test. A bare file name such as `test_bot.mjs` is compared with the pattern's last segment, so `tests/**/test_*.py` accepts `test_api.py`.
 
 ## Collections — verify documented counts against code
 
@@ -267,16 +193,7 @@ built-in DocGuard meaning. An unresolvable glob is skipped, never treated as 0.
 }
 ```
 
-`docs.language` is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag.
-Absent (or `"en"`) means English, byte for byte as before. `pt` and `es` ship
-built-in headings and words, matched by primary subtag (`pt-BR`, `pt-PT`, `es-MX`);
-any other valid tag is accepted and has no built-in set, so a document that
-carries no marker and no alias for a required heading is reported as not read
-(`language-not-supported`), never as missing. `docs.labelAliases` is flat, keyed
-by label id; each value is a list of strings that extends the built-in set and
-never replaces it. An invalid tag or key is reported and ignored. The ids, the
-`<!-- docguard:heading <id> -->` marker, what is skipped and why are in
-[Documents in other languages](languages.md).
+`docs.language` is a [BCP 47](https://www.rfc-editor.org/info/bcp47) tag. Absent (or `"en"`) means English, byte for byte as before. `pt` and `es` ship built-in headings and words, matched by primary subtag (`pt-BR`, `pt-PT`, `es-MX`). Any other valid tag is accepted and has no built-in set. So a document that carries no marker and no alias for a required heading is reported as not read (`language-not-supported`), never as missing. `docs.labelAliases` is flat, keyed by label id. Each value is a list of strings that extends the built-in set and never replaces it. An invalid tag or key is reported and ignored. The ids, the `<!-- docguard:heading <id> -->` marker, what is skipped and why are in [Documents in other languages](languages.md).
 
 ## Documentation homes — `docs.dirs`
 
@@ -288,10 +205,7 @@ a conventional dir, list it in `.docguardignore`.
 
 ## Excluding paths — `.docguardignore`
 
-`.docguardignore`, at the project root, lists paths no validator should read.
-One pattern per line, gitignore-style: `#` at the start of a line is a comment,
-blank lines are skipped, and a pattern matches at a path-segment boundary at
-any depth (`fixtures/` excludes `fixtures/` and `packages/a/fixtures/`).
+`.docguardignore`, at the project root, lists paths no validator should read. One pattern per line, gitignore-style. `#` at the start of a line is a comment, and blank lines are skipped. A pattern matches at a path-segment boundary at any depth (`fixtures/` excludes `fixtures/` and `packages/a/fixtures/`).
 
 Pattern syntax, shared by `.docguardignore` and every `.docguard.json` array
 below:
@@ -309,14 +223,7 @@ below:
 | Trailing `/` | Dropped: `dir/` also excludes a file named `dir` |
 | Anything else | Literal, including `( ) + ^ $ \| { } .` (no `{a,b}` alternation) |
 
-Unlike gitignore, a slash in the middle does not anchor (`docs/old` also
-excludes `site/docs/old`), and a leading `!` is a literal character: negation is
-not supported. Before v0.44, `?`, `[`, `(`, `+`, `|` and the other regular
-expression characters were passed through unescaped (`a|b` was read as an
-alternation and excluded unrelated paths, and an unclosed `[` made the checks
-that read the ignore list fail with a regular-expression error), and `**/x` did
-not match a top-level `x`. A pattern without those
-characters and without `**/` matches exactly what it matched before.
+Unlike gitignore, a slash in the middle does not anchor (`docs/old` also excludes `site/docs/old`). A leading `!` is a literal character: negation is not supported. Before v0.44, `?`, `[`, `(`, `+`, `|` and the other regular expression characters were passed through unescaped. So `a|b` was read as an alternation and excluded unrelated paths. An unclosed `[` made the checks that read the ignore list fail with a regular-expression error. And `**/x` did not match a top-level `x`. A pattern without those characters and without `**/` matches exactly what it matched before.
 
 An entry can say why it exists and when it ends:
 
@@ -332,10 +239,7 @@ docs/archive/
 - **Expiry.** `expires:YYYY-MM-DD` as the last word before the reason. The
   entry applies through the end of that day (UTC). From the next day it
   excludes nothing, and guard reports IGN001 so you can renew or delete it.
-- **Unreadable expiry.** A date that is not a real `YYYY-MM-DD` day (for
-  example `expires:2026-02-30`), or a line with an expiry or reason and no
-  pattern, excludes nothing and is reported as IGN003: DocGuard cannot tell
-  when it should end.
+- **Unreadable expiry.** Two cases exclude nothing. One is a date that is not a real `YYYY-MM-DD` day (for example `expires:2026-02-30`). The other is a line with an expiry or reason and no pattern. DocGuard reports both as IGN003, because it cannot tell when the exclusion should end.
 
 A line with no whitespace-then-`#` and no trailing `expires:` word means exactly
 what it meant before v0.44. One that has them was read before as a pattern
@@ -350,14 +254,9 @@ To require a reason on every entry:
 Guard then reports IGN002 for each entry without one. The entry still applies.
 Raise it to blocking with `"findingSeverity": { "IGN002": "high" }`.
 
-`.docguard.json` has its own arrays: `ignore` (every validator; merged with
-`.docguardignore` at load), `securityIgnore` (Security only) and `todoIgnore`
-(TODO-Tracking only), and `documentLifecycle` (paths the Document-Lifecycle
-check skips when it looks for terminal-status documents and completed specs).
-They hold plain patterns, or objects that carry waiver metadata (spec 084):
+`.docguard.json` has its own arrays. `ignore` applies to every validator (merged with `.docguardignore` at load). `securityIgnore` applies to Security only, and `todoIgnore` to TODO-Tracking only. `documentLifecycle` lists paths the Document-Lifecycle check skips when it looks for terminal-status documents and completed specs. They hold plain patterns, or objects that carry waiver metadata (spec 084):
 `{ "pattern": "vendor/**", "reason": "third-party", "owner": "@ops", "expires": "2027-01-01" }`.
-An expired object entry applies to nothing. `suppressions.requireReason` does
-not apply to them.
+An expired object entry applies to nothing. `suppressions.requireReason` does not apply to them.
 
 Every other kind of suppression can carry the same metadata at the end of its
 reason: `// docguard:ignore SEC001 — rotating key in #812 owner:@ana expires:2026-12-31`,
@@ -375,10 +274,7 @@ IGN005 for one that expires later than the window, or never. With either set,
 guard also reads inline pragmas across the project to report expired ones
 (IGN001); that full read is skipped otherwise. Baseline fingerprints are exempt.
 
-`docguard ignore` lists every suppression the project has, including inline
-pragmas, N/A markers and the baseline, with its reason and state;
-`docguard ignore --format claimspec` exports the reasoned `.docguardignore`
-entries as a claimspec `ignore` document ([commands](commands.md#docguard-ignore)).
+`docguard ignore` lists every suppression the project has, including inline pragmas, N/A markers and the baseline, with its reason and state. `docguard ignore --format claimspec` exports the reasoned `.docguardignore` entries as a claimspec `ignore` document ([commands](commands.md#docguard-ignore)).
 
 ### Directories skipped without configuration
 
@@ -393,11 +289,7 @@ at any depth, with nothing in `.docguardignore` (`DEFAULT_IGNORE_DIRS` in
   `.cache`;
 - version control: `.git`, `.jj`, `.hg`, `.svn`.
 
-A `bin` directory is skipped only when the directory holding it also holds a
-.NET project file (`*.csproj`, `*.fsproj`, `*.vbproj`): there it is build and
-publish output. Every other `bin/` is read, such as a Node CLI's `bin/cli.js`,
-Ruby binstubs or shell scripts. To skip a directory this list does not name,
-add it to `.docguardignore`.
+A `bin` directory is skipped only when the directory holding it also holds a .NET project file (`*.csproj`, `*.fsproj`, `*.vbproj`). There it is build and publish output. Every other `bin/` is read, such as a Node CLI's `bin/cli.js`, Ruby binstubs or shell scripts. To skip a directory this list does not name, add it to `.docguardignore`.
 
 ## Adoption baseline — `baseline`
 
@@ -431,7 +323,7 @@ Two ways to turn a validator off, for two different intents:
 | Operational toggle (CI speed, not relevant *right now*) | `.docguard.json` → `"validators": { "testSpec": false }` | silent — disabled |
 | **Intentional non-applicability** (POC with no tests, library with no auth) | inline marker in a canonical doc or `AGENTS.md`:<br>`<!-- docguard:validator testSpec n/a — POC, no automated tests yet -->` | `➖ Test-Spec [N/A] (declared N/A: …)` — visible, git-tracked |
 
-The marker is preferred when the validator genuinely does not apply: the rationale lives next to the declaration, travels with the repo, and shows up honestly as N/A rather than a hidden skip or a fake green check. The key is the validator key from the table above (case/separator tolerant — `test-spec` works too); a mistyped key is reported as a warning rather than silently ignored. A no-tests POC typically marks both `testSpec` and `traceability` N/A.
+Use the marker when the validator does not apply. The reason stays next to the declaration, travels with the repo, and shows as N/A instead of a hidden skip or a fake green check. The key is the validator key from the table above (case and separator do not matter, so `test-spec` works too). DocGuard reports a mistyped key as a warning and does not ignore it silently. A POC with no tests usually marks both `testSpec` and `traceability` N/A.
 
 ## Spec-first gate — `specFirst`
 
@@ -475,19 +367,11 @@ reported.
 
 ## File kinds — `fileKinds`
 
-Some files in a repository are not the project's own work: a scaffolder's
-`templates/<app>/files/AGENTS.md` is a form written into other repositories, a
-`fixtures/` project is test data, `vendor/` is someone else's code. DocGuard
-asks one question, "is this file the project's own", and answers from a closed
-list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`,
-`backup` and `nested-checkout`.
+Some files in a repository are not the project's own work. A scaffolder's `templates/<app>/files/AGENTS.md` is a form written into other repositories. A `fixtures/` project is test data. `vendor/` is someone else's code. DocGuard asks one question, "is this file the project's own". It answers from a closed list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`, `backup` and `nested-checkout`.
 
 - **Unknown is own.** Classifying a file as a copy removes it from checks, so
   a file nothing recognizes stays the project's.
-- **Directory names** match as whole path segments, in any case
-  (`Templates/`, `EXAMPLES/`), and only before the first segment that starts
-  with `.`: `.claude/skills/templates/` holds files the harness loads. A package
-  segment never counts (`src/main/java/com/example`).
+- **Directory names** match as whole path segments, in any case (`Templates/`, `EXAMPLES/`). They match only before the first segment that starts with `.`: `.claude/skills/templates/` holds files the harness loads. A package segment never counts (`src/main/java/com/example`).
   - template: `templates`, `template`, `_templates`, `__templates__`,
     `scaffold(s)`, `boilerplate(s)`, `starter-kit(s)`, `skeleton(s)`
   - fixture: `fixtures`, `__fixtures__`, `testdata`, `__mocks__`, `mocks`,
@@ -498,26 +382,12 @@ list of kinds: `own`, `template`, `fixture`, `test`, `vendored`, `generated`,
     (routes, Security's test-path context) still reads them as product
   - vendored: `node_modules`, `vendor`, `vendored`, `third_party`; generated:
     `dist`, `build`, `out`, `coverage`, `target`, `generated`
-- **The folder that holds the file does not count** for a file that describes
-  its own folder, an agent-instruction file: `templates/AGENTS.md` governs
-  `templates/`, and `packages/templates/AGENTS.md` governs a package.
-- **Backups** apply to documents only (`ARCHITECTURE copy.md`,
-  `ARCHITECTURE-old.md`, `*.md.bak`, or a document below `archive`, `backup`,
-  `old` or `deprecated` inside `docs/`), never to code. A backup is read as no
-  document: it is not a canonical document, Freshness does not review it,
-  cross-references are not read from it, `docguard llms` does not list it, and
-  it never stands in for a missing role document. A backup-named document in a
-  documentation directory is **STR008**; a document in an archive folder is
-  left out without a warning.
+- **The folder that holds the file does not count** for a file that describes its own folder, an agent-instruction file. `templates/AGENTS.md` governs `templates/`, and `packages/templates/AGENTS.md` governs a package.
+- **Backups** apply to documents only (`ARCHITECTURE copy.md`, `ARCHITECTURE-old.md`, `*.md.bak`, or a document below `archive`, `backup`, `old` or `deprecated` inside `docs/`), never to code. A backup is read as no document. It is not a canonical document. Freshness does not review it. Cross-references are not read from it. `docguard llms` does not list it. It never stands in for a missing role document. A backup-named document in a documentation directory is **STR008**. A document in an archive folder is left out without a warning.
 - **Nested checkouts.** A directory below the root that holds its own `.git`
   is another project's files and is never walked. Security is the one reader
   that still scans one: a secret in a copy is a leaked secret.
-- **Where each reader asks.** TODO tracking skips templates, fixtures and
-  build output (`out/`, `target/`) like the other walkers; reference-existence
-  does not let a template, fixture, vendored or generated copy define the
-  symbol a document names; the canonical-layout detection and the role hint
-  never propose a document under a template, fixture, test, vendored,
-  generated, backup or nested-checkout path.
+- **Where each reader asks.** TODO tracking skips templates, fixtures and build output (`out/`, `target/`) like the other walkers. Reference-existence does not let a template, fixture, vendored or generated copy define the symbol a document names. The canonical-layout detection and the role hint never propose a document under a template, fixture, test, vendored, generated, backup or nested-checkout path.
 
 `fileKinds.own` lists glob patterns for files that are the project's own
 wherever they sit, such as a real package that happens to be called
@@ -527,39 +397,15 @@ wherever they sit, such as a real package that happens to be called
 { "fileKinds": { "own": ["examples/billing-sdk/**"] } }
 ```
 
-`.docguardignore` and `ignore` still win and remain the way to exclude a file.
-Nothing is dropped silently: `guard --format json` carries `files.kinds` (a
-count per kind, and up to 20 paths per kind of instruction files and backup
-documents left out as copies), and the text output prints one line when any were left out. PSR006
-warns when a template or fixture copy shares a governing instruction file's
-name; the instruction-chain budget (STR004) does not count a copy.
+`.docguardignore` and `ignore` still win and remain the way to exclude a file. Nothing is dropped silently. `guard --format json` carries `files.kinds` (a count per kind, and up to 20 paths per kind of instruction files and backup documents left out as copies). The text output prints one line when any were left out. PSR006 warns when a template or fixture copy shares a governing instruction file's name. The instruction-chain budget (STR004) does not count a copy.
 
 ### Mirrors
 
-Some files are copies of one thing for different agent harnesses: the root
-instruction files `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` and
-`.github/copilot-instructions.md` (the same set inside one nested folder is
-compared only within that folder), and a skill or command at the same relative
-path under different agent roots (`.agent/`, `.agents/`, `.claude/`, `.codex/`,
-`.gemini/`, `.github/`, `.specify/extensions/<ext>/`). A file with the same name
-in another folder is a different document, never a mirror.
+Some files are copies of one thing for different agent harnesses. They are the root instruction files `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` and `.github/copilot-instructions.md` (the same set inside one nested folder is compared only within that folder). They are also a skill or command at the same relative path under different agent roots (`.agent/`, `.agents/`, `.claude/`, `.codex/`, `.gemini/`, `.github/`, `.specify/extensions/<ext>/`). A file with the same name in another folder is a different document, never a mirror.
 
-- **Identical mirrors are one subject.** A finding a check would raise on each
-  copy is raised once, on the first path (`AGENTS.md`, then `CLAUDE.md`,
-  `GEMINI.md`, `.github/copilot-instructions.md`; for skills the lexically first
-  root), and names every path: `mirrors` on the finding in `--format json`, an
-  `also in:` line in text. What each harness loads, and the budgets that count
-  it, do not change. A pointer file (`@AGENTS.md`) and a symlink are not mirrors.
-- **PSR007** (warn) fires when a skill or command copy differs from its mirror,
-  and names both paths, how many lines differ and which was committed more
-  recently (or says it cannot tell). Two Spec Kit installs for different
-  harnesses differ by design and are not reported; PSR005 checks each against its
-  install manifest.
-- **PSR008** (warn) fires when two root instruction files share at least 80% of
-  their non-blank lines but are not identical, so one can say `npm` where the
-  other says `yarn`. Pointers and files written by `docguard agents --sync` are
-  not compared (`docguard agents --check` does that). Files that are simply
-  different documents share few lines and are never reported.
+- **Identical mirrors are one subject.** A finding a check would raise on each copy is raised once, on the first path. The order is `AGENTS.md`, then `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, and for skills the lexically first root. It names every path: `mirrors` on the finding in `--format json`, an `also in:` line in text. What each harness loads, and the budgets that count it, do not change. A pointer file (`@AGENTS.md`) and a symlink are not mirrors.
+- **PSR007** (warn) fires when a skill or command copy differs from its mirror. It names both paths, how many lines differ and which was committed more recently (or says it cannot tell). Two Spec Kit installs for different harnesses differ by design and are not reported. PSR005 checks each against its install manifest.
+- **PSR008** (warn) fires when two root instruction files share at least 80% of their non-blank lines but are not identical. So one can say `npm` where the other says `yarn`. Pointers and files written by `docguard agents --sync` are not compared (`docguard agents --check` does that). Files that are simply different documents share few lines and are never reported.
 
 `guard --format json` carries `files.mirrors` (groups, identical sets and the
 drift list). GEMINI.md is read for dead pointers and `@` imports like the other
@@ -631,13 +477,13 @@ committed `.docguard-anchor-lock.jsonl` or this setting:
 |---|---|---|
 | `anchors.enabled` | `false` | Report ANC findings in guard before the project has an anchor lock |
 | `anchors.fanOutLimit` | `10` | Most importing files `docguard anchors` lists as ripple for one changed anchor before it collapses them into a count |
-| `anchors.failOn` | `reviewed-exact` | Which suspect (ANC001) and lost (ANC003) links fail guard. `reviewed-exact` fails only links someone accepted as reviewed (never baselined ones), at symbol, statement or route scope, read at an exact tier (Babel, python3 `ast`). File-scope and pattern-tier links warn, because they change on edits that leave the requirement alone. `none` makes every anchor finding a warning. A requirement-text change (ANC002) never fails. The default comes from a replay of 150 commits of this repository, in which no exact-tier link was flagged by a formatting-only commit |
+| `anchors.failOn` | `reviewed-exact` | Which suspect (ANC001) and lost (ANC003) links fail guard. `reviewed-exact` fails only links that someone accepted as reviewed (never baselined ones). They must be at symbol, statement or route scope, read at an exact tier (Babel, python3 `ast`). File-scope and pattern-tier links warn, because they change on edits that leave the requirement alone. `none` makes every anchor finding a warning. A requirement-text change (ANC002) never fails. The default comes from a replay of 150 commits of this repository. In that replay, no commit that only changed formatting flagged an exact-tier link |
 | `anchors.import` | `[]` | Also read `strictdoc` `@relation(...)` and `openfasttrace` `[impl->dsn~name~3]` tags as anchors. Read-only: DocGuard never writes them |
 | `anchors.importMap` | `{}` | Foreign ID → requirement: `"strictdoc:REQ-1": "acme.billing#FR-001"`, or `"oft:dsn~refund": { "requirement": "acme.billing#FR-002", "revision": 2 }` so an OpenFastTrace tag behind revision 2 is reported outdated (ANC001). An unmapped ID is ANC007 |
 | `anchors.orphanPaths` | the `scope.sourcePaths` of current specs | Where `docguard anchors --orphans` looks for untagged symbols: globs (`src/**/*.go`), files or directories. Nothing is listed when neither is set |
-| `anchors.treeSitter.artifacts` | unset | The opt-in tree-sitter tier. Set `runtime` and `runtimeWasm` to the `web-tree-sitter` files, and set `grammars` to one `.wasm` per language (`go`, `rust`, `java`, `csharp`, `php`, `ruby`, `c`, `cpp`). Each file must match the sha256 that `schemas/docguard-anchor-treesitter.manifest.json` pins, the versions vetted in `tools/anchor-oracle/VETTING.md`. A missing or mismatched file is ANC010, and the pattern tier answers. Never auto-detected |
-| `anchors.testguard.evidence` | `.testguard/evidence.json` | The saved TestGuard evidence `docguard anchors` reads to mark the tests of a changed requirement re-verified. Project-relative; read through the same no-symlink, inside-the-project reader as other evidence. DocGuard never runs TestGuard or a test |
-| `anchors.testguard.claims` | `testguard.claims.json` | The TestGuard claims file. A claim counts only while its statement, source and fault set still match what was probed. When the evidence says its claims came from outside the repository and this key is not set, no claims file is read (not even the default) and those two comparisons are reported as not checked; set it to a local copy to compare |
+| `anchors.treeSitter.artifacts` | unset | The opt-in tree-sitter tier. Set `runtime` and `runtimeWasm` to the `web-tree-sitter` files. Set `grammars` to one `.wasm` per language (`go`, `rust`, `java`, `csharp`, `php`, `ruby`, `c`, `cpp`). Each file must match the sha256 that `schemas/docguard-anchor-treesitter.manifest.json` pins, which are the versions vetted in `tools/anchor-oracle/VETTING.md`. A missing or mismatched file is ANC010, and the pattern tier answers. DocGuard never detects this tier automatically |
+| `anchors.testguard.evidence` | `.testguard/evidence.json` | The saved TestGuard evidence that `docguard anchors` reads to mark the tests of a changed requirement as re-verified. The path is project-relative. DocGuard reads it with the same reader as other evidence, which rejects symlinks and paths outside the project. DocGuard never runs TestGuard or a test |
+| `anchors.testguard.claims` | `testguard.claims.json` | The TestGuard claims file. A claim counts only while its statement, source and fault set still match what was probed. Suppose the evidence says its claims came from outside the repository, and this key is not set. Then DocGuard reads no claims file (not even the default) and reports those two comparisons as not checked. Set the key to a local copy to compare |
 | `validators.requirementAnchors` | `true` | Set `false` to turn the Requirement-Anchors validator off |
 
 See [`docguard anchors`](commands.md#docguard-anchors).
@@ -662,9 +508,7 @@ the owner, and the Doc-Ownership validator (OWN001–OWN007) keeps the map true.
 }
 ```
 
-- `entries[].paths`: files, directories or globs. Each file has at most one
-  owner: an exact path beats any glob, a longer literal directory prefix beats
-  a shorter one, and any other overlap is a tie (OWN002).
+- `entries[].paths`: files, directories or globs. Each file has at most one owner. An exact path beats any glob. A longer literal directory prefix beats a shorter one. Any other overlap is a tie (OWN002).
 - `entries[].section`: a `docguard:section` id or a heading anchor in `doc`.
 - `roots`: directories whose source code must be owned (OWN001). By default,
   the top-level source modules, skipping test, fixture and example paths. A
@@ -701,11 +545,7 @@ The `entity-diagram` section has no options.
 
 ## Symbol map budget — `memory.symbolMap`
 
-`memory --pack --symbols` stops the symbol map at `memory.symbolMap.maxBytes`
-bytes (default 4096, between 256 and 16384), at a whole line, and states how
-many ranked files it left out. About 4 bytes stand for one token. The section
-is opt-in, and the agent-context benchmark kept it that way
-(`benchmarks/agent-context/results/README-v3.md`).
+`memory --pack --symbols` stops the symbol map at `memory.symbolMap.maxBytes` bytes (default 4096, between 256 and 16384), at a whole line. It states how many ranked files it left out. About 4 bytes stand for one token. The section is opt-in, and the agent-context benchmark kept it that way (`benchmarks/agent-context/results/README-v3.md`).
 
 ```json
 { "memory": { "symbolMap": { "maxBytes": 4096 } } }
@@ -746,7 +586,7 @@ tooling), the one that names a framework wins.
 
 ## Existing documentation layouts
 
-Use explicit document roles to validate Markdown files in an existing layout. A mapping replaces the default path for that role, makes the mapped file required, and enrolls it in the canonical inventory. Missing files and content defects remain findings. No project names or framework-specific paths are required.
+Use explicit document roles to check Markdown files in an existing layout. A mapping replaces the default path for that role and makes the mapped file required. It also adds the file to the canonical inventory. Missing files and content defects stay findings. You do not need project names or framework-specific paths.
 
 ```json
 {
@@ -761,7 +601,7 @@ Use explicit document roles to validate Markdown files in an existing layout. A 
 }
 ```
 
-Supported roles are architecture, dataModel, security, testSpec, environment, apiReference, and requirements. Paths must name Markdown files within the project; private directories, parent traversal, absolute paths, and symlink destinations are rejected. Several roles may reference one document. Each role's content checks still apply; a mapping is not a correctness attestation. Default roles remain unchanged unless explicitly mapped.
+Supported roles are architecture, dataModel, security, testSpec, environment, apiReference, and requirements. Paths must name Markdown files inside the project. DocGuard rejects private directories, parent traversal, absolute paths, and symlink destinations. Several roles can point to one document. Each role's content checks still apply, and a mapping does not prove the content is correct. Default roles stay the same unless you map them.
 
 Mapped paths use an explicit ownership contract for writes:
 
@@ -773,11 +613,11 @@ Mapped paths use an explicit ownership contract for writes:
 
 Broad legacy scaffolding such as `diagnose --auto` remains unavailable for a mapped layout because it cannot select an operation-specific owned target safely. Read-only plans identify mapped destinations without requiring ownership markers.
 
-The docs.dirs setting extends document inventory and explicitly opts additional directories into freshness review. Inventory membership does not mean every detector checks every file. Semantic extraction covers canonical Markdown, explicitly mapped Markdown roles, README, and AGENTS within its safety and size limits; other prose remains unverified.
+The docs.dirs setting adds directories to the document inventory and opts them into freshness review. Being in the inventory does not mean every detector checks every file. Semantic extraction covers canonical Markdown, explicitly mapped Markdown roles, README, and AGENTS, within its safety and size limits. Other prose stays unverified.
 
 ## Review signals and historical material
 
-Freshness findings describe repository-history review signals with low confidence. They do not establish semantic drift or instruct automatic rewriting. After reviewing the relevant intent and implementation, record a review date or propose the appropriate code/document change.
+Freshness findings are low-confidence signals from repository history. They do not prove semantic drift, and they do not tell you to rewrite anything automatically. Review the intent and the implementation. Then record a review date or propose the code or document change.
 
 Use an explicit historical, superseded, or deprecated status when a document records past decisions rather than current instructions:
 
@@ -785,36 +625,32 @@ Use an explicit historical, superseded, or deprecated status when a document rec
 <!-- docguard:status historical -->
 ```
 
-These statuses skip currentness assertions; they do not hide structural or other applicable findings. A filename containing ADR does not automatically exempt an active decision. Existing explicit validator/section exemptions continue to require reasons.
+These statuses skip currentness assertions. They do not hide structural or other applicable findings. A filename that contains ADR does not automatically exempt an active decision. Explicit validator and section exemptions still need reasons.
 
 ## Understanding check coverage
 
-Guard JSON includes checkCoverage and an applicability record per validator. States distinguish checked, partial, disabled, not-applicable, missing-prerequisite, unsupported, no-matches, and error. A passing gate means the selected policy passed; it does not mean unsupported languages or unmatched inputs were examined. CI and reports preserve this disclosure. Python architecture analysis uses the installed Python interpreter's AST without importing project modules. It resolves unique repository-local modules in regular flat and `src/` packages plus explicit relative imports. Dynamic imports, runtime `sys.path` changes, parser failure or absence, and ambiguous modules remain partial or unsupported coverage while supported edges and findings are retained.
+Guard JSON includes checkCoverage and an applicability record per validator. States distinguish checked, partial, disabled, not-applicable, missing-prerequisite, unsupported, no-matches, and error. A passing gate means the selected policy passed. It does not mean DocGuard examined unsupported languages or unmatched inputs. CI and reports keep this disclosure. Python architecture analysis uses the AST of the installed Python interpreter and does not import project modules. It resolves unique repository-local modules in regular flat and `src/` packages, plus explicit relative imports. Dynamic imports, runtime `sys.path` changes, parser failure or absence, and ambiguous modules stay partial or unsupported coverage. DocGuard keeps the supported edges and findings.
 
-Wrangler configuration supplies static evidence for Worker classification and untyped official handler arguments; DocGuard never executes configuration or application code. With the optional Babel parser, environment extraction recognizes module-handler `env`, exported Pages `onRequest*` `context.env`, `this.env` on classes extending an entrypoint imported from `cloudflare:workers`, and `env` imported from that module. Lexical aliases are followed and shadows are excluded. Computed non-literal keys, indirect exports, user-defined lookalike classes, and other runtimes remain outside the bounded analysis. The fallback covers ordinary handler `env` scopes and reports AST-only forms as partial coverage.
+Wrangler configuration gives static evidence for Worker classification and untyped official handler arguments. DocGuard never runs configuration or application code. With the optional Babel parser, environment extraction recognizes these forms. They are module-handler `env`, exported Pages `onRequest*` `context.env`, `this.env` on classes that extend an entrypoint imported from `cloudflare:workers`, and `env` imported from that module. It follows lexical aliases and excludes shadows. Computed non-literal keys, indirect exports, user-defined lookalike classes, and other runtimes stay outside this bounded analysis. The fallback covers ordinary handler `env` scopes and reports AST-only forms as partial coverage.
 
 ### Evidence boundaries in documentation and schema scans
 
-Documentation-coverage filename checks search supported Markdown in conventional and explicitly configured homes, mapped role files, and supported extension metadata. Configured homes extend the defaults. Excluded files, private paths and symlinks cannot satisfy a documentation reference. This search does not establish absence of an explanation in external sites, RST, or unsupported formats.
+Documentation-coverage filename checks search supported Markdown in conventional and explicitly configured homes, mapped role files, and supported extension metadata. Configured homes add to the defaults. Excluded files, private paths and symlinks cannot satisfy a documentation reference. The search does not prove that an explanation is absent from external sites, RST, or unsupported formats.
 
-A parsed direct file-read/write call supplies stronger path evidence than a path construction or existence check. Ambiguous paths remain low-confidence review signals; a directory name alone does not establish a configuration file. The bounded detector does not resolve arbitrary import aliases or dynamic paths. Schema synchronization applies source exclusions and deduplicates overlapping roots by source file, preserving models in distinct files even when names match.
+A parsed direct file-read or file-write call gives stronger path evidence than a path construction or an existence check. Ambiguous paths stay low-confidence review signals. A directory name alone does not prove a configuration file. The bounded detector does not resolve arbitrary import aliases or dynamic paths. Schema synchronization applies source exclusions. It deduplicates overlapping roots by source file and keeps models in distinct files, even when the names match.
 
-Feature requirement scoring recognizes eligible test annotations and labels using the validator parser. An arbitrary fixture string is not linkage evidence, and a recognized link is not proof of behavioral coverage. Duplicate requirement IDs across separate specifications remain a known scoping limitation.
+Feature requirement scoring recognizes eligible test annotations and labels with the validator parser. An arbitrary fixture string is not linkage evidence. A recognized link does not prove behavioral coverage. Duplicate requirement IDs across separate specs are a known scoping limitation.
 
 
 ### Requirement identity across documents
 
-Requirement definitions are identified by repository-relative document path plus ID. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one document. When features reuse an ID, qualify the declaration: `@req specs/payments/spec.md#FR-001`. The same spelling works in a test label. Use forward slashes; an optional leading `./` is accepted. Qualifiers are exact repository-relative paths, not paths relative to the test file.
+DocGuard identifies a requirement definition by its repository-relative document path plus its ID. A bare test annotation such as `@req FR-001` earns linkage credit only when that ID is defined in one document. When features reuse an ID, qualify the declaration: `@req specs/payments/spec.md#FR-001`. The same spelling works in a test label. Use forward slashes. An optional leading `./` is accepted. Qualifiers are exact repository-relative paths, not paths relative to the test file.
 
-Validation and `trace --features` share definition parsing and reference resolution. A qualified reference credits only its target document. Ambiguous bare references credit neither feature and produce a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Repeated mentions within one document do not create additional identities. Linkage remains evidence of a declaration, not proof of behavioral correctness; lifecycle and arbitrary verification-link semantics are separate concerns.
+Validation and `trace --features` share definition parsing and reference resolution. A qualified reference credits only its target document. An ambiguous bare reference credits neither feature and produces a review finding for each unresolved definition. A wrong qualifier is an orphan reference and never falls back to a bare match. Repeated mentions within one document do not create extra identities. Linkage is evidence of a declaration, not proof of correct behavior. Lifecycle and arbitrary verification-link semantics are separate concerns.
 
 ## Version-age note — `DOCGUARD_NO_UPDATE_HINT`
 
-When the installed DocGuard was released more than 14 days ago, guard's text
-output, the MCP server's `initialize` instructions and the context pack say
-so, and suggest `docguard upgrade` to check npm. DocGuard reads its own
-release date from the `CHANGELOG.md` it ships with: the note makes no network
-call and never claims a newer version exists. The threshold is fixed.
+When the installed DocGuard was released more than 14 days ago, guard's text output, the MCP server's `initialize` instructions and the context pack say so. They also suggest `docguard upgrade` to check npm. DocGuard reads its own release date from the `CHANGELOG.md` it ships with. The note makes no network call and never claims a newer version exists. The threshold is fixed.
 
 It is silent when the date cannot be read for certain, in a DocGuard source
 checkout, and in guard's text output when `CI` is set. Machine outputs (JSON,
