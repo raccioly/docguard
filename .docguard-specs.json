@@ -9843,7 +9843,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "58aed35af17d9744395a7b76b470d70dd70bc7de",
+          "lastReviewedRevision": "fa412aab8d660957b18405eed33a6311ec38d3d1",
           "outcomes": [
             {
               "revision": "7db0ae5fa8809ddbd40c6b23d69a1d4ca5ae06b4",
@@ -9872,6 +9872,30 @@
             {
               "revision": "58aed35af17d9744395a7b76b470d70dd70bc7de",
               "reason": "CI fuzz time: two speedups in the spec 105 parsers (dot-free tokens skip the dot protections; blanking passes run only when their trigger character is present); output unchanged, fuzz and the spec's tests pass",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/init.mjs",
+                "cli/config.mjs",
+                "cli/shared-glossary.mjs",
+                "cli/shared-sentences.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/glossary.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/doc-quality-plain-writing.test.mjs",
+                "tests/glossary-compat.test.mjs",
+                "tests/glossary-init.test.mjs",
+                "tests/glossary-match.test.mjs",
+                "tests/glossary-parse.test.mjs",
+                "tests/glossary-validator.test.mjs",
+                "tests/glossary-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "fa412aab8d660957b18405eed33a6311ec38d3d1",
+              "reason": "DQ009 defaultLevel info (maintainer decision 2026-11-19); FR-026 amended; tests and docs updated",
               "evidence": [
                 "cli/commands/fix.mjs",
                 "cli/commands/init.mjs",
@@ -9938,7 +9962,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:21dafcc3911a6697ff5a5f1dcb61bbf34c684a17782413043ff9ddda967d65be"
+            "digest": "sha256:c43158fae1ca514b266a94b70c437364fa94ac99a9f5df0f8db255d22be536ff"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
