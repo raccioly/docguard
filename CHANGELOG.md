@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-11-23
+
 ### Added
 
 - **A project glossary, and plain-writing checks from ASD STE100: new validator Glossary (`GLS001` to `GLS004`) and new Doc-Quality codes `DQ009` and `DQ010` (spec 105, `docguard.glossary-and-plain-writing`, issue 706).** This change ADDS findings (warnings only after a project writes a glossary); no existing finding changes, and `DQ001` to `DQ008` are byte-identical.
@@ -22,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - **The user docs are rewritten in plain language (light ASD STE100).** README (English, Portuguese and Spanish), `docs/` (quickstart, installation, FAQ, guides, reference, commands, configuration), PHILOSOPHY, CONTRIBUTING, PRIVACY, SECURITY, SUPPORT, COMPARISONS and the technical brief (`docs/docguard-explained.html` and its PDF) now use short sentences, active voice and one term per concept. Sentences over 25 words fell from about 18% to under 10% on most pages. No command, flag, config key, finding code, heading or link changed, and no behavior changed. The canonical docs and the generated findings reference are unchanged.
+
+### Commits
+
+- feat: project glossary and STE100 plain-writing checks (spec 105) (#708)
+- docs: plain-language rewrite of the user docs (light STE100) (#707)
+- docs: 79-second explainer video (#705)
+- feat(docs): text-quality metrics for Portuguese and Spanish, with reviewed word lists (spec 104 T033) (#704)
 
 ## [0.49.0] - 2026-11-17
 

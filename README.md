@@ -176,7 +176,7 @@ The server is **read-only**: it only reads the mounted project.
   ```yaml
   repos:
     - repo: https://github.com/raccioly/docguard
-      rev: v0.49.0
+      rev: v0.50.0
       hooks: [{ id: docguard-guard }]   # docguard-guard-full for pre-push
   ```
 - **MCP** (Claude, Cursor, any MCP client) — `claude mcp add docguard -- npx -y docguard-cli mcp`; read-only tools that check docs (guard, score, diagnose, …) and that read them one section at a time. The full list is in [docs/ai-integration.md](docs/ai-integration.md). The registry manifest is in the repository (`server.json`, ready for Smithery).
@@ -797,7 +797,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: raccioly/docguard@v0.49.0
+      - uses: raccioly/docguard@v0.50.0
         with:
           command: guard
 ```
@@ -833,7 +833,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - uses: raccioly/docguard@v0.49.0
+      - uses: raccioly/docguard@v0.50.0
         with: { command: fix, auto-commit: 'true', comment-on-pr: 'true' }
 ```
 
