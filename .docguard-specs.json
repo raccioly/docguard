@@ -12751,12 +12751,12 @@
       "path": "specs/107-language-registry/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -12766,11 +12766,27 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/ARCHITECTURE.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "df310fade95f6403168acaa9d0e5a4fd358406bb",
+          "outcomes": [
+            {
+              "revision": "df310fade95f6403168acaa9d0e5a4fd358406bb",
+              "reason": "Every 'is this file code?' list under cli/ reads cli/shared-languages.mjs; parser-bound lists carry a reasoned LANGUAGE EXEMPTION enforced by tests/language-registry.test.mjs; Apex reaches todo, drift, anchors and SPK008; API-Surface skips the Salesforce DX framework name.",
+              "evidence": [
+                "cli/shared-languages.mjs",
+                "cli/validators/api-surface.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/language-registry.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -12789,7 +12805,7 @@
         "artifacts": [
           {
             "path": "specs/107-language-registry/spec.md",
-            "digest": "sha256:9fca0dfeea64206be8fdca71b6f62822515150e9644b1070d9a37feb8f1052a1"
+            "digest": "sha256:e668134373d09c3eeb1d176ea0a900036d7e38e8387f158b0bb236e85f051611"
           },
           {
             "path": "specs/107-language-registry/plan.md",
@@ -12804,7 +12820,28 @@
           "checked": 8,
           "total": 8
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/shared-languages.mjs",
+            "line": 14
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/shared-languages.mjs",
+            "line": 15
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/shared-languages.mjs",
+            "line": 16
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/validators/api-surface.mjs",
+            "line": 118
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",
@@ -19755,7 +19792,7 @@
           {
             "requirementId": "FR-006",
             "file": "cli/validators/api-surface.mjs",
-            "line": 387
+            "line": 388
           },
           {
             "requirementId": "FR-006",

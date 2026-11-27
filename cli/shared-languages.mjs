@@ -11,6 +11,9 @@
  * the same field report, so the two tools name the same files the same way.
  *
  * @implements docguard.field-report-fixes#FR-003
+ * @implements docguard.language-registry#FR-001
+ * @implements docguard.language-registry#FR-002
+ * @implements docguard.language-registry#FR-003
  */
 
 /**

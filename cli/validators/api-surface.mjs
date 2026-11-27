@@ -115,6 +115,7 @@ export function detectSpecDivergence(projectDir, config) {
  * package.json read stays as the fallback for a JS project whose manifest sits
  * outside the ecosystem walk (a workspace member reached through config).
  */
+// @implements docguard.language-registry#FR-005
 function frameworkNames(projectDir, config) {
   const names = [];
   try {
