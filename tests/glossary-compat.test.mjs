@@ -101,7 +101,9 @@ describe(`FR-027: no glossary, no plain-writing problem: ${TAG} and this tree ag
   });
 
   it('give the same top-level keys, and the same validators besides Glossary', () => {
-    assert.deepEqual(Object.keys(runs.head.json).sort(), Object.keys(runs.base.json).sort());
+    // exitCode and outcome joined in spec 106 (docguard.field-report-fixes#FR-011).
+    const later = new Set(['exitCode', 'outcome']);
+    assert.deepEqual(Object.keys(runs.head.json).filter(k => !later.has(k)).sort(), Object.keys(runs.base.json).filter(k => !later.has(k)).sort());
     const names = json => json.validators.filter(v => v.key !== 'glossary').map(v => v.key);
     assert.deepEqual(names(runs.head.json), names(runs.base.json));
     assert.equal(runs.head.json.validators.filter(v => v.key === 'glossary').length, 1);

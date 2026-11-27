@@ -7,7 +7,7 @@ import { describeCheckCoverage, summarizeCheckCoverage, deriveVerdict, summarize
 import { openObservations, closeObservations } from '../observations.mjs';
 import { requiredCheckStatus } from '../required-checks.mjs';
 import { listValidatorMarkers } from '../validator-markers.mjs';
-import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, strictSummaryLines, strictFindingContext, modeLine, strictBlocks, OFF_BY_DEFAULT_VALIDATORS } from '../enforcement.mjs';
+import { resolveEnforcement, buildStrictReport, adoptLines, couldNotReadLines, strictSummaryLines, strictFindingContext, modeLine, guardExitDecision } from '../enforcement.mjs';
 import { applyDocRoles } from '../shared-doc-roles.mjs';
 /**
  * @implements docguard.evidence-scoped-verification#FR-010 {scope=file}
@@ -465,7 +465,7 @@ export function runGuardInternal(projectDir, config) {
       else validators[key] = value;
     }
   }
-  const gatingContext = strict ? strictFindingContext({ gating: deriveGatingSet(undefined, CLI_VERSION), enforcement, runningVersion: CLI_VERSION }) : null;
+  const gatingContext = strict ? strictFindingContext({ gating: deriveGatingSet(undefined, CLI_VERSION), enforcement, runningVersion: CLI_VERSION, config }) : null;
   const results = [];
 
   const validatorMap = [
@@ -788,8 +788,9 @@ export function runGuardInternal(projectDir, config) {
         else infos++;
       }
     } else {
-      // FR-008: a validator the 0.47.0 defaults left off reports its intrinsic errors as warnings under strict.
-      const demoted = strict && OFF_BY_DEFAULT_VALIDATORS.includes(v.key) ? v.errors.length : 0;
+      // FR-008: a validator the 0.47.0 defaults left off reports its intrinsic errors as warnings under strict,
+      // unless the project turned it on (docguard.field-report-fixes#FR-001): the same set as the structured branch.
+      const demoted = strict && gatingContext.offByDefault.has(v.key) ? v.errors.length : 0;
       errors = v.errors.length - demoted;
       warnings = demoted;
       if (v.severity === 'high') errors += v.warnings.length;
@@ -818,6 +819,11 @@ export function runGuardInternal(projectDir, config) {
     ? [...results, { key: 'semanticClaims', name: 'Semantic claims', verdict: 'pass', findings: [], performed: 1, unexaminedDocuments: claimLanguageGaps }]
     : results;
   const strictReport = strict ? buildStrictReport(strictInput, { baselineSuppressed, lite, markers: listValidatorMarkers(projectDir, allValidatorKeys), enforcement, runningVersion: CLI_VERSION, pendingCodes: gatingContext.pendingCodes, ignoredDisabled }) : null;
+  // docguard.field-report-fixes#FR-002: possible secrets in product code that strict demoted, so a default run says so.
+  if (strictReport) {
+    strictReport.demotedProductSecrets = activeResults.flatMap(v => v.findings || [])
+      .filter(f => /^SEC00[1-6]$/.test(f.code || '') && f.context !== 'test-path' && f.enforcement?.source === 'strict-demoted').length;
+  }
 
   // The headline status word MUST agree with the exit code, which is
   // severity-aware (effectiveErrors/effectiveWarnings, computed above).
@@ -1099,10 +1105,11 @@ export function runGuard(projectDir, config, flags) {
   const undecided = d => (d.validators || []).filter(v => v.verdict === 'inconclusive' || v.verdict === 'blocked');
   // docguard.enforcement-ladder#FR-001: a required check that did not decide also exits 4.
   const requiredUndecided = d => d.requiredChecks?.undecided || [];
-  const exitFor = d => (d.effectiveErrors > 0
-    ? (uninitialised ? 3 : 1)
-    : (flags.failOnInconclusive && undecided(d).length > 0) || requiredUndecided(d).length > 0 || strictBlocks(d) ? 4
-    : d.effectiveWarnings > 0 ? 2 : 0);
+  // docguard.field-report-fixes#FR-011: one function decides, and the JSON carries what it decided.
+  const decision = guardExitDecision(data, { uninitialised, failOnInconclusive: Boolean(flags.failOnInconclusive) });
+  data.exitCode = decision.exitCode;
+  data.outcome = decision.outcome;
+  const exitFor = () => decision.exitCode;
 
   // ── SARIF output (2.1.0) ──
   // Same flush discipline as the JSON branch below (bug-105): set exitCode and

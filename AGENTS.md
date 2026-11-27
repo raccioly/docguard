@@ -69,9 +69,12 @@ release and migrate the config schema; `--apply` also refreshes out-of-date agen
 ## Consuming Guard Output (agents)
 
 Prefer the machine contract over parsing prose: `docguard guard --format json`
-returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
-not `1`, when the project has no `.docguard.json`, so branch on `status` rather
-than assuming `1`), `findings[]`
+returns `exitCode` (the process exit code: 0, 1, 2, 3 or 4) and `outcome`
+(`pass`, `warnings`, `errors`, `not-initialized`, `unexamined`, `undecided`) —
+gate on these, not on `status` or `errors`. `status` (PASS/WARN/FAIL) comes from
+the effective counts only, so a strict run that exits 4 can still say WARN;
+`errors`/`warnings` are intrinsic counts and `effectiveErrors` is what fails the
+run (schema: `schemas/docguard-guard-result.schema.json`). It also returns `findings[]`
 (`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
 `nextStep`, `reportable[]` (findings whose code is unmeasured or whose
 confidence is low — verify before acting), `coverage`

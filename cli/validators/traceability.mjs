@@ -14,6 +14,8 @@
  * @implements docguard.document-lifecycle#FR-013
  */
 
+import { APEX_EXTENSIONS } from '../shared-languages.mjs';
+import { SCAFFOLD_CHECKED, isUneditedScaffold, scaffoldTemplateName } from '../shared-scaffold.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename, extname } from 'node:path';
 import { TRACE_MAP, isTraceableSource } from '../shared-trace-patterns.mjs';
@@ -254,7 +256,15 @@ export function validateTraceability(projectDir, config) {
         .some(f => existsSync(resolve(projectDir, f)) || existsSync(f));
     }
 
-    if (hasSource) {
+    // docguard.field-report-fixes#FR-015: STR006 already reports a document that is still the template, and
+    // a scaffold that names no code is that same cause. One finding per cause.
+    const template = scaffoldTemplateName(config, relative(projectDir, docPath).replaceAll('\\', '/'));
+    let unedited = false;
+    if (!hasSource && SCAFFOLD_CHECKED.includes(template)) {
+      try { unedited = isUneditedScaffold(readFileSync(docPath, 'utf-8'), template); } catch { unedited = false; }
+    }
+
+    if (hasSource || unedited) {
       passed++;
     } else {
       findings.push(mkFinding({
@@ -499,7 +509,7 @@ export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
  */
 function scanDocAnnotations(projectFiles, projectDir) {
   const map = new Map();
-  const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.go', '.rs', '.java']);
+  const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.go', '.rs', '.java', ...APEX_EXTENSIONS]);
 
   for (const relPath of projectFiles) {
     const ext = extname(relPath);

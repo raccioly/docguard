@@ -22,7 +22,7 @@ import { docRolePath, resolveDocRole } from '../shared-doc-roles.mjs';
 import { existsSync, readFileSync, readdirSync, statSync, lstatSync } from 'node:fs';
 import { resolve, join, relative, basename, extname, isAbsolute } from 'node:path';
 import { resolveSourceRoots } from '../shared-source.mjs';
-import { fileKind, holdsOwnGit } from '../shared-file-kind.mjs';
+import { DOCUMENTATION_DIRS, fileKind, holdsOwnGit } from '../shared-file-kind.mjs';
 import { shouldIgnore, walkFiles as sharedWalkFiles, buildIgnoreFilter, mergeIgnoreFile, DEFAULT_IGNORE_DIRS, isDocguardOwnedDir } from '../shared-ignore.mjs';
 import { headingsForId, resolveDocDirs } from '../shared.mjs';
 import { acceptedFormsHint, labelContext, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
@@ -314,6 +314,9 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
       const relPath = relative(projectDir, fullPath);
       // DocGuard's own doc homes are documentation, not source directories.
       if (isDocguardOwnedDir(projectDir, relPath)) continue;
+      // docguard.field-report-fixes#FR-014: neither is a documentation directory, nor one that holds only
+      // documents and images. A folder with any other file (RAML, a script, code) stays a source directory.
+      if (DOCUMENTATION_DIRS.has(entry.toLowerCase()) || holdsOnlyDocuments(fullPath)) continue;
 
       // Honor user-configured ignore patterns (FR-006 / IR-5).
       // Patterns like `**/cdk.out/**` are written to match files INSIDE the
@@ -348,6 +351,24 @@ function checkSourceDirs(projectDir, allDocContent, config = {}, iac = { isIaC: 
   }
 
   return { findings, passed, total };
+}
+
+/** Documents and assets: a directory that holds only these is not a source directory (FR-014). */
+const DOCUMENT_EXTENSIONS = new Set(['.md', '.mdx', '.markdown', '.txt', '.rst', '.adoc', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.pdf', '.drawio']);
+
+/**
+ * True when a directory holds at least one file and every file is a document or an image.
+ * Bounded: it stops at the first other file and after 2,000 files (then the directory counts as source).
+ */
+function holdsOnlyDocuments(dir) {
+  let files = 0;
+  let other = false;
+  sharedWalkFiles(dir, (full) => {
+    if (other) return;
+    files++;
+    if (files > 2000 || !DOCUMENT_EXTENSIONS.has(extname(full).toLowerCase())) other = true;
+  });
+  return files > 0 && !other;
 }
 
 /**

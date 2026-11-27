@@ -6,6 +6,9 @@
  * @implements docguard.precision-evidence-loop#FR-003
  * @implements docguard.dogfood-round-2#FR-005
  * @implements docguard.strict-by-default#FR-010
+ * @implements docguard.field-report-fixes#FR-004
+ * @implements docguard.field-report-fixes#FR-009
+ * @implements docguard.field-report-fixes#FR-010
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -13,6 +16,8 @@ import { resolve, join, extname } from 'node:path';
 import { shouldIgnore, relPosix, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
+import { APEX, VISUALFORCE } from '../shared-languages.mjs';
+import { countLanguages, describeLanguageCounts } from '../shared-source.mjs';
 
 // Each secret pattern maps to a stable finding code (see cli/findings.mjs CODES)
 // so it is `explain`-able and inline-suppressible (`// docguard:ignore SEC00x`).
@@ -29,6 +34,9 @@ const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
   '.py', '.java', '.go', '.rs', '.swift', '.kt',
   '.rb', '.php', '.cs', '.env',
+  // Salesforce (docguard.field-report-fixes#FR-004): Apex uses the same `name = 'value'` shape, and
+  // Visualforce markup can embed a literal. A LaTeX `.cls` is scanned too: the safe direction.
+  ...APEX.extensions, ...VISUALFORCE.extensions,
 ]);
 
 // SECURITY EXEMPTION (tests/file-kinds-registry.test.mjs): the original narrow list, kept as it is on purpose.
@@ -84,6 +92,13 @@ export function isSyntheticValue(value) {
 const TEST_FILE_NAME = /(?:^|\/)__tests?__\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;
 
 /**
+ * Storybook stories hold demo values the way tests hold fixtures
+ * (docguard.field-report-fixes#FR-010). They are demo data for the secret context only, never
+ * tests: a story must not count as test coverage, so this rule is not in `TEST_PATTERNS`.
+ */
+const STORYBOOK_FILE_NAME = /\.(?:stories|story)\.(?:[cm]?[jt]sx?|mdx|svelte|vue)$/;
+
+/**
  * Where a literal sits: `test-path` for a test, fixture, example or mock path
  * (`isNonProductPath`, plus the test-file names the fixture-password rule
  * already recognizes), else `product`. A classification only: it never changes
@@ -93,7 +108,7 @@ const TEST_FILE_NAME = /(?:^|\/)__tests?__\/|\.(?:test|spec)\.[cm]?[jt]sx?$/;
  * @returns {'product'|'test-path'}
  */
 export function secretContext(relPath, config = {}) {
-  return isNonProductPath(relPath, config) || TEST_FILE_NAME.test(relPath) ? 'test-path' : 'product';
+  return isNonProductPath(relPath, config) || TEST_FILE_NAME.test(relPath) || STORYBOOK_FILE_NAME.test(relPath) ? 'test-path' : 'product';
 }
 
 const CONTEXT_CODES = new Set(['SEC001', 'SEC002', 'SEC003', 'SEC004']);
@@ -202,6 +217,73 @@ function isPasswordLabel(key, value) {
   return fromKey.join(' ') === words.join(' ');
 }
 
+/** Words of a key that name a credential (`COOKIE_ACCESS_TOKEN` → access, token). */
+const CREDENTIAL_WORDS = new Set(['password', 'passwd', 'pwd', 'access', 'token', 'api', 'key', 'apikey', 'secret', 'accesstoken', 'secretkey']);
+
+/** Key words that say the key holds the NAME of something (`COOKIE_ACCESS_TOKEN`, `tokenHeader`), not its value. */
+const NAMING_WORDS = new Set(['cookie', 'header', 'param', 'parameter', 'query', 'field', 'name', 'storage', 'column', 'claim', 'attribute', 'attr', 'prop', 'property', 'env', 'var', 'variable', 'label', 'event', 'metric']);
+
+/** A route segment: lowercase words joined by `-`, `_` or `.`, or a parameter (`:id`, `{id}`, `${id}`). */
+const ROUTE_SEGMENT = /^(?:[a-z]+(?:[-_.][a-z0-9]+)*\d{0,3}|\d{1,4}|:[A-Za-z_]\w*|\{[A-Za-z_]\w*\}|\$\{[A-Za-z_]\w*\})$/;
+/** A query parameter name that carries a credential. */
+const CREDENTIAL_PARAM = /token|key|secret|pass|pwd|auth|sig|credential|session/i;
+
+/**
+ * The shape of a value that cannot be a credential, or null (docguard.field-report-fixes#FR-009).
+ * The password and token patterns match a credential-looking key followed by any long enough
+ * literal; these values are what the key names, not its secret:
+ *   - `route`: `/forgot-password`, `./reset`, `#login`, `/users/:id`: lowercase words and parameters only;
+ *   - `url`: an endpoint with a scheme and without `user:pass@` or a credential-named query value;
+ *     a bare query parameter name (`?access_token=`) is one too;
+ *   - `name`: `idp_access_token` under `COOKIE_ACCESS_TOKEN`: the key says it holds a name (a word such
+ *     as cookie, header, field or storage), and the value is two to four lowercase words that contain
+ *     every credential word of the key, with no word that mixes letters and digits;
+ *   - `label`: `auth.refreshAccessToken`: two to five dotted identifiers, no `eyJ` (a JWT) and no
+ *     segment with digits inside it or 20 characters or more.
+ * Each is reported as a low-confidence warning, never dropped: a real secret could still take one
+ * of these shapes, and `docguard:ignore` settles it.
+ * @param {string} key - the identifier the literal is assigned to
+ * @param {string} value - the literal, without quotes
+ * @returns {'route'|'url'|'name'|'label'|null}
+ */
+export function nonCredentialShape(key, value) {
+  if (typeof value !== 'string' || !value) return null;
+  const v = value.trim();
+  if (/^(?:\.?\/|#)/.test(v)) {
+    const segments = v.replace(/^(?:\.?\/|#)/, '').replace(/\/$/, '').split('/');
+    if (segments.every(seg => seg.length > 0 && seg.length < 25 && ROUTE_SEGMENT.test(seg))) return 'route';
+    return null;
+  }
+  if (/^[?&][A-Za-z_][\w.-]*=$/.test(v)) return 'url';
+  if (/^(?:https?|wss?):\/\/\S+$/i.test(v)) {
+    let url;
+    try { url = new URL(v); } catch { return null; }
+    if (url.username || url.password) return null;
+    for (const [name, val] of url.searchParams) if (val && CREDENTIAL_PARAM.test(name)) return null;
+    return 'url';
+  }
+  if (/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)+$/.test(v)) {
+    const words = v.split(/[-_]/);
+    const kw = keyWords(key || '');
+    const credential = kw.filter(w => CREDENTIAL_WORDS.has(w));
+    const naming = kw.some(w => NAMING_WORDS.has(w));
+    const plain = words.length <= 4 && words.every(w => w.length < 20 && (/^[a-z]+$/.test(w) || /^\d{1,3}$/.test(w)));
+    if (naming && plain && credential.length > 0 && credential.every(w => words.includes(w))) return 'name';
+    return null;
+  }
+  const dotted = v.split('.');
+  if (dotted.length >= 2 && dotted.length <= 5 && !/^eyJ/.test(v)
+    && dotted.every(seg => seg.length > 0 && seg.length < 20 && /^[A-Za-z_$][A-Za-z_$]*\d{0,3}$/.test(seg))) return 'label';
+  return null;
+}
+
+const SHAPE_TEXT = {
+  route: 'the value is a route path, not a credential',
+  url: 'the value is a URL or URL parameter name without credentials (an endpoint, not a credential)',
+  name: "the value is a name made of the key's own words (a cookie, header or field name, not a credential)",
+  label: 'the value is a dotted label (an event, metric or message key, not a credential)',
+};
+
 /** The identifier a secret match sits in: chars before the match plus the matched word. */
 function matchedKey(content, index, matchStr) {
   let start = index;
@@ -271,6 +353,22 @@ function candidateFiles(projectDir) {
     if (!CODE_EXTENSIONS.has(extname(filePath))) return;
     if (filePath.endsWith('.env') || filePath.endsWith('.env.local') || filePath.endsWith('.env.example')) return;
     found.push(relPosix(projectDir, filePath));
+  });
+  return found;
+}
+
+/**
+ * Source files in a language DocGuard can name but the secret scan does not read
+ * (`.scala`, `.dart`, …), project-relative, minus ignored paths.
+ * @returns {string[]}
+ */
+function unscannedSourceFiles(projectDir, config) {
+  const found = [];
+  walkDir(projectDir, (filePath) => {
+    if (CODE_EXTENSIONS.has(extname(filePath))) return;
+    const rel = relPosix(projectDir, filePath);
+    if (countLanguages([rel]).length === 0 || shouldIgnore(rel, config, 'securityIgnore')) return;
+    found.push(rel);
   });
   return found;
 }
@@ -382,8 +480,27 @@ export function validateSecurity(projectDir, config) {
         if (code && lineSuppresses(code, matchLine, prevLine)) continue;
 
         const value = quotedValue(match[0]);
+        const key = matchedKey(content, match.index, match[0]);
         // UI copy such as `f_password: 'Password'` is a label, not a secret (#527).
-        if (code === 'SEC001' && isPasswordLabel(matchedKey(content, match.index, match[0]), value)) continue;
+        if (code === 'SEC001' && isPasswordLabel(key, value)) continue;
+        // A route, an endpoint, the key's own name or a dotted label (docguard.field-report-fixes#FR-009).
+        const shape = CONTEXT_CODES.has(code) ? nonCredentialShape(key, value) : null;
+        if (shape) {
+          findings.push(mkFinding({
+            context,
+            code, validator: 'security', severity: 'warn', confidence: 'low',
+            message: `${location}: possible ${label}, but ${SHAPE_TEXT[shape]}`,
+            location,
+            suggestion: {
+              kind: 'suppress',
+              text: 'If this value is not a secret, suppress it inline with the reason.',
+              pragma: `// docguard:ignore ${code} — ${shape}, not a credential`,
+            },
+            reportable: true,
+            redactedContext: `${label} pattern fired on a value shaped as a ${shape}. Literal omitted.`,
+          }));
+          continue;
+        }
         const isProse = looksLikeProse(value);
 
         if (isProse) {
@@ -434,10 +551,18 @@ export function validateSecurity(projectDir, config) {
     if (realSecretCount === 0) passed++;
   } else {
     const a = applies(projectDir, config);
+    // docguard.field-report-fixes#FR-004: when the project has source in a language the scan does not
+    // read, say which, instead of pointing at a setting that would not help.
+    const unscanned = a.applies ? [] : unscannedSourceFiles(projectDir, config);
+    const languages = describeLanguageCounts(countLanguages(unscanned));
     findings.push(mkFinding({
       code: 'SEC011', validator: 'security', severity: 'warn', confidence: 'high',
-      message: 'No source files were scanned for secrets — check config.sourceRoot / ignore patterns',
-      suggestion: { kind: 'review', text: !a.applies
+      message: languages
+        ? `No source files were scanned for secrets: the project has ${languages}, and the secret scan does not read ${unscanned.length === 1 ? 'that extension' : 'those extensions'}`
+        : 'No source files were scanned for secrets — check config.sourceRoot / ignore patterns',
+      suggestion: { kind: 'review', text: languages
+        ? `Review ${unscanned[0]} and the other ${languages} by hand or with a scanner for that language; \`docguard feedback\` asks for the extension to be added.`
+        : !a.applies
         ? 'The project has no file with a scanned extension, so there is nothing to scan; no setting needs to change unless source files live somewhere the scan does not reach.'
         : `${a.candidates} candidate file(s) exist but every one is excluded by ${a.excludedBy}. Narrow ${a.excludedBy === 'securityIgnore' ? '"securityIgnore" in .docguard.json' : '"ignore" in .docguard.json or .docguardignore'} so at least the product source is scanned.` },
     }));

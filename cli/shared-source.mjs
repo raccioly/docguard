@@ -45,6 +45,8 @@ export const LANGUAGE_NAMES = Object.freeze({
   '.erl': 'Erlang', '.ml': 'OCaml', '.fs': 'F#', '.vb': 'Visual Basic',
   '.groovy': 'Groovy', '.pl': 'Perl', '.cr': 'Crystal', '.nim': 'Nim', '.zig': 'Zig',
   '.jl': 'Julia',
+  // Salesforce (docguard.field-report-fixes#FR-003): read by pattern, like Java.
+  '.cls': 'Apex', '.trigger': 'Apex', '.apex': 'Apex', '.page': 'Visualforce', '.component': 'Visualforce',
 });
 
 const extOf = filePath => (String(filePath).match(/\.[^./\\]+$/) || [''])[0].toLowerCase();

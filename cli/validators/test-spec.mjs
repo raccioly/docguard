@@ -18,6 +18,8 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { headingsForId } from '../shared.mjs';
 import { labelContext, LANGUAGE_NOT_SUPPORTED, unsupportedEntry } from '../shared-labels.mjs';
+import { isTestSource } from '../scanners/requirement-evidence.mjs';
+import { declaresApexTest, isApexPath } from '../shared-languages.mjs';
 
 /**
  * The tests a project has, by the three signals Test-Spec uses: a top-level
@@ -482,17 +484,28 @@ function globPartToRegex(part) {
 /**
  * Does the tree below `dir` hold a test file? The shared walker skips build output, package caches, dot entries
  * and nested checkouts (specs/100-file-kinds): a test of another project is not this project's.
+ *
+ * A file is a test by the classifier traceability uses (`isTestSource`), so the two validators cannot disagree
+ * in one run: a Maven or Gradle `src/test/` at any depth and an Apex test class count, as does a `.cls` that
+ * declares `@isTest` (docguard.field-report-fixes#FR-006). The older name rules stay for file kinds the shared
+ * classifier does not read (`x.test.vue`, a non-code file under `__tests__/`).
+ * @implements docguard.field-report-fixes#FR-006
  */
 function hasTestFilesRecursive(dir) {
   let found = false;
   walkFiles(dir, (full) => {
     if (found) return;
+    const rel = relative(dir, full).replaceAll('\\', '/');
     const entry = basename(full);
-    if (/(^|[\\/])__tests?__[\\/]/.test(relative(dir, full))
+    if (/(^|[\\/])__tests?__[\\/]/.test(rel)
       || /\.(test|spec)\.[^.]+$/.test(entry)
       // Go, pytest and Django test files are tests too; missing them reported
       // "no test files" for projects that have them (docguard.generated-docs-consistency#FR-010).
-      || /_test\.go$|^test_[^/]+\.py$|_test\.py$|^tests\.py$/.test(entry)) found = true;
+      || /_test\.go$|^test_[^/]+\.py$|_test\.py$|^tests\.py$/.test(entry)
+      || isTestSource(rel)) { found = true; return; }
+    if (isApexPath(entry) && entry.endsWith('.cls')) {
+      try { if (declaresApexTest(readFileSync(full, 'utf-8'))) found = true; } catch { /* unreadable: not evidence */ }
+    }
   });
   return found;
 }

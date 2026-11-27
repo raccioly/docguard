@@ -13,6 +13,8 @@
  * @implements docguard.generated-docs-consistency#FR-004
  */
 
+import { APEX_TEST_NAME } from './shared-languages.mjs';
+
 /**
  * A markdown file is documentation, never the source that *implements* a
  * canonical doc — so it must not count as a doc→code match. Without this,
@@ -35,6 +37,8 @@ export const TEST_PATTERNS = [
   /_test\.go$/,
   // Java/Kotlin — JUnit/TestNG conventions
   /(?:Test|Tests|Spec|IT)\.(?:java|kt)$/,
+  // Salesforce Apex test classes (docguard.field-report-fixes#FR-005; the rule lives in shared-languages.mjs)
+  APEX_TEST_NAME,
   // Rust — tests live in tests/ or as #[cfg(test)] modules; pattern below covers integration tests
   /(^|\/)tests\/[^/]+\.rs$/,
   // Ruby/RSpec

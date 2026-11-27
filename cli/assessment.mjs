@@ -98,7 +98,7 @@ function summarizeAssessment(assessment) {
   }
 
   if (assessment.reasons.includes('CI_STRICT_UNEXAMINED')) {
-    clauses.push(`${formatCount(assessment.strictUnexamined.length, 'validator')} apply${assessment.strictUnexamined.length === 1 ? 'es' : ''} here and examined nothing (${assessment.strictUnexamined.join(', ')}), enforcement strict`);
+    clauses.push(`${formatCount(assessment.strictUnexamined.length, 'validator')} appl${assessment.strictUnexamined.length === 1 ? 'ies' : 'y'} here and examined nothing (${assessment.strictUnexamined.join(', ')}), enforcement strict`);
   }
 
   if (assessment.reasons.includes('CI_INCONCLUSIVE_BLOCKED')) {

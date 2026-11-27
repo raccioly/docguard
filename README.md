@@ -598,6 +598,13 @@ and the file count. DocGuard matches environment variables by pattern in every
 supported language. For a source language with no env patterns (Swift, Scala,
 …), the Environment check is `partial`, not a silent pass.
 
+**Gate on `exitCode` or `outcome`.** `guard --format json` carries `exitCode`
+(the process exit code) and `outcome` (`pass`, `warnings`, `errors`,
+`not-initialized`, `unexamined`, `undecided`), so a pipeline that keeps only
+stdout reaches the same decision. `errors` and `warnings` count findings at their
+intrinsic severity, before strict or `findingSeverity` change them. Schema:
+`schemas/docguard-guard-result.schema.json`.
+
 Every field appears on every finding in `guard --format json`, in SARIF
 `result.properties`, and on each finding in `diagnose --format json` (which also
 prints a `dispositionCounts` summary). `guard`, `diagnose`, `ci` and `report`

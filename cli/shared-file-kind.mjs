@@ -151,8 +151,11 @@ export const FIXTURE_DIRS = names([
   'corpus', 'golden',
 ]);
 
-/** The project's own tests. Not copies, but detection never reads them as product code. */
-export const TEST_DIRS = names(['test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs']);
+/**
+ * The project's own tests. Not copies, but detection never reads them as product code.
+ * `test-utils` and `test-support` hold test helpers like `test-helpers` (docguard.field-report-fixes#FR-010).
+ */
+export const TEST_DIRS = names(['test', 'tests', '__tests__', 'test-helpers', 'test-utils', 'test-support', 'spec', 'specs']);
 
 /**
  * `corpus` and `golden` mark copies for instruction files (kind fixture), but a
@@ -199,7 +202,7 @@ export function isGeneratedFileName(name) {
   return GENERATED_NAME_RES.some(re => re.test(text));
 }
 
-const DOCUMENTATION_DIRS = new Set(['docs', 'docs-canonical', 'docs-implementation', 'documentation', 'doc']);
+export const DOCUMENTATION_DIRS = new Set(['docs', 'docs-canonical', 'docs-implementation', 'documentation', 'doc']);
 const BACKUP_DIRS = new Set(['archive', 'archived', 'backup', 'backups', 'old', 'deprecated']);
 const DOC_EXT = '(?:md|mdx|markdown|txt|rst|adoc)';
 const BACKUP_SUFFIX_RE = /(?:\.bak|\.orig|\.backup|~)$/i;
