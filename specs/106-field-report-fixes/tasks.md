@@ -25,4 +25,4 @@
 - [x] T012 FR-016: CHANGELOG, `docs/`, `npm run llms`, `npm run docs:reference`.
 - [x] T013 `npm test` by exit code, the CI lint, `docguard guard` on this repository.
 - [x] T014 Hermetic A/B against v0.50.0 on DocGuard, the benchmark corpus and the other local repositories.
-- [ ] T015 Scrub check, pull request, CI, merge.
+- [x] T015 Scrub check, pull request, CI, merge.

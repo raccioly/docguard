@@ -16,6 +16,6 @@
 
 ## Phase 3: Verification
 
-- [ ] T006 FR-006: CHANGELOG, docs.
-- [ ] T007 `npm test` by exit code, hermetic A/B.
+- [x] T006 FR-006: CHANGELOG, docs.
+- [x] T007 `npm test` by exit code, hermetic A/B.
 - [ ] T008 Scrub check, pull request, CI, merge.

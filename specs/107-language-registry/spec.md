@@ -53,4 +53,4 @@ As a maintainer, I add a language to one registry entry and every scanner that a
 ## Verification Notes
 
 - **SC-001**: `npm test` by exit code on the final commit of the pull request.
-- **SC-002**: recorded below after the A/B.
+- **SC-002**: hermetic A/B, main (`86a46ca`) against this change, one fresh `git archive` per CLI, run one at a time, comparing findings, exit codes, each validator's verdict, applicability and counts, semantic claims and strict could-not-read. DocGuard itself: exit 2 → 2, no verdict changed; one TRC004 on DocGuard lost its advisory IR soft-match hint, because more files are test sources and the 250-file test corpus took a different set (the finding and its level are unchanged). 25 local projects: no difference at all (none holds Apex, Elixir or Dart with a TODO, a DRIFT comment or a tag). Benchmark corpus: PASS, 31 cases, no regression. Budget: PASS (one earlier run under a load average of 14 measured +292 ms on one fixture; five interleaved local runs and the rerun show no slowdown).
