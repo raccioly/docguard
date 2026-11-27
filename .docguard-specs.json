@@ -22361,7 +22361,7 @@
         "artifacts": [
           {
             "path": "specs/088-validator-fuzz/spec.md",
-            "digest": "sha256:080157436ab8d9a3a25ce2f2910dd49b577f0e73bd518d7e0425bc2988302e32"
+            "digest": "sha256:0bccd634442f559b0a711f56566ec536398cc9152b9e0f70efdbab74dcbfec51"
           },
           {
             "path": "specs/088-validator-fuzz/plan.md",
