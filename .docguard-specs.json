@@ -7195,12 +7195,12 @@
       "path": "specs/109-documented-quantities/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -7210,11 +7210,27 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
+          "outcomes": [
+            {
+              "revision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
+              "reason": "Issue 629: shell-fence comments and bare s are claims; MET005 Node minimum vs engines.node, MET006 duration above the CI budget, MET007 (info) explicit budget >= 10x; A/B shows no exit change and no new finding on local projects.",
+              "evidence": [
+                "cli/scanners/semantic-claims.mjs",
+                "cli/validators/metrics-consistency.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/documented-quantities.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -7232,7 +7248,7 @@
         "artifacts": [
           {
             "path": "specs/109-documented-quantities/spec.md",
-            "digest": "sha256:4172f4f0bcfedc4176562b5ac470afbca6c6a982e602f681ec72adf43d23cc76"
+            "digest": "sha256:553b8666c10198f3727c04446fb336d21fa34456f9dd5de9135af189d8ff389b"
           },
           {
             "path": "specs/109-documented-quantities/plan.md",

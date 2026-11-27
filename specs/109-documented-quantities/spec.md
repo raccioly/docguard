@@ -47,3 +47,9 @@
 
 - **SC-001**: `npm test` by exit code: 6010 pass, 0 fail.
 - **SC-002**: hermetic A/B, main (`86a46ca`) against this branch, one fresh `git archive` per CLI, run one at a time. No exit code changed. The first candidate added 4 MET007 in one project, against a generic job `timeout-minutes`, and 1 MET006 in another, for a schedule interval ("every 24 hours") on a line that names a command. Both are false positives. FR-003 and FR-004 now require an explicit budget variable for MET007, and a prose duration phrased as how long the command takes; each shape has a test. On the rerun no MET005 to MET007 fires on any local project. Metrics-Consistency compares more lines (DocGuard: 7 → 17 checks), and the semantic-claim count grows in 8 projects, by 1 to 10 claims (fenced shell comments and bare `s`).
+
+<!-- docguard:implementation-outcomes:start -->
+## Implementation Outcomes
+
+- `f240a8e1d14c9bfa41a6068e690d655625906a46` — Issue 629: shell-fence comments and bare s are claims; MET005 Node minimum vs engines.node, MET006 duration above the CI budget, MET007 (info) explicit budget = 10x; A/B shows no exit change and no new finding on local projects. Evidence: `cli/scanners/semantic-claims.mjs`, `cli/validators/metrics-consistency.mjs`, `docs-canonical/DATA-MODEL.md`, `tests/documented-quantities.test.mjs`, `tests/program-verification.test.mjs`. Accepted deviations: none. Successor: none. Blobs: `cli/scanners/semantic-claims.mjs`=`2cf43006f5a9064dc526cb2070a7553c86a0ef76`, `cli/validators/metrics-consistency.mjs`=`8400ab54745fcc2bd7958620d830a89ba5c685c1`, `docs-canonical/DATA-MODEL.md`=`c9ef1c35b559a2bb55d153b10cc3b9bf18000402`, `tests/documented-quantities.test.mjs`=`addf5281448d5def40726641c802e0b4c40d6765`, `tests/program-verification.test.mjs`=`5a8e961da6236a80dc7e9d0dffa9424ea4c55720`.
+<!-- docguard:implementation-outcomes:end -->
