@@ -91,6 +91,18 @@ describe('issue 719: config files are scanned for secrets', () => {
     assert.equal(at(found, 'src/test/resources/application.yml')[0]?.context, 'test-path');
   });
 
+  it('the A/B false positives: CloudFormation tags, ${VAR:?msg}, shell substitution, an OpenAPI example, a dev phrase', (t) => {
+    const dir = tree(t, {
+      'infra/template.yaml': 'Resources:\n  Fn:\n    Properties:\n      Environment:\n        Variables:\n          TOKEN_SECRET: !Ref TokenSecretParam\n          SIGNING_SECRET: !Sub "{{resolve:secretsmanager:${Arn}}}"\n',
+      'infra/compose.yaml': 'services:\n  cache:\n    environment:\n      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in your local env file}\n      ROOT_SECRET: ${ROOT_SECRET?set it first please now}\n      TOKEN_SECRET: local-development-token-secret-value\n',
+      'scripts/setup.sh': '#!/bin/sh\nredis_password="$(openssl rand -hex 24)"\n',
+      'docs/openapi.yaml': 'paths:\n  /login:\n    post:\n      requestBody:\n        content:\n          application/json:\n            example:\n              email: a@b.test\n              password: Zp2Wm7x41k8Jd93\n',
+    });
+    const found = sec(dir);
+    assert.deepEqual(found.filter(f => f.severity === 'error').map(f => f.location), []);
+    assert.deepEqual(found.map(f => f.location).sort(), ['docs/openapi.yaml:9', 'infra/compose.yaml:6']);
+  });
+
   it('the #715 value shapes apply to config values too', (t) => {
     const dir = tree(t, { 'config/routes.yaml': 'links:\n  forgotPassword: /forgot-password\n  accessToken: https://auth.sandbox.payments.test/oauth2/token\n' });
     const found = sec(dir);

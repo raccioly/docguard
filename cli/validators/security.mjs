@@ -385,10 +385,13 @@ function configKeyLabel(key) {
 export function configLiteral(value) {
   let v = String(value ?? '').trim();
   if (!v || v === 'null' || v === '~' || v === '""' || v === "''") return null;
-  if (/^(?:\$\{\{|\{\{|%env\(|<%|\{cipher\}|ENC\(|!vault|vault:|p\(['"]secure::|#\{|\$\()/i.test(v)) return null;
+  // A YAML tag (`!Ref`, `!Sub`, `!GetAtt`, `!vault`) asks the tool to resolve a value; it holds none.
+  if (/^(?:\$\{\{|\{\{|%env\(|<%|\{cipher\}|ENC\(|![A-Za-z]|vault:|p\(['"]secure::|#\{|\$\()/i.test(v)) return null;
   const env = /^\$\{([^}]*)\}$/.exec(v);
   if (env) {
     if (/::/.test(env[1])) return null;
+    // `${VAR?message}` and `${VAR:?message}` require the variable; the text is an error message, not a default.
+    if (/^[\w.]+:?\?/.test(env[1])) return null;
     const colon = env[1].indexOf(':');
     if (colon < 0) return null;
     v = env[1].slice(colon + 1).replace(/^-/, '').trim();
@@ -401,19 +404,27 @@ export function configLiteral(value) {
 /** Defaults every tutorial and compose file uses; a match is a low-confidence warning, not an error. */
 const KNOWN_DEFAULTS = new Set(['postgres', 'password', 'secret', 'admin', 'root', 'changeme', 'example', 'test', 'guest', 'mysql', 'default', 'letmein', 'mongodb', 'rabbitmq', 'redis']);
 
-/** Key/value pairs of one config file, with 1-based lines. */
+/** Words that mark a value as a local or development setting (`local-development-token-secret`). */
+const DEV_WORDS = new Set(['local', 'dev', 'development', 'insecure', 'demo', 'fake', 'sample', 'test', 'testing', 'localhost', 'docker']);
+
+/** Key/value pairs of one config file, with 1-based lines. A YAML pair under `example`/`examples` is marked. */
 function configPairs(kind, content) {
   const pairs = [];
   const lines = content.split('\n');
   const unquote = v => { const t = v.trim(); return /^(['"]).*\1$/.test(t) ? t.slice(1, -1) : t; };
   if (kind === 'yaml-config') {
+    const stack = [];
     lines.forEach((line, i) => {
       const m = /^\s*(?:-\s+)?["']?([A-Za-z0-9_.\-]+)["']?\s*:\s+(.*)$/.exec(line) || /^\s*(?:-\s+)?["']?([A-Za-z0-9_.\-]+)["']?\s*:\s*$/.exec(line);
       if (!m) return;
+      const indent = line.match(/^\s*/)[0].length;
+      while (stack.length && stack.at(-1).indent >= indent) stack.pop();
+      const inExample = stack.some(e => /^(?:x-)?examples?$/i.test(e.key));
+      stack.push({ indent, key: m[1] });
       let v = (m[2] || '').trim();
       if (/^[|>&*[{]/.test(v) && !/^\{\{|^\{cipher\}/.test(v)) return;
       if (!/^['"]/.test(v)) v = v.replace(/\s+#.*$/, '');
-      pairs.push({ key: m[1], value: unquote(v), line: i + 1 });
+      pairs.push({ key: m[1], value: unquote(v), line: i + 1, inExample });
     });
   } else if (kind === 'properties') {
     lines.forEach((line, i) => {
@@ -446,7 +457,7 @@ function configSecretFindings(kind, content, relPath, context) {
   const out = [];
   const lines = content.split('\n');
   const minLength = label => (label === 'hardcoded password' ? 8 : 16);
-  for (const { key, value, line } of configPairs(kind, content)) {
+  for (const { key, value, line, inExample } of configPairs(kind, content)) {
     const label = configKeyLabel(key);
     if (!label) continue;
     const literal = configLiteral(value);
@@ -455,9 +466,12 @@ function configSecretFindings(kind, content, relPath, context) {
     const code = LABEL_TO_CODE[label];
     const location = `${relPath}:${line}`;
     if (lineSuppresses(code, lines[line - 1] || '', lines[line - 2] || '')) continue;
-    if (isSyntheticValue(literal) || AWS_DOCUMENTATION_SECRETS.has(literal)) continue;
+    if (isSyntheticValue(literal) || AWS_DOCUMENTATION_SECRETS.has(literal) || literal.toLowerCase() === 'password123') continue;
     const shape = nonCredentialShape(key, literal);
-    const weak = shape ? SHAPE_TEXT[shape]
+    const devWords = /^[a-z]+(?:[-_][a-z0-9]+)+$/.test(literal) && literal.split(/[-_]/).some(w => DEV_WORDS.has(w));
+    const weak = inExample ? 'the value is an example in an API description, not a configured credential'
+      : shape ? SHAPE_TEXT[shape]
+      : devWords ? 'the value names itself a local or development setting, not a production credential'
       : KNOWN_DEFAULTS.has(literal.toLowerCase()) ? 'the value is a well-known default (a local or tutorial setup, not a credential to protect)'
       : looksLikeProse(literal) ? 'the value reads like natural-language text, not a credential' : null;
     out.push(mkFinding({
@@ -580,6 +594,8 @@ export function validateSecurity(projectDir, config) {
         // Skip known-safe placeholder/example values, but keep scanning for a
         // real one further down the file.
         if (isSafePlaceholder(matchLine, match[0], label)) continue;
+        // A shell script that assigns `"$(openssl rand …)"` or `"$VAR"` reads a value; it holds none (spec 108).
+        if (SCRIPT_EXTENSIONS.includes(ext) && /^\$/.test(quotedValue(match[0]))) continue;
 
         const code = LABEL_TO_CODE[label];
         const location = `${relPath}:${lineNo}`;
