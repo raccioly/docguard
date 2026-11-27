@@ -195,6 +195,7 @@ import { languageFor } from '../shared-languages.mjs';
  * (docguard.analysis-disclosure#FR-002). Each capability is the consumer's own predicate, so the
  * list cannot drift from what the checks do: `secrets` is the secret scan, `traceability` the
  * requirement-tag scan. Visibility only: it never changes a finding or the exit code.
+ * @implements docguard.analysis-disclosure#FR-002
  * @returns {{ language: string, name: string, files: number, missing: string[], example: string }[]}
  */
 export function computeUnanalyzed(projectDir, config = {}) {

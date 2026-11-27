@@ -336,6 +336,7 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
 /**
  * Frameworks DocGuard names but reads no route of (docguard.analysis-disclosure#FR-005): their name alone
  * must not make API-Surface apply, or every such project would apply and examine nothing under strict.
+ * @implements docguard.analysis-disclosure#FR-005
  */
 export const NO_ROUTE_READER = new Set(['Salesforce DX', 'MuleSoft']);
 

@@ -14,6 +14,7 @@
  * @implements docguard.language-registry#FR-001
  * @implements docguard.language-registry#FR-002
  * @implements docguard.language-registry#FR-003
+ * @implements docguard.analysis-disclosure#FR-004
  */
 
 /**

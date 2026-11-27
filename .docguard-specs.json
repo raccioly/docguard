@@ -1313,12 +1313,12 @@
       "path": "specs/108-analysis-disclosure/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -1328,11 +1328,29 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs/configuration.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "19120bb51dec971a637bffcb45c9a2f1a9b6fa1d",
+          "outcomes": [
+            {
+              "revision": "19120bb51dec971a637bffcb45c9a2f1a9b6fa1d",
+              "reason": "Issues 718 and 719: config files read by key with placeholder and value-shape rules, shell scripts scanned, unanalyzed block and SEC012 disclose what no check reads, MuleSoft detected and NO_ROUTE_READER keeps API-Surface off for route-less platforms; A/B shows no exit-code change.",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/scanners/project-type.mjs",
+                "cli/shared-languages.mjs",
+                "cli/validators/security.mjs",
+                "docs/configuration.md",
+                "tests/config-secrets-and-coverage.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -1353,7 +1371,7 @@
         "artifacts": [
           {
             "path": "specs/108-analysis-disclosure/spec.md",
-            "digest": "sha256:49536b061006aaef4cb7f4847045a40ccebcee6352b24c76f0228b33e477a6cd"
+            "digest": "sha256:123bfa15dee61db3b3b5191a4780db6d7a8e7b7c38371b8591abaacc2a933821"
           },
           {
             "path": "specs/108-analysis-disclosure/plan.md",
@@ -1368,7 +1386,43 @@
           "checked": 8,
           "total": 8
         },
-        "implementationEvidence": [],
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/validators/security.mjs",
+            "line": 12
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/guard.mjs",
+            "line": 195
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/commands/guard.mjs",
+            "line": 198
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/security.mjs",
+            "line": 13
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/shared-languages.mjs",
+            "line": 17
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/project-type.mjs",
+            "line": 337
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "cli/scanners/project-type.mjs",
+            "line": 339
+          }
+        ],
         "testEvidence": [
           {
             "requirementId": "FR-001",
@@ -2499,12 +2553,12 @@
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 958
+            "line": 959
           },
           {
             "requirementId": "FR-020",
             "file": "cli/commands/guard.mjs",
-            "line": 985
+            "line": 986
           },
           {
             "requirementId": "FR-021",
@@ -7642,7 +7696,7 @@
           {
             "requirementId": "FR-005",
             "file": "cli/validators/security.mjs",
-            "line": 195
+            "line": 197
           },
           {
             "requirementId": "FR-006",
@@ -12609,7 +12663,7 @@
           {
             "requirementId": "FR-008",
             "file": "cli/scanners/project-type.mjs",
-            "line": 363
+            "line": 364
           },
           {
             "requirementId": "FR-009",
@@ -20280,7 +20334,7 @@
           {
             "requirementId": "FR-014",
             "file": "cli/commands/guard.mjs",
-            "line": 261
+            "line": 262
           },
           {
             "requirementId": "FR-014",

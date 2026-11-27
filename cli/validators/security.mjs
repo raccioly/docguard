@@ -9,6 +9,8 @@
  * @implements docguard.field-report-fixes#FR-004
  * @implements docguard.field-report-fixes#FR-009
  * @implements docguard.field-report-fixes#FR-010
+ * @implements docguard.analysis-disclosure#FR-001
+ * @implements docguard.analysis-disclosure#FR-003
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
