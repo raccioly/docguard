@@ -256,6 +256,9 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.file-kinds#SC-002
   // @req docguard.file-kinds#SC-003
   it('100: the A/B at each stage and the gates', () => recorded('100-file-kinds', ['SC-002', 'SC-003']));
+  // @req docguard.documented-quantities#SC-001
+  // @req docguard.documented-quantities#SC-002
+  it('109: the suite and the A/B', () => recorded('109-documented-quantities', ['SC-001', 'SC-002']));
   // @req docguard.field-report-fixes#SC-001
   // @req docguard.field-report-fixes#SC-002
   // @req docguard.field-report-fixes#SC-003

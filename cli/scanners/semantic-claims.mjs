@@ -39,6 +39,9 @@ import { codeExtensionAlternation } from '../shared-languages.mjs';
 const NUMBER_PATTERNS = [
   { kind: 'duration', re: /\b(\d+(?:\.\d+)?)\s*(milliseconds?|ms|seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b/gi },
   { kind: 'rate',     re: /\b(\d+)\s*(?:\/|\bper\b|\breq(?:uests?)?\s*\/?)\s*(s|sec|seconds?|min|minutes?|hours?|h)\b/gi },
+  // docguard.documented-quantities#FR-001: a bare `s` attached to the number (`~15s`, `(20s)`). Up to three
+  // digits, so a decade (`1990s`) is not a duration, and never `10s of` (tens of).
+  { kind: 'duration', re: /(?<![\w.$])~?(\d{1,3}(?:\.\d+)?)(s)(?![\w'’-])(?!\s+of\b)/g },
   // Field report #6: the noun list IS the precision mechanism — a number is only
   // a claim when it sits next to a recognized "registered-unit" noun. The gap that
   // shipped a wrong "16 extractors" past every check was simply that "extractors"
@@ -226,6 +229,23 @@ function claimSourceDocs(projectDir, read, config) {
   return [...new Set([...evidenceDocs(projectDir, config), 'README.md', ...rootAgentDocs(projectDir, config)])].filter(doc => !isIgnored(doc));
 }
 
+const SHELL_FENCE = /^(?:bash|sh|shell|zsh|console|terminal|shell-session|bash-session)$/i;
+
+/**
+ * The trailing `# comment` of a shell line (outside quotes), or null.
+ * @implements docguard.documented-quantities#FR-001
+ */
+export function shellComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote) { if (ch === quote && line[i - 1] !== '\\') quote = null; continue; }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(i + 1).trim();
+  }
+  return null;
+}
+
 /** True if a line is inside a fenced code block (toggled by the caller). */
 function findCitedCode(lines, idx) {
   // Search the claim line first, then the immediately adjacent lines. A tight
@@ -276,11 +296,24 @@ export function extractSemanticClaims(projectDir, config = {}, read = createEvid
     const lines = content.split('\n');
     let section = '';
     let inFence = false;
+    let shellFence = false;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (/^\s*```/.test(line)) { inFence = !inFence; continue; }
-      if (inFence) continue; // numbers in code samples are examples, not claims
+      let line = lines[i];
+      const fence = /^\s*```\s*([\w-]*)/.exec(line);
+      if (fence) {
+        inFence = !inFence;
+        shellFence = inFence && SHELL_FENCE.test(fence[1]);
+        continue;
+      }
+      if (inFence) {
+        // Numbers in code samples are examples, not claims, except a shell fence's trailing `# comment`: in an
+        // instruction file that comment is prose about the command (docguard.documented-quantities#FR-001).
+        if (!shellFence) continue;
+        const comment = shellComment(line);
+        if (comment === null) continue;
+        line = comment;
+      }
       const h = line.match(/^#{1,6}\s+(.*)$/);
       if (h) { section = h[1].trim(); continue; }
 
