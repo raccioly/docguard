@@ -26,6 +26,11 @@ export function isTestSource(file) {
     && (TEST_PATTERNS.some(pattern => pattern.test(file)) || /(?:^|\/)(?:__tests__|tests?)\//.test(file));
 }
 
+/** Is this a file whose `@implements`/`@req` tags the requirement scan reads (docguard.analysis-disclosure#FR-002)? */
+export function readsRequirementTags(file) {
+  return IMPLEMENTATION_EXT.test(file) || isTestSource(file);
+}
+
 export function resolveRequirementReferences(definitions, references, retiredDefinitions = new Set()) {
   const byId = new Map();
   for (const [key, definition] of definitions) {

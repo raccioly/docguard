@@ -602,7 +602,8 @@ supported language. For a source language with no env patterns (Swift, Scala,
 (the process exit code) and `outcome` (`pass`, `warnings`, `errors`,
 `not-initialized`, `unexamined`, `undecided`), so a pipeline that keeps only
 stdout reaches the same decision. `errors` and `warnings` count findings at their
-intrinsic severity, before strict or `findingSeverity` change them. Schema:
+intrinsic severity, before strict or `findingSeverity` change them. `unanalyzed`
+lists the recognized files that some check does not read. Schema:
 `schemas/docguard-guard-result.schema.json`.
 
 Every field appears on every finding in `guard --format json`, in SARIF

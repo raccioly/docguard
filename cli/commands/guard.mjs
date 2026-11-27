@@ -23,7 +23,7 @@ import { applyDocRoles } from '../shared-doc-roles.mjs';
  */
 
 import { c, resolveSeverity, resolveFindingEnforcement, loadIgnorePatterns, resolveDocDirs } from '../shared.mjs';
-import { walkFiles, buildIgnoreFilter, normalizeIgnoreConfig, relPosix } from '../shared-ignore.mjs';
+import { walkFiles, buildIgnoreFilter, normalizeIgnoreConfig, relPosix, shouldIgnore } from '../shared-ignore.mjs';
 import { ABSENCE_CLAIM_CODES, CODES, mkFinding, resultFromFindings } from '../findings.mjs';
 import { loadValidatorSuppressions } from '../validator-markers.mjs';
 import { detectAgentMode, isSpecKitInitialized } from '../ensure-skills.mjs';
@@ -186,6 +186,34 @@ import { validateDocOwnership } from '../validators/doc-ownership.mjs';
 import { validateEvidence } from '../validators/evidence.mjs';
 import { coverSemanticClaims } from '../evidence/evaluate.mjs';
 import { footerHint } from '../release-age.mjs';
+import { scansForSecrets } from '../validators/security.mjs';
+import { readsRequirementTags } from '../scanners/requirement-evidence.mjs';
+import { languageFor } from '../shared-languages.mjs';
+
+/**
+ * Files in a language DocGuard recognizes that some check does not read, grouped by language
+ * (docguard.analysis-disclosure#FR-002). Each capability is the consumer's own predicate, so the
+ * list cannot drift from what the checks do: `secrets` is the secret scan, `traceability` the
+ * requirement-tag scan. Visibility only: it never changes a finding or the exit code.
+ * @returns {{ language: string, name: string, files: number, missing: string[], example: string }[]}
+ */
+export function computeUnanalyzed(projectDir, config = {}) {
+  const CAPS = { secrets: scansForSecrets, traceability: readsRequirementTags };
+  const RELEVANT = { code: ['secrets', 'traceability'], dsl: ['secrets', 'traceability'], flow: ['secrets', 'traceability'], config: ['secrets'], markup: ['secrets'], metadata: ['secrets'] };
+  const byLang = new Map();
+  walkFiles(projectDir, (full) => {
+    const rel = relPosix(projectDir, full);
+    const lang = languageFor(rel);
+    const relevant = lang && RELEVANT[lang.kind];
+    if (!relevant || shouldIgnore(rel, config)) return;
+    const missing = relevant.filter(cap => !CAPS[cap](rel));
+    if (missing.length === 0) return;
+    const entry = byLang.get(lang.id) || { language: lang.id, name: lang.name, files: 0, missing, example: rel };
+    entry.files++;
+    byLang.set(lang.id, entry);
+  }, { config, root: projectDir, skipKinds: ['fixture', 'vendored', 'generated', 'backup', 'template'] });
+  return [...byLang.values()].sort((a, b) => a.language.localeCompare(b.language));
+}
 
 /**
  * Internal guard — returns structured data, no console output, no process.exit.
@@ -848,10 +876,12 @@ export function runGuardInternal(projectDir, config) {
   // repo-wide Markdown walk.
   let coverage = null;
   let files = null;
+  let unanalyzed = null;
   let semanticClaims = null;
   const evidence = results.find(result => result.key === 'evidence')?.evidence || null;
   if (!lite) {
     try { coverage = computeDocCoverage(projectDir, config); } catch { coverage = null; }
+    try { unanalyzed = computeUnanalyzed(projectDir, config); } catch { unanalyzed = null; }
     try { files = { kinds: computeFileKinds(projectDir, config), mirrors: computeFileMirrors(projectDir, config) }; } catch { files = null; }
     // docguard.completion-upkeep#FR-018: the evidence files SPR011 does not byte-compare, because this many closed specs share them.
     try {
@@ -904,6 +934,8 @@ export function runGuardInternal(projectDir, config) {
     // docguard.recorded-document-reviews#FR-011: agents read these files every
     // session, so their staleness is said first, whatever its severity.
     staleInstructions: staleInstructionsOf(allFindings),
+    // docguard.analysis-disclosure#FR-002: what DocGuard recognized and no check read (visibility only).
+    ...(unanalyzed ? { unanalyzed } : {}),
     // Benchmark evidence for the codes this run actually emitted. Codes the
     // corpus never exercised say so; none inherits another code's measurement.
     precisionEvidence: precisionEvidenceBlock(allFindings.map(f => f.code), CLI_VERSION),
@@ -1288,6 +1320,9 @@ export function runGuard(projectDir, config, flags) {
     }
   }
   for (const line of data.strict ? strictSummaryLines(data.strict) : []) console.log(`  ${c.dim}${line}${c.reset}`);
+  if (data.unanalyzed?.length) {
+    console.log(`  ${c.dim}Not analyzed by DocGuard: ${data.unanalyzed.map(u => `${u.name} (${u.files} file${u.files === 1 ? '' : 's'}: ${u.missing.join(', ')})`).join('; ')}${c.reset}`);
+  }
 
   if (data.status === 'PASS') {
     // PASS can still carry raw warnings if a validator was demoted to

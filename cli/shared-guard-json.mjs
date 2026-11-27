@@ -61,7 +61,7 @@ export function compactGuardResult(full) {
     ...(Array.isArray(structured) ? {} : { errors, warnings }),
     };
   });
-  const { findings: _all, reportable: _reportable, validators: _validators, precisionEvidence, checkCoverage, strict, ...top } = full;
+  const { findings: _all, reportable: _reportable, validators: _validators, precisionEvidence, checkCoverage, strict, unanalyzed, ...top } = full;
   let precision;
   if (precisionEvidence && typeof precisionEvidence === 'object') {
     const { codes: _codes, ...summary } = precisionEvidence;
@@ -72,6 +72,8 @@ export function compactGuardResult(full) {
     hint: FULL_CONTRACT_HINT,
     ...top,
     ...(strict ? { strict: compactStrict(strict) } : {}),
+    // docguard.analysis-disclosure#FR-002: counts only; the full form names the missing checks and an example.
+    ...(Array.isArray(unanalyzed) ? { unanalyzed: unanalyzed.map(({ language, files }) => ({ language, files })) } : {}),
     ...(checkCoverage && typeof checkCoverage === 'object' ? { checkCoverage: withoutLimitations(checkCoverage) } : {}),
     findings,
     evidenceByCode,

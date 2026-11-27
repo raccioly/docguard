@@ -146,6 +146,13 @@ export const CODES = {
     help: 'The secret scan matched zero source files — usually a too-broad ignore config or a wrong sourceRoot. A scan that checks nothing is a dangerous false ✅.',
     suppress: null,
   },
+  SEC012: {
+    validator: 'security',
+    title: 'Recognized files not scanned for secrets',
+    help: 'The secret scan read some files but left out files in a language DocGuard recognizes and has no secret rule for (DataWeave, LWC templates and others): the message counts them by language and `guard --format json` lists them under `unanalyzed`. Informational: it never changes the exit code. Review those files for credentials another way (specs/108-analysis-disclosure).',
+    defaultLevel: 'info',
+    suppress: null,
+  },
   // ── v0.29 findings-migration tranche (structure / changelog / metrics) ──
   STR001: {
     validator: 'structure',

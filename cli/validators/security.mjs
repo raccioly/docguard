@@ -16,7 +16,7 @@ import { resolve, join, extname } from 'node:path';
 import { shouldIgnore, relPosix, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
-import { VISUALFORCE, codeExtensions } from '../shared-languages.mjs';
+import { SCRIPT_EXTENSIONS, VISUALFORCE, codeExtensions, languageFor } from '../shared-languages.mjs';
 
 // Each secret pattern maps to a stable finding code (see cli/findings.mjs CODES)
 // so it is `explain`-able and inline-suppressible (`// docguard:ignore SEC00x`).
@@ -31,7 +31,8 @@ const LABEL_TO_CODE = {
 
 // Every programming language (specs/107-language-registry), dotenv files, and Visualforce markup, which can
 // embed a literal (docguard.field-report-fixes#FR-004). A LaTeX `.cls` is scanned too: the safe direction.
-const CODE_EXTENSIONS = codeExtensions(['.env', ...VISUALFORCE.extensions]);
+// Shell scripts too (docguard.analysis-disclosure#FR-001): a deploy script is a common place for a pasted token.
+const CODE_EXTENSIONS = codeExtensions(['.env', ...VISUALFORCE.extensions, ...SCRIPT_EXTENSIONS]);
 
 // SECURITY EXEMPTION (tests/file-kinds-registry.test.mjs): the original narrow list, kept as it is on purpose.
 // The shared build-output set also skips `out/`, `target/` and `obj/`, where a bundled key is still a leaked key.
@@ -336,6 +337,143 @@ function fixturePasswordEvidence(content, filename) {
   return evidence;
 }
 
+
+// ── Config files (specs/108-analysis-disclosure, issue 719) ─────────────────
+// YAML, .properties, appsettings JSON, Mule flow XML and Salesforce Flow metadata hold credentials as
+// key/value pairs that the code pattern (`name = "value"`) does not match. They are read by key.
+
+/** Lockfiles are generated and never hold a hand-written credential. */
+const CONFIG_SKIP = /(?:^|\/)(?:pnpm-lock\.ya?ml|yarn\.lock|package-lock\.json|composer\.lock|Gemfile\.lock|poetry\.lock)$/i;
+const CONFIG_LANGUAGES = new Set(['yaml-config', 'properties', 'appsettings', 'mule-flow', 'salesforce-flow']);
+
+/** The config language the secret scan reads this file as, or null. */
+export function configSecretKind(relPath) {
+  if (CONFIG_SKIP.test(relPath)) return null;
+  const lang = languageFor(relPath);
+  return lang && CONFIG_LANGUAGES.has(lang.id) ? lang.id : null;
+}
+
+/** Does the secret scan read this file (code, dotenv, Visualforce, or a config file by key)? */
+export function scansForSecrets(relPath) {
+  return CODE_EXTENSIONS.has(extname(relPath)) || configSecretKind(relPath) !== null;
+}
+
+/**
+ * The secret label a config key names, by its last segment's words, or null:
+ * `spring.datasource.password`, `client-secret`, `POSTGRES_PASSWORD`, `ClientSecret`, `api_key`.
+ */
+function configKeyLabel(key) {
+  const seg = String(key).split(/[.:]/).filter(Boolean).pop() || '';
+  const words = keyWords(seg);
+  const last = words.at(-1);
+  const prev = words.at(-2);
+  if (['password', 'passwd', 'pwd'].includes(last)) return 'hardcoded password';
+  if (last === 'token') return 'hardcoded access token';
+  if (last === 'key' && ['api'].includes(prev)) return 'hardcoded API key';
+  if (seg.toLowerCase() === 'apikey') return 'hardcoded API key';
+  if (last === 'secret' || (last === 'key' && ['secret', 'private', 'signing', 'encryption', 'access'].includes(prev))) return 'hardcoded secret key';
+  if (['secretkey', 'privatekey', 'clientsecret'].includes(seg.toLowerCase())) return 'hardcoded secret key';
+  return null;
+}
+
+/**
+ * A value that refers to a secret instead of holding one: `${VAR}` (with an empty default), Mule
+ * `${secure::k}` and `p('secure::k')`, GitHub `${{ secrets.X }}`, Helm `{{ .Values.x }}`, Symfony
+ * `%env(X)%`, ERB `<%= %>`, Spring Cloud `{cipher}`, Jasypt `ENC(...)`, `vault:`/`!vault`, `$VAR`, or
+ * empty, `null` and `~`. Returns the literal to judge (the default of `${VAR:default}`), or null.
+ */
+export function configLiteral(value) {
+  let v = String(value ?? '').trim();
+  if (!v || v === 'null' || v === '~' || v === '""' || v === "''") return null;
+  if (/^(?:\$\{\{|\{\{|%env\(|<%|\{cipher\}|ENC\(|!vault|vault:|p\(['"]secure::|#\{|\$\()/i.test(v)) return null;
+  const env = /^\$\{([^}]*)\}$/.exec(v);
+  if (env) {
+    if (/::/.test(env[1])) return null;
+    const colon = env[1].indexOf(':');
+    if (colon < 0) return null;
+    v = env[1].slice(colon + 1).replace(/^-/, '').trim();
+    return v ? v : null;
+  }
+  if (/^\$[A-Za-z_]/.test(v)) return null;
+  return v;
+}
+
+/** Defaults every tutorial and compose file uses; a match is a low-confidence warning, not an error. */
+const KNOWN_DEFAULTS = new Set(['postgres', 'password', 'secret', 'admin', 'root', 'changeme', 'example', 'test', 'guest', 'mysql', 'default', 'letmein', 'mongodb', 'rabbitmq', 'redis']);
+
+/** Key/value pairs of one config file, with 1-based lines. */
+function configPairs(kind, content) {
+  const pairs = [];
+  const lines = content.split('\n');
+  const unquote = v => { const t = v.trim(); return /^(['"]).*\1$/.test(t) ? t.slice(1, -1) : t; };
+  if (kind === 'yaml-config') {
+    lines.forEach((line, i) => {
+      const m = /^\s*(?:-\s+)?["']?([A-Za-z0-9_.\-]+)["']?\s*:\s+(.*)$/.exec(line) || /^\s*(?:-\s+)?["']?([A-Za-z0-9_.\-]+)["']?\s*:\s*$/.exec(line);
+      if (!m) return;
+      let v = (m[2] || '').trim();
+      if (/^[|>&*[{]/.test(v) && !/^\{\{|^\{cipher\}/.test(v)) return;
+      if (!/^['"]/.test(v)) v = v.replace(/\s+#.*$/, '');
+      pairs.push({ key: m[1], value: unquote(v), line: i + 1 });
+    });
+  } else if (kind === 'properties') {
+    lines.forEach((line, i) => {
+      const m = /^\s*([^#!=:\s][^=:\s]*)\s*[=:]\s*(.*)$/.exec(line);
+      if (m) pairs.push({ key: m[1], value: m[2].trim(), line: i + 1 });
+    });
+  } else if (kind === 'appsettings') {
+    lines.forEach((line, i) => {
+      for (const m of line.matchAll(/"([A-Za-z0-9_.\-]+)"\s*:\s*"([^"]*)"/g)) pairs.push({ key: m[1], value: m[2], line: i + 1 });
+    });
+  } else if (kind === 'mule-flow') {
+    lines.forEach((line, i) => {
+      for (const m of line.matchAll(/\s([A-Za-z_][\w.-]*)\s*=\s*"([^"]*)"/g)) pairs.push({ key: m[1].split(':').pop(), value: m[2], line: i + 1 });
+    });
+  } else if (kind === 'salesforce-flow') {
+    // A Flow variable keeps its name and its value in sibling elements; the narrow rule reads that shape only.
+    for (const block of content.matchAll(/<variables>([\s\S]*?)<\/variables>/g)) {
+      const name = /<name>([^<]+)<\/name>/.exec(block[1]);
+      const val = /<stringValue>([^<]*)<\/stringValue>/.exec(block[1]);
+      if (!name || !val) continue;
+      const offset = block.index + block[0].indexOf('<variables>') + 11 + block[1].indexOf(val[0]);
+      pairs.push({ key: name[1], value: val[1], line: content.slice(0, offset).split('\n').length });
+    }
+  }
+  return pairs;
+}
+
+/** Findings for one config file (code SEC001 to SEC004, by the key's label). */
+function configSecretFindings(kind, content, relPath, context) {
+  const out = [];
+  const lines = content.split('\n');
+  const minLength = label => (label === 'hardcoded password' ? 8 : 16);
+  for (const { key, value, line } of configPairs(kind, content)) {
+    const label = configKeyLabel(key);
+    if (!label) continue;
+    const literal = configLiteral(value);
+    if (literal === null || literal.length < minLength(label)) continue;
+    if (/^(?:true|false|yes|no|on|off|\d+)$/i.test(literal)) continue;
+    const code = LABEL_TO_CODE[label];
+    const location = `${relPath}:${line}`;
+    if (lineSuppresses(code, lines[line - 1] || '', lines[line - 2] || '')) continue;
+    if (isSyntheticValue(literal) || AWS_DOCUMENTATION_SECRETS.has(literal)) continue;
+    const shape = nonCredentialShape(key, literal);
+    const weak = shape ? SHAPE_TEXT[shape]
+      : KNOWN_DEFAULTS.has(literal.toLowerCase()) ? 'the value is a well-known default (a local or tutorial setup, not a credential to protect)'
+      : looksLikeProse(literal) ? 'the value reads like natural-language text, not a credential' : null;
+    out.push(mkFinding({
+      context, code, validator: 'security',
+      severity: weak ? 'warn' : 'error', confidence: weak ? 'low' : 'high',
+      message: weak ? `${location}: possible ${label} in a config file, but ${weak}` : `${location}: possible ${label} found in a config file`,
+      location,
+      suggestion: weak
+        ? { kind: 'suppress', text: 'If this value is not a secret, suppress it inline with the reason.', pragma: `# docguard:ignore ${code} — reason` }
+        : { kind: 'fix', text: 'Read the value from the environment or a secret store (`${ENV_VAR}`, a secure property, a vault reference). Never commit credentials.', command: `docguard explain ${code}`, pragma: `# docguard:ignore ${code} — reason (only if a confirmed false positive)` },
+      ...(weak ? { reportable: true, redactedContext: `${label} key in a ${kind} file with a weak value. Literal omitted.` } : {}),
+    }));
+  }
+  return out;
+}
+
 /**
  * Files this validator would scan, before any ignore setting: the walker's
  * files with a scanned extension, minus the dotenv files it skips on purpose.
@@ -344,9 +482,10 @@ function fixturePasswordEvidence(content, filename) {
 function candidateFiles(projectDir) {
   const found = [];
   walkDir(projectDir, (filePath) => {
-    if (!CODE_EXTENSIONS.has(extname(filePath))) return;
+    const rel = relPosix(projectDir, filePath);
+    if (!CODE_EXTENSIONS.has(extname(filePath)) && !configSecretKind(rel)) return;
     if (filePath.endsWith('.env') || filePath.endsWith('.env.local') || filePath.endsWith('.env.example')) return;
-    found.push(relPosix(projectDir, filePath));
+    found.push(rel);
   });
   return found;
 }
@@ -386,10 +525,18 @@ export function validateSecurity(projectDir, config) {
   let total = 0;
   let scanned = 0;
   let realSecretCount = 0;
+  const unscanned = [];
 
   walkDir(projectDir, (filePath) => {
     const ext = extname(filePath);
-    if (!CODE_EXTENSIONS.has(ext)) return;
+    const configKind = CODE_EXTENSIONS.has(ext) ? null : configSecretKind(relPosix(projectDir, filePath));
+    if (!CODE_EXTENSIONS.has(ext) && !configKind) {
+      // docguard.analysis-disclosure#FR-003: a file DocGuard recognizes and does not scan is counted, not hidden.
+      const rel = relPosix(projectDir, filePath);
+      const lang = languageFor(rel);
+      if (lang && !CONFIG_SKIP.test(rel) && !shouldIgnore(rel, config, 'securityIgnore')) unscanned.push({ rel, name: lang.name });
+      return;
+    }
 
     // Skip .env files — they're supposed to have secrets
     if (filePath.endsWith('.env') || filePath.endsWith('.env.local')) return;
@@ -404,6 +551,13 @@ export function validateSecurity(projectDir, config) {
     scanned++;
     const context = secretContext(relPath, config);
     const content = readFileSync(filePath, 'utf-8');
+    if (configKind) {
+      // docguard.analysis-disclosure#FR-001: config files are read by key, not by the code pattern.
+      const found = configSecretFindings(configKind, content, relPath, context);
+      realSecretCount += found.filter(f => f.severity === 'error').length;
+      findings.push(...found);
+      return;
+    }
     let lines = null;
     let passwordFixtureEvidence = null;
 
@@ -535,6 +689,19 @@ export function validateSecurity(projectDir, config) {
       suggestion: { kind: 'review', text: !a.applies
         ? 'The project has no file with a scanned extension, so there is nothing to scan; no setting needs to change unless source files live somewhere the scan does not reach.'
         : `${a.candidates} candidate file(s) exist but every one is excluded by ${a.excludedBy}. Narrow ${a.excludedBy === 'securityIgnore' ? '"securityIgnore" in .docguard.json' : '"ignore" in .docguard.json or .docguardignore'} so at least the product source is scanned.` },
+    }));
+  }
+
+  // docguard.analysis-disclosure#FR-003: SEC011 says nothing was scanned; SEC012 says what was left out.
+  if (scanned > 0 && unscanned.length > 0) {
+    const byName = new Map();
+    for (const u of unscanned) byName.set(u.name, (byName.get(u.name) || 0) + 1);
+    const list = [...byName].sort((a, b) => a[0].localeCompare(b[0])).map(([n, c]) => `${n} (${c})`).join(', ');
+    findings.push(mkFinding({
+      code: 'SEC012', validator: 'security', severity: 'warn', confidence: 'high',
+      message: `${unscanned.length} file(s) in ${byName.size} language(s) were not scanned for secrets: ${list}`,
+      location: unscanned[0].rel,
+      suggestion: { kind: 'review', text: `Review these files for credentials by hand or with a scanner for the language, for example ${unscanned[0].rel}. \`guard --format json\` lists them under \`unanalyzed\`.` },
     }));
   }
 

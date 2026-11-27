@@ -312,6 +312,8 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
     else if (existsSync(join(dir, 'main.go')) || existsSync(join(dir, 'cmd'))) kind = 'service';
   } else if (lang === 'Java' || lang === 'Kotlin') {
     if (has(deps, 'spring-boot-starter-web', 'spring-boot-starter', 'org.springframework.boot:spring-boot-starter-web')) { framework = 'Spring Boot'; kind = 'api'; }
+    // docguard.analysis-disclosure#FR-005: a Mule application is a pom with mule-application packaging.
+    else if (/<packaging>\s*mule-application\s*<\/packaging>/.test(readSafe(join(dir, 'pom.xml')))) { framework = 'MuleSoft'; kind = 'platform'; }
   } else if (lang === 'Ruby') {
     if (has(deps, 'rails')) { framework = 'Rails'; kind = 'webapp'; }
     else if (has(deps, 'sinatra')) { framework = 'Sinatra'; kind = 'api'; }
@@ -328,8 +330,14 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
     if (webSdk || has(deps, 'Microsoft.AspNetCore.App')) { framework = 'ASP.NET Core'; kind = 'api'; }
   }
 
-  return { framework, kind };
+  return { framework, kind, routeReader: !NO_ROUTE_READER.has(framework) };
 }
+
+/**
+ * Frameworks DocGuard names but reads no route of (docguard.analysis-disclosure#FR-005): their name alone
+ * must not make API-Surface apply, or every such project would apply and examine nothing under strict.
+ */
+export const NO_ROUTE_READER = new Set(['Salesforce DX', 'MuleSoft']);
 
 // ORM, UI and auth libraries worth naming next to the framework
 // (docguard.js-ts-extraction#FR-008): a Next.js app's React, its Drizzle or
@@ -410,6 +418,7 @@ function buildEcosystem(projectDir, m) {
     manifest: relative(resolve(projectDir), path) || m.file,
     dir: relative(resolve(projectDir), m.absDir) || '.',
     framework: cls.framework,
+    routeReader: cls.routeReader,
     libraries: jsLibraries(lang, deps, cls.framework),
     kind: kind || cls.kind || 'library',
     deps,

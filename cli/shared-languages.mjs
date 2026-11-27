@@ -61,13 +61,25 @@ export const LANGUAGES = Object.freeze([
   { id: 'apex', name: 'Apex', kind: 'code', comments: 'slash', lexer: 'java', extensions: ['.cls', '.trigger', '.apex'] },
   { id: 'shell', name: 'Shell', kind: 'script', comments: 'hash', lexer: null, extensions: ['.sh', '.bash'] },
   { id: 'visualforce', name: 'Visualforce', kind: 'markup', comments: null, lexer: null, extensions: ['.page', '.component'] },
-].map(l => Object.freeze({ ast: false, ...l, extensions: Object.freeze(l.extensions) })));
+  // Recognized so they can be disclosed when no check reads them (specs/108-analysis-disclosure).
+  { id: 'dataweave', name: 'DataWeave', kind: 'dsl', comments: 'slash', lexer: null, extensions: ['.dwl'] },
+  { id: 'yaml-config', name: 'YAML config', kind: 'config', comments: 'hash', lexer: null, extensions: ['.yml', '.yaml'] },
+  { id: 'properties', name: 'Properties config', kind: 'config', comments: 'hash', lexer: null, extensions: ['.properties', '.conf'] },
+  // Path rules: matched before the extension, so `pom.xml` and other XML stay unclassified.
+  { id: 'mule-flow', name: 'Mule flow XML', kind: 'flow', comments: null, lexer: null, extensions: [], match: /(?:^|\/)src\/main\/mule\/.+\.xml$/i },
+  { id: 'salesforce-flow', name: 'Salesforce Flow', kind: 'metadata', comments: null, lexer: null, extensions: [], match: /\.flow-meta\.xml$/i },
+  { id: 'lwc-template', name: 'LWC template', kind: 'markup', comments: null, lexer: null, extensions: [], match: /(?:^|\/)lwc\/.+\.html$/i },
+  { id: 'appsettings', name: 'appsettings JSON', kind: 'config', comments: null, lexer: null, extensions: [], match: /(?:^|\/)appsettings(?:\.[\w-]+)?\.json$/i },
+].map(l => Object.freeze({ ast: false, match: null, ...l, extensions: Object.freeze(l.extensions) })));
 
 const byExtension = new Map(LANGUAGES.flatMap(l => l.extensions.map(e => [e, l])));
+const byRule = LANGUAGES.filter(l => l.match);
 
-/** The language of a path by its extension, or null. */
+/** The language of a path: a path rule first (Mule flow XML, Salesforce Flow, LWC template), then its extension; or null. */
 export function languageFor(path) {
-  return byExtension.get((String(path).match(/\.[^./\\]+$/) || [''])[0].toLowerCase()) || null;
+  const p = String(path).replace(/\\/g, '/');
+  for (const l of byRule) if (l.match.test(p)) return l;
+  return byExtension.get((p.match(/\.[^./]+$/) || [''])[0].toLowerCase()) || null;
 }
 
 /** Every programming-language extension (not shell, not markup). */
@@ -113,7 +125,7 @@ export const HASH_COMMENT_EXTENSIONS = Object.freeze(new Set(LANGUAGES.filter(l 
 
 /** Display names of the languages read by pattern (no syntax tree), by extension, for naming coverage gaps. */
 export const LANGUAGE_NAMES = Object.freeze(Object.fromEntries(
-  LANGUAGES.filter(l => !l.ast && l.kind !== 'script').flatMap(l => l.extensions.map(e => [e, l.name])),
+  LANGUAGES.filter(l => !l.ast && (l.kind === 'code' || l.kind === 'markup')).flatMap(l => l.extensions.map(e => [e, l.name])),
 ));
 
 /** Salesforce Apex: classes, triggers and anonymous scripts. Java-like syntax, single-quoted strings. */

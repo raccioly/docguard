@@ -93,6 +93,7 @@ export const TRACE_MAP = {
       // Auth modules — semantic, language-agnostic
       { label: 'Auth modules', glob: /(?:auth|login|session|jwt|oauth|middleware|guard|csrf|cors|permissions?|policy)/i },
       // Secret configs — .env family + secrets.* / keyring patterns
+      // LANGUAGE EXEMPTION (tests/language-registry.test.mjs): a file-name convention (`secrets.yaml`), not a language list.
       { label: 'Secret configs', glob: /\.env(?:\.|$)|(?:^|\/)secrets?\.(?:py|js|ts|yaml|yml|json)$|keyring/i },
       // Gitignore + ignore files
       { label: 'Ignore files', glob: /^\.(?:git|docker|npm)ignore$/ },
