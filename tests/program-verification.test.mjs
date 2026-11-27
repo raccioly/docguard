@@ -37,6 +37,10 @@ function recorded(dir, ids) {
 }
 
 describe('documentation each spec requires', () => {
+  // @req docguard.field-report-fixes#FR-016
+  it('106: every changed code and the exit codes in the changelog', () => describes([
+    ['CHANGELOG.md', ['SEC001', 'SEC004', 'SEC011', 'TSP007', 'TRC002', 'TRC004', 'SPK008', 'DCV003', 'Exit codes:']],
+  ]));
   // @req docguard.configured-canonical-paths#FR-007
   it('093: STR003 help, the canonical documents and the changelog', () => describes([
     ['docs/reference/findings.md', ['STR003']],
@@ -248,4 +252,8 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.file-kinds#SC-002
   // @req docguard.file-kinds#SC-003
   it('100: the A/B at each stage and the gates', () => recorded('100-file-kinds', ['SC-002', 'SC-003']));
+  // @req docguard.field-report-fixes#SC-001
+  // @req docguard.field-report-fixes#SC-002
+  // @req docguard.field-report-fixes#SC-003
+  it('106: the issue trees, the suite and the A/B', () => recorded('106-field-report-fixes', ['SC-001', 'SC-002', 'SC-003']));
 });

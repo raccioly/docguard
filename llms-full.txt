@@ -104,7 +104,7 @@ It targets development teams and AI coding agents that need to maintain document
 | **Scanners** | Project file scanners for test discovery, route detection, schema mapping, CDK/IaC, doc-tools, integrations, frontend surface, spec-kit, memory-plan, semantic claims, agent readability, and the tech stack (`tech-stack.mjs`: what every ecosystem's manifests and unambiguous source text show, and which absences a manifest proves) | `cli/scanners/` | `*.mjs` |
 | **Writers** | Deterministic doc-mutation and output modules — section-addressable edits, mapped-role ownership authorization, mechanical fix registry, API-Reference writer, generate I/O + doc builders (split from generate.mjs), SARIF emitter (no LLM) | `cli/writers/`, `cli/shared-doc-roles.mjs` | Mapped human docs expose only unique `source=code` sections; new or explicitly generated single-role targets permit whole-document writes; whole-document replacements use backups and `--force` cannot grant ownership. `generate --plan --write` goes through `writeOwnedSections`, which skips the backup only for a DocGuard-authored document (generated marker, or an unedited init template) whose every line outside unpinned code-section bodies survives, and never replaces a `source=human` section. Generators and checks share their facts: `collectEnvVars` (env templates plus code reads) in `cli/shared-source.mjs`, and `detectCodeTechnologies` in `cli/scanners/tech-stack.mjs`, which records the file behind each technology: a manifest of any ecosystem, or an unambiguous source-text signal in a product file for the two technologies commonly used without a dependency (specs/061-dogfood-round-2 lists the signals) |
 | **Config** | Configuration loading, schema migration, validator policy, and exact finding-code policy | `cli/` | `config.mjs`, `shared.mjs` |
-| **Shared** | Cross-cutting utilities — ignore/glob filters (with `DEFAULT_IGNORE_DIRS`, and `isIgnoredDirEntry` skipping a `bin/` only beside a .NET project file), Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-html-comments.mjs` (HTML comments in Markdown, line by line, with code spans as text), `shared-trace-patterns.mjs`, `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared-test-cases.mjs` (declared test-case counts for Metrics-Consistency `MET003`), `shared.mjs` |
+| **Shared** | Cross-cutting utilities — ignore/glob filters (with `DEFAULT_IGNORE_DIRS`, and `isIgnoredDirEntry` skipping a `bin/` only beside a .NET project file), Git-ignore-aware bounded indexing, package capability counts, source-root resolution, Git helpers, declaration-shaped requirement identity parsing, and the shared doc→code trace patterns used by both `trace` and the Traceability validator | `cli/` | `shared-ignore.mjs`, `shared-validator-surface.mjs`, `shared-source.mjs`, `shared-git.mjs`, `shared-requirements.mjs`, `shared-html-comments.mjs` (HTML comments in Markdown, line by line, with code spans as text), `shared-trace-patterns.mjs`, `shared-languages.mjs` (one entry per source language every scanner asks: Salesforce Apex and Visualforce, spec 106), `shared-openapi.mjs` (OpenAPI discovery shared by API-Surface and Docs-Sync), `shared-test-cases.mjs` (declared test-case counts for Metrics-Consistency `MET003`), `shared.mjs` |
 | **Templates** | Document skeletons (ARCHITECTURE, SECURITY, etc.) and slash command files for AI agents | `templates/` | `*.template`, `commands/*.md` |
 | **Extension** | Spec Kit extension: AI skills, slash commands, bash scripts and workflow hooks, as declared in `extension.yml` | `extensions/spec-kit-docguard/` | `skills/*/SKILL.md`, `scripts/bash/*.sh` |
 | **Tests** | Per-validator unit tests + command-level integration tests using `node:test` | `tests/` | `*.test.mjs` |
@@ -2039,6 +2039,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Strict no longer demotes a hardcoded secret when the project turned security on (issue 711, spec 106 `docguard.field-report-fixes`).** From 0.48.0, strict (the default) reported every error of `security` and `architecture` as a warning, even with `"validators": { "security": true }` or the `enterprise` profile, so a committed product credential failed `standard` (exit 1) but not the default (exit 4 or 2). The demotion now applies only when the merged config does not turn the validator on; both the structured and the legacy count paths read the same set. A project that did not turn security on keeps the warnings, and the text output now prints `N possible secrets in product code are warnings under strict` with the fix; `strict.demotedProductSecrets` carries the count. `SEC001` to `SEC004` and `ARC*` errors change from warn to error for projects that turned the validator on.
+- **Salesforce Apex is read (issues 712 to 714).** One language entry (`cli/shared-languages.mjs`: `.cls`, `.trigger`, `.apex`, id `apex`) feeds every consumer. The secret scan reads Apex and Visualforce (`.page`, `.component`), so `SEC001` to `SEC004` can now fire on them; when it scans nothing, `SEC011` names the source files it skipped by language instead of pointing at `sourceRoot`. Apex test classes (`*Test.cls`, `*Tests.cls`, `*_Test.cls`, `Test_*.cls`, or `@isTest`) are tests, and `@req` in them is read, so `TRC004` clears. `sfdx-project.json` is detected as the Salesforce DX ecosystem; `projectType` is `webapp` when the package holds `lwc/`, `aura/` or `pages/`, else `unknown` as before. `SPK008` reads Apex and `*-meta.xml`, matches a metadata file by its API name and matches directory names, so a completed custom-object task is no longer a phantom; a file that quotes the task text (a saved guard report) is no longer evidence.
+- **`TSP007` finds Maven and Gradle module tests (issue 713).** Test-Spec now detects tests with the classifier traceability uses, so `<module>/src/test/java/**` at any depth counts. A project that has such tests and no `TEST-SPEC.md` now has Test-Spec apply, and under strict that is `needs-declaration`.
+- **`SEC001` and `SEC004` no longer fail on values that cannot be credentials (issue 715).** A route path, a URL without credentials (or a query parameter name), a name made of the key's own words (`idp_access_token`) and a dotted label (`auth.refreshAccessToken`) are low-confidence warnings whose message names the shape. A JWT, a URL with `user:pass@` or a credential query value, and high-entropy values stay errors. Storybook stories, `test-utils/` and `test-support/` are `context: test-path`; a story is never test coverage.
+- **Guard JSON states its exit decision (issue 716).** `guard --format json` (full and `--compact`) carries `exitCode` and `outcome`; `ci --format json` carries `exitCode` and `outcome` (`pass`, `warnings`, `blocked`). `errors` keeps its meaning (intrinsic counts). New schemas `schemas/docguard-guard-result.schema.json` and `schemas/docguard-ci-result.schema.json`. The ci summary says "1 validator applies".
+- **`DCV003` no longer lists `docs/` or a folder of only documents as a source directory, and `TRC002` no longer repeats `STR006` for an unedited scaffold (issue 717).**
+
+Exit codes: a project with `"security": true` (or `architecture: true`, or the `enterprise` profile) and a product-code secret now exits 1 under strict, as under standard. A Maven or Gradle project with module tests and no `TEST-SPEC.md` can now exit 4 under strict (Test-Spec applies). Fewer `SEC001`/`SEC004` errors can turn an exit 1 into 2 for the shapes above; new `SEC001`/`SEC004` errors in Apex can turn 2 into 1. Changed codes: SEC001, SEC004, SEC011, TSP007, TRC002, TRC004, SPK008, DCV003.
+
+## [0.50.0] - 2026-11-23
+
 ### Added
 
 - **A project glossary, and plain-writing checks from ASD STE100: new validator Glossary (`GLS001` to `GLS004`) and new Doc-Quality codes `DQ009` and `DQ010` (spec 105, `docguard.glossary-and-plain-writing`, issue 706).** This change ADDS findings (warnings only after a project writes a glossary); no existing finding changes, and `DQ001` to `DQ008` are byte-identical.
@@ -2054,6 +2067,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - **The user docs are rewritten in plain language (light ASD STE100).** README (English, Portuguese and Spanish), `docs/` (quickstart, installation, FAQ, guides, reference, commands, configuration), PHILOSOPHY, CONTRIBUTING, PRIVACY, SECURITY, SUPPORT, COMPARISONS and the technical brief (`docs/docguard-explained.html` and its PDF) now use short sentences, active voice and one term per concept. Sentences over 25 words fell from about 18% to under 10% on most pages. No command, flag, config key, finding code, heading or link changed, and no behavior changed. The canonical docs and the generated findings reference are unchanged.
+
+### Commits
+
+- feat: project glossary and STE100 plain-writing checks (spec 105) (#708)
+- docs: plain-language rewrite of the user docs (light STE100) (#707)
+- docs: 79-second explainer video (#705)
+- feat(docs): text-quality metrics for Portuguese and Spanish, with reviewed word lists (spec 104 T033) (#704)
 
 ## [0.49.0] - 2026-11-17
 
@@ -2410,28 +2430,8 @@ Budget-Exempt: bytes:llms-full.txt — +42 KB (14.5%) is this release's new docu
   manifest has a version and a document it reads states one (a URL with a
   version, a `version:` line, `<package>@x.y.z`); where no document states a
   version nothing can drift, so it is not applicable instead of asking the
-  project to write the version down. Docs-Diff offers the `docs.roles` mapping
-  for an architecture document kept elsewhere even when the test spec exists,
-  and Test-Spec names both accepted map headings in every fix text
-  (`docguard.strict-by-default` FR-006, T018f).
-- **Group A, third proof pass.** Metadata-Sync counts only a version stated for
-  this package (`<package>@x.y.z`, a URL that names the package, a `version:`
-  line that opens its line in a document that names the package); the
-  comparison and the applicability decision share that one selection, so
-  another tool's minimum version in a guide is neither compared nor counted.
-  Traceability's `performed` is the number of requirements it examined (`total`
-  is unchanged), a template row (`System MUST [capability]`) is no longer a
-  requirement and draws no TRC004, and a project that declares no requirement
-  is not applicable. The placeholder and requirement-ID definition moved to
-  `cli/shared-requirement-definition.mjs`, shared with Requirement-Anchors.
-  Docs-Diff, Test-Spec and Environment find an architecture, test or
-  environment document by a folder or file name that contains the role's word,
-  and otherwise give the exact `docs.roles` snippet with a placeholder path
-  (`docguard.strict-by-default` FR-006, T018g).
-- **The `docs.roles` mapping offer ranks its candidates.** A file whose own name
-  has the role's word ranks above one that only sits in a folder with that word;
 
-<!-- truncated: 6792 more lines — read CHANGELOG.md directly -->
+<!-- truncated: 6812 more lines — read CHANGELOG.md directly -->
 
 ---
 
@@ -2841,9 +2841,12 @@ release and migrate the config schema; `--apply` also refreshes out-of-date agen
 ## Consuming Guard Output (agents)
 
 Prefer the machine contract over parsing prose: `docguard guard --format json`
-returns `status` (PASS/WARN/FAIL, matches exit code 0/2/1 — but FAIL exits `3`,
-not `1`, when the project has no `.docguard.json`, so branch on `status` rather
-than assuming `1`), `findings[]`
+returns `exitCode` (the process exit code: 0, 1, 2, 3 or 4) and `outcome`
+(`pass`, `warnings`, `errors`, `not-initialized`, `unexamined`, `undecided`) —
+gate on these, not on `status` or `errors`. `status` (PASS/WARN/FAIL) comes from
+the effective counts only, so a strict run that exits 4 can still say WARN;
+`errors`/`warnings` are intrinsic counts and `effectiveErrors` is what fails the
+run (schema: `schemas/docguard-guard-result.schema.json`). It also returns `findings[]`
 (`{code, severity, confidence, disposition, evidence, parserTier, message, location, suggestion}`),
 `nextStep`, `reportable[]` (findings whose code is unmeasured or whose
 confidence is low — verify before acting), `coverage`
@@ -3106,4 +3109,4 @@ A structural score is a maturity proxy. Preserve `assurance` and nullable factua
 
 
 ---
-Generated by DocGuard v0.49.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)
+Generated by DocGuard v0.50.0 | [docguard-cli](https://www.npmjs.com/package/docguard-cli)

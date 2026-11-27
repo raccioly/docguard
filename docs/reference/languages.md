@@ -112,6 +112,11 @@ syntax tree. A dash means nothing is extracted.
 | Rust | `.rs` | `fallback-language` | Axum, Actix Web, Rocket, Warp, Tide | Diesel `table!` | Yes | - |
 | PHP | `.php` | `fallback-language` | Laravel, Symfony | - | Yes | - |
 | C# | `.cs` | `fallback-language` | ASP.NET Core controllers and minimal APIs | - | Yes | - |
+| Apex (Salesforce) | `.cls .trigger .apex` | `fallback-language` | - | - | - | - |
+
+Apex is read for secrets, tests and requirement tags (`@req`, `@implements`), and for task evidence in
+Spec Kit (`SPK008`), with the Java comment and string rules. Visualforce (`.page .component`) is scanned
+for secrets only. Both are defined once in `cli/shared-languages.mjs`.
 
 DocGuard recognizes every other language in `LANGUAGE_NAMES`
 (`cli/shared-source.mjs`) by extension, so that a coverage gap can name it.
@@ -311,7 +316,8 @@ the symbol map.
 | Python | `test_*.py`, `*_test.py`, `tests.py` | `def test_` functions |
 | Go | `*_test.go` | Top-level `func Test` functions (subtests are not counted) |
 | Ruby | `*_spec.rb`, `*_test.rb` | `it`, `test` and `specify` lines, in the generated test inventory |
-| Java, Kotlin | `*Test`, `*Tests`, `*Spec`, `*IT` (`.java`, `.kt`), for requirement traceability only | - |
+| Java, Kotlin | `*Test`, `*Tests`, `*Spec`, `*IT` (`.java`, `.kt`), and any code file under a `test/` or `tests/` directory (a Maven or Gradle `src/test/` at any depth) | - |
+| Apex | `*Test.cls`, `*Tests.cls`, `*_Test.cls`, `Test_*.cls`, or a `.cls` that declares `@isTest` (Test-Spec reads the annotation) | - |
 | Rust | Files under `tests/`, for requirement traceability only | - |
 
 Counts are declared cases, not executed ones: a case inside a loop or a
@@ -372,6 +378,7 @@ manifest could have shown it:
 | PHP | `composer.json` | MongoDB |
 | C# | `*.csproj` | Redis, PostgreSQL, MySQL, MongoDB, DynamoDB |
 | Java, Kotlin | `pom.xml`, `build.gradle` | None |
+| Apex | `sfdx-project.json` (Salesforce DX) | None |
 
 Every ecosystem also detects the databases it can see, such as `redis` in
 `requirements.txt` or `pynamodb`. The third column is narrower because the

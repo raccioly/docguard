@@ -32,6 +32,7 @@ import { isTerminalStatus, parseLifecycleStatus } from './lifecycle-status.mjs';
 import { acceptedFormsHint, hasPhaseWord, headingLabelVia, idForEnglishLabel, labelContext, unsupportedEntry } from '../shared-labels.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
+import { APEX_EXTENSIONS, isSalesforceMetadata, metadataApiName } from '../shared-languages.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
 // ──── Spec Kit Mandatory Sections ────
@@ -373,7 +374,14 @@ const EVIDENCE_CODE_EXTS = new Set([
   '.py', '.go', '.rs', '.java', '.rb', '.php', '.kt', '.swift',
   '.c', '.h', '.cpp', '.hpp', '.cs', '.sh', '.sql',
   '.yml', '.yaml', '.json', '.toml',
+  // Salesforce (docguard.field-report-fixes#FR-008): Apex, and metadata XML, which is the deliverable.
+  ...APEX_EXTENSIONS,
 ]);
+
+/** Is this file read for symbol and task-ID evidence? Metadata XML counts; other XML does not. */
+function isEvidenceFile(absPath) {
+  return EVIDENCE_CODE_EXTS.has(extname(absPath).toLowerCase()) || isSalesforceMetadata(absPath);
+}
 
 /**
  * Parse checked tasks (`- [x] T001 …`) out of a tasks.md.
@@ -507,14 +515,31 @@ function scanRepoForEvidence(projectDir, needles) {
   const symbolRes = new Map();
   for (const sym of needles.symbols) symbolRes.set(sym, new RegExp(`\\b${escapeRe(sym)}\\b`));
   const wantContent = needles.ids.size > 0 || symbolRes.size > 0;
+  // docguard.field-report-fixes#FR-008: a file that quotes a checked task (a saved guard report, a script that
+  // echoes the task) is not implementation evidence. Plain and JSON-escaped forms are both checked.
+  const quotes = [...(needles.texts || [])].filter(t => t.length >= 12).flatMap(t => [t, JSON.stringify(t).slice(1, -1)]);
+  const root = resolve(projectDir);
+  const noteName = (name) => {
+    if (needles.basenames.has(name)) found.basenames.add(name);
+    // A metadata file names its deliverable by API name (`Widget__c.object-meta.xml` → `Widget__c`).
+    const api = metadataApiName(name);
+    if (api && needles.basenames.has(api)) found.basenames.add(api);
+  };
+  const seenDirs = new Set();
   walkFiles(projectDir, (absPath) => {
-    const base = basename(absPath);
-    if (needles.basenames.has(base)) found.basenames.add(base);
+    // A directory is a deliverable too (a custom object is `objects/Widget__c/`): note every ancestor once.
+    for (let d = dirname(absPath); d.length > root.length && !seenDirs.has(d); d = dirname(d)) {
+      seenDirs.add(d);
+      const name = basename(d);
+      if (name.length >= 5) noteName(name);
+    }
+    noteName(basename(absPath));
     if (!wantContent) return;
-    if (!EVIDENCE_CODE_EXTS.has(extname(absPath).toLowerCase())) return;
+    if (!isEvidenceFile(absPath)) return;
     if (found.ids.size === needles.ids.size && found.symbols.size === symbolRes.size) return;
     const content = readScannable(absPath);
     if (!content) return;
+    if (quotes.some(q => content.includes(q))) return;
     if (needles.ids.size > found.ids.size) {
       for (const m of content.matchAll(/\bT\d{3,4}\b/g)) {
         if (needles.ids.has(m[0])) found.ids.add(m[0]);
@@ -599,8 +624,9 @@ export function detectPhantomCompletions(projectDir, specs) {
   }
 
   if (pending.length > 0) {
-    const needles = { basenames: new Set(), symbols: new Set(), ids: new Set() };
+    const needles = { basenames: new Set(), symbols: new Set(), ids: new Set(), texts: new Set() };
     for (const p of pending) {
+      needles.texts.add(p.task.text);
       for (const b of p.basenames) needles.basenames.add(b);
       for (const s of p.symbols) needles.symbols.add(s);
       if (p.task.id) needles.ids.add(p.task.id);

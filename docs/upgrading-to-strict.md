@@ -108,6 +108,20 @@ To switch a validator off on purpose, use one of two ways:
 
 New projects no longer get `false` entries from `init`.
 
+## Security and Architecture errors are warnings, unless you turned them on
+
+The defaults before 0.48 did not run `security` and `architecture`. Under strict
+they run, and their errors start as warnings, so an upgrade does not turn your
+build red for checks you never chose. If your config turns the validator on
+(`"validators": { "security": true }`, or the `enterprise` profile), its errors
+stay errors, the same as under `standard`; a finding in a test path stays a
+warning, because a test path never fails a strict build. From 0.48.0 to 0.50.0 strict demoted
+them even then; this was fixed in issue 711.
+
+When strict demotes a possible secret in product code, guard prints the count
+and the two ways to make it fail. `--format json` carries the count as
+`strict.demotedProductSecrets`.
+
 ## Roll it out in stages with `asOf`
 
 A new release can add a validator or a gating finding code to strict. To keep a

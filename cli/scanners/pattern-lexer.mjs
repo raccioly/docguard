@@ -64,6 +64,8 @@ const EXTENSIONS = new Map(Object.entries({
   ts: 'ts', mts: 'ts', cts: 'ts', tsx: 'ts',
   py: 'python', pyi: 'python',
   go: 'go', rs: 'rust', java: 'java', kt: 'kotlin', kts: 'kotlin', cs: 'csharp', php: 'php',
+  // Salesforce Apex reads with the Java rules: `//` and `/* */` comments, `'…'` strings (docguard.field-report-fixes#FR-005).
+  cls: 'java', trigger: 'java', apex: 'java',
   rb: 'ruby', rake: 'ruby', gemspec: 'ruby', swift: 'swift',
   c: 'c', h: 'c',
   cc: 'cpp', cpp: 'cpp', cxx: 'cpp', 'c++': 'cpp', hh: 'cpp', hpp: 'cpp', hxx: 'cpp', ipp: 'cpp', inl: 'cpp',

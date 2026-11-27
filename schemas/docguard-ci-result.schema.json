@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/raccioly/docguard/schemas/docguard-ci-result.schema.json",
+  "title": "DocGuard ci result",
+  "description": "The decision fields of `docguard ci --format json`, specs/106-field-report-fixes FR-011 and FR-012. Gate on `exitCode` or `outcome`. `guard.status` is guard's own word and does not include the ci gates (threshold, --fail-on-warning, strict unexamined).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["status", "exitCode", "outcome", "score", "grade", "guard", "assessment"],
+  "properties": {
+    "status": { "enum": ["PASS", "WARN", "FAIL"] },
+    "exitCode": { "enum": [0, 1, 2], "description": "The process exit code: 1 FAIL, 2 WARN, 0 PASS." },
+    "outcome": { "enum": ["pass", "warnings", "blocked"], "description": "blocked: a gate stops the pipeline (assessment.reasons says which)." },
+    "score": { "type": "number" },
+    "grade": { "type": "string" },
+    "guard": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["PASS", "WARN", "FAIL"] } } },
+    "assessment": { "type": "object", "required": ["status", "reasons", "summary"], "properties": { "status": { "enum": ["READY", "ATTENTION", "BLOCKED"] }, "reasons": { "type": "array", "items": { "type": "string" } }, "summary": { "type": "string" } } }
+  }
+}

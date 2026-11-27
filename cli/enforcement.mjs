@@ -87,14 +87,29 @@ export const V047_ERROR_CODES = Object.freeze(['ANC001', 'ANC003', 'ANC005', 'AP
 export const OFF_BY_DEFAULT_VALIDATORS = Object.freeze(['security', 'architecture']);
 
 /**
+ * The off-by-default validators whose intrinsic errors strict demotes for this project:
+ * those the merged configuration (defaults, then the profile, then `.docguard.json`) does
+ * not turn on. A project that set `"security": true`, or chose a profile that does, made
+ * that choice, and strict must never be weaker than standard for it.
+ * @implements docguard.field-report-fixes#FR-001
+ * @param {object|null} config the merged configuration
+ * @returns {Set<string>}
+ */
+export function demotedValidators(config) {
+  const switches = config?.validators || {};
+  return new Set(OFF_BY_DEFAULT_VALIDATORS.filter(key => switches[key] !== true));
+}
+
+/**
  * What `resolveFindingEnforcement` needs under strict (FR-008): the closed list, the
- * validators whose errors are demoted, and the gating codes. With `enforcement.asOf`
+ * validators whose errors are demoted (only those the project did not turn on,
+ * docguard.field-report-fixes#FR-001), and the gating codes. With `enforcement.asOf`
  * set, a gating code the table lists under a later release is not gating yet; it is
  * returned in `pendingCodes` so the report can say so (FR-013).
  *
  * @param {{ gating?: Iterable<string>, additions?: object, enforcement?: object, runningVersion?: string }} [input]
  */
-export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS, enforcement = null, runningVersion = null } = {}) {
+export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS, enforcement = null, runningVersion = null, config = null } = {}) {
   const asOf = enforcement?.asOf ?? null;
   const active = new Set();
   const pendingCodes = [];
@@ -103,7 +118,7 @@ export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS
     if (asOf && line && compareLines(line, asOf) > 0) pendingCodes.push(code);
     else active.add(code);
   }
-  return { closed: new Set(V047_ERROR_CODES), offByDefault: new Set(OFF_BY_DEFAULT_VALIDATORS), gating: active, pendingCodes: pendingCodes.sort(), runningVersion };
+  return { closed: new Set(V047_ERROR_CODES), offByDefault: demotedValidators(config), testPathOnly: new Set(OFF_BY_DEFAULT_VALIDATORS), gating: active, pendingCodes: pendingCodes.sort(), runningVersion };
 }
 
 /**
@@ -407,6 +422,12 @@ export function strictSummaryLines(strict) {
     lines.push(`Not honored under strict (these validators run): "validators": false for ${ignored.join(', ')}`);
     lines.push('  Switch one off on purpose with a reasoned waiver (<!-- docguard:validator <key> n/a — <reason> owner:<@handle> expires:<YYYY-MM-DD> -->) or choose "enforcement": "standard".');
   }
+  // docguard.field-report-fixes#FR-002: a demoted product secret is said, not only counted.
+  const secrets = strict?.demotedProductSecrets || 0;
+  if (secrets > 0) {
+    lines.push(`${secrets} possible secret${secrets === 1 ? '' : 's'} in product code ${secrets === 1 ? 'is a warning' : 'are warnings'} under strict, because "security" is not turned on in .docguard.json.`);
+    lines.push('  Make them fail with "validators": { "security": true }, or set "findingSeverity" for SEC001 to SEC006.');
+  }
   const pending = strict?.pending || [];
   if (pending.length > 0) {
     lines.push('Pending (strict since a later release; reported only, this does not change the exit code):');
@@ -418,4 +439,27 @@ export function strictSummaryLines(strict) {
 /** True when this run's exit code is decided by strict (an unexamined blocking validator). */
 export function strictBlocks(data) {
   return (data?.strict?.blocking?.length || 0) > 0;
+}
+
+/** The words `outcome` takes in guard JSON, one per exit path (docguard.field-report-fixes#FR-011). */
+export const GUARD_OUTCOMES = Object.freeze(['pass', 'warnings', 'errors', 'not-initialized', 'unexamined', 'undecided']);
+
+/**
+ * The exit decision of one guard run: the code the process exits with and the word for why.
+ * Every output format sets the process exit code from this function, and the JSON carries
+ * both fields, so a consumer that stores only stdout reaches the same decision.
+ *   1 errors · 3 not-initialized (errors, and no .docguard.json) · 4 unexamined (strict) or
+ *   undecided (`--fail-on-inconclusive`, `requiredChecks`) · 2 warnings · 0 pass
+ * @implements docguard.field-report-fixes#FR-011
+ * @param {object} data the guard result (effective counts, `strict`, `validators`, `requiredChecks`)
+ * @param {{ uninitialised?: boolean, failOnInconclusive?: boolean }} [opts]
+ * @returns {{ exitCode: 0|1|2|3|4, outcome: string }}
+ */
+export function guardExitDecision(data, { uninitialised = false, failOnInconclusive = false } = {}) {
+  if ((data?.effectiveErrors || 0) > 0) return uninitialised ? { exitCode: 3, outcome: 'not-initialized' } : { exitCode: 1, outcome: 'errors' };
+  const undecided = (data?.validators || []).some(v => v.verdict === 'inconclusive' || v.verdict === 'blocked');
+  if ((failOnInconclusive && undecided) || (data?.requiredChecks?.undecided || []).length > 0) return { exitCode: 4, outcome: 'undecided' };
+  if (strictBlocks(data)) return { exitCode: 4, outcome: 'unexamined' };
+  if ((data?.effectiveWarnings || 0) > 0) return { exitCode: 2, outcome: 'warnings' };
+  return { exitCode: 0, outcome: 'pass' };
 }

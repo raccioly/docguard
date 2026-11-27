@@ -11,8 +11,13 @@ import { TEST_PATTERNS } from '../shared-trace-patterns.mjs';
 import { realComments } from './anchor-tags.mjs';
 import { parseJsTs, walk } from './js-ast.mjs';
 
+/**
+ * A test source file, by path: a code extension (Apex included, docguard.field-report-fixes#FR-005) and a
+ * test name or a test directory (`tests/`, `src/test/` at any depth).
+ * @implements docguard.field-report-fixes#FR-005
+ */
 export function isTestSource(file) {
-  return /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh)$/.test(file)
+  return /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cls|trigger|apex)$/.test(file)
     && (TEST_PATTERNS.some(pattern => pattern.test(file)) || /(?:^|\/)(?:__tests__|tests?)\//.test(file));
 }
 
@@ -155,7 +160,7 @@ export function scanImplementationFilesForReferences(projectDir, projectFiles, p
     projectDir,
     projectFiles,
     patterns,
-    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift|ya?ml)$/.test(path),
+    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift|ya?ml|cls|trigger|apex)$/.test(path),
     implementationDeclarations,
   );
 }

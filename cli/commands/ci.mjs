@@ -87,6 +87,10 @@ export function runCI(projectDir, config, flags) {
   const status = assessment.status === 'BLOCKED'
     ? 'FAIL'
     : assessment.status === 'ATTENTION' ? 'WARN' : 'PASS';
+  // Exit code follows `status` exactly — one derivation, no drift between what history/JSON record and what
+  // the pipeline does. The JSON carries it (docguard.field-report-fixes#FR-011).
+  const exitCode = status === 'FAIL' ? 1 : status === 'WARN' ? 2 : 0;
+  const outcome = status === 'FAIL' ? 'blocked' : status === 'WARN' ? 'warnings' : 'pass';
 
   // ── Record history (unless opted out) ──
   if (!flags.noHistory) {
@@ -130,6 +134,8 @@ export function runCI(projectDir, config, flags) {
       threshold,
       thresholdMet,
       status,
+      exitCode,
+      outcome,
       assessment,
       timestamp: new Date().toISOString(),
     };
@@ -168,7 +174,5 @@ export function runCI(projectDir, config, flags) {
     console.log('');
   }
 
-  // Exit code follows `status` exactly — one derivation, no drift between
-  // what history/JSON record and what the pipeline does.
-  process.exitCode = status === 'FAIL' ? 1 : status === 'WARN' ? 2 : 0;
+  process.exitCode = exitCode;
 }

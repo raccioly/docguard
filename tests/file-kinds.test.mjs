@@ -74,9 +74,10 @@ describe('FR-001 — every vocabulary word, in lower, upper and mixed case', () 
   });
 
   it("the fixture and test vocabularies split today's detection set, plus corpus and golden", () => {
-    assert.deepEqual([...TEST_DIRS].sort(), ['__tests__', 'spec', 'specs', 'test', 'test-helpers', 'tests']);
+    // test-utils and test-support joined in spec 106 (docguard.field-report-fixes#FR-010).
+    assert.deepEqual([...TEST_DIRS].sort(), ['__tests__', 'spec', 'specs', 'test', 'test-helpers', 'test-support', 'test-utils', 'tests']);
     assert.deepEqual([...FIXTURE_DIRS].sort(), ['__fixtures__', '__mocks__', 'corpus', 'example', 'examples', 'fixtures', 'golden', 'mocks', 'sample', 'samples', 'test-fixtures', 'testdata', 'testfixtures']);
-    const before = ['fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata', 'test', 'tests', '__tests__', 'test-helpers', 'spec', 'specs', '__mocks__', 'mocks', 'examples', 'example', 'sample', 'samples'];
+    const before = ['fixtures', '__fixtures__', 'test-fixtures', 'testfixtures', 'testdata', 'test', 'tests', '__tests__', 'test-helpers', 'test-utils', 'test-support', 'spec', 'specs', '__mocks__', 'mocks', 'examples', 'example', 'sample', 'samples'];
     assert.deepEqual([...NON_PRODUCT_DIRS].sort(), [...before].sort(), 'detection keeps its set: corpus and golden can be real packages');
     assert.deepEqual([...DEFAULT_DETECTION_IGNORE_DIRS].sort(), [...NON_PRODUCT_DIRS].sort());
   });

@@ -8,7 +8,7 @@
  * these facts.
  *
  * Supported ecosystems:
- *   JS/TS · Python · Rust · Go · Java/Kotlin · Ruby · PHP · C#/.NET
+ *   JS/TS · Python · Rust · Go · Java/Kotlin · Ruby · PHP · C#/.NET · Salesforce DX (Apex)
  *
  * Zero NPM dependencies — minimal manifest parsing with Node.js built-ins.
  */
@@ -41,6 +41,8 @@ const MANIFESTS = [
   { file: 'build.gradle.kts', lang: 'Kotlin' },
   { file: 'Gemfile', lang: 'Ruby' },
   { file: 'composer.json', lang: 'PHP' },
+  // Salesforce DX (docguard.field-report-fixes#FR-007): the manifest of an Apex project.
+  { file: 'sfdx-project.json', lang: 'Apex' },
 ];
 
 function readSafe(p) { try { return readFileSync(p, 'utf-8'); } catch { return ''; } }
@@ -245,6 +247,26 @@ function servesNetHttp(dir) {
   return walk(dir, 0);
 }
 
+/** Does a Salesforce DX package directory hold Lightning (`lwc/`, `aura/`) or Visualforce (`pages/`) UI? */
+function salesforceHasUi(dir) {
+  const manifest = readJson(join(dir, 'sfdx-project.json')) || {};
+  const packages = (Array.isArray(manifest.packageDirectories) ? manifest.packageDirectories : [])
+    .map(p => p && typeof p.path === 'string' ? p.path : null).filter(p => p && !p.includes('..'));
+  const UI = new Set(['lwc', 'aura', 'pages']);
+  const walk = (d, depth) => {
+    if (depth > 4) return false;
+    let entries;
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return false; }
+    for (const e of entries) {
+      if (!e.isDirectory() || e.name.startsWith('.') || IGNORE_DIRS.has(e.name)) continue;
+      if (UI.has(e.name)) return true;
+      if (walk(join(d, e.name), depth + 1)) return true;
+    }
+    return false;
+  };
+  return (packages.length ? packages : ['force-app']).some(p => walk(join(dir, p), 0));
+}
+
 function has(deps, ...names) {
   // A Go module's major version is a path suffix (`github.com/labstack/echo/v4`);
   // match on the module without it (docguard.go-spring-rails-routes#FR-007).
@@ -296,6 +318,11 @@ function classify(lang, dir, deps, { webSdk = false } = {}) {
   } else if (lang === 'PHP') {
     if (has(deps, 'laravel/framework')) { framework = 'Laravel'; kind = 'webapp'; }
     else if (has(deps, 'symfony/framework-bundle')) { framework = 'Symfony'; kind = 'webapp'; }
+  } else if (lang === 'Apex') {
+    // docguard.field-report-fixes#FR-007: Lightning or Visualforce UI makes it a web app; without UI
+    // the kind is `platform`, which no project type maps to, so `projectType` stays `unknown`.
+    framework = 'Salesforce DX';
+    kind = salesforceHasUi(dir) ? 'webapp' : 'platform';
   } else if (lang === 'C#') {
     // The regex used to be tested against '' and never matched (docguard.php-dotnet-routes#FR-008).
     if (webSdk || has(deps, 'Microsoft.AspNetCore.App')) { framework = 'ASP.NET Core'; kind = 'api'; }
