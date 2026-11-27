@@ -127,3 +127,9 @@ As the author of a pipeline that stores only stdout, I read one field and reach 
 - **SC-001**: Each issue tree from 711 to 717 gives the expected result (one test per tree, each failing on the base code).
 - **SC-002**: The full suite passes by exit code.
 - **SC-003**: A hermetic A/B against v0.50.0 on DocGuard itself, the benchmark corpus and the other local repositories shows no finding lost that was correct, and every difference is explained by an FR.
+
+## Verification Notes
+
+- **SC-001**: `tests/field-report-fixes.test.mjs` holds one test per issue tree (711 to 717). On the v0.50.0 code 15 of its first 16 tests failed (the story-coverage guard already held); all pass on this change.
+- **SC-002**: `npm test`, by exit code, on the final commit of the pull request.
+- **SC-003**: hermetic A/B, v0.50.0 against this change, one fresh `git archive` per CLI, run one at a time. DocGuard itself: exit 2 → 2, no finding added or removed. 25 other local projects: no exit code changed; one `SPK008` removed in one project (a task that names `.github/workflows/` is now matched by directory name, FR-008; the task named no deliverable). A first candidate turned one project with the `enterprise` profile from exit 4 to 1 on a secret in a test file; FR-001 now keeps test-path findings as warnings, and the rerun is 4 → 4. None of the local projects is a Salesforce or Maven multi-module tree; the issue trees cover those. If product-context secrets gated under the default (not done, plan Decision 1), 3 of the 25 projects would exit 1 (9 findings).

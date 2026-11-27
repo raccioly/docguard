@@ -187,7 +187,9 @@ describe('security synthetic values and context', () => {
     function project() {
       put(dir, 'tests/auth.js', 'const password = "Tr0ub4dor&3xyz";\n');
       put(dir, 'src/config.js', 'const apiKey = "k8Jd93kfLQ0Zp2Wm7xR41abcdEf";\n');
-      writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'x', validators: { security: true } }));
+      // About output formats, not the mode: standard keeps both findings errors (spec 106 FR-001 keeps a
+      // test-path finding a warning under strict, and JUnit lists only a validator's errors when it has any).
+      writeFileSync(join(dir, '.docguard.json'), JSON.stringify({ projectName: 'x', enforcement: 'standard', validators: { security: true } }));
       fixtureGit(dir, ['init', '-q']);
     }
     const run = fmt => spawnSync(process.execPath, [CLI, 'guard', '--format', fmt], { cwd: dir, encoding: 'utf-8' });
