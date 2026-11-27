@@ -8783,12 +8783,12 @@
       "path": "specs/106-field-report-fixes/spec.md",
       "reviewed": {
         "lifecycle": {
-          "approval": "draft",
-          "delivery": "planned",
+          "approval": "approved",
+          "delivery": "verified",
           "context": "current",
           "retirementReason": null,
           "storage": "working_tree",
-          "persistenceModel": null
+          "persistenceModel": "living"
         },
         "relations": {
           "extends": [],
@@ -8798,11 +8798,31 @@
           "supersededBy": []
         },
         "scope": {
-          "canonicalDocs": []
+          "canonicalDocs": [
+            "docs/configuration.md"
+          ]
         },
         "reconciliation": {
-          "lastReviewedRevision": null,
-          "outcomes": []
+          "lastReviewedRevision": "4eaf71ba97685fd2853eb69f837873ef2fbde7bd",
+          "outcomes": [
+            {
+              "revision": "4eaf71ba97685fd2853eb69f837873ef2fbde7bd",
+              "reason": "Issues 711-717 fixed and merged in PR 720 (86a46ca): strict demotion follows the merged config, Apex read by the five named consumers, exitCode/outcome in guard and ci JSON, shape-aware SEC001/SEC004, DCV003 and TRC002 noise; spec 107 then moved the language lists onto one registry.",
+              "evidence": [
+                "cli/enforcement.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/shared-languages.mjs",
+                "cli/validators/security.mjs",
+                "cli/validators/test-spec.mjs",
+                "docs/configuration.md",
+                "tests/field-report-fixes.test.mjs",
+                "tests/program-verification.test.mjs",
+                "tests/security-test-or-placeholder.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
         }
       },
       "intent": {
@@ -8832,7 +8852,7 @@
         "artifacts": [
           {
             "path": "specs/106-field-report-fixes/spec.md",
-            "digest": "sha256:a086907eea8245a27e34e385700043f2bee4013115045d9befdc7cb4ad5922d9"
+            "digest": "sha256:520613bbf9b3b936a7ecb463341d69e1fc0cb6e92597da78cb7869aaae064408"
           },
           {
             "path": "specs/106-field-report-fixes/plan.md",
@@ -12777,11 +12797,11 @@
           },
           {
             "path": "specs/107-language-registry/tasks.md",
-            "digest": "sha256:c62b355b5e529d2e18d69417e4b303581e39f4aff76b3c1a20cae577ca28a855"
+            "digest": "sha256:ef86035289889fe1de9c7bd5833eee7a5922fc4105399ea525860acc9b0ce99e"
           }
         ],
         "taskCompletion": {
-          "checked": 7,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [],

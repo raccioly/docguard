@@ -18,4 +18,4 @@
 
 - [x] T006 FR-006: CHANGELOG, docs.
 - [x] T007 `npm test` by exit code, hermetic A/B.
-- [ ] T008 Scrub check, pull request, CI, merge.
+- [x] T008 Scrub check, pull request, CI, merge.
