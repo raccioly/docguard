@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Quantities in instruction documents are compared (spec 109, `docguard.documented-quantities`, issue 629, the last part of 628).** The claim extractor now reads the trailing `# comment` of a shell-fence line and a bare `s` unit (`~15s`), so `semanticClaims.count` can grow. New Metrics-Consistency codes: `MET005` (warn), a documented minimum Node.js version that disagrees with `engines.node`; `MET006` (warn), a documented duration for a package-script command above the CI budget of that command (`*_BUDGET_MS`, `timeout-minutes`); `MET007` (informational, no exit-code change), a CI budget ten times or more the documented time. Exit codes: a project with a contradicting Node.js minimum or a documented time above its CI budget gets a new warning (exit 2 under standard, no change under strict).
+
 ### Fixed
 
 - **Strict no longer demotes a hardcoded secret when the project turned security on (issue 711, spec 106 `docguard.field-report-fixes`).** From 0.48.0, strict (the default) reported every error of `security` and `architecture` as a warning, even with `"validators": { "security": true }` or the `enterprise` profile, so a committed product credential failed `standard` (exit 1) but not the default (exit 4 or 2). The demotion now applies only when the merged config does not turn the validator on; both the structured and the legacy count paths read the same set. A finding in a test path stays a warning under strict either way (`enforcement.source: strict-test-path`), because a test path never fails a strict build. A project that did not turn security on keeps the warnings, and the text output now prints `N possible secrets in product code are warnings under strict` with the fix; `strict.demotedProductSecrets` carries the count. `SEC001` to `SEC004` and `ARC*` errors change from warn to error for projects that turned the validator on.

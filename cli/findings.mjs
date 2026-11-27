@@ -245,6 +245,25 @@ export const CODES = {
     help: 'A document (including the Spec Kit constitution) states how many runtime dependencies the project has ("zero runtime dependencies", "Dependencies: None", "one npm dependency"), and package.json `dependencies` declares a different number. Only qualified wording counts, so "no dependencies between modules" is never compared. The claim may be stale, or a dependency may have been added that the project promised not to take: decide which side is wrong. There is no mechanical fix.',
     suppress: null,
   },
+  MET005: {
+    validator: 'metricsConsistency',
+    title: 'Documented minimum Node.js version disagrees with engines.node',
+    help: 'A document states a minimum Node.js version ("Node.js 20+", "Node ≥ 20", "Node 20 or later") and `engines.node` in package.json names a different minimum major. One of them is stale: decide which, and change the other (specs/109-documented-quantities).',
+    suppress: null,
+  },
+  MET006: {
+    validator: 'metricsConsistency',
+    title: 'Documented duration exceeds the CI budget for the same command',
+    help: 'A document says a package-script command (`npm test`, `npm run lint`) takes longer than the budget CI gives that command (a `*_BUDGET_MS`/`*_TIMEOUT_MS` env var or `timeout-minutes` on the step or job that runs it). A run as long as the document says would fail in CI, so the number or the budget is wrong (specs/109-documented-quantities).',
+    suppress: null,
+  },
+  MET007: {
+    validator: 'metricsConsistency',
+    title: 'CI budget is ten times or more the documented duration',
+    help: 'A CI budget is a ceiling, not a duration, so a budget far above the documented time is not a contradiction. At ten times or more it is evidence that the documented number may be stale: time the command and update the document, or lower the budget. Informational; it never changes the exit code (specs/109-documented-quantities).',
+    defaultLevel: 'info',
+    suppress: null,
+  },
   FRS001: {
     validator: 'freshness',
     title: 'Document review signal unavailable',

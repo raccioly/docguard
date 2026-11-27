@@ -7191,6 +7191,140 @@
       }
     },
     {
+      "specId": "docguard.documented-quantities",
+      "path": "specs/109-documented-quantities/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "approved",
+          "delivery": "verified",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": "living"
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": [
+            "docs-canonical/DATA-MODEL.md"
+          ]
+        },
+        "reconciliation": {
+          "lastReviewedRevision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
+          "outcomes": [
+            {
+              "revision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
+              "reason": "Issue 629: shell-fence comments and bare s are claims; MET005 Node minimum vs engines.node, MET006 duration above the CI budget, MET007 (info) explicit budget >= 10x; A/B shows no exit change and no new finding on local projects.",
+              "evidence": [
+                "cli/scanners/semantic-claims.mjs",
+                "cli/validators/metrics-consistency.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/documented-quantities.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            }
+          ]
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.documented-quantities#FR-001",
+          "docguard.documented-quantities#FR-002",
+          "docguard.documented-quantities#FR-003",
+          "docguard.documented-quantities#FR-004",
+          "docguard.documented-quantities#FR-005",
+          "docguard.documented-quantities#SC-001",
+          "docguard.documented-quantities#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/109-documented-quantities/spec.md",
+            "digest": "sha256:553b8666c10198f3727c04446fb336d21fa34456f9dd5de9135af189d8ff389b"
+          },
+          {
+            "path": "specs/109-documented-quantities/plan.md",
+            "digest": "sha256:aac4fbfabe2793e5bea6d5f18f9a2e063e304ac3b21ab5ed681409ad023dae8d"
+          },
+          {
+            "path": "specs/109-documented-quantities/tasks.md",
+            "digest": "sha256:55ae1fc438f80377039b15801044964131a19495fe41a0f489088b52b9865b7a"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 6,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/semantic-claims.mjs",
+            "line": 232
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 485
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 486
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 487
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/program-verification.test.mjs",
+            "line": 255
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 256
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.dogfood-findings",
       "path": "specs/050-dogfood-findings/spec.md",
       "reviewed": {
@@ -7272,22 +7406,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 453
+            "line": 642
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 432
+            "line": 621
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 509
+            "line": 698
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 523
+            "line": 712
           }
         ],
         "testEvidence": [
@@ -8983,17 +9117,17 @@
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 255
+            "line": 258
           },
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 256
+            "line": 259
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 257
+            "line": 260
           }
         ]
       }
@@ -9650,7 +9784,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1234
+            "line": 1253
           },
           {
             "requirementId": "FR-008",
@@ -11222,12 +11356,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1510
+            "line": 1529
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1520
+            "line": 1539
           },
           {
             "requirementId": "FR-006",
@@ -18037,7 +18171,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/semantic-claims.mjs",
-            "line": 81
+            "line": 84
           },
           {
             "requirementId": "FR-033",
