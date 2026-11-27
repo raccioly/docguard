@@ -1,5 +1,73 @@
 {
   "documents": {
+    "AGENTS.md": {
+      "excluded": {
+        ".docguard-anchor-lock.jsonl": "DocGuard state file",
+        ".github": "directory",
+        ".jules": "directory",
+        ".jules/RULES.md": "another document (reviewed on its own)",
+        ".jules/routines": "directory",
+        "CHANGELOG.md": "changelog, lockfile or claims/evidence data",
+        "DRIFT-LOG.md": "another document (reviewed on its own)",
+        "docs-canonical": "directory",
+        "docs-canonical/ARCHITECTURE.md": "another document (reviewed on its own)",
+        "docs-canonical/DATA-MODEL.md": "another document (reviewed on its own)",
+        "docs-canonical/ENVIRONMENT.md": "another document (reviewed on its own)",
+        "docs-canonical/REQUIREMENTS.md": "another document (reviewed on its own)",
+        "docs-canonical/SECURITY.md": "another document (reviewed on its own)",
+        "docs-canonical/TEST-SPEC.md": "another document (reviewed on its own)",
+        "llms-full.txt": "another document (reviewed on its own)",
+        "llms.txt": "another document (reviewed on its own)",
+        "specs": "directory",
+        "specs/015-spec-first-gate": "directory",
+        "specs/067-jules-policy": "directory",
+        "specs/101-completion-one-commit": "directory",
+        "specs/103-completion-upkeep": "directory",
+        "testguard.claims.json": "changelog, lockfile or claims/evidence data",
+        "testguard.config.json": "under 20 lines",
+        "testguard.ignore.json": "under 20 lines",
+        "tests/helpers/git.mjs": "test, fixture or example path",
+        "tests/program-verification.test.mjs": "test, fixture or example path",
+        "tests/workflow-permissions.test.mjs": "test, fixture or example path"
+      },
+      "reason": "Reread Consuming Guard Output against schemas/docguard-guard-result.schema.json after spec 108 added unanalyzed: exitCode/outcome guidance and every cited path still hold",
+      "references": {
+        ".github/scripts/jules-policy.mjs": {
+          "fingerprint": "sha256:1103ee9ecc4394bc397eceab17fa76fc141ca22e83b3360f3737e14ed97be423",
+          "tier": "content"
+        },
+        ".jules/preflight.mjs": {
+          "fingerprint": "sha256:4af8d99fc2d9b7b88b4702d51e66fd0ad2e9502713d7f17b66feaad8f2120d29",
+          "tier": "content"
+        },
+        "cli/precision-evidence-data.mjs": {
+          "fingerprint": "sha256:6daed8e9420a52c4541d87fa6d5729a65fd8eb19b31146657c22f8753d929d86",
+          "tier": "content"
+        },
+        "extensions/spec-kit-docguard/extension.yml": {
+          "fingerprint": "sha256:af96a253e4ac5c3c4e87f9cda55395fc400349dd83351e7e1c710eae905d15d3",
+          "tier": "content"
+        },
+        "package.json": {
+          "fingerprint": "sha256:112a1697a73480debd949c4807df6d8becb3cc13044aa5b1d76963c91bb50dd8",
+          "tier": "content"
+        },
+        "schemas/docguard-guard-result.schema.json": {
+          "fingerprint": "sha256:86b9c1c13e91ea62fe4cd44b0bc3b44b931b21466afbf34aa088fbc1433c5ebe",
+          "tier": "content"
+        },
+        "tools/node-test-json-reporter.mjs": {
+          "fingerprint": "sha256:9ac134e251710c6796721c0bb0cee2f5e74537d335ca30659af590fe16dfb252",
+          "tier": "content"
+        },
+        "tools/suite-runtime-budget.mjs": {
+          "fingerprint": "sha256:32e1e28fc46360ccdb41c99f8e937518e8e7a85f7c8ffc87ff4b2d879569df6b",
+          "tier": "content"
+        }
+      },
+      "reviewedAt": "2026-11-27",
+      "reviewedRevision": "28583bff60ce8e5f927e3f9ca91a73398949b672"
+    },
     "docs-canonical/ARCHITECTURE.md": {
       "excluded": {
         ".agent": "directory",
