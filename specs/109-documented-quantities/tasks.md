@@ -15,5 +15,5 @@
 ## Phase 3: Verification
 
 - [x] T004 FR-005: codes, docs, CHANGELOG.
-- [ ] T005 Full suite, hermetic A/B.
-- [ ] T006 Pull request, CI, merge.
+- [x] T005 Full suite, hermetic A/B.
+- [x] T006 Pull request, CI, merge.

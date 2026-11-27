@@ -7232,7 +7232,7 @@
         "artifacts": [
           {
             "path": "specs/109-documented-quantities/spec.md",
-            "digest": "sha256:4cad3d6ce8237fd0b7aa865a7442d6178bc83dc558f9b4aa10e0213fd32e3341"
+            "digest": "sha256:4172f4f0bcfedc4176562b5ac470afbca6c6a982e602f681ec72adf43d23cc76"
           },
           {
             "path": "specs/109-documented-quantities/plan.md",
@@ -7240,11 +7240,11 @@
           },
           {
             "path": "specs/109-documented-quantities/tasks.md",
-            "digest": "sha256:9321e3abc971497f4fb19250451017c84624bad044fac296fe25c1636ebef361"
+            "digest": "sha256:55ae1fc438f80377039b15801044964131a19495fe41a0f489088b52b9865b7a"
           }
         ],
         "taskCompletion": {
-          "checked": 4,
+          "checked": 6,
           "total": 6
         },
         "implementationEvidence": [
@@ -7256,17 +7256,17 @@
           {
             "requirementId": "FR-002",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 481
+            "line": 485
           },
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 482
+            "line": 486
           },
           {
             "requirementId": "FR-004",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 483
+            "line": 487
           }
         ],
         "testEvidence": [
@@ -7294,6 +7294,16 @@
             "requirementId": "FR-005",
             "file": "tests/documented-quantities.test.mjs",
             "line": 8
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/program-verification.test.mjs",
+            "line": 255
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 256
           }
         ]
       }
@@ -7380,22 +7390,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 631
+            "line": 642
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 610
+            "line": 621
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 687
+            "line": 698
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 701
+            "line": 712
           }
         ],
         "testEvidence": [
@@ -9091,17 +9101,17 @@
           {
             "requirementId": "SC-001",
             "file": "tests/program-verification.test.mjs",
-            "line": 255
+            "line": 258
           },
           {
             "requirementId": "SC-002",
             "file": "tests/program-verification.test.mjs",
-            "line": 256
+            "line": 259
           },
           {
             "requirementId": "SC-003",
             "file": "tests/program-verification.test.mjs",
-            "line": 257
+            "line": 260
           }
         ]
       }
