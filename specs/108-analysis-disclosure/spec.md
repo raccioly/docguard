@@ -59,5 +59,5 @@
 
 ## Verification Notes
 
-- **SC-001**: `npm test` by exit code on the final commit.
-- **SC-002**: recorded after the A/B.
+- **SC-001**: `npm test` by exit code: 6021 pass, 0 fail.
+- **SC-002**: hermetic A/B, main (`86a46ca`) against this branch, one fresh `git archive` per CLI, run one at a time. The first candidate turned three local projects from exit 4 or 2 to exit 1. Every new finding was reviewed by key name, length and a redacted shape, never the value, and each was a false positive: CloudFormation `!Ref`/`!Sub` values, compose `${VAR:?message}`, a shell `"$(openssl rand …)"`, an OpenAPI request `example:`, and lowercase local-development phrases. FR-001 now drops the first three and reports the last two as low-confidence warnings. On the rerun no exit code changed: DocGuard itself exits 2 → 2, five low-confidence SEC003 warnings in one project (development phrases in a compose file), one SEC001 warning in another, and one project loses SEC011 because its config files are now scanned. A test pins each of the five shapes.

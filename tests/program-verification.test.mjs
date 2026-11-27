@@ -263,4 +263,7 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.language-registry#SC-001
   // @req docguard.language-registry#SC-002
   it('107: the suite and the A/B', () => recorded('107-language-registry', ['SC-001', 'SC-002']));
+  // @req docguard.analysis-disclosure#SC-001
+  // @req docguard.analysis-disclosure#SC-002
+  it('108: the suite and the A/B', () => recorded('108-analysis-disclosure', ['SC-001', 'SC-002']));
 });

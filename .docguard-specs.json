@@ -1353,7 +1353,7 @@
         "artifacts": [
           {
             "path": "specs/108-analysis-disclosure/spec.md",
-            "digest": "sha256:dbcc83ff9d068b98362eb9c7ed7e7da24c0ece9f648c125f1f4034296fbc9dd9"
+            "digest": "sha256:49536b061006aaef4cb7f4847045a40ccebcee6352b24c76f0228b33e477a6cd"
           },
           {
             "path": "specs/108-analysis-disclosure/plan.md",
@@ -1361,11 +1361,11 @@
           },
           {
             "path": "specs/108-analysis-disclosure/tasks.md",
-            "digest": "sha256:18d8388ef8bc8a589fd95227b7c8b9eea75613e7fd0b6ac1fa71655e1ab4c9ea"
+            "digest": "sha256:5af2ebe2f8baa37b0705f083a1e1a253a4cde9ab5313af3fa541596a9b76333c"
           }
         ],
         "taskCompletion": {
-          "checked": 6,
+          "checked": 8,
           "total": 8
         },
         "implementationEvidence": [],
@@ -1409,6 +1409,16 @@
             "requirementId": "FR-008",
             "file": "tests/config-secrets-and-coverage.test.mjs",
             "line": 12
+          },
+          {
+            "requirementId": "SC-001",
+            "file": "tests/program-verification.test.mjs",
+            "line": 266
+          },
+          {
+            "requirementId": "SC-002",
+            "file": "tests/program-verification.test.mjs",
+            "line": 267
           }
         ]
       }

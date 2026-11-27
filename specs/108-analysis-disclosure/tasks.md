@@ -17,5 +17,5 @@
 ## Phase 3: Verification
 
 - [x] T006 FR-006, FR-007: schema, docs, CHANGELOG.
-- [ ] T007 Full suite, hermetic A/B.
-- [ ] T008 Scrub check, pull request, CI, merge.
+- [x] T007 Full suite, hermetic A/B.
+- [x] T008 Scrub check, pull request, CI, merge.
