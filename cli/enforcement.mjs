@@ -118,7 +118,7 @@ export function strictFindingContext({ gating = [], additions = STRICT_ADDITIONS
     if (asOf && line && compareLines(line, asOf) > 0) pendingCodes.push(code);
     else active.add(code);
   }
-  return { closed: new Set(V047_ERROR_CODES), offByDefault: demotedValidators(config), gating: active, pendingCodes: pendingCodes.sort(), runningVersion };
+  return { closed: new Set(V047_ERROR_CODES), offByDefault: demotedValidators(config), testPathOnly: new Set(OFF_BY_DEFAULT_VALIDATORS), gating: active, pendingCodes: pendingCodes.sort(), runningVersion };
 }
 
 /**

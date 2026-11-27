@@ -76,6 +76,19 @@ describe('issue 711: strict keeps the errors of a validator the project turned o
     assert.equal(guard(dir).status, 1);
   });
 
+  it('a secret in a test path stays a warning under strict even when security is on', (t) => {
+    const dir = tree(t, { 'package.json': '{"name":"demo","version":"1.0.0"}\n', 'src/test/java/demo/LegacyClientTest.java': JAVA_SECRET.replace('LegacyClient', 'LegacyClientTest') });
+    init(dir);
+    setConfig(dir, c => { c.validators.security = true; delete c.enforcement; });
+    const found = codes(guard(dir).data, ['SEC001', 'SEC004']);
+    assert.equal(found.length, 2);
+    for (const f of found) {
+      assert.equal(f.context, 'test-path');
+      assert.equal(f.effectiveSeverity, 'warn');
+      assert.equal(f.enforcement.source, 'strict-test-path');
+    }
+  });
+
   it('without the key the errors are warnings, and the text output says so', (t) => {
     const dir = tree(t, { 'package.json': '{"name":"demo","version":"1.0.0"}\n', 'src/main/java/demo/LegacyClient.java': JAVA_SECRET });
     init(dir);
@@ -101,9 +114,11 @@ describe('issue 711: strict is never weaker than standard for the same switches'
     let compared = 0;
     for (const key of keys) for (const code of Object.keys(CODES).slice(0, 400)) for (const severity of ['error', 'warn', 'info']) for (const where of ['product', 'test-path', undefined]) {
       const finding = { code, severity, ...(where ? { context: where } : {}) };
-      const strict = resolveFindingEnforcement(config, finding, key, context).level;
+      const strict = resolveFindingEnforcement(config, finding, key, context);
       const standard = resolveFindingEnforcement(config, finding, key, null).level;
-      assert.ok(rank[strict] >= rank[standard], `${key} ${code} ${severity} ${where}: strict ${strict} < standard ${standard}`);
+      // The one documented exception: a test-path finding never fails a strict build (spec 097).
+      if (where === 'test-path' && strict.source === 'strict-test-path') continue;
+      assert.ok(rank[strict.level] >= rank[standard], `${key} ${code} ${severity} ${where}: strict ${strict.level} < standard ${standard}`);
       compared++;
     }
     assert.ok(compared > 1000);

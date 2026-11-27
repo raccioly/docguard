@@ -93,6 +93,9 @@ export function resolveFindingEnforcement(config, finding, validatorKey, strictC
     if (finding?.severity === 'error') {
       if (code && strictContext.closed.has(code)) return { level: 'error', source: 'intrinsic', key: code };
       if (strictContext.offByDefault.has(validatorKey)) return { level: 'warn', source: 'strict-demoted', key: code };
+      // docguard.field-report-fixes#FR-001: a project that turned the validator on keeps its errors, except in a
+      // test path, which never fails a strict build (spec 097).
+      if (finding?.context === 'test-path' && strictContext.testPathOnly?.has(validatorKey)) return { level: 'warn', source: 'strict-test-path', key: code };
     }
   }
   if (finding?.severity === 'error') {
