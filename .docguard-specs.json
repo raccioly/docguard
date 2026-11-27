@@ -9040,7 +9040,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cdb655592a32a9121989f408adb32af2595af051",
+          "lastReviewedRevision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
           "outcomes": [
             {
               "revision": "4eaf71ba97685fd2853eb69f837873ef2fbde7bd",
@@ -9062,6 +9062,23 @@
             {
               "revision": "cdb655592a32a9121989f408adb32af2595af051",
               "reason": "Spec 107 moved each file's language list onto cli/shared-languages.mjs (and spec 106 tags were added); reviewed: behavior unchanged except the wider language set the specs already describe as 'code'",
+              "evidence": [
+                "cli/enforcement.mjs",
+                "cli/scanners/requirement-evidence.mjs",
+                "cli/shared-languages.mjs",
+                "cli/validators/security.mjs",
+                "cli/validators/test-spec.mjs",
+                "docs/configuration.md",
+                "tests/field-report-fixes.test.mjs",
+                "tests/program-verification.test.mjs",
+                "tests/security-test-or-placeholder.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
+              "reason": "Spec 108 added the config secret scan and disclosure to files these specs list as evidence; reviewed: their recorded behavior holds",
               "evidence": [
                 "cli/enforcement.mjs",
                 "cli/scanners/requirement-evidence.mjs",
@@ -9106,7 +9123,7 @@
         "artifacts": [
           {
             "path": "specs/106-field-report-fixes/spec.md",
-            "digest": "sha256:3dd3fe7674d9a16cac14b82a4cbcc090a8e3c8d1a57b8af831add690615e9adf"
+            "digest": "sha256:bc3e532e5984f72478a075c6ee47cc65592f6e7ca9f0070e0084bb8fa1930853"
           },
           {
             "path": "specs/106-field-report-fixes/plan.md",
@@ -10372,7 +10389,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cdb655592a32a9121989f408adb32af2595af051",
+          "lastReviewedRevision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
           "outcomes": [
             {
               "revision": "7db0ae5fa8809ddbd40c6b23d69a1d4ca5ae06b4",
@@ -10469,6 +10486,30 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
+              "reason": "Spec 108 added the config secret scan and disclosure to files these specs list as evidence; reviewed: their recorded behavior holds",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/init.mjs",
+                "cli/config.mjs",
+                "cli/shared-glossary.mjs",
+                "cli/shared-sentences.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/glossary.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/doc-quality-plain-writing.test.mjs",
+                "tests/glossary-compat.test.mjs",
+                "tests/glossary-init.test.mjs",
+                "tests/glossary-match.test.mjs",
+                "tests/glossary-parse.test.mjs",
+                "tests/glossary-validator.test.mjs",
+                "tests/glossary-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -10515,7 +10556,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:94851c5eb5459a10953cc25bcb50d5d23cc8289c5d41a7ab845cb618024548a3"
+            "digest": "sha256:28c3bbf09561e4c078e6a406293fb1ed17c96006a6d7417999c5b1734784d939"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
@@ -13079,11 +13120,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "df310fade95f6403168acaa9d0e5a4fd358406bb",
+          "lastReviewedRevision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
           "outcomes": [
             {
               "revision": "df310fade95f6403168acaa9d0e5a4fd358406bb",
               "reason": "Every 'is this file code?' list under cli/ reads cli/shared-languages.mjs; parser-bound lists carry a reasoned LANGUAGE EXEMPTION enforced by tests/language-registry.test.mjs; Apex reaches todo, drift, anchors and SPK008; API-Surface skips the Salesforce DX framework name.",
+              "evidence": [
+                "cli/shared-languages.mjs",
+                "cli/validators/api-surface.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/language-registry.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "2c7ce32fed372a12a601a845aa96f8a373a8bf39",
+              "reason": "Spec 108 added the config secret scan and disclosure to files these specs list as evidence; reviewed: their recorded behavior holds",
               "evidence": [
                 "cli/shared-languages.mjs",
                 "cli/validators/api-surface.mjs",
@@ -13113,7 +13167,7 @@
         "artifacts": [
           {
             "path": "specs/107-language-registry/spec.md",
-            "digest": "sha256:e668134373d09c3eeb1d176ea0a900036d7e38e8387f158b0bb236e85f051611"
+            "digest": "sha256:ae77c28aad01b675f4c7b091665416aa305dd5ad5b6af92e21a6a2e78132e160"
           },
           {
             "path": "specs/107-language-registry/plan.md",
