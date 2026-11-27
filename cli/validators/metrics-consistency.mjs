@@ -410,7 +410,7 @@ function ciBudgets(projectDir, scripts) {
     const n = Number(String(value).replace(/["']/g, ''));
     if (!m || !Number.isFinite(n) || n <= 0) return null;
     const unit = m[1].toUpperCase();
-    return { seconds: unit === 'MS' ? n / 1000 : unit.startsWith('MIN') ? n * 60 : n, source: `${key}: ${String(value).replace(/["']/g, '')}` };
+    return { seconds: unit === 'MS' ? n / 1000 : unit.startsWith('MIN') ? n * 60 : n, source: `${key}: ${String(value).replace(/["']/g, '')}`, explicit: true };
   };
   for (const file of files) {
     let lines;
@@ -423,8 +423,12 @@ function ciBudgets(projectDir, scripts) {
         const limits = [...step.env, ...job.env, ...workflowEnv, ...(step.timeout ? [step.timeout] : []), ...(job.timeout ? [job.timeout] : [])];
         if (!limits.length) continue;
         const best = limits.reduce((a, b) => (b.seconds < a.seconds ? b : a));
+        // A job's `timeout-minutes` is a safety net, not a budget for the command: only an explicit
+        // budget variable is evidence for MET007 (`explicitSeconds`).
+        const explicit = limits.filter(l => l.explicit);
+        const explicitBest = explicit.length ? explicit.reduce((a, b) => (b.seconds < a.seconds ? b : a)) : null;
         const cur = budgets.get(call);
-        if (!cur || best.seconds < cur.seconds) budgets.set(call, { ...best, file: rel });
+        if (!cur || best.seconds < cur.seconds) budgets.set(call, { ...best, file: rel, explicit: explicitBest ? { ...explicitBest, file: rel } : cur?.explicit || null });
       }
     };
     for (const raw of lines) {
@@ -523,7 +527,13 @@ function checkQuantityClaims(projectDir, mdFiles, isIgnored) {
       const code = shell ? (hash >= 0 ? line.slice(0, hash) : line) : line;
       const prose = shell ? (hash >= 0 ? line.slice(hash + 2) : '') : line;
       const call = scriptCalled(code, scripts);
-      const d = call && DURATION.exec(prose);
+      let d = call && DURATION.exec(prose);
+      // In prose, a duration counts only when phrased as how long the command takes, never a schedule.
+      if (d && !shell) {
+        const before = prose.slice(Math.max(0, d.index - 30), d.index);
+        if (/\b(?:every|each|per|after|within|cron|schedule[ds]?|daily|nightly|weekly)\b[^.]*$/i.test(before)
+          || !(/(?:\btakes?|\btook|\bruns? in|\bfinish(?:es)? in|\bcompletes? in|\blasts?|\bin (?:about|under|around)|[~≈(])\s*$/i.test(before) || /^(?:~|about|around|roughly)/i.test(d[1]))) d = null;
+      }
       const budget = call && budgets.get(call.name);
       if (!d || !budget) return;
       const seconds = Number(d[2]) * UNIT_SECONDS[d[3].toLowerCase()];
@@ -538,10 +548,11 @@ function checkQuantityClaims(projectDir, mdFiles, isIgnored) {
           location,
           suggestion: { kind: 'review', text: 'Time the command, then fix the document or the CI budget.' },
         }));
-      } else if (budget.seconds >= 10 * seconds) {
+      } else if (budget.explicit && budget.explicit.seconds >= 10 * seconds) {
+        const ew = `${budget.explicit.source} (${Math.round(budget.explicit.seconds)} s) in ${budget.explicit.file}`;
         findings.push(mkFinding({
           code: 'MET007', validator: 'metricsConsistency', severity: 'warn', confidence: 'medium',
-          message: `${location} says \`${call.text}\` takes ${said}; CI budgets it ${where}: ${Math.round(budget.seconds / seconds)}x the documented time, so the number may be stale`,
+          message: `${location} says \`${call.text}\` takes ${said}; CI budgets it ${ew}: ${Math.round(budget.explicit.seconds / seconds)}x the documented time, so the number may be stale`,
           location,
           suggestion: { kind: 'review', text: 'Time the command and update the document, or lower the CI budget if it is generous on purpose.' },
         }));

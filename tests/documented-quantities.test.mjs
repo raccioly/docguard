@@ -76,7 +76,7 @@ describe('issue 629: documented quantities against their source of truth', () =>
     const dir = tree(t, {
       'package.json': '{"name":"x","version":"1.0.0","scripts":{"test":"node --test","docs":"x"}}\n',
       '.github/workflows/ci.yml': 'jobs:\n  t:\n    timeout-minutes: 1\n    steps:\n      - run: npm test\n',
-      'AGENTS.md': '# Agents\n\nA review takes about 30 minutes.\n\n`npm run docs` takes about 10 minutes.\n',
+      'AGENTS.md': '# Agents\n\nA review takes about 30 minutes.\n\n`npm run docs` takes about 10 minutes.\n\nRun `npm test` every 24 hours.\n\n`npm test` takes ~1s locally.\n',
     });
     assert.deepEqual([...met(dir, 'MET006'), ...met(dir, 'MET007')], []);
   });
