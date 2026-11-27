@@ -138,6 +138,7 @@ import { ensureStateDir } from '../writers/state-dir.mjs';
 import { resolveHooksTarget } from '../shared-git.mjs';
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { namesToken } from '../scanners/doc-references.mjs';
+import { codePathPattern } from '../shared-languages.mjs';
 
 // Git enforcement is offline and fail-closed; agent nudges stay best-effort.
 const ENFORCEMENT_RUNTIME = `
@@ -562,7 +563,8 @@ export function runHooks(projectDir, config, flags) {
 const NUDGE_HOOK_COMMAND = 'docguard nudge-hook';
 const NUDGE_THROTTLE_MS = 30 * 60 * 1000; // one nudge per file per 30 min
 const NUDGE_STATE_PATH = '.docguard/nudge-state.json';
-const NUDGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift)$/;
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const NUDGE_CODE_EXT = codePathPattern([], { flags: '' });
 // docguard.agent-instruction-role#FR-002: the role owns the root-level list.
 const NUDGE_AGENT_FILES = ROOT_AGENT_FILES;
 

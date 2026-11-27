@@ -49,6 +49,7 @@ import { resolveDocDirs } from '../shared.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
 const NOTHING_HOW = 'Nothing to configure unless a document backticks a code identifier (camelCase, snake_case or PascalCase) or source code cites an ADR in a comment (`ADR-012`): Reference-Existence compares what a document names with the code at the commit where the document was last updated and at HEAD, and checks that a cited ADR is defined.';
 
@@ -74,10 +75,8 @@ export function applies(projectDir, config = {}) {
  */
 const COPY_OF_CODE_KINDS = ['template', 'fixture', 'vendored', 'generated', 'nested-checkout'];
 
-const CODE_EXT = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs', '.java',
-  '.kt', '.rb', '.php', '.cs', '.swift', '.scala', '.dart', '.c', '.cpp', '.h',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXT = codeExtensions();
 const IDENT = /[A-Za-z_][A-Za-z0-9_]*/g;
 
 // Compound = clearly a code symbol, not a prose word: camelCase, snake_case,

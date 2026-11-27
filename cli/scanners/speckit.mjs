@@ -32,7 +32,7 @@ import { isTerminalStatus, parseLifecycleStatus } from './lifecycle-status.mjs';
 import { acceptedFormsHint, hasPhaseWord, headingLabelVia, idForEnglishLabel, labelContext, unsupportedEntry } from '../shared-labels.mjs';
 import { walkFiles, relPosix } from '../shared-ignore.mjs';
 import { readScannable } from '../shared-source.mjs';
-import { APEX_EXTENSIONS, isSalesforceMetadata, metadataApiName } from '../shared-languages.mjs';
+import { SCRIPT_EXTENSIONS, codeExtensions, isSalesforceMetadata, metadataApiName } from '../shared-languages.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 
 // ──── Spec Kit Mandatory Sections ────
@@ -369,14 +369,9 @@ const CHECKED_TASK_RE = /^\s*-\s*\[[xX]\]\s*(T\d{3,4})?\s*(.+)$/;
 const MAX_PHANTOM_FINDINGS = 10;
 
 /** Code-ish extensions whose content can carry task-ID / symbol evidence. */
-const EVIDENCE_CODE_EXTS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.go', '.rs', '.java', '.rb', '.php', '.kt', '.swift',
-  '.c', '.h', '.cpp', '.hpp', '.cs', '.sh', '.sql',
-  '.yml', '.yaml', '.json', '.toml',
-  // Salesforce (docguard.field-report-fixes#FR-008): Apex, and metadata XML, which is the deliverable.
-  ...APEX_EXTENSIONS,
-]);
+// Every programming language and script (specs/107-language-registry), plus the data formats a task delivers.
+// Salesforce metadata XML is the deliverable too (docguard.field-report-fixes#FR-008, `isEvidenceFile`).
+const EVIDENCE_CODE_EXTS = codeExtensions([...SCRIPT_EXTENSIONS, '.sql', '.yml', '.yaml', '.json', '.toml']);
 
 /** Is this file read for symbol and task-ID evidence? Metadata XML counts; other XML does not. */
 function isEvidenceFile(absPath) {

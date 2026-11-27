@@ -45,6 +45,7 @@ import { loadTestguardEvidence, structuredHint, testStatus } from './testguard-e
 import { collectRequirementIds } from './requirement-docs.mjs';
 import { readRetirementManifest } from './retirement-manifest.mjs';
 import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from './import-graph.mjs';
+import { LEXER_BY_EXTENSION, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
 
 export { ANCHOR_LOCK_PATH };
 export const ANCHOR_ALGO = 1;
@@ -85,7 +86,9 @@ export function isFailingProblem(problem, policy) {
     && problem.reviewedState === 'reviewed';
 }
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
-const SOURCE_EXT = /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|kts|rb|php|sh|cs|swift|c|h|cc|cpp|cxx|hh|hpp|hxx|ya?ml)$/i;
+// One language list for every scanner (specs/107-language-registry): the languages a pattern-tier lexer reads,
+// plus scripts and YAML, whose comments the hash reader takes.
+const SOURCE_EXT = new RegExp(`\\.(?:${[...Object.keys(LEXER_BY_EXTENSION), ...SCRIPT_EXTENSIONS.map(e => e.slice(1)), 'yml', 'yaml'].sort((a, b) => b.length - a.length).map(e => e.replace(/[+]/g, '\\+')).join('|')})$`, 'i');
 
 /** Percent-encode the two characters that would break a `|`-joined key. */
 export const encodeKeyPart = part => String(part).replaceAll('%', '%25').replaceAll('|', '%7C');

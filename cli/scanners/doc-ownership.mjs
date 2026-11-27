@@ -25,9 +25,11 @@ import { listTrackedFiles } from '../shared-git.mjs';
 import { extractHeadings } from '../shared-headings.mjs';
 import { parseSections } from '../writers/sections.mjs';
 import { scanComponents } from './inventory.mjs';
+import { codePathPattern, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
 
 // A source file is code; docs, data and config are not "unowned code".
-export const SOURCE_RE = /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|kts|rb|php|cs|swift|scala|sh|bash|ps1|lua|dart|ex|exs|clj|c|cc|cpp|h|hpp|m|mm|vue|svelte)$/i;
+// One language list for every scanner (specs/107-language-registry): code, scripts and single-file components.
+export const SOURCE_RE = codePathPattern(['.vue', '.svelte', '.ps1', ...SCRIPT_EXTENSIONS]);
 const GLOB_CHARS = /[*?{[]/;
 
 const _compiled = new Map(); // config key → compiled map (long-lived MCP server)

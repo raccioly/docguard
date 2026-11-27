@@ -19,8 +19,10 @@ import { resolve, join, relative, extname } from 'node:path';
 import { resolveSourceRoots, readScannable } from '../shared-source.mjs';
 import { DEFAULT_IGNORE_DIRS, isIgnoredDirEntry, isNonProductDir, isDocguardOwnedDir, walkFiles } from '../shared-ignore.mjs';
 import { TEST_LOCATIONS } from '../shared-file-kind.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
-const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.rb', '.php', '.java', '.kt']);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXT = codeExtensions();
 const toPosix = (p) => p.split(/[\\/]/).join('/');
 
 // ── Component map ─────────────────────────────────────────────────────────────

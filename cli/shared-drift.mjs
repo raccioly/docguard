@@ -5,12 +5,10 @@
  */
 import { extname } from 'node:path';
 import { DEFAULT_IGNORE_DIRS } from './shared-ignore.mjs';
+import { codeExtensions } from './shared-languages.mjs';
 
-export const DRIFT_CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.swift', '.kt',
-  '.rb', '.php', '.cs', '.c', '.cpp', '.h',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+export const DRIFT_CODE_EXTENSIONS = codeExtensions();
 
 // The shared build-output and package-cache set, plus `cli`: DocGuard's own source contains `DRIFT:` in regex patterns.
 export const DRIFT_IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'cli']);

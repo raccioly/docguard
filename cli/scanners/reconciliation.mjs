@@ -20,8 +20,10 @@ import { parseUnifiedDiff } from '../shared-diff.mjs';
 import { mechanicalSectionsForChanges } from '../shared-sync-scope.mjs';
 import { assetPathCovers, projectSpecRegistry } from './spec-registry.mjs';
 import { collectRequirementIdsFromContent } from '../shared-requirements.mjs';
+import { codeExtensions, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
 
-const CODE = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.go', '.rs', '.java', '.kt', '.rb', '.php', '.sh', '.cs', '.swift']);
+// One language list for every scanner (specs/107-language-registry): code and scripts.
+const CODE = codeExtensions(SCRIPT_EXTENSIONS);
 const TEST = /(?:^|\/)(?:__tests__|tests?|specs?)\/|\.(?:test|spec)\./;
 const DECISION = /(?:^|\/)(?:adr|adrs|decisions?|rfcs?)(?:\/|$)/i;
 

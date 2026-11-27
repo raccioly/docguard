@@ -25,6 +25,7 @@ import { ENV_TOKEN, backtickRefs, codekbFiles, findAidlcRecords, findAidlcSpaces
 import { walkFiles } from '../shared-ignore.mjs';
 import { gitMetadataStatus, lastCommitHash, runGit } from '../shared-git.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { codeExtensionAlternation, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
 
 const VALIDATOR = 'aidlc';
 const CAP = 10;
@@ -35,13 +36,16 @@ function envNamesInUse(projectDir, candidates) {
   if (candidates.size === 0) return found;
   walkFiles(projectDir, full => {
     if (found.size === candidates.size) return;
-    if (!/\.(?:m?[jt]sx?|cjs|py|go|rs|java|kt|rb|php|cs|ya?ml|toml|tf|sh)$|(?:^|[\\/])\.env[^\\/]*$/.test(full)) return;
+    if (!EVIDENCE_FILE.test(full)) return;
     let text;
     try { text = readFileSync(full, 'utf-8'); } catch { return; }
     for (const name of candidates) if (!found.has(name) && text.includes(name)) found.add(name);
   }, { keepDot: entry => entry.startsWith('.env') });
   return found;
 }
+
+// specs/107-language-registry: code, scripts, config and dotenv files carry AI-DLC evidence.
+const EVIDENCE_FILE = new RegExp(`\\.(?:${codeExtensionAlternation(['.yml', '.yaml', '.toml', '.tf', ...SCRIPT_EXTENSIONS])})$|(?:^|[\\\\/])\\.env[^\\\\/]*$`);
 
 /**
  * Does this kind of check belong to the project? It does when the project has

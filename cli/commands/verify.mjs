@@ -30,8 +30,10 @@ import { auditInstructions } from '../scanners/instruction-audit.mjs';
 import { isGitRepo, getDiffText } from '../shared-git.mjs';
 import { parseUnifiedDiff, activityLabeledDiff } from '../shared-diff.mjs';
 import { coverSemanticClaims, evaluateEvidence } from '../evidence/evaluate.mjs';
+import { codePathPattern } from '../shared-languages.mjs';
 
-const CHANGE_CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CHANGE_CODE_EXT = codePathPattern([], { flags: '' });
 
 /**
  * Structured change context for staged agent tasks (feat 6). When `--since` is

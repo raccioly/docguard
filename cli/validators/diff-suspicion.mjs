@@ -29,8 +29,10 @@ import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { namesToken } from '../scanners/doc-references.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
+import { codePathPattern, codeExtensionAlternation } from '../shared-languages.mjs';
 
-const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart)$/;
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXTENSIONS = codePathPattern([], { flags: '' });
 
 // Generic framework / language noise that overlaps between ANY React/TS doc and
 // ANY diff — empirically the residual false-positive source (v0.31.0 corpus:
@@ -110,7 +112,7 @@ function referenceKind(docLines, file) {
 const HEADING = /^ {0,3}(#{1,6})\s/;
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 const TABLE_ROW = /^\s*\|/;
-const FILE_EXT = '(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart|vue|svelte|md)';
+const FILE_EXT = `(?:${codeExtensionAlternation(['.vue', '.svelte', '.md'])})`;
 // A file path, or a backticked file name: what an inventory row is about.
 const NAMES_A_FILE = new RegExp(`\`[^\`\\s]+\\.${FILE_EXT}\`|[\\w.@-]+\\/[\\w./@-]*\\.${FILE_EXT}\\b`);
 

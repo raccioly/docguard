@@ -1456,6 +1456,7 @@ export function clearWalkDirCache() {
   _walkDirCache.clear();
 }
 
+// LANGUAGE EXEMPTION (tests/language-registry.test.mjs): the languages whose ORM and schema readers this scanner has.
 const _CODE_FILE_RE = /\.(js|mjs|cjs|ts|tsx|jsx|py|rs|go|java|kt|rb)$/;
 
 function _collectFiles(dir, out) {

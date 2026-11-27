@@ -31,17 +31,16 @@ import { collectCodeTests } from '../validators/docs-diff.mjs';
 import { assertOwnedCodeSection, getSection, replaceSection, upsertSection } from '../writers/sections.mjs';
 import { labelContext } from '../shared-labels.mjs';
 import { registerGeneratedCanonicalDocs, surfaceConfidence, writeOwnedSections } from '../writers/generate-io.mjs';
-import { detectProjectProfile } from '../scanners/project-type.mjs';
+import { detectProjectProfile, detectEcosystems, NO_ROUTE_READER } from '../scanners/project-type.mjs';
 import {
   generateArchitecture, generateApiReference, generateDataModel,
   generateEnvironment, generateTestSpec, generateSecurity, generateRootFiles,
 } from '../writers/doc-generators.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXTENSIONS = codeExtensions();
 
 /**
  * `docguard generate --plan` — AI-powered Generate.
@@ -235,6 +234,15 @@ export function runGenerate(projectDir, config, flags) {
   for (const [category, tech] of Object.entries(stack)) {
     if (tech) console.log(`    ${c.cyan}${category}:${c.reset} ${tech}`);
   }
+  // docguard.analysis-disclosure#FR-005: a stack DocGuard has no analyzer for is named, so a zero below is not
+  // read as a measurement.
+  try {
+    for (const eco of detectEcosystems(projectDir, config)) {
+      if (eco.framework && NO_ROUTE_READER.has(eco.framework)) {
+        console.log(`    ${c.yellow}${eco.framework} (no DocGuard analyzer: its routes, components, env vars and tests are not read, so the counts below are not measurements)${c.reset}`);
+      }
+    }
+  } catch { /* detection is advisory here */ }
   console.log('');
 
   // ── 2. Detect Existing Doc Tools ──

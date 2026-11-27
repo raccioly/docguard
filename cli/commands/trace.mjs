@@ -13,10 +13,6 @@ import { detectSpecKit } from '../scanners/speckit.mjs';
 import { scanTestFilesForReferences, collectRequirementIds, resolveRequirementReferences } from '../validators/traceability.mjs';
 import { listCanonicalDocs, walkFiles } from '../shared-ignore.mjs';
 
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs',
-]);
 
 // v0.16-P2: language-aware patterns. The original JS/TS-only sets created
 // false-negative warnings on Python/Rust/Go/Java projects (reported by the
@@ -30,6 +26,7 @@ import { anchorGranularity, traceMatrix } from '../scanners/anchors.mjs';
 import { CSV_COLUMNS, matrixModel, toCsv, toReqif } from '../writers/trace-matrix.mjs';
 import { safeWrite } from '../writers/generate-io.mjs';
 import { readFileSync as readPackageJson } from 'node:fs';
+import { codeExtensionAlternation } from '../shared-languages.mjs';
 
 
 /**
@@ -526,7 +523,8 @@ const FEATURE_REQ_RE = /\b(?:FR|SC)-\d{2,4}\b/g;
 
 // Path-token heuristic mirrored from cli/scanners/semantic-claims.mjs
 // CITED_CODE_RE: a backticked or bare path-like token with a code extension.
-const TASK_PATH_RE = /`?([\w./-]+\.(?:ts|tsx|js|mjs|cjs|jsx|py|go|rs|java|kt|rb|php|sql|yaml|yml|json))`?/g;
+// One language list for every scanner (specs/107-language-registry): code plus the data formats a task names.
+const TASK_PATH_RE = new RegExp(`\`?([\\w./-]+\\.(?:${codeExtensionAlternation(['.sql', '.yaml', '.yml', '.json'])}))\`?`, 'g');
 
 // 20-char bar mirrored from cli/commands/score.mjs renderBar (not exported
 // there; score.mjs is display-conventions-only for this feature).

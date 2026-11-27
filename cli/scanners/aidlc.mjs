@@ -13,6 +13,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
 import { DEFAULT_IGNORE_DIRS, walkFiles } from '../shared-ignore.mjs';
+import { codePathPattern, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
 
 const MAX_FILES = 2000;
 // The shared build-output and package-cache set, plus AI-DLC's own engine folder. Dot entries are read: a record
@@ -90,7 +91,8 @@ export function readAidlcRecord(projectDir, record) {
   return { ...record, rel: rel(record.abs), stages, tables, manifests, malformed };
 }
 
-const SOURCE_EXT = /\.(?:m?[jt]sx?|cjs|py|go|rs|java|kt|rb|php|cs|swift|scala|dart|c|cc|cpp|h|hpp|vue|svelte|sql|ya?ml|json|toml|tf|sh)$/i;
+// One language list for every scanner (specs/107-language-registry): code, scripts and the formats AI-DLC stages write.
+const SOURCE_EXT = codePathPattern(['.vue', '.svelte', '.sql', '.yml', '.yaml', '.json', '.toml', '.tf', ...SCRIPT_EXTENSIONS]);
 const ID_LIKE = /^(?:FR|NFR|US|AC|BR|SC|REQ|UC)[-.]?\d/i;
 
 /** True when a traceability target names a workspace path, not an ID or prose. */

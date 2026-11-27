@@ -18,8 +18,10 @@ import { mkFinding, resultFromFindings } from '../findings.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { acceptedFormsHint, unreleasedState, unsupportedEntry } from '../shared-labels.mjs';
 import { documentLanguage } from '../shared-doc-language.mjs';
+import { codePathPattern } from '../shared-languages.mjs';
 
-const CODE_EXT_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|rb|php|cs|kt|swift)$/;
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXT_RE = codePathPattern([], { flags: '' });
 
 /** Return staged file paths (relative to repo root), or null if git is unavailable. */
 function getStagedFiles(projectDir) {

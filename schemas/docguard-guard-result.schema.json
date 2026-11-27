@@ -5,27 +5,168 @@
   "description": "The decision fields and counts of `docguard guard --format json` (full and `--compact`), specs/106-field-report-fixes FR-011 and FR-012. Gate on `exitCode` or `outcome`: they are what the process exit code says. `errors` and `warnings` count each finding at its intrinsic severity, before strict mode, `findingSeverity` or `severity` reweight it; `effectiveErrors` and `effectiveWarnings` are the counts after that, and decide the exit code. Other fields are documented in AGENTS.md (Consuming Guard Output) and docs/configuration.md and are not listed here.",
   "type": "object",
   "additionalProperties": true,
-  "required": ["status", "exitCode", "outcome", "errors", "warnings", "effectiveErrors", "effectiveWarnings", "findings", "enforcement"],
+  "required": [
+    "status",
+    "exitCode",
+    "outcome",
+    "errors",
+    "warnings",
+    "effectiveErrors",
+    "effectiveWarnings",
+    "findings",
+    "enforcement"
+  ],
   "properties": {
-    "status": { "enum": ["PASS", "WARN", "FAIL"], "description": "From the effective counts only: FAIL when effectiveErrors > 0, WARN when effectiveWarnings > 0. A strict run that exits 4 can say WARN or PASS here; read exitCode." },
-    "exitCode": { "enum": [0, 1, 2, 3, 4], "description": "The process exit code of this run." },
+    "status": {
+      "enum": [
+        "PASS",
+        "WARN",
+        "FAIL"
+      ],
+      "description": "From the effective counts only: FAIL when effectiveErrors > 0, WARN when effectiveWarnings > 0. A strict run that exits 4 can say WARN or PASS here; read exitCode."
+    },
+    "exitCode": {
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "description": "The process exit code of this run."
+    },
     "outcome": {
-      "enum": ["pass", "warnings", "errors", "not-initialized", "unexamined", "undecided"],
+      "enum": [
+        "pass",
+        "warnings",
+        "errors",
+        "not-initialized",
+        "unexamined",
+        "undecided"
+      ],
       "description": "Why the run exits with exitCode: 0 pass; 2 warnings; 1 errors; 3 not-initialized (errors in a project with no .docguard.json); 4 unexamined (strict: a validator that applies examined nothing, see strict.blocking) or undecided (--fail-on-inconclusive or requiredChecks)."
     },
-    "errors": { "type": "integer", "minimum": 0, "description": "Findings at intrinsic severity error. Not the gate under strict: read effectiveErrors." },
-    "warnings": { "type": "integer", "minimum": 0, "description": "Findings at intrinsic severity warn." },
-    "effectiveErrors": { "type": "integer", "minimum": 0, "description": "Findings that resolve to error after enforcement. exitCode is 1 or 3 exactly when this is above 0." },
-    "effectiveWarnings": { "type": "integer", "minimum": 0 },
-    "effectiveInfos": { "type": "integer", "minimum": 0 },
-    "findings": { "type": "array", "items": { "type": "object", "required": ["code", "severity", "message"], "properties": { "code": { "type": "string" }, "severity": { "enum": ["error", "warn", "info"] }, "effectiveSeverity": { "enum": ["error", "warn", "info"] }, "message": { "type": "string" } } } },
-    "enforcement": { "type": "object", "required": ["mode"], "properties": { "mode": { "enum": ["strict", "standard"] } } },
+    "errors": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Findings at intrinsic severity error. Not the gate under strict: read effectiveErrors."
+    },
+    "warnings": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Findings at intrinsic severity warn."
+    },
+    "effectiveErrors": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Findings that resolve to error after enforcement. exitCode is 1 or 3 exactly when this is above 0."
+    },
+    "effectiveWarnings": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "effectiveInfos": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warn",
+              "info"
+            ]
+          },
+          "effectiveSeverity": {
+            "enum": [
+              "error",
+              "warn",
+              "info"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "strict",
+            "standard"
+          ]
+        }
+      }
+    },
     "strict": {
       "type": "object",
       "description": "Present under strict.",
       "properties": {
-        "blocking": { "type": "array", "items": { "type": "string" }, "description": "Validators that make the run exit 4 (outcome unexamined)." },
-        "demotedProductSecrets": { "type": "integer", "minimum": 0, "description": "Possible secrets in product code that strict reports as warnings because the project did not turn security on." }
+        "blocking": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Validators that make the run exit 4 (outcome unexamined)."
+        },
+        "demotedProductSecrets": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Possible secrets in product code that strict reports as warnings because the project did not turn security on."
+        }
+      }
+    },
+    "unanalyzed": {
+      "type": "array",
+      "description": "Files in a language DocGuard recognizes that some check does not read (specs/108-analysis-disclosure FR-002). Visibility only: never changes a finding or the exit code. The compact form keeps language and files.",
+      "items": {
+        "type": "object",
+        "required": [
+          "language",
+          "files"
+        ],
+        "properties": {
+          "language": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "files": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "secrets",
+                "traceability"
+              ]
+            }
+          },
+          "example": {
+            "type": "string"
+          }
+        }
       }
     }
   }

@@ -37,6 +37,10 @@ function recorded(dir, ids) {
 }
 
 describe('documentation each spec requires', () => {
+  // @req docguard.language-registry#FR-006
+  it('107: the registry and the exit-code effect in the changelog', () => describes([
+    ['CHANGELOG.md', ['One language registry for every scanner', 'TDO002', 'DRF002', 'FRS002']],
+  ]));
   // @req docguard.field-report-fixes#FR-016
   it('106: every changed code and the exit codes in the changelog', () => describes([
     ['CHANGELOG.md', ['SEC001', 'SEC004', 'SEC011', 'TSP007', 'TRC002', 'TRC004', 'SPK008', 'DCV003', 'Exit codes:']],
@@ -259,4 +263,10 @@ describe('one-time measurements, recorded', () => {
   // @req docguard.field-report-fixes#SC-002
   // @req docguard.field-report-fixes#SC-003
   it('106: the issue trees, the suite and the A/B', () => recorded('106-field-report-fixes', ['SC-001', 'SC-002', 'SC-003']));
+  // @req docguard.language-registry#SC-001
+  // @req docguard.language-registry#SC-002
+  it('107: the suite and the A/B', () => recorded('107-language-registry', ['SC-001', 'SC-002']));
+  // @req docguard.analysis-disclosure#SC-001
+  // @req docguard.analysis-disclosure#SC-002
+  it('108: the suite and the A/B', () => recorded('108-analysis-disclosure', ['SC-001', 'SC-002']));
 });

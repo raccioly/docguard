@@ -43,6 +43,7 @@ import {
   relPosix,
 } from '../shared-ignore.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
+import { codeExtensionAlternation } from '../shared-languages.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -120,7 +121,8 @@ export function extractInstructionRules(projectDir, config = {}) {
 
 // ── Deterministic findings ──────────────────────────────────────────────────
 
-const PATH_EXTS = 'md|mjs|cjs|js|ts|tsx|jsx|json|ya?ml|py|sh|toml|txt|rs|go|css|html';
+// A cited path: any code file (specs/107-language-registry) or a document, config, script or web asset.
+const PATH_EXTS = codeExtensionAlternation(['.md', '.json', '.yaml', '.yml', '.sh', '.toml', '.txt', '.css', '.html']);
 // Backticked token: no spaces, lexes as a relative path with a known extension.
 const PATH_LIKE_RE = new RegExp(`\\.(?:${PATH_EXTS})$`, 'i');
 // Bare (unbackticked) token: requires a directory separator for precision.

@@ -21,20 +21,25 @@ import { stripHtmlComments } from '../cli/shared-html-comments.mjs';
 const FIXTURES = resolve('tests/fixtures/fuzz');
 
 /**
- * SC-003 is a time bound at reference speed. A fixed workload that does not touch
- * the code under test (a regression there must not cancel out) measures this
- * runner; the fuzz run's time is divided by the ratio to REFERENCE_CALIBRATION_MS.
- * The reference is a runner about 2.6x slower than a development laptop (which
- * calibrates in about 190 ms), so a 2x slowdown fails and a slow CI runner does not.
+ * SC-003 bounds the fuzz run's cost relative to a fixed workload that does not touch the code under test
+ * (a regression there must not cancel out). A wall-clock bound divided by a calibration run before and
+ * after did not hold on CI: over 93 CI test jobs the normalized time ranged 2980 to 5787 ms (median 4028),
+ * because the long fuzz run absorbs the load of parallel test files while two short calibrations catch idle
+ * moments; 4 jobs crossed the 5000 ms ceiling, and a scheduled release failed on it (2026-11-16).
+ *
+ * Here each parser's fuzz chunk is followed by a slice of the calibration workload, so both see the same
+ * load, and the ratio of their totals is the cost. Three repeats, the median counts. On a development
+ * laptop the ratio is about 9 idle and stays between 8.4 and 11 with every core busy.
  */
-const REFERENCE_CALIBRATION_MS = 550;
-const CEILING_MS = 5000;
+const CEILING_RATIO = 16;
+const SEED = 20261103;
+const CALIBRATION_ITERATIONS = 120000;
 
-function calibrate() {
+function calibrate(iterations = CALIBRATION_ITERATIONS) {
   const start = performance.now();
   let x = 12345, hits = 0;
   const seen = new Map();
-  for (let i = 0; i < 120000; i++) {
+  for (let i = 0; i < iterations; i++) {
     x = (Math.imul(x, 1103515245) + 12345) >>> 0;
     const line = `- **FR-${x % 997}**: \`tok${x % 31}\` see [a](#b${x % 13}) ${'word '.repeat(x % 40)}<!-- c${i} -->`;
     for (const m of line.matchAll(/FR-(\d+)|`([^`]+)`|<!--.*?-->/g)) { hits++; seen.set(m[0], (seen.get(m[0]) ?? 0) + 1); }
@@ -44,38 +49,52 @@ function calibrate() {
   return performance.now() - start;
 }
 
-/** Runs `work`, calibrating before and after; the slower reading counts, so a burst of load is never read as a fast runner. */
-function atReferenceSpeed(work) {
-  const before = Math.min(calibrate(), calibrate());
-  const start = performance.now();
-  const failures = work();
-  const ms = performance.now() - start;
-  const factor = Math.max(before, Math.min(calibrate(), calibrate())) / REFERENCE_CALIBRATION_MS;
-  return { failures, ms, factor, normalized: ms / factor };
+/**
+ * The fuzz run's cost relative to the calibration workload, interleaved per parser, median of `repeats`.
+ * @returns {{ failures: object[], ratio: number, ratios: number[], fuzzMs: number }}
+ */
+function relativeCost(parsers = TARGETS, repeats = 3) {
+  const per = Math.ceil(CALIBRATION_ITERATIONS / parsers.length);
+  const ratios = [];
+  let failures = [];
+  let fuzzMs = 0;
+  for (let r = 0; r < repeats; r++) {
+    let fuzzTime = 0, calibrationTime = 0;
+    for (const target of parsers) {
+      const start = performance.now();
+      const found = fuzz({ seed: SEED, cases: 200, parsers: [target] });
+      fuzzTime += performance.now() - start;
+      calibrationTime += calibrate(per);
+      if (r === 0) failures = failures.concat(found);
+    }
+    ratios.push(fuzzTime / calibrationTime);
+    fuzzMs += fuzzTime;
+  }
+  const sorted = [...ratios].sort((a, b) => a - b);
+  return { failures, ratio: sorted[Math.floor(sorted.length / 2)], ratios, fuzzMs: fuzzMs / repeats };
 }
 
 describe('US1 — every parser, fixed seed', () => {
   it('200 generated documents and the pathological set: no throw, same answer twice, linear time', () => {
-    const run = atReferenceSpeed(() => fuzz({ seed: 20261103, cases: 200 }));
+    const run = relativeCost();
     assert.deepEqual(run.failures.map(f => `${f.target} ${f.kind} (${f.index}): ${f.detail}`), []);
-    // SC-003 at reference speed: a slow runner is divided out, as tools/suite-runtime-budget.mjs does.
-    console.log(`fuzz time: ${Math.round(run.ms)} ms measured, speed factor ${run.factor.toFixed(2)}, ${Math.round(run.normalized)} ms at reference speed`);
-    assert.ok(run.normalized < CEILING_MS, `the fixed-seed run took ${Math.round(run.normalized)} ms at reference speed (${Math.round(run.ms)} ms measured, speed factor ${run.factor.toFixed(2)}); the ceiling is ${CEILING_MS} ms (SC-003)`);
+    console.log(`fuzz cost: ratio ${run.ratio.toFixed(2)} to the calibration workload (repeats ${run.ratios.map(r => r.toFixed(2)).join(', ')}; ${Math.round(run.fuzzMs)} ms)`);
+    assert.ok(run.ratio < CEILING_RATIO, `the fixed-seed run cost ${run.ratio.toFixed(2)} times the calibration workload; the ceiling is ${CEILING_RATIO} (SC-003)`);
   });
 
   it('the time bound fails for a real slowdown of 2x and more (a busy-wait in one parser)', () => {
-    const baseline = atReferenceSpeed(() => fuzz({ seed: 20261103, cases: 200 }));
+    const baseline = relativeCost(TARGETS, 1);
     // Two calls per input (the determinism check) over 200 documents and the pathological set.
     const calls = 2 * (200 + Object.keys(pathological()).length);
-    // 1.3x the baseline on top of it: 2.3x in all, so the other test files loading the machine cannot hide it.
-    const spin = 1.3 * baseline.ms / calls;
+    // 1.3x the baseline's fuzz time on top of it: 2.3x in all.
+    const spin = 1.3 * baseline.fuzzMs / calls;
     const slowed = TARGETS.map(t => (t.name === 'extractHeadings'
       ? { ...t, run: text => { const end = performance.now() + spin; while (performance.now() < end); return t.run(text); } }
       : t));
-    const run = atReferenceSpeed(() => fuzz({ seed: 20261103, cases: 200, parsers: slowed }));
+    const run = relativeCost(slowed, 1);
     assert.deepEqual(run.failures, [], 'the busy-wait must not trip the per-call budget; only the total');
-    console.log(`slowed run: ${Math.round(run.normalized)} ms at reference speed (baseline ${Math.round(baseline.normalized)})`);
-    assert.ok(run.normalized > CEILING_MS, `a 2x slowdown measured ${Math.round(run.normalized)} ms at reference speed; the ceiling ${CEILING_MS} ms must reject it`);
+    console.log(`slowed run: ratio ${run.ratio.toFixed(2)} (baseline ${baseline.ratio.toFixed(2)})`);
+    assert.ok(run.ratio > CEILING_RATIO, `a 2x slowdown measured a ratio of ${run.ratio.toFixed(2)}; the ceiling ${CEILING_RATIO} must reject it`);
   });
 
   it('the same seed gives the same documents', () => {
