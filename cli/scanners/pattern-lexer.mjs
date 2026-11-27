@@ -41,6 +41,7 @@
 
 import { createHash } from 'node:crypto';
 import { NO_VOLATILE, VOLATILE_PLACEHOLDER, maskVolatileLines } from './fingerprint.mjs';
+import { LEXER_BY_EXTENSION } from '../shared-languages.mjs';
 
 /** Bump on any change to the floor token rules: every stored floor depends on them. */
 export const PATTERN_ALGO = 1;
@@ -59,17 +60,8 @@ const DEDENT = '\u0002dedent';
 
 // ── Languages ────────────────────────────────────────────────────────────────
 
-const EXTENSIONS = new Map(Object.entries({
-  js: 'js', mjs: 'js', cjs: 'js', jsx: 'js',
-  ts: 'ts', mts: 'ts', cts: 'ts', tsx: 'ts',
-  py: 'python', pyi: 'python',
-  go: 'go', rs: 'rust', java: 'java', kt: 'kotlin', kts: 'kotlin', cs: 'csharp', php: 'php',
-  // Salesforce Apex reads with the Java rules: `//` and `/* */` comments, `'…'` strings (docguard.field-report-fixes#FR-005).
-  cls: 'java', trigger: 'java', apex: 'java',
-  rb: 'ruby', rake: 'ruby', gemspec: 'ruby', swift: 'swift',
-  c: 'c', h: 'c',
-  cc: 'cpp', cpp: 'cpp', cxx: 'cpp', 'c++': 'cpp', hh: 'cpp', hpp: 'cpp', hxx: 'cpp', ipp: 'cpp', inl: 'cpp',
-}));
+// Which lexer reads which extension comes from the language registry (specs/107-language-registry).
+const EXTENSIONS = new Map(Object.entries(LEXER_BY_EXTENSION));
 const RUBY_FILES = new Set(['Rakefile', 'Gemfile', 'Guardfile', 'Capfile', 'Vagrantfile', 'Podfile', 'Fastfile', 'Brewfile', 'Dangerfile', 'Berksfile']);
 
 /**

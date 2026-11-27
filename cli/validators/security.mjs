@@ -16,8 +16,7 @@ import { resolve, join, extname } from 'node:path';
 import { shouldIgnore, relPosix, isNonProductPath, walkFiles as sharedWalkFiles } from '../shared-ignore.mjs';
 import { mkFinding, resultFromFindings, lineSuppresses } from '../findings.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
-import { APEX, VISUALFORCE } from '../shared-languages.mjs';
-import { countLanguages, describeLanguageCounts } from '../shared-source.mjs';
+import { VISUALFORCE, codeExtensions } from '../shared-languages.mjs';
 
 // Each secret pattern maps to a stable finding code (see cli/findings.mjs CODES)
 // so it is `explain`-able and inline-suppressible (`// docguard:ignore SEC00x`).
@@ -30,14 +29,9 @@ const LABEL_TO_CODE = {
   'API secret key (Stripe/OpenAI pattern)': 'SEC006',
 };
 
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.swift', '.kt',
-  '.rb', '.php', '.cs', '.env',
-  // Salesforce (docguard.field-report-fixes#FR-004): Apex uses the same `name = 'value'` shape, and
-  // Visualforce markup can embed a literal. A LaTeX `.cls` is scanned too: the safe direction.
-  ...APEX.extensions, ...VISUALFORCE.extensions,
-]);
+// Every programming language (specs/107-language-registry), dotenv files, and Visualforce markup, which can
+// embed a literal (docguard.field-report-fixes#FR-004). A LaTeX `.cls` is scanned too: the safe direction.
+const CODE_EXTENSIONS = codeExtensions(['.env', ...VISUALFORCE.extensions]);
 
 // SECURITY EXEMPTION (tests/file-kinds-registry.test.mjs): the original narrow list, kept as it is on purpose.
 // The shared build-output set also skips `out/`, `target/` and `obj/`, where a bundled key is still a leaked key.
@@ -358,22 +352,6 @@ function candidateFiles(projectDir) {
 }
 
 /**
- * Source files in a language DocGuard can name but the secret scan does not read
- * (`.scala`, `.dart`, …), project-relative, minus ignored paths.
- * @returns {string[]}
- */
-function unscannedSourceFiles(projectDir, config) {
-  const found = [];
-  walkDir(projectDir, (filePath) => {
-    if (CODE_EXTENSIONS.has(extname(filePath))) return;
-    const rel = relPosix(projectDir, filePath);
-    if (countLanguages([rel]).length === 0 || shouldIgnore(rel, config, 'securityIgnore')) return;
-    found.push(rel);
-  });
-  return found;
-}
-
-/**
  * Does a secret scan belong to this project, and what excluded the candidates?
  * It applies when the project holds at least one source or configuration file
  * with a scanned extension. Excluding every one of them with `securityIgnore`,
@@ -551,18 +529,10 @@ export function validateSecurity(projectDir, config) {
     if (realSecretCount === 0) passed++;
   } else {
     const a = applies(projectDir, config);
-    // docguard.field-report-fixes#FR-004: when the project has source in a language the scan does not
-    // read, say which, instead of pointing at a setting that would not help.
-    const unscanned = a.applies ? [] : unscannedSourceFiles(projectDir, config);
-    const languages = describeLanguageCounts(countLanguages(unscanned));
     findings.push(mkFinding({
       code: 'SEC011', validator: 'security', severity: 'warn', confidence: 'high',
-      message: languages
-        ? `No source files were scanned for secrets: the project has ${languages}, and the secret scan does not read ${unscanned.length === 1 ? 'that extension' : 'those extensions'}`
-        : 'No source files were scanned for secrets — check config.sourceRoot / ignore patterns',
-      suggestion: { kind: 'review', text: languages
-        ? `Review ${unscanned[0]} and the other ${languages} by hand or with a scanner for that language; \`docguard feedback\` asks for the extension to be added.`
-        : !a.applies
+      message: 'No source files were scanned for secrets — check config.sourceRoot / ignore patterns',
+      suggestion: { kind: 'review', text: !a.applies
         ? 'The project has no file with a scanned extension, so there is nothing to scan; no setting needs to change unless source files live somewhere the scan does not reach.'
         : `${a.candidates} candidate file(s) exist but every one is excluded by ${a.excludedBy}. Narrow ${a.excludedBy === 'securityIgnore' ? '"securityIgnore" in .docguard.json' : '"ignore" in .docguard.json or .docguardignore'} so at least the product source is scanned.` },
     }));

@@ -119,7 +119,9 @@ function frameworkNames(projectDir, config) {
   const names = [];
   try {
     for (const eco of detectEcosystems(projectDir, config)) {
-      if (eco.framework) names.push(eco.framework);
+      // Salesforce DX is a platform DocGuard reads no route of (no Apex REST reader): it does not make the
+      // API surface apply, or every SFDX project would apply and examine nothing (specs/107-language-registry).
+      if (eco.framework && eco.language !== 'Apex') names.push(eco.framework);
     }
   } catch { /* fall through to the package.json read */ }
   if (names.length > 0) return [...new Set(names)];

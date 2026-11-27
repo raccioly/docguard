@@ -22,10 +22,10 @@ import { DRIFT_COMMENT, driftReadsPath } from '../shared-drift.mjs';
 import { agentInstructionDocs } from '../shared-agent-instructions.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { recordedReviewSignals, recordedReviewDate, laterDate } from '../scanners/recorded-review-signals.mjs';
+import { CODE_EXTENSIONS as LANGUAGE_CODE_EXTENSIONS } from '../shared-languages.mjs';
 
-// Keep aligned with shared-source's supported languages, including module variants.
-const CODE_EXTS = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.mts', '.cts',
-  '.py', '.java', '.go', '.rs', '.rb', '.php'];
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXTS = [...LANGUAGE_CODE_EXTENSIONS];
 const CODE_PATHS = CODE_EXTS.map(ext => `*${ext}`);
 
 function pathFilter(dir, config) {

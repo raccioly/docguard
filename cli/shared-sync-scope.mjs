@@ -5,6 +5,8 @@
  * @implements docguard.code-derived-diagrams#FR-009
  */
 
+import { codePathPattern } from './shared-languages.mjs';
+
 // Keyed by the `source=code` section IDs the memory plan emits
 // (cli/scanners/memory-plan.mjs); a test keeps the two sets equal. The table
 // was keyed `endpoints-table`, `entities-table`, `env-vars-table`, … while the
@@ -15,7 +17,7 @@
 // live in any code file, so their sections refresh on any code change; the
 // narrowing that holds is "a docs-only or unrelated change refreshes nothing".
 // Skipping a refresh the code needed is worse than an unneeded one.
-const CODE = /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|cs|swift)$/i;
+const CODE = codePathPattern(); // specs/107-language-registry
 const MANIFEST = /(?:^|\/)(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|pom\.xml|Gemfile|requirements[^/]*\.txt)$/;
 const API_CONTRACT = /\.(?:ya?ml|json)$/i;
 const TEST_FILE = /(?:^|\/)(?:__tests__|tests?|specs?)\/|\.(?:test|spec)\.[^/]+$|(?:^|\/)test_[^/]+\.py$|_test\.go$/;

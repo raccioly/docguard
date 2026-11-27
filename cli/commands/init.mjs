@@ -30,6 +30,7 @@ import { labelContext } from '../shared-labels.mjs';
 import { languageReadyScaffold } from '../shared-scaffold.mjs';
 import { buildMemoryPlan } from '../scanners/memory-plan.mjs';
 import { glossaryPath, starterGlossary } from '../shared-glossary.mjs';
+import { CODE_EXTENSIONS as LANGUAGE_CODE_EXTENSIONS } from '../shared-languages.mjs';
 
 // v0.20: scaffolder names that can be passed via `init --with <name>` and
 // dispatched to their writers. CI scaffolding is distinct from the standalone
@@ -347,7 +348,7 @@ function shouldRunGenerate(projectDir, flags) {
   // Fallback: count source files at top level (Python / Rust / Go projects
   // often don't use src/ — files live at the root).
   try {
-    const exts = ['.py', '.rs', '.go', '.java', '.rb', '.ts', '.tsx', '.mjs', '.js'];
+    const exts = [...LANGUAGE_CODE_EXTENSIONS]; // specs/107-language-registry
     const topLevel = readdirSync(projectDir).filter(f => {
       return exts.some(e => f.endsWith(e));
     });

@@ -37,11 +37,10 @@ import {
   generateEnvironment, generateTestSpec, generateSecurity, generateRootFiles,
 } from '../writers/doc-generators.mjs';
 import { readAgentSurface, commandHint } from '../agent-surface.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.rb', '.php', '.cs',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXTENSIONS = codeExtensions();
 
 /**
  * `docguard generate --plan` — AI-powered Generate.

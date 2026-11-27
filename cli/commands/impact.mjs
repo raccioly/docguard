@@ -50,12 +50,13 @@ import { buildImportGraph, reverseImportAncestors, reverseImportIndex } from '..
 import { listCanonicalDocs } from '../shared-ignore.mjs';
 import { findReferences, namesToken } from '../scanners/doc-references.mjs';
 import { rootAgentDocs } from '../shared-agent-instructions.mjs';
+import { codePathPattern } from '../shared-languages.mjs';
 
 /**
  * File extensions we consider "code" for the purposes of impact analysis.
  * Match the set used by other validators (Docs-Sync, Freshness).
  */
-const CODE_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift)$/;
+const CODE_EXTENSIONS = codePathPattern([], { flags: '' }); // specs/107-language-registry
 
 
 function escapeRegex(s) {

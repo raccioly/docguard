@@ -137,14 +137,13 @@ describe('issue 712: the secret scan reads Apex', () => {
     assert.equal(codes(data, ['SEC011']).length, 0);
   });
 
-  it('SEC011 names the source files it does not scan, by language', (t) => {
+  it('a Scala source is scanned like every registry language (spec 107 supersedes the SEC011 naming)', (t) => {
     const dir = tree(t, { 'build.sbt': 'name := "demo"\n', 'app/Main.scala': 'object Main { val password = "Hx7#kQ2!vLp9zR" }\n' });
     init(dir);
     setConfig(dir, c => { c.validators.security = true; c.enforcement = 'standard'; });
-    const [f] = codes(guard(dir).data, ['SEC011']);
-    assert.ok(f, 'SEC011 fires');
-    assert.match(f.message, /1 Scala file/);
-    assert.doesNotMatch(f.message, /sourceRoot/);
+    const { data } = guard(dir);
+    assert.equal(codes(data, ['SEC011']).length, 0);
+    assert.deepEqual(codes(data, ['SEC001']).map(f => f.location), ['app/Main.scala:1']);
   });
 });
 

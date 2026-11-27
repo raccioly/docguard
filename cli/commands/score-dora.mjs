@@ -19,6 +19,7 @@ import { loadOwnership } from '../scanners/doc-ownership.mjs';
 import { isRetiredStatus, parseLifecycleStatus } from '../scanners/lifecycle-status.mjs';
 import { labelContext } from '../shared-labels.mjs';
 import { diffEntities, diffEnvVars, diffRoutes, diffTechStack, domainAccuracy } from './diff.mjs';
+import { codePathPattern } from '../shared-languages.mjs';
 
 export const DORA_SOURCES = Object.freeze({
   documentationQuality: 'https://dora.dev/capabilities/documentation-quality/',
@@ -179,7 +180,7 @@ function versionControl(tracked) {
   const has = re => tracked.some(f => re.test(f));
   const infra = tracked.filter(f => /\.tf$|(^|\/)(cdk\.json|serverless\.ya?ml|Pulumi\.ya?ml|template\.ya?ml|kustomization\.ya?ml|docker-compose\.ya?ml|compose\.ya?ml|Procfile|fly\.toml|vercel\.json|netlify\.toml|app\.yaml|wrangler\.toml)$|(^|\/)(k8s|kubernetes|helm|charts)\//.test(f));
   const checks = [
-    ['application code', has(/\.(m?[jt]sx?|cjs|py|go|rs|java|kt|rb|php|cs|swift|c|cc|cpp|scala|ex|exs)$/)],
+    ['application code', has(codePathPattern([], { flags: '' }))], // specs/107-language-registry
     ['application configuration', has(/\.(json|ya?ml|toml|ini)$|(^|\/)\.env\.example$/)],
     ['build and automation scripts', has(/(^|\/)(package\.json|pyproject\.toml|Cargo\.toml|go\.mod|pom\.xml|build\.gradle(\.kts)?|Makefile|Dockerfile)$|^\.github\/workflows\//)],
   ];

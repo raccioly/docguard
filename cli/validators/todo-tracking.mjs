@@ -36,6 +36,7 @@ import { findDocsByName } from '../shared-doc-roles.mjs';
 import { parseJsTs, walk } from '../scanners/js-ast.mjs';
 import { realComments } from '../scanners/anchor-tags.mjs';
 import { languageOf } from '../scanners/pattern-lexer.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
 // Build output and package caches come from the one shared set (spec 100 D8: `out/` and `target/` were read here
 // and nowhere else). `Research` and the hosting folders are this validator's own additions, not a kind.
@@ -49,11 +50,8 @@ const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '.amplify-hosting', '.serve
 const NOT_OWN_WORK_KINDS = ['template', 'fixture', 'backup'];
 const walkOptions = (projectDir, config) => ({ ignoreDirs: IGNORE_DIRS, root: resolve(projectDir), config, skipKinds: NOT_OWN_WORK_KINDS });
 
-const SOURCE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.rb', '.go', '.rs', '.java', '.cs',
-  '.vue', '.svelte', '.astro',
-]);
+// One language list for every scanner (specs/107-language-registry): code plus single-file components.
+const SOURCE_EXTENSIONS = codeExtensions(['.vue', '.svelte', '.astro']);
 
 const TEST_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx']);
 

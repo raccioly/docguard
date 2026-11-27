@@ -32,6 +32,7 @@ import { rootAgentDocs } from '../shared-agent-instructions.mjs';
 import { fileKind } from '../shared-file-kind.mjs';
 import { unreadEntry } from '../shared-labels.mjs';
 import { nonEnglishDocument } from '../shared-doc-language.mjs';
+import { codeExtensionAlternation } from '../shared-languages.mjs';
 
 
 // Numbers are only claims when adjacent to a recognized unit.
@@ -51,6 +52,9 @@ const NUMBER_PATTERNS = [
 // but only when the line or its heading reads like a status/state/enum context.
 const ENUM_LIST_RE = /\b[A-Z][A-Z0-9_]{2,}(?:\s*(?:\/|,|\||\bor\b)\s*[A-Z][A-Z0-9_]{2,}){1,}\b/g;
 const ENUM_CONTEXT_RE = /\b(status|state|enum|values?|one of|phase|stage|transitions?)\b/i;
+
+// specs/107-language-registry: a cited code or data path, optionally with a `:line` reference.
+const CITED_PATH_RE = new RegExp(`(?:\\.(?:${codeExtensionAlternation(['.sql', '.yaml', '.yml', '.json'])})|(?:^|\\/)\\.env(?:\\.[\\w.-]+)?)(?::\\d+(?:-\\d+)?)?$`);
 
 export const SEMANTIC_COVERAGE_LIMITATION = 'Semantic claim discovery is limited to docs-canonical/**/*.md, explicitly mapped Markdown document roles, README.md, and the root-level agent-instruction documents (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, configured agent files), subject to ignores, safety checks, and scan budgets. Other resolved documentation homes are unscanned/unsupported by this extractor; guard coverage labels do not extend this scope. Hashes cover only captured document and cited-source inputs, not all documentation or factual correctness.';
 
@@ -140,7 +144,7 @@ export function citedSources(text, limit = MAX_CITED_SOURCES) {
   const paths = [];
   for (const match of String(text || '').slice(0, 32768).matchAll(/`([^`\n]+)`|([^\s`]+)/g)) {
     const candidate = match[1] || match[2].replace(/^[(["']+|[)\],;.!"']+$/g, '');
-    if (!/(?:\.(?:ts|tsx|js|mjs|cjs|jsx|py|go|rs|java|kt|rb|php|sql|yaml|yml|json)|(?:^|\/)\.env(?:\.[\w.-]+)?)(?::\d+(?:-\d+)?)?$/.test(candidate)) continue;
+    if (!CITED_PATH_RE.test(candidate)) continue;
     if (!paths.includes(candidate)) paths.push(candidate);
     if (paths.length >= limit) break;
   }

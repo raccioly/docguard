@@ -20,12 +20,11 @@ import { runGuardInternal } from './guard.mjs';
 import { clearMemoryPlanCache } from '../scanners/memory-plan.mjs';
 import { buildIgnoreFilter, loadDocguardIgnore, DEFAULT_IGNORE_DIRS, relPosix } from '../shared-ignore.mjs';
 import { holdsOwnGit } from '../shared-file-kind.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
 const DEBOUNCE_MS = 500;
-const WATCH_EXTS = new Set([
-  '.md', '.json', '.mjs', '.cjs', '.js', '.ts', '.tsx', '.jsx', '.mts', '.cts', '.py',
-  '.java', '.go', '.rs', '.rb', '.php', '.yaml', '.yml', '.toml',
-]);
+// One language list for every scanner (specs/107-language-registry): code plus documents and config.
+const WATCH_EXTS = codeExtensions(['.md', '.json', '.yaml', '.yml', '.toml']);
 
 export function runWatch(projectDir, config, flags = {}, runtime = {}) {
   const watch = runtime.watch || fsWatch;

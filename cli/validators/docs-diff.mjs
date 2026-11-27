@@ -34,15 +34,14 @@ import { visibleMarkdown } from '../shared-html-comments.mjs';
 import { contractFields } from '../shared-result-contract.mjs';
 import { LANGUAGE_NOT_SUPPORTED, unreadEntry } from '../shared-labels.mjs';
 import { nonEnglishDocument } from '../shared-doc-language.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
 // The shared build-output and package-cache set, plus DocGuard's own document homes. A scaffolder's templates are
 // a file kind (specs/100-file-kinds), left out below.
 const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, 'docs-canonical', 'docs-implementation']);
 
-const CODE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
-  '.py', '.java', '.go', '.rs', '.rb', '.php',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const CODE_EXTENSIONS = codeExtensions();
 
 // v0.29: one stable finding code per drift domain (not per occurrence).
 // Location = the canonical doc that owns the domain, so an agent knows which

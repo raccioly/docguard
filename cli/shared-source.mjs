@@ -21,9 +21,14 @@ import { DEFAULT_IGNORE_DIRS as IGNORE_DIRS, shouldIgnore, isNonProductDir, isNo
 // The one shared build-output and package-cache set (specs/100-file-kinds): this module no longer keeps its own.
 import { pythonEnvNames } from './scanners/py-env.mjs';
 import { holdsOwnGit, isGeneratedFileName } from './shared-file-kind.mjs';
+import { HASH_COMMENT_EXTENSIONS, LANGUAGE_NAMES, SLASH_COMMENT_EXTENSIONS } from './shared-languages.mjs';
 
 
-/** Extensions the env scan reads (docguard.fallback-language-coverage#FR-003). */
+/**
+ * Extensions the env scan reads (docguard.fallback-language-coverage#FR-003).
+ * LANGUAGE EXEMPTION (tests/language-registry.test.mjs): tied to the env-read patterns of `grepEnvUsage`; a language
+ * joins only with a pattern for how it reads the environment.
+ */
 export const CODE_EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
   '.py', '.java', '.go', '.rs', '.rb', '.php',
@@ -34,20 +39,10 @@ export const CODE_EXTENSIONS = new Set([
  * Source languages DocGuard reads without a syntax tree, by extension. Used to
  * NAME a coverage gap ("3 Go files"), so a reader learns which language was
  * read by pattern, or not read at all. JS/TS and Python are absent: they have
- * AST tiers. (docguard.fallback-language-coverage#FR-001/FR-004/FR-010)
+ * AST tiers. (docguard.fallback-language-coverage#FR-001/FR-004/FR-010) The
+ * names come from the one language registry (specs/107-language-registry).
  */
-export const LANGUAGE_NAMES = Object.freeze({
-  '.go': 'Go', '.java': 'Java', '.kt': 'Kotlin', '.kts': 'Kotlin', '.rb': 'Ruby',
-  '.rs': 'Rust', '.php': 'PHP', '.cs': 'C#', '.swift': 'Swift', '.scala': 'Scala',
-  '.ex': 'Elixir', '.exs': 'Elixir', '.dart': 'Dart', '.c': 'C', '.h': 'C',
-  '.cc': 'C++', '.cpp': 'C++', '.cxx': 'C++', '.hpp': 'C++', '.m': 'Objective-C',
-  '.mm': 'Objective-C', '.lua': 'Lua', '.clj': 'Clojure', '.hs': 'Haskell',
-  '.erl': 'Erlang', '.ml': 'OCaml', '.fs': 'F#', '.vb': 'Visual Basic',
-  '.groovy': 'Groovy', '.pl': 'Perl', '.cr': 'Crystal', '.nim': 'Nim', '.zig': 'Zig',
-  '.jl': 'Julia',
-  // Salesforce (docguard.field-report-fixes#FR-003): read by pattern, like Java.
-  '.cls': 'Apex', '.trigger': 'Apex', '.apex': 'Apex', '.page': 'Visualforce', '.component': 'Visualforce',
-});
+export { LANGUAGE_NAMES };
 
 const extOf = filePath => (String(filePath).match(/\.[^./\\]+$/) || [''])[0].toLowerCase();
 
@@ -304,8 +299,9 @@ export function findDockerManifest(projectDir, config = {}) {
   return null;
 }
 
-const HASH_COMMENT_EXTS = new Set(['.py', '.rb', '.php', '.sh']);
-const SLASH_COMMENT_EXTS = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.go', '.rs', '.java', '.php', '.kt', '.kts', '.cs', '.scala']);
+// Comment families come from the language registry (specs/107-language-registry).
+const HASH_COMMENT_EXTS = HASH_COMMENT_EXTENSIONS;
+const SLASH_COMMENT_EXTS = SLASH_COMMENT_EXTENSIONS;
 
 /**
  * Classify every character of `content` as code (0), string-literal (1), or

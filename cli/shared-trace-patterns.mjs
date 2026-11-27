@@ -53,6 +53,7 @@ export const TRACE_MAP = {
     sourcePatterns: [
       // Entry points: JS (index/main/app/server.[jt]sx?), Python (__main__.py, main.py, app.py, cli.py),
       // Go (main.go, cmd/), Rust (main.rs, lib.rs), Java (Application.java, Main.java)
+      // LANGUAGE EXEMPTION (tests/language-registry.test.mjs): entry-point file names per ecosystem convention.
       { label: 'Entry points', glob: /(?:^|\/)(?:index|main|app|server|cli|__main__|Application|Main)\.(?:[jt]sx?|mjs|cjs|py|go|rs|java|kt|rb)$|(?:^|\/)cmd\// },
       // Config files: JS (package.json/tsconfig/next.config/vite.config), Python (pyproject.toml/setup.py/setup.cfg),
       // Rust (Cargo.toml), Go (go.mod), Java/Kotlin (pom.xml/build.gradle), Ruby (Gemfile), PHP (composer.json)
@@ -68,6 +69,7 @@ export const TRACE_MAP = {
       // Go (models/), Rust (struct definitions in models/), Java (entities/)
       { label: 'Schema definitions', glob: /(?:schema|model|entity|migration|prisma)/i },
       // Type definitions: JS types.ts, Python types.py, Rust types.rs
+      // LANGUAGE EXEMPTION (tests/language-registry.test.mjs): type-definition file names per ecosystem convention.
       { label: 'Type definitions', glob: /(?:^|\/)types?\.(?:[jt]sx?|mjs|py|rs|go|java|kt)$/ },
       // ORM/database libs (any language)
       { label: 'Database configs', glob: /(?:drizzle|knex|sequelize|typeorm|sqlalchemy|alembic|django|diesel|sqlx|gorm|hibernate|active.?record)/i },
@@ -77,6 +79,7 @@ export const TRACE_MAP = {
     standard: 'ISO/IEC/IEEE 29119-3',
     sourcePatterns: [
       // Test files in any ecosystem (mirrors TEST_PATTERNS above)
+      // LANGUAGE EXEMPTION (tests/language-registry.test.mjs): test-file naming conventions, which differ per language.
       { label: 'Test files', glob: /\.(?:test|spec)\.(?:mjs|cjs|[jt]sx?)$|(?:^|\/)test_[^/]+\.py$|[^/]+_test\.py$|(?:^|\/)tests\.py$|_test\.go$|(?:Test|Spec|IT)\.(?:java|kt)$|(?:^|\/)tests?\/[^/]+\.(?:rs|py|rb|php)$|_(?:spec|test)\.rb$|Test\.php$/ },
       // Test runner configs: JS (jest/vitest/playwright/cypress), Python (pytest.ini/tox.ini), Rust (Cargo.toml has [[test]]),
       // Java (pom.xml/build.gradle), Go (no config file typically)

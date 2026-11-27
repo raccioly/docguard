@@ -33,6 +33,7 @@ const IGNORE_DIRS = new Set([...DEFAULT_IGNORE_DIRS, '__tests__', '__test__']);
 // Files that are tests, not source. Matched against the relative path AND
 // the basename. Covers Jest/Vitest/Mocha/Jasmine/pytest/Go/Java conventions.
 const TEST_PATH_RE = /(^|\/)__tests?__\//;
+// LANGUAGE EXEMPTION (tests/language-registry.test.mjs): the test-name convention of the languages Docs-Sync reads routes and services for.
 const TEST_FILE_RE = /\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py|java|go)$/;
 
 // Next.js App Router uses a strict filename convention for route handlers.
@@ -203,6 +204,8 @@ function expandDirs(projectDir, config, subPaths) {
   return out;
 }
 
+// LANGUAGE EXEMPTION (tests/language-registry.test.mjs): the languages Docs-Sync reads routes and services for; it also decides `applies`, so a
+// language joins only with a reader (spec 097: a wider list would make projects apply and examine nothing).
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.py', '.java', '.go'];
 const ROUTE_SUBPATHS = ['src/routes', 'src/app/api', 'routes', 'app/api'];
 const SERVICE_SUBPATHS = ['src/services', 'services', 'src/lib'];

@@ -10,6 +10,11 @@ import { extname, resolve } from 'node:path';
 import { TEST_PATTERNS } from '../shared-trace-patterns.mjs';
 import { realComments } from './anchor-tags.mjs';
 import { parseJsTs, walk } from './js-ast.mjs';
+import { HASH_COMMENT_EXTENSIONS, codePathPattern, SCRIPT_EXTENSIONS } from '../shared-languages.mjs';
+
+// specs/107-language-registry: code and scripts are test sources by name or directory; implementation files add YAML.
+const TEST_SOURCE_EXT = codePathPattern(SCRIPT_EXTENSIONS, { flags: '' });
+const IMPLEMENTATION_EXT = codePathPattern([...SCRIPT_EXTENSIONS, '.yml', '.yaml'], { flags: '' });
 
 /**
  * A test source file, by path: a code extension (Apex included, docguard.field-report-fixes#FR-005) and a
@@ -17,7 +22,7 @@ import { parseJsTs, walk } from './js-ast.mjs';
  * @implements docguard.field-report-fixes#FR-005
  */
 export function isTestSource(file) {
-  return /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cls|trigger|apex)$/.test(file)
+  return TEST_SOURCE_EXT.test(file)
     && (TEST_PATTERNS.some(pattern => pattern.test(file)) || /(?:^|\/)(?:__tests__|tests?)\//.test(file));
 }
 
@@ -85,7 +90,7 @@ function testDeclarations(content, filename) {
   }
 
   const tokens = /\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*|\#[^\n]*|"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|`(?:\\[\s\S]|[^`\\])*`/g;
-  const hashComments = /\.(?:py|rb|php|sh)$/.test(ext);
+  const hashComments = HASH_COMMENT_EXTENSIONS.has(ext.toLowerCase());
   let end = 0;
   let line = 1;
   let code = '';
@@ -160,7 +165,7 @@ export function scanImplementationFilesForReferences(projectDir, projectFiles, p
     projectDir,
     projectFiles,
     patterns,
-    path => !isTestSource(path) && /\.(?:[cm]?[jt]sx?|py|go|rs|java|kt|rb|php|sh|cs|swift|ya?ml|cls|trigger|apex)$/.test(path),
+    path => !isTestSource(path) && IMPLEMENTATION_EXT.test(path),
     implementationDeclarations,
   );
 }

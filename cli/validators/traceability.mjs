@@ -14,7 +14,6 @@
  * @implements docguard.document-lifecycle#FR-013
  */
 
-import { APEX_EXTENSIONS } from '../shared-languages.mjs';
 import { SCAFFOLD_CHECKED, isUneditedScaffold, scaffoldTemplateName } from '../shared-scaffold.mjs';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve, relative, basename, extname } from 'node:path';
@@ -48,6 +47,7 @@ import {
   trustedSpecLifecycleIndex,
   uncommittedPlannedSpecLifecycleIndex,
 } from '../scanners/spec-registry.mjs';
+import { codeExtensions } from '../shared-languages.mjs';
 
 /**
  * Optional graphify interop (github.com/Graphify-Labs/graphify, MIT).
@@ -509,7 +509,7 @@ export function scanTestFilesForReferences(projectDir, projectFiles, patterns) {
  */
 function scanDocAnnotations(projectFiles, projectDir) {
   const map = new Map();
-  const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.go', '.rs', '.java', ...APEX_EXTENSIONS]);
+  const CODE_EXT = codeExtensions(); // specs/107-language-registry
 
   for (const relPath of projectFiles) {
     const ext = extname(relPath);

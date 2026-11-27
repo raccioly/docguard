@@ -11,11 +11,10 @@ import { extname } from 'node:path';
 import { listCanonicalDocs, isNonProductPath, relPosix, walkFiles } from './shared-ignore.mjs';
 import { listTrackedFiles } from './shared-git.mjs';
 import { isTestSource as isTestFile } from './scanners/requirement-evidence.mjs';
+import { codeExtensions } from './shared-languages.mjs';
 
-const SOURCE_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.py', '.go', '.rs', '.java', '.kt', '.rb',
-  '.php', '.cs', '.swift', '.scala', '.c', '.cc', '.cpp', '.h', '.hpp',
-]);
+// One language list for every scanner (specs/107-language-registry): every programming language.
+const SOURCE_EXTENSIONS = codeExtensions();
 
 // Tooling configuration is code in a source extension but not the project's product: a lint, test-runner,
 // bundler or ORM config, an rc file, a test setup file.
