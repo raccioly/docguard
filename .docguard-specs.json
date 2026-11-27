@@ -7191,6 +7191,114 @@
       }
     },
     {
+      "specId": "docguard.documented-quantities",
+      "path": "specs/109-documented-quantities/spec.md",
+      "reviewed": {
+        "lifecycle": {
+          "approval": "draft",
+          "delivery": "planned",
+          "context": "current",
+          "retirementReason": null,
+          "storage": "working_tree",
+          "persistenceModel": null
+        },
+        "relations": {
+          "extends": [],
+          "duplicates": [],
+          "conflictsWith": [],
+          "supersedes": [],
+          "supersededBy": []
+        },
+        "scope": {
+          "canonicalDocs": []
+        },
+        "reconciliation": {
+          "lastReviewedRevision": null,
+          "outcomes": []
+        }
+      },
+      "intent": {
+        "requirements": [
+          "docguard.documented-quantities#FR-001",
+          "docguard.documented-quantities#FR-002",
+          "docguard.documented-quantities#FR-003",
+          "docguard.documented-quantities#FR-004",
+          "docguard.documented-quantities#FR-005",
+          "docguard.documented-quantities#SC-001",
+          "docguard.documented-quantities#SC-002"
+        ]
+      },
+      "observed": {
+        "artifacts": [
+          {
+            "path": "specs/109-documented-quantities/spec.md",
+            "digest": "sha256:4cad3d6ce8237fd0b7aa865a7442d6178bc83dc558f9b4aa10e0213fd32e3341"
+          },
+          {
+            "path": "specs/109-documented-quantities/plan.md",
+            "digest": "sha256:aac4fbfabe2793e5bea6d5f18f9a2e063e304ac3b21ab5ed681409ad023dae8d"
+          },
+          {
+            "path": "specs/109-documented-quantities/tasks.md",
+            "digest": "sha256:9321e3abc971497f4fb19250451017c84624bad044fac296fe25c1636ebef361"
+          }
+        ],
+        "taskCompletion": {
+          "checked": 4,
+          "total": 6
+        },
+        "implementationEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "cli/scanners/semantic-claims.mjs",
+            "line": 232
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 481
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 482
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "cli/validators/metrics-consistency.mjs",
+            "line": 483
+          }
+        ],
+        "testEvidence": [
+          {
+            "requirementId": "FR-001",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 4
+          },
+          {
+            "requirementId": "FR-002",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 5
+          },
+          {
+            "requirementId": "FR-003",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 6
+          },
+          {
+            "requirementId": "FR-004",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 7
+          },
+          {
+            "requirementId": "FR-005",
+            "file": "tests/documented-quantities.test.mjs",
+            "line": 8
+          }
+        ]
+      }
+    },
+    {
       "specId": "docguard.dogfood-findings",
       "path": "specs/050-dogfood-findings/spec.md",
       "reviewed": {
@@ -7272,22 +7380,22 @@
           {
             "requirementId": "FR-003",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 453
+            "line": 631
           },
           {
             "requirementId": "FR-005",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 432
+            "line": 610
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 509
+            "line": 687
           },
           {
             "requirementId": "FR-006",
             "file": "cli/validators/metrics-consistency.mjs",
-            "line": 523
+            "line": 701
           }
         ],
         "testEvidence": [
@@ -9650,7 +9758,7 @@
           {
             "requirementId": "FR-007",
             "file": "cli/findings.mjs",
-            "line": 1234
+            "line": 1253
           },
           {
             "requirementId": "FR-008",
@@ -11222,12 +11330,12 @@
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1510
+            "line": 1529
           },
           {
             "requirementId": "FR-006",
             "file": "cli/findings.mjs",
-            "line": 1520
+            "line": 1539
           },
           {
             "requirementId": "FR-006",
@@ -18037,7 +18145,7 @@
           {
             "requirementId": "FR-033",
             "file": "cli/scanners/semantic-claims.mjs",
-            "line": 81
+            "line": 84
           },
           {
             "requirementId": "FR-033",

@@ -296,6 +296,12 @@ export function validateMetricsConsistency(projectDir, config, guardResults) {
     }
   }
 
+  // docguard.documented-quantities#FR-002 to FR-004: the Node.js minimum and command durations.
+  const quantities = checkQuantityClaims(projectDir, mdFiles, isIgnored);
+  findings.push(...quantities.findings);
+  passed += quantities.passed;
+  total += quantities.total;
+
   const deps = checkDependencyClaims(projectDir, mdFiles, isIgnored);
   findings.push(...deps.findings);
   passed += deps.passed;
@@ -373,6 +379,178 @@ function runtimeDependencyCount(projectDir) {
  * An escalation with no mechanical fix: the reader decides whether the prose
  * or the manifest is wrong (a dependency may have been added by mistake).
  */
+/** Seconds in one unit of a written duration. */
+const UNIT_SECONDS = { ms: 0.001, millisecond: 0.001, milliseconds: 0.001, s: 1, sec: 1, secs: 1, second: 1, seconds: 1, min: 60, mins: 60, minute: 60, minutes: 60, h: 3600, hr: 3600, hrs: 3600, hour: 3600, hours: 3600 };
+const DURATION = /(?<![\w.$])((?:~|about |around |roughly )?(\d+(?:\.\d+)?)\s?(milliseconds?|ms|seconds?|secs?|sec|s|minutes?|mins?|min|hours?|hrs?|hr|h))(?![\w'’-])(?!\s+of\b)/i;
+// npm test | npm t | npm run x | pnpm [run] x | yarn [run] x | bun run x
+const SCRIPT_CALL = /(?<![\w-])(?:npm\s+(?:run(?:-script)?\s+([\w:.-]+)|(test|t)\b)|pnpm\s+(?:run\s+)?([\w:.-]+)|yarn\s+(?:run\s+)?([\w:.-]+)|bun\s+run\s+([\w:.-]+))/;
+const NODE_MINIMUM = /\bNode(?:\.js)?\s*(?:(?:≥|>=)\s*v?(\d{1,2})|v?(\d{1,2})(?:\.\d+)*\s*(?:\+|or\s+(?:later|newer|higher|above)))/i;
+
+/** The package script a command line runs, or null. */
+function scriptCalled(text, scripts) {
+  const m = SCRIPT_CALL.exec(text);
+  if (!m) return null;
+  const name = m[1] || (m[2] ? 'test' : null) || m[3] || m[4] || m[5];
+  return name && Object.hasOwn(scripts, name) ? { name, text: m[0] } : null;
+}
+
+/**
+ * The budget CI gives each package script, from `.github/workflows/*.yml`: the smallest of a
+ * `*_BUDGET`/`*_TIMEOUT`/`*_CEILING` env var with a unit suffix on the step, job or workflow, and the
+ * step's or job's `timeout-minutes`. Line-based, for the plain shapes workflows use.
+ * @returns {Map<string, { seconds: number, source: string, file: string }>}
+ */
+function ciBudgets(projectDir, scripts) {
+  const budgets = new Map();
+  const dir = resolve(projectDir, '.github', 'workflows');
+  let files = [];
+  try { files = readdirSync(dir).filter(f => /\.ya?ml$/.test(f)); } catch { return budgets; }
+  const envBudget = (key, value) => {
+    const m = /(?:BUDGET|TIMEOUT|CEILING)_(MS|S|SEC|SECONDS|MIN|MINUTES)$/i.exec(key);
+    const n = Number(String(value).replace(/["']/g, ''));
+    if (!m || !Number.isFinite(n) || n <= 0) return null;
+    const unit = m[1].toUpperCase();
+    return { seconds: unit === 'MS' ? n / 1000 : unit.startsWith('MIN') ? n * 60 : n, source: `${key}: ${String(value).replace(/["']/g, '')}` };
+  };
+  for (const file of files) {
+    let lines;
+    try { lines = readFileSync(join(dir, file), 'utf8').split('\n'); } catch { continue; }
+    const rel = `.github/workflows/${file}`;
+    let workflowEnv = [], job = null, step = null, envTarget = null, envIndent = -1, runIndent = -1;
+    const flushStep = () => {
+      if (!step || !job) return;
+      for (const call of step.calls) {
+        const limits = [...step.env, ...job.env, ...workflowEnv, ...(step.timeout ? [step.timeout] : []), ...(job.timeout ? [job.timeout] : [])];
+        if (!limits.length) continue;
+        const best = limits.reduce((a, b) => (b.seconds < a.seconds ? b : a));
+        const cur = budgets.get(call);
+        if (!cur || best.seconds < cur.seconds) budgets.set(call, { ...best, file: rel });
+      }
+    };
+    for (const raw of lines) {
+      const line = raw.replace(/\s+#.*$/, '');
+      if (!line.trim()) continue;
+      const indent = raw.match(/^\s*/)[0].length;
+      if (envTarget && indent > envIndent) {
+        const kv = /^\s*([A-Za-z_][\w]*)\s*:\s*(.+)$/.exec(line);
+        const b = kv && envBudget(kv[1], kv[2].trim());
+        if (b) envTarget.push(b);
+        continue;
+      }
+      envTarget = null;
+      if (runIndent >= 0 && indent > runIndent && step) {
+        const call = scriptCalled(line, scripts);
+        if (call) step.calls.push(call.name);
+        continue;
+      }
+      runIndent = -1;
+      if (/^jobs:\s*$/.test(line)) { flushStep(); step = null; job = null; continue; }
+      if (indent === 2 && /^\s{2}[\w-]+:\s*$/.test(line)) { flushStep(); step = null; job = { env: [], timeout: null }; continue; }
+      if (/^\s*-\s/.test(line) && job) { flushStep(); step = { env: [], timeout: null, calls: [] }; }
+      const body = line.replace(/^\s*-\s+/, ' '.repeat(indent + 2));
+      const kv = /^\s*([\w-]+)\s*:\s*(.*)$/.exec(body);
+      if (!kv) continue;
+      const [, key, value] = kv;
+      if (key === 'env' && !value.trim()) {
+        envTarget = indent === 0 ? workflowEnv : step && indent > 4 ? step.env : job ? job.env : workflowEnv;
+        envIndent = indent;
+        continue;
+      }
+      if (key === 'timeout-minutes' && Number(value) > 0) {
+        const t = { seconds: Number(value) * 60, source: `timeout-minutes: ${Number(value)}` };
+        if (step && indent > 4) step.timeout = t; else if (job) job.timeout = t;
+        continue;
+      }
+      if (key === 'run' && step) {
+        if (/^[|>]/.test(value.trim())) { runIndent = indent; continue; }
+        const call = scriptCalled(value, scripts);
+        if (call) step.calls.push(call.name);
+      }
+    }
+    flushStep();
+  }
+  return budgets;
+}
+
+/**
+ * MET005: a documented minimum Node.js version against `engines.node`. MET006 and MET007: a duration
+ * documented for a package-script command against the CI budget of that command (a budget is a ceiling:
+ * a longer documented time contradicts it, MET006; a budget ten times or more the documented time is only
+ * evidence the number may be stale, MET007, informational). A duration counts only on a line that names
+ * the command; in a shell fence, the command is the code and the duration its trailing `#` comment.
+ * @implements docguard.documented-quantities#FR-002
+ * @implements docguard.documented-quantities#FR-003
+ * @implements docguard.documented-quantities#FR-004
+ */
+function checkQuantityClaims(projectDir, mdFiles, isIgnored) {
+  const findings = [];
+  let passed = 0, total = 0;
+  let pkg = null;
+  try { pkg = JSON.parse(readFileSync(resolve(projectDir, 'package.json'), 'utf8')); } catch { return { findings, passed, total }; }
+  const enginesNode = typeof pkg?.engines?.node === 'string' ? pkg.engines.node : null;
+  const engineMajor = enginesNode ? Number((/(\d+)/.exec(enginesNode) || [])[1]) || null : null;
+  const scripts = pkg?.scripts && typeof pkg.scripts === 'object' ? pkg.scripts : {};
+  const budgets = Object.keys(scripts).length ? ciBudgets(projectDir, scripts) : new Map();
+  if (!engineMajor && budgets.size === 0) return { findings, passed, total };
+  for (const mdFile of mdFiles) {
+    const rel = relative(projectDir, mdFile).replace(/\\/g, '/');
+    if (rel.toLowerCase().includes('changelog') || /^specs\//.test(rel) || isIgnored(rel)) continue;
+    let content;
+    try { content = readFileSync(mdFile, 'utf8'); } catch { continue; }
+    let fence = null;
+    content.split('\n').forEach((line, i) => {
+      const f = /^\s*```\s*([\w-]*)/.exec(line);
+      if (f) { fence = fence === null ? f[1].toLowerCase() : null; return; }
+      const location = `${rel}:${i + 1}`;
+      if (engineMajor && fence === null) {
+        const n = NODE_MINIMUM.exec(line);
+        if (n) {
+          total++;
+          const major = Number(n[1] || n[2]);
+          if (major === engineMajor) passed++;
+          else findings.push(mkFinding({
+            code: 'MET005', validator: 'metricsConsistency', severity: 'warn', confidence: 'high',
+            message: `${location} says ${n[0].trim()}; package.json engines.node is "${enginesNode}"`,
+            location,
+            suggestion: { kind: 'review', text: 'Decide which minimum is right and change the other: the document or engines.node in package.json.' },
+          }));
+        }
+      }
+      if (!budgets.size) return;
+      const shell = fence !== null && /^(?:bash|sh|shell|zsh|console|terminal|shell-session|bash-session)$/.test(fence);
+      if (fence !== null && !shell) return;
+      const hash = shell ? line.search(/\s#/) : -1;
+      const code = shell ? (hash >= 0 ? line.slice(0, hash) : line) : line;
+      const prose = shell ? (hash >= 0 ? line.slice(hash + 2) : '') : line;
+      const call = scriptCalled(code, scripts);
+      const d = call && DURATION.exec(prose);
+      const budget = call && budgets.get(call.name);
+      if (!d || !budget) return;
+      const seconds = Number(d[2]) * UNIT_SECONDS[d[3].toLowerCase()];
+      if (!(seconds > 0)) return;
+      total++;
+      const said = d[1].trim();
+      const where = `${budget.source} (${Math.round(budget.seconds)} s) in ${budget.file}`;
+      if (seconds > budget.seconds) {
+        findings.push(mkFinding({
+          code: 'MET006', validator: 'metricsConsistency', severity: 'warn', confidence: 'high',
+          message: `${location} says \`${call.text}\` takes ${said}; CI gives it ${where}, so a run that long fails there`,
+          location,
+          suggestion: { kind: 'review', text: 'Time the command, then fix the document or the CI budget.' },
+        }));
+      } else if (budget.seconds >= 10 * seconds) {
+        findings.push(mkFinding({
+          code: 'MET007', validator: 'metricsConsistency', severity: 'warn', confidence: 'medium',
+          message: `${location} says \`${call.text}\` takes ${said}; CI budgets it ${where}: ${Math.round(budget.seconds / seconds)}x the documented time, so the number may be stale`,
+          location,
+          suggestion: { kind: 'review', text: 'Time the command and update the document, or lower the CI budget if it is generous on purpose.' },
+        }));
+      } else passed++;
+    });
+  }
+  return { findings, passed, total };
+}
+
 function checkDependencyClaims(projectDir, mdFiles, isIgnored) {
   const out = { findings: [], passed: 0, total: 0 };
   const actual = runtimeDependencyCount(projectDir);
