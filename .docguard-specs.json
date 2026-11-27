@@ -762,7 +762,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -781,6 +781,20 @@
             {
               "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
               "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
+              "evidence": [
+                "cli/shared-agent-instructions.mjs",
+                "cli/validators/freshness.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "tests/agent-instruction-role.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
               "evidence": [
                 "cli/shared-agent-instructions.mjs",
                 "cli/validators/freshness.mjs",
@@ -817,7 +831,7 @@
         "artifacts": [
           {
             "path": "specs/094-agent-instruction-role/spec.md",
-            "digest": "sha256:eecf8b2dca3b956bb5b2fe192e68262da27cdc0376d3699c3d6877ef0e4a4015"
+            "digest": "sha256:cda3f462116387a69c49c48e372be631becb19f3a0cfd0e665ab4ab3336cdea7"
           },
           {
             "path": "specs/094-agent-instruction-role/plan.md",
@@ -6151,7 +6165,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "053ecd8c466840a3c00a1a733f5f17ee2c388a12",
@@ -6314,6 +6328,60 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
+              "evidence": [
+                "cli/authoring-contract.mjs",
+                "cli/config.mjs",
+                "cli/scanners/as-built.mjs",
+                "cli/scanners/lifecycle-status.mjs",
+                "cli/scanners/speckit.mjs",
+                "cli/shared-doc-language.mjs",
+                "cli/shared-labels.mjs",
+                "cli/shared-prose-words.mjs",
+                "cli/shared-requirement-ids.mjs",
+                "cli/shared-scaffold.mjs",
+                "cli/shared.mjs",
+                "cli/validators/changelog.mjs",
+                "cli/validators/decision-records.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/docs-coverage.mjs",
+                "cli/validators/environment.mjs",
+                "cli/validators/structure.mjs",
+                "cli/validators/test-spec.mjs",
+                "cli/writers/generate-io.mjs",
+                "cli/writers/mechanical.mjs",
+                "cli/writers/sections.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/config.test.mjs",
+                "tests/document-languages-changelog.test.mjs",
+                "tests/document-languages-compat.test.mjs",
+                "tests/document-languages-decisions.test.mjs",
+                "tests/document-languages-english-identity-stage2.test.mjs",
+                "tests/document-languages-english-identity.test.mjs",
+                "tests/document-languages-explain.test.mjs",
+                "tests/document-languages-fixtures.test.mjs",
+                "tests/document-languages-generate.test.mjs",
+                "tests/document-languages-labels-review.test.mjs",
+                "tests/document-languages-metrics-wordlists.test.mjs",
+                "tests/document-languages-metrics.test.mjs",
+                "tests/document-languages-naming.test.mjs",
+                "tests/document-languages-nfc.test.mjs",
+                "tests/document-languages-r1-coverage.test.mjs",
+                "tests/document-languages-registry.test.mjs",
+                "tests/document-languages-requirements.test.mjs",
+                "tests/document-languages-sections.test.mjs",
+                "tests/document-languages-speckit.test.mjs",
+                "tests/document-languages-strict.test.mjs",
+                "tests/document-languages-structure.test.mjs",
+                "tests/document-languages-verification.test.mjs",
+                "tests/document-languages-writers.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -6359,7 +6427,7 @@
         "artifacts": [
           {
             "path": "specs/104-document-languages/spec.md",
-            "digest": "sha256:39904f7599e3d2ac62080532386697c0a6554af00784faf412189063852a1524"
+            "digest": "sha256:446a743ef9933ca25010c6231244ab98647f2c7e87d3ff1414718b1f43b8881b"
           },
           {
             "path": "specs/104-document-languages/plan.md",
@@ -7366,11 +7434,24 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "f240a8e1d14c9bfa41a6068e690d655625906a46",
               "reason": "Issue 629: shell-fence comments and bare s are claims; MET005 Node minimum vs engines.node, MET006 duration above the CI budget, MET007 (info) explicit budget >= 10x; A/B shows no exit change and no new finding on local projects.",
+              "evidence": [
+                "cli/scanners/semantic-claims.mjs",
+                "cli/validators/metrics-consistency.mjs",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/documented-quantities.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
               "evidence": [
                 "cli/scanners/semantic-claims.mjs",
                 "cli/validators/metrics-consistency.mjs",
@@ -7399,7 +7480,7 @@
         "artifacts": [
           {
             "path": "specs/109-documented-quantities/spec.md",
-            "digest": "sha256:553b8666c10198f3727c04446fb336d21fa34456f9dd5de9135af189d8ff389b"
+            "digest": "sha256:bbe4bf395ca5287c2ccb2b0081355d89fe46aa9e81f4bde88f3d22b25d39dcad"
           },
           {
             "path": "specs/109-documented-quantities/plan.md",
@@ -9438,7 +9519,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "cae5cf32b7fde604e7ceb769486168298aefedfa",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "c297b588418dbdece3ee2321568af081dd843fa5",
@@ -9559,6 +9640,36 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
+              "evidence": [
+                "cli/commands/guard.mjs",
+                "cli/commands/sync-tests.mjs",
+                "cli/scanners/agent-instructions.mjs",
+                "cli/scanners/doc-tools.mjs",
+                "cli/scanners/frontend.mjs",
+                "cli/scanners/iac.mjs",
+                "cli/shared-backup-documents.mjs",
+                "cli/shared-file-kind.mjs",
+                "cli/shared-mirrors.mjs",
+                "cli/shared-test-cases.mjs",
+                "cli/validators/path-scoped-rules.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "docs-canonical/TEST-SPEC.md",
+                "tests/file-kinds-detection.test.mjs",
+                "tests/file-kinds-registry.test.mjs",
+                "tests/file-kinds-stage2.test.mjs",
+                "tests/file-kinds.test.mjs",
+                "tests/helpers/benchmark-subset.mjs",
+                "tests/instruction-copies.test.mjs",
+                "tests/mirrors.test.mjs",
+                "tests/program-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -9589,7 +9700,7 @@
         "artifacts": [
           {
             "path": "specs/100-file-kinds/spec.md",
-            "digest": "sha256:ab4cfd36b6af3a194c257770f71dbae625f5f4e74f8736eed44c4eb29e32524f"
+            "digest": "sha256:58e9170f9e19c9420afbc9b5bf21e5ddcc616158037c363725b64395ab379506"
           },
           {
             "path": "specs/100-file-kinds/plan.md",
@@ -10353,7 +10464,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "fa412aab8d660957b18405eed33a6311ec38d3d1",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "7db0ae5fa8809ddbd40c6b23d69a1d4ca5ae06b4",
@@ -10426,6 +10537,30 @@
               ],
               "deviations": [],
               "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
+              "evidence": [
+                "cli/commands/fix.mjs",
+                "cli/commands/init.mjs",
+                "cli/config.mjs",
+                "cli/shared-glossary.mjs",
+                "cli/shared-sentences.mjs",
+                "cli/validators/doc-quality.mjs",
+                "cli/validators/glossary.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/doc-quality-plain-writing.test.mjs",
+                "tests/glossary-compat.test.mjs",
+                "tests/glossary-init.test.mjs",
+                "tests/glossary-match.test.mjs",
+                "tests/glossary-parse.test.mjs",
+                "tests/glossary-validator.test.mjs",
+                "tests/glossary-verification.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
             }
           ]
         }
@@ -10472,7 +10607,7 @@
         "artifacts": [
           {
             "path": "specs/105-glossary-and-plain-writing/spec.md",
-            "digest": "sha256:28c3bbf09561e4c078e6a406293fb1ed17c96006a6d7417999c5b1734784d939"
+            "digest": "sha256:f3b1cf733104841e5b61626268fc1a1ea6af7522fe190da9955e63d2bfb0086f"
           },
           {
             "path": "specs/105-glossary-and-plain-writing/plan.md",
@@ -16769,7 +16904,7 @@
           ]
         },
         "reconciliation": {
-          "lastReviewedRevision": "46fe53c404c5db84cab8c739cd94111eb963b336",
+          "lastReviewedRevision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
           "outcomes": [
             {
               "revision": "d531756de886c5f89d64125a22a8fb07bb9aafe9",
@@ -16793,6 +16928,25 @@
             {
               "revision": "46fe53c404c5db84cab8c739cd94111eb963b336",
               "reason": "Evidence changed by spec 100 stage 2 (file-kind classification in the role, resolution and freshness code); requirements re-verified, their tests pass.",
+              "evidence": [
+                "cli/commands/review.mjs",
+                "cli/scanners/doc-reviews.mjs",
+                "cli/scanners/recorded-review-signals.mjs",
+                "cli/scanners/reference-staleness.mjs",
+                "cli/validators/freshness.mjs",
+                "docs-canonical/ARCHITECTURE.md",
+                "docs-canonical/DATA-MODEL.md",
+                "tests/history-replay.test.mjs",
+                "tests/program-verification.test.mjs",
+                "tests/recorded-document-reviews.test.mjs",
+                "tests/review-accept-many.test.mjs"
+              ],
+              "deviations": [],
+              "successor": null
+            },
+            {
+              "revision": "9c0f0556facd40156eb7e64d3144ab92c45f8025",
+              "reason": "Merged main (spec 109) into specs 107/108: the language registry and config scan changed files these specs list as evidence; reviewed, their recorded behavior holds",
               "evidence": [
                 "cli/commands/review.mjs",
                 "cli/scanners/doc-reviews.mjs",
@@ -16838,7 +16992,7 @@
         "artifacts": [
           {
             "path": "specs/095-recorded-document-reviews/spec.md",
-            "digest": "sha256:2b9e006320596dd7da8a0e1de39bd8c19cd3314be8a4c4e987211f27d9a1ec39"
+            "digest": "sha256:f9dc83d7085f30b2436587aac01b670956aeb8ca6e81f5f33f0e261a36952ffa"
           },
           {
             "path": "specs/095-recorded-document-reviews/plan.md",
