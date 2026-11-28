@@ -53,5 +53,5 @@ termination.
 ## Running DocGuard
 
 Run `docguard` from PATH when it is installed. Otherwise run
-`npx --yes docguard-cli@0.50.0`, the release these instructions ship with, in its
+`npx --yes docguard-cli@0.51.0`, the release these instructions ship with, in its
 place. Every `docguard …` command below means one of the two.
