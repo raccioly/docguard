@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-11-28
+
 ### Added
 
 - **Quantities in instruction documents are compared (spec 109, `docguard.documented-quantities`, issue 629, the last part of 628).** The claim extractor now reads the trailing `# comment` of a shell-fence line and a bare `s` unit (`~15s`), so `semanticClaims.count` can grow. New Metrics-Consistency codes: `MET005` (warn), a documented minimum Node.js version that disagrees with `engines.node`; `MET006` (warn), a documented duration for a package-script command above the CI budget of that command (`*_BUDGET_MS`, `timeout-minutes`); `MET007` (informational, no exit-code change), a CI budget ten times or more the documented time. Exit codes: a project with a contradicting Node.js minimum or a documented time above its CI budget gets a new warning (exit 2 under standard, no change under strict).
@@ -24,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The secret scan reads config files, and DocGuard says what it did not read (spec 108, `docguard.analysis-disclosure`, issues 718 and 719).** YAML, `.properties`/`.conf`, `appsettings*.json`, Mule flow XML (`src/main/mule/`) and Salesforce Flow variables are read by key, and shell scripts by the code pattern, so `SEC001` to `SEC004` can now fire on a committed `application.yml` password. Placeholders (`${VAR}`, `${secure::key}`, `${{ secrets.X }}`, `{{ .Values.x }}`, `%env()%`, `{cipher}`, `ENC()`, `vault:`) are not reported; a literal default in `${VAR:default}` is. Well-known defaults (`postgres`) and the spec 106 value shapes are low-confidence warnings; lockfiles and `*.example` files are not read; `src/test/resources/` is `test-path`. New informational `SEC012` counts files in a recognized language the scan left out (DataWeave, LWC templates). `guard --format json` carries `unanalyzed` (language, files, the checks that do not read them); the text output prints one line. MuleSoft (`mule-application` packaging) is detected; neither it nor Salesforce DX makes API-Surface apply, and `generate` says the stack has no DocGuard analyzer.
 
 Exit codes: a project with `"security": true` (or `architecture: true`, or the `enterprise` profile) and a product-code secret now exits 1 under strict, as under standard. A Maven or Gradle project with module tests and no `TEST-SPEC.md` can now exit 4 under strict (Test-Spec applies). Fewer `SEC001`/`SEC004` errors can turn an exit 1 into 2 for the shapes above; new `SEC001`/`SEC004` errors in Apex can turn 2 into 1. A project in a language some checks did not read before (Apex, Elixir, Dart, Kotlin, Swift, C# depending on the check) can see new `TDO*`, `DRF*` (an unlogged `DRIFT:` comment is an error, exit 1), `FRS*` and `SEC*` findings, and Doc-Dependency, Requirement-Anchors and Doc-Ownership now apply to it when it has canonical documents, as they do for Java. A committed credential in a config file or shell script is now `SEC001` to `SEC004`, an error, and fails a project that turned security on (exit 1). Changed codes: SEC001, SEC002, SEC003, SEC004, SEC011, SEC012 (new, informational), TSP007, TRC002, TRC004, SPK008, DCV003, TDO002, DRF002, FRS002.
+
+### Commits
+
+- refactor: one language registry, config secret scan and analysis disclosure (specs 107, 108; #718, #719) (#721)
+- feat(metrics): quantities in instruction documents (spec 109, #629, closes #628) (#723)
+- fix: strict secrets, Salesforce Apex, guard exit contract, doc-folder noise (spec 106, #711–#717) (#720)
 
 ## [0.50.0] - 2026-11-23
 
